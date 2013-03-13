@@ -1,0 +1,28 @@
+<controlFile>
+  <sourceFile name="ex8.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="2" >
+      <command>
+	<cascadeFunction> cascade_assume </cascadeFunction>
+	<argument><![CDATA[
+	k == 3
+	]]>
+	</argument>
+      </command>
+    </startPosition>
+    <wayPoint fileId="1" line="11" >
+      <loop iterTimes="3" >
+        <wayPoint fileId="1" line="12" >
+      	  <command>
+	    <cascadeFunction> cascade_check </cascadeFunction>
+	    <argument><![CDATA[
+	    _valid(&a[i])
+	    ]]>
+	    </argument>
+      	  </command>
+        </wayPoint>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="15" />
+  </run>
+</controlFile>

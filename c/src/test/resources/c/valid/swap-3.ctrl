@@ -1,0 +1,26 @@
+<controlFile>
+  <sourceFile name="swap.c" id="1"/> 
+  <run>
+    <startPosition fileId="1" line="10">
+      <command>
+        <cascadeFunction>  cascade_assume
+        </cascadeFunction>
+        <argument><![CDATA[
+           a != b &&
+	         (int)a < (int)&a && (int)b < (int)&a
+	         ]]>
+        </argument>
+      </command>
+    </startPosition>
+    <endPosition fileId="1" line="11">
+      <command>
+        <cascadeFunction>  cascade_check
+        </cascadeFunction>
+        <argument><![CDATA[
+          old_a==*b && old_b==*a
+          ]]>
+        </argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

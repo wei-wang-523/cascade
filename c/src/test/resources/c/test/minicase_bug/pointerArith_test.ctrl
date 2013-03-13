@@ -1,0 +1,23 @@
+<controlFile>
+  <sourceFile name="pointerArith_test.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="1" >
+      <command>
+	<cascadeFunction> cascade_assume </cascadeFunction>
+	<argument><![CDATA[
+	_allocated(p, sizeof(int)*3)
+	]]>
+	</argument>
+      </command>
+    </startPosition>
+    <endPosition fileId="1" line="3" >
+      <command>
+	<cascadeFunction> cascade_check </cascadeFunction>
+	<argument><![CDATA[
+	_valid(p+i)
+	]]>
+	</argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

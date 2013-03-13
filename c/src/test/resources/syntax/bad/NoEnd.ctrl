@@ -1,0 +1,4 @@
+<controlFile>
+<sourceFile name="foo.c" id="1" />
+<run><endPosition FileId="1" line="1"/></run>
+</controlFile>

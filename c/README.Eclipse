@@ -1,0 +1,17 @@
+You will need the Maven plugin for Eclipse, available via the Eclipse update
+mechanism here: http://m2eclipse.sonatype.org/sites/m2e
+
+Eclipse will refuse to build a fresh checkout until the directories 
+target/generated-sources/jaxb and target/generated-sources/xtc are created 
+(because they are on the Eclipse source path, but they won't exist until JAXB 
+and XTC get a chance to run).
+
+Even after these directories exist, Eclipse will give compiler errors for 
+classes that should be generated in edu.nyu.cascade.control.jaxb. You can get
+Eclipse to generate these for you using the JAXB plugin, but Maven will 
+generate then for you.
+
+Running "mvn generate-sources" from the command line should be sufficient to 
+clear both of the above hurdles, after which you should be able to use 
+Eclipse as normal. You can also "Run As... -> Maven package" inside Eclipse;
+for whatever reason this works even though the Maven plugin doesn't.

@@ -1,0 +1,7 @@
+<controlFile>
+<sourceFile name="foo.c" id="-1" />
+<run>
+  <startPosition fileId="1" line="1"/>
+  <endPosition fileId="1" line="1"/>
+</run>
+</controlFile>

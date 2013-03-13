@@ -1,0 +1,31 @@
+<controlFile>
+  <sourceFile name="whileLoop_test.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="1" />
+    <wayPoint fileId="1" line="4" >
+      <loop>
+        <invariant><![CDATA[
+            i >= 0 && i <= 2 && sum == i*(i-1)/2
+        ]]>
+        </invariant>
+      </loop>
+    </wayPoint>
+    <wayPoint fileId="1" line="8" >
+      <loop>
+        <invariant><![CDATA[
+            i >= 2 && i <= 4 && sum == i*(i-1)/2
+        ]]>
+        </invariant>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="12" >
+      <command>
+	<cascadeFunction> cascade_check </cascadeFunction>
+	<argument><![CDATA[
+	sum == 6
+	]]>
+	</argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

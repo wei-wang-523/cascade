@@ -1,0 +1,8 @@
+<controlFile>
+<sourceFile name="foo.c" id="1" />
+<run>
+  <startPosition fileId="1" line="1"/>
+  <wayPoint fileId="1" line="1"><command></command></wayPoint>
+  <endPosition fileId="1" line="1"/>
+</run>
+</controlFile>

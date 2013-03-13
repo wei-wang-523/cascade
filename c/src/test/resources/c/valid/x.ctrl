@@ -1,0 +1,15 @@
+<controlFile>
+  <sourceFile name="x.c" id="1" /> 
+  <run>
+    <startPosition fileId="1" line="2" />
+    <endPosition fileId="1" line="3">
+      <command>
+        <cascadeFunction>  cascade_check
+        </cascadeFunction>
+        <argument><![CDATA[ x==1 
+          ]]>
+        </argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

@@ -1,0 +1,29 @@
+<controlFile>
+  <sourceFile name="ns_name_skip.c" id="1" /> 
+  <theory qname="edu.nyu.cascade.datatypes.CompressedDomainNames" />
+  <run>
+    <startPosition fileId="1" line="7">
+      <command>
+        <cascadeFunction>  cascade_assume
+        </cascadeFunction>
+        <argument><![CDATA[ 
+                            p != (unsigned char *)&cp && p != &n
+          ]]>
+        </argument>
+      </command>
+    </startPosition>
+    <wayPoint fileId="1" line="13" />
+    <wayPoint fileId="1" line="17" />
+    <wayPoint fileId="1" line="20" />
+    <endPosition fileId="1" line="22">
+      <command>
+        <cascadeFunction>  cascade_check
+        </cascadeFunction>
+        <argument><![CDATA[ 
+                            is_label(p) && rest(p) == Dn(cp)
+          ]]>
+        </argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

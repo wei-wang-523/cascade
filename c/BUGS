@@ -1,0 +1,2 @@
+* Assertions in control files can't refer to values included via headers, because the spec parser doesn't have access 
+  to the C preprocessor.

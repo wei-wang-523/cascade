@@ -1,0 +1,48 @@
+# Cascade/C
+
+This is the Cascade/C verification tool.
+
+## Prerequisites
+
+You must use [Maven2][mvn] to build Cascade/SPL.
+
+Cascade/C depends on the Cascade core module. If you are building a 
+release version of Cascade/C, then the core module should be downloaded 
+and installed automatically by the Maven dependency mechanism.
+
+### CVC3
+
+If you are using Cascade/C with the [CVC3][cvc3] theorem prover plugin, you must 
+have the CVC3 library and Java bindings installed. By default, Cascade looks 
+for CVC3 in `/usr/local`. The location of the CVC3 installation can be 
+customized using a [local profile][profiles]. 
+
+The relevant properties are:
+
+* `cvc3.version`: The full version number of the CVC3 library
+* `cvc3.basedir`: The base directory of the CVC3 installation 
+  (default: `/usr/local`)
+* `cvc3.libdir`: The directory containing the CVC3 libraries 
+  (default `${cvc3.basedir}/lib`)
+* `cvc3.libdir`: The directory containing the CVC3 JNI bindings 
+  (default `${cvc3.libdir}/jni`)
+* `cvc3.jar`: The path of the CVC3 JAR library 
+  (default: `${cvc3.basedir}/java/libcvc3-${cvc3.version}.jar`)
+
+See `profiles.xml.example`. (Note: this configuration is identical to the
+configuration required for the plugin.)
+
+## Building
+
+Use [Maven][mvn] to build:
+
+    mvn package
+    mvn install
+
+(Optional: Use the [Maven plugin for Eclipse][m2eclipse].)
+
+
+   [cvc3]: http://www.cs.nyu.edu/acsys/cvc3/
+   [m2eclipse]: https://docs.sonatype.org/display/M2ECLIPSE/Home
+   [mvn]: http://maven.apache.org
+   [profiles]: http://maven.apache.org/guides/introduction/introduction-to-profiles.html

@@ -1,0 +1,18 @@
+<controlFile>
+  <sourceFile name="ns_name_skip.c" id="1" /> 
+  <run>
+    <startPosition fileId="1" line="7" />
+    <wayPoint fileId="1" line="13" />
+    <wayPoint fileId="1" line="17" />
+    <endPosition fileId="1" line="20">
+      <command>
+        <cascadeFunction>  cascade_check
+        </cascadeFunction>
+        <argument><![CDATA[ 
+                            (n & 0xc0) != 0
+          ]]>
+        </argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

@@ -1,0 +1,15 @@
+<controlFile>
+  <sourceFile name="ex13.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="2" />
+    <endPosition fileId="1" line="6" >
+      <command>
+	<cascadeFunction> cascade_check </cascadeFunction>
+	<argument><![CDATA[
+	_valid(&a[x%32])
+	]]>
+	</argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

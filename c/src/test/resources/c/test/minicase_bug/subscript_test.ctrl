@@ -1,0 +1,15 @@
+<controlFile>
+  <sourceFile name="subscript_test.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="1" />
+    <endPosition fileId="1" line="4" >
+      <command>
+	<cascadeFunction> cascade_check </cascadeFunction>
+	<argument><![CDATA[
+	A[1][1] == 1 && A[2][2] == 1
+	]]>
+	</argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

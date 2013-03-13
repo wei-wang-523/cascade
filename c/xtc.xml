@@ -1,0 +1,68 @@
+<!--  Invoked from pom.xml, where various properties will be set -->
+<project name="XTC build rules" default="build" basedir=".">
+  <property name="rats.class" value="xtc.parser.Rats" />
+  <property name="c.parser.dir" value="edu/nyu/cascade/c" />
+  <property name="spec.parser.dir" value="edu/nyu/cascade/specs" />
+
+  <path id="project.class.path">
+    <path path="${runtime-classpath}" />
+  </path>
+
+  <target name="check-c-sources">
+    <uptodate property="c.parser.uptodate"
+              targetfile="${xtc.generated.sourceDirectory}/${c.parser.dir}/CParser.java">
+      <srcfiles dir="${xtc.build.sourceDirectory}/${c.parser.dir}"
+                includes="*" />
+    </uptodate>
+    <uptodate property="c.spec.parser.uptodate"
+              targetfile="${xtc.generated.sourceDirectory}/${c.parser.dir}/CSpecParser.java">
+      <srcfiles dir="${xtc.build.sourceDirectory}/${c.parser.dir}"
+                includes="*" />
+    </uptodate>
+  </target>
+
+  <target name="make-c-parser-dir">
+    <mkdir dir="${xtc.generated.sourceDirectory}/${c.parser.dir}" />
+  </target>
+
+  <target name="build-c-parser"
+          depends="check-c-sources,make-c-parser-dir"
+          unless="c.parser.uptodate">
+    <!--    <echo>Classpath= ${runtime-classpath}</echo> -->
+    <java classpath="${runtime-classpath}"
+          classname="${rats.class}"
+          fork="true">
+      <arg value="-in" />
+      <arg value="${xtc.build.sourceDirectory}" />
+      <arg value="-out" />
+      <arg value="${xtc.generated.sourceDirectory}/${c.parser.dir}" />
+      <arg path="${xtc.build.sourceDirectory}/${c.parser.dir}/C.rats" />
+    </java>
+  </target>
+
+  <target name="build-c-spec-parser"
+          depends="check-c-sources,make-c-parser-dir"
+          unless="c.spec.parser.uptodate">
+    <!-- We need to extract the spec *.rats files from the core JAR so that
+         we can pass them into Rats! -->
+    <unjar src="${cascade.core.jar}" dest="${core.rats.sourceDirectory}">
+      <patternset>
+        <include name="META-INF/${spec.parser.dir}/*" />
+      </patternset>
+      <globmapper from="META-INF/*" to="*" />
+    </unjar>
+    <java classpath="${runtime-classpath}"
+          classname="${rats.class}"
+          fork="true">
+      <arg value="-in" />
+      <arg value="${xtc.build.sourceDirectory}" />
+      <arg value="-in" />
+      <arg value="${core.rats.sourceDirectory}" />
+      <arg value="-out" />
+      <arg value="${xtc.generated.sourceDirectory}/${c.parser.dir}" />
+      <arg path="${xtc.build.sourceDirectory}/${c.parser.dir}/CSpec.rats" />
+    </java>
+  </target>
+
+  <target name="build" depends="build-c-parser, build-c-spec-parser" />
+</project>

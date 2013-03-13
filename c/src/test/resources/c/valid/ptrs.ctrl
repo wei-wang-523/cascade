@@ -1,0 +1,37 @@
+<controlFile>
+  <sourceFile name="ptrs.c" id="1" /> 
+  <theory qname="edu.nyu.cascade.datatypes.CompressedDomainNames" />
+  <run>
+    <startPosition fileId="1" line="3" />
+    <wayPoint fileId="1" line="4">
+      <command>
+        <cascadeFunction>  cascade_check
+        </cascadeFunction>
+        <argument>1</argument>
+      </command>
+    </wayPoint>
+    <wayPoint fileId="1" line="5">
+      <command>
+        <cascadeFunction>  cascade_check
+        </cascadeFunction>
+        <argument>1</argument>
+      </command>
+    </wayPoint>
+    <wayPoint fileId="1" line="6">
+      <command>
+        <cascadeFunction>  cascade_check
+        </cascadeFunction>
+        <argument>1</argument>
+      </command>
+    </wayPoint>
+    <endPosition fileId="1" line="8" insert="before">
+      <command>
+        <cascadeFunction>  cascade_check
+        </cascadeFunction>
+        <argument><![CDATA[
+        init_cp == last_cp
+        ]]></argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

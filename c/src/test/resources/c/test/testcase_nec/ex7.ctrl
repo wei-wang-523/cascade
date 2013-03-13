@@ -1,0 +1,28 @@
+<controlFile>
+  <sourceFile name="ex7.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="2" >
+      <command>
+      	<cascadeFunction> cascade_assume </cascadeFunction>
+      	<argument><![CDATA[
+      	y == 3
+      	]]>
+      	</argument>
+      </command>
+    </startPosition>
+    <wayPoint fileId="1" line="13" >
+      <loop iterTimes="3" >
+        <wayPoint fileId="1" line="14" >
+          <command>
+            <cascadeFunction> cascade_check </cascadeFunction>
+            <argument><![CDATA[
+            _valid(&a[i])
+            ]]>
+            </argument>
+          </command>
+        </wayPoint>
+      </loop>
+    </wayPoint>    	
+    <endPosition fileId="1" line="17" />
+  </run>
+</controlFile>

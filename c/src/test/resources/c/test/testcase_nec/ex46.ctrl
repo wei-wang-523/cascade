@@ -1,0 +1,44 @@
+<controlFile>
+  <sourceFile name="ex46.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="12" >
+      <command>
+    	<cascadeFunction> cascade_assume </cascadeFunction>
+    	<argument><![CDATA[
+	h == 3
+	]]>
+	</argument>
+      </command>
+    </startPosition>
+    
+    <wayPoint fileId="1" line="17" >
+      <command>
+    	<cascadeFunction> cascade_assume </cascadeFunction>
+    	<argument> h > 0 </argument>
+      </command>
+    </wayPoint>
+    
+    <wayPoint fileId="1" line="18" >
+      <command>
+    	<cascadeFunction> cascade_assume </cascadeFunction>
+    	<argument> w > 0 </argument>
+      </command>
+    </wayPoint>
+    
+    <wayPoint fileId="1" line="22" >
+      <loop iterTimes="3" />
+    </wayPoint>
+    
+    <wayPoint fileId="1" line="25" >
+      <command>
+	<cascadeFunction> cascade_check </cascadeFunction>
+    	<argument><![CDATA[
+	lut[0][h*w-1].x == lut[h-1][w-1].x
+    	]]>
+    	</argument>
+      </command>
+    </wayPoint>
+    
+    <endPosition fileId="1" line="30" />
+  </run>
+</controlFile>

@@ -1,0 +1,26 @@
+<controlFile>
+  <sourceFile name="ftpd.c" id="1" /> 
+  <run>
+    <startPosition fileId="1" lineNum="55" />
+    <wayPoint fileId="1" lineNum="26">
+      <command>
+        <cascadeFunction>  cascade_check_valid_address
+        </cascadeFunction>
+        <argument>         dest
+        </argument>
+      </command>
+    </wayPoint>
+    <wayPoint fileId="1" lineNum="36">
+      <command>
+        <cascadeFunction>  cascade_assume
+        </cascadeFunction>
+        <argument><![CDATA[
+          (resolved[0] == '\0' || resolved[1] == '\0') &&
+          (wbuf[0] == '\0' || wbuf[1] == '\0')
+          ]]>
+        </argument>
+      </command>
+    </wayPoint>
+    <endPosition fileId="1" lineNum="56"/>
+  </run>
+</controlFile>
