@@ -12,8 +12,8 @@
   </description>
 
   <scm>
-    <connection>scm:svn:https://subversive.cims.nyu.edu/cascade/branches/wwang1109/z3_branch/c</connection>
-    <developerConnection>scm:svn:https://subversive.cims.nyu.edu/cascade/branches/wwang1109/z3_branch/c</developerConnection>
+    <connection>scm:svn:https://subversive.cims.nyu.edu/cascade/branches/wwang1109/trunk/c</connection>
+    <developerConnection>scm:svn:https://subversive.cims.nyu.edu/cascade/branches/wwang1109/trunk/c</developerConnection>
   </scm>
 
   <parent>
@@ -29,18 +29,18 @@
       <version>0.0.3-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>com.microsoft.z3</groupId>
-      <artifactId>z3-java</artifactId>
-      <version>${z3.version}</version>
-      <scope>system</scope>
-      <systemPath>${z3.jar}</systemPath>
-    </dependency>
-    <dependency>
       <groupId>edu.nyu.cvc4</groupId>
       <artifactId>cvc4-java</artifactId>
       <version>${cvc4.version}</version>
       <scope>system</scope>
       <systemPath>${cvc4.jar}</systemPath>
+    </dependency>
+    <dependency>
+      <groupId>com.microsoft.z3</groupId>
+      <artifactId>z3-java</artifactId>
+      <version>${z3.version}</version>
+      <scope>system</scope>
+      <systemPath>${z3.jar}</systemPath>
     </dependency>
     <dependency>
       <groupId>javax.xml.bind</groupId>
