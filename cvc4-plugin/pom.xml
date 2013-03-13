@@ -1,0 +1,138 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>edu.nyu.cascade</groupId>
+  <artifactId>cvc4-plugin</artifactId>
+  <name>Cascade CVC4 Plugin</name>
+  <version>0.0.2-SNAPSHOT</version>
+
+  <description>
+    A CVC4 implementation of the Cascade theorem prover interface.
+  </description>
+
+  <scm>
+    <connection>scm:svn:https://subversive.cims.nyu.edu/cascade/branches/wwang1109/z3_branch/cvc4-plugin</connection>
+    <developerConnection>scm:svn:https://subversive.cims.nyu.edu/cascade/branches/wwang1109/z3_branch/cvc4-plugin</developerConnection>
+  </scm>
+
+  <repositories>
+    <repository>
+      <id>cascade-public-repo</id>
+      <name>Cascade Public Repository</name>
+      <url>http://cs.nyu.edu/acsys/cascade/repository/</url>
+    </repository>
+  </repositories>
+
+  <parent>
+    <groupId>edu.nyu.cascade</groupId>
+    <artifactId>cascade</artifactId>
+    <version>0.0.2-SNAPSHOT</version>
+  </parent>
+
+  <dependencies>
+    <dependency>
+      <groupId>edu.nyu.cascade</groupId>
+      <artifactId>core</artifactId>
+      <version>0.0.3-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>edu.nyu.cvc4</groupId>
+      <artifactId>cvc4-java</artifactId>
+      <version>${cvc4.version}</version>
+      <scope>system</scope>
+      <systemPath>${cvc4.jar}</systemPath>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.3.2</version>
+        <executions>
+          <execution>
+            <id>default-testCompile</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+            <configuration>
+              <showWarnings>true</showWarnings>
+              <source>1.6</source>
+              <target>1.6</target>
+            </configuration>
+          </execution>
+          <execution>
+            <id>default-compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <configuration>
+              <showWarnings>true</showWarnings>
+              <source>1.6</source>
+              <target>1.6</target>
+            </configuration>
+          </execution>
+          <execution>
+            <phase>compile</phase>
+            <configuration>
+              <showWarnings>true</showWarnings>
+              <source>1.6</source>
+              <target>1.6</target>
+            </configuration>
+          </execution>
+        </executions>
+        <configuration>
+          <showWarnings>true</showWarnings>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.7.2</version>
+        <executions>
+          <execution>
+            <id>default-test</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm>
+              <fork>always</fork>
+            </configuration>
+          </execution>
+        </executions>
+        <configuration>
+          <environmentVariables>
+            <LD_LIBRARY_PATH>${cvc4.libdir}:${cvc4.jni.libdir}</LD_LIBRARY_PATH>
+          </environmentVariables>
+          <!-- <systemProperties> -->
+          <!--   <property> -->
+          <!--     <name>java.library.path</name> -->
+          <!--     <value>${cvc4.libdir}</value> -->
+          <!--   </property> -->
+          <!-- </systemProperties> -->
+          <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm>
+          <fork>always</fork>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <profiles>
+    <profile>
+      <id>cvc4-default</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <cvc4.version>4.0.0</cvc4.version>
+        <cvc4.basedir>/usr/local</cvc4.basedir>
+        <cvc4.libdir>${cvc4.basedir}/lib</cvc4.libdir>
+        <cvc4.jni.libdir>${cvc4.libdir}/jni</cvc4.jni.libdir>
+        <cvc4.jar>${cvc4.basedir}/share/java/CVC4.jar</cvc4.jar>
+      </properties>
+    </profile>
+  </profiles>
+</project>

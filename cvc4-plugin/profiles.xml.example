@@ -1,0 +1,11 @@
+  <profiles>
+    <profile>
+      <id>tools-builds-cvc4</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <cvc4.basedir>/home/chris/tools/builds/cvc4</cvc4.basedir> 
+      </properties> 
+    </profile> 
+  </profiles> 
