@@ -1,0 +1,164 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>edu.nyu.cascade</groupId>
+  <artifactId>core</artifactId>
+  <name>Cascade Core Library</name>
+  <version>0.0.3-SNAPSHOT</version>
+
+  <description>
+    The core Cascade library provides generic interfaces to first-order theorem provers
+    and program analysis, as well as utilities used throughout the Cascade platform.
+  </description>
+
+  <scm>
+    <connection>scm:svn:https://subversive.cims.nyu.edu/cascade/branches/wwang1109/z3_branch/core</connection>
+    <developerConnection>scm:svn:https://subversive.cims.nyu.edu/cascade/branches/wwang1109/z3_branch/core</developerConnection>
+  </scm>
+
+  <repositories>
+    <repository>
+      <id>cascade-public-repo</id>
+      <name>Cascade Public Repository</name>
+      <url>http://cs.nyu.edu/acsys/cascade/repository/</url>
+    </repository>
+  </repositories>
+
+  <parent>
+    <groupId>edu.nyu.cascade</groupId>
+    <artifactId>cascade</artifactId>
+    <version>0.0.2-SNAPSHOT</version>
+  </parent>
+  
+  <dependencies>
+    <!-- Intended for injection during testing, but creates a cyclic dependency -->
+    <!--
+    <dependency>
+      <groupId>edu.nyu.cascade</groupId>
+      <artifactId>z3-plugin</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+      <scope>testing</scope>
+    </dependency>
+    -->
+    <dependency>
+      <groupId>org.codehaus.mojo</groupId>
+      <artifactId>exec-maven-plugin</artifactId>
+      <version>1.1.1</version>
+      <type>maven-plugin</type>
+    </dependency>
+  </dependencies>
+
+  <properties>
+    <xtc.jar>${basedir}/lib/xtc.jar</xtc.jar>
+    <xtc.build.sourceDirectory>src/main/xtc</xtc.build.sourceDirectory>
+    <generated.sourceDirectory>${project.build.directory}/generated-sources</generated.sourceDirectory>
+    <xtc.generated.sourceDirectory>${generated.sourceDirectory}/xtc</xtc.generated.sourceDirectory>
+  </properties>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>${project.basedir}/src/main/resources</directory>
+        <targetPath>META-INF</targetPath>
+      </resource>
+    </resources>
+    <testResources>
+      <testResource>
+        <directory>${project.basedir}/src/test/resources</directory>
+        <targetPath>META-INF</targetPath>
+      </testResource>
+    </testResources>
+    <!--
+      <resources> <resource> <filtering>true</filtering>
+      <directory>${project.build.scriptSourceDirectory}</directory>
+      <includes> <include>**/*.sh</include> <include>**/*.bat</include>
+      </includes> <targetPath>..</targetPath> Put scripts in target/ not
+      target/classes </resource> </resources>
+    -->
+    <plugins>
+      <!--
+      Run Rats! on grammar files
+      -->
+     <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+        </configuration>
+        <executions>
+          <execution>
+            <id>make-assembly</id> <!-- this is used for inheritance merges -->
+            <phase>package</phase> <!-- append to the packaging phase. -->
+            <goals>
+              <goal>single</goal> <!-- goals == mojos -->
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.3.2</version>
+        <executions>
+          <execution>
+            <id>default-testCompile</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+            <configuration>
+              <showWarnings>true</showWarnings>
+              <source>1.6</source>
+              <target>1.6</target>
+            </configuration>
+          </execution>
+          <execution>
+            <id>default-compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <configuration>
+              <showWarnings>true</showWarnings>
+              <source>1.6</source>
+              <target>1.6</target>
+            </configuration>
+          </execution>
+          <execution>
+            <phase>compile</phase>
+            <configuration>
+              <showWarnings>true</showWarnings>
+              <source>1.6</source>
+              <target>1.6</target>
+            </configuration>
+          </execution>
+        </executions>
+        <configuration>
+          <showWarnings>true</showWarnings>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.7.2</version>
+        <executions>
+          <execution>
+            <id>default-test</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm>
+              <fork>always</fork>
+            </configuration>
+          </execution>
+        </executions>
+        <configuration>
+          <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm>
+          <fork>always</fork>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

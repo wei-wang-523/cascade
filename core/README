@@ -1,0 +1,19 @@
+# Cascade Core Module
+
+This is the core module for the Cascade, which includes components
+which are shared between different tools, including the specification 
+language parser, intermediate representations, and the theorem proving 
+interface.
+
+## Building
+
+Use [Maven][mvn] to build:
+
+    mvn package
+    mvn install
+
+(Optional: Use the [Maven plugin for Eclipse][m2eclipse].)
+
+   [m2eclipse]: https://docs.sonatype.org/display/M2ECLIPSE/Home
+   [mvn]: http://maven.apache.org
+

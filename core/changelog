@@ -1,0 +1,18 @@
+core (0.0.3) UNRELEASED
+
+  * Suppressing output from the library by default
+
+  -- Christopher L. Conway (cconway@cs.nyu.edu) 
+
+
+core (0.0.2)
+
+  * Fixing exception thrown when plugins dir is missing
+
+  -- Christopher L. Conway (cconway@cs.nyu.edu) 2010-02-09 15:14:27 -0500
+
+core (0.0.1)
+
+  * Initial release
+
+  -- Christopher L. Conway (cconway@cs.nyu.edu) 2010-02-08 16:36:45 -0500

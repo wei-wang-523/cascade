@@ -1,0 +1,326 @@
+<project name="Prior Core library" default="dist" basedir=".">
+  <description>Build file for edu.nyu.cascade.theorem_prover</description>
+
+  <target name="start">
+    <delete dir="${dist}" />
+    <tstamp>
+      <format property="timestamp" pattern="HH:mm:ss MM/dd/yyyy" />
+    </tstamp>
+    <available file="${basedir}/local.properties"
+               property="local.properties.available" />
+
+    <property name="build.log.filename" value="build.log" />
+    <record name="${build.log.filename}" loglevel="verbose" append="false" />
+    <echo message="Build logged to ${build.log.filename} at ${timestamp}" />
+  </target>
+
+  <target name="properties-local"
+          if="local.properties.available"
+          depends="start">
+    <echo message="Loading local properties file" />
+    <property file="${basedir}/local.properties" />
+  </target>
+
+  <target name="properties" depends="properties-local">
+    <echo message="Loading build properties file" />
+    <property file="build.properties" />
+    <property name="src" location="src" />
+    <property name="build" location="bin" />
+    <property name="lib" location="lib" />
+    <property name="dist" location="dist" />
+    <property name="test.dir" location="testsrc" />
+    <property name="test.build.dir" location="testbin" />
+
+    <!-- the root directory of the source code -->
+    <property name="core" location="${src}/edu/nyu/prior" />
+
+    <!-- XTC definitions -->
+    <property name="xtc_jar" location="${lib}/xtc.jar" />
+    <property name="rats_class" value="xtc.parser.Rats" />
+    <property name="typical_class" value="xtc.typical.Typical" />
+
+    <property name="google_collect_jar" location="${lib}/google-collect.jar" />
+
+    <!-- Specification language definitions -->
+    <property name="spec.dir" location="${core}/specs" />
+
+    <!-- SPL parser definitions -->
+    <property name="spl.dir" location="${core}/spl" />
+    <property name="spl_parser" location="${spl.dir}/SPLParser.java" />
+    <property name="spl_grammar" location="${spl.dir}/SPL.rats" />
+    <property name="spl_type_checker" location="${spl.dir}/SPL.tpcl" />
+    <property name="spl_spec_parser" location="${spl.dir}/SpecParser.java" />
+    <property name="spl_spec_grammar" location="${spl.dir}/Spec.rats" />
+    <filelist id="spl_gen_files"
+              files="${spl_parser},${spl_spec_parser},SPLAnalyzer.java,SPLSupport.java,SPLTypes.java" />
+
+    <!-- C parser definitions -->
+    <property name="c.dir" location="${core}/c" />
+    <property name="c_parser" location="${c.dir}/CParser.java" />
+    <property name="c_grammar" location="${c.dir}/C.rats" />
+    <property name="c_spec_parser" location="${c.dir}/CSpecParser.java" />
+    <property name="c_spec_grammar" location="${c.dir}/CSpec.rats" />
+    <filelist id="c_gen_files"
+              dir="${c.dir}"
+              files="${c_parser},${c_spec_parser}" />
+
+    <fail message="JUnit4 not found. Add to classpath or set the local property junit4_jar.">
+      <condition>
+        <not>
+          <available classpath="${junit4_jar}" classname="org.junit.Test" />
+        </not>
+      </condition>
+    </fail>
+
+    <path id="classpath">
+      <pathelement location="${build}" />
+      <pathelement path="${junit4_jar}" />
+      <fileset dir="${lib}" includes="*.jar" excludes="ant.jar" />
+    </path>
+
+    <fileset id="spec.rats.files" dir="${spec.dir}" includes="**/*.rats" />
+
+    <!-- Check if the SPL type checker has been generated already
+         (checks all 3 output files) -->
+    <uptodate property="spl.tpcl.done" srcfile="${spl_type_checker}">
+      <compositemapper>
+        <mapper type="merge" to="${spl.dir}/SPLAnalyzer.java" />
+        <mapper type="merge" to="${spl.dir}/SPLSupport.java" />
+        <mapper type="merge" to="${spl.dir}/SPLTypes.java" />
+      </compositemapper>
+    </uptodate>
+
+
+    <!-- Check if the SPL parser has been generated already -->
+    <uptodate property="spl.rats.done" targetfile="${spl_parser}">
+      <!-- Depends on all .rats files in SPL dir -->
+      <srcfiles dir="${spl.dir}"
+                includes="**/*.rats"
+                excludes="${spl_spec_grammar}" />
+    </uptodate>
+
+    <!-- Check if the SPL spec parser has been generated already -->
+    <condition property="splspec.rats.done">
+      <and>
+        <!--       <istrue value="spec.rats.done" /> -->
+        <istrue value="${spl.rats.done}" />
+        <uptodate targetfile="${spl_spec_parser}">
+          <srcresources>
+            <fileset refid="spec.rats.files" />
+            <filelist files="${spl_spec_grammar}" />
+          </srcresources>
+        </uptodate>
+      </and>
+    </condition>
+
+    <!-- Check if the C parser has been generated already -->
+    <uptodate property="c.rats.done" targetfile="${c_parser}">
+      <!-- Depends on all .rats files in C dir -->
+      <srcfiles dir="${c.dir}" includes="**/*.rats" />
+    </uptodate>
+
+    <!--     <echo message="c.rats.done=${c.rats.done}" />
+-->
+    <!-- Check if the C spec parser has been generated already -->
+    <condition property="cspec.rats.done">
+      <and>
+        <istrue value="${c.rats.done}" />
+        <uptodate targetfile="${c_spec_parser}">
+          <srcresources>
+            <fileset refid="spec.rats.files" />
+            <filelist files="${c_spec_grammar}" />
+          </srcresources>
+        </uptodate>
+      </and>
+    </condition>
+  </target>
+
+
+  <!-- Build the SPL parser -->
+  <target name="spl.rats"
+          depends="properties"
+          unless="spl.rats.done"
+          description="build SPL parser">
+
+    <!-- Run Rats! on SPL.rats -->
+    <java classpath="${xtc_jar}" classname="${rats_class}" failonerror="true">
+      <arg value="-in" />
+      <arg value="${src}" />
+      <arg value="-out" />
+      <arg value="${spl.dir}" />
+      <arg path="${spl_grammar}" />
+    </java>
+  </target>
+
+
+  <!-- Build the SPL type checker -->
+  <target name="spl.tpcl"
+          depends="spl.rats,properties"
+          unless="spl.tpcl.done"
+          description="build XTC type checker">
+    <basename property="spl_tpcl" file="${spl_type_checker}" />
+
+    <!-- Run Typical on SPL.tpcl -->
+    <java fork="true"
+          dir="${spl.dir}"
+          classpath="${xtc_jar}"
+          classname="${typical_class}"
+          failonerror="true">
+      <arg value="-in" />
+      <arg value="${src}" />
+      <arg value="-out" />
+      <arg value="${spl.dir}" />
+      <arg value="-Otype" />
+      <arg value="-Ofold-let" />
+      <arg value="-Oswitch" />
+      <arg value="${spl_tpcl}" />
+    </java>
+  </target>
+
+  <!-- Build the SPL spec parser -->
+  <target name="splspec.rats"
+          depends="spl.rats"
+          unless="splspec.rats.done"
+          description="build SPL spec parser">
+
+    <!-- Run Rats! on Spec.rats -->
+    <java classpath="${xtc_jar}" classname="${rats_class}">
+      <arg value="-in" />
+      <arg value="${src}" />
+      <arg value="-out" />
+      <arg value="${spl.dir}" />
+      <arg path="${spl_spec_grammar}" />
+    </java>
+  </target>
+
+  <!-- Build the C parser -->
+  <target name="c.rats"
+          depends="properties"
+          unless="c.rats.done"
+          description="build C parser">
+    <!-- Run Rats! on C.rats -->
+    <java classpath="${xtc_jar}" classname="${rats_class}">
+      <arg value="-in" />
+      <arg value="${src}" />
+      <arg value="-out" />
+      <arg value="${c.dir}" />
+      <arg path="${c_grammar}" />
+    </java>
+  </target>
+
+  <!-- Build the C spec parser -->
+  <target name="cspec.rats"
+          depends="properties"
+          unless="cspec.rats.done"
+          description="build C spec parser">
+
+    <!-- Run Rats! on Spec.rats -->
+    <java classpath="${xtc_jar}" classname="${rats_class}" failonerror="true">
+      <arg value="-in" />
+      <arg value="${src}" />
+      <arg value="-out" />
+      <arg value="${c.dir}" />
+      <arg path="${c_spec_grammar}" />
+    </java>
+  </target>
+
+  <!--   <filelist id="spec.rats.javas" dir="${spec.dir}" files="SpecParser.java" /> -->
+
+
+  <!--   <\!-\- Check if the spec parser has been generated already -\-> -->
+  <!--   <uptodate property="spec.rats.done" targetfile="${spec.dir}/SpecParser.java"> -->
+  <!--     <\!-\- Depends on all .rats files in spec dir -\-> -->
+  <!--     <srcfiles dir="${spec.dir}" includes="**/*.rats" /> -->
+  <!--   </uptodate> -->
+
+  <!--   <\!-\- Build the spec parser -\-> -->
+  <!--   <target name="spec.rats" unless="spec.rats.done" -->
+  <!--           description="build spec parser"> -->
+
+  <!--     <\!-\- Run Rats! on Spec.rats -\-> -->
+  <!--     <java classpath="${xtc_jar}" classname="xtc.parser.Rats"> -->
+  <!--       <arg line="-in ${src}" /> -->
+  <!--       <arg line="-out ${spec.dir}" /> -->
+  <!--       <arg path="${spec.dir}/Spec.rats" /> -->
+  <!--     </java> -->
+  <!--   </target> -->
+
+
+
+  <target name="parsers"
+          depends="properties,spl.rats,spl.tpcl,splspec.rats,c.rats,cspec.rats"
+          description="build all parsers" />
+
+  <target name="compile"
+          description="compile the source "
+          depends="properties,parsers">
+
+    <mkdir dir="${build}" />
+
+    <javac srcdir="${src}"
+           destdir="${build}"
+           classpathref="classpath"
+           debug="true" />
+
+    <!-- Build tests -->
+    <mkdir dir="${test.build.dir}" />
+
+    <javac srcdir="${test.dir}"
+           destdir="${test.build.dir}"
+           excludes="data/"
+           classpathref="classpath"
+           debug="true" />
+  </target>
+
+  <target name="dist" depends="compile" description="generate the distribution">
+    <!-- Create the distribution directory -->
+    <mkdir dir="${dist}/lib" />
+
+    <!-- Put everything in ${build} JAR file -->
+    <jar jarfile="${dist}/lib/prior-core.jar">
+      <fileset dir="${build}" />
+      <zipfileset src="${xtc_jar}" excludes="META-INF/" />
+      <zipfileset src="${google_collect_jar}" excludes="META-INF/" />
+      <fileset dir="${basedir}" includes="COPYING" />
+      <metainf dir="${lib}/licenses" />
+    </jar>
+
+    <filter token="classpath" value="${toString:libs}" />
+    <copy file="${src}/bin/prior.sh"
+          tofile="${dist}/bin/prior"
+          filtering="true"
+          overwrite="true" />
+    <chmod file="${dist}/bin/prior" perm="755" />
+
+  </target>
+
+  <target name="test" description="run the tests" depends="compile,properties">
+    <!-- Run JUnit tests -->
+    <junit printsummary="yes"
+           fork="yes"
+           haltonfailure="no"
+           showoutput="no"
+           outputtoformatters="no"
+           dir="${test.dir}">
+      <formatter type="brief" usefile="no" />
+      <classpath>
+        <path refid="classpath" />
+        <pathelement location="${test.build.dir}" />
+      </classpath>
+
+      <batchtest>
+        <fileset dir="${test.build.dir}" includes="**/*Test.class" />
+      </batchtest>
+    </junit>
+  </target>
+
+  <target name="clean" description="clean up" depends="properties">
+    <delete quiet="true">
+      <fileset dir="${dist}" />
+      <fileset dir="${build}" />
+      <filelist refid="spl_gen_files" />
+      <filelist refid="c_gen_files" />
+      <fileset dir="${test.build.dir}" />
+    </delete>
+  </target>
+</project>

@@ -1,0 +1,12 @@
+in N : [1..];
+local y : [0..1] where y = 1;
+
+|| [i : [1..N]] ::
+[
+    l_0: loop forever do [
+        l_1: noncritical;
+        l_2: request y;
+        l_3: critical;
+        l_4: release y
+    ]
+]

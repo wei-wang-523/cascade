@@ -1,0 +1,57 @@
+  local x : int;
+  local y : int;
+  local z : int;
+  local p : array [1..5] of [0..2];
+  
+  P1::
+  [
+    l_0: <<
+           x := 1 
+           or 
+           [ 
+	     (x, y) := (1, 2); 
+	     x := 57;
+	     z := 58; 
+	   ] 
+           or 
+           y := 59
+           or
+           y := 60
+	 >>;
+
+    l_1: << 
+            release x; 
+            y := y + 1;
+	    if z = 1 then 
+		x := 1
+	    else 
+	      y := 2;
+	    z := 57 
+	 >>;
+    l_2: << if x = z then y := 57; y := y + 58 >>;
+    l_3: << if x = z then [ if T then x := 100; y := 57 ] >>;
+    l_4: << if T then [
+             x := 3;
+             y := 4;
+           ]
+           else x := 5;
+    
+           z := x + y 
+	   >>;
+    l_5: << [ x := 1 or y := 1 ] >>;
+    l_6: <<
+            [
+	      [ 
+		x := 1;
+		y := 2;
+	      ] 
+	    ];
+           
+            z := 3
+         >>;
+    l_7:
+  ]
+
+
+
+

@@ -1,0 +1,136 @@
+package edu.nyu.cascade.ir.expr;
+
+import java.util.Collections;
+import java.util.List;
+
+import edu.nyu.cascade.prover.IBooleanExpression;
+import edu.nyu.cascade.prover.IExpression;
+import edu.nyu.cascade.prover.IExpressionManager;
+import edu.nyu.cascade.prover.IVariableExpression;
+import edu.nyu.cascade.prover.TheoremProverException;
+import edu.nyu.cascade.prover.type.IBooleanType;
+import edu.nyu.cascade.prover.type.IUnaryFunctionType;
+import edu.nyu.cascade.prover.type.IType;
+
+/**
+ * Path factory that encodes a path as list of boolean assertions on states.
+ */
+
+public class BooleanPathFactory<Expr, Bool> extends
+    AbstractPathFactory<Expr, Bool, List<IBooleanExpression>> {
+  public static <Expr, Bool> BooleanPathFactory<Expr, Bool> create(
+      IExpressionInterpreter<Expr, Bool, ?> interp)
+      throws PathFactoryException {
+    return new BooleanPathFactory<Expr, Bool>(interp);
+  }
+  
+  private static final String STATE_VARIABLE_NAME = "M";
+  private static final String STATE_PRIME_VARIABLE_NAME = "M'";
+
+  private final IVariableExpression<?> state, statePrime;
+  private final IExpressionManager exprManager;
+  private final IExpressionFactory<Expr, Bool, ?> exprFactory;
+
+  public BooleanPathFactory(IExpressionInterpreter<Expr, Bool, ?> interp)
+      throws PathFactoryException {
+    super(interp);
+    this.exprFactory = getExpressionFactory();
+    this.exprManager = getExpressionManager();
+    try {
+      IType<?> stateType = exprFactory.getStateType();
+      state = stateType.variable(STATE_VARIABLE_NAME, true);
+      statePrime = stateType.variable(STATE_PRIME_VARIABLE_NAME, true);
+    } catch (TheoremProverException e) {
+      throw new PathFactoryException(e);
+    } catch (ExpressionFactoryException e) {
+      throw new PathFactoryException(e);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public IExpression<IBooleanType> assertionToBoolean(List<IBooleanExpression> prefix, Bool p)
+      throws PathFactoryException {
+    try {
+      return forceBool(prefix, state).implies(
+          exprFactory.evalBoolean(p, (IExpression) state));
+    } catch (ExpressionFactoryException e) {
+      throw new PathFactoryException(e);
+    } catch (TheoremProverException e) {
+      throw new PathFactoryException(e);
+    }
+  }
+
+  /**
+   * The assignment <code>x:=E</code> with precondition P results in: P[s/s'] ∧ s = 〚x:=E〛(s')
+   * 
+   * @throws PathFactoryException
+   */
+  @SuppressWarnings("unchecked")
+  @Override
+  public List<IBooleanExpression> assign(List<IBooleanExpression> pre, Expr var, Expr val)
+      throws PathFactoryException {
+    try {
+      try {
+        return suspendBool(exprManager.exists(Collections
+            .singletonList(statePrime), exprManager.and(state
+            .eq((IExpression) exprFactory.assign((IExpression) statePrime, var,
+                val)), forceBool(pre, statePrime))));
+      } catch (TheoremProverException e) {
+        throw new PathFactoryException(e);
+      }
+    } catch (ExpressionFactoryException e) {
+      throw new PathFactoryException(e);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public List<IBooleanExpression> assume(List<IBooleanExpression> pre, Bool expr) throws PathFactoryException {
+    try {
+      return suspendBool(forceBool(pre, state).and(
+          exprFactory.evalBoolean(expr, (IExpression) state)));
+    } catch (TheoremProverException e) {
+      throw new PathFactoryException(e);
+    } catch (ExpressionFactoryException e) {
+      throw new PathFactoryException(e);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public List<IBooleanExpression> emptyPath() throws PathFactoryException {
+    try {
+      return suspendBool(getExpressionFactory().getInitialState().eq((IExpression) state));
+    } catch (TheoremProverException e) {
+      throw new PathFactoryException(e);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private IBooleanExpression forceBool(List<IBooleanExpression> pre, IVariableExpression<?> x)
+      throws PathFactoryException {
+    try {
+      return exprManager.asBooleanExpression(exprManager.applyExpr(
+          (IExpression) pre.value, (IExpression) x));
+    } catch (TheoremProverException e) {
+      throw new PathFactoryException(e);
+    }
+  }
+
+  @Override
+  public IExpression<IBooleanType> pathToBoolean(List<IBooleanExpression> path)
+      throws PathFactoryException {
+    return forceBool(path, state);
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<IBooleanExpression> suspendBool(IExpression<IBooleanType> expr)
+      throws PathFactoryException {
+    try {
+      return new List<IBooleanExpression>((IExpression) expr.lambda(state));
+    } catch (TheoremProverException e) {
+      throw new PathFactoryException(e);
+    }
+  }
+}

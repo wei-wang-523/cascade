@@ -1,0 +1,13 @@
+in    M : int where M >= 2;
+local c : array [1..M] of int where forall i:[1..M] . (c[i] = 1);
+
+|| P[j:[1..M]] :: [
+      l_0: loop forever do [
+         l_1: noncritical;
+         l_2: request c[j];
+         l_3: request c[(j+1) mod M];
+         l_4: critical;
+         l_5: release c[j];
+         l_6: release c[(j+1) mod M];
+      ]
+   ]

@@ -1,0 +1,147 @@
+module edu.nyu.cascade.specs.Expressions(Symbols, Constants, Identifiers, Keywords);
+
+import Symbols;
+import Constants;
+import Identifiers;
+import Keywords;
+
+generic Expression = yyValue:IffExpression ;
+
+modify IffExpression = 
+// generic IffExpression =
+    IffExpression IFF       ImpliesExpression
+  / IffExpression CONGRUENT ImpliesExpression @CongruentExpression
+  / yyValue:ImpliesExpression
+  ;
+
+generic ImpliesExpression =
+    ImpliesExpression IMPLIES OrExpression
+  / ImpliesExpression ENTAILS OrExpression @EntailsExpression
+  / yyValue:OrExpression
+  ;
+
+generic OrExpression =
+      OrExpression OR AndExpression						
+    / yyValue:AndExpression
+    ;
+
+generic AndExpression =
+      AndExpression AND UntilExpression				
+    / yyValue:UntilExpression				
+  ;
+
+generic UntilExpression =
+    UntilExpression UNTIL  TemporalExpression
+  / UntilExpression AWAITS TemporalExpression @AwaitsExpression
+  / UntilExpression SINCE  TemporalExpression @SinceExpression
+  / UntilExpression BACKTO TemporalExpression @BacktoExpression
+  / yyValue:TemporalExpression
+  ;
+
+generic TemporalExpression =
+    NEXT       TemporalExpression @NextExpression
+  / HENCEFORTH TemporalExpression @HenceforthExpression
+  / EVENTUALLY TemporalExpression @EventuallyExpression
+  / PREVIOUSLY TemporalExpression @PreviouslyExpression
+  / SOFAR      TemporalExpression @SofarExpression
+  / ONCE       TemporalExpression @OnceExpression
+  / yyValue:EqualityExpression
+  ;
+
+generic EqualityExpression =
+    EqualityExpression EQ RelationalExpression @EqExpression
+  / EqualityExpression NE RelationalExpression @NeExpression
+  / yyValue:RelationalExpression
+  ;
+
+generic RelationalExpression =
+    RelationalExpression LT NotExpression @LtExpression
+  / RelationalExpression GT NotExpression @GtExpression
+  / RelationalExpression LE NotExpression @LeExpression
+  / RelationalExpression GE NotExpression @GeExpression
+  / yyValue:NotExpression
+  ;
+
+generic NotExpression =
+    NOT NotExpression
+  / yyValue:IDivExpression
+  ;
+
+generic IDivExpression =
+    AdditiveExpression MOD IDivExpression @ModExpression
+  / AdditiveExpression IDIV IDivExpression
+  / yyValue:AdditiveExpression
+  ;
+            
+generic AdditiveExpression =
+    AdditiveExpression PLUS  MultiplicativeExpression  @PlusExpression
+  / AdditiveExpression MINUS MultiplicativeExpression  @MinusExpression
+  / yyValue:MultiplicativeExpression
+  ;
+
+generic MultiplicativeExpression =
+    MultiplicativeExpression TIMES UnaryExpression    @TimesExpression
+  / MultiplicativeExpression DIV   UnaryExpression    @DivExpression
+  / yyValue:UnaryExpression
+  ;
+
+generic UnaryExpression =
+    PLUS  UnaryExpression         @UnaryMinusExpression
+  / MINUS UnaryExpression         @UnaryPlusExpression
+  / yyValue:PrimaryExpression
+  ;
+generic PrimaryExpression = 
+      yyValue:BooleanConstant                 
+    / yyValue:IntegerConstant                 
+    / yyValue:QuantifiedExpression            
+    / yyValue:LValue                          
+    / LPAREN yyValue:Expression RPAREN
+    ;
+
+generic QuantifiedExpression = 
+      FORALL Bindings DOT Expression  @ForAllExpr
+    / EXISTS Bindings DOT Expression  @ExistsExpr
+    / UEXISTS Bindings DOT Expression  @UExistsExpr
+;
+
+generic Bindings = 
+  Identifier+ COLON BaseType (COMMA Bindings)*
+  ;
+
+generic BaseType = 
+      INT             @IntegerType
+    / BOOL            @BooleanType
+    / RATIONAL        @RationalType
+    / yyValue:Range           /* @RangeType */
+    ;
+
+generic Range = 
+    void:"[":Symbol Expression DOTS Expression void:"]":Symbol
+    ;
+   
+generic LValue = 
+      LValue void:"[":Symbol Expression void:"]":Symbol @IndexExpr
+    / yyValue:Identifier
+    ;    
+
+// generic IndexedLValue =
+//       Identifier (void:"[":Symbol Expression void:"]":Symbol)+
+//     ;
+
+//       LValue void:"[":Symbol Expression void:"]":Symbol @IndexExpr
+//     / yyValue:
+//     ;
+    
+// generic SimpleLValue = Identifier
+//     ;
+
+generic ExpressionList =
+    Expression (COMMA Expression)*
+    ;
+
+
+/* Emacs Local Variables: */
+/* Emacs mode: java */
+/* Emacs compile-command: "ant -f ../../../../../../../../build.xml -emacs" */
+/* Emacs indent-tabs-mode: nil */
+/* Emacs End: */
