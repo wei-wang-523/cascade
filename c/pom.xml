@@ -274,7 +274,7 @@
       </activation>
       <properties>
         <cvc4.version>4.0.0</cvc4.version>
-        <cvc4.basedir>/usr/local</cvc4.basedir>
+        <cvc4.basedir>/Users/Wei/Workspace/target/cvc4/</cvc4.basedir>
         <cvc4.libdir>${cvc4.basedir}/lib</cvc4.libdir>
         <cvc4.jni.libdir>${cvc4.libdir}/jni</cvc4.jni.libdir>
         <cvc4.jar>${cvc4.basedir}/share/java/CVC4.jar</cvc4.jar>
