@@ -647,4 +647,9 @@ public class TheoremProverImpl implements TheoremProver {
     smtEngine.setOption("input-language", new SExpr("presentation"));
     smtEngine.setOption("output-language", new SExpr("cvc4"));
   }
+
+  @Override
+  public String getProviderName() {
+    return "cvc4";
+  }
 }

@@ -555,4 +555,9 @@ public class TheoremProverImpl implements TheoremProver {
     cfg.put("model", "true");
     cfg.put("incremental", "true");
   }
+
+  @Override
+  public String getProviderName() {
+    return "z3";
+  }
 }
