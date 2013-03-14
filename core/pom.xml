@@ -11,8 +11,8 @@
   </description>
 
   <scm>
-    <connection>scm:svn:https://subversive.cims.nyu.edu/cascade/branches/wwang1109/z3_branch/core</connection>
-    <developerConnection>scm:svn:https://subversive.cims.nyu.edu/cascade/branches/wwang1109/z3_branch/core</developerConnection>
+    <connection>scm:svn:https://subversive.cims.nyu.edu/cascade/branches/wwang1109/trunk/core</connection>
+    <developerConnection>scm:svn:https://subversive.cims.nyu.edu/cascade/branches/wwang1109/trunk/core</developerConnection>
   </scm>
 
   <repositories>

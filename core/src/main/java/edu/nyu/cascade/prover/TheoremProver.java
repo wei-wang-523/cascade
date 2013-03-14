@@ -96,5 +96,7 @@ public interface TheoremProver {
    * <code>edu.nyu.cascade.util.Preferences</code>.
    */
   void setPreferences() ;
+  
+  String getProviderName();
 
 }
