@@ -11,11 +11,13 @@ public class CompressedDomainNames implements Theory {
   private final MemoryModel memoryModel;
   
   public CompressedDomainNames(ExpressionManager exprManager) {
-    if(exprManager instanceof edu.nyu.cascade.z3.ExpressionManagerImpl)
+    String tpProviderName = exprManager.getTheoremProver().getProviderName();
+    if("z3".equals(tpProviderName))
       encoding = new CompressedDomainNamesEncoding_Z3(exprManager);
-    else // if (exprManager instanceof edu.nyu.cascade.cvc4.ExpressionManagerImpl)
+    else if ("cvc4".equals(tpProviderName))
       encoding = new CompressedDomainNamesEncoding_CVC4(exprManager);
-    
+    else
+      throw new IllegalArgumentException("Unknown theorem prover " + tpProviderName);
     memoryModel = BitVectorMemoryModel.create(encoding,
         encoding.getAddressSize(), encoding.getWordSize());
   }

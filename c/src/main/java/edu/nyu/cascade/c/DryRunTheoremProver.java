@@ -1097,4 +1097,9 @@ final class DryRunTheoremProver implements TheoremProver {
   public void setPreferences() {
     theoremProver.setPreferences();
   }
+
+  @Override
+  public String getProviderName() {
+    return theoremProver.getProviderName();
+  }
 }

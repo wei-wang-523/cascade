@@ -23,10 +23,13 @@ public class CompressedDomainNamesTest {
   public void setUp() throws ExpressionFactoryException, TheoremProverFactoryException {
     theoremProver = TheoremProverFactory.getInstance();
     exprManager = theoremProver.getExpressionManager();
-    if(theoremProver instanceof edu.nyu.cascade.z3.TheoremProverImpl)
+    String tpProviderName = theoremProver.getProviderName();
+    if("z3".equals(tpProviderName))
       cdn = new CompressedDomainNamesEncoding_Z3(exprManager);
-    else // if (theoremProver instanceof edu.nyu.cascade.cvc4.TheoremProverImpl)
+    else if ("cvc4".equals(tpProviderName))
       cdn = new CompressedDomainNamesEncoding_CVC4(exprManager);
+    else
+      throw new IllegalArgumentException("Unknown theorem prover " + tpProviderName);
   }
   
   @Test

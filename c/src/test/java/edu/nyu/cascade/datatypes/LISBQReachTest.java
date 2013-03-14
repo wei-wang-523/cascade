@@ -29,9 +29,10 @@ public class LISBQReachTest {
     theoremProver = TheoremProverFactory.getInstance();
     exprManager = theoremProver.getExpressionManager();
 
-    if(theoremProver instanceof edu.nyu.cascade.cvc4.TheoremProverImpl)
+    String tpProviderName = theoremProver.getProviderName();
+    if("cvc4".equals(tpProviderName))
       encoding = new LISBQwithRRReachEncoding(exprManager);
-    else if(theoremProver instanceof edu.nyu.cascade.z3.TheoremProverImpl)
+    else if("z3".equals(tpProviderName))
       encoding = new LISBQwithQFReachEncoding(exprManager);
     else
       throw new IllegalArgumentException("Unsupported theorem prover " + theoremProver);
