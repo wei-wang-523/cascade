@@ -15,9 +15,9 @@ public class JoinReachTheory implements Theory {
   
   public JoinReachTheory(ExpressionManager exprManager) {
     TheoremProver tp = exprManager.getTheoremProver();
-    if(tp instanceof edu.nyu.cascade.cvc4.TheoremProverImpl)
+    if(tp.getProviderName().equals("cvc4"))
       encoding = new JoinwithRRReachEncoding(exprManager);
-    else if(tp instanceof edu.nyu.cascade.z3.TheoremProverImpl)
+    else if(tp.getProviderName().equals("z3"))
       encoding = new JoinwithQFReachEncoding(exprManager);
     else
       throw new IllegalArgumentException("Unsupported theorem prover " + tp);

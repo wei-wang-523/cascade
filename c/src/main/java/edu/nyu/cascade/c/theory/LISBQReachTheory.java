@@ -14,9 +14,9 @@ public class LISBQReachTheory implements Theory {
   
   public LISBQReachTheory(ExpressionManager exprManager) {
     TheoremProver tp = exprManager.getTheoremProver();
-    if(tp instanceof edu.nyu.cascade.cvc4.TheoremProverImpl)
+    if(tp.getProviderName().equals("cvc4"))
       encoding = new LISBQwithRRReachEncoding(exprManager);
-    else if(tp instanceof edu.nyu.cascade.z3.TheoremProverImpl)
+    else if(tp.getProviderName().equals("z3"))
       encoding = new LISBQwithQFReachEncoding(exprManager);
     else
       throw new IllegalArgumentException("Unsupported theorem prover " + tp);
