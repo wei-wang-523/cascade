@@ -31,14 +31,6 @@
   
   <dependencies>
     <!-- Intended for injection during testing, but creates a cyclic dependency -->
-    <!--
-    <dependency>
-      <groupId>edu.nyu.cascade</groupId>
-      <artifactId>z3-plugin</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
-      <scope>testing</scope>
-    </dependency>
-    -->
     <dependency>
       <groupId>org.codehaus.mojo</groupId>
       <artifactId>exec-maven-plugin</artifactId>
