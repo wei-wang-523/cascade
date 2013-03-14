@@ -261,7 +261,12 @@ public class TheoremProverFactory {
     if( candidates.isEmpty() ) {
       return null;
     } else {
-      return Iterables.get(candidates,0);
+//      if( nameMap.containsKey("z3"))
+//        return nameMap.get("z3");
+//      else if( nameMap.containsKey("cvc4"))
+//        return nameMap.get("cvc4");
+//      else
+        return Iterables.get(candidates,0);
     }
   }
 
