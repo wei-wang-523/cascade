@@ -29,20 +29,6 @@
       <version>0.0.3-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>edu.nyu.cvc4</groupId>
-      <artifactId>cvc4-java</artifactId>
-      <version>${cvc4.version}</version>
-      <scope>system</scope>
-      <systemPath>${cvc4.jar}</systemPath>
-    </dependency>
-    <dependency>
-      <groupId>com.microsoft.z3</groupId>
-      <artifactId>z3-java</artifactId>
-      <version>${z3.version}</version>
-      <scope>system</scope>
-      <systemPath>${z3.jar}</systemPath>
-    </dependency>
-    <dependency>
       <groupId>javax.xml.bind</groupId>
       <artifactId>jaxb-api</artifactId>
       <version>2.2</version>
@@ -62,8 +48,8 @@
       <type>jar</type>
       <scope>compile</scope>
     </dependency>
-	<!-- We shouldn't really have this as a hard dependency, but it makes life 
-		much easier for now. -->
+    <!-- We shouldn't really have this as a hard dependency, but it makes life 
+	 much easier for now. -->
     <dependency>
     	<groupId>edu.nyu.cascade</groupId>
     	<artifactId>z3-plugin</artifactId>
