@@ -127,7 +127,7 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <properties>
-        <cvc4.version>4.0.0</cvc4.version>
+        <cvc4.version>1.0</cvc4.version>
         <cvc4.basedir>/Users/Wei/Workspace/target/cvc4</cvc4.basedir>
         <cvc4.libdir>${cvc4.basedir}/lib</cvc4.libdir>
         <cvc4.jni.libdir>${cvc4.libdir}/jni</cvc4.jni.libdir>

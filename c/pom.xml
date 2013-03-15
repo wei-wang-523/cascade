@@ -273,8 +273,8 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <properties>
-        <cvc4.version>4.0.0</cvc4.version>
-        <cvc4.basedir>/Users/Wei/Workspace/target/cvc4/</cvc4.basedir>
+        <cvc4.version>1.0</cvc4.version>
+        <cvc4.basedir>/Users/Wei/Workspace/target/cvc4</cvc4.basedir>
         <cvc4.libdir>${cvc4.basedir}/lib</cvc4.libdir>
         <cvc4.jni.libdir>${cvc4.libdir}/jni</cvc4.jni.libdir>
         <cvc4.jar>${cvc4.basedir}/share/java/CVC4.jar</cvc4.jar>
@@ -287,9 +287,9 @@
       </activation>
       <properties>
         <z3.version>4.3.1</z3.version>
-        <z3.basedir>/Users/Wei/Workspace/resource/z3/build/</z3.basedir>
+        <z3.basedir>/Users/Wei/Workspace/resource/z3/build</z3.basedir>
         <z3.libdir>${z3.basedir}</z3.libdir>
-        <z3.jar>${z3.basedir}com.microsoft.z3.jar</z3.jar>
+        <z3.jar>${z3.basedir}/com.microsoft.z3.jar</z3.jar>
       </properties>
     </profile>
   </profiles>
