@@ -81,9 +81,6 @@ public class Main {
   private static final String OPTION_TIME_LIMIT = "time-limit";
   private static final String OPTION_FEASIBILITY = "feasibility";
   private static final String OPTION_SMT2_FILE = "smt2-file";
-  private static final String OPTION_TP_STATS = "tp-stats";
-  private static final String OPTION_TP_TRACE = "tp-trace";
-  private static final String OPTION_TP_DEBUG = "tp-debug";
   private static final String OPTION_MARK_AST = "optionMarkAST";
   private static final String OPTION_PEDANTIC = "pedantic";
   private static final String OPTION_INTERNAL_PEDANTIC = "optionPedantic";
@@ -127,21 +124,6 @@ public class Main {
           .hasArg() //
           .withArgName("FILE") //
           .withType(File.class) //
-          .create()) //
-      .addOption(OptionBuilder.withLongOpt(OPTION_TP_STATS) //
-          .withDescription("Show theorem prover statistics.") //
-          .create()) //
-      .addOption(OptionBuilder.withLongOpt(OPTION_TP_TRACE) //
-          .hasArg() //
-          .withArgName("TAGs") //
-          .withType(String.class)
-          .withDescription("Enable theorem prover trace TAGs (comma-separated list)") //
-          .create()) //
-      .addOption(OptionBuilder.withLongOpt(OPTION_TP_DEBUG) //
-          .hasArg() //
-          .withArgName("TAGs") //
-          .withType(String.class)
-          .withDescription("Debug theorem prover debug TAGs (comma-separated list)") //
           .create()) //
       .addOption(OptionBuilder.withLongOpt(OPTION_EFFORT_LEVEL) //
           .hasArg() //
