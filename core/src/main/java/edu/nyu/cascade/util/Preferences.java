@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -62,6 +63,17 @@ public class Preferences {
   public static File getFile(String option) {
     String fileName = (String)getProperties().get(option);
     return fileName==null ? null : new File(fileName);
+  }
+  
+  public static File[] getFiles(String option) {
+    String fileNames = (String)getProperties().get(option);
+    String[] fileNameArr = fileNames.split(Pattern.quote(","));
+    File[] fileArr = new File[fileNameArr.length];
+    int i = 0;
+    for(String fileName : fileNameArr) {
+      fileArr[i++] = fileName==null ? null : new File(fileName);
+    }
+    return fileArr;
   }
 
   public static int getInt(String option) {
