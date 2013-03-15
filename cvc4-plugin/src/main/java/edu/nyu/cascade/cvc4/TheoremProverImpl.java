@@ -22,7 +22,6 @@ import edu.nyu.acsys.CVC4.SExpr;
 import edu.nyu.acsys.CVC4.ExprManager;
 import edu.nyu.acsys.CVC4.Result;
 import edu.nyu.acsys.CVC4.SmtEngine;
-import edu.nyu.acsys.CVC4.Integer;
 
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -352,8 +351,8 @@ public class TheoremProverImpl implements TheoremProver {
                                     .toString()).flush();
       }
       
-      debugCommand("QUERY " + getSmtEngine().simplify(cvc4Expr).toString());
-      tpFileCommand("QUERY " + getSmtEngine().simplify(cvc4Expr).toString());
+//      debugCommand("QUERY " + getSmtEngine().simplify(cvc4Expr).toString());
+//      tpFileCommand("QUERY " + getSmtEngine().simplify(cvc4Expr).toString());
       
 //      IOUtils.out().println(ManagementFactory.getRuntimeMXBean().getName());
       Result cvc4QueryResult = getSmtEngine().query(cvc4Expr);
