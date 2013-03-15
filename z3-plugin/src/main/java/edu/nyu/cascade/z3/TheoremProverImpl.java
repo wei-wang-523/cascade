@@ -114,14 +114,14 @@ public class TheoremProverImpl implements TheoremProver {
   private static final String FLAG_TRACE = "trace";
   private static final String FLAG_TYPE_CORRECTNESS_CONDITIONS = "tcc";*/
 
-  private static final String OPTION_DUMP_LOG = "tp-log";
-  private static final String OPTION_DUMP_TRACE = "tp-dump-trace";
-  private static final String OPTION_RESOURCE_LIMIT = "tp-resource-limit";
-  private static final String OPTION_TP_STATS = "tp-stats";
-  private static final String OPTION_QUANT_LIMIT = "tp-quant-limit";
-  private static final String OPTION_TRACE = "tp-trace";
-  private static final String OPTION_DEBUG = "tp-debug";
-  private static final String OPTION_NO_TYPE_CORRECTNESS_CONDITIONS = "tp-notcc";
+  private static final String OPTION_DUMP_LOG = "z3-log";
+  private static final String OPTION_DUMP_TRACE = "z3-dump-trace";
+  private static final String OPTION_RESOURCE_LIMIT = "z3-resource-limit";
+  private static final String OPTION_TP_STATS = "z3-stats";
+  private static final String OPTION_QUANT_LIMIT = "z3-quant-limit";
+  private static final String OPTION_TRACE = "z3-trace";
+  private static final String OPTION_DEBUG = "z3-debug";
+  private static final String OPTION_NO_TYPE_CORRECTNESS_CONDITIONS = "z3-notcc";
 
   private static final Pattern p = Pattern.compile("(^|\\n|\\r\\n?)");
 
