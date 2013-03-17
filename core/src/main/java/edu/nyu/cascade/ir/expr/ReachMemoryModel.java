@@ -314,4 +314,7 @@ public abstract class ReachMemoryModel extends BitVectorMemoryModel {
    */
   abstract public Expression reach(Expression state, String fieldName, 
       Expression lvalExpr, Expression rvalExpr);
+
+  abstract public BooleanExpression isRoot(Expression memory, String fieldname,
+      Expression ptrExpr);
 }

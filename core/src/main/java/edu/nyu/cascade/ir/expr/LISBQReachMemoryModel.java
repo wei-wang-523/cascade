@@ -10,6 +10,7 @@ import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
+import edu.nyu.cascade.prover.type.Type;
 
 import edu.nyu.cascade.util.RecursionStrategies;
 import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
@@ -145,6 +146,20 @@ public class LISBQReachMemoryModel extends ReachMemoryModel {
     ExpressionEncoding encoding = getExpressionEncoding();
     Expression result = encoding.functionCall(FUN_RF, lvalExpr, rvalExpr, rvalExpr);
     return result;
+  }
+  
+  @Override
+  public BooleanExpression isRoot(Expression state, String fieldName, Expression rootExpr) {
+    Preconditions.checkArgument( state.getType().equals( getStateType() ));
+    Preconditions.checkArgument(rootExpr.getType().equals(addressType));
+    LISBQReachEncoding encoding = (LISBQReachEncoding) getExpressionEncoding();
+    ExpressionManager exprManager = getExpressionManager();
+    Expression nil = encoding.getNil();
+    Type eltType = encoding.getEltType();
+    Expression x_var = exprManager.variable("x", eltType, true);
+    BooleanExpression res = exprManager.implies(rootExpr.neq(nil), 
+        exprManager.forall(x_var, rootExpr.neq(encoding.applyF(x_var))));
+    return res;
   }
 
   @Override

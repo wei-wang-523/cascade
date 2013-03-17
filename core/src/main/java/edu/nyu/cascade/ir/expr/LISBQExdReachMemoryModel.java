@@ -12,8 +12,9 @@ import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
+import edu.nyu.cascade.prover.type.Type;
 
-public class BackToFutureExdReachMemoryModel extends ReachMemoryModel {
+public class LISBQExdReachMemoryModel extends ReachMemoryModel {
   
   private static final String FUN_R = "r";
   
@@ -25,7 +26,7 @@ public class BackToFutureExdReachMemoryModel extends ReachMemoryModel {
    * side-effect assumption, generated in memory operations 
    * private BooleanExpression sideAssump;
    */
-  private BackToFutureExdReachMemoryModel(ExpressionEncoding encoding, ArrayType memType,
+  private LISBQExdReachMemoryModel(ExpressionEncoding encoding, ArrayType memType,
       ArrayType reachArrayType) {
     super(encoding, memType, reachArrayType);
     nullPtr = addressType.zero(addressType.getSize());
@@ -38,7 +39,7 @@ public class BackToFutureExdReachMemoryModel extends ReachMemoryModel {
    * @param exprManager
    * @throws IllegalArgumentException if <code>addressSize</code> is not a multiple of <code>cellSize</code>
    */
-  public static BackToFutureExdReachMemoryModel create(
+  public static LISBQExdReachMemoryModel create(
       ExpressionEncoding encoding,
       int addressSize, int cellSize)
       throws ExpressionFactoryException {
@@ -50,7 +51,7 @@ public class BackToFutureExdReachMemoryModel extends ReachMemoryModel {
     ArrayType memArrayType = exprManager.arrayType(addressType, cellType);
     ArrayType reachArrayType = exprManager.arrayType(addressType, addressType);
     
-    return new BackToFutureExdReachMemoryModel(encoding, memArrayType, reachArrayType);
+    return new LISBQExdReachMemoryModel(encoding, memArrayType, reachArrayType);
   }
   
   /** Create an expression factory with the given array type to model memory. The size of the 
@@ -67,7 +68,7 @@ public class BackToFutureExdReachMemoryModel extends ReachMemoryModel {
    *           if <code>addressSize</code> is not a multiple of
    *           <code>cellSize</code>
    */
-  public static BackToFutureExdReachMemoryModel create(
+  public static LISBQExdReachMemoryModel create(
       ExpressionEncoding encoding, 
       ArrayType memArrayType)
       throws ExpressionFactoryException {
@@ -81,10 +82,10 @@ public class BackToFutureExdReachMemoryModel extends ReachMemoryModel {
     BitVectorType addressType = memArrayType.getIndexType().asBitVectorType();
     ArrayType reachArrayType = exprManager.arrayType(addressType, addressType);
     
-    return new BackToFutureExdReachMemoryModel(encoding, memArrayType, reachArrayType);
+    return new LISBQExdReachMemoryModel(encoding, memArrayType, reachArrayType);
   }
 
-  public static BackToFutureExdReachMemoryModel create(
+  public static LISBQExdReachMemoryModel create(
       ExpressionEncoding encoding,
       ArrayVariableExpression memArray) throws ExpressionFactoryException {
     return create(encoding, memArray.getType());
@@ -145,5 +146,19 @@ public class BackToFutureExdReachMemoryModel extends ReachMemoryModel {
 //    }
     
     return exprManager.and(result);
+  }
+  
+  @Override
+  public BooleanExpression isRoot(Expression state, String fieldName, Expression rootExpr) {
+    Preconditions.checkArgument( state.getType().equals( getStateType() ));
+    Preconditions.checkArgument(rootExpr.getType().equals(addressType));
+    JoinReachEncoding encoding = (JoinReachEncoding) getExpressionEncoding();
+    ExpressionManager exprManager = getExpressionManager();
+    Expression nil = encoding.getNil();
+    Type eltType = encoding.getEltType();
+    Expression x_var = exprManager.variable("x", eltType, true);
+    BooleanExpression res = exprManager.implies(rootExpr.neq(nil), 
+        exprManager.forall(x_var, rootExpr.neq(encoding.applyF(x_var))));
+    return res;
   }
 }

@@ -25,14 +25,14 @@ import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.Type;
 
-public class BackToFutureExdReachEncoding extends AbstractExpressionEncoding {
+public class LISBQExdReachEncoding extends AbstractExpressionEncoding {
 
   private static final String FUN_R = "r";
   
-  public static BackToFutureExdReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
+  public static LISBQExdReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
     int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
-    return BackToFutureExdReachMemoryModel.create(encoding, size, size);
+    return LISBQExdReachMemoryModel.create(encoding, size, size);
   }
 
   private final Type eltType, memType;
@@ -47,7 +47,7 @@ public class BackToFutureExdReachEncoding extends AbstractExpressionEncoding {
   
   public static final int DEFAULT_WORD_SIZE = 8;
   
-  public BackToFutureExdReachEncoding(ExpressionManager exprManager) {
+  public LISBQExdReachEncoding(ExpressionManager exprManager) {
     super(BitVectorIntegerEncoding.create(exprManager, DEFAULT_WORD_SIZE),
         new DefaultBooleanEncoding(exprManager),
         new DefaultArrayEncoding(exprManager));
