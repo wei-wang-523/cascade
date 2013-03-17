@@ -40,21 +40,21 @@ void filter(Node *root) {
   int nondet;
   while(e) {
     if(e->data) {
-    	if (!prev) {
-    		prev = e;
-    		e = e->next;
-    		first = e;
-    		prev->next = NULL;
-    		prev = NULL;
-    	} else {
-    		e = e->next;
-    		del = prev->next;
-    		del->next = NULL;
-    		prev->next = e;
-    	}
+      if (!prev) {
+	prev = e;
+	e = e->next;
+	first = e;
+	prev->next = NULL;
+	prev = NULL;
+      } else {
+	e = e->next;
+	del = prev->next;
+	del->next = NULL;
+	prev->next = e;
+      }
     } else {
-    	prev = e;
-    	e = e->next;
+      prev = e;
+      e = e->next;
     }
   }
 }
