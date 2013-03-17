@@ -665,7 +665,7 @@ public class Main {
     IOUtils.err()
     .println(
         "Cascade took time: "
-            + time/1000 + "s");
+            + time/1000.0 + "s");
   }
 
   public void setErrStream(PrintStream err) {
