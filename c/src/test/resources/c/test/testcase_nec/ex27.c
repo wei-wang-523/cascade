@@ -1,7 +1,6 @@
 int check(int * x){
-   if (!x) // return 0;
-	   return 0;
-
+   if (!x) 
+     return 0;
    return 10;
 }
 
@@ -12,7 +11,7 @@ int copy(int * a, int * b){
 
 int foo(int * a, int * b, int n){
    int i;
-   if (n <= 0) return 1; // return;
+   if (n <= 0) return 0; // return
    if (!check(a))
       return 1;
 
@@ -29,15 +28,14 @@ int foo(int * a, int * b, int n){
 
 #define NULL (int *) 0
 int main(){
-   int a[100],b[200];
+  int a[10],b[20]; //a[100], b[200]
 
-   foo(NULL,a,100);	
+   foo(NULL,a,100);
    foo(a,NULL,200);
-   foo(a,b,5);
-   foo(a,b,2);
+   foo(a,b,5); //foo(a, b, 50)
+   foo(a,b,2); // foo(a,b,20);
+   foo(a,b,20); // foo(a,b,200);
    return 2;
 }
 
-// LOC 3: put "return 0" in the next line. 
-// LOC 15: code bug return; add it as return 1.
-// --mem-cell-size 10 --feasibility
+// Loc 14: bug fixed for null return statement

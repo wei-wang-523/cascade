@@ -40,7 +40,7 @@
           </function>
         </wayPoint>
         <wayPoint fileId="1" line="22" >
-          <loop iterTimes="1" />
+          <loop iterTimes="5" />
         </wayPoint>
       </function>
     </wayPoint>
@@ -57,7 +57,7 @@
           </function>
         </wayPoint>
         <wayPoint fileId="1" line="22" >
-          <loop iterTimes="1" />
+          <loop iterTimes="2" />
         </wayPoint>
       </function>
     </wayPoint>

@@ -32,7 +32,7 @@
     	  <function funcName="push_back" >
     	    <wayPoint fileId="1" line="37" >
     	      <command>
-    		<cascadeFunction> cascade_check </cascadeFunction>
+    		<cascadeFunction> cascade_assume </cascadeFunction>
     		<argument><![CDATA[
 		vct->size <= vct->capacity
     		]]>
@@ -51,7 +51,7 @@
 	  <function funcName="push_back" >
 	    <wayPoint fileId="1" line="37" >
     	      <command>
-    		<cascadeFunction> cascade_check </cascadeFunction>
+    		<cascadeFunction> cascade_assume </cascadeFunction>
     		<argument><![CDATA[
 		vct->size <= vct->capacity
     		]]>

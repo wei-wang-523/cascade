@@ -1,0 +1,38 @@
+<controlFile>
+  <sourceFile name="ex26.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="14" />
+    <wayPoint fileId="1" line="16" >
+      <loop iterTimes="10" >
+	<wayPoint fileId="1" line="17" >
+	  <function funcName="g" >
+	    <wayPoint fileId="1" line="8" />
+	  </function>
+	</wayPoint>
+	<wayPoint fileId="1" line="18" >
+	  <function funcName="g" >
+	    <wayPoint fileId="1" line="10" />
+	  </function>
+	</wayPoint>
+      </loop>
+    </wayPoint>
+    <wayPoint fileId="1" line="22" >
+      <loop iterTimes="10" >
+	<wayPoint fileId="1" line="23" >
+	  <function funcName="g" >
+	    <wayPoint fileId="1" line="10" >
+	      <command>
+		<cascadeFunction> cascade_check </cascadeFunction>
+		<argument><![CDATA[
+		_valid(&x[2*y])
+		]]>
+		</argument>
+	      </command>
+	    </wayPoint>
+	  </function>
+	</wayPoint>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="28" />
+  </run>
+</controlFile>
