@@ -1,8 +1,8 @@
 int check(int * x){
-   if (!x) // return 0;
-	   return 0;
-
-   return 10;
+  if (!x) // return 0;
+    return 0;
+  
+  return 10;
 }
 
 int copy(int * a, int * b){
