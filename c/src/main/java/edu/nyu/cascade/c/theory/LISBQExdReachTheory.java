@@ -1,18 +1,18 @@
 package edu.nyu.cascade.c.theory;
 
 import edu.nyu.cascade.c.Theory;
-import edu.nyu.cascade.ir.expr.BackToFutureExdReachEncoding;
+import edu.nyu.cascade.ir.expr.LISBQExdReachEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.prover.ExpressionManager;
 
-public class BackToFutureExdReachTheory implements Theory {
-  private final BackToFutureExdReachEncoding encoding;
+public class LISBQExdReachTheory implements Theory {
+  private final LISBQExdReachEncoding encoding;
   private final MemoryModel memoryModel;
   
-  public BackToFutureExdReachTheory(ExpressionManager exprManager) {
-    encoding = new BackToFutureExdReachEncoding(exprManager);
-    memoryModel = BackToFutureExdReachEncoding.createMemoryModel(encoding);
+  public LISBQExdReachTheory(ExpressionManager exprManager) {
+    encoding = new LISBQExdReachEncoding(exprManager);
+    memoryModel = LISBQExdReachEncoding.createMemoryModel(encoding);
   }
 
   @Override

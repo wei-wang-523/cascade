@@ -61,6 +61,7 @@ class CExpressionEncoder implements ExpressionEncoder {
   private static final String FUN_EXISTS = "_exists";
   private static final String FUN_REACH = "_reach";
   private static final String FUN_ALLOCATED = "_allocated";
+  private static final String FUN_ISROOT = "_is_root";
   private static final String FUN_CREATE_ACYCLIC_LIST = "_create_acyclic_list";
   private static final String FUN_CREATE_CYCLIC_LIST = "_create_cyclic_list";
   
@@ -327,12 +328,6 @@ class CExpressionEncoder implements ExpressionEncoder {
           ExpressionManager exprManager = getExpressionManager();
           List<VariableExpression> argVars = Lists.newArrayList();
           for(int i=0; i<size-1; i++) {
-//            GNode argNode = argList.getGeneric(i);
-//            String argName = argNode.getString(0);
-//            VariableExpression argVar = exprManager.variable(argName, 
-//                getMemoryModel().getMemoryType().asArrayType().getElementType(), false);
-//            argVars.add(argVar);
-//            addVar(argNode);
             GNode argNode = argList.getGeneric(i);
             String argName = argNode.getNode(argNode.size()-1).getString(0);
             Expression argNodeList = (Expression) dispatch(argNode);
@@ -362,9 +357,10 @@ class CExpressionEncoder implements ExpressionEncoder {
             FUN_CREATE_CYCLIC_LIST.equals(name)) {
           Preconditions.checkArgument(argList.size() == 3);
           String fieldName = argList.getNode(0).getString(0);
-          Expression ptrExpr = (Expression) lvalVisitor.dispatch(argList.getNode(1));
+          Node ptrNode = argList.getNode(1);
+          Expression ptrExpr = (Expression) lvalVisitor.dispatch(ptrNode);
           Expression length = (Expression) dispatch(argList.getNode(2));
-          Type type = lookupType(argList.getNode(1)).toPointer().getType().resolve();
+          Type type = lookupType(ptrNode).toPointer().getType().resolve();
           int size = sizeofType(type);
           int offset = getOffsetOfField(type, fieldName);
           
@@ -379,7 +375,17 @@ class CExpressionEncoder implements ExpressionEncoder {
           } else {
             res = getExpressionManager().tt();
           }
-        } else {
+        } else if( FUN_ISROOT.equals(name) ) {
+          Preconditions.checkArgument(argList.size() == 2);
+          String fieldname = argList.getNode(0).getString(0);
+          Expression ptrExpr = (Expression) dispatch(argList.getNode(1));
+          MemoryModel mm = getMemoryModel();
+          if(mm instanceof ReachMemoryModel) {
+            res = ((ReachMemoryModel) mm).isRoot(memory, fieldname, ptrExpr);
+          } else {
+            throw new ExpressionFactoryException("Invalid memory model.");
+          }
+        }else {
           List<Expression> argExprs = (List<Expression>) dispatch(argList);
           res = encoding.functionCall(name, argExprs);
         }
