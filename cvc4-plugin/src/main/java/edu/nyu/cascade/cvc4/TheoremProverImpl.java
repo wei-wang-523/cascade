@@ -334,6 +334,7 @@ public class TheoremProverImpl implements TheoremProver {
   @Override
   public ValidityResult<?> checkValidity(Expression expr) {
     Preconditions.checkArgument(expr.isBoolean());
+    long time = System.currentTimeMillis();
     try {
       
       /* getCvc4ExprManager().push(); */
@@ -403,6 +404,11 @@ public class TheoremProverImpl implements TheoremProver {
       
       /*  getCvc4ExprManager().pop();*/
       getSmtEngine().pop();
+      time = System.currentTimeMillis() - time;
+      IOUtils.err()
+      .println(
+          "CVC4 took time: "
+              + time/1000.0 + "s");
 
       return res;
     } catch (Exception e) {
