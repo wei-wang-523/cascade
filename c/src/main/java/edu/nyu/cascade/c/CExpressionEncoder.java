@@ -131,7 +131,7 @@ class CExpressionEncoder implements ExpressionEncoder {
       /* [chris 12/3/2010] Note that this ignores pointer arithmetic, so any 
        * non-char* arithmetic will be wrong
        */
-      IOUtils.err().println("APPROX: Possible pointer arithmetic treated as char*");
+      IOUtils.debug().pln("APPROX: Possible pointer arithmetic treated as char*");
       Expression res = binaryOp(node, this,
           new BinaryInfixRecursionStrategy<Expression, Expression>() {
             @Override
@@ -390,7 +390,7 @@ class CExpressionEncoder implements ExpressionEncoder {
           res = encoding.functionCall(name, argExprs);
         }
       } else {
-        IOUtils.err().println(
+        IOUtils.debug().pln(
             "APPROX: Treating unexpected function call as unknown: "
                 + node.getName());
         res = encoding.unknown();
@@ -534,7 +534,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 
     public Expression visitSubscriptExpression(GNode node)
         throws ExpressionFactoryException {
-      IOUtils.err().println(
+      IOUtils.debug().pln(
           "APPROX: Treating pointer as char*");
       Node base = node.getNode(0);
       Node offset = node.getNode(1);
@@ -665,7 +665,7 @@ class CExpressionEncoder implements ExpressionEncoder {
       /* [chris 12/3/2010] Note that this ignores pointer arithmetic, so any 
        * non-char* arithmetic will be wrong
        */
-      IOUtils.err().println("APPROX: Possible pointer arithmetic treated as char*");
+      IOUtils.debug().pln("APPROX: Possible pointer arithmetic treated as char*");
       return binaryOp(node, this, 
           new BinaryInfixRecursionStrategy<Expression, Expression>() {
         @Override
@@ -785,7 +785,7 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitSubscriptExpression(GNode node) 
         throws ExpressionFactoryException {
-      IOUtils.err().println(
+      IOUtils.debug().pln(
           "APPROX: Treating pointer as char*");
       Node base = node.getNode(0);
       Node offset = node.getNode(1);
