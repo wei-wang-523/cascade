@@ -255,7 +255,7 @@ public class TheoremProverImpl implements TheoremProver {
     Preconditions.checkArgument(expr.isBoolean());
     try {
       getSolver().Push();
-
+      z3FileCommand("(push)");
       addAssumptions();
 
       Expr z3Expr = getExpressionManager().toZ3Expr(expr);
@@ -298,6 +298,7 @@ public class TheoremProverImpl implements TheoremProver {
       }
       
       getSolver().Pop();
+      z3FileCommand("(pop)");
 
       return res;
     } catch (Exception e) {
@@ -308,9 +309,11 @@ public class TheoremProverImpl implements TheoremProver {
   @Override
   public ValidityResult<?> checkValidity(Expression expr) {
     Preconditions.checkArgument(expr.isBoolean());
+    long time = System.currentTimeMillis();
     try {
       getSolver().Push();
-
+      z3FileCommand("(push)");
+      
       addAssumptions();
 
       final ExpressionManagerImpl exprManager = getExpressionManager();
@@ -355,6 +358,12 @@ public class TheoremProverImpl implements TheoremProver {
       }
       
       getSolver().Pop();
+      z3FileCommand("(pop)");
+      time = System.currentTimeMillis() - time;
+      IOUtils.err()
+      .println(
+          "Z3 took time: "
+              + time/1000.0 + "s");
 
       return res;
     } catch (Exception e) {
