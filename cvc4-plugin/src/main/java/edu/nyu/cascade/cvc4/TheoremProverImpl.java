@@ -30,6 +30,7 @@ import edu.nyu.cascade.prover.TheoremProver;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.ValidityResult;
 import edu.nyu.cascade.prover.TheoremProverFactory.Capability;
+import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Preferences;
 
@@ -275,8 +276,8 @@ public class TheoremProverImpl implements TheoremProver {
                                     .toString()).flush();
       }
       
-      debugCommand("CHECKSAT " + getSmtEngine().simplify(cvc4Expr).toString());
-      tpFileCommand("CHECKSAT " + getSmtEngine().simplify(cvc4Expr).toString());
+//      debugCommand("CHECKSAT " + getSmtEngine().simplify(cvc4Expr).toString());
+//      tpFileCommand("CHECKSAT " + getSmtEngine().simplify(cvc4Expr).toString());
       
       Result cvc4SatResult = getSmtEngine().checkSat(cvc4Expr);
       IOUtils.debug().pln(cvc4SatResult.toString()).flush();
@@ -374,7 +375,9 @@ public class TheoremProverImpl implements TheoremProver {
         boolean modelWorked = false;
         
         try {
-          for (Expression e: exprManager.getVariables()) {
+          for (VariableExpression e: exprManager.getVariables()) {
+            if(e.getName().startsWith("m_") || e.getName().startsWith("regionSize_"))
+              continue;
             Expr eValue = getSmtEngine().getValue(exprManager.toCvc4Expr(e));
             ctrex.add(e.eq((ExpressionImpl) exprManager.toExpression(eValue)));
           }   
