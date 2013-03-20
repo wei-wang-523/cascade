@@ -329,7 +329,8 @@ class CExpressionEncoder implements ExpressionEncoder {
           List<VariableExpression> argVars = Lists.newArrayList();
           for(int i=0; i<size-1; i++) {
             GNode argNode = argList.getGeneric(i);
-            String argName = argNode.getNode(argNode.size()-1).getString(0);
+            String argName = argNode.getName().equals("PrimaryIdentifier") ? argNode.getString(0) :
+                argNode.getNode(argNode.size()-1).getString(0);
             Expression argNodeList = (Expression) dispatch(argNode);
             VariableExpression argVar = exprManager.variable(argName, 
                 getMemoryModel().getMemoryType().asArrayType().getElementType(), false);
@@ -824,7 +825,10 @@ class CExpressionEncoder implements ExpressionEncoder {
           res = encoding.plus(ptr, encoding.times(index, sizeOfType));
         }
       } else if(t.isPointer()) {
-        res = encoding.plus(ptr, index);
+        PointerT pointerT = t.toPointer();
+        Type cellType = pointerT.getType();
+        Expression sizeOfType = encoding.integerConstant(sizeofType(cellType));
+        res = encoding.plus(ptr, encoding.times(index, sizeOfType));
       } else {
         res = encoding.unknown();
       }
