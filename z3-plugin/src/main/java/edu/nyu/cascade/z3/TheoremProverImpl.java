@@ -6,6 +6,7 @@ import static edu.nyu.cascade.prover.TheoremProverFactory.Capability.SMT;
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 import org.apache.commons.cli.Option;
@@ -18,6 +19,7 @@ import com.google.inject.internal.Maps;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Params;
 import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
 import com.microsoft.z3.Z3Exception;
@@ -433,7 +435,13 @@ public class TheoremProverImpl implements TheoremProver {
   protected Solver getSolver() {
     if(solver == null) {
       try {
-        solver = getZ3Context().MkSolver();
+        Context ctx = getZ3Context();
+        solver = ctx.MkSolver();
+        Params p = ctx.MkParams();
+        for(Entry<String, String> pair : settings.entrySet()) {
+          p.Add(pair.getKey(), Integer.parseInt(pair.getValue()));
+        }
+        solver.setParameters(p);
       } catch (Z3Exception e) {
         throw new TheoremProverException(e);
       }
@@ -476,7 +484,7 @@ public class TheoremProverImpl implements TheoremProver {
 
   public void setTimeLimit(int second) {
     try {
-      getSettings().put("timeout", Long.toString(second * 1000));
+      getSettings().put("timeout", Long.toString(second));
     } catch (Exception e) {
       throw new TheoremProverException(e);
     }
