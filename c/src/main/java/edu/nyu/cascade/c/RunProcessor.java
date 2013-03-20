@@ -134,7 +134,7 @@ final class PathEncoder {
       if (!runIsValid) {
         if ( result.isInvalid() ) {
           if( Preferences.isSet(Preferences.OPTION_COUNTER_EXAMPLE) )
-            IOUtils.out().println("\nCounter-example:\n" + result.getUnknown_reason());
+            IOUtils.out().println("\nCounter-example:\n" + result.getCounterExample());
         } else { // result.isUnknown()
           IOUtils.out().println("Unkown: " + result.getUnknown_reason());
         }
@@ -991,8 +991,8 @@ class RunProcessor {
         for(LoopPoint loopPos : pos.getLoops()) { 
           // Ignore loop iteration times when have loop invariant
           if(loopPos.getInvariant() != null) {
-            if(pos.getInvariant() != null)
-              throw new RunProcessorException("Multiple invariants for one loop.");
+//            if(pos.getInvariant() != null)
+//              throw new RunProcessorException("Multiple invariants for one loop.");
             pos.setInvariant(loopPos.getInvariant());
             resWaypoints.add(pos);
             continue;
