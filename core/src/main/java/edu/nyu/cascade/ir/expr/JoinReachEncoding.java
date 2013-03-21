@@ -15,7 +15,7 @@ public abstract class JoinReachEncoding extends AbstractExpressionEncoding {
 
   protected static final String FUN_F = "f";
   
-  protected static final String FUN_RF = "rf";
+  protected static final String FUN_CYCLE = "cycle";
 
   protected static final String FUN_RF_AVOID = "rf_avoid";
   
@@ -35,9 +35,9 @@ public abstract class JoinReachEncoding extends AbstractExpressionEncoding {
         new DefaultArrayEncoding(exprManager));
   }
 
+  protected abstract BooleanExpression applyCycle(Expression arg) ;
+  
   protected abstract Expression applyF(Expression arg) ;
-
-  protected abstract BooleanExpression applyRf(Expression... args) ;
   
   protected abstract BooleanExpression applyRfAvoid(Expression... args) ;
   

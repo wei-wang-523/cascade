@@ -17,7 +17,7 @@ import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
 public class JoinReachMemoryModel extends ReachMemoryModel {
   
   private static final String FUN_F = "f";  
-  private static final String FUN_RF = "rf";
+  private static final String FUN_RF_AVOID = "rf_avoid";
   
   /** 
    * Map associate a region with bunch of regions may be pointed to
@@ -143,7 +143,7 @@ public class JoinReachMemoryModel extends ReachMemoryModel {
     Preconditions.checkArgument(rvalExpr.getType().equals(addressType));
     
     ExpressionEncoding encoding = getExpressionEncoding();
-    Expression result = encoding.functionCall(FUN_RF, lvalExpr, rvalExpr, rvalExpr);
+    Expression result = encoding.functionCall(FUN_RF_AVOID, lvalExpr, rvalExpr, rvalExpr);
     return result;
   }
 
@@ -153,20 +153,6 @@ public class JoinReachMemoryModel extends ReachMemoryModel {
     final ExpressionManager exprManager = getExpressionManager();
     final ExpressionEncoding encoding = getExpressionEncoding();
     final ArrayExpression reachArray = state.getChild(2).asArray();
-    
-    /* For each pair (locVar_a, locVar_b) in reachArray 
-     * f(a) = b && dist(a) = dist(b) + 1 
-     */
-//    List<BooleanExpression> result = Lists.newArrayList();
-//    for(Expression locVar_a : heapRegions) {
-//      Expression locVar_b = reachArray.index(locVar_a); 
-//      Expression f_locVar_a = encoding.functionCall(FUN_F, locVar_a);
-//      result.add(f_locVar_a.eq(locVar_b));
-////      Expression dist_a = encoding.functionCall(FUN_DIST, locVar_a);      
-////      Expression dist_b = encoding.functionCall(FUN_DIST, locVar_b);
-////      result.add(exprManager.eq(dist_a, exprManager.plus(dist_b, exprManager.one())));
-//    }
-//    return exprManager.and(result);
     
     /* Apply unaryRecursionOverList instead of go through a list
      * same job as above
@@ -179,9 +165,6 @@ public class JoinReachMemoryModel extends ReachMemoryModel {
         Expression locVar_b = reachArray.index(locVar_a); 
         Expression f_locVar_a = encoding.functionCall(FUN_F, locVar_a);
         return f_locVar_a.eq(locVar_b);
-//        Expression dist_a = encoding.functionCall(FUN_DIST, locVar_a);      
-//        Expression dist_b = encoding.functionCall(FUN_DIST, locVar_b);
-//        return exprManager.eq(dist_a, exprManager.plus(dist_b, exprManager.one()));
       }
     }));
   }

@@ -37,12 +37,12 @@ public class JoinwithRRReachEncoding extends JoinReachEncoding {
   
   /** The elt -> elt mapping */
   private final Expression f;
-
-  /** The (elt, elt, elt) -> bool mapping */
-  private final Expression rf;
   
   /** The (elt, elt, elt) -> bool mapping */
   private final Expression rf_avoid;
+  
+  /** The elt -> bool mapping */
+  private final Expression cycle;
   
   /** The (elt, elt) -> elt mapping */
   private final Expression join;
@@ -63,14 +63,13 @@ public class JoinwithRRReachEncoding extends JoinReachEncoding {
       
       nil = exprManager.bitVectorZero(eltType.asBitVectorType().getSize()); // nil = 0(NULL);
       f = exprManager.functionVar(FUN_F, exprManager.functionType(FUN_F, eltType, eltType), false);
-      rf = exprManager.functionVar(FUN_RF, exprManager.functionType(FUN_RF,
-          ImmutableList.of(eltType, eltType, eltType), 
-          exprManager.booleanType()), false);
       rf_avoid = exprManager.functionVar(FUN_RF_AVOID, exprManager.functionType(FUN_RF_AVOID,
           ImmutableList.of(eltType, eltType, eltType), 
           exprManager.booleanType()), false);
-      join = exprManager.functionVar(FUN_JOIN, exprManager.functionType(FUN_JOIN,
-          ImmutableList.of(eltType, eltType), eltType), false);
+      cycle = exprManager.functionVar(FUN_CYCLE, exprManager.functionType(FUN_CYCLE,
+          eltType, exprManager.booleanType()), false);
+      join = exprManager.functionVar(FUN_JOIN, 
+          exprManager.functionType(FUN_JOIN, ImmutableList.of(eltType, eltType), eltType), false);
 
       /* Create data constraints */
       
@@ -82,11 +81,14 @@ public class JoinwithRRReachEncoding extends JoinReachEncoding {
       VariableExpression x = eltType.boundVariable("x", true); 
       VariableExpression y = eltType.boundVariable("y", true);
       VariableExpression z = eltType.boundVariable("z", true);
-      VariableExpression x0 = eltType.boundVariable("x0", true);
-      VariableExpression x1 = eltType.boundVariable("x1", true);
-      VariableExpression x2 = eltType.boundVariable("x2", true); 
-      VariableExpression x3 = eltType.boundVariable("x3", true); 
-      VariableExpression exc = eltType.boundVariable("exc", true);
+      VariableExpression u = eltType.boundVariable("u", true);
+      VariableExpression v = eltType.boundVariable("v", true);
+      
+      ImmutableList<VariableExpression> vars = null;
+      ImmutableList<Expression> triggers = null;
+      Expression head, body, _let_0;
+      BooleanExpression guard;
+      BooleanExpression rrDeductionExpr;
       
       /* Create a f(null)=null assumption */
       
@@ -96,80 +98,93 @@ public class JoinwithRRReachEncoding extends JoinReachEncoding {
       
       /* Create a step rule */
       
-      ImmutableList<VariableExpression> vars = ImmutableList.of(x);      
-      BooleanExpression guard = exprManager.tt();      
-      Expression head = exprManager.tt();
-      Expression _let_0 = applyF(x);
-      Expression body = applyRf(x, _let_0, _let_0);
-      ImmutableList<Expression> triggers = ImmutableList.of(_let_0);
-      BooleanExpression rrDeductionExpr = exprManager.rrDeduction(head, body, triggers);
+      vars = ImmutableList.of(x, u);
+      /* Rf_avoid(x, f(x), u) || x = u */
+      guard = exprManager.tt();      
+      head = exprManager.neq(x, u);
+      _let_0 = applyF(x);
+      body = applyRfAvoid(x, _let_0, u);
+      triggers = ImmutableList.of(_let_0);
+      rrDeductionExpr = exprManager.rrDeduction(head, body, triggers);
       BooleanExpression step_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
       
       rewrite_rulesetBuilder.add(step_rule); 
       
-      /* Create a reach rule */
+      /* Create a selfLoop rule */
       
-      vars = ImmutableList.of(x1, x2);
-      guard = exprManager.tt();
-      head = applyRf(x1, x2, x2);
-      body = exprManager.or(exprManager.eq(x1, x2), applyRf(x1, applyF(x1), x2));
-      triggers = ImmutableList.of(applyF(x1));
+      vars = ImmutableList.of(x, y); // x, y
+      _let_0 = applyF(x); // f(x)
+      /* f(x) = x && Rf_avoid(x, y, y) => x = y */
+      guard = _let_0.eq(x);
+      head = applyRfAvoid(x, y, y);
+      body = x.eq(y);
+      triggers = ImmutableList.of(_let_0);
       rrDeductionExpr = exprManager.rrDeduction(head, body, triggers);
-      BooleanExpression reach_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
+      BooleanExpression selfLoop_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
       
-      rewrite_rulesetBuilder.add(reach_rule);
-      
-      /* Create a cycle rule */
-
-      vars = ImmutableList.of(x1, x2);
-      guard = exprManager.eq(applyF(x1), x1);      
-      head = applyRf(x1, x2, x2);
-      body = exprManager.eq(x1, x2);
-      triggers = ImmutableList.of(applyF(x1));
-      rrDeductionExpr = exprManager.rrDeduction(head, body, triggers);
-      BooleanExpression cycle_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
-      
-      rewrite_rulesetBuilder.add(cycle_rule);
+      rewrite_rulesetBuilder.add(selfLoop_rule);     
       
       /* Create a sandwich rule */
       
-      vars = ImmutableList.of(x1, x2);
-      guard = exprManager.tt();      
-      head = applyRf(x1, x2, x1);
-      body = exprManager.eq(x1, x2);
+      vars = ImmutableList.of(x, y); // x, y
+      /* Rf_avoid(x, y, x) => x = y */
+      guard = exprManager.tt(); 
+      head = applyRfAvoid(x, y, x);
+      body = exprManager.eq(x, y);
       rrDeductionExpr = exprManager.rrDeduction(head, body);
       BooleanExpression sandwich_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
       
       rewrite_rulesetBuilder.add(sandwich_rule);
       
-      /* Create an order1 rule */
+      /* Create a reach rule */
       
-      vars = ImmutableList.of(x1, x2, x3);
-      guard = exprManager.tt();      
-      head = exprManager.and(applyRf(x1, x2, x2), applyRf(x1, x3, x3));
-      body = exprManager.or(applyRf(x1, x2, x3), applyRf(x1, x3, x2));
+      vars = ImmutableList.of(x, y, u);
+      /* Rf_avoid(x, y, u) => Rf_avoid(x, y, y) */
+      guard = exprManager.tt(); 
+      head = applyRfAvoid(x, y, u);
+      body = applyRfAvoid(x, y, y);
       rrDeductionExpr = exprManager.rrDeduction(head, body);
-      BooleanExpression order1_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
+      BooleanExpression reach_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
       
-      rewrite_rulesetBuilder.add(order1_rule);
+      rewrite_rulesetBuilder.add(reach_rule);
       
-      /* Create an order2 rule */
+      /* Create a linear1 rule */
       
-      vars = ImmutableList.of(x1, x2, x3);
-      guard = exprManager.tt();      
-      head = applyRf(x1, x2, x3);
-      body = exprManager.and(applyRf(x1, x2, x2), applyRf(x2, x3, x3));
+      vars = ImmutableList.of(x, y, u);
+      /* Rf_avoid(x, y, y) && x != u => Rf_avoid(x, u, y) || Rf_avoid(x, y, u) */
+      guard = exprManager.tt(); 
+      head = applyRfAvoid(x, y, y).and(x.neq(u));
+      body = exprManager.or(applyRfAvoid(x, u, y), applyRfAvoid(x, y, u));
       rrDeductionExpr = exprManager.rrDeduction(head, body);
-      BooleanExpression order2_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
+      BooleanExpression line1_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
       
-      rewrite_rulesetBuilder.add(order2_rule);
+      rewrite_rulesetBuilder.add(line1_rule);
+      
+      /* Create a linear2 rule */
+      
+      vars = ImmutableList.of(x, y, z, u, v);
+      /* Rf_avoid(x, y, u) && Rf_avoid(x, z, v) => 
+       * (Rf_avoid(x, z, u) && Rf_avoid(z, y, u)) || (Rf_avoid(x, y, v) && Rf_avoid(y, z, v))
+       */
+      guard = exprManager.tt();
+      head = exprManager.and(applyRfAvoid(x, y, u), applyRfAvoid(x, z, v));
+      body = exprManager.or(
+          exprManager.and(applyRfAvoid(x, z, u),
+              applyRfAvoid(z, y, u)), 
+          exprManager.and(applyRfAvoid(x, y, v),
+              applyRfAvoid(y, z, v)));
+      rrDeductionExpr = exprManager.rrDeduction(head, body);
+      BooleanExpression line2_rule =  exprManager.rewriteRule(vars, guard, rrDeductionExpr);
+      
+      rewrite_rulesetBuilder.add(line2_rule);      
       
       /* Create a transitive1 rule */
       
-      vars = ImmutableList.of(x1, x2, x3);
-      guard = exprManager.tt();      
-      head = exprManager.and(applyRf(x1, x2, x2), applyRf(x2, x3, x3));
-      body = applyRf(x1, x3, x3);
+      vars = ImmutableList.of(x, y, z, u);
+      /* Rf_avoid(x, y, u) && Rf_avoid(y, z, u) => Rf(x, z, u)*/
+      guard = exprManager.tt();
+      head = exprManager.and(applyRfAvoid(x, y, u), applyRfAvoid(y, z, u));
+      body = applyRfAvoid(x, z, u);
       rrDeductionExpr = exprManager.rrDeduction(head, body);
       BooleanExpression trans1_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
       
@@ -177,44 +192,24 @@ public class JoinwithRRReachEncoding extends JoinReachEncoding {
       
       /* Create a transitive2 rule */
       
-      vars = ImmutableList.of(x0, x1, x2, x3);
-      guard = exprManager.tt();      
-      head = exprManager.and(applyRf(x0, x1, x2), applyRf(x1, x3, x2));
-      body = exprManager.and(applyRf(x0, x1, x3), applyRf(x0, x3, x2));
+      vars = ImmutableList.of(x, y, z, u);
+      /* Rf_avoid(x, y, z) && Rf_avoid(y, u, z) && Rf_avoid(y, z, z) => Rf(x, y, u) */
+      guard = applyRfAvoid(y, z, z);
+      head = exprManager.and(applyRfAvoid(x, y, z), applyRfAvoid(y, u, z));
+      body = applyRfAvoid(x, y, u);
       rrDeductionExpr = exprManager.rrDeduction(head, body);
       BooleanExpression trans2_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
       
       rewrite_rulesetBuilder.add(trans2_rule);
       
-      /* Create a transitive3 rule */
-      
-      vars = ImmutableList.of(x0, x1, x2, x3);
-      guard = exprManager.tt();      
-      head = exprManager.and(applyRf(x0, x1, x2), applyRf(x0, x3, x1));
-      body = exprManager.and(applyRf(x0, x3, x2), applyRf(x3, x1, x2));
-      rrDeductionExpr = exprManager.rrDeduction(head, body);
-      BooleanExpression trans3_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
-      
-      rewrite_rulesetBuilder.add(trans3_rule);
-      
-      /* Create a rf_avoid rule */
-      
-      vars = ImmutableList.of(x0, x1, exc);
-      guard = exprManager.tt();      
-      head = applyRfAvoid(x0, x1, exc);
-      body = exprManager.or(applyRf(x0, x1, exc), 
-          exprManager.and(applyRf(x0, x1, x1), exprManager.not(applyRf(x0, exc, exc))));
-      rrDeductionExpr = exprManager.rrDeduction(head, body);
-      BooleanExpression rf_avoid_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
-      
-      rewrite_rulesetBuilder.add(rf_avoid_rule);
-      
       /* Create a join1 rule */
-      vars = ImmutableList.of(x, y, z);
-      guard = exprManager.tt();      
+      
+      vars = ImmutableList.of(x, y); // x, y
       _let_0 = applyJoin(x, y);
-      head = exprManager.and(applyRf(x, z, z), applyRf(y, z, z));
-      body = applyRf(x, _let_0, z);
+      /* Rf_avoid(x, join(x, y), join(x, y) */
+      guard = exprManager.tt();
+      head = exprManager.tt();
+      body = applyRfAvoid(x, _let_0, _let_0);
       triggers = ImmutableList.of(_let_0);
       rrDeductionExpr = exprManager.rrDeduction(head, body, triggers);
       BooleanExpression join1_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
@@ -222,20 +217,75 @@ public class JoinwithRRReachEncoding extends JoinReachEncoding {
       rewrite_rulesetBuilder.add(join1_rule);
       
       /* Create a join2 rule */
-      vars = ImmutableList.of(x, y);
-      guard = exprManager.tt();      
+      
+      vars = ImmutableList.of(x, y, z);
       _let_0 = applyJoin(x, y);
-      head = exprManager.tt();
-      body = exprManager.or(
-          exprManager.and(applyRf(x, _let_0, _let_0), applyRf(y, _let_0, _let_0)),
-          _let_0.eq(nil)
-          );
+      /* Rf_avoid(x, z, z) && Rf_avoid(y, z, z) => Rf_avoid(y, join(x, y), join(x, y))*/
+      guard = exprManager.tt();
+      head = exprManager.and(applyRfAvoid(x, z, z), applyRfAvoid(y, z, z));
+      body = applyRfAvoid(y, _let_0, _let_0);
       triggers = ImmutableList.of(_let_0);
       rrDeductionExpr = exprManager.rrDeduction(head, body, triggers);
       BooleanExpression join2_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
       
       rewrite_rulesetBuilder.add(join2_rule);
       
+      /* Create a join3 rule */
+      
+      vars = ImmutableList.of(x, y, z);
+      _let_0 = applyJoin(x, y);
+      /* Rf_avoid(x, z, z) && Rf_avoid(y, z, z) => Rf_avoid(x, join(x, y), z) */
+      guard = exprManager.tt();
+      head = exprManager.and(applyRfAvoid(x, z, z), applyRfAvoid(y, z, z));
+      body = applyRfAvoid(x, _let_0, z);
+      triggers = ImmutableList.of(_let_0);
+      rrDeductionExpr = exprManager.rrDeduction(head, body, triggers);
+      BooleanExpression join3_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
+      
+      rewrite_rulesetBuilder.add(join3_rule);
+      
+      /* Create a join4 rule */
+      
+      vars = ImmutableList.of(x, y); 
+      _let_0 = applyJoin(x, y);
+      /* Rf_avoid(y, join(x, y) join(x, y)) || x = join(x, y) */
+      guard = exprManager.tt();
+      head = exprManager.tt();
+      body = exprManager.or(applyRfAvoid(y, _let_0, _let_0), _let_0.eq(x));
+      triggers = ImmutableList.of(_let_0);
+      rrDeductionExpr = exprManager.rrDeduction(head, body, triggers);
+      BooleanExpression join4_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
+      
+      rewrite_rulesetBuilder.add(join4_rule);
+      
+      /* Create a cycle1 rule */
+      
+      vars = ImmutableList.of(x, y);
+      _let_0 = applyCycle(x);
+      /* Rf_avoid(x, y, y) && Rf_avoid(y, x, x) => cycle(x) || x = y */
+      guard = exprManager.tt();
+      head = exprManager.and(applyRfAvoid(x, y, y), applyRfAvoid(y, x, x));
+      body = exprManager.and(_let_0, x.eq(y));
+      triggers = ImmutableList.of(_let_0);
+      rrDeductionExpr = exprManager.rrDeduction(head, body, triggers);
+      BooleanExpression cycle1_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
+      
+      rewrite_rulesetBuilder.add(cycle1_rule);
+      
+      /* Create a cycle2 rule */
+      
+      vars = ImmutableList.of(x, y);
+      _let_0 = applyCycle(x);
+      /* cycle(x) && Rf_avoid(x, y, y) => Rf_avoid(y, x, x) */
+      guard = exprManager.tt();
+      head = exprManager.and(_let_0, applyRfAvoid(x, y, y));
+      body = applyRfAvoid(y, x, x);
+      triggers = ImmutableList.of(_let_0);
+      rrDeductionExpr = exprManager.rrDeduction(head, body, triggers);
+      BooleanExpression cycle2_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
+      
+      rewrite_rulesetBuilder.add(cycle2_rule);
+            
       rewrite_rules = rewrite_rulesetBuilder.build();
       
     } catch (TheoremProverException e) {
@@ -251,15 +301,20 @@ public class JoinwithRRReachEncoding extends JoinReachEncoding {
         checkArgument(args.size() == 1);
         return getExpressionManager().applyExpr(f, args.get(0));
       }
-
-      if (FUN_RF.equals(name)) {
-        checkArgument(args.size() == 3);
-        return getExpressionManager().applyExpr(rf, args);
-      }
       
       if (FUN_RF_AVOID.equals(name)) {
         checkArgument(args.size() == 3);
         return getExpressionManager().applyExpr(rf_avoid, args);
+      }
+      
+      if (FUN_CYCLE.equals(name)) {
+        checkArgument(args.size() == 1);
+        return getExpressionManager().applyExpr(cycle, args.get(0));
+      }
+      
+      if (FUN_JOIN.equals(name)) {
+        checkArgument(args.size() == 2);
+        return getExpressionManager().applyExpr(join, args);
       }
 
       /* Otherwise, pass through to the underlying bit-vector encoding */
@@ -285,10 +340,8 @@ public class JoinwithRRReachEncoding extends JoinReachEncoding {
     return getExpressionManager().applyExpr(f, arg);
   }
 
-  protected BooleanExpression applyRf(Expression... args) {
-    ImmutableList<Expression> argExprs = ImmutableList.of(args);
-    Preconditions.checkArgument(argExprs.size() == 3);
-    return getExpressionManager().applyExpr(rf, argExprs).asBooleanExpression();
+  protected BooleanExpression applyCycle(Expression arg) {
+    return getExpressionManager().applyExpr(cycle, arg).asBooleanExpression();
   }
   
   protected BooleanExpression applyRfAvoid(Expression... args) {
