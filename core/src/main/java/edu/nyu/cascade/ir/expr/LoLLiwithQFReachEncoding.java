@@ -296,7 +296,7 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
       /* Rf_avoid(x, y, y) && Rf_avoid(y, x, x) => cycle(x) || x = y */
       head = exprManager.and(applyRfAvoid(xbounds[0], xbounds[1], xbounds[1]),
           applyRfAvoid(xbounds[1], xbounds[0], xbounds[0]));
-      body = exprManager.and(applyCycle(xbounds[0]), xbounds[0].eq(xbounds[1]));
+      body = exprManager.or(applyCycle(xbounds[0]), xbounds[0].eq(xbounds[1]));
       ruleExpr = exprManager.implies(head, body);
       BooleanExpression cycle1_rule = exprManager.forall(vars, ruleExpr);
       

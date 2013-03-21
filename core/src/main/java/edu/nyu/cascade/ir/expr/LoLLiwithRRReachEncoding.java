@@ -103,7 +103,7 @@ public class LoLLiwithRRReachEncoding extends LoLLiReachEncoding {
       body = applyRfAvoid(x, x, u);
       BooleanExpression reflex_rule = exprManager.forall(vars, body);
       
-      rewrite_rulesetBuilder.add(reflex_rule); 
+//      rewrite_rulesetBuilder.add(reflex_rule); 
       
       /* Create a step rule */
       
@@ -277,7 +277,7 @@ public class LoLLiwithRRReachEncoding extends LoLLiReachEncoding {
       /* Rf_avoid(x, y, y) && Rf_avoid(y, x, x) => cycle(x) || x = y */
       guard = exprManager.tt();
       head = exprManager.and(applyRfAvoid(x, y, y), applyRfAvoid(y, x, x));
-      body = exprManager.and(_let_0, x.eq(y));
+      body = exprManager.or(_let_0, x.eq(y));
       triggers = ImmutableList.of(_let_0);
       rrDeductionExpr = exprManager.rrDeduction(head, body, triggers);
       BooleanExpression cycle1_rule = exprManager.rewriteRule(vars, guard, rrDeductionExpr);
