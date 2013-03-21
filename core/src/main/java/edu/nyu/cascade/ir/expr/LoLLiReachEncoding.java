@@ -11,7 +11,7 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.type.Type;
 
-public abstract class JoinReachEncoding extends AbstractExpressionEncoding {
+public abstract class LoLLiReachEncoding extends AbstractExpressionEncoding {
 
   protected static final String FUN_F = "f";
   
@@ -21,15 +21,15 @@ public abstract class JoinReachEncoding extends AbstractExpressionEncoding {
   
   protected static final String FUN_JOIN = "join";
   
-  public static JoinReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
+  public static LoLLiReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
     int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
-    return JoinReachMemoryModel.create(encoding, size, size);
+    return LoLLiReachMemoryModel.create(encoding, size, size);
   }
   
   public static final int DEFAULT_WORD_SIZE = 8;
   
-  public JoinReachEncoding(ExpressionManager exprManager) {
+  public LoLLiReachEncoding(ExpressionManager exprManager) {
     super(BitVectorIntegerEncoding.create(exprManager, DEFAULT_WORD_SIZE),
         new DefaultBooleanEncoding(exprManager),
         new DefaultArrayEncoding(exprManager));

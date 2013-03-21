@@ -20,12 +20,12 @@ import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 
-public class JoinwithRRReachEncoding extends JoinReachEncoding {
+public class LoLLiwithRRReachEncoding extends LoLLiReachEncoding {
   
-  public static JoinReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
+  public static LoLLiReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
     int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
-    return JoinReachMemoryModel.create(encoding, size, size);
+    return LoLLiReachMemoryModel.create(encoding, size, size);
   }
 
   private final Type eltType;
@@ -49,7 +49,7 @@ public class JoinwithRRReachEncoding extends JoinReachEncoding {
   
   public static final int DEFAULT_WORD_SIZE = 8;
   
-  public JoinwithRRReachEncoding(ExpressionManager exprManager) {
+  public LoLLiwithRRReachEncoding(ExpressionManager exprManager) {
     super(exprManager);
 
     try {
@@ -96,6 +96,15 @@ public class JoinwithRRReachEncoding extends JoinReachEncoding {
       
       rewrite_rulesetBuilder.add(nil_assumption);
       
+      /* Create a reflex rule */
+      
+      vars = ImmutableList.of(x, u); // x, u
+      /* Rf_avoid(x, x, u) */
+      body = applyRfAvoid(x, x, u);
+      BooleanExpression reflex_rule = exprManager.forall(vars, body);
+      
+      rewrite_rulesetBuilder.add(reflex_rule); 
+      
       /* Create a step rule */
       
       vars = ImmutableList.of(x, u);
@@ -115,6 +124,7 @@ public class JoinwithRRReachEncoding extends JoinReachEncoding {
       vars = ImmutableList.of(x, y); // x, y
       _let_0 = applyF(x); // f(x)
       /* f(x) = x && Rf_avoid(x, y, y) => x = y */
+      // FIXME: why cannot put f(x) = x into the head part?
       guard = _let_0.eq(x);
       head = applyRfAvoid(x, y, y);
       body = x.eq(y);
@@ -152,6 +162,7 @@ public class JoinwithRRReachEncoding extends JoinReachEncoding {
       
       vars = ImmutableList.of(x, y, u);
       /* Rf_avoid(x, y, y) && x != u => Rf_avoid(x, u, y) || Rf_avoid(x, y, u) */
+      // FIXME: why cannot put x.neq(u) as guard?
       guard = exprManager.tt(); 
       head = applyRfAvoid(x, y, y).and(x.neq(u));
       body = exprManager.or(applyRfAvoid(x, u, y), applyRfAvoid(x, y, u));
@@ -194,6 +205,7 @@ public class JoinwithRRReachEncoding extends JoinReachEncoding {
       
       vars = ImmutableList.of(x, y, z, u);
       /* Rf_avoid(x, y, z) && Rf_avoid(y, u, z) && Rf_avoid(y, z, z) => Rf(x, y, u) */
+      // FIXME: why cannot put three clauses into the head?
       guard = applyRfAvoid(y, z, z);
       head = exprManager.and(applyRfAvoid(x, y, z), applyRfAvoid(y, u, z));
       body = applyRfAvoid(x, y, u);

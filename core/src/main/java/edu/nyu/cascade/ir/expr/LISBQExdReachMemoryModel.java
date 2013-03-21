@@ -136,14 +136,6 @@ public class LISBQExdReachMemoryModel extends ReachMemoryModel {
     List<BooleanExpression> result = Lists.newArrayList();    
     ArrayExpression reachArray = state.getChild(2).asArray();    
     result.add(reachArray.index(nullPtr).eq(nullPtr));
-//    
-//    /* For each pair (locVar_a, locVar_b) in reachArray
-//     */
-//    for(VariableExpression locVar_a : regions) {
-//      Expression locVar_b = reachArray.index(locVar_a); 
-//      Expression f_locVar_a = encoding.functionCall(FUN_R, locVar_a);
-//      result.add(f_locVar_a.eq(locVar_b));
-//    }
     
     return exprManager.and(result);
   }
@@ -152,7 +144,7 @@ public class LISBQExdReachMemoryModel extends ReachMemoryModel {
   public BooleanExpression isRoot(Expression state, String fieldName, Expression rootExpr) {
     Preconditions.checkArgument( state.getType().equals( getStateType() ));
     Preconditions.checkArgument(rootExpr.getType().equals(addressType));
-    JoinReachEncoding encoding = (JoinReachEncoding) getExpressionEncoding();
+    LISBQReachEncoding encoding = (LISBQReachEncoding) getExpressionEncoding();
     ExpressionManager exprManager = getExpressionManager();
     Expression nil = encoding.getNil();
     Type eltType = encoding.getEltType();

@@ -21,12 +21,12 @@ import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 
-public class JoinwithQFReachEncoding extends JoinReachEncoding {
+public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
 
-  public static JoinReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
+  public static LoLLiReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
     int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
-    return JoinReachMemoryModel.create(encoding, size, size);
+    return LoLLiReachMemoryModel.create(encoding, size, size);
   }
 
   private final Type eltType;
@@ -50,7 +50,7 @@ public class JoinwithQFReachEncoding extends JoinReachEncoding {
   
   public static final int DEFAULT_WORD_SIZE = 8;
   
-  public JoinwithQFReachEncoding(ExpressionManager exprManager) {
+  public LoLLiwithQFReachEncoding(ExpressionManager exprManager) {
     super(exprManager);
 
     try {
@@ -97,6 +97,16 @@ public class JoinwithQFReachEncoding extends JoinReachEncoding {
       Expression head, _let_0, body;
       ImmutableList<? extends Expression> triggers = null;
       BooleanExpression ruleExpr;
+      
+      /* Create a reflex rule */
+      
+      vars = ImmutableList.of(xvars[0], xvars[1]); // x, u
+      /* Rf_avoid(x, x, u) */
+      body = applyRfAvoid(xbounds[0], xbounds[0], xbounds[1]);
+      ruleExpr = body.asBooleanExpression();
+      BooleanExpression reflex_rule = exprManager.forall(vars, ruleExpr);
+      
+      rewrite_rulesetBuilder.add(reflex_rule); 
       
       /* Create a step rule */
       

@@ -14,7 +14,7 @@ import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.RecursionStrategies;
 import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
 
-public class JoinReachMemoryModel extends ReachMemoryModel {
+public class LoLLiReachMemoryModel extends ReachMemoryModel {
   
   private static final String FUN_F = "f";  
   private static final String FUN_RF_AVOID = "rf_avoid";
@@ -25,7 +25,7 @@ public class JoinReachMemoryModel extends ReachMemoryModel {
    * side-effect assumption, generated in memory operations 
    * private BooleanExpression sideAssump;
    */
-  private JoinReachMemoryModel(ExpressionEncoding encoding, ArrayType memType,
+  private LoLLiReachMemoryModel(ExpressionEncoding encoding, ArrayType memType,
       ArrayType reachArrayType) {
     super(encoding, memType, reachArrayType);
   }
@@ -37,7 +37,7 @@ public class JoinReachMemoryModel extends ReachMemoryModel {
    * @param exprManager
    * @throws IllegalArgumentException if <code>addressSize</code> is not a multiple of <code>cellSize</code>
    */
-  public static JoinReachMemoryModel create(
+  public static LoLLiReachMemoryModel create(
       ExpressionEncoding encoding,
       int addressSize, int cellSize)
       throws ExpressionFactoryException {
@@ -49,7 +49,7 @@ public class JoinReachMemoryModel extends ReachMemoryModel {
     ArrayType memArrayType = exprManager.arrayType(addressType, cellType);
     ArrayType reachArrayType = exprManager.arrayType(addressType, addressType);
     
-    return new JoinReachMemoryModel(encoding, memArrayType, reachArrayType);
+    return new LoLLiReachMemoryModel(encoding, memArrayType, reachArrayType);
   }
   
   /** Create an expression factory with the given array type to model memory. The size of the 
@@ -66,7 +66,7 @@ public class JoinReachMemoryModel extends ReachMemoryModel {
    *           if <code>addressSize</code> is not a multiple of
    *           <code>cellSize</code>
    */
-  public static JoinReachMemoryModel create(
+  public static LoLLiReachMemoryModel create(
       ExpressionEncoding encoding, 
       ArrayType memArrayType)
       throws ExpressionFactoryException {
@@ -80,10 +80,10 @@ public class JoinReachMemoryModel extends ReachMemoryModel {
     BitVectorType addressType = memArrayType.getIndexType().asBitVectorType();
     ArrayType reachArrayType = exprManager.arrayType(addressType, addressType);
     
-    return new JoinReachMemoryModel(encoding, memArrayType, reachArrayType);
+    return new LoLLiReachMemoryModel(encoding, memArrayType, reachArrayType);
   }
 
-  public static JoinReachMemoryModel create(
+  public static LoLLiReachMemoryModel create(
       ExpressionEncoding encoding,
       ArrayVariableExpression memArray) throws ExpressionFactoryException {
     return create(encoding, memArray.getType());
@@ -173,7 +173,7 @@ public class JoinReachMemoryModel extends ReachMemoryModel {
   public BooleanExpression isRoot(Expression state, String fieldName, Expression rootExpr) {
     Preconditions.checkArgument( state.getType().equals( getStateType() ));
     Preconditions.checkArgument(rootExpr.getType().equals(addressType));
-    JoinReachEncoding encoding = (JoinReachEncoding) getExpressionEncoding();
+    LoLLiReachEncoding encoding = (LoLLiReachEncoding) getExpressionEncoding();
     ExpressionManager exprManager = getExpressionManager();
     Expression nil = encoding.getNil();
     Type eltType = encoding.getEltType();
