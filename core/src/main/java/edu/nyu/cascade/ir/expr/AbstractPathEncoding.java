@@ -42,9 +42,15 @@ public abstract class AbstractPathEncoding implements
   }
   
   @Override
-  public Expression allocStack(Expression pre, IRExpression ptr, IRExpression size) {
+  public Expression declareArray(Expression pre, IRExpression ptr, IRExpression size) {
     ExpressionEncoder encoder = getExpressionEncoder();
-    return allocStack(pre, ptr.toLval(encoder), size.toExpression(encoder));
+    return declareArray(pre, ptr.toLval(encoder), size.toExpression(encoder));
+  }
+  
+  @Override
+  public Expression declareStruct(Expression pre, IRExpression ptr, IRExpression size) {
+    ExpressionEncoder encoder = getExpressionEncoder();
+    return declareStruct(pre, ptr.toLval(encoder), size.toExpression(encoder));
   }
   
   @Override

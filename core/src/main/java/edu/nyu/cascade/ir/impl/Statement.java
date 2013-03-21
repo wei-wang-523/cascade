@@ -5,6 +5,8 @@ import static edu.nyu.cascade.ir.IRStatement.StatementType.ASSERT;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.ASSIGN;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.ASSUME;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.AWAIT;
+import static edu.nyu.cascade.ir.IRStatement.StatementType.DECLARE_ARRAY;
+import static edu.nyu.cascade.ir.IRStatement.StatementType.DECLARE_STRUCT;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.CALL;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.CRITICAL_SECTION;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.FIELD_ASSIGN;
@@ -42,13 +44,18 @@ import edu.nyu.cascade.ir.expr.ReachMemoryModel;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.util.IOUtils;
 
-public class Statement implements IRStatement {  
-  
-  /** Statement Labels */
-  private static final String ALLOC_STACK_LABEL = "allocStack";
+public class Statement implements IRStatement {
   
   public static Statement alloc(Node sourceNode, IRExpressionImpl ptrExpr, IRExpressionImpl sizeExpr) {
     return new Statement(sourceNode, ALLOC, ptrExpr, sizeExpr);
+  }
+  
+  public static Statement declareArray(Node sourceNode, IRExpressionImpl ptrExpr, IRExpressionImpl sizeExpr) {
+    return new Statement(sourceNode, DECLARE_ARRAY, ptrExpr, sizeExpr);
+  }
+  
+  public static Statement declareStruct(Node sourceNode, IRExpressionImpl ptrExpr, IRExpressionImpl sizeExpr) {
+    return new Statement(sourceNode, DECLARE_STRUCT, ptrExpr, sizeExpr);
   }
   
   public static Statement assertStmt(Node sourceNode, IRExpression expr) {
@@ -248,12 +255,12 @@ public class Statement implements IRStatement {
     case ASSUME:
     case AWAIT:
       return factory.assume(prefix, getOperand(0));
-    case ALLOC: {
-      if(getPreLabels().contains(ALLOC_STACK_LABEL))
-        return factory.allocStack(prefix, getOperand(0), getOperand(1));
-      else
+    case ALLOC:
         return factory.alloc(prefix, getOperand(0), getOperand(1));      
-    }
+    case DECLARE_ARRAY:
+        return factory.declareArray(prefix, getOperand(0), getOperand(1));
+    case DECLARE_STRUCT:
+      return factory.declareStruct(prefix, getOperand(0), getOperand(1));
     case FREE:
       return factory.free(prefix, getOperand(0));
     case HAVOC:
@@ -310,13 +317,12 @@ public class Statement implements IRStatement {
       return sourceNode.getName();
     }
     switch (getType()) {
-    case ALLOC: {
-      if(getPreLabels().contains(ALLOC_STACK_LABEL))
-        return getOperand(0) + " := stack_alloc(" + getOperand(1) + ")";
-      else
-        return getOperand(0) + " := malloc(" + getOperand(1) + ")";     
-    }
-    
+    case ALLOC:
+      return getOperand(0) + " := malloc(" + getOperand(1) + ")";     
+    case DECLARE_ARRAY:
+      return getOperand(0) + " := array[" + getOperand(1) + "]";
+    case DECLARE_STRUCT:
+      return getOperand(0) + " := struct[" + getOperand(1) + "]";
     case ASSERT:
       return "assert " + getOperand(0);
 

@@ -60,7 +60,31 @@ public abstract class ReachMemoryModel extends BitVectorMemoryModel {
   }
 
   @Override
-  public TupleExpression allocStack(Expression state, Expression ptr, Expression size) {
+  public TupleExpression declareArray(Expression state, Expression ptr, Expression size) {
+    Preconditions.checkArgument(state.getType().equals( getStateType() ));
+    Preconditions.checkArgument(ptr.getType().equals( addressType ));
+    // FIXME: What if element size and integer size don't agree?
+    Preconditions.checkArgument(size.getType().equals( addressType ));
+    
+    ExpressionManager exprManager = getExpressionManager();
+    
+    VariableExpression locVar = exprManager.variable(REGION_VARIABLE_NAME, addressType, true);  
+    
+    // For array, add to the start of regions;
+    stackRegions.add(locVar); 
+    // Add ptr to rvals (removed variables)
+    rvals.add((VariableExpression) ptr);
+    
+    Expression regionSize = state.getChild(1).asArray().update(locVar, size);
+    
+    return exprManager.tuple(getStateType(), 
+        state.getChild(0), 
+        regionSize,
+        state.getChild(2));
+  }
+  
+  @Override
+  public TupleExpression declareStruct(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(state.getType().equals( getStateType() ));
     Preconditions.checkArgument(ptr.getType().equals( addressType ));
     // FIXME: What if element size and integer size don't agree?

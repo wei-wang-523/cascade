@@ -136,15 +136,16 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   }
   
   @Override
-  public Expression allocStack(Expression pre, ExpressionClosure lval,
+  public Expression declareStruct(Expression pre, ExpressionClosure lval,
       ExpressionClosure rval) {
-    Expression result = getMemoryModel().allocStack(pre, lval.eval(pre), rval.eval(pre));
-/*  ExpressionManager exprManager = getExpressionManager();
-    Expression sideExpr;
-    sideExpr = getMemoryModel().getSideAssumption();
-    if(sideExpr != null)
-      assumps = exprManager.ifThenElse(assumps, sideExpr, exprManager.ff());
-*/
+    Expression result = getMemoryModel().declareStruct(pre, lval.eval(pre), rval.eval(pre));
+    return result;
+  }
+  
+  @Override
+  public Expression declareArray(Expression pre, ExpressionClosure lval,
+      ExpressionClosure rval) {
+    Expression result = getMemoryModel().declareArray(pre, lval.eval(pre), rval.eval(pre));
     return result;
   }
   

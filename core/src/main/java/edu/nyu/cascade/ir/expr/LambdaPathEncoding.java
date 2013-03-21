@@ -18,7 +18,6 @@ package edu.nyu.cascade.ir.expr;
 
 import com.google.common.base.Preconditions;
 
-import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -212,13 +211,6 @@ public class LambdaPathEncoding extends AbstractPathEncoding {
   public InductiveType getPathType() {
     return pathType;
   }
-
-  @Override
-  public Expression alloc(Expression pre, IRExpression ptr,
-      IRExpression size) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("alloc");
-  }
   
   @Override
   public Expression alloc(Expression pre, ExpressionClosure ptr,
@@ -228,14 +220,14 @@ public class LambdaPathEncoding extends AbstractPathEncoding {
   }
   
   @Override
-  public Expression allocStack(Expression pre, IRExpression ptr,
-      IRExpression size) {
+  public Expression declareStruct(Expression pre, ExpressionClosure ptr,
+      ExpressionClosure size) {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("allocStack");
   }
   
   @Override
-  public Expression allocStack(Expression pre, ExpressionClosure ptr,
+  public Expression declareArray(Expression pre, ExpressionClosure ptr,
       ExpressionClosure size) {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("allocStack");

@@ -46,8 +46,11 @@ public interface PathEncoding    {
   Expression alloc(Expression pre, ExpressionClosure ptr, ExpressionClosure size);
   Expression alloc(Expression pre, IRExpression ptr, IRExpression size);
 
-  Expression allocStack(Expression pre, ExpressionClosure ptr, ExpressionClosure size);
-  Expression allocStack(Expression pre, IRExpression ptr, IRExpression size);
+  Expression declareArray(Expression pre, ExpressionClosure ptr, ExpressionClosure size);
+  Expression declareArray(Expression pre, IRExpression ptr, IRExpression size);
+
+  Expression declareStruct(Expression pre, ExpressionClosure ptr, ExpressionClosure size);
+  Expression declareStruct(Expression pre, IRExpression ptr, IRExpression size);
   
   Expression free(Expression pre, ExpressionClosure ptr);
   Expression free(Expression pre, IRExpression ptr);

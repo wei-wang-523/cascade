@@ -2,7 +2,6 @@ package edu.nyu.cascade.ir.expr;
 
 import com.google.inject.internal.Preconditions;
 
-import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.FunctionExpression;
@@ -131,35 +130,23 @@ public class PredicatePathEncoding extends
   public FunctionType getPathType() {
     return pathType;
   }
-
-  @Override
-  public Expression alloc(Expression pre, IRExpression ptr, IRExpression size) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("alloc");
-  }
   
   @Override
   public Expression alloc(Expression pre, ExpressionClosure ptr, ExpressionClosure size) {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("alloc");
   }
-
+  
   @Override
-  public Expression allocStack(Expression pre, IRExpression ptr, IRExpression size) {
+  public Expression declareStruct(Expression pre, ExpressionClosure ptr, ExpressionClosure size) {
     // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("allocStack");
+    throw new UnsupportedOperationException("declareStruct");
   }
   
   @Override
-  public Expression allocStack(Expression pre, ExpressionClosure ptr, ExpressionClosure size) {
+  public Expression declareArray(Expression pre, ExpressionClosure ptr, ExpressionClosure size) {
     // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("allocStack");
-  }
-  
-  @Override
-  public Expression free(Expression pre, IRExpression ptr) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("free");
+    throw new UnsupportedOperationException("declareArray");
   }
   
   @Override

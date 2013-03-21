@@ -54,7 +54,13 @@ public interface MemoryModel {
    * Allocate a array or struct with size <code>size</code> to the memory location 
    * <code>ptr</code> in pre-state <code>state</code>.
    */
-  Expression allocStack(Expression state, Expression ptr, Expression size);
+  Expression declareStruct(Expression state, Expression ptr, Expression size);
+  
+  /**
+   * Allocate a array or struct with size <code>size</code> to the memory location 
+   * <code>ptr</code> in pre-state <code>state</code>.
+   */
+  Expression declareArray(Expression state, Expression ptr, Expression size);
   
   /**
    * Free a region in memory at the memory location <code>ptr</code> in pre-state 

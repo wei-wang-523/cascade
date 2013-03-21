@@ -143,7 +143,23 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
   }
   
   @Override
-  public TupleExpression allocStack(Expression state, Expression ptr, Expression size) {
+  public TupleExpression declareArray(Expression state, Expression ptr, Expression size) {
+    Preconditions.checkArgument(state.getType().equals( getStateType() ));
+    Preconditions.checkArgument(ptr.getType().equals( addressType ));
+    // FIXME: What if element size and integer size don't agree?
+    Preconditions.checkArgument(size.getType().equals( addressType ));
+    
+    ExpressionManager exprManager = getExpressionManager();
+       
+    stackRegions.add(ptr); // For stack allocated region, add ptr directly to stackRegions;
+    rvals.add((VariableExpression) ptr); // Add ptr to rvals (removed variables)
+    
+    Expression regionSize = state.getChild(1).asArray().update(ptr, size);  
+    return exprManager.tuple(getStateType(), state.getChild(0), regionSize);
+  }
+  
+  @Override
+  public TupleExpression declareStruct(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(state.getType().equals( getStateType() ));
     Preconditions.checkArgument(ptr.getType().equals( addressType ));
     // FIXME: What if element size and integer size don't agree?
