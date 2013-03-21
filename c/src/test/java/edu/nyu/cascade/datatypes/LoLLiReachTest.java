@@ -10,10 +10,10 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import edu.nyu.cascade.ir.expr.JoinReachEncoding;
+import edu.nyu.cascade.ir.expr.LoLLiReachEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
-import edu.nyu.cascade.ir.expr.JoinwithQFReachEncoding;
-import edu.nyu.cascade.ir.expr.JoinwithRRReachEncoding;
+import edu.nyu.cascade.ir.expr.LoLLiwithQFReachEncoding;
+import edu.nyu.cascade.ir.expr.LoLLiwithRRReachEncoding;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -24,8 +24,8 @@ import edu.nyu.cascade.prover.TheoremProverFactory.TheoremProverFactoryException
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
 
-public class JoinReachTest {
-  private JoinReachEncoding encoding;
+public class LoLLiReachTest {
+  private LoLLiReachEncoding encoding;
   private TheoremProver theoremProver;
   private ExpressionManager exprManager;
 
@@ -39,9 +39,9 @@ public class JoinReachTest {
       exprManager = theoremProver.getExpressionManager();
       String tpProviderName = theoremProver.getProviderName();
       if("cvc4".equals(tpProviderName))
-        encoding = new JoinwithRRReachEncoding(exprManager);
+        encoding = new LoLLiwithRRReachEncoding(exprManager);
       else if ("z3".equals(tpProviderName))
-        encoding = new JoinwithQFReachEncoding(exprManager);
+        encoding = new LoLLiwithQFReachEncoding(exprManager);
       else
         throw new IllegalArgumentException("Unsupported theorem prover " + theoremProver);
 //    } catch (FileNotFoundException e) {
@@ -63,6 +63,7 @@ public class JoinReachTest {
   }
   
   /** Example0 */
+  @Ignore
   @Test
   public void testAssumptions3() throws TheoremProverException, ExpressionFactoryException {
     theoremProver.assume( encoding.getAssumptions() );
@@ -74,13 +75,17 @@ public class JoinReachTest {
         exprManager.implies(
             exprManager.and(
                 exprManager.not(e1.eq(e2)), 
-                applyRf(e1, e2, e3)),
-            applyRf(e1, applyF(e1), e3))
+                applyRfAvoid(e1, e2, e3),
+                applyRfAvoid(e2, e3, e3)), // applyRf(e1, e2, e3)
+            exprManager.and(
+                applyRfAvoid(e1, applyF(e1), e3), 
+                applyRfAvoid(applyF(e1), e3, e3))) // applyRf(e1, applyF(e1), e3))
         );
     assertTrue( theoremProver.checkSat(targetExpr).isUnsatisfiable());
   }
   
   /** Thomas' example1 */
+  @Ignore
   @Test
   public void testAssumptions4() throws TheoremProverException, ExpressionFactoryException {
     theoremProver.assume( encoding.getAssumptions() );
@@ -92,15 +97,20 @@ public class JoinReachTest {
     BooleanExpression targetExpr = exprManager.not(
         exprManager.implies(
             exprManager.and(
-                applyRf(e1, e2, e3),
+                applyRfAvoid(e1, e2, e3), //applyRf(e1, e2, e3)
+                applyRfAvoid(e2, e3, e3),
                 exprManager.not(e2.eq(e3)),
                 e4.eq(applyF(e2))),
-            applyRf(e1, e4, e3))
+            exprManager.and(
+                applyRfAvoid(e1, e4, e3),
+                applyRfAvoid(e4, e3, e3))) //applyRf(e1, e4, e3)
         );
     assertTrue( theoremProver.checkSat(targetExpr).isUnsatisfiable());
   }
   
-  /** Thomas' example2 */
+  /** Thomas' example2 
+   * FIXME: LoLLiwithRR and LoLLiwithQF has inconsistent result
+   */
   @Ignore
   @Test
   public void testAssumptions5() throws TheoremProverException, ExpressionFactoryException {
@@ -112,34 +122,34 @@ public class JoinReachTest {
     BooleanExpression targetExpr = exprManager.not(
         exprManager.implies(
             exprManager.and(
-                applyRf(e1, nil, nil),
+                applyRfAvoid(e1, nil, nil),
                 applyJoin(e1, e2).eq(nil)
                 ),
             exprManager.or(
                 exprManager.and(
                     applyRfAvoid(e1, nil, e2),
-                    applyRf(e1, nil, nil),
+                    applyRfAvoid(e1, nil, nil),
                     applyRfAvoid(e1, e2, nil),
                     e2.neq(nil)
                     ),                  
                 exprManager.and(
                     applyRfAvoid(e1, nil, e2),
-                    applyRf(e1, nil, e2),
+                    applyRfAvoid(e1, nil, e2), // applyRf(e1, nil, e2)
+                    applyRfAvoid(nil, e2, e2),
                     applyRfAvoid(e1, e2, nil),
                     e2.neq(nil)
                     ),
                 exprManager.and(
-                    applyRf(e1, nil, nil),
+                    applyRfAvoid(e1, nil, nil),
                     applyRfAvoid(e1, nil, e2)
                     )
                 )
             )
         );
-    assertTrue( theoremProver.checkSat(targetExpr).isSatisfiable());
+    assertTrue( theoremProver.checkSat(targetExpr).isUnsatisfiable());
   }
   
   /** Thomas' example3 */
-  @Ignore
   @Test
   public void testAssumptions6() throws TheoremProverException, ExpressionFactoryException {
     theoremProver.assume( encoding.getAssumptions() );
@@ -150,17 +160,17 @@ public class JoinReachTest {
     BooleanExpression targetExpr = exprManager.not(
         exprManager.implies(
             exprManager.and(
-                applyRf(e2, nil, nil),
+                applyRfAvoid(e2, nil, nil),
                 e2.neq(nil)
                 ),
             exprManager.or(
                 exprManager.and(
-                    exprManager.not(applyRf(applyF(e2), e2, e2)),
-                    exprManager.not(applyRf(e1, e2, e2))
+                    exprManager.not(applyRfAvoid(applyF(e2), e2, e2)),
+                    exprManager.not(applyRfAvoid(e1, e2, e2))
                     ),                  
                 exprManager.and(
-                    applyRf(e1, e2, e2),
-                    exprManager.not(applyRf(applyF(e2), e1, e1))
+                    applyRfAvoid(e1, e2, e2),
+                    exprManager.not(applyRfAvoid(applyF(e2), e1, e1))
                     )
                 )
             )
@@ -168,8 +178,9 @@ public class JoinReachTest {
     assertTrue( theoremProver.checkSat(targetExpr).isUnsatisfiable());
   }
   
-  /** Thomas' example wrong sat? / Example4 */
-  @Ignore
+  /** Thomas' example 4 
+   * FIXME: LoLLiwithRR and LoLLiwithQF has inconsistent result
+   */
   @Test
   public void testAssumptions7() throws TheoremProverException, ExpressionFactoryException {
     theoremProver.assume( encoding.getAssumptions() );
@@ -181,13 +192,13 @@ public class JoinReachTest {
         exprManager.implies(
             exprManager.and(
                 applyJoin(e1, e2).eq(nil),
-                applyRf(e2, nil, nil),
+                applyRfAvoid(e2, nil, nil),
                 e2.neq(nil)
                 ),
-            exprManager.not(applyRf(e2, e2, e2))
+            exprManager.not(applyRfAvoid(e2, e2, e2)) //applyRf(e2, e2, e2)
             )
         );
-    assertTrue( theoremProver.checkSat(targetExpr).isSatisfiable());
+    assertTrue( theoremProver.checkSat(targetExpr).isUnsatisfiable());
   }
   
   /** Example5 */
@@ -199,15 +210,11 @@ public class JoinReachTest {
     VariableExpression e2 = exprManager.variable("e2", eltType, false);
     BooleanExpression targetExpr = exprManager.and(
         applyF(applyF(e1)).eq(e1),
-        applyRf(e1, e2, e2),
+        applyRfAvoid(e1, e2, e2),
         e1.neq(e1),
         e2.neq(applyF(e1))
         );
     assertTrue( theoremProver.checkSat(targetExpr).isUnsatisfiable());
-  }
-  
-  private Expression applyRf(Expression ... args) {
-    return encoding.functionCall("rf", args);
   }
   
   private Expression applyRfAvoid(Expression ... args) {
