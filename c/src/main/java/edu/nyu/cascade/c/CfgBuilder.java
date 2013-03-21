@@ -71,11 +71,6 @@ public class CfgBuilder extends Visitor {
     return (Map<Node, IRControlFlowGraph>) new CfgBuilder(symbolTable).dispatch(ast);
   }
   
-  /** 
-   * Statement Labels 
-   */
-  private static final String ALLOC_STACK_LABEL = "allocStack";
-  
   /**
    * Store the global statements for each file. Each declared function node in 
    * a file has its CFG. Various functions may share global statements as 
@@ -1258,9 +1253,8 @@ public class CfgBuilder extends Visitor {
       if(!isAliasName(var.getNode(0))) {
         CExpression baseExpr = expressionOf(varExpr.getSourceNode().getNode(1).getNode(0));
         CExpression sizeExpr = expressionOf(varExpr.getSourceNode().getNode(1).getNode(1));
-        Statement allocStmt = Statement.alloc(varExpr.getSourceNode(), baseExpr, sizeExpr);
-        allocStmt.addPreLabel(ALLOC_STACK_LABEL);
-        addStatementGlobalOrLocal(allocStmt);
+        Statement declareStmt = Statement.declareArray(varExpr.getSourceNode(), baseExpr, sizeExpr);
+        addStatementGlobalOrLocal(declareStmt);
         if(null != node.get(4)) {
           GNode valNodeList = node.getGeneric(4);
           assert(valNodeList.getName().equals("InitializerList"));
@@ -1277,9 +1271,8 @@ public class CfgBuilder extends Visitor {
         		&& !isAliasName(varNode)) {
           Node sizeNode = getSizeofTypeNode(varType, node);
           CExpression sizeExpr = expressionOf(sizeNode);
-          Statement allocStmt = Statement.alloc(node, varExpr, sizeExpr);
-          allocStmt.addPreLabel(ALLOC_STACK_LABEL);
-          addStatementGlobalOrLocal(allocStmt);
+          Statement declareStmt = Statement.declareStruct(node, varExpr, sizeExpr);
+          addStatementGlobalOrLocal(declareStmt);
         }
       }
       /* Assignment expression is included here, e.g. "int a = 1;" */
@@ -1577,9 +1570,8 @@ public class CfgBuilder extends Visitor {
     CExpression sizeExpr = expressionOf(sizeNode);
     
     // string_allocated(STRING_VAR_*, length * sizeof(char))   
-    Statement allocStmt = Statement.alloc(node, stringVarExpr, sizeExpr);
-    allocStmt.addPreLabel(ALLOC_STACK_LABEL);
-    addStatementGlobalOrLocal(allocStmt);
+    Statement declareStmt = Statement.declareArray(node, stringVarExpr, sizeExpr);
+    addStatementGlobalOrLocal(declareStmt);
     
     List<CExpression> indexExprList = Lists.newArrayList();
     initializeArray(stringVarExpr, initListNode, 1, indexExprList);
