@@ -71,60 +71,25 @@ public class TheoremProverImpl implements TheoremProver {
               .withType(File.class) //
               .withDescription("Dump Z3 activity to log FILE") //
               .create(), //
-              OptionBuilder.withLongOpt(OPTION_DUMP_TRACE) //
-                  .hasArg() //
-                  .withArgName("FILE") //
-                  .withType(File.class) //
-                  .withDescription("Dump Z3 traces to log FILE") //
-                  .create(), //
-              OptionBuilder.withLongOpt(OPTION_RESOURCE_LIMIT) //
-                  .hasArg() //
-                  .withArgName("N") //
-                  .withType(Integer.class) //
-                  .withDescription("Set Z3 resource limit to N") //
-                  .create(), //
+              OptionBuilder.withLongOpt(OPTION_PBQI) //
+              .withDescription("Enable Z3 pattern based quantifier instantiation") //
+              .create(), //
+              OptionBuilder.withLongOpt(OPTION_MBQI) //
+              .withDescription("Enable Z3 model based quantifier instantiation") //
+              .create(), //
               OptionBuilder
-                  .withLongOpt(OPTION_TRACE)
-                  .hasArg()
-                  .withArgName("TAGs")
-                  .withDescription(
-                      "Enable Z3 trace FLAGS (comma-separated list)") //
-                  .create(), //
-              OptionBuilder.withLongOpt(OPTION_QBQI) //
-                  .withDescription("Enable Z3 pattern based quantifier instantiation") //
-                  .create(), //
-              OptionBuilder
-                  .withLongOpt(OPTION_QUANT_LIMIT)
-                  .hasArg()
-                  .withArgName("N")
-                  .withType(Integer.class)
-                  .withDescription(
-                      "Set Z3 quantifier instantiation limit to N") //
-                  .create(), //
-              OptionBuilder
-                  .withLongOpt(OPTION_TP_STATS)
-                  .withDescription("Show z3 statistics.")
-                  .create());
+              .withLongOpt(OPTION_TP_STATS)
+              .withDescription("Show z3 statistics.")
+              .create());
 
     }
 
   }
 
-/*  private static final int DEFAULT_MAX_QUANTIFIER_LEVEL = 10;
-  private static final String FLAG_DUMP_LOG = "dump-log";
-  private static final String FLAG_DUMP_TRACE = "dump-trace";
-  private static final String FLAG_QUANT_MAX_INST_LEVEL = "quant-max-IL";
-  private static final String FLAG_TRACE = "trace";
-  private static final String FLAG_TYPE_CORRECTNESS_CONDITIONS = "tcc";*/
-
   private static final String OPTION_DUMP_LOG = "z3-log";
-  private static final String OPTION_DUMP_TRACE = "z3-dump-trace";
-  private static final String OPTION_RESOURCE_LIMIT = "z3-resource-limit";
   private static final String OPTION_TP_STATS = "z3-stats";
-  private static final String OPTION_QUANT_LIMIT = "z3-quant-limit";
-  private static final String OPTION_TRACE = "z3-trace";
-  private static final String OPTION_DEBUG = "z3-debug";
-  private static final String OPTION_QBQI = "z3-pbqi";
+  private static final String OPTION_PBQI = "z3-pbqi";
+  private static final String OPTION_MBQI = "z3-mbqi";
 
   private static final Pattern p = Pattern.compile("(^|\\n|\\r\\n?)");
 
@@ -472,7 +437,7 @@ public class TheoremProverImpl implements TheoremProver {
   
   public void setEffortLevel(int level) {
     try {
-      getSettings().put("effort-level", Long.toString(level << 8));
+      getSettings().put("memory", Long.toString(level << 8));
     } catch (Exception e) {
       throw new TheoremProverException(e);
     }
@@ -495,7 +460,7 @@ public class TheoremProverImpl implements TheoremProver {
   
   public void enableZ3Stats() {
     try {
-      getSettings().put("all-statistics", "true");
+      getSettings().put("st", "true");
     } catch (Exception e) {
       throw new TheoremProverException(e);
     }
@@ -517,10 +482,18 @@ public class TheoremProverImpl implements TheoremProver {
     }
   }
   
-  public void enableZ3Ptbi() {
+  public void enableZ3Pbqi() {
     try{
-      getSettings().put("mobi", "false");
+      getSettings().put("mbqi", "false");
       getSettings().put("auto-config", "false");
+    } catch (Exception e) {
+      throw new TheoremProverException(e);
+    }
+  }
+  
+  public void enableZ3Mbqi() {
+    try{
+      getSettings().put("mbqi", "true");
     } catch (Exception e) {
       throw new TheoremProverException(e);
     }
@@ -537,22 +510,14 @@ public class TheoremProverImpl implements TheoremProver {
         enableZ3Stats();
       }
       
-      if (Preferences.isSet(OPTION_TRACE)) {
-        for( String flag : Preferences.getString(OPTION_TRACE).split(",") ) {
-          enableZ3Trace(flag);
-        }
-      }
-      
-      if (Preferences.isSet(OPTION_DEBUG)) {
-        for( String flag : Preferences.getString(OPTION_DEBUG).split(",") ) {
-          enableZ3Debug(flag);
-        }
-      }
-      
-      if (Preferences.isSet(OPTION_QBQI)) {
-        enableZ3Ptbi();
+      if (Preferences.isSet(OPTION_PBQI)) {
+        enableZ3Pbqi();
       }
     
+      if (Preferences.isSet(OPTION_MBQI)) {
+        enableZ3Mbqi();
+      }
+      
       /** FIXME: other preferences are not supported in Z3 */
       
       /** 
