@@ -74,12 +74,6 @@ public class TheoremProverImpl implements TheoremProver {
                   .withType(File.class) //
                   .withDescription("Dump CVC4 traces to log FILE") //
                   .create(), //
-              OptionBuilder.withLongOpt(OPTION_RESOURCE_LIMIT) //
-                  .hasArg() //
-                  .withArgName("N") //
-                  .withType(Integer.class) //
-                  .withDescription("Set CVC4 resource limit to N") //
-                  .create(), //
               OptionBuilder
                   .withLongOpt(OPTION_TRACE)
                   .hasArg()
@@ -97,10 +91,6 @@ public class TheoremProverImpl implements TheoremProver {
                   .withType(Integer.class)
                   .withDescription(
                       "Set CVC4 quantifier instantiation limit to N") //
-                  .create(), //
-              OptionBuilder
-                  .withLongOpt(OPTION_CVC4_STATS)
-                  .withDescription("Show cvc4 statistics.")
                   .create());
 
     }
@@ -116,8 +106,7 @@ public class TheoremProverImpl implements TheoremProver {
 
   private static final String OPTION_DUMP_LOG = "cvc4-log";
   private static final String OPTION_DUMP_TRACE = "cvc4-dump-trace";
-  private static final String OPTION_RESOURCE_LIMIT = "cvc4-resource-limit";
-  private static final String OPTION_CVC4_STATS = "cvc4-stats";
+  private static final String OPTION_TP_STATS = "cvc4-stats";
   private static final String OPTION_QUANT_LIMIT = "cvc4-quant-limit";
   private static final String OPTION_TRACE = "cvc4-trace";
   private static final String OPTION_DEBUG = "cvc4-debug";
@@ -319,7 +308,7 @@ public class TheoremProverImpl implements TheoremProver {
             cvc4SatResult.whyUnknown().toString()); 
       }
 
-      if (Preferences.isSet(OPTION_CVC4_STATS)) {
+      if (Preferences.isSet(OPTION_TP_STATS)) {
         getSmtEngine().getStatistics().flushInformation(IOUtils.out());
       }
           
@@ -401,7 +390,7 @@ public class TheoremProverImpl implements TheoremProver {
             cvc4QueryResult.whyUnknown().toString()); 
       }
 
-      if (Preferences.isSet(OPTION_CVC4_STATS)) {
+      if (Preferences.isSet(OPTION_TP_STATS)) {
         getSmtEngine().getStatistics().flushInformation(IOUtils.out());
       }
       
@@ -572,12 +561,8 @@ public class TheoremProverImpl implements TheoremProver {
    */
   @Override
   public void setPreferences() {
-    try {
-      if (Preferences.isSet(OPTION_RESOURCE_LIMIT)) {
-        setResourceLimit(Preferences.getInt(OPTION_RESOURCE_LIMIT));
-      }
-      
-      if (Preferences.isSet(OPTION_CVC4_STATS)) {
+    try {      
+      if (Preferences.isSet(OPTION_TP_STATS)) {
         enableCvc4Stats();
       }
       
