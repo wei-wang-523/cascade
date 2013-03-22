@@ -25,7 +25,7 @@ public class LoLLiReachMemoryModel extends ReachMemoryModel {
    * side-effect assumption, generated in memory operations 
    * private BooleanExpression sideAssump;
    */
-  private LoLLiReachMemoryModel(ExpressionEncoding encoding, ArrayType memType,
+  protected LoLLiReachMemoryModel(ExpressionEncoding encoding, ArrayType memType,
       ArrayType reachArrayType) {
     super(encoding, memType, reachArrayType);
   }
