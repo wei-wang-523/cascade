@@ -239,8 +239,10 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
               throw new TheoremProverException(e);
             }
           }
-    }, vars, body, triggers, noTriggers);    
-    e.setTriggers(triggers);
+    }, vars, body, triggers, noTriggers);
+    if(triggers != null) e.setTriggers(triggers);
+    if(noTriggers != null) e.setNoTriggers(noTriggers);
+    
     return e;
   }
 
@@ -671,7 +673,7 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
     this.triggers = multiTriggerList;
     /*internalSetTriggers();*/
   }
-  
+
   public void setMultiNoTriggers(
       Iterable<? extends Iterable<? extends Expression>> multiNoTriggers) {
     List<ImmutableList<? extends Expression>> multiTriggerList = Lists.newArrayList();
