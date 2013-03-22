@@ -22,6 +22,7 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Params;
 import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
+import com.microsoft.z3.Symbol;
 import com.microsoft.z3.Z3Exception;
 import com.microsoft.z3.Expr;
 
@@ -89,8 +90,8 @@ public class TheoremProverImpl implements TheoremProver {
                   .withDescription(
                       "Enable Z3 trace FLAGS (comma-separated list)") //
                   .create(), //
-              OptionBuilder.withLongOpt(OPTION_NO_TYPE_CORRECTNESS_CONDITIONS) //
-                  .withDescription("Disable Z3 type-correctness conditions") //
+              OptionBuilder.withLongOpt(OPTION_QBQI) //
+                  .withDescription("Enable Z3 pattern based quantifier instantiation") //
                   .create(), //
               OptionBuilder
                   .withLongOpt(OPTION_QUANT_LIMIT)
@@ -123,7 +124,7 @@ public class TheoremProverImpl implements TheoremProver {
   private static final String OPTION_QUANT_LIMIT = "z3-quant-limit";
   private static final String OPTION_TRACE = "z3-trace";
   private static final String OPTION_DEBUG = "z3-debug";
-  private static final String OPTION_NO_TYPE_CORRECTNESS_CONDITIONS = "z3-notcc";
+  private static final String OPTION_QBQI = "z3-pbqi";
 
   private static final Pattern p = Pattern.compile("(^|\\n|\\r\\n?)");
 
@@ -439,7 +440,9 @@ public class TheoremProverImpl implements TheoremProver {
         solver = ctx.MkSolver();
         Params p = ctx.MkParams();
         for(Entry<String, String> pair : settings.entrySet()) {
-          p.Add(pair.getKey(), Integer.parseInt(pair.getValue()));
+          Symbol key = ctx.MkSymbol(pair.getKey());
+          Symbol val = ctx.MkSymbol(pair.getValue());
+          p.Add(key, val);
         }
         solver.setParameters(p);
       } catch (Z3Exception e) {
@@ -484,7 +487,7 @@ public class TheoremProverImpl implements TheoremProver {
 
   public void setTimeLimit(int second) {
     try {
-      getSettings().put("timeout", Long.toString(second));
+      getSettings().put("timeout", Long.toString(second * 1000));
     } catch (Exception e) {
       throw new TheoremProverException(e);
     }
@@ -514,6 +517,15 @@ public class TheoremProverImpl implements TheoremProver {
     }
   }
   
+  public void enableZ3Ptbi() {
+    try{
+      getSettings().put("mobi", "false");
+      getSettings().put("auto-config", "false");
+    } catch (Exception e) {
+      throw new TheoremProverException(e);
+    }
+  }
+  
   /**
    * Set implementation-specific properties from {@link Preferences}.
    */
@@ -535,6 +547,10 @@ public class TheoremProverImpl implements TheoremProver {
         for( String flag : Preferences.getString(OPTION_DEBUG).split(",") ) {
           enableZ3Debug(flag);
         }
+      }
+      
+      if (Preferences.isSet(OPTION_QBQI)) {
+        enableZ3Ptbi();
       }
     
       /** FIXME: other preferences are not supported in Z3 */
