@@ -104,7 +104,8 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
       /* Rf_avoid(x, x, u) */
       body = applyRfAvoid(xbounds[0], xbounds[0], xbounds[1]);
       ruleExpr = body.asBooleanExpression();
-      BooleanExpression reflex_rule = exprManager.forall(vars, ruleExpr);
+      triggers = ImmutableList.of(body);
+      BooleanExpression reflex_rule = exprManager.forall(vars, ruleExpr, triggers);
       
       rewrite_rulesetBuilder.add(reflex_rule); 
       
@@ -115,9 +116,9 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
       /* Rf_avoid(x, f(x), u) || x = u */
       body = exprManager.or(applyRfAvoid(xbounds[0], _let_0, xbounds[1]),
           xbounds[0].eq(xbounds[1]));
-      triggers = ImmutableList.of(_let_0);
+      triggers = ImmutableList.of(applyRfAvoid(xbounds[0], _let_0, xbounds[1]));
       ruleExpr = body.asBooleanExpression();
-      BooleanExpression step_rule = exprManager.forall(vars, ruleExpr/* , triggers */);
+      BooleanExpression step_rule = exprManager.forall(vars, ruleExpr, triggers);
       
       rewrite_rulesetBuilder.add(step_rule); 
       
@@ -129,9 +130,9 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
       head = exprManager.and(_let_0.eq(xbounds[0]), 
           applyRfAvoid(xbounds[0], xbounds[1], xbounds[1]));
       body = exprManager.eq(xbounds[0], xbounds[1]);
-      triggers = ImmutableList.of(_let_0);
+      triggers = ImmutableList.of(_let_0, applyRfAvoid(xbounds[0], xbounds[1], xbounds[1]));
       ruleExpr = exprManager.implies(head, body);
-      BooleanExpression selfLoop_rule = exprManager.forall(vars, ruleExpr/* , triggers */);
+      BooleanExpression selfLoop_rule = exprManager.forall(vars, ruleExpr, triggers);
       
       rewrite_rulesetBuilder.add(selfLoop_rule);
       
@@ -142,7 +143,8 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
       head = applyRfAvoid(xbounds[0], xbounds[1], xbounds[0]);
       body = exprManager.eq(xbounds[0], xbounds[1]);
       ruleExpr = exprManager.implies(head, body);
-      BooleanExpression sandwich_rule = exprManager.forall(vars, ruleExpr);
+      triggers = ImmutableList.of(applyRfAvoid(xbounds[0], xbounds[1], xbounds[0]));
+      BooleanExpression sandwich_rule = exprManager.forall(vars, ruleExpr, triggers);
       
       rewrite_rulesetBuilder.add(sandwich_rule);
       
@@ -156,7 +158,8 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
       head = applyRfAvoid(xbounds[0], xbounds[1], xbounds[2]);
       body = applyRfAvoid(xbounds[0], xbounds[1], xbounds[1]);
       ruleExpr = exprManager.implies(head, body);
-      BooleanExpression reach_rule = exprManager.forall(vars, ruleExpr);
+      triggers = ImmutableList.of(applyRfAvoid(xbounds[0], xbounds[1], xbounds[2]));
+      BooleanExpression reach_rule = exprManager.forall(vars, ruleExpr/*, triggers*/);
       
       rewrite_rulesetBuilder.add(reach_rule);
       
@@ -171,7 +174,8 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
       body = exprManager.or(applyRfAvoid(xbounds[0], xbounds[2], xbounds[1]),
           applyRfAvoid(xbounds[0], xbounds[1], xbounds[2]));
       ruleExpr = exprManager.implies(head, body);
-      BooleanExpression line1_rule = exprManager.forall(vars, ruleExpr);
+      triggers = ImmutableList.of(applyRfAvoid(xbounds[0], xbounds[1], xbounds[1]));
+      BooleanExpression line1_rule = exprManager.forall(vars, ruleExpr/*, triggers*/);
       
       rewrite_rulesetBuilder.add(line1_rule);
       
@@ -194,7 +198,9 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
           exprManager.and(applyRfAvoid(xbounds[0], xbounds[1], xbounds[4]),
               applyRfAvoid(xbounds[1], xbounds[2], xbounds[4])));
       ruleExpr = exprManager.implies(head, body);
-      BooleanExpression line2_rule = exprManager.forall(vars, ruleExpr);
+      triggers = ImmutableList.of(applyRfAvoid(xbounds[0], xbounds[1], xbounds[3]),
+          applyRfAvoid(xbounds[0], xbounds[2], xbounds[4]));
+      BooleanExpression line2_rule = exprManager.forall(vars, ruleExpr/*, triggers*/);
       
       rewrite_rulesetBuilder.add(line2_rule);      
       
@@ -210,7 +216,9 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
           applyRfAvoid(xbounds[1], xbounds[2], xbounds[3]));
       body = applyRfAvoid(xbounds[0], xbounds[2], xbounds[3]);
       ruleExpr = exprManager.implies(head, body);
-      BooleanExpression trans1_rule = exprManager.forall(vars, ruleExpr);
+      triggers = ImmutableList.of(applyRfAvoid(xbounds[0], xbounds[1], xbounds[3]), 
+          applyRfAvoid(xbounds[1], xbounds[2], xbounds[3]));
+      BooleanExpression trans1_rule = exprManager.forall(vars, ruleExpr, triggers);
       
       rewrite_rulesetBuilder.add(trans1_rule);
       
@@ -227,7 +235,10 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
           applyRfAvoid(xbounds[1], xbounds[2], xbounds[2]));
       body = applyRfAvoid(xbounds[0], xbounds[1], xbounds[3]);
       ruleExpr = exprManager.implies(head, body);
-      BooleanExpression trans2_rule = exprManager.forall(vars, ruleExpr/* , triggers */);
+      triggers = ImmutableList.of(applyRfAvoid(xbounds[0], xbounds[1], xbounds[2]), 
+          applyRfAvoid(xbounds[1], xbounds[3], xbounds[2]),
+          applyRfAvoid(xbounds[1], xbounds[2], xbounds[2]));
+      BooleanExpression trans2_rule = exprManager.forall(vars, ruleExpr, triggers);
       
       rewrite_rulesetBuilder.add(trans2_rule);
       
@@ -237,9 +248,9 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
       _let_0 = applyJoin(xbounds[0], xbounds[1]);
       /* Rf_avoid(x, join(x, y), join(x, y) */
       body = applyRfAvoid(xbounds[0], _let_0, _let_0);
-      triggers = ImmutableList.of(_let_0);
       ruleExpr = body.asBooleanExpression();
-      BooleanExpression join1_rule = exprManager.forall(vars, ruleExpr/* , triggers */);
+      triggers = ImmutableList.of(body);
+      BooleanExpression join1_rule = exprManager.forall(vars, ruleExpr, triggers);
       
       rewrite_rulesetBuilder.add(join1_rule);
       
@@ -254,9 +265,10 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
       head = exprManager.and(applyRfAvoid(xbounds[0], xbounds[2], xbounds[2]),
           applyRfAvoid(xbounds[1], xbounds[2], xbounds[2]));
       body = applyRfAvoid(xbounds[1], _let_0, _let_0);
-      triggers = ImmutableList.of(_let_0);
+      triggers = ImmutableList.of(applyRfAvoid(xbounds[0], xbounds[2], xbounds[2]),
+          applyRfAvoid(xbounds[1], xbounds[2], xbounds[2]));
       ruleExpr = exprManager.implies(head, body);
-      BooleanExpression join2_rule = exprManager.forall(vars, ruleExpr/* , triggers */);
+      BooleanExpression join2_rule = exprManager.forall(vars, ruleExpr, triggers);
       
       rewrite_rulesetBuilder.add(join2_rule);
       
@@ -271,9 +283,10 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
       head = exprManager.and(applyRfAvoid(xbounds[0], xbounds[2], xbounds[2]), 
           applyRfAvoid(xbounds[1], xbounds[2], xbounds[2]));
       body = applyRfAvoid(xbounds[0], _let_0, xbounds[2]);
-      triggers = ImmutableList.of(_let_0);
+      triggers = ImmutableList.of(applyRfAvoid(xbounds[0], xbounds[2], xbounds[2]), 
+          applyRfAvoid(xbounds[1], xbounds[2], xbounds[2]));
       ruleExpr = exprManager.implies(head, body);
-      BooleanExpression join3_rule = exprManager.forall(vars, ruleExpr/* , triggers */);
+      BooleanExpression join3_rule = exprManager.forall(vars, ruleExpr, triggers );
       
       rewrite_rulesetBuilder.add(join3_rule);
       
@@ -286,7 +299,7 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
           _let_0.eq(xbounds[0]));
       triggers = ImmutableList.of(_let_0);
       ruleExpr = body.asBooleanExpression();
-      BooleanExpression join4_rule = exprManager.forall(vars, ruleExpr/*, triggers */);
+      BooleanExpression join4_rule = exprManager.forall(vars, ruleExpr, triggers);
       
       rewrite_rulesetBuilder.add(join4_rule);
       
@@ -298,7 +311,9 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
           applyRfAvoid(xbounds[1], xbounds[0], xbounds[0]));
       body = exprManager.or(applyCycle(xbounds[0]), xbounds[0].eq(xbounds[1]));
       ruleExpr = exprManager.implies(head, body);
-      BooleanExpression cycle1_rule = exprManager.forall(vars, ruleExpr);
+      triggers = ImmutableList.of(applyRfAvoid(xbounds[0], xbounds[1], xbounds[1]),
+          applyRfAvoid(xbounds[1], xbounds[0], xbounds[0]));
+      BooleanExpression cycle1_rule = exprManager.forall(vars, ruleExpr, triggers);
       
       rewrite_rulesetBuilder.add(cycle1_rule);
       
@@ -310,7 +325,9 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
           applyRfAvoid(xbounds[0], xbounds[1], xbounds[1]));
       body = applyRfAvoid(xbounds[1], xbounds[0], xbounds[0]);
       ruleExpr = exprManager.implies(head, body);
-      BooleanExpression cycle2_rule = exprManager.forall(vars, ruleExpr);
+      triggers = ImmutableList.of(applyCycle(xvars[0]), 
+          applyRfAvoid(xbounds[0], xbounds[1], xbounds[1]));
+      BooleanExpression cycle2_rule = exprManager.forall(vars, ruleExpr, triggers);
       
       rewrite_rulesetBuilder.add(cycle2_rule);
       
