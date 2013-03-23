@@ -388,7 +388,7 @@ public class TheoremProverImpl implements TheoremProver {
   public Context getZ3Context() throws Z3Exception {
     if(z3Context == null) {
       System.loadLibrary("z3java");
-      z3Context = new Context(getSettings());
+      z3Context = new Context();
     }
     return z3Context;
   }
@@ -403,13 +403,15 @@ public class TheoremProverImpl implements TheoremProver {
       try {
         Context ctx = getZ3Context();
         solver = ctx.MkSolver();
-        Params p = ctx.MkParams();
-        for(Entry<String, String> pair : settings.entrySet()) {
-          Symbol key = ctx.MkSymbol(pair.getKey());
-          Symbol val = ctx.MkSymbol(pair.getValue());
-          p.Add(key, val);
+        if(settings != null) {
+          Params p = ctx.MkParams();
+          for(Entry<String, String> pair : settings.entrySet()) {
+            Symbol key = ctx.MkSymbol(pair.getKey());
+            Symbol val = ctx.MkSymbol(pair.getValue());
+            p.Add(key, val);
+          }
+          solver.setParameters(p);
         }
-        solver.setParameters(p);
       } catch (Z3Exception e) {
         throw new TheoremProverException(e);
       }
