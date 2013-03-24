@@ -234,11 +234,19 @@ public class LISBQwithRRReachEncoding extends LISBQReachEncoding {
     return getExpressionManager().applyExpr(rf, argExprs).asBooleanExpression();
   }
 
+  @Override
   public Type getEltType() {
     return eltType;
   }
 
+  @Override
   public Expression getNil() {
     return nil;
+  }
+
+  @Override
+  public void instGen(Iterable<Expression> gterms) {
+    // TODO Auto-generated method stub
+    
   }
 }

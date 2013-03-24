@@ -510,10 +510,12 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
     rewrite_rules = ImmutableSet.copyOf(inst_rulesetBuilder.build());
   }
 
+  @Override
   public Type getEltType() {
     return eltType;
   }
-
+  
+  @Override
   public Expression getNil() {
     return nil;
   }
