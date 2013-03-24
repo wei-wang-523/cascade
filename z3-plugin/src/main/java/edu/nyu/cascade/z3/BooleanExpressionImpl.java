@@ -242,7 +242,8 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
     }, vars, body, triggers, noTriggers);
     if(triggers != null) e.setTriggers(triggers);
     if(noTriggers != null) e.setNoTriggers(noTriggers);
-    
+    if(vars != null) e.setBoundVars(vars);
+    e.setBody(body.asBooleanExpression());
     return e;
   }
 
@@ -300,6 +301,8 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
         }, vars, body, triggers, noTriggers);
     if(triggers != null) e.setTriggers(triggers);
     if(noTriggers != null) e.setNoTriggers(noTriggers);
+    if(vars != null) e.setBoundVars(vars);
+    e.setBody(body.asBooleanExpression());
     return e;
   }
 
@@ -493,6 +496,8 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
 
   private List<ImmutableList<? extends Expression>> triggers = Lists.newArrayList();
   private List<ImmutableList<? extends Expression>> noTriggers = Lists.newArrayList();
+  private ImmutableList<? extends Expression> boundVars = null;
+  private BooleanExpression body = null;
 
   private BooleanExpressionImpl(ExpressionImpl e) {
     super(e);
@@ -708,6 +713,27 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
   @Override
   public BooleanExpression forall(Expression firstVar,Expression... otherVars) {
     return forall(Lists.asList(firstVar, otherVars));
+  }
+  
+  @Override
+  public void setBoundVars(Iterable<? extends Expression> vars) {
+    boundVars = ImmutableList.copyOf(vars);
+  }
+
+  @Override
+  public ImmutableList<? extends Expression> getBoundVars() {
+    if(boundVars == null)   return null;
+    return ImmutableList.copyOf(boundVars);
+  }
+
+  @Override
+  public void setBody(BooleanExpression expr) {
+    body = expr;
+  }
+
+  @Override
+  public BooleanExpression getBody() {
+    return body;
   }
 
 }

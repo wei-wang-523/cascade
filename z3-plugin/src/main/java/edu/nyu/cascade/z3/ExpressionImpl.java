@@ -148,6 +148,7 @@ public class ExpressionImpl implements Expression {
           }
         }, args);
     result.setType(funcDeclarator.getRangeType());
+    result.setFuncDecl(funcDeclarator);
     return result;
   }
   
@@ -255,6 +256,8 @@ public class ExpressionImpl implements Expression {
   private TypeImpl type;
   
   private GNode sourceNode;
+  
+  private FunctionDeclarator funcDecl;
   
   /** The name of a variable expression. <code>null</code> if the expression
    * is not a variable. */
@@ -709,6 +712,11 @@ public class ExpressionImpl implements Expression {
   public ImmutableList<? extends ExpressionImpl> getChildren() {
     return children;
   }
+  
+  @Override
+  public FunctionType getFuncDecl() {
+    return funcDecl;
+  }
 
   /**
    * Returns the z3 expression we are using
@@ -886,6 +894,10 @@ public class ExpressionImpl implements Expression {
 
   protected void setType(Type type) {
     this.type = getExpressionManager().importType(type);
+  }
+  
+  protected void setFuncDecl(FunctionDeclarator funcDecl) {
+    this.funcDecl = funcDecl;
   }
 
   @Override

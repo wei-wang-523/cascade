@@ -72,6 +72,20 @@ public abstract class TypeImpl implements Type {
 
   @Override
   public boolean equals(Object obj) {
+    if(obj instanceof FunctionDeclarator) {
+      if(!(this instanceof FunctionDeclarator)) return false;
+      
+      FunctionDeclarator thisF = (FunctionDeclarator) this;
+      FunctionDeclarator thatF = (FunctionDeclarator) obj;
+      
+      if(thisF.getName().equals(thatF.getName()) && 
+          thisF.getArgTypes().equals(thatF.getArgTypes()) &&
+            thisF.getRangeType().equals(thatF.getRangeType()))
+        return true;
+      else
+        return false;
+    }
+    
     if (obj instanceof TypeImpl) {
       if(getZ3Type() != null)
         return getZ3Type().equals(((TypeImpl) obj).getZ3Type());
