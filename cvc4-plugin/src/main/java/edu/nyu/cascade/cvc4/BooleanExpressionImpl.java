@@ -200,7 +200,7 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
   static BooleanExpressionImpl mkExists(ExpressionManagerImpl exprManager,
       Iterable<? extends Expression> vars,
       Expression body) {
-    return new BooleanExpressionImpl(exprManager, Kind.EXISTS,
+    BooleanExpressionImpl e = new BooleanExpressionImpl(exprManager, Kind.EXISTS,
         new BinderConstructionStrategy() {
           @Override
           public Expr apply(ExprManager em, List<Expr> vars, Expr body)
@@ -211,6 +211,9 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
             return em.mkExpr(edu.nyu.acsys.CVC4.Kind.EXISTS, boundVarList, body);
           }
         }, vars, body);
+    if(vars != null) e.setBoundVars(vars);
+    e.setBody(body.asBooleanExpression());
+    return e;
   }
 
   static BooleanExpressionImpl mkFalse(ExpressionManagerImpl exprManager) {
@@ -228,7 +231,7 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
   static BooleanExpressionImpl mkForall(ExpressionManagerImpl exprManager,
       Iterable<? extends Expression> vars,
       Expression body) {
-    return new BooleanExpressionImpl(exprManager, Kind.FORALL,
+    BooleanExpressionImpl e = new BooleanExpressionImpl(exprManager, Kind.FORALL,
         new BinderConstructionStrategy() {
           @Override
           public Expr apply(ExprManager em, List<Expr> vars, Expr body)
@@ -239,6 +242,9 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
             return em.mkExpr(edu.nyu.acsys.CVC4.Kind.FORALL, boundVarList, body);
           }
         }, vars, body);
+    if(vars != null) e.setBoundVars(vars);
+    e.setBody(body.asBooleanExpression());
+    return e;
   }
 
   static BooleanExpressionImpl mkForall(ExpressionManagerImpl exprManager,
@@ -262,7 +268,9 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
             return em.mkExpr(edu.nyu.acsys.CVC4.Kind.FORALL, boundVarList, body, triggersPattern);
           }
         }, vars, body, triggers);
-    e.setTriggers(triggers);
+    if(triggers != null) e.setTriggers(triggers);
+    if(vars != null) e.setBoundVars(vars);
+    e.setBody(body.asBooleanExpression());
     return e;
   }
 
@@ -555,6 +563,8 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
   }
 
   private List<ImmutableList<? extends Expression>> triggers = Lists.newArrayList();
+  private ImmutableList<? extends Expression> boundVars = null;
+  private BooleanExpression body = null;
 
   private BooleanExpressionImpl(ExpressionImpl e) {
     super(e);
@@ -774,6 +784,26 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
   public BooleanExpression forall(Expression firstVar,
       Expression... otherVars) {
     return forall(Lists.asList(firstVar, otherVars));
+  }
+
+  @Override
+  public void setBoundVars(Iterable<? extends Expression> vars) {
+    boundVars = ImmutableList.copyOf(vars);
+  }
+
+  @Override
+  public ImmutableList<? extends Expression> getBoundVars() {
+    return ImmutableList.copyOf(boundVars);
+  }
+
+  @Override
+  public void setBody(BooleanExpression expr) {
+    body = expr;
+  }
+
+  @Override
+  public BooleanExpression getBody() {
+    return body;
   }
 
 }

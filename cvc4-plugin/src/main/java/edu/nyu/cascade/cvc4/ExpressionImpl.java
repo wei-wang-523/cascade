@@ -749,6 +749,12 @@ public class ExpressionImpl implements Expression {
   }
   
   @Override
+  public FunctionType getFuncDecl() {
+    // FIXME: FuncDecl is only for Z3 expression
+    return null;
+  }
+  
+  @Override
   public GNode getNode() {
     return sourceNode;
   }
