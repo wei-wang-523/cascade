@@ -84,7 +84,6 @@ public class Main {
   private static final String OPTION_MARK_AST = "optionMarkAST";
   private static final String OPTION_PEDANTIC = "pedantic";
   private static final String OPTION_INTERNAL_PEDANTIC = "optionPedantic";
-  private static final String OPTION_MEMCELL_SIZE = "mem-cell-size";
   @SuppressWarnings("static-access")
   private static final Options options = new Options() //
       .addOption(OPTION_HELP_SHORT, OPTION_HELP, false, //
@@ -131,7 +130,7 @@ public class Main {
           .withType(Integer.class) //
           .withDescription("Set effort level for the theorem prover to N.") //
           .create()) //
-      .addOption(OptionBuilder.withLongOpt(OPTION_MEMCELL_SIZE) //
+      .addOption(OptionBuilder.withLongOpt(Preferences.OPTION_MEM_CELL_SIZE) //
           .hasArg() //
           .withArgName("N") //
           .withType(Integer.class) //
@@ -165,6 +164,14 @@ public class Main {
               .create()) //
       .addOption(OptionBuilder.withLongOpt(Preferences.OPTION_SIGNED_OPERATION)
               .withDescription("Enable signed numeric operations.")
+              .create()) //
+      .addOption(
+          OptionBuilder.withLongOpt(Preferences.OPTION_PARTIAL_INST) //
+              .withDescription("Enable partial instantiation.") //
+              .create()) //
+      .addOption(
+          OptionBuilder.withLongOpt(Preferences.OPTION_TOTAL_INST) //
+              .withDescription("Enable total instantiation.") //
               .create()) //
       .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_PLUGINS_DIRECTORY) //
@@ -370,8 +377,8 @@ public class Main {
     }
     
     /* Set the size of memory cell to "memCellSize" */
-    if( Preferences.isSet(OPTION_MEMCELL_SIZE) ) {
-      String memCellSizeStr = Preferences.getString(OPTION_MEMCELL_SIZE);
+    if( Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ) {
+      String memCellSizeStr = Preferences.getString(Preferences.OPTION_MEM_CELL_SIZE);
       try {
         memCellSize  = Integer.parseInt(memCellSizeStr);
       } catch( NumberFormatException e ) {
