@@ -97,14 +97,14 @@ public class LoLLiwithRRReachEncoding extends LoLLiReachEncoding {
       rewrite_rulesetBuilder.add(nil_assumption);
       
       /* Create a reflex rule */
-      
+      /*
       vars = ImmutableList.of(x, u); // x, u
-      /* Rf_avoid(x, x, u) */
+       Rf_avoid(x, x, u) 
       body = applyRfAvoid(x, x, u);
       BooleanExpression reflex_rule = exprManager.forall(vars, body);
       
-//      rewrite_rulesetBuilder.add(reflex_rule); 
-      
+      rewrite_rulesetBuilder.add(reflex_rule); 
+      */
       /* Create a step rule */
       
       vars = ImmutableList.of(x, u);
@@ -367,12 +367,21 @@ public class LoLLiwithRRReachEncoding extends LoLLiReachEncoding {
     Preconditions.checkArgument(argExprs.size() == 2);
     return getExpressionManager().applyExpr(join, argExprs);
   }
+  
 
+  @Override
   public Type getEltType() {
     return eltType;
   }
 
+  @Override
   public Expression getNil() {
     return nil;
+  }
+
+  @Override
+  public void instGen(Iterable<Expression> gterms) {
+    // TODO Auto-generated method stub
+    
   }
 }

@@ -46,4 +46,6 @@ public abstract class LoLLiReachEncoding extends AbstractExpressionEncoding {
   public abstract Type getEltType() ;
 
   public abstract Expression getNil() ;
+  
+  public abstract void instGen(Iterable<Expression> gterms) ;
 }

@@ -339,4 +339,24 @@ public class StatePropertyImpl extends StateExpressionImpl implements
       Expression... otherVars) {
     return valueOf(toBooleanExpression().forall(firstVar, otherVars));
   }
+
+  @Override
+  public void setBoundVars(Iterable<? extends Expression> vars) {
+    toBooleanExpression().setBoundVars(vars);  
+  }
+
+  @Override
+  public ImmutableList<? extends Expression> getBoundVars() {
+    return toBooleanExpression().getBoundVars();
+  }
+
+  @Override
+  public void setBody(BooleanExpression expr) {
+    toBooleanExpression().setBody(expr);
+  }
+
+  @Override
+  public BooleanExpression getBody() {
+    return toBooleanExpression().getBody();
+  }
 }

@@ -140,7 +140,7 @@ public interface BooleanExpression extends Expression {
    */
   public BooleanExpression xor(Expression e) ;
 
-  BooleanExpression or(Iterable<? extends Expression> disjuncts) ;
+  public BooleanExpression or(Iterable<? extends Expression> disjuncts) ;
 
   /**
    * Returns a new Boolean expression that is the integer representation of this
@@ -157,4 +157,26 @@ public interface BooleanExpression extends Expression {
    * @return the rational cast
    */
   // public IRationalExpression castToRational();
+  
+  /**
+   * Add bound variables to a quantified expression.  
+   * @param vars
+   */
+  public void setBoundVars(Iterable<? extends Expression> vars) ;
+  
+  /**
+   * Get bound variables from a quantified expression.
+   */
+  public ImmutableList<? extends Expression> getBoundVars() ;
+  
+  /**
+   * Add a body expression to a quantified expression. 
+   * @param expr
+   */
+  public void setBody(BooleanExpression expr) ;
+  
+  /**
+   * Get a body from a quantified expression.
+   */
+  public BooleanExpression getBody() ;
 }

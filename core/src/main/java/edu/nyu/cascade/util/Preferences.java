@@ -48,6 +48,12 @@ public class Preferences {
   
   public static final String OPTION_SIGNED_OPERATION = "signed";
   
+  public static final String OPTION_MEM_CELL_SIZE = "mem-cell-size";
+  
+  public static final String OPTION_PARTIAL_INST = "partialy-inst";
+  
+  public static final String OPTION_TOTAL_INST = "total-inst";
+  
   public static void clearAll() {
     getProperties().clear();
   }

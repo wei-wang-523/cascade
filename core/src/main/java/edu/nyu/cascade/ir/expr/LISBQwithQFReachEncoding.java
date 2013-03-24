@@ -90,10 +90,10 @@ public class LISBQwithQFReachEncoding extends LISBQReachEncoding {
       BooleanExpression head, body;
       
       /* Create a reflexive rule */
-      vars = ImmutableList.of(xvars[0]);
-      body = applyRf(xbounds[0], xbounds[0], xbounds[0]);
-      triggers = ImmutableList.of(applyF(xbounds[0]));
-      BooleanExpression reflex_rule = exprManager.forall(vars, body, triggers);
+//      vars = ImmutableList.of(xvars[0]);
+//      body = applyRf(xbounds[0], xbounds[0], xbounds[0]);
+//      triggers = ImmutableList.of(applyF(xbounds[0]));
+//      BooleanExpression reflex_rule = exprManager.forall(vars, body, triggers);
       
 //      rewrite_rulesetBuilder.add(reflex_rule);
             

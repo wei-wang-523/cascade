@@ -3,23 +3,29 @@ package edu.nyu.cascade.ir.expr;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.List;
+import java.util.Map;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.inject.internal.Maps;
 
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.Preferences;
 
 public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
 
@@ -31,7 +37,7 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
 
   private final Type eltType;
   
-  private final ImmutableSet<BooleanExpression> rewrite_rules;
+  private ImmutableSet<BooleanExpression> rewrite_rules;
   
   /** The null variable in elt */
   private final Expression nil;
@@ -47,6 +53,8 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
   
   /** The (elt, elt) -> elt mapping */
   private final FunctionType join;
+  
+  private final Map<Expression, Expression> boundVarMap;
   
   public static final int DEFAULT_WORD_SIZE = 8;
   
@@ -77,7 +85,7 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
           .builder();
       
       /* Create bound vars */
-      
+      boundVarMap = Maps.newHashMap();
       int size = 5;
       VariableExpression[] xvars = new VariableExpression[size];
       Expression[] xbounds = new Expression[size];
@@ -85,6 +93,7 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
       for(int i = 0; i < size; i++) {
         xvars[i] = exprManager.variable("x"+ i, eltType, false);
         xbounds[i] = exprManager.boundExpression(i, eltType);
+        boundVarMap.put(xbounds[i], xvars[i]);
       }
       
       /* Create a f(null)=null assumption */
@@ -102,7 +111,7 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
       
       vars = ImmutableList.of(xvars[0], xvars[1]); // x, u
       /* Rf_avoid(x, x, u) */
-      body = applyRfAvoid(xbounds[0], xbounds[0], xbounds[1]);
+      body = applyRfAvoid(xbounds[1], xbounds[1], xbounds[0]);
       ruleExpr = body.asBooleanExpression();
       triggers = ImmutableList.of(body);
       BooleanExpression reflex_rule = exprManager.forall(vars, ruleExpr, triggers);
@@ -112,11 +121,11 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
       /* Create a step rule */
       
       vars = ImmutableList.of(xvars[0], xvars[1]); // x, u
-      _let_0 = applyF(xbounds[0]);
+      _let_0 = applyF(xbounds[1]);
       /* Rf_avoid(x, f(x), u) || x = u */
-      body = exprManager.or(applyRfAvoid(xbounds[0], _let_0, xbounds[1]),
-          xbounds[0].eq(xbounds[1]));
-      triggers = ImmutableList.of(applyRfAvoid(xbounds[0], _let_0, xbounds[1]));
+      body = exprManager.or(applyRfAvoid(xbounds[1], _let_0, xbounds[0]),
+          xbounds[1].eq(xbounds[0]));
+      triggers = ImmutableList.of(applyRfAvoid(xbounds[1], _let_0, xbounds[0]));
       ruleExpr = body.asBooleanExpression();
       BooleanExpression step_rule = exprManager.forall(vars, ruleExpr, triggers);
       
@@ -125,12 +134,12 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
       /* Create a selfLoop rule */
       
       vars = ImmutableList.of(xvars[0], xvars[1]); // x, y
-      _let_0 = applyF(xbounds[0]); // f(x)
+      _let_0 = applyF(xbounds[1]); // f(x)
       /* f(x) = x && Rf_avoid(x, y, y) => x = y */
-      head = exprManager.and(_let_0.eq(xbounds[0]), 
-          applyRfAvoid(xbounds[0], xbounds[1], xbounds[1]));
-      body = exprManager.eq(xbounds[0], xbounds[1]);
-      triggers = ImmutableList.of(_let_0, applyRfAvoid(xbounds[0], xbounds[1], xbounds[1]));
+      head = exprManager.and(_let_0.eq(xbounds[1]), 
+          applyRfAvoid(xbounds[1], xbounds[0], xbounds[0]));
+      body = exprManager.eq(xbounds[1], xbounds[0]);
+      triggers = ImmutableList.of(_let_0, applyRfAvoid(xbounds[1], xbounds[0], xbounds[0]));
       ruleExpr = exprManager.implies(head, body);
       BooleanExpression selfLoop_rule = exprManager.forall(vars, ruleExpr, triggers);
       
@@ -399,6 +408,106 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
     ImmutableList<Expression> argExprs = ImmutableList.of(args);
     Preconditions.checkArgument(argExprs.size() == 2);
     return getExpressionManager().applyExpr(join, argExprs);
+  }
+  
+  /**
+   * Check if <code>expr</code> contains applyF sub-expression.
+   */
+  private ImmutableSet<? extends Expression> checkApplyF(Expression expr) {
+    ImmutableSet.Builder<Expression> instCand_builder = ImmutableSet.builder();
+    
+    if(expr.getArity() == 0)    return instCand_builder.build();   
+    if(expr.getKind().equals(Kind.APPLY)) 
+      if(f.equals(expr.getFuncDecl()))
+        return instCand_builder.add(expr.getChild(0)).build();
+  
+    for(Expression child : expr.getChildren())
+      instCand_builder.addAll(checkApplyF(child));
+    
+    return instCand_builder.build();
+  }
+  
+  /**
+   * Collect instantiation <code>ground_terms</code> set with given <code>size</code>
+   */
+  private List<ImmutableList<Expression>> collectInstTerms(int size, 
+      Iterable<? extends Expression> ground_terms) {
+    List<ImmutableList<Expression>> res = Lists.newLinkedList();
+    if(size == 1) {
+      for(Expression term : ground_terms)   res.add(ImmutableList.of(term));
+    } else {
+      List<ImmutableList<Expression>> prev_res = collectInstTerms(size-1, ground_terms);
+      for(ImmutableList<Expression> prev_list : prev_res) {
+        for(Expression term : ground_terms) {
+          ImmutableList.Builder<Expression> curr_list_buider = ImmutableList.builder();         
+          res.add(curr_list_buider.add(term).addAll(prev_list).build());
+        }
+      }
+    }
+    return res;
+  }
+  
+  /**
+   * Instantiate the <code>bound_vars</code> to <code>ground_terms</code> in <code>expr</code>
+   */
+  private ImmutableList<? extends Expression> instantiate(Expression expr, 
+      Iterable<? extends Expression> bound_vars, 
+      Iterable<? extends Expression> ground_terms) {
+    ImmutableList.Builder<Expression> builder = ImmutableList.builder();
+    List<ImmutableList<Expression>> inst_terms_list = collectInstTerms(
+        Iterables.size(bound_vars), ground_terms);
+    for(ImmutableList<Expression> instTerms : inst_terms_list)
+      builder.add(expr.subst(bound_vars, instTerms));
+    return builder.build();
+  }
+  
+  /**
+   * Instantiate partially bound variables in rewrite rules with <code>gterms</code>
+   */
+  @Override
+  public void instGen(Iterable<Expression> gterms) {
+    ImmutableSet.Builder<BooleanExpression> inst_rulesetBuilder = ImmutableSet
+        .builder();
+    for(BooleanExpression rule : rewrite_rules) {
+      BooleanExpression body = rule.getBody();
+      if(body != null) {
+        ImmutableSet<? extends Expression> instCand = null;
+        if(Preferences.isSet(Preferences.OPTION_PARTIAL_INST)) {          
+          instCand = checkApplyF(body); // check if body contains applyF(x)
+        } else { // TOTOALLY_INST
+          ImmutableSet.Builder<Expression> instCand_builder = ImmutableSet.builder();
+          for(Expression key : boundVarMap.keySet()) {
+            Expression var = boundVarMap.get(key);
+            if(rule.getBoundVars().contains(var) && key.getType().equals(eltType))  
+              instCand_builder.add(key);
+          }
+          instCand = instCand_builder.build();
+        }
+        if(!instCand.isEmpty()) {
+          ImmutableList<? extends Expression> instBodyList = instantiate(body, instCand, gterms);
+            
+          List<? extends Expression> boundVars = Lists.newArrayList(rule.getBoundVars());
+          for(Expression cand : instCand)   boundVars.remove(boundVarMap.get(cand));
+          
+          /* List<Iterable<? extends Expression>> instTriggerList = Lists.newArrayList();
+            Iterable<? extends Expression> triggers = rule.getTriggers().get(0); 
+            for(Expression trigger : triggers){
+              List<? extends Expression> instTrigger = instantiate(trigger, instCand, gterms);
+              instTriggerList.add(instTrigger);
+            }          
+            Iterator<Iterable<? extends Expression>> iter = instTriggerList.iterator();
+           */
+          for(Expression instBody : instBodyList) {
+            BooleanExpression inst_rule = boundVars.isEmpty() ? instBody.asBooleanExpression() :
+              getExpressionManager().forall(boundVars, instBody/*, iter.next()*/);
+            inst_rulesetBuilder.add(inst_rule);
+          }
+          continue;
+        }
+      }
+      inst_rulesetBuilder.add(rule); 
+    }
+    rewrite_rules = ImmutableSet.copyOf(inst_rulesetBuilder.build());
   }
 
   public Type getEltType() {

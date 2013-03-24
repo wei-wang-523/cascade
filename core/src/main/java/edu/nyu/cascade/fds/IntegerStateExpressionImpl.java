@@ -18,6 +18,7 @@ import edu.nyu.cascade.prover.RationalVariableExpression;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ComparableType;
+import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.IntegerType;
 
 public class IntegerStateExpressionImpl implements IntegerStateExpression {
@@ -131,6 +132,11 @@ public class IntegerStateExpressionImpl implements IntegerStateExpression {
   @Override
   public IntegerType getType() {
     return getExpressionManager().integerType();
+  }
+  
+  @Override
+  public FunctionType getFuncDecl() {
+    return expr.getFuncDecl();
   }
 
   @Override

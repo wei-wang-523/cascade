@@ -155,9 +155,6 @@ public abstract class AbstractPathEncoding implements
 
   @Override
   public void printCounterExample(PrintStream out, Iterable<?> counterExample) {
-    // ITheoremProver tp =
-    // getExpressionFactory().getExpressionManager().getTheoremProver();
-    // Set<?> counterExample = tp.getCounterExample();
     out.println("Assertions that invalidate the query:");
     for (Object o : counterExample) {
       out.println("ASSERT " + o + ";");

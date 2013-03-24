@@ -11,6 +11,7 @@ import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.RecursionStrategies;
 import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
 
@@ -151,8 +152,12 @@ public class LoLLiReachMemoryModel extends ReachMemoryModel {
   public BooleanExpression getReachAssumptions(Expression state) {
     Preconditions.checkArgument( state.getType().equals( getStateType() ));
     final ExpressionManager exprManager = getExpressionManager();
-    final ExpressionEncoding encoding = getExpressionEncoding();
+    final LoLLiReachEncoding encoding = (LoLLiReachEncoding) getExpressionEncoding();
     final ArrayExpression reachArray = state.getChild(2).asArray();
+    
+    if(Preferences.isSet(Preferences.OPTION_PARTIAL_INST) 
+        || Preferences.isSet(Preferences.OPTION_TOTAL_INST))
+      encoding.instGen(heapRegions);
     
     /* Apply unaryRecursionOverList instead of go through a list
      * same job as above

@@ -4,6 +4,7 @@ import java.util.List;
 
 import xtc.tree.GNode;
 
+import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.Type;
 
 /**
@@ -313,6 +314,10 @@ public interface Expression {
   /** Returns the node of this expression.
    */
   GNode getNode();
+  
+  /** Returns the function declarator of this expression if its kind is APPLY
+   */
+  FunctionType getFuncDecl();
   
   /** Set the node of this expression.
    */

@@ -21,6 +21,7 @@ import edu.nyu.cascade.prover.RationalExpression;
 import edu.nyu.cascade.prover.RationalVariableExpression;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.VariableExpression;
+import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.Type;
 
 public class StateExpressionImpl implements StateExpression {
@@ -160,6 +161,11 @@ public class StateExpressionImpl implements StateExpression {
   @Override
   public Type getType() {
     return expression.getType();
+  }
+  
+  @Override
+  public FunctionType getFuncDecl() {
+    return expression.getFuncDecl();
   }
 
 /*  @SuppressWarnings("unchecked")
