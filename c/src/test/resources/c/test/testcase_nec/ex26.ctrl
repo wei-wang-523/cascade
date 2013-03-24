@@ -3,7 +3,7 @@
   <run>
     <startPosition fileId="1" line="14" />
     <wayPoint fileId="1" line="16" >
-      <loop iterTimes="10" >
+      <loop iterTimes="100" >
 	<wayPoint fileId="1" line="17" >
 	  <function funcName="g" >
 	    <wayPoint fileId="1" line="8" />
@@ -17,7 +17,7 @@
       </loop>
     </wayPoint>
     <wayPoint fileId="1" line="22" >
-      <loop iterTimes="10" >
+      <loop iterTimes="100" >
 	<wayPoint fileId="1" line="23" >
 	  <function funcName="g" >
 	    <wayPoint fileId="1" line="10" >

@@ -3,7 +3,7 @@
   <run>
     <startPosition fileId="1" line="11" />  
     <wayPoint fileId="1" line="16" >
-      <loop iterTimes="10" />
+      <loop iterTimes="3" />
     </wayPoint>
     <endPosition fileId="1" line="19" >
       <command>

@@ -14,7 +14,7 @@
           </command>
         </wayPoint>
       </function>
-      <loop iterTimes="2" />
+      <loop iterTimes="10" />
     </wayPoint>
         <wayPoint fileId="1" line="12" >
       <function funcName="foo" >
@@ -28,7 +28,7 @@
           </command>
         </wayPoint>
       </function>
-      <loop iterTimes="2" />
+      <loop iterTimes="10" />
     </wayPoint>
     <endPosition fileId="1" line="11" />
   </run>

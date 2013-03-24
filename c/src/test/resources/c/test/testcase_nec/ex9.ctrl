@@ -12,7 +12,7 @@
     <wayPoint fileId="1" line="35" >
       <function funcName="test" >
       	<wayPoint fileId="1" line="8" >
-      	  <loop iterTimes="5" >
+      	  <loop iterTimes="3" >
       	    <wayPoint fileId="1" line="9" >
       	      <command>
 		<cascadeFunction> cascade_check </cascadeFunction>

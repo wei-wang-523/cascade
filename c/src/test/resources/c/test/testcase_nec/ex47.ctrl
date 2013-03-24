@@ -1,0 +1,25 @@
+<controlFile>
+  <sourceFile name="ex47.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="6" />
+    <wayPoint fileId="1" line="12" >
+      <command>
+    	<cascadeFunction> cascade_assume </cascadeFunction>
+    	<argument><![CDATA[
+	h > 0 && w > 0 && k > 0 && k < h*w
+	]]>
+	</argument>
+      </command>
+    </wayPoint>
+    <wayPoint fileId="1" line="18" >
+      <loop iterTimes="3" />
+    </wayPoint>
+    <wayPoint fileId="1" line="22" >
+      <command>
+    	<cascadeFunction> cascade_check </cascadeFunction>
+    	<argument> array[k] == lut[k/w][k%w] </argument>
+      </command>
+    </wayPoint>
+    <endPosition fileId="1" line="27" />
+  </run>
+</controlFile>

@@ -7,7 +7,7 @@ int main(){
 
 
    while(i){ //while(__NONDET__()
-     
+      i--; // no havoc statement supported here, will fixed later
       if (len==4)
          len =0;
       

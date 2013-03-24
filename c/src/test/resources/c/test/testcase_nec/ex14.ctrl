@@ -3,7 +3,7 @@
   <run>
     <startPosition fileId="1" line="3" />
     <wayPoint fileId="1" line="7" >
-      <loop iterTimes="5" >
+      <loop iterTimes="10" >
 	<wayPoint fileId="1" line="9">
 	  <command>
 	    <cascadeFunction> cascade_check </cascadeFunction>

@@ -23,7 +23,7 @@
       <command>
 	<cascadeFunction> cascade_assume </cascadeFunction>
 	<argument><![CDATA[
-	addr->len == 2
+	addr->len == 3
 	]]>
 	</argument>
       </command>
@@ -31,7 +31,7 @@
     <wayPoint fileId="1" line="23">
       <function funcName="f1" >
         <wayPoint fileId="1" line="39" >
-          <loop iterTimes="2" >
+          <loop iterTimes="3" >
             <wayPoint fileId="1" line="40" >
               <command>
 		<cascadeFunction> cascade_check </cascadeFunction>

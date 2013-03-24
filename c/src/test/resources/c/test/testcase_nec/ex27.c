@@ -28,13 +28,13 @@ int foo(int * a, int * b, int n){
 
 #define NULL (int *) 0
 int main(){
-  int a[10],b[20]; //a[100], b[200]
+  int a[100],b[200];
 
    foo(NULL,a,100);
    foo(a,NULL,200);
-   foo(a,b,5); //foo(a, b, 50)
-   foo(a,b,2); // foo(a,b,20);
-   foo(a,b,20); // foo(a,b,200);
+   foo(a,b,50);
+   foo(a,b,20);
+   foo(a,b,200);
    return 2;
 }
 

@@ -5,7 +5,7 @@
       <command>
       	<cascadeFunction> cascade_assume </cascadeFunction>
       	<argument><![CDATA[
-      	n == 8
+      	n == 3
       	]]>
       	</argument>
       </command>
@@ -14,7 +14,7 @@
     <wayPoint fileId="1" line="31" >
       <function funcName="test" >
       	<wayPoint fileId="1" line="8" >
-      	  <loop iterTimes="8" >
+      	  <loop iterTimes="3" >
             <wayPoint fileId="1" line="10" >
 	      <command>
 		<cascadeFunction> cascade_check </cascadeFunction>

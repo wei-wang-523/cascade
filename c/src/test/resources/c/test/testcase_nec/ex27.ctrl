@@ -25,21 +25,21 @@
     <wayPoint fileId="1" line="35" >
       <function funcName="foo" >
 	<wayPoint fileId="1" line="21" >
-	  <loop iterTimes="5" />
+	  <loop iterTimes="50" />
 	</wayPoint>
       </function>
     </wayPoint>
     <wayPoint fileId="1" line="36" >
       <function funcName="foo" >
 	<wayPoint fileId="1" line="21" >
-	  <loop iterTimes="2" />
+	  <loop iterTimes="20" />
 	</wayPoint>
       </function>
     </wayPoint>
     <wayPoint fileId="1" line="37" >
       <function funcName="foo" >
 	<wayPoint fileId="1" line="21" >
-	  <loop iterTimes="20" >
+	  <loop iterTimes="200" >
 	    <wayPoint fileId="1" line="22" >
 	      <function funcName="copy" >
 		<wayPoint fileId="1" line="8" >

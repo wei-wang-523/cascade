@@ -2,9 +2,9 @@
   <sourceFile name="ex20.c" id="1" />
   <run>
     <startPosition fileId="1" line="3" />
-    <wayPoint fileId="1" line="8" />
+    <wayPoint fileId="1" line="10" />
     <wayPoint fileId="1" line="15" >
-      <loop iterTimes="1" />
+      <loop iterTimes="1024" />
     </wayPoint>
     <wayPoint fileId="1" line="21" >
       <command>

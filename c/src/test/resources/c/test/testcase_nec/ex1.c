@@ -1,4 +1,4 @@
-#define N 20 // (1<<10)
+#define N 6 // (1<<10)
 int A[N] ;
 int B[N/2] ;
 

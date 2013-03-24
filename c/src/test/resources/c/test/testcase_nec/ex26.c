@@ -1,7 +1,7 @@
 
 int foo(int x);
-int a[10]; //a[100]
-int b[20]; //b[200]
+int a[100];
+int b[200];
 
 void g(int * x, int y){
    if (x == a)
@@ -13,15 +13,15 @@ void g(int * x, int y){
 
 int main(){
    int i,j;
-   for(i=0; i < 10; ++i){ // i < 100
-     g(a,i); //a[i] = 0
-     g(b,i); //b[2i] = 0 
-     foo(i); //?
+   for(i=0; i < 100; ++i){
+     g(a,i);
+     g(b,i);
+     foo(i);
    }
 
-   for(j=10;j < 20; ++j){ // j = 100; j < 200
-     g(b,j); //b[2j] = 0
-     foo(j); //?
+   for(j=100;j < 200; ++j){
+     g(b,j);
+     foo(j);
    }
 
    return 1;

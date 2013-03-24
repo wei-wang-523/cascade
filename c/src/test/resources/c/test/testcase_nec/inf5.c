@@ -47,8 +47,8 @@ int main(int f){
   }
 
   if (comf_level >= 0 && comf_level <= 20){
-	  ASSERT(f >= 50 );
-	  ASSERT(f <= 80);
+    ASSERT(f >= 50 );
+    ASSERT(f <= 80);
   }
 
   return 1;

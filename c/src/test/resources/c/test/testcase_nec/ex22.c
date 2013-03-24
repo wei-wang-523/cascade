@@ -33,8 +33,8 @@ int main(){
 
    foo(NULL,a,100);	
    foo(a,NULL,200);
-   foo(a,b,5);
-   foo(a,b,2);
+   foo(a,b,50);
+   foo(a,b,20);
    return 2;
 }
 

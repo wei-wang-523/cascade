@@ -1,0 +1,34 @@
+<controlFile>
+  <sourceFile name="ex32.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="19" />
+    <wayPoint fileId="1" line="21" >
+      <function funcName="no" >
+	<wayPoint fileId="1" line="16" />
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="22" >
+      <function funcName="make_null" >
+	<wayPoint fileId="1" line="7" >
+	  <loop iterTimes="1000" />
+	</wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="23" >
+      <function funcName="make_null" >
+	<wayPoint fileId="1" line="7" >
+	  <loop iterTimes="1000" />
+	</wayPoint>
+      </function>
+    </wayPoint>
+    <endPosition fileId="1" line="25" >
+      <command>
+	<cascadeFunction>cascade_check</cascadeFunction>
+	<argument><![CDATA[
+	hoo.x[0] == 0
+	]]>
+	</argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

@@ -5,7 +5,7 @@
       <command>
     	<cascadeFunction> cascade_assume </cascadeFunction>
     	<argument><![CDATA[
-	h == 3
+	h == 2 && w == 1
 	]]>
 	</argument>
       </command>
@@ -26,7 +26,7 @@
     </wayPoint>
     
     <wayPoint fileId="1" line="22" >
-      <loop iterTimes="3" />
+      <loop iterTimes="2" />
     </wayPoint>
     
     <wayPoint fileId="1" line="25" >

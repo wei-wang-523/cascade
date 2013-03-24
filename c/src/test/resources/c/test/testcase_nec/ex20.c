@@ -3,8 +3,8 @@ int b;
 int main(){
    int i,n,j;
    int a[1025];
-   int nondet;
-   if(nondet) { // if (__NONDET__()){
+   int k;
+   if (k){ // __NONDET__()
       n=0;
    } else {
       n=1023;
@@ -28,6 +28,3 @@ int main(){
    return 1;
   
 }
-
-// --mem-cell-size 11
-// Loc 6, Loc 7 -- declare int k to simulate __NONDET__() 

@@ -40,7 +40,7 @@
           </function>
         </wayPoint>
         <wayPoint fileId="1" line="22" >
-          <loop iterTimes="5" />
+          <loop iterTimes="50" />
         </wayPoint>
       </function>
     </wayPoint>
@@ -57,7 +57,7 @@
           </function>
         </wayPoint>
         <wayPoint fileId="1" line="22" >
-          <loop iterTimes="2" />
+          <loop iterTimes="20" />
         </wayPoint>
       </function>
     </wayPoint>
@@ -65,7 +65,7 @@
       <command>
 	<cascadeFunction> cascade_check </cascadeFunction>
 	<argument><![CDATA[
-	1==1
+	a[50]==b[50]
 	]]>
 	</argument>
       </command>
