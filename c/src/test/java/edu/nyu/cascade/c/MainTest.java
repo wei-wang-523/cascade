@@ -33,8 +33,8 @@ public class MainTest {
       "test");
   private static final File mini_programs_location = new File(programs_test_location,
       "minicase_bug");
-  private static final File nec_programs_location = new File(programs_test_location,
-      "testcase_nec");
+//  private static final File nec_programs_location = new File(programs_test_location,
+//      "testcase_nec");
   private static final FilenameFilter cFileFilter = new FilenameFilter() {
     public boolean accept(File dir, String name) {
       return name.endsWith(".c");
@@ -161,8 +161,8 @@ public class MainTest {
 	parserTest("--dry-run"), false);
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, 
         parserTest("--dry-run"), false);
-    TestUtils.checkDirectory(nec_programs_location, ctrlFileFilter, 
-        parserTest("--dry-run"), false);
+//    TestUtils.checkDirectory(nec_programs_location, ctrlFileFilter, 
+//        parserTest("--dry-run"), false);
   }
 
   /** FIXME: This is really a test for tp-tp */
