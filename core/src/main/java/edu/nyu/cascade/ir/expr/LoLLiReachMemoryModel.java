@@ -1,6 +1,9 @@
 package edu.nyu.cascade.ir.expr;
 
+import java.util.Collections;
+
 import com.google.common.base.Preconditions;
+import com.google.inject.internal.Iterables;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.ArrayVariableExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -156,8 +159,11 @@ public class LoLLiReachMemoryModel extends ReachMemoryModel {
     final ArrayExpression reachArray = state.getChild(2).asArray();
     
     if(Preferences.isSet(Preferences.OPTION_PARTIAL_INST) 
-        || Preferences.isSet(Preferences.OPTION_TOTAL_INST))
-      encoding.instGen(heapRegions);
+        || Preferences.isSet(Preferences.OPTION_TOTAL_INST)) {
+      Iterable<Expression> ground_terms = Iterables.concat(heapRegions, 
+          Collections.singletonList(nullPtr));
+      encoding.instGen(ground_terms);
+    }
     
     /* Apply unaryRecursionOverList instead of go through a list
      * same job as above

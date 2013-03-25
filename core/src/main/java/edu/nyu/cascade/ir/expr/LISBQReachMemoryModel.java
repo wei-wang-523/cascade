@@ -1,6 +1,10 @@
 package edu.nyu.cascade.ir.expr;
 
+import java.util.Collections;
+
 import com.google.common.base.Preconditions;
+import com.google.inject.internal.Iterables;
+
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.ArrayVariableExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -12,6 +16,7 @@ import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 
+import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.RecursionStrategies;
 import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
 
@@ -166,8 +171,15 @@ public class LISBQReachMemoryModel extends ReachMemoryModel {
   public BooleanExpression getReachAssumptions(Expression state) {
     Preconditions.checkArgument( state.getType().equals( getStateType() ));
     final ExpressionManager exprManager = getExpressionManager();
-    final ExpressionEncoding encoding = getExpressionEncoding();
+    final LISBQReachEncoding encoding = (LISBQReachEncoding) getExpressionEncoding();
     final ArrayExpression reachArray = state.getChild(2).asArray();
+    
+    if(Preferences.isSet(Preferences.OPTION_PARTIAL_INST) 
+        || Preferences.isSet(Preferences.OPTION_TOTAL_INST)) {
+      Iterable<Expression> ground_terms = Iterables.concat(heapRegions, 
+          Collections.singletonList(nullPtr));
+      encoding.instGen(ground_terms);
+    }
     
     /* For each pair (locVar_a, locVar_b) in reachArray 
      * f(a) = b && dist(a) = dist(b) + 1 
