@@ -1687,7 +1687,7 @@ public class CfgBuilder extends Visitor {
     Guard elseBranch = ifBranch.negate();
 
     BasicBlock entryBlock = currentCfg.newLoopBlock(node.getLocation(), symbolTable.getCurrentScope());
-    BasicBlock bodyBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+    BasicBlock bodyBlock = currentCfg.newBlock(symbolTable.getScope(body));
     BasicBlock exitBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
 
     pushScope(entryBlock, exitBlock);

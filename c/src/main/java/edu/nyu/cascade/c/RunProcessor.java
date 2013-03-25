@@ -134,7 +134,10 @@ final class PathEncoder {
       if (!runIsValid) {
         if ( result.isInvalid() ) {
           if( Preferences.isSet(Preferences.OPTION_COUNTER_EXAMPLE) )
-            IOUtils.out().println("\nCounter-example:\n" + result.getCounterExample());
+            if(result.getCounterExample().isEmpty())
+              IOUtils.out().println("\nCounter-example:\n" + result.getUnknown_reason());
+            else
+              IOUtils.out().println("\nCounter-example:\n" + result.getCounterExample());
         } else { // result.isUnknown()
           IOUtils.out().println("Unkown: " + result.getUnknown_reason());
         }
@@ -1044,13 +1047,12 @@ class RunProcessor {
         if (block == null)      break;
         IOUtils.debug().pln("<wayPoint> " + pos.toString()).flush();
         block = buildPathToPosition(cfg, block, pos, tmpPath);
-        if(pos.getInvariant() != null) {
-          Scope currScope = symbolTable.getCurrentScope();
-          symbolTable.setScope(block.getScope());
+        Scope currScope = symbolTable.getCurrentScope();
+        symbolTable.setScope(block.getScope());
+        if(pos.getInvariant() != null)
           tmpPath.addAll(processInvariant(cfg, block, pos, symbolTable));
-          symbolTable.setScope(currScope);
-        }
         processPosition(pos, symbolTable, tmpPath);
+        symbolTable.setScope(currScope);
         addTmpPathToPath(path, tmpPath, symbolTable);
       }
       
