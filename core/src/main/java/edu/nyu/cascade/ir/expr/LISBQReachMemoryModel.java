@@ -111,12 +111,12 @@ public class LISBQReachMemoryModel extends ReachMemoryModel {
     
     Expression memory = state.getChild(0).asArray().update(ptr, locVar);
     Expression regionSize = state.getChild(1).asArray().update(locVar, size); 
-    Expression reachArray = state.getChild(2).asArray().update(locVar, locVar);
+//    Expression reachArray = state.getChild(2).asArray().update(locVar, locVar);
         
     return exprManager.tuple(getStateType(),
         memory, 
         regionSize,
-        reachArray);
+        state.getChild(2));
   }
   
   @Override
@@ -161,7 +161,7 @@ public class LISBQReachMemoryModel extends ReachMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
     Expression nil = encoding.getNil();
     Type eltType = encoding.getEltType();
-    Expression x_var = exprManager.variable("x", eltType, true);
+    Expression x_var = exprManager.boundVariable("x", eltType, true);
     BooleanExpression res = exprManager.implies(rootExpr.neq(nil), 
         exprManager.forall(x_var, rootExpr.neq(encoding.applyF(x_var))));
     return res;
