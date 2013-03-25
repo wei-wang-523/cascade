@@ -163,6 +163,7 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
     }
     List<IRStatement> nextStmts = statements.subList(i, statements.size());
     BasicBlock next = new BasicBlock(type, nextStmts);
+    next.setScope(getScope());
     nextStmts.clear(); // removes the sublist from this.statements
     updateLocations();
     return next;
@@ -179,6 +180,7 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
     }
     List<IRStatement> nextStmts = statements.subList(i, statements.size());
     BasicBlock next = new BasicBlock(type, nextStmts);
+    next.setScope(getScope());
     nextStmts.clear(); // removes the sublist from this.statements
     updateLocations();
     return next;
