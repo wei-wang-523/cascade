@@ -50,7 +50,7 @@ public class Preferences {
   
   public static final String OPTION_MEM_CELL_SIZE = "mem-cell-size";
   
-  public static final String OPTION_PARTIAL_INST = "partialy-inst";
+  public static final String OPTION_PARTIAL_INST = "partial-inst";
   
   public static final String OPTION_TOTAL_INST = "total-inst";
   
