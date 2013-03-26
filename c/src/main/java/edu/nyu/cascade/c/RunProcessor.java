@@ -1127,14 +1127,20 @@ class RunProcessor {
       throw new RunProcessorException("Function ended before end of run.");
     }
     if (end == null) {
-      buildPathToBlock(cfg, block, cfg.getExit(), tmpPath);
+      IRBasicBlock endBlock = buildPathToBlock(cfg, block, cfg.getExit(), tmpPath);
       IOUtils.debug().pln("<endPosition> Null").flush();
+      Scope currScope = symbolTable.getCurrentScope();
+      if(endBlock.getScope() != null) symbolTable.setScope(endBlock.getScope());
       addTmpPathToPath(path, tmpPath, symbolTable);
+      symbolTable.setScope(currScope);
     } else {
-      buildPathToPosition(cfg, block, end, tmpPath);
+      IRBasicBlock endBlock = buildPathToPosition(cfg, block, end, tmpPath);
       IOUtils.debug().pln("<endPosition> " + end.toString()).flush();
+      Scope currScope = symbolTable.getCurrentScope();
+      if(endBlock.getScope() != null) symbolTable.setScope(endBlock.getScope());
       processPosition((Position)end, symbolTable, tmpPath);
       addTmpPathToPath(path, tmpPath, symbolTable);
+      symbolTable.setScope(currScope);
     }
     
     symbolTable.setScope(oldScope);
