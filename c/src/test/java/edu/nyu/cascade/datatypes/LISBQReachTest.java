@@ -5,10 +5,10 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
 
-import edu.nyu.cascade.ir.expr.LISBQReachEncoding;
 import edu.nyu.cascade.ir.expr.LISBQwithQFReachEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.ir.expr.LISBQwithRRReachEncoding;
+import edu.nyu.cascade.ir.expr.ReachEncoding;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -20,7 +20,7 @@ import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
 
 public class LISBQReachTest {
-  private LISBQReachEncoding encoding;
+  private ReachEncoding encoding;
   private TheoremProver theoremProver;
   private ExpressionManager exprManager;
 

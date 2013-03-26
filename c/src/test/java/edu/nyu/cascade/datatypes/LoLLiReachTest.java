@@ -10,10 +10,10 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import edu.nyu.cascade.ir.expr.LoLLiReachEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.ir.expr.LoLLiwithQFReachEncoding;
 import edu.nyu.cascade.ir.expr.LoLLiwithRRReachEncoding;
+import edu.nyu.cascade.ir.expr.ReachEncoding;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -25,7 +25,7 @@ import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
 
 public class LoLLiReachTest {
-  private LoLLiReachEncoding encoding;
+  private ReachEncoding encoding;
   private TheoremProver theoremProver;
   private ExpressionManager exprManager;
 
