@@ -223,12 +223,15 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
               if(!isBound) {
                 Symbol[] symbols = new Symbol[vars.length];
                 Sort[] types = new Sort[vars.length];
+                Expr[] bounds = new Expr[vars.length];
                 int i = 0;
                 for(Expr var : vars) {
                   symbols[i] = ctx.MkSymbol(var.toString());
                   types[i] = var.Sort();
+                  bounds[i] = ctx.MkBound(i, types[i]);
                   i++;
                 }
+                body = body.Substitute(vars, bounds);
                 /* FIXME: Z3 with warning unknown attribute :skid, and take null for :qid and :skid
                  */
                 return ctx.MkForall(types, symbols, body, 0, ptns, noTriggers, null, null);
@@ -284,12 +287,15 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
               if(!isBound) {
                 Symbol[] symbols = new Symbol[vars.length];
                 Sort[] types = new Sort[vars.length];
+                Expr[] bounds = new Expr[vars.length];
                 int i = 0;
                 for(Expr var : vars) {
                   symbols[i] = ctx.MkSymbol(var.toString());
                   types[i] = var.Sort();
+                  bounds[i] = ctx.MkBound(i, types[i]);
                   i++;
                 }
+                body = body.Substitute(vars, bounds);
                 return ctx.MkForall(types, symbols, body, 1, ptns, noTriggers, null, null);
               } else { 
                 return ctx.MkForall(vars, body, 1, ptns, noTriggers, null, null);
