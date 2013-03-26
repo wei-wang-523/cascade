@@ -9,10 +9,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import edu.nyu.cascade.ir.expr.AbstractExpressionEncoding;
-import edu.nyu.cascade.ir.expr.BitVectorIntegerEncoding;
-import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
-import edu.nyu.cascade.ir.expr.DefaultBooleanEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.prover.BitVectorExpression;
@@ -25,7 +21,7 @@ import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.Type;
 
-public class LISBQExdReachEncoding extends AbstractExpressionEncoding {
+public class LISBQExdReachEncoding extends ReachEncoding {
 
   private static final String FUN_R = "r";
   
@@ -45,12 +41,8 @@ public class LISBQExdReachEncoding extends AbstractExpressionEncoding {
   /** The (mem, elt, elt, elt) -> bool mapping */
   private final FunctionType r;
   
-  public static final int DEFAULT_WORD_SIZE = 8;
-  
   public LISBQExdReachEncoding(ExpressionManager exprManager) {
-    super(BitVectorIntegerEncoding.create(exprManager, DEFAULT_WORD_SIZE),
-        new DefaultBooleanEncoding(exprManager),
-        new DefaultArrayEncoding(exprManager));
+    super(exprManager);
 
     try {
       BitVectorType wordType = exprManager.bitVectorType(DEFAULT_WORD_SIZE);
@@ -258,11 +250,23 @@ public class LISBQExdReachEncoding extends AbstractExpressionEncoding {
     return getExpressionManager().applyExpr(r, argExprs).asBooleanExpression();
   }
 
+  @Override
+  public Expression getEltExpr(Expression arg) {
+    return arg;
+  }
+  
+  @Override
   public Type getEltType() {
     return eltType;
   }
 
+  @Override
   public Expression getNil() {
     return nil;
+  }
+
+  @Override
+  public void instGen(Iterable<? extends Expression> heapRegions) {
+    throw new UnsupportedOperationException("LISBQ extend encoding doesn't support instGen.");
   }
 }

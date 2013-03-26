@@ -326,6 +326,32 @@ public abstract class ReachMemoryModel extends BitVectorMemoryModel {
     return exprManager.tt();
   }
   
+  @Override
+  public ReachEncoding getExpressionEncoding() {
+    ReachEncoding encoding = (ReachEncoding) super.getExpressionEncoding();
+    return encoding;
+  }
+  
+  protected Expression getEltExpr(Expression arg) {
+    ReachEncoding encoding = getExpressionEncoding();
+    return encoding.getEltExpr(arg);
+  }
+  
+  protected Type getEltType() {
+    ReachEncoding encoding = getExpressionEncoding();
+    return encoding.getEltType();
+  }
+  
+  protected Expression getNil() {
+    ReachEncoding encoding = getExpressionEncoding();
+    return encoding.getNil();
+  }
+  
+  protected void instGen(Iterable<Expression> gterms) {
+    ReachEncoding encoding = getExpressionEncoding();
+    encoding.instGen(gterms);
+  }
+  
   /**
    * Get all the related reachability assumptions f(a) = b from memory model
    * <code>state</code>
@@ -341,4 +367,6 @@ public abstract class ReachMemoryModel extends BitVectorMemoryModel {
 
   abstract public BooleanExpression isRoot(Expression memory, String fieldname,
       Expression ptrExpr);
+  
+  
 }

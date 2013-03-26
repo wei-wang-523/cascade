@@ -20,7 +20,7 @@ import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 
-public class LoLLiwithRRReachEncoding extends LoLLiReachEncoding {
+public class LoLLiwithRRReachEncoding extends ReachEncoding {
   
   public static LoLLiReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
@@ -46,8 +46,6 @@ public class LoLLiwithRRReachEncoding extends LoLLiReachEncoding {
   
   /** The (elt, elt) -> elt mapping */
   private final Expression join;
-  
-  public static final int DEFAULT_WORD_SIZE = 8;
   
   public LoLLiwithRRReachEncoding(ExpressionManager exprManager) {
     super(exprManager);
@@ -380,8 +378,12 @@ public class LoLLiwithRRReachEncoding extends LoLLiReachEncoding {
   }
 
   @Override
-  public void instGen(Iterable<Expression> gterms) {
-    // TODO Auto-generated method stub
-    
+  public void instGen(Iterable<? extends Expression> gterms) {
+    throw new UnsupportedOperationException("LoLLi with rewrite encoding doesn't support instGen.");   
+  }
+
+  @Override
+  public Expression getEltExpr(Expression arg) {
+    return arg;
   }
 }

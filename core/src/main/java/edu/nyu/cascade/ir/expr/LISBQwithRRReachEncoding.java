@@ -21,7 +21,7 @@ import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 
-public class LISBQwithRRReachEncoding extends LISBQReachEncoding {
+public class LISBQwithRRReachEncoding extends ReachEncoding {
   
   public static LISBQReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
@@ -41,8 +41,6 @@ public class LISBQwithRRReachEncoding extends LISBQReachEncoding {
 
   /** The (elt, elt, elt) -> bool mapping */
   private final Expression rf;
-  
-  public static final int DEFAULT_WORD_SIZE = 8;
   
   public LISBQwithRRReachEncoding(ExpressionManager exprManager) {
     super(exprManager);
@@ -235,6 +233,11 @@ public class LISBQwithRRReachEncoding extends LISBQReachEncoding {
   }
 
   @Override
+  public Expression getEltExpr(Expression arg) {
+    return arg;
+  }
+  
+  @Override
   public Type getEltType() {
     return eltType;
   }
@@ -245,8 +248,7 @@ public class LISBQwithRRReachEncoding extends LISBQReachEncoding {
   }
 
   @Override
-  public void instGen(Iterable<Expression> gterms) {
-    // TODO Auto-generated method stub
-    
+  public void instGen(Iterable<? extends Expression> heapRegions) {
+	  throw new UnsupportedOperationException("LISBQ with rewrite encoding doesn't support instGen.");
   }
 }

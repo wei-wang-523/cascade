@@ -17,6 +17,7 @@ import edu.nyu.cascade.prover.type.Type;
 public class LISBQExdReachMemoryModel extends ReachMemoryModel {
   
   private static final String FUN_R = "r";
+  private static final String FUN_F = "f";
   
   private final Expression nullPtr;
 
@@ -121,11 +122,9 @@ public class LISBQExdReachMemoryModel extends ReachMemoryModel {
     Preconditions.checkArgument( state.getType().equals( getStateType() ));
     Preconditions.checkArgument(lvalExpr.getType().equals(addressType));
     Preconditions.checkArgument(rvalExpr.getType().equals(addressType));
-    
-    ExpressionEncoding encoding = getExpressionEncoding();
     ArrayExpression reachArray = state.getChild(2).asArray();
     
-    Expression result = encoding.functionCall(FUN_R, reachArray, lvalExpr, rvalExpr, rvalExpr);
+    Expression result = applyR(reachArray, lvalExpr, rvalExpr, rvalExpr);
     return result;
   }
 
@@ -144,13 +143,22 @@ public class LISBQExdReachMemoryModel extends ReachMemoryModel {
   public BooleanExpression isRoot(Expression state, String fieldName, Expression rootExpr) {
     Preconditions.checkArgument( state.getType().equals( getStateType() ));
     Preconditions.checkArgument(rootExpr.getType().equals(addressType));
-    LISBQReachEncoding encoding = (LISBQReachEncoding) getExpressionEncoding();
     ExpressionManager exprManager = getExpressionManager();
-    Expression nil = encoding.getNil();
-    Type eltType = encoding.getEltType();
+    Expression nil = getNil();
+    Type eltType = getEltType();
     Expression x_var = exprManager.variable("x", eltType, true);
     BooleanExpression res = exprManager.implies(rootExpr.neq(nil), 
-        exprManager.forall(x_var, rootExpr.neq(encoding.applyF(x_var))));
+        exprManager.forall(x_var, rootExpr.neq(applyF(x_var))));
     return res;
+  }
+  
+  private Expression applyF(Expression arg) {
+    ReachEncoding encoding = getExpressionEncoding();
+    return encoding.functionCall(FUN_F, arg);
+  }
+  
+  private Expression applyR(ArrayExpression arr, Expression arg1, Expression arg2, Expression arg3) {
+    ReachEncoding encoding = getExpressionEncoding();
+    return encoding.functionCall(FUN_R, arr, arg1, arg2, arg3);
   }
 }

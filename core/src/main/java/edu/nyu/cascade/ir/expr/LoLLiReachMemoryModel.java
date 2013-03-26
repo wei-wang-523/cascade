@@ -1,9 +1,6 @@
 package edu.nyu.cascade.ir.expr;
 
-import java.util.Collections;
-
 import com.google.common.base.Preconditions;
-import com.google.inject.internal.Iterables;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.ArrayVariableExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -145,9 +142,8 @@ public class LoLLiReachMemoryModel extends ReachMemoryModel {
     Preconditions.checkArgument( state.getType().equals( getStateType() ));
     Preconditions.checkArgument(lvalExpr.getType().equals(addressType));
     Preconditions.checkArgument(rvalExpr.getType().equals(addressType));
-    
-    ExpressionEncoding encoding = getExpressionEncoding();
-    Expression result = encoding.functionCall(FUN_RF_AVOID, lvalExpr, rvalExpr, rvalExpr);
+
+    Expression result = applyEltRf_avoid(lvalExpr, rvalExpr, rvalExpr);
     return result;
   }
 
@@ -155,14 +151,11 @@ public class LoLLiReachMemoryModel extends ReachMemoryModel {
   public BooleanExpression getReachAssumptions(Expression state) {
     Preconditions.checkArgument( state.getType().equals( getStateType() ));
     final ExpressionManager exprManager = getExpressionManager();
-    final LoLLiReachEncoding encoding = (LoLLiReachEncoding) getExpressionEncoding();
     final ArrayExpression reachArray = state.getChild(2).asArray();
     
     if(Preferences.isSet(Preferences.OPTION_PARTIAL_INST) 
         || Preferences.isSet(Preferences.OPTION_TOTAL_INST)) {
-      Iterable<Expression> ground_terms = Iterables.concat(heapRegions, 
-          Collections.singletonList(nullPtr));
-      encoding.instGen(ground_terms);
+      instGen(heapRegions);
     }
     
     /* Apply unaryRecursionOverList instead of go through a list
@@ -173,8 +166,8 @@ public class LoLLiReachMemoryModel extends ReachMemoryModel {
         new UnaryRecursionStrategy<Expression, Expression>() {
       @Override
       public BooleanExpression apply(Expression locVar_a) {
-        Expression locVar_b = reachArray.index(locVar_a); 
-        Expression f_locVar_a = encoding.functionCall(FUN_F, locVar_a);
+        Expression locVar_b = getEltExpr(reachArray.index(locVar_a)); 
+        Expression f_locVar_a = applyEltF(locVar_a);
         return f_locVar_a.eq(locVar_b);
       }
     }));
@@ -184,13 +177,31 @@ public class LoLLiReachMemoryModel extends ReachMemoryModel {
   public BooleanExpression isRoot(Expression state, String fieldName, Expression rootExpr) {
     Preconditions.checkArgument( state.getType().equals( getStateType() ));
     Preconditions.checkArgument(rootExpr.getType().equals(addressType));
-    LoLLiReachEncoding encoding = (LoLLiReachEncoding) getExpressionEncoding();
     ExpressionManager exprManager = getExpressionManager();
-    Expression nil = encoding.getNil();
-    Type eltType = encoding.getEltType();
+    Expression nil = getNil();
+    Type eltType = getEltType();
     Expression x_var = exprManager.variable("x", eltType, true);
+    rootExpr = getEltExpr(rootExpr);
     BooleanExpression res = exprManager.implies(rootExpr.neq(nil), 
-        exprManager.forall(x_var, rootExpr.neq(encoding.applyF(x_var))));
+        exprManager.forall(x_var, rootExpr.neq(applyF(x_var))));
     return res;
+  }
+  
+  private Expression applyF(Expression arg) {
+    ReachEncoding encoding = getExpressionEncoding();
+    return encoding.functionCall(FUN_F, arg);
+  }
+  
+  private Expression applyEltF(Expression arg) {
+    return applyF(getEltExpr(arg));
+  }
+  
+  private Expression applyRf_avoid(Expression arg1, Expression arg2, Expression arg3) {
+    ReachEncoding encoding = getExpressionEncoding();
+    return encoding.functionCall(FUN_RF_AVOID, arg1, arg2, arg3);
+  }
+  
+  private Expression applyEltRf_avoid(Expression arg1, Expression arg2, Expression arg3) {
+    return applyRf_avoid(getEltExpr(arg1), getEltExpr(arg2), getEltExpr(arg3));
   }
 }

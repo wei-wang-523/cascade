@@ -24,18 +24,18 @@ import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.BitVectorType;
+import edu.nyu.cascade.prover.type.Constructor;
+import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.Preferences;
 
-public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
+public class LoLLiwithQFReachEncoding extends ReachEncoding {
 
   public static LoLLiReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
     int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
     return LoLLiReachMemoryModel.create(encoding, size, size);
   }
-
-  private final Type eltType;
   
   private ImmutableSet<BooleanExpression> rewrite_rules;
   
@@ -54,9 +54,13 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
   /** The (elt, elt) -> elt mapping */
   private final FunctionType join;
   
-  private final Map<Expression, Expression> boundVarMap;
+  private final Type eltType;
   
-  public static final int DEFAULT_WORD_SIZE = 8;
+  private final Constructor consConstr;
+  
+  private final Selector nextSel;
+  
+  private final Map<Expression, Expression> boundVarMap;
   
   public LoLLiwithQFReachEncoding(ExpressionManager exprManager) {
     super(exprManager);
@@ -65,12 +69,13 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
       BitVectorType wordType = exprManager.bitVectorType(DEFAULT_WORD_SIZE);
 
       /* Create datatype */
-      
-      eltType = wordType;
+      nextSel = exprManager.selector(NEXT_SELECTOR_NAME, wordType);
+      consConstr = exprManager.constructor(ELT_F_CONST, nextSel);
+      eltType = exprManager.dataType(ELT_DATATYPE, consConstr);
       
       /* Create function expression */
       
-      nil = exprManager.bitVectorZero(eltType.asBitVectorType().getSize()); // nil = 0(NULL);
+      nil = getEltExpr(exprManager.bitVectorZero(DEFAULT_WORD_SIZE));
       f = exprManager.functionType(FUN_F, eltType, eltType);
       rf_avoid = exprManager.functionType(FUN_RF_AVOID, 
           ImmutableList.of(eltType, eltType, eltType), 
@@ -465,7 +470,14 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
    * Instantiate partially bound variables in rewrite rules with <code>gterms</code>
    */
   @Override
-  public void instGen(Iterable<Expression> gterms) {
+  public void instGen(Iterable<? extends Expression> heapRegions) {
+    ImmutableList.Builder<Expression> builder = ImmutableList.builder();
+    for(Expression region : heapRegions)
+      builder.add(getEltExpr(region));
+    
+    builder.add(getNil());
+    ImmutableList<Expression> gterms = builder.build();
+    
     ImmutableSet.Builder<BooleanExpression> inst_rulesetBuilder = ImmutableSet
         .builder();
     for(BooleanExpression rule : rewrite_rules) {
@@ -518,5 +530,10 @@ public class LoLLiwithQFReachEncoding extends LoLLiReachEncoding {
   @Override
   public Expression getNil() {
     return nil;
+  }
+
+  @Override
+  public Expression getEltExpr(Expression arg) {
+    return consConstr.apply(arg);
   }
 }

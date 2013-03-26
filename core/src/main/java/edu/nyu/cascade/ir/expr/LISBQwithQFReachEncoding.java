@@ -24,19 +24,19 @@ import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.type.BitVectorType;
+import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.FunctionType;
+import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.Preferences;
 
-public class LISBQwithQFReachEncoding extends LISBQReachEncoding {
+public class LISBQwithQFReachEncoding extends ReachEncoding {
   
   public static LISBQReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
     int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
     return LISBQReachMemoryModel.create(encoding, size, size);
   }
-
-  private final Type eltType;
   
   private ImmutableSet<BooleanExpression> rewrite_rules;
   
@@ -49,9 +49,15 @@ public class LISBQwithQFReachEncoding extends LISBQReachEncoding {
   /** The (elt, elt, elt) -> bool mapping */
   private final FunctionType rf;
   
-  private final Map<Expression, Expression> boundVarMap;
+  /** Constructor and Selector for the elt type*/
   
-  public static final int DEFAULT_WORD_SIZE = 8;
+  private final Type eltType;
+  
+  private final Constructor consConstr;
+  
+  private final Selector nextSel;
+  
+  private final Map<Expression, Expression> boundVarMap;
   
   public LISBQwithQFReachEncoding(ExpressionManager exprManager) {
     super(exprManager);
@@ -60,12 +66,13 @@ public class LISBQwithQFReachEncoding extends LISBQReachEncoding {
       BitVectorType wordType = exprManager.bitVectorType(DEFAULT_WORD_SIZE);
 
       /* Create datatype */
-      
-      eltType = wordType;
+      nextSel = exprManager.selector(NEXT_SELECTOR_NAME, wordType);
+      consConstr = exprManager.constructor(ELT_F_CONST, nextSel);
+      eltType = exprManager.dataType(ELT_DATATYPE, consConstr);
       
       /* Create function expression */
       
-      nil = exprManager.bitVectorZero(eltType.asBitVectorType().getSize()); // nil = 0(NULL);
+      nil = getEltExpr(exprManager.bitVectorZero(DEFAULT_WORD_SIZE));
       f = exprManager.functionType(FUN_F, eltType, eltType);
       rf = exprManager.functionType(FUN_RF, 
           ImmutableList.of(eltType, eltType, eltType), 
@@ -121,12 +128,12 @@ public class LISBQwithQFReachEncoding extends LISBQReachEncoding {
       
       vars = ImmutableList.of(xvars[0], xvars[1]);
       
-      head = applyRf(xbounds[0], xbounds[1], xbounds[1]);
-      body = exprManager.or(exprManager.eq(xbounds[0], xbounds[1]), 
-          applyRf(xbounds[0], applyF(xbounds[0]), xbounds[1]));
+      head = applyRf(xbounds[1], xbounds[0], xbounds[0]);
+      body = exprManager.or(exprManager.eq(xbounds[1], xbounds[0]), 
+          applyRf(xbounds[1], applyF(xbounds[1]), xbounds[0]));
       triggers = ImmutableList.of(
-          applyRf(xbounds[0], xbounds[1], xbounds[1]), 
-          applyF(xbounds[0]));
+          applyRf(xbounds[1], xbounds[0], xbounds[0]), 
+          applyF(xbounds[1]));
       BooleanExpression reach_rule = exprManager.forall(vars, head.implies(body), triggers);
       
       rewrite_rulesetBuilder.add(reach_rule);
@@ -135,12 +142,12 @@ public class LISBQwithQFReachEncoding extends LISBQReachEncoding {
 
       vars = ImmutableList.of(xvars[0], xvars[1]);
       
-      head = applyRf(xbounds[0], xbounds[1], xbounds[1]).
-          and(exprManager.eq(applyF(xbounds[0]), xbounds[0]));
-      body = exprManager.eq(xbounds[0], xbounds[1]);
+      head = applyRf(xbounds[1], xbounds[0], xbounds[0]).
+          and(exprManager.eq(applyF(xbounds[1]), xbounds[1]));
+      body = exprManager.eq(xbounds[1], xbounds[0]);
       triggers = ImmutableList.of(
-          applyRf(xbounds[0], xbounds[1], xbounds[1]), 
-          applyF(xbounds[0]));
+          applyRf(xbounds[1], xbounds[0], xbounds[0]), 
+          applyF(xbounds[1]));
       BooleanExpression cycle_rule = exprManager.forall(vars, head.implies(body), triggers);
       
       rewrite_rulesetBuilder.add(cycle_rule);
@@ -315,10 +322,17 @@ public class LISBQwithQFReachEncoding extends LISBQReachEncoding {
   }
   
   /**
-   * Instantiate partially bound variables in rewrite rules with <code>gterms</code>
+   * Instantiate partially bound variables in rewrite rules with <code>heapRegions</code>
    */
   @Override
-  public void instGen(Iterable<Expression> gterms) {
+  public void instGen(Iterable<? extends Expression> heapRegions) {
+    ImmutableList.Builder<Expression> builder = ImmutableList.builder();
+    for(Expression region : heapRegions)
+      builder.add(getEltExpr(region));
+    
+    builder.add(getNil());
+    ImmutableList<Expression> gterms = builder.build();
+    
     ImmutableSet.Builder<BooleanExpression> inst_rulesetBuilder = ImmutableSet
         .builder();
     for(BooleanExpression rule : rewrite_rules) {
@@ -361,6 +375,13 @@ public class LISBQwithQFReachEncoding extends LISBQReachEncoding {
       inst_rulesetBuilder.add(rule); 
     }
     rewrite_rules = ImmutableSet.copyOf(inst_rulesetBuilder.build());
+  }
+  
+  @Override
+  public Expression getEltExpr(Expression arg) {
+    Preconditions.checkArgument(arg.getType().
+        equals(getExpressionManager().bitVectorType(DEFAULT_WORD_SIZE)));
+    return consConstr.apply(arg);
   }
   
   @Override

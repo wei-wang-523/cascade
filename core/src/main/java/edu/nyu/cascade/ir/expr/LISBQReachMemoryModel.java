@@ -1,10 +1,6 @@
 package edu.nyu.cascade.ir.expr;
 
-import java.util.Collections;
-
 import com.google.common.base.Preconditions;
-import com.google.inject.internal.Iterables;
-
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.ArrayVariableExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -148,8 +144,7 @@ public class LISBQReachMemoryModel extends ReachMemoryModel {
     Preconditions.checkArgument(lvalExpr.getType().equals(addressType));
     Preconditions.checkArgument(rvalExpr.getType().equals(addressType));
     
-    ExpressionEncoding encoding = getExpressionEncoding();
-    Expression result = encoding.functionCall(FUN_RF, lvalExpr, rvalExpr, rvalExpr);
+    Expression result = applyEltRf(lvalExpr, rvalExpr, rvalExpr);
     return result;
   }
   
@@ -157,13 +152,13 @@ public class LISBQReachMemoryModel extends ReachMemoryModel {
   public BooleanExpression isRoot(Expression state, String fieldName, Expression rootExpr) {
     Preconditions.checkArgument( state.getType().equals( getStateType() ));
     Preconditions.checkArgument(rootExpr.getType().equals(addressType));
-    LISBQReachEncoding encoding = (LISBQReachEncoding) getExpressionEncoding();
     ExpressionManager exprManager = getExpressionManager();
-    Expression nil = encoding.getNil();
-    Type eltType = encoding.getEltType();
+    Expression nil = getNil();
+    Type eltType = getEltType();
     Expression x_var = exprManager.boundVariable("x", eltType, true);
+    rootExpr = getEltExpr(rootExpr);
     BooleanExpression res = exprManager.implies(rootExpr.neq(nil), 
-        exprManager.forall(x_var, rootExpr.neq(encoding.applyF(x_var))));
+        exprManager.forall(x_var, rootExpr.neq(applyF(x_var))));
     return res;
   }
 
@@ -171,31 +166,11 @@ public class LISBQReachMemoryModel extends ReachMemoryModel {
   public BooleanExpression getReachAssumptions(Expression state) {
     Preconditions.checkArgument( state.getType().equals( getStateType() ));
     final ExpressionManager exprManager = getExpressionManager();
-    final LISBQReachEncoding encoding = (LISBQReachEncoding) getExpressionEncoding();
     final ArrayExpression reachArray = state.getChild(2).asArray();
     
     if(Preferences.isSet(Preferences.OPTION_PARTIAL_INST) 
-        || Preferences.isSet(Preferences.OPTION_TOTAL_INST)) {
-      Iterable<Expression> ground_terms = Iterables.concat(heapRegions, 
-          Collections.singletonList(nullPtr));
-      encoding.instGen(ground_terms);
-    }
-    
-    /* For each pair (locVar_a, locVar_b) in reachArray 
-     * f(a) = b && dist(a) = dist(b) + 1 
-     */
-    
-//    List<BooleanExpression> result = Lists.newArrayList();    
-//    for(Expression locVar_a : heapRegions) {
-//      Expression locVar_b = reachArray.index(locVar_a); 
-//      Expression f_locVar_a = encoding.functionCall(FUN_F, locVar_a);
-//      result.add(f_locVar_a.eq(locVar_b));
-////      Expression dist_a = encoding.functionCall(FUN_DIST, locVar_a);      
-////      Expression dist_b = encoding.functionCall(FUN_DIST, locVar_b);
-////      result.add(exprManager.eq(dist_a, exprManager.plus(dist_b, exprManager.one())));
-//    }
-//    
-//    return exprManager.and(result);
+        || Preferences.isSet(Preferences.OPTION_TOTAL_INST))
+      instGen(heapRegions);
     
     /* Apply unaryRecursionOverList instead of go through a list
      * same job as above
@@ -205,13 +180,28 @@ public class LISBQReachMemoryModel extends ReachMemoryModel {
         new UnaryRecursionStrategy<Expression, Expression>() {
       @Override
       public BooleanExpression apply(Expression locVar_a) {
-        Expression locVar_b = reachArray.index(locVar_a); 
-        Expression f_locVar_a = encoding.functionCall(FUN_F, locVar_a);
+        Expression locVar_b = getEltExpr(reachArray.index(locVar_a));
+        Expression f_locVar_a = applyEltF(locVar_a);
         return f_locVar_a.eq(locVar_b);
-//        Expression dist_a = encoding.functionCall(FUN_DIST, locVar_a);      
-//        Expression dist_b = encoding.functionCall(FUN_DIST, locVar_b);
-//        return exprManager.eq(dist_a, exprManager.plus(dist_b, exprManager.one()));
       }
     }));
+  }
+  
+  private Expression applyF(Expression arg) {
+    ReachEncoding encoding = getExpressionEncoding();
+    return encoding.functionCall(FUN_F, arg);
+  }
+  
+  private Expression applyEltF(Expression arg) {
+    return applyF(getEltExpr(arg));
+  }
+  
+  private Expression applyRf(Expression arg1, Expression arg2, Expression arg3) {
+    ReachEncoding encoding = getExpressionEncoding();
+    return encoding.functionCall(FUN_RF, arg1, arg2, arg3);
+  }
+  
+  private Expression applyEltRf(Expression arg1, Expression arg2, Expression arg3) {
+    return applyRf(getEltExpr(arg1), getEltExpr(arg2), getEltExpr(arg3));
   }
 }
