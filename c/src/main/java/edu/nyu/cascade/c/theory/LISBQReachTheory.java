@@ -14,13 +14,14 @@ public class LISBQReachTheory implements Theory {
   
   public LISBQReachTheory(ExpressionManager exprManager) {
     TheoremProver tp = exprManager.getTheoremProver();
-    if(tp.getProviderName().equals("cvc4"))
+    if(tp.getProviderName().equals("cvc4")) {
       encoding = new LISBQwithRRReachEncoding(exprManager);
-    else if(tp.getProviderName().equals("z3"))
+      memoryModel = LISBQwithRRReachEncoding.createMemoryModel(encoding);
+    } else if(tp.getProviderName().equals("z3")) {
       encoding = new LISBQwithQFReachEncoding(exprManager);
-    else
+      memoryModel = LISBQwithQFReachEncoding.createMemoryModel(encoding);
+    } else
       throw new IllegalArgumentException("Unsupported theorem prover " + tp);
-    memoryModel = LISBQwithQFReachEncoding.createMemoryModel(encoding);
   }
 
   @Override
