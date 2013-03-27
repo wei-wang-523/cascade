@@ -1,0 +1,28 @@
+<controlFile>
+  <!-- Example (a)->(b)->(c)->NULL -->
+  <sourceFile name="list.c" id="1" />
+  <theory qname="edu.nyu.cascade.c.theory.LoLLiArrReachTheory" />
+  <run>
+    <startPosition fileId="1" line="21" >
+      <command>
+	<cascadeFunction> cascade_assume </cascadeFunction>
+	<argument><![CDATA[
+	_create_acyclic_list(next, root, 3)
+	]]>
+	</argument>
+      </command>
+    </startPosition>
+    <wayPoint fileId="1" line="26" >
+      <loop iterTimes="3" />
+    </wayPoint>
+    <endPosition fileId="1" line="32" >
+      <command>
+	<cascadeFunction> cascade_check </cascadeFunction>
+	<argument><![CDATA[
+	!_is_root(next, root)
+	]]>
+	</argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>
