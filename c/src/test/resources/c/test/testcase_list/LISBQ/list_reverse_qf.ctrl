@@ -7,7 +7,7 @@
       <command>
 	<cascadeFunction> cascade_assume </cascadeFunction>
 	<argument><![CDATA[
-	_create_acyclic_list(next, root, 3) && _is_root(next, root)
+	_create_acyclic_list(next, root, 3)
 	]]>
 	</argument>
       </command>
@@ -19,7 +19,7 @@
       <command>
 	<cascadeFunction> cascade_check </cascadeFunction>
 	<argument><![CDATA[
-	_is_root(next, first)
+	!_is_root(next, root)
 	]]>
 	</argument>
       </command>

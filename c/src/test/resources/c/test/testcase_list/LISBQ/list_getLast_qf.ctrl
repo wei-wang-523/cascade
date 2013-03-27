@@ -7,7 +7,7 @@
       <command>
 	<cascadeFunction> cascade_assume </cascadeFunction>
 	<argument><![CDATA[ 
-	_create_acyclic_list(next, root, 2) && _is_root(next, root)
+	_create_acyclic_list(next, root, 2)
 	]]>
 	</argument>
       </command>
@@ -19,8 +19,8 @@
       <command>
 	<cascadeFunction> cascade_check </cascadeFunction>
 	<argument><![CDATA[
-	p->next == 0 &&
-	_forall(Node * v, _implies(_reach(next, root, v) && v != p, _reach(next, v, p)))
+    p->next == 0 &&
+	_forall((struct NodeStruct *) v, _implies(_reach(next, root, v) && v != p && v != 0, _reach(next, v, p)))
 	]]>
 	</argument>
       </command>
