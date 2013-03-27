@@ -349,8 +349,7 @@ class CExpressionEncoder implements ExpressionEncoder {
           Expression toExpr = (Expression) dispatch(argList.getNode(2));
           MemoryModel mm = getMemoryModel();
           if(mm instanceof ReachMemoryModel) {
-            res = ((ReachMemoryModel) mm).reach(memory, fieldName, 
-                fromExpr, toExpr);
+            res = ((ReachMemoryModel) mm).reach(fieldName, fromExpr, toExpr, toExpr);
           } else {
             res = getExpressionManager().ff();         
           }
@@ -382,7 +381,7 @@ class CExpressionEncoder implements ExpressionEncoder {
           Expression ptrExpr = (Expression) dispatch(argList.getNode(1));
           MemoryModel mm = getMemoryModel();
           if(mm instanceof ReachMemoryModel) {
-            res = ((ReachMemoryModel) mm).isRoot(memory, fieldname, ptrExpr);
+            res = ((ReachMemoryModel) mm).isRoot(fieldname, ptrExpr);
           } else {
             throw new ExpressionFactoryException("Invalid memory model.");
           }

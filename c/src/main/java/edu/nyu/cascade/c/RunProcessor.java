@@ -1048,7 +1048,7 @@ class RunProcessor {
         IOUtils.debug().pln("<wayPoint> " + pos.toString()).flush();
         block = buildPathToPosition(cfg, block, pos, tmpPath);
         Scope currScope = symbolTable.getCurrentScope();
-        symbolTable.setScope(block.getScope());
+        if(block.getScope() != null)   symbolTable.setScope(block.getScope());
         if(pos.getInvariant() != null)
           tmpPath.addAll(processInvariant(cfg, block, pos, symbolTable));
         processPosition(pos, symbolTable, tmpPath);

@@ -4,14 +4,14 @@ import edu.nyu.cascade.c.Theory;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.LoLLiwithQFReachEncoding;
 import edu.nyu.cascade.ir.expr.LoLLiwithRRReachEncoding;
-import edu.nyu.cascade.ir.expr.MemoryModel;
+import edu.nyu.cascade.ir.expr.ReachMemoryModel;
 import edu.nyu.cascade.ir.expr.ReachEncoding;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TheoremProver;
 
 public class LoLLiReachTheory implements Theory {
   private final ReachEncoding encoding;
-  private final MemoryModel memoryModel;
+  private final ReachMemoryModel memoryModel;
   
   public LoLLiReachTheory(ExpressionManager exprManager) {
     TheoremProver tp = exprManager.getTheoremProver();
@@ -31,7 +31,7 @@ public class LoLLiReachTheory implements Theory {
   }
 
   @Override
-  public MemoryModel getMemoryModel() {
+  public ReachMemoryModel getMemoryModel() {
     return memoryModel;
   }
 }

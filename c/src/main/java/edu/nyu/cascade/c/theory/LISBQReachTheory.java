@@ -4,13 +4,13 @@ import edu.nyu.cascade.c.Theory;
 import edu.nyu.cascade.ir.expr.LISBQwithQFReachEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.LISBQwithRRReachEncoding;
-import edu.nyu.cascade.ir.expr.MemoryModel;
+import edu.nyu.cascade.ir.expr.ReachMemoryModel;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TheoremProver;
 
 public class LISBQReachTheory implements Theory {
   private final ExpressionEncoding encoding;
-  private final MemoryModel memoryModel;
+  private final ReachMemoryModel memoryModel;
   
   public LISBQReachTheory(ExpressionManager exprManager) {
     TheoremProver tp = exprManager.getTheoremProver();
@@ -30,7 +30,7 @@ public class LISBQReachTheory implements Theory {
   }
 
   @Override
-  public MemoryModel getMemoryModel() {
+  public ReachMemoryModel getMemoryModel() {
     return memoryModel;
   }
 }
