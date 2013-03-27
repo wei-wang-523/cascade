@@ -31,10 +31,10 @@ import edu.nyu.cascade.util.Preferences;
 
 public class LoLLiwithQFReachEncoding extends ReachEncoding {
 
-  public static LoLLiReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
+  public static ReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
     int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
-    return LoLLiReachMemoryModel.create(encoding, size, size);
+    return ReachMemoryModel.create(encoding, size, size);
   }
   
   private ImmutableSet<BooleanExpression> rewrite_rules;
@@ -475,7 +475,7 @@ public class LoLLiwithQFReachEncoding extends ReachEncoding {
     for(Expression region : heapRegions)
       builder.add(getEltExpr(region));
     
-    builder.add(getNil());
+    builder.add(nil);
     ImmutableList<Expression> gterms = builder.build();
     
     ImmutableSet.Builder<BooleanExpression> inst_rulesetBuilder = ImmutableSet
@@ -523,6 +523,11 @@ public class LoLLiwithQFReachEncoding extends ReachEncoding {
   }
 
   @Override
+  public Expression getEltExpr(Expression arg) {
+    return consConstr.apply(arg);
+  }
+
+  @Override
   public Type getEltType() {
     return eltType;
   }
@@ -531,9 +536,31 @@ public class LoLLiwithQFReachEncoding extends ReachEncoding {
   public Expression getNil() {
     return nil;
   }
+  
+  @Override
+  public BooleanExpression assignReach(String field, Expression arg1,
+      Expression arg2) {
+    return applyF(getEltExpr(arg1)).eq(getEltExpr(arg2));
+  }
 
   @Override
-  public Expression getEltExpr(Expression arg) {
-    return consConstr.apply(arg);
+  public void updateReach(String field, Expression arg1, Expression arg2) {
+    throw new UnsupportedOperationException("LoLLi with QF encoding doesn't support updateReach.");   
+  }
+
+  @Override
+  public BooleanExpression isRoot(String field, Expression rootExpr) {
+    ExpressionManager exprManager = getExpressionManager();
+    Expression x_var = exprManager.boundVariable("x", eltType, true);
+    rootExpr = getEltExpr(rootExpr);
+    BooleanExpression res = exprManager.implies(rootExpr.neq(nil), 
+        exprManager.forall(x_var, rootExpr.neq(applyF(x_var))));
+    return res;
+  }
+
+  @Override
+  public BooleanExpression reach(String field, Expression arg1,
+      Expression arg2, Expression arg3) {
+    return applyRfAvoid(getEltExpr(arg1), getEltExpr(arg2), getEltExpr(arg3));
   }
 }

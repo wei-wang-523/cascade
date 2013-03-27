@@ -9,7 +9,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import edu.nyu.cascade.ir.expr.LISBQReachMemoryModel;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.prover.BitVectorExpression;
@@ -23,10 +22,10 @@ import edu.nyu.cascade.prover.type.Type;
 
 public class LISBQwithRRReachEncoding extends ReachEncoding {
   
-  public static LISBQReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
+  public static ReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
     int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
-    return LISBQReachMemoryModel.create(encoding, size, size);
+    return ReachMemoryModel.create(encoding, size, size);
   }
 
   private final Type eltType;
@@ -236,19 +235,46 @@ public class LISBQwithRRReachEncoding extends ReachEncoding {
   public Expression getEltExpr(Expression arg) {
     return arg;
   }
-  
+
+  @Override
+  public void instGen(Iterable<? extends Expression> heapRegions) {
+	  throw new UnsupportedOperationException("LISBQ with RR encoding doesn't support instGen.");
+  }
+
+  @Override
+  public BooleanExpression assignReach(String field, Expression arg1,
+      Expression arg2) {
+    return applyF(getEltExpr(arg1)).eq(getEltExpr(arg2));
+  }
+
+  @Override
+  public void updateReach(String field, Expression arg1, Expression arg2) {
+    throw new UnsupportedOperationException("LISBQ with RR encoding doesn't support updateReach.");
+  }
+
   @Override
   public Type getEltType() {
     return eltType;
   }
-
+  
   @Override
   public Expression getNil() {
     return nil;
   }
+  
+  @Override
+  public BooleanExpression isRoot(String field, Expression rootExpr) {
+    ExpressionManager exprManager = getExpressionManager();
+    Expression x_var = exprManager.boundVariable("x", eltType, true);
+    rootExpr = getEltExpr(rootExpr);
+    BooleanExpression res = exprManager.implies(rootExpr.neq(nil), 
+        exprManager.forall(x_var, rootExpr.neq(applyF(x_var))));
+    return res;
+  }
 
   @Override
-  public void instGen(Iterable<? extends Expression> heapRegions) {
-	  throw new UnsupportedOperationException("LISBQ with rewrite encoding doesn't support instGen.");
+  public BooleanExpression reach(String field, Expression arg1,
+      Expression arg2, Expression arg3) {
+    return applyRf(getEltExpr(arg1), getEltExpr(arg2), getEltExpr(arg3));
   }
 }

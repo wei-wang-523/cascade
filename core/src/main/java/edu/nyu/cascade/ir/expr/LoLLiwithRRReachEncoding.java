@@ -22,10 +22,10 @@ import edu.nyu.cascade.prover.type.Type;
 
 public class LoLLiwithRRReachEncoding extends ReachEncoding {
   
-  public static LoLLiReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
+  public static ReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
     int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
-    return LoLLiReachMemoryModel.create(encoding, size, size);
+    return ReachMemoryModel.create(encoding, size, size);
   }
 
   private final Type eltType;
@@ -365,25 +365,51 @@ public class LoLLiwithRRReachEncoding extends ReachEncoding {
     Preconditions.checkArgument(argExprs.size() == 2);
     return getExpressionManager().applyExpr(join, argExprs);
   }
-  
 
+  @Override
+  public void instGen(Iterable<? extends Expression> gterms) {
+    throw new UnsupportedOperationException("LoLLi with RR encoding doesn't support instGen.");   
+  }
+
+  @Override
+  public Expression getEltExpr(Expression arg) {
+    return arg;
+  }
+  
+  @Override
+  public BooleanExpression assignReach(String field, Expression arg1,
+      Expression arg2) {
+    return applyF(getEltExpr(arg1)).eq(getEltExpr(arg2));
+  }
+
+  @Override
+  public void updateReach(String field, Expression arg1, Expression arg2) {
+    throw new UnsupportedOperationException("LoLLi with RR encoding doesn't support updateReach.");   
+  }
+
+  @Override
+  public BooleanExpression isRoot(String field, Expression rootExpr) {
+    ExpressionManager exprManager = getExpressionManager();
+    Expression x_var = exprManager.boundVariable("x", eltType, true);
+    rootExpr = getEltExpr(rootExpr);
+    BooleanExpression res = exprManager.implies(rootExpr.neq(nil), 
+        exprManager.forall(x_var, rootExpr.neq(applyF(x_var))));
+    return res;
+  }
+  
   @Override
   public Type getEltType() {
     return eltType;
   }
-
+  
   @Override
   public Expression getNil() {
     return nil;
   }
 
   @Override
-  public void instGen(Iterable<? extends Expression> gterms) {
-    throw new UnsupportedOperationException("LoLLi with rewrite encoding doesn't support instGen.");   
-  }
-
-  @Override
-  public Expression getEltExpr(Expression arg) {
-    return arg;
+  public BooleanExpression reach(String field, Expression arg1,
+      Expression arg2, Expression arg3) {
+    return applyRfAvoid(getEltExpr(arg1), getEltExpr(arg2), getEltExpr(arg3));
   }
 }

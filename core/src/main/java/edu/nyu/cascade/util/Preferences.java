@@ -18,6 +18,7 @@ import com.google.common.collect.Maps;
  * threads.
  * 
  * @author Chris Conway (cconway@cs.nyu.edu)
+ * @author Wei Wang (wwang1109@cims.nyu.edu)
  *
  */
 
@@ -53,6 +54,8 @@ public class Preferences {
   public static final String OPTION_PARTIAL_INST = "partial-inst";
   
   public static final String OPTION_TOTAL_INST = "total-inst";
+  
+  public static final String OPTION_ENCODE_FIELD_ARRAY = "field-array";
   
   public static void clearAll() {
     getProperties().clear();

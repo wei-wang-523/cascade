@@ -125,14 +125,6 @@ public class LambdaPathEncoding extends AbstractPathEncoding {
     return extendPath(pre, stateIsOk.and(result).ifThenElse(state, bottom));
   }
   
-  @Override
-  public Expression assumeReachRelation(Expression pre) {
-    if(!(getMemoryModel() instanceof ReachMemoryModel))  
-      return getExpressionManager().tt();
-    
-    return ((ReachMemoryModel) getMemoryModel()).getReachAssumptions(pre);
-  }
-  
   /**
    * A path P is feasible iff. <code>is_ok(P)</code> is satisfiable.
    * @throws ExpressionFactoryException 

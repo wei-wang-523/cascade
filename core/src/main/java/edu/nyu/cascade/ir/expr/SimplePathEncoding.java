@@ -72,30 +72,6 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     assumps = exprManager.ifThenElse(assumps, result, exprManager.ff());
     return pre;
   }
-  
-  @Override
-  public Expression assumeReachRelation(Expression pre) {
-    ExpressionManager exprManager = getExpressionManager();
-    Expression result = exprManager.tt();
-    if(getMemoryModel() instanceof ReachMemoryModel)  
-      result = ((ReachMemoryModel) getMemoryModel()).getReachAssumptions(pre);
-    assumps = exprManager.ifThenElse(assumps, result, exprManager.ff());
-    return pre;
-  }
-  
-//  private Expression addAssumptions(BooleanExpression expr)
-//      throws PathFactoryException {
-//    try {
-//      ExpressionEncoding encoding = getExpressionEncoding();
-//      ExpressionManager exprManager = encoding.getExpressionManager();
-//      return exprManager.and(exprManager.and(encoding.getAssumptions()),
-//          expr);
-//    } catch (TheoremProverException e) {
-//      throw new PathFactoryException(e);
-//    } catch (ExpressionFactoryException e) {
-//      throw new PathFactoryException(e);
-//    }
-//  }
 
   @Override
   protected BooleanExpression assertionToBoolean(Expression path,
@@ -126,12 +102,6 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   public Expression alloc(Expression pre, ExpressionClosure lval,
       ExpressionClosure rval) {
     Expression result = getMemoryModel().alloc(pre, lval.eval(pre), rval.eval(pre));
-/*  ExpressionManager exprManager = getExpressionManager();
-    Expression sideExpr;
-    sideExpr = getMemoryModel().getSideAssumption();
-    if(sideExpr != null)
-      assumps = exprManager.ifThenElse(assumps, sideExpr, exprManager.ff());
-*/
     return result;
   }
   
@@ -157,11 +127,13 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   @Override
   public Expression fieldAssign(Expression pre, ExpressionClosure lval,
       String field, ExpressionClosure rval) {
-    if(!(getMemoryModel() instanceof ReachMemoryModel))
-      return pre;
-    ReachMemoryModel mm = (ReachMemoryModel) getMemoryModel();
-    Expression result = mm.fieldAssign(pre, lval.eval(pre), field, rval.eval(pre));
-    return result;
+    if(getMemoryModel() instanceof ReachMemoryModel) {
+      ReachMemoryModel mm = (ReachMemoryModel) getMemoryModel();
+      Expression result = mm.fieldAssign(pre, lval.eval(pre), field, rval.eval(pre));
+      ExpressionManager exprManager =  getExpressionManager();
+      assumps = exprManager.ifThenElse(assumps, result, exprManager.ff());
+    }  
+    return pre;
   }
   
   @Override

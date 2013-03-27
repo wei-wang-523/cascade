@@ -40,7 +40,6 @@ import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.ir.expr.PathEncoding;
-import edu.nyu.cascade.ir.expr.ReachMemoryModel;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.util.IOUtils;
 
@@ -247,10 +246,7 @@ public class Statement implements IRStatement {
       return factory.fieldAssign(prefix, getOperand(0), getOperand(1).toString(), getOperand(2));
     }
     case ASSERT: {
-      if(factory.getMemoryModel() instanceof ReachMemoryModel)
-        return factory.assumeReachRelation(factory.assumeMemorySafe(prefix));
-      else
-        return factory.assumeMemorySafe(prefix);
+      return factory.assumeMemorySafe(prefix);
     }
     case ASSUME:
     case AWAIT:

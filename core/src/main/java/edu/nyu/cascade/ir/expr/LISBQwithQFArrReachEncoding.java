@@ -15,6 +15,7 @@ import com.google.inject.internal.Maps;
 
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
+import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -29,7 +30,7 @@ import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.Preferences;
 
-public class LISBQwithQFReachEncoding extends ReachEncoding {
+public class LISBQwithQFArrReachEncoding extends ReachEncoding {
   
   public static ReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
@@ -42,8 +43,8 @@ public class LISBQwithQFReachEncoding extends ReachEncoding {
   /** The null variable in elt */
   private final Expression nil;
   
-  /** The elt -> elt mapping */
-  private final FunctionType f;
+  /** The Array of elt -> elt mapping */
+  private ArrayExpression f;
 
   /** The (elt, elt, elt) -> bool mapping */
   private final FunctionType rf;
@@ -56,9 +57,9 @@ public class LISBQwithQFReachEncoding extends ReachEncoding {
   
   private final Selector nextSel;
   
-  private final Map<Expression, Expression> boundVarMap;
+  private Map<Expression, Expression> boundVarMap;
   
-  public LISBQwithQFReachEncoding(ExpressionManager exprManager) {
+  public LISBQwithQFArrReachEncoding(ExpressionManager exprManager) {
     super(exprManager);
 
     try {
@@ -72,154 +73,10 @@ public class LISBQwithQFReachEncoding extends ReachEncoding {
       /* Create function expression */
       
       nil = getEltExpr(exprManager.bitVectorZero(DEFAULT_WORD_SIZE));
-      f = exprManager.functionType(FUN_F, eltType, eltType);
+      f = exprManager.arrayVar(FUN_F, eltType, eltType, true);
       rf = exprManager.functionType(FUN_RF, 
           ImmutableList.of(eltType, eltType, eltType), 
           exprManager.booleanType());
-
-      /* Create data constraints */
-      
-      ImmutableSet.Builder<BooleanExpression> rewrite_rulesetBuilder = ImmutableSet
-          .builder();
-      
-      /* Create bound vars */
-      boundVarMap = Maps.newHashMap();
-      int size = 4;
-      VariableExpression[] xvars = new VariableExpression[size];
-      Expression[] xbounds = new Expression[size];
-      
-      for(int i = 0; i < size; i++) {
-        xvars[i] = exprManager.variable("x"+ i, eltType, false);
-        xbounds[i] = exprManager.boundExpression(i, eltType);
-        boundVarMap.put(xbounds[i], xvars[i]);
-      }
-      
-      /* Create a f(null)=null assumption */
-      
-      BooleanExpression nil_assumption = applyF(nil).eq(nil);
-      
-      rewrite_rulesetBuilder.add(nil_assumption);
-      
-      ImmutableList<? extends VariableExpression> vars;
-      ImmutableList<? extends Expression> triggers;
-      Expression _let_0;
-      BooleanExpression head, body;
-      
-      /* Create a reflexive rule */
-//      vars = ImmutableList.of(xvars[0]);
-//      body = applyRf(xbounds[0], xbounds[0], xbounds[0]);
-//      triggers = ImmutableList.of(applyF(xbounds[0]));
-//      BooleanExpression reflex_rule = exprManager.forall(vars, body, triggers);
-      
-//      rewrite_rulesetBuilder.add(reflex_rule);
-            
-      /* Create a step rule */
-      
-      vars = ImmutableList.of(xvars[0]);   
-      _let_0 = applyF(xbounds[0]);
-      body = applyRf(xbounds[0], _let_0, _let_0);
-      triggers = ImmutableList.of(_let_0);
-      BooleanExpression step_rule = exprManager.forall(vars, body, triggers);
-      
-      rewrite_rulesetBuilder.add(step_rule); 
-      
-      /* Create a reach rule */
-      
-      vars = ImmutableList.of(xvars[0], xvars[1]);
-      
-      head = applyRf(xbounds[1], xbounds[0], xbounds[0]);
-      body = exprManager.or(exprManager.eq(xbounds[1], xbounds[0]), 
-          applyRf(xbounds[1], applyF(xbounds[1]), xbounds[0]));
-      triggers = ImmutableList.of(
-          applyRf(xbounds[1], xbounds[0], xbounds[0]), 
-          applyF(xbounds[1]));
-      BooleanExpression reach_rule = exprManager.forall(vars, head.implies(body), triggers);
-      
-      rewrite_rulesetBuilder.add(reach_rule);
-      
-      /* Create a cycle rule */
-
-      vars = ImmutableList.of(xvars[0], xvars[1]);
-      
-      head = applyRf(xbounds[1], xbounds[0], xbounds[0]).
-          and(exprManager.eq(applyF(xbounds[1]), xbounds[1]));
-      body = exprManager.eq(xbounds[1], xbounds[0]);
-      triggers = ImmutableList.of(
-          applyRf(xbounds[1], xbounds[0], xbounds[0]), 
-          applyF(xbounds[1]));
-      BooleanExpression cycle_rule = exprManager.forall(vars, head.implies(body), triggers);
-      
-      rewrite_rulesetBuilder.add(cycle_rule);
-      
-      /* Create a sandwich rule */
-      
-      vars = ImmutableList.of(xvars[0], xvars[1]);
-      
-      head = applyRf(xbounds[0], xbounds[1], xbounds[0]);
-      body = exprManager.eq(xbounds[0], xbounds[1]);
-      BooleanExpression sandwich_rule = exprManager.forall(vars, head.implies(body));
-      
-      rewrite_rulesetBuilder.add(sandwich_rule);
-      
-      /* Create an order1 rule */
-      
-      vars = ImmutableList.of(xvars[0], xvars[1], xvars[2]);
-      
-      head = exprManager.and(applyRf(xbounds[0], xbounds[1], xbounds[1]), 
-          applyRf(xbounds[0], xbounds[2], xbounds[2]));
-      body = exprManager.or(applyRf(xbounds[0], xbounds[1], xbounds[2]), 
-          applyRf(xbounds[0], xbounds[2], xbounds[1]));
-      BooleanExpression order1_rule = exprManager.forall(vars, head.implies(body));
-      
-      rewrite_rulesetBuilder.add(order1_rule);
-      
-      /* Create an order2 rule */
-      
-      vars = ImmutableList.of(xvars[0], xvars[1], xvars[2]);
-      
-      head = applyRf(xbounds[0], xbounds[1], xbounds[2]);
-      body = exprManager.and(applyRf(xbounds[0], xbounds[1], xbounds[1]), 
-          applyRf(xbounds[1], xbounds[2], xbounds[2]));
-      BooleanExpression order2_rule = exprManager.forall(vars, head.implies(body));
-      
-      rewrite_rulesetBuilder.add(order2_rule);
-      
-      /* Create a transitive1 rule */
-      
-      vars = ImmutableList.of(xvars[0], xvars[1], xvars[2]); 
-      
-      head = exprManager.and(applyRf(xbounds[0], xbounds[1], xbounds[1]), 
-          applyRf(xbounds[1], xbounds[2], xbounds[2]));
-      body = applyRf(xbounds[0], xbounds[2], xbounds[2]);
-      BooleanExpression trans1_rule = exprManager.forall(vars, head.implies(body));
-      
-      rewrite_rulesetBuilder.add(trans1_rule);
-      
-      /* Create a transitive2 rule */
-      
-      vars = ImmutableList.of(xvars[0], xvars[1], xvars[2], xvars[3]);
-      
-      head = exprManager.and(applyRf(xbounds[0], xbounds[1], xbounds[2]), 
-          applyRf(xbounds[1], xbounds[3], xbounds[2]));
-      body = exprManager.and(applyRf(xbounds[0], xbounds[1], xbounds[3]), 
-          applyRf(xbounds[0], xbounds[3], xbounds[2]));
-      BooleanExpression trans2_rule = exprManager.forall(vars, head.implies(body));
-      
-      rewrite_rulesetBuilder.add(trans2_rule);
-      
-      /* Create a transitive3 rule */
-      
-      vars = ImmutableList.of(xvars[0], xvars[1], xvars[2], xvars[3]);
-      
-      head = exprManager.and(applyRf(xbounds[0], xbounds[1], xbounds[2]), 
-          applyRf(xbounds[0], xbounds[3], xbounds[1]));
-      body = exprManager.and(applyRf(xbounds[0], xbounds[3], xbounds[2]), 
-          applyRf(xbounds[3], xbounds[1], xbounds[2]));
-      BooleanExpression trans3_rule = exprManager.forall(vars, head.implies(body));
-      
-      rewrite_rulesetBuilder.add(trans3_rule);
-      
-      rewrite_rules = rewrite_rulesetBuilder.build();
       
     } catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
@@ -232,7 +89,7 @@ public class LISBQwithQFReachEncoding extends ReachEncoding {
     try {
       if (FUN_F.equals(name)) {
         checkArgument(args.size() == 1);
-        return f.apply(args.get(0));
+        return f.index(args.get(0));
       }
 
       if (FUN_RF.equals(name)) {
@@ -256,17 +113,25 @@ public class LISBQwithQFReachEncoding extends ReachEncoding {
   
   @Override
   public ImmutableSet<BooleanExpression> getAssumptions() {
-    return ImmutableSet.copyOf(Sets.union(rewrite_rules, super.getAssumptions()));
+    return ImmutableSet.copyOf(Sets.union(getRewriteRules(), super.getAssumptions()));
   }
   
-  private Expression applyF(Expression arg) {
-    return getExpressionManager().applyExpr(f, arg);
+  public Expression applyF(Expression arg) {
+    return f.index(arg);
   }
 
-  private BooleanExpression applyRf(Expression... args) {
+  protected BooleanExpression applyRf(Expression... args) {
     ImmutableList<Expression> argExprs = ImmutableList.of(args);
     Preconditions.checkArgument(argExprs.size() == 3);
     return getExpressionManager().applyExpr(rf, argExprs).asBooleanExpression();
+  }
+  
+  private ImmutableSet<BooleanExpression> getRewriteRules() {
+    if(rewrite_rules != null)   return rewrite_rules;
+    else    {
+      composeRewriteRules(); // compose rewrite rules until collect all updates of f 
+      return rewrite_rules;
+    }
   }
 
   /**
@@ -276,9 +141,9 @@ public class LISBQwithQFReachEncoding extends ReachEncoding {
     ImmutableSet.Builder<Expression> instCand_builder = ImmutableSet.builder();
     
     if(expr.getArity() == 0)    return instCand_builder.build();   
-    if(expr.getKind().equals(Kind.APPLY)) 
-      if(f.equals(expr.getFuncDecl()))
-        return instCand_builder.add(expr.getChild(0)).build();
+    if(expr.getKind().equals(Kind.ARRAY_INDEX)) 
+      if(f.equals(expr.getChild(0)))
+        return instCand_builder.add(expr.getChild(1)).build();
   
     for(Expression child : expr.getChildren())
       instCand_builder.addAll(checkApplyF(child));
@@ -334,7 +199,7 @@ public class LISBQwithQFReachEncoding extends ReachEncoding {
     
     ImmutableSet.Builder<BooleanExpression> inst_rulesetBuilder = ImmutableSet
         .builder();
-    for(BooleanExpression rule : rewrite_rules) {
+    for(BooleanExpression rule : getRewriteRules()) {
       BooleanExpression body = rule.getBody();
       if(body != null) {
         ImmutableSet<? extends Expression> instCand = null;
@@ -382,18 +247,7 @@ public class LISBQwithQFReachEncoding extends ReachEncoding {
         equals(getExpressionManager().bitVectorType(DEFAULT_WORD_SIZE)));
     return consConstr.apply(arg);
   }
-
-  @Override
-  public BooleanExpression assignReach(String field, Expression arg1,
-      Expression arg2) {
-    return applyF(getEltExpr(arg1)).eq(getEltExpr(arg2));
-  }
-
-  @Override
-  public void updateReach(String field, Expression arg1, Expression arg2) {
-    throw new UnsupportedOperationException("update reach is not supported in LISBQwithQF.");
-  }
-
+  
   @Override
   public BooleanExpression isRoot(String field, Expression rootExpr) {
     ExpressionManager exprManager = getExpressionManager();
@@ -405,6 +259,22 @@ public class LISBQwithQFReachEncoding extends ReachEncoding {
   }
   
   @Override
+  public BooleanExpression reach(String field, Expression arg1, Expression arg2, Expression arg3) {
+    return applyRf(getEltExpr(arg1), getEltExpr(arg2), getEltExpr(arg3));
+  }
+  
+  @Override
+  public void updateReach(String field, Expression lval, Expression rval) {
+    f = f.update(getEltExpr(lval), getEltExpr(rval));
+  }
+
+  @Override
+  public BooleanExpression assignReach(String field, Expression arg1,
+      Expression arg2) {
+    return f.index(getEltExpr(arg1)).eq(getEltExpr(arg2));
+  }
+  
+  @Override
   public Type getEltType() {
     return eltType;
   }
@@ -413,10 +283,149 @@ public class LISBQwithQFReachEncoding extends ReachEncoding {
   public Expression getNil() {
     return nil;
   }
+  
+  private void composeRewriteRules() {
+    ExpressionManager exprManager = getExpressionManager();
+    ImmutableSet.Builder<BooleanExpression> rewrite_rulesetBuilder = ImmutableSet
+        .builder();
+    
+    /* Create bound vars */
+    boundVarMap = Maps.newHashMap();
+    int size = 4;
+    VariableExpression[] xvars = new VariableExpression[size];
+    Expression[] xbounds = new Expression[size];
+    
+    for(int i = 0; i < size; i++) {
+      xvars[i] = exprManager.variable("x"+ i, eltType, false);
+      xbounds[i] = exprManager.boundExpression(i, eltType);
+      boundVarMap.put(xbounds[i], xvars[i]);
+    }
+    
+    /* Create a f(null)=null assumption */
+    
+    BooleanExpression nil_assumption = applyF(nil).eq(nil);
+    
+    rewrite_rulesetBuilder.add(nil_assumption);
+    
+    ImmutableList<? extends VariableExpression> vars;
+    ImmutableList<? extends Expression> triggers;
+    Expression _let_0;
+    BooleanExpression head, body;
+    
+    /* Create a reflexive rule */
+//    vars = ImmutableList.of(xvars[0]);
+//    body = applyRf(xbounds[0], xbounds[0], xbounds[0]);
+//    triggers = ImmutableList.of(applyF(xbounds[0]));
+//    BooleanExpression reflex_rule = exprManager.forall(vars, body, triggers);
+    
+//    rewrite_rulesetBuilder.add(reflex_rule);
+          
+    /* Create a step rule */
+    
+    vars = ImmutableList.of(xvars[0]);   
+    _let_0 = applyF(xbounds[0]);
+    body = applyRf(xbounds[0], _let_0, _let_0);
+    triggers = ImmutableList.of(_let_0);
+    BooleanExpression step_rule = exprManager.forall(vars, body/*, triggers*/);
+    
+    rewrite_rulesetBuilder.add(step_rule); 
+    
+    /* Create a reach rule */
+    
+    vars = ImmutableList.of(xvars[0], xvars[1]);
+    
+    head = applyRf(xbounds[1], xbounds[0], xbounds[0]);
+    body = exprManager.or(exprManager.eq(xbounds[1], xbounds[0]), 
+        applyRf(xbounds[1], applyF(xbounds[1]), xbounds[0]));
+    triggers = ImmutableList.of(
+        applyRf(xbounds[1], xbounds[0], xbounds[0]), 
+        applyF(xbounds[1]));
+    BooleanExpression reach_rule = exprManager.forall(vars, head.implies(body)/*, triggers*/);
+    
+    rewrite_rulesetBuilder.add(reach_rule);
+    
+    /* Create a cycle rule */
 
-  @Override
-  public BooleanExpression reach(String field, Expression arg1,
-      Expression arg2, Expression arg3) {
-    return applyRf(getEltExpr(arg1), getEltExpr(arg2), getEltExpr(arg3));
+    vars = ImmutableList.of(xvars[0], xvars[1]);
+    
+    head = applyRf(xbounds[1], xbounds[0], xbounds[0]).
+        and(exprManager.eq(applyF(xbounds[1]), xbounds[1]));
+    body = exprManager.eq(xbounds[1], xbounds[0]);
+    triggers = ImmutableList.of(
+        applyRf(xbounds[1], xbounds[0], xbounds[0]), 
+        applyF(xbounds[1]));
+    BooleanExpression cycle_rule = exprManager.forall(vars, head.implies(body)/*, triggers*/);
+    
+    rewrite_rulesetBuilder.add(cycle_rule);
+    
+    /* Create a sandwich rule */
+    
+    vars = ImmutableList.of(xvars[0], xvars[1]);
+    
+    head = applyRf(xbounds[0], xbounds[1], xbounds[0]);
+    body = exprManager.eq(xbounds[0], xbounds[1]);
+    BooleanExpression sandwich_rule = exprManager.forall(vars, head.implies(body));
+    
+    rewrite_rulesetBuilder.add(sandwich_rule);
+    
+    /* Create an order1 rule */
+    
+    vars = ImmutableList.of(xvars[0], xvars[1], xvars[2]);
+    
+    head = exprManager.and(applyRf(xbounds[0], xbounds[1], xbounds[1]), 
+        applyRf(xbounds[0], xbounds[2], xbounds[2]));
+    body = exprManager.or(applyRf(xbounds[0], xbounds[1], xbounds[2]), 
+        applyRf(xbounds[0], xbounds[2], xbounds[1]));
+    BooleanExpression order1_rule = exprManager.forall(vars, head.implies(body));
+    
+    rewrite_rulesetBuilder.add(order1_rule);
+    
+    /* Create an order2 rule */
+    
+    vars = ImmutableList.of(xvars[0], xvars[1], xvars[2]);
+    
+    head = applyRf(xbounds[0], xbounds[1], xbounds[2]);
+    body = exprManager.and(applyRf(xbounds[0], xbounds[1], xbounds[1]), 
+        applyRf(xbounds[1], xbounds[2], xbounds[2]));
+    BooleanExpression order2_rule = exprManager.forall(vars, head.implies(body));
+    
+    rewrite_rulesetBuilder.add(order2_rule);
+    
+    /* Create a transitive1 rule */
+    
+    vars = ImmutableList.of(xvars[0], xvars[1], xvars[2]); 
+    
+    head = exprManager.and(applyRf(xbounds[0], xbounds[1], xbounds[1]), 
+        applyRf(xbounds[1], xbounds[2], xbounds[2]));
+    body = applyRf(xbounds[0], xbounds[2], xbounds[2]);
+    BooleanExpression trans1_rule = exprManager.forall(vars, head.implies(body));
+    
+    rewrite_rulesetBuilder.add(trans1_rule);
+    
+    /* Create a transitive2 rule */
+    
+    vars = ImmutableList.of(xvars[0], xvars[1], xvars[2], xvars[3]);
+    
+    head = exprManager.and(applyRf(xbounds[0], xbounds[1], xbounds[2]), 
+        applyRf(xbounds[1], xbounds[3], xbounds[2]));
+    body = exprManager.and(applyRf(xbounds[0], xbounds[1], xbounds[3]), 
+        applyRf(xbounds[0], xbounds[3], xbounds[2]));
+    BooleanExpression trans2_rule = exprManager.forall(vars, head.implies(body));
+    
+    rewrite_rulesetBuilder.add(trans2_rule);
+    
+    /* Create a transitive3 rule */
+    
+    vars = ImmutableList.of(xvars[0], xvars[1], xvars[2], xvars[3]);
+    
+    head = exprManager.and(applyRf(xbounds[0], xbounds[1], xbounds[2]), 
+        applyRf(xbounds[0], xbounds[3], xbounds[1]));
+    body = exprManager.and(applyRf(xbounds[0], xbounds[3], xbounds[2]), 
+        applyRf(xbounds[3], xbounds[1], xbounds[2]));
+    BooleanExpression trans3_rule = exprManager.forall(vars, head.implies(body));
+    
+    rewrite_rulesetBuilder.add(trans3_rule);
+    
+    rewrite_rules = rewrite_rulesetBuilder.build();
   }
 }

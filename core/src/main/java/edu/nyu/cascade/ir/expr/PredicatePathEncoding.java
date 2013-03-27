@@ -91,14 +91,6 @@ public class PredicatePathEncoding extends
   }
   
   @Override
-  public Expression assumeReachRelation(Expression pre) {
-    if(!(getMemoryModel() instanceof ReachMemoryModel))  
-      return getExpressionManager().tt();
-    
-    return ((ReachMemoryModel) getMemoryModel()).getReachAssumptions(pre);
-  }
-  
-  @Override
   public FunctionExpression emptyPath()  {
     return suspendBool(getExpressionEncoder().getMemoryModel().initialState()
         .eq(state));
