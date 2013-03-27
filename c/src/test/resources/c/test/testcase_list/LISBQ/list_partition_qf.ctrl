@@ -26,8 +26,7 @@
       <command>
 	<cascadeFunction> cascade_check </cascadeFunction>
 	<argument><![CDATA[
-	_is_root(next, p_false) && _is_root(next, p_true)
-	&& _forall((struct NodeStruct*) v, _implies(_reach(next, p_true, v) && v != 0, v->data != 0))
+    _forall((struct NodeStruct*) v, _implies(_reach(next, p_true, v) && v != 0, v->data != 0))
 	]]>
 	</argument>
       </command>
