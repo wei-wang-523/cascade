@@ -1260,6 +1260,10 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     return BoundVariableListExpressionImpl.valueOf(this,importExpression(expression));
   }
   
+  public BoundVariableExpressionImpl boundVariable(String name, Type type, boolean fresh) {
+    return BoundVariableExpressionImpl.create(this, name, type, fresh);
+  }
+  
   public BoundVariableListExpressionImpl boundVariableList(Expression first, 
       Expression... rest) {
     Preconditions.checkArgument(rest.length > 0);

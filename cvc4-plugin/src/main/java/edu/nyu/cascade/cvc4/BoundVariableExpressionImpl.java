@@ -46,7 +46,7 @@ public class BoundVariableExpressionImpl extends ExpressionImpl implements
     return result;
   }
   
-  static  ExpressionImpl valueOfVariable(
+  static ExpressionImpl valueOfVariable(
       ExpressionManagerImpl exprManager, final Expr expr, Type type) {
     Preconditions.checkArgument(expr.getKind().equals(edu.nyu.acsys.CVC4.Kind.VARIABLE) 
         /*|| expr.isSymbol()*/);
@@ -56,6 +56,10 @@ public class BoundVariableExpressionImpl extends ExpressionImpl implements
         VARIABLE, expr, expr.toString(), type);
     result.setIsVariable(true);
     return result;
+  }
+  
+  static BoundVariableExpressionImpl create(ExpressionManagerImpl exprManager, String name, Type type, boolean fresh) {
+    return new BoundVariableExpressionImpl(exprManager, name, type, fresh);
   }
   
   protected BoundVariableExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,

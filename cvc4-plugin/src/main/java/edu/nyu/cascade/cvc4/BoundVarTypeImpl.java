@@ -1,8 +1,6 @@
 package edu.nyu.cascade.cvc4;
 
-import edu.nyu.cascade.prover.type.BoundVarType;
-
-public final class BoundVarTypeImpl extends TypeImpl implements BoundVarType {
+public final class BoundVarTypeImpl extends TypeImpl {
   static BoundVarTypeImpl create(ExpressionManagerImpl em) {
     return new BoundVarTypeImpl(em);
   }

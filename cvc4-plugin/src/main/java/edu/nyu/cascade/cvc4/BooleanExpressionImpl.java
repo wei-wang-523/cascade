@@ -206,7 +206,12 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
           public Expr apply(ExprManager em, List<Expr> vars, Expr body)
               throws Exception {
             vectorExpr varList = new vectorExpr();
-            for(Expr var : vars)    varList.add(var);
+            for(Expr var : vars) {
+              if(var.getKind() == edu.nyu.acsys.CVC4.Kind.BOUND_VARIABLE)
+                varList.add(var);
+              else
+                varList.add(em.mkBoundVar(var.toString(), var.getType()));
+            }
             Expr boundVarList = em.mkExpr(edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
             return em.mkExpr(edu.nyu.acsys.CVC4.Kind.EXISTS, boundVarList, body);
           }
@@ -237,7 +242,12 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
           public Expr apply(ExprManager em, List<Expr> vars, Expr body)
               throws Exception {
             vectorExpr varList = new vectorExpr();
-            for(Expr var : vars)    varList.add(var);
+            for(Expr var : vars) {
+              if(var.getKind() == edu.nyu.acsys.CVC4.Kind.BOUND_VARIABLE)
+                varList.add(var);
+              else
+                varList.add(em.mkBoundVar(var.toString(), var.getType()));
+            }
             Expr boundVarList = em.mkExpr(edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
             return em.mkExpr(edu.nyu.acsys.CVC4.Kind.FORALL, boundVarList, body);
           }
@@ -257,7 +267,12 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
           public Expr apply(ExprManager em, List<Expr> vars, Expr body, List<Expr> triggers)
               throws Exception {
             vectorExpr varList = new vectorExpr();
-            for(Expr var : vars)    varList.add(var);
+            for(Expr var : vars) {
+              if(var.getKind() == edu.nyu.acsys.CVC4.Kind.BOUND_VARIABLE)
+                varList.add(var);
+              else
+                varList.add(em.mkBoundVar(var.toString(), var.getType()));
+            }
             Expr boundVarList = em.mkExpr(edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
             vectorExpr triggerList = new vectorExpr();
             for(Expr trigger : triggers) {

@@ -1,7 +1,6 @@
 package edu.nyu.cascade.cvc4;
 
 import java.util.Arrays;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 

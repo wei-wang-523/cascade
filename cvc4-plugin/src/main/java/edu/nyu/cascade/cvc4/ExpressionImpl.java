@@ -33,7 +33,6 @@ import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
-import edu.nyu.cascade.prover.type.BoundVarType;
 import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.IntegerType;
@@ -997,8 +996,17 @@ public class ExpressionImpl implements Expression {
     return getType() instanceof InductiveType;
   }
   
+  public boolean isBoundVariable() {
+    return getType() instanceof BoundVarTypeImpl;
+  }
+  
   public boolean isBoundVariableList() {
-    return getType() instanceof BoundVarType;
+    return Iterables.all(children, new Predicate<ExpressionImpl>() {
+      @Override
+      public boolean apply(ExpressionImpl input) {
+        return input.isBoundVariable();
+      }
+    });
   }
   
   public BoundVariableListExpressionImpl asBoundVariableList() {
