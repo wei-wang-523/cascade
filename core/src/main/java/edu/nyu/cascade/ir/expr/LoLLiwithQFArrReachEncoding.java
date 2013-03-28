@@ -280,7 +280,7 @@ public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
   @Override
   public BooleanExpression isRoot(String field, Expression rootExpr) {
     ExpressionManager exprManager = getExpressionManager();
-    Expression x_var = exprManager.boundVariable("x", eltType, true);
+    Expression x_var = exprManager.variable("x", eltType, true);
     rootExpr = getEltExpr(rootExpr);
     BooleanExpression res = exprManager.implies(rootExpr.neq(nil), 
         exprManager.forall(x_var, rootExpr.neq(applyF(x_var))));

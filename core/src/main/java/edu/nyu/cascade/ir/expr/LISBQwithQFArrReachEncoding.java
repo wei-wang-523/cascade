@@ -138,8 +138,7 @@ public class LISBQwithQFArrReachEncoding extends ReachEncoding {
    * Check if <code>expr</code> contains applyF sub-expression.
    */
   private ImmutableSet<? extends Expression> checkApplyF(Expression expr) {
-    ImmutableSet.Builder<Expression> instCand_builder = ImmutableSet.builder();
-    
+    ImmutableSet.Builder<Expression> instCand_builder = ImmutableSet.builder();    
     if(expr.getArity() == 0)    return instCand_builder.build();   
     if(expr.getKind().equals(Kind.ARRAY_INDEX)) 
       if(f.equals(expr.getChild(0)))
@@ -251,7 +250,7 @@ public class LISBQwithQFArrReachEncoding extends ReachEncoding {
   @Override
   public BooleanExpression isRoot(String field, Expression rootExpr) {
     ExpressionManager exprManager = getExpressionManager();
-    Expression x_var = exprManager.boundVariable("x", eltType, true);
+    Expression x_var = exprManager.variable("x", eltType, true);
     rootExpr = getEltExpr(rootExpr);
     BooleanExpression res = exprManager.implies(rootExpr.neq(nil), 
         exprManager.forall(x_var, rootExpr.neq(applyF(x_var))));

@@ -346,12 +346,6 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
     variableSet.add(res);
     return res;
   }
-  
-  @Override
-  public VariableExpression boundVariable(String name,
-      Type type, boolean fresh) {
-    return type.boundVariable(name, fresh);
-  }
 
   @Override
   public IntegerExpression zero() {

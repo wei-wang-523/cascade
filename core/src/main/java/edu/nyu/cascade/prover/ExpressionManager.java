@@ -1023,13 +1023,6 @@ public interface ExpressionManager {
    * manager, the name may be mangled to ensure uniqueness.
    */
   VariableExpression variable(String name, Type type, boolean fresh);
-  
-  /**
-   * Create a Bound variable of the given type. If <code>fresh</code> is true and
-   * a variable of the same name has been previously created by this expression
-   * manager, the name may be mangled to ensure uniqueness.
-   */
-  VariableExpression boundVariable(String name, Type type, boolean fresh);
 
   /**
    * Create a new Boolean xor expression
