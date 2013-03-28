@@ -940,11 +940,6 @@ final class DryRunTheoremProver implements TheoremProver {
     public VariableExpression variable(String name, Type type, boolean fresh) {
       return exprManager.variable(name, type, fresh);
     }
-    
-    @Override
-    public VariableExpression boundVariable(String name, Type type, boolean fresh) {
-      return exprManager.boundVariable(name, type, fresh);
-    }
 
     @Override
     public BooleanExpression xor(Expression left, Expression right) {
