@@ -308,26 +308,26 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
     return axiom;
   }
   
-//  private Axiom refl_axiom() {
-//    ExpressionManager exprManager = getExpressionManager();
-//    Axiom axiom = Axiom.create("refl");
-//    Expression xbounds[] = new Expression[2];
-//    VariableExpression xvars[] = new VariableExpression[2];
-//    for(int i = 0; i < 2; i++) {
-//      if(i == 0) {
-//        xbounds[i] = exprManager.boundExpression(i, fldType);
-//        xvars[i] = exprManager.variable("x", fldType, true);
-//      } else {
-//        xbounds[i] = exprManager.boundExpression(i, eltType);
-//        xvars[i] = exprManager.variable("x", eltType, true);
-//      }
-//      axiom.putBoundVar(xbounds[i], xvars[i]);
-//    }
-//    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
-//    BooleanExpression body = applyRf(xbounds[0], xbounds[1], xbounds[1], xbounds[1]);
-//    axiom.setRule(exprManager.forall(vars, body));
-//    return axiom;
-//  }
+  private Axiom refl_axiom() {
+    ExpressionManager exprManager = getExpressionManager();
+    Axiom axiom = Axiom.create("refl");
+    Expression xbounds[] = new Expression[2];
+    VariableExpression xvars[] = new VariableExpression[2];
+    for(int i = 0; i < 2; i++) {
+      if(i == 0) {
+        xbounds[i] = exprManager.boundExpression(i, fldType);
+        xvars[i] = exprManager.variable("x", fldType, true);
+      } else {
+        xbounds[i] = exprManager.boundExpression(i, eltType);
+        xvars[i] = exprManager.variable("x", eltType, true);
+      }
+      axiom.putBoundVar(xbounds[i], xvars[i]);
+    }
+    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    BooleanExpression body = applyRf(xbounds[0], xbounds[1], xbounds[1], xbounds[1]);
+    axiom.setRule(exprManager.forall(vars, body));
+    return axiom;
+  }
   
   private Axiom step_axiom() {
     ExpressionManager exprManager = getExpressionManager();
