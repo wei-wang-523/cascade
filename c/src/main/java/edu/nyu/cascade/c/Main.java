@@ -168,6 +168,9 @@ public class Main {
       .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_PARTIAL_INST) //
               .withDescription("Enable partial instantiation.") //
+              .hasArg() //
+              .withArgName("fld: field; elt: element; fld-of-elt: field of element") //
+              .withType(String.class)
               .create()) //
       .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_TOTAL_INST) //
