@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -65,6 +66,8 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
     try {
       BitVectorType wordType = exprManager.bitVectorType(DEFAULT_WORD_SIZE);
 
+      fldMap = Maps.newHashMap();
+      
       /* Create datatype */
       nextSel = exprManager.selector(NEXT_SELECTOR_NAME, wordType);
       consConstr = exprManager.constructor(ELT_F_CONST, nextSel);
@@ -72,7 +75,6 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
       fldType = exprManager.arrayType(eltType, eltType);
       
       /* Create function expression */
-      fldMap = Maps.newHashMap();
       nil = getEltExpr(exprManager.bitVectorZero(DEFAULT_WORD_SIZE));
       rf = exprManager.functionType(FUN_RF, 
           ImmutableList.of(fldType, eltType, eltType, eltType), 
@@ -129,21 +131,60 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
     return builder.build();
   }
 
+  private static class InstCand {
+    private final ImmutableSet<? extends Expression> indices;
+    private final ImmutableSet<? extends Expression> arrays;
+    
+    InstCand(ImmutableSet<? extends Expression> indices,
+        ImmutableSet<? extends Expression> arrays) {
+      this.indices = indices;
+      this.arrays = arrays;
+    }
+    
+    public static InstCand create(ImmutableSet<? extends Expression> indices,
+        ImmutableSet<? extends Expression> arrays) {
+      return new InstCand(indices, arrays);
+    }
+    
+    public ImmutableSet<? extends Expression> getIndices() {
+      return indices;
+    }
+    
+    public ImmutableSet<? extends Expression> getArrays() {
+      return arrays;
+    }
+    
+    public boolean isNoIndices() {
+      return indices.isEmpty();
+    }
+    
+    public boolean isNoArrays() {
+      return arrays.isEmpty();
+    }
+  }
+  
   /**
    * Check if <code>expr</code> contains applyF sub-expression.
    */
-  private ImmutableSet<? extends Expression> checkApplyF(Expression expr, List<? extends Expression> bounds) {
-    ImmutableSet.Builder<Expression> instCand_builder = ImmutableSet.builder();    
-    if(expr.getArity() == 0)    return instCand_builder.build();   
+  private InstCand checkApplyF(Expression expr, 
+      List<? extends Expression> bounds) {
+    ImmutableSet.Builder<Expression> instIndices_builder = ImmutableSet.builder();   
+    ImmutableSet.Builder<Expression> instArrays_builder = ImmutableSet.builder();  
+    if(expr.getArity() == 0)    
+      return InstCand.create(instIndices_builder.build(), instArrays_builder.build()); 
     if(expr.getKind().equals(Kind.ARRAY_INDEX)) {
-      if(expr.getChild(0).getType().equals(fldType))
-        if(bounds.contains(expr.getChild(1)))
-          return instCand_builder.add(expr.getChild(1)).build();
+      if(expr.getChild(0).getType().equals(fldType) && bounds.contains(expr.getChild(0))) {
+        instArrays_builder.add(expr.getChild(0));
+        if(expr.getChild(1).getType().equals(eltType) && bounds.contains(expr.getChild(1)))
+          instIndices_builder.add(expr.getChild(1));
+      }
     }
-    for(Expression child : expr.getChildren())
-      instCand_builder.addAll(checkApplyF(child, bounds));
-    
-    return instCand_builder.build();
+    for(Expression child : expr.getChildren()) {
+      InstCand cand = checkApplyF(child, bounds);
+      instIndices_builder.addAll(cand.getIndices());
+      instArrays_builder.addAll(cand.getArrays());
+    }
+    return InstCand.create(instIndices_builder.build(), instArrays_builder.build()); 
   }
   
   /**
@@ -199,32 +240,51 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
       BooleanExpression rule = axiom.getRule();
       BooleanExpression body = rule.getBody();
       if(body != null) {
-        ImmutableSet<? extends Expression> instCand = null;
+        InstCand instCand = null;
+        List<? extends Expression> boundVars = Lists.newArrayList(rule.getBoundVars());
+        
         if(Preferences.isSet(Preferences.OPTION_PARTIAL_INST)) {          
           instCand = checkApplyF(body, axiom.getBounds()); // check if body contains applyF(x)
         } else { // TOTOALLY_INST
-          ImmutableSet.Builder<Expression> instCand_builder = ImmutableSet.builder();
+          ImmutableSet.Builder<Expression> instIndices_builder = ImmutableSet.builder();   
+          ImmutableSet.Builder<Expression> instArrays_builder = ImmutableSet.builder(); 
           for(Expression key : axiom.getBounds()) {
             Expression var = axiom.getVar(key);
             if(rule.getBoundVars().contains(var) && key.getType().equals(eltType))  
-              instCand_builder.add(key);
+              instIndices_builder.add(key);
+            if(key.getType().equals(fldType))
+              instArrays_builder.add(key);
           }
-          instCand = instCand_builder.build();
+          instCand = InstCand.create(instIndices_builder.build(), instArrays_builder.build());
         }
-        if(!instCand.isEmpty()) {
-          ImmutableList<? extends Expression> instBodyList = instantiate(body, instCand, gterms);
-            
-          List<? extends Expression> boundVars = Lists.newArrayList(rule.getBoundVars());
-          for(Expression cand : instCand)   boundVars.remove(axiom.getVar(cand));
+        
+        if(!(instCand.isNoArrays() && instCand.isNoIndices())) {
+          ImmutableList<? extends Expression> instBodyList = ImmutableList.of(body);
           
-          /* List<Iterable<? extends Expression>> instTriggerList = Lists.newArrayList();
-            Iterable<? extends Expression> triggers = rule.getTriggers().get(0); 
-            for(Expression trigger : triggers){
-              List<? extends Expression> instTrigger = instantiate(trigger, instCand, gterms);
-              instTriggerList.add(instTrigger);
-            }          
-            Iterator<Iterable<? extends Expression>> iter = instTriggerList.iterator();
-           */
+          if((getInstOpt().equals(InstOpt.ELEMENT) 
+              || getInstOpt().equals(InstOpt.FIELD_OF_LEMENT)) 
+              && !instCand.isNoIndices()) { // Instantiate x in the applyF(f, x)
+            ImmutableList.Builder<Expression> instBodyList_builder = ImmutableList.builder();
+            for(Expression instBody : instBodyList)
+              instBodyList_builder.addAll(instantiate(instBody, instCand.getIndices(), gterms));
+            instBodyList = instBodyList_builder.build();
+            for(Expression cand : instCand.getIndices())     boundVars.remove(axiom.getVar(cand));
+          }
+          
+          if((getInstOpt().equals(InstOpt.FIELD) 
+              || getInstOpt().equals(InstOpt.FIELD_OF_LEMENT)) 
+              && !instCand.isNoArrays()) { // Instantiate f in the apply(f, x)
+            ImmutableList.Builder<Expression> instBodyList_builder = ImmutableList.builder();
+            for(Expression instBody : instBodyList) {
+              ImmutableSet.Builder<ArrayExpression> fields_builder = ImmutableSet.builder();
+              for(Entry<String, ArrayExpression> entry : fldMap.entrySet())
+                fields_builder.add(entry.getValue());
+              instBodyList_builder.addAll(instantiate(instBody, instCand.getArrays(), fields_builder.build()));
+            }
+            instBodyList = instBodyList_builder.build();
+            for(Expression cand : instCand.getArrays())     boundVars.remove(axiom.getVar(cand));
+          }
+          
           for(Expression instBody : instBodyList) {
             BooleanExpression inst_rule = boundVars.isEmpty() ? instBody.asBooleanExpression() :
               getExpressionManager().forall(boundVars, instBody/*, iter.next()*/);
@@ -308,13 +368,14 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
     return axiom;
   }
   
+  @SuppressWarnings("unused")
   private Axiom refl_axiom() {
     ExpressionManager exprManager = getExpressionManager();
     Axiom axiom = Axiom.create("refl");
     Expression xbounds[] = new Expression[2];
     VariableExpression xvars[] = new VariableExpression[2];
     for(int i = 0; i < 2; i++) {
-      if(i == 0) {
+      if(i == 1) {
         xbounds[i] = exprManager.boundExpression(i, fldType);
         xvars[i] = exprManager.variable("x", fldType, true);
       } else {
@@ -324,7 +385,7 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
     Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
-    BooleanExpression body = applyRf(xbounds[0], xbounds[1], xbounds[1], xbounds[1]);
+    BooleanExpression body = applyRf(xbounds[1], xbounds[0], xbounds[0], xbounds[0]);
     axiom.setRule(exprManager.forall(vars, body));
     return axiom;
   }
@@ -334,20 +395,37 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
     Axiom axiom = Axiom.create("step");
     Expression xbounds[] = new Expression[2];
     VariableExpression xvars[] = new VariableExpression[2];
-    for(int i = 0; i < 2; i++) {
-      if(i == 0) {
-        xbounds[i] = exprManager.boundExpression(i, fldType);
-        xvars[i] = exprManager.variable("x", fldType, true);
-      } else {
-        xbounds[i] = exprManager.boundExpression(i, eltType);
-        xvars[i] = exprManager.variable("x", eltType, true);
+    if(getInstOpt().equals(InstOpt.FIELD)) {
+      for(int i = 0; i < 2; i++) {
+        if(i == 1) {
+          xbounds[i] = exprManager.boundExpression(i, fldType);
+          xvars[i] = exprManager.variable("x", fldType, true);
+        } else {
+          xbounds[i] = exprManager.boundExpression(i, eltType);
+          xvars[i] = exprManager.variable("x", eltType, true);
+        }
+        axiom.putBoundVar(xbounds[i], xvars[i]);
       }
-      axiom.putBoundVar(xbounds[i], xvars[i]);
+      Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+      Expression _let_0 = applyF(xbounds[1], xbounds[0]);
+      BooleanExpression body = applyRf(xbounds[1], xbounds[0], _let_0, _let_0);
+      axiom.setRule(exprManager.forall(vars, body));
+    } else {
+      for(int i = 0; i < 2; i++) {
+        if(i == 0) {
+          xbounds[i] = exprManager.boundExpression(i, fldType);
+          xvars[i] = exprManager.variable("x", fldType, true);
+        } else {
+          xbounds[i] = exprManager.boundExpression(i, eltType);
+          xvars[i] = exprManager.variable("x", eltType, true);
+        }
+        axiom.putBoundVar(xbounds[i], xvars[i]);
+      }
+      Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+      Expression _let_0 = applyF(xbounds[0], xbounds[1]);
+      BooleanExpression body = applyRf(xbounds[0], xbounds[1], _let_0, _let_0);
+      axiom.setRule(exprManager.forall(vars, body));
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
-    Expression _let_0 = applyF(xbounds[0], xbounds[1]);
-    BooleanExpression body = applyRf(xbounds[0], xbounds[1], _let_0, _let_0);
-    axiom.setRule(exprManager.forall(vars, body));
     return axiom;
   }
   
@@ -356,21 +434,39 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
     Axiom axiom = Axiom.create("reach");
     Expression xbounds[] = new Expression[3];
     VariableExpression xvars[] = new VariableExpression[3];
-    for(int i = 0; i < 3; i++) {
-      if(i == 1) {
-        xbounds[i] = exprManager.boundExpression(i, fldType);
-        xvars[i] = exprManager.variable("x", fldType, true);
-      } else {
-        xbounds[i] = exprManager.boundExpression(i, eltType);
-        xvars[i] = exprManager.variable("x", eltType, true);
+    if(getInstOpt().equals(InstOpt.FIELD)) {
+      for(int i = 0; i < 3; i++) {
+        if(i == 2) {
+          xbounds[i] = exprManager.boundExpression(i, fldType);
+          xvars[i] = exprManager.variable("x", fldType, true);
+        } else {
+          xbounds[i] = exprManager.boundExpression(i, eltType);
+          xvars[i] = exprManager.variable("x", eltType, true);
+        }
+        axiom.putBoundVar(xbounds[i], xvars[i]);
       }
-      axiom.putBoundVar(xbounds[i], xvars[i]);
+      Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+      BooleanExpression head = applyRf(xbounds[2], xbounds[1], xbounds[0], xbounds[0]);
+      BooleanExpression body = exprManager.or(exprManager.eq(xbounds[1], xbounds[0]), 
+          applyRf(xbounds[2], xbounds[1], applyF(xbounds[2], xbounds[1]), xbounds[0]));
+      axiom.setRule(exprManager.forall(vars, head.implies(body)));
+    } else {   
+      for(int i = 0; i < 3; i++) {
+        if(i == 1) {
+          xbounds[i] = exprManager.boundExpression(i, fldType);
+          xvars[i] = exprManager.variable("x", fldType, true);
+        } else {
+          xbounds[i] = exprManager.boundExpression(i, eltType);
+          xvars[i] = exprManager.variable("x", eltType, true);
+        }
+        axiom.putBoundVar(xbounds[i], xvars[i]);
+      }
+      Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+      BooleanExpression head = applyRf(xbounds[1], xbounds[2], xbounds[0], xbounds[0]);
+      BooleanExpression body = exprManager.or(exprManager.eq(xbounds[2], xbounds[0]), 
+          applyRf(xbounds[1], xbounds[2], applyF(xbounds[1], xbounds[2]), xbounds[0]));
+      axiom.setRule(exprManager.forall(vars, head.implies(body)));
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
-    BooleanExpression head = applyRf(xbounds[1], xbounds[2], xbounds[0], xbounds[0]);
-    BooleanExpression body = exprManager.or(exprManager.eq(xbounds[2], xbounds[0]), 
-        applyRf(xbounds[1], xbounds[2], applyF(xbounds[1], xbounds[2]), xbounds[0]));
-    axiom.setRule(exprManager.forall(vars, head.implies(body)));
     return axiom;   
   }
   
@@ -379,21 +475,39 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
     Axiom axiom = Axiom.create("cycle");
     Expression xbounds[] = new Expression[3];
     VariableExpression xvars[] = new VariableExpression[3];
-    for(int i = 0; i < 3; i++) {
-      if(i == 1) {
-        xbounds[i] = exprManager.boundExpression(i, fldType);
-        xvars[i] = exprManager.variable("x", fldType, true);
-      } else {
-        xbounds[i] = exprManager.boundExpression(i, eltType);
-        xvars[i] = exprManager.variable("x", eltType, true);
+    if(getInstOpt().equals(InstOpt.FIELD)) { 
+      for(int i = 0; i < 3; i++) {
+        if(i == 2) {
+          xbounds[i] = exprManager.boundExpression(i, fldType);
+          xvars[i] = exprManager.variable("x", fldType, true);
+        } else {
+          xbounds[i] = exprManager.boundExpression(i, eltType);
+          xvars[i] = exprManager.variable("x", eltType, true);
+        }
+        axiom.putBoundVar(xbounds[i], xvars[i]);
       }
-      axiom.putBoundVar(xbounds[i], xvars[i]);
+      Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+      BooleanExpression head = applyRf(xbounds[2], xbounds[1], xbounds[0], xbounds[0]).
+          and(exprManager.eq(applyF(xbounds[2], xbounds[1]), xbounds[1]));
+      BooleanExpression body = exprManager.eq(xbounds[1], xbounds[0]);
+      axiom.setRule(exprManager.forall(vars, head.implies(body)));
+    } else {
+      for(int i = 0; i < 3; i++) {
+        if(i == 1) {
+          xbounds[i] = exprManager.boundExpression(i, fldType);
+          xvars[i] = exprManager.variable("x", fldType, true);
+        } else {
+          xbounds[i] = exprManager.boundExpression(i, eltType);
+          xvars[i] = exprManager.variable("x", eltType, true);
+        }
+        axiom.putBoundVar(xbounds[i], xvars[i]);
+      }
+      Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+      BooleanExpression head = applyRf(xbounds[1], xbounds[2], xbounds[0], xbounds[0]).
+          and(exprManager.eq(applyF(xbounds[1], xbounds[2]), xbounds[2]));
+      BooleanExpression body = exprManager.eq(xbounds[2], xbounds[0]);
+      axiom.setRule(exprManager.forall(vars, head.implies(body)));
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
-    BooleanExpression head = applyRf(xbounds[1], xbounds[2], xbounds[0], xbounds[0]).
-        and(exprManager.eq(applyF(xbounds[1], xbounds[2]), xbounds[2]));
-    BooleanExpression body = exprManager.eq(xbounds[2], xbounds[0]);
-    axiom.setRule(exprManager.forall(vars, head.implies(body)));
     return axiom;   
   }
   

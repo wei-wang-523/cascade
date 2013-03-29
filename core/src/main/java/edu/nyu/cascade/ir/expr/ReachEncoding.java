@@ -8,6 +8,7 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.Preferences;
 
 public abstract class ReachEncoding extends AbstractExpressionEncoding {
   
@@ -24,10 +25,31 @@ public abstract class ReachEncoding extends AbstractExpressionEncoding {
   
   public static final int DEFAULT_WORD_SIZE = 8;
   
+  protected enum InstOpt{ // Partial quantifier instantiation option
+    FIELD,
+    ELEMENT,
+    FIELD_OF_LEMENT,
+    ERROR;
+  }
+  
   public ReachEncoding(ExpressionManager exprManager) {
     super(BitVectorIntegerEncoding.create(exprManager, DEFAULT_WORD_SIZE),
         new DefaultBooleanEncoding(exprManager),
         new DefaultArrayEncoding(exprManager));
+  }
+  
+  protected InstOpt getInstOpt() {
+    if(!Preferences.isSet(Preferences.OPTION_PARTIAL_INST))
+      throw new IllegalArgumentException("Option --partial-inst is disabled");
+    String opt = Preferences.getString(Preferences.OPTION_PARTIAL_INST);
+    if(opt.equals("fld"))
+      return InstOpt.FIELD;
+    else if(opt.equals("elt"))
+      return InstOpt.FIELD;
+    else if(opt.equals("fld-of-elt"))
+      return InstOpt.FIELD_OF_LEMENT;
+    else
+      return InstOpt.ERROR;
   }
 
   public abstract Type getEltType() ;

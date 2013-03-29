@@ -253,19 +253,6 @@ public class LoLLiwithQFDArrReachEncoding extends ReachEncoding {
     return builder.build();
   }
   
-  private int getPartialInstOption() {
-    if(!Preferences.isSet(Preferences.OPTION_PARTIAL_INST))
-      throw new IllegalArgumentException("--partial-inst is disabled.");
-
-    String opt = Preferences.getString(Preferences.OPTION_PARTIAL_INST);
-    if(opt.equals("field"))
-      return 1;
-    else if(opt.equals("element"))
-      return 0;
-    else
-        throw new IllegalArgumentException("Invalid argument for option --partial-inst: " + opt);
-  }
-  
   /**
    * Instantiate partially bound variables in rewrite rules with <code>heapRegions</code>
    */
@@ -306,7 +293,9 @@ public class LoLLiwithQFDArrReachEncoding extends ReachEncoding {
         if(!(instCand.isNoArrays() && instCand.isNoIndices())) {
           ImmutableList<? extends Expression> instBodyList = ImmutableList.of(body);
           
-          if(getPartialInstOption() >= 0 && !instCand.isNoIndices()) { // Instantiate x in the applyF(f, x)
+          if((getInstOpt().equals(InstOpt.ELEMENT) 
+              || getInstOpt().equals(InstOpt.FIELD_OF_LEMENT))
+              && !instCand.isNoIndices()) { // Instantiate x in the applyF(f, x)
             ImmutableList.Builder<Expression> instBodyList_builder = ImmutableList.builder();
             for(Expression instBody : instBodyList)
               instBodyList_builder.addAll(instantiate(instBody, instCand.getIndices(), gterms));
@@ -314,7 +303,9 @@ public class LoLLiwithQFDArrReachEncoding extends ReachEncoding {
             for(Expression cand : instCand.getIndices())     boundVars.remove(axiom.getVar(cand));
           }
           
-          if(getPartialInstOption() == 1 && !instCand.isNoArrays()) { // Instantiate f in the apply(f, x)
+          if((getInstOpt().equals(InstOpt.FIELD) 
+              || getInstOpt().equals(InstOpt.FIELD_OF_LEMENT))
+              && !instCand.isNoArrays()) { // Instantiate f in the apply(f, x)
             ImmutableList.Builder<Expression> instBodyList_builder = ImmutableList.builder();
             for(Expression instBody : instBodyList) {
               ImmutableSet.Builder<ArrayExpression> fields_builder = ImmutableSet.builder();
@@ -439,22 +430,41 @@ public class LoLLiwithQFDArrReachEncoding extends ReachEncoding {
     Axiom axiom = Axiom.create("step");
     Expression xbounds[] = new Expression[3];
     VariableExpression xvars[] = new VariableExpression[3];
-    for(int i = 0; i < 3; i++) {
-      if(i == 1) {
-        xbounds[i] = exprManager.boundExpression(i, fldType);
-        xvars[i] = exprManager.variable("x", fldType, true);
-      } else {
-        xbounds[i] = exprManager.boundExpression(i, eltType);
-        xvars[i] = exprManager.variable("x", eltType, true);
+    if(getInstOpt().equals(InstOpt.FIELD)) { // --partial-inst on element or total 
+      for(int i = 0; i < 3; i++) {
+        if(i == 2) {
+          xbounds[i] = exprManager.boundExpression(i, fldType);
+          xvars[i] = exprManager.variable("x", fldType, true);
+        } else {
+          xbounds[i] = exprManager.boundExpression(i, eltType);
+          xvars[i] = exprManager.variable("x", eltType, true);
+        }
+        axiom.putBoundVar(xbounds[i], xvars[i]);
       }
-      axiom.putBoundVar(xbounds[i], xvars[i]);
+      Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+      Expression _let_0 = applyF(xbounds[2], xbounds[1]);
+      BooleanExpression body = exprManager.or(
+          applyRfAvoid(xbounds[2], xbounds[1], _let_0, xbounds[0]),
+          xbounds[1].eq(xbounds[0]));
+      axiom.setRule(exprManager.forall(vars, body));
+    } else {
+      for(int i = 0; i < 3; i++) {
+        if(i == 1) {
+          xbounds[i] = exprManager.boundExpression(i, fldType);
+          xvars[i] = exprManager.variable("x", fldType, true);
+        } else {
+          xbounds[i] = exprManager.boundExpression(i, eltType);
+          xvars[i] = exprManager.variable("x", eltType, true);
+        }
+        axiom.putBoundVar(xbounds[i], xvars[i]);
+      }
+      Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+      Expression _let_0 = applyF(xbounds[1], xbounds[2]);
+      BooleanExpression body = exprManager.or(
+          applyRfAvoid(xbounds[1], xbounds[2], _let_0, xbounds[0]),
+          xbounds[2].eq(xbounds[0]));
+      axiom.setRule(exprManager.forall(vars, body));
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
-    Expression _let_0 = applyF(xbounds[1], xbounds[2]);
-    BooleanExpression body = exprManager.or(
-        applyRfAvoid(xbounds[1], xbounds[2], _let_0, xbounds[0]),
-        xbounds[2].eq(xbounds[0]));
-    axiom.setRule(exprManager.forall(vars, body));
     return axiom;
   }
   
@@ -464,23 +474,43 @@ public class LoLLiwithQFDArrReachEncoding extends ReachEncoding {
     Axiom axiom = Axiom.create("selfLoop");
     Expression xbounds[] = new Expression[3];
     VariableExpression xvars[] = new VariableExpression[3];
-    for(int i = 0; i < 3; i++) {
-      if(i == 1) {
-        xbounds[i] = exprManager.boundExpression(i, fldType);
-        xvars[i] = exprManager.variable("x", fldType, true);
-      } else {
-        xbounds[i] = exprManager.boundExpression(i, eltType);
-        xvars[i] = exprManager.variable("x", eltType, true);
+    if(getInstOpt().equals(InstOpt.FIELD)) {
+      for(int i = 0; i < 3; i++) {
+        if(i == 2) {
+          xbounds[i] = exprManager.boundExpression(i, fldType);
+          xvars[i] = exprManager.variable("x", fldType, true);
+        } else {
+          xbounds[i] = exprManager.boundExpression(i, eltType);
+          xvars[i] = exprManager.variable("x", eltType, true);
+        }
+        axiom.putBoundVar(xbounds[i], xvars[i]);
       }
-      axiom.putBoundVar(xbounds[i], xvars[i]);
+      Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+      Expression _let_0 = applyF(xbounds[2], xbounds[1]);
+      BooleanExpression head = exprManager.and(
+          _let_0.eq(xbounds[1]),
+          applyRfAvoid(xbounds[2], xbounds[1], xbounds[0], xbounds[0]));
+      BooleanExpression body = xbounds[1].eq(xbounds[0]);
+      axiom.setRule(exprManager.forall(vars, head.implies(body)));
+    } else {
+      for(int i = 0; i < 3; i++) {
+        if(i == 1) {
+          xbounds[i] = exprManager.boundExpression(i, fldType);
+          xvars[i] = exprManager.variable("x", fldType, true);
+        } else {
+          xbounds[i] = exprManager.boundExpression(i, eltType);
+          xvars[i] = exprManager.variable("x", eltType, true);
+        }
+        axiom.putBoundVar(xbounds[i], xvars[i]);
+      }
+      Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+      Expression _let_0 = applyF(xbounds[1], xbounds[2]);
+      BooleanExpression head = exprManager.and(
+          _let_0.eq(xbounds[2]),
+          applyRfAvoid(xbounds[1], xbounds[2], xbounds[0], xbounds[0]));
+      BooleanExpression body = xbounds[2].eq(xbounds[0]);
+      axiom.setRule(exprManager.forall(vars, head.implies(body)));
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
-    Expression _let_0 = applyF(xbounds[1], xbounds[2]);
-    BooleanExpression head = exprManager.and(
-        _let_0.eq(xbounds[2]),
-        applyRfAvoid(xbounds[1], xbounds[2], xbounds[0], xbounds[0]));
-    BooleanExpression body = xbounds[2].eq(xbounds[0]);
-    axiom.setRule(exprManager.forall(vars, head.implies(body)));
     return axiom;
   }
   
