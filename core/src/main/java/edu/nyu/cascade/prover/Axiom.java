@@ -1,7 +1,9 @@
 package edu.nyu.cascade.prover;
 
+import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Lists;
 import com.google.inject.internal.Maps;
 
 public class Axiom {
@@ -43,7 +45,7 @@ public class Axiom {
     boundVarMap.put(bound, var);
   }
   
-  public Iterable<? extends Expression> getBounds() {
-    return boundVarMap.keySet();
+  public List<? extends Expression> getBounds() {
+    return Lists.newArrayList(boundVarMap.keySet());
   }
 }
