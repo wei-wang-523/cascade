@@ -15,7 +15,7 @@ public class InductiveVariableImpl extends VariableExpressionImpl
 
   private InductiveVariableImpl(ExpressionManagerImpl exprManager, String name,
       InductiveTypeImpl type, boolean fresh) {
-    super(exprManager, name, type, true);
+    super(exprManager, name, type, fresh);
   }
 
   @Override
