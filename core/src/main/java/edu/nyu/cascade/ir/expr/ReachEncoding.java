@@ -40,7 +40,7 @@ public abstract class ReachEncoding extends AbstractExpressionEncoding {
   
   protected InstOpt getInstOpt() {
     if(!Preferences.isSet(Preferences.OPTION_PARTIAL_INST))
-      throw new IllegalArgumentException("Option --partial-inst is disabled");
+      return InstOpt.ERROR;
     String opt = Preferences.getString(Preferences.OPTION_PARTIAL_INST);
     if(opt.equals("fld"))
       return InstOpt.FIELD;

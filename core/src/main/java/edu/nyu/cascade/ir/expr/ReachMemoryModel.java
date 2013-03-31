@@ -1,10 +1,12 @@
 package edu.nyu.cascade.ir.expr;
 
 import java.util.List;
+import java.util.Map;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.inject.internal.Maps;
 
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.ArrayVariableExpression;
@@ -104,9 +106,10 @@ public class ReachMemoryModel extends BitVectorMemoryModel {
    * type with size <code>size<code>, and the field with offset <code>offset</code> in 
    * the type.
    */
-  public BooleanExpression create_acyclic_list(Expression state, 
-      String field, Expression ptr,
-      Expression lengthExpr, int size, int offset) {
+  public BooleanExpression create_list(Expression state,
+      Expression ptr, Expression lengthExpr, int size,
+      Map<String, Integer> fldOffMap,
+      boolean acyclic, boolean singly_list) {
     Preconditions.checkArgument(state.getType().equals( getStateType() ));
     Preconditions.checkArgument(ptr.getType().equals( addressType ));
     Preconditions.checkArgument(lengthExpr.isConstant());
@@ -121,94 +124,66 @@ public class ReachMemoryModel extends BitVectorMemoryModel {
     /* Create #length new regions */
     List<Expression> newRegions = Lists.newArrayListWithCapacity(length);
     for(int i = 0; i<length; i++) 
-      newRegions.add(exprManager.variable(REGION_VARIABLE_NAME, 
-          addressType, true));
+      newRegions.add(exprManager.variable(REGION_VARIABLE_NAME, addressType, true));
     
     /* For dynamic memory allocation, add to the end of regions */
     heapRegions.addAll(newRegions);
     
+    Expression auxPtr = acyclic ? nullPtr : ptr;
+    newRegions.add(0, auxPtr);
+    newRegions.add(auxPtr);
+    
     ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
-    builder.add(isRoot(field, newRegions.get(0)));
     Expression currloc = ptr;
-    for(int i = 0; i<length; i++) {
-      memory = memory.update(currloc, newRegions.get(i));
+    memory = memory.update(currloc, newRegions.get(1));
+    
+    String[] flds = new String[fldOffMap.size()];
+    Map<String, Expression> fldLocMap = Maps.newLinkedHashMap();
+
+    for(int i = 1; i<=length; i++) {
       regionSize = regionSize.update(newRegions.get(i), 
           exprManager.bitVectorConstant(size, addressType.getSize()));
-      currloc = exprManager.plus(addressType.getSize(), newRegions.get(i), 
-          (Expression) exprManager.bitVectorConstant(offset, addressType.getSize()));
-      if(i == length-1) {
+      int fld_index = 0;
+      for(String fld : fldOffMap.keySet()) {
+        int offset = fldOffMap.get(fld);
+        currloc = exprManager.plus(addressType.getSize(), newRegions.get(i), 
+            (Expression) exprManager.bitVectorConstant(offset, addressType.getSize())); 
+        flds[fld_index++] = fld;
+        fldLocMap.put(fld, currloc);
+      }
+      
+      if(singly_list) { // singly-linked list
+        Preconditions.checkArgument(flds.length == 1);
+        memory = memory.update(fldLocMap.get(flds[0]), newRegions.get(i+1));
         if(Preferences.isSet(Preferences.OPTION_ENCODE_FIELD_ARRAY))
-          updateReach(field, newRegions.get(i), nullPtr);
-        else
-          builder.add(assignReach(field, newRegions.get(i), nullPtr));
-        memory = memory.update(currloc, nullPtr);        
-      } else {
-        if(Preferences.isSet(Preferences.OPTION_ENCODE_FIELD_ARRAY))
-          updateReach(field, newRegions.get(i), newRegions.get(i+1));
-        else
-          builder.add(assignReach(field, newRegions.get(i), newRegions.get(i+1)));
+          updateReach(flds[0], newRegions.get(i), newRegions.get(i+1));
+        else           
+          builder.add(assignReach(flds[0], newRegions.get(i), newRegions.get(i+1)));
+      } else { // doubly-linked list
+        Preconditions.checkArgument(flds.length == 2);
+        memory = memory.update(fldLocMap.get(flds[0]), newRegions.get(i+1));
+        memory = memory.update(fldLocMap.get(flds[1]), newRegions.get(i-1));
+        if(Preferences.isSet(Preferences.OPTION_ENCODE_FIELD_ARRAY)) {
+          updateReach(flds[0], newRegions.get(i), newRegions.get(i+1));
+          updateReach(flds[1], newRegions.get(i), newRegions.get(i-1));
+        } else {
+          builder.add(assignReach(flds[0], newRegions.get(i), newRegions.get(i+1)));
+          builder.add(assignReach(flds[1], newRegions.get(i), newRegions.get(i-1)));
+        }
+      }
+    }
+    
+    if(acyclic) {
+      if(singly_list)
+        builder.add(isRoot(flds[0], newRegions.get(1)));
+      else {
+        builder.add(isRoot(flds[0], newRegions.get(1)));
+        builder.add(isRoot(flds[1], newRegions.get(length)));
       }
     }
     
     Expression statePrime = exprManager.tuple(getStateType(), memory, regionSize);    
     setCurrentState(state, statePrime);
-    return exprManager.and(builder.build());
-  }
-  
-  /**
-   * Assume a cyclic singly list with length <code>length</code> connected by field 
-   * <code>fieldName</code> is allocated with root <code>ptr</code>. Each element has  
-   * type with size <code>size<code>, and the field with offset <code>offset</code> in 
-   * the type.
-   */
-  public BooleanExpression create_cyclic_list(Expression state, 
-      String field, Expression ptr,
-      Expression lengthExpr, int size, int offset) {
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
-    Preconditions.checkArgument(ptr.getType().equals( addressType ));
-    Preconditions.checkArgument(lengthExpr.isConstant());
-    
-    ExpressionManager exprManager = getExpressionManager();
-    
-    ArrayExpression memory = state.getChild(0).asArray();
-    ArrayExpression regionSize = state.getChild(1).asArray();
-    
-    int length = exprManager.valueOfIntegerConstant(lengthExpr);
-   
-    /* Create #length new regions */
-    List<Expression> newRegions = Lists.newArrayListWithCapacity(length);
-    for(int i = 0; i<length; i++) 
-      newRegions.add(exprManager.variable(REGION_VARIABLE_NAME, 
-          addressType, true));
-    
-    /* For dynamic memory allocation, add to the end of regions */
-    heapRegions.addAll(newRegions);
-    
-    ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
-    
-    Expression currloc = ptr;
-    for(int i = 0; i<length; i++) {
-      memory = memory.update(currloc, newRegions.get(i));
-      regionSize = regionSize.update(newRegions.get(i), 
-          exprManager.bitVectorConstant(size, addressType.getSize()));
-      currloc = exprManager.plus(addressType.getSize(), newRegions.get(i), 
-          (Expression) exprManager.bitVectorConstant(offset, addressType.getSize()));
-      if(i == length-1) {
-        if(Preferences.isSet(Preferences.OPTION_ENCODE_FIELD_ARRAY))
-          updateReach(field, newRegions.get(i), ptr);
-        else
-          builder.add(assignReach(field, newRegions.get(i), ptr));
-        memory = memory.update(currloc, ptr);
-      } else {
-        if(Preferences.isSet(Preferences.OPTION_ENCODE_FIELD_ARRAY))
-          updateReach(field, newRegions.get(i), newRegions.get(i+1));
-        else
-          builder.add(assignReach(field, newRegions.get(i), newRegions.get(i+1)));
-      }
-    }
-    
-    Expression statePrime = exprManager.tuple(getStateType(), memory, regionSize);    
-    setCurrentState(state, statePrime);    
     return exprManager.and(builder.build());
   }
   
