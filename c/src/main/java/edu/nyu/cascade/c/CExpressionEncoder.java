@@ -16,6 +16,7 @@ import xtc.type.BooleanT;
 import xtc.type.NumberT;
 import xtc.type.PointerT;
 import xtc.type.StructOrUnionT;
+import xtc.type.StructT;
 import xtc.type.Type;
 import xtc.type.ArrayT;
 import xtc.type.VariableT;
@@ -64,6 +65,8 @@ class CExpressionEncoder implements ExpressionEncoder {
   private static final String FUN_ISROOT = "_is_root";
   private static final String FUN_CREATE_ACYCLIC_LIST = "_create_acyclic_list";
   private static final String FUN_CREATE_CYCLIC_LIST = "_create_cyclic_list";
+  private static final String FUN_CREATE_ACYCLIC_DLIST = "_create_acyclic_dlist";
+  private static final String FUN_CREATE_CYCLIC_DLIST = "_create_cyclic_dlist";
   
   @SuppressWarnings("unused")
   private class ExpressionVisitor extends Visitor {
@@ -354,24 +357,31 @@ class CExpressionEncoder implements ExpressionEncoder {
             res = getExpressionManager().ff();         
           }
         } else if( FUN_CREATE_ACYCLIC_LIST.equals(name) || 
-            FUN_CREATE_CYCLIC_LIST.equals(name)) {
-          Preconditions.checkArgument(argList.size() == 3);
-          String fieldName = argList.getNode(0).getString(0);
-          Node ptrNode = argList.getNode(1);
+            FUN_CREATE_CYCLIC_LIST.equals(name) ||
+            FUN_CREATE_ACYCLIC_DLIST.equals(name) ||
+            FUN_CREATE_CYCLIC_DLIST.equals(name)) {
+          Preconditions.checkArgument(argList.size() == 2);
+          Node ptrNode = argList.getNode(0);
           Expression ptrExpr = (Expression) lvalVisitor.dispatch(ptrNode);
-          Expression length = (Expression) dispatch(argList.getNode(2));
+          Expression length = (Expression) dispatch(argList.getNode(1));
           Type type = lookupType(ptrNode).toPointer().getType().resolve();
           int size = sizeofType(type);
-          int offset = getOffsetOfField(type, fieldName);
+          Map<String, Integer> fldOff = getFieldOffset(type);
           
           MemoryModel mm = getMemoryModel();
           if(mm instanceof ReachMemoryModel) {
             if(FUN_CREATE_ACYCLIC_LIST.equals(name))
-              res = ((ReachMemoryModel) mm).create_acyclic_list(memory, fieldName, 
-                  ptrExpr, length, size, offset);
+              res = ((ReachMemoryModel) mm).create_list(memory,
+                  ptrExpr, length, size, fldOff, true, true);
+            else if(FUN_CREATE_CYCLIC_LIST.equals(name))
+              res = ((ReachMemoryModel) mm).create_list(memory,
+                  ptrExpr, length, size, fldOff, false, true);
+            else if(FUN_CREATE_ACYCLIC_DLIST.equals(name))
+              res = ((ReachMemoryModel) mm).create_list(memory,
+                  ptrExpr, length, size, fldOff, true, false);
             else
-              res = ((ReachMemoryModel) mm).create_cyclic_list(memory, fieldName, 
-                  ptrExpr, length, size, offset);
+              res = ((ReachMemoryModel) mm).create_list(memory,
+                  ptrExpr, length, size, fldOff, false, false);
           } else {
             res = getExpressionManager().tt();
           }
@@ -1062,6 +1072,20 @@ class CExpressionEncoder implements ExpressionEncoder {
       throw new ExpressionFactoryException("Invalid type: " + t.toString() 
           + "with field" + name);
     return resType;
+  }
+  
+  private Map<String, Integer> getFieldOffset(Type t) {
+    Preconditions.checkArgument(t.isStruct());
+    StructT struct = (StructT) t;
+    Map<String, Integer> resMap = Maps.newHashMap();
+    for(VariableT mem: struct.getMembers()) {
+      if(!(mem.getType().isPointer() 
+          && ((PointerT) mem.getType()).getType().equals(t))) continue;
+      String name = mem.getName();
+      int off = getOffsetOfField(t, name);
+      resMap.put(name, off);
+    }   
+    return resMap;
   }
   
   private int getOffsetOfField(Type t, String name) {
