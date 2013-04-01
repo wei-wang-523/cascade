@@ -277,7 +277,7 @@ public class TheoremProverImpl implements TheoremProver {
   @Override
   public ValidityResult<?> checkValidity(Expression expr) {
     Preconditions.checkArgument(expr.isBoolean());
-    long time = System.currentTimeMillis();
+
     try {
       getSolver().Push();
       z3FileCommand("(push)");
@@ -301,7 +301,10 @@ public class TheoremProverImpl implements TheoremProver {
       
       debugCommand("(check-sat)");
       z3FileCommand("(check-sat)");
+      long time = System.currentTimeMillis();
       Status z3QueryResult = getSolver().Check();
+      time = System.currentTimeMillis() - time;
+      IOUtils.err().println("Z3 took time: " + time/1000.0 + "s");
       IOUtils.debug().pln(z3QueryResult.toString());
       ValidityResult.Type resultType = convertZ3QueryResult(z3QueryResult);
 
@@ -327,11 +330,6 @@ public class TheoremProverImpl implements TheoremProver {
       
       getSolver().Pop();
       z3FileCommand("(pop)");
-      time = System.currentTimeMillis() - time;
-      IOUtils.err()
-      .println(
-          "Z3 took time: "
-              + time/1000.0 + "s");
 
       return res;
     } catch (Exception e) {
