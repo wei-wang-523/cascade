@@ -28,7 +28,7 @@ public abstract class ReachEncoding extends AbstractExpressionEncoding {
   protected enum InstOpt{ // Partial quantifier instantiation option
     FIELD,
     ELEMENT,
-    FIELD_OF_LEMENT,
+    FIELD_OF_ELEMENT,
     ERROR;
   }
   
@@ -45,9 +45,9 @@ public abstract class ReachEncoding extends AbstractExpressionEncoding {
     if(opt.equals("fld"))
       return InstOpt.FIELD;
     else if(opt.equals("elt"))
-      return InstOpt.FIELD;
+      return InstOpt.ELEMENT;
     else if(opt.equals("fld-of-elt"))
-      return InstOpt.FIELD_OF_LEMENT;
+      return InstOpt.FIELD_OF_ELEMENT;
     else
       return InstOpt.ERROR;
   }

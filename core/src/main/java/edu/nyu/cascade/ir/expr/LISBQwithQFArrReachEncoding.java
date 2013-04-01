@@ -202,7 +202,7 @@ public class LISBQwithQFArrReachEncoding extends ReachEncoding {
       if(body != null) {
         ImmutableSet<? extends Expression> instCand = null;
         if(Preferences.isSet(Preferences.OPTION_PARTIAL_INST)) {
-          if(!getInstOpt().equals(InstOpt.FIELD)) // field instantiation is not applicable here
+          if(!getInstOpt().equals(InstOpt.ELEMENT)) // field instantiation is not applicable here
             throw new IllegalArgumentException("--partial-inst has invalid arg for this theory: field.");
           instCand = checkApplyF(body, axiom.getBounds()); // check if body contains applyF(x)
         } else { // TOTOALLY_INST

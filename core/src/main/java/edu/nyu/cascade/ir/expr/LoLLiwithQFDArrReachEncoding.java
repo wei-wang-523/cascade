@@ -294,7 +294,7 @@ public class LoLLiwithQFDArrReachEncoding extends ReachEncoding {
           ImmutableList<? extends Expression> instBodyList = ImmutableList.of(body);
           
           if((getInstOpt().equals(InstOpt.ELEMENT) 
-              || getInstOpt().equals(InstOpt.FIELD_OF_LEMENT))
+              || getInstOpt().equals(InstOpt.FIELD_OF_ELEMENT))
               && !instCand.isNoIndices()) { // Instantiate x in the applyF(f, x)
             ImmutableList.Builder<Expression> instBodyList_builder = ImmutableList.builder();
             for(Expression instBody : instBodyList)
@@ -304,7 +304,7 @@ public class LoLLiwithQFDArrReachEncoding extends ReachEncoding {
           }
           
           if((getInstOpt().equals(InstOpt.FIELD) 
-              || getInstOpt().equals(InstOpt.FIELD_OF_LEMENT))
+              || getInstOpt().equals(InstOpt.FIELD_OF_ELEMENT))
               && !instCand.isNoArrays()) { // Instantiate f in the apply(f, x)
             ImmutableList.Builder<Expression> instBodyList_builder = ImmutableList.builder();
             for(Expression instBody : instBodyList) {

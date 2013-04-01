@@ -153,7 +153,7 @@ public class ReachMemoryModel extends BitVectorMemoryModel {
       }
       
       if(singly_list) { // singly-linked list
-        Preconditions.checkArgument(flds.length == 2);
+        Preconditions.checkArgument(flds.length == 1);
         memory = memory.update(fldLocMap.get(flds[0]), newRegions.get(i+1));
         if(Preferences.isSet(Preferences.OPTION_ENCODE_FIELD_ARRAY))
           updateReach(flds[0], newRegions.get(i), newRegions.get(i+1));

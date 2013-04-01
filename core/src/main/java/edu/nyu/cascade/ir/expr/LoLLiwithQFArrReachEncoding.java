@@ -232,8 +232,8 @@ public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
       if(body != null) {
         ImmutableSet<? extends Expression> instCand = null;
         if(Preferences.isSet(Preferences.OPTION_PARTIAL_INST)) {
-          if(getInstOpt().equals(InstOpt.ELEMENT)) // field instantiation is not applicable here
-            throw new IllegalArgumentException("--partial-inst has invalid arg for this theory: field.");
+          if(!getInstOpt().equals(InstOpt.ELEMENT)) // field instantiation is not applicable here
+            throw new IllegalArgumentException("--partial-inst has invalid arg for this theory.");
           instCand = checkApplyF(body); // check if body contains applyF(x)
         } else { // TOTOALLY_INST
           ImmutableSet.Builder<Expression> instCand_builder = ImmutableSet.builder();
