@@ -1,0 +1,29 @@
+<controlFile>
+  <sourceFile name="list.c" id="1" />
+  <theory qname="edu.nyu.cascade.c.theory.LISBQArrReachTheory" />
+  <!-- Example: (root)->(n/f(root))->(f(f(root)))->NULL -->
+  <run>
+    <startPosition fileId="1" line="176" >
+      <command>
+	<cascadeFunction> cascade_assume </cascadeFunction>
+	<argument><![CDATA[
+	_create_acyclic_list(root, 3)
+	]]>
+	</argument>
+      </command>
+    </startPosition>
+    <wayPoint fileId="1" line="181" >
+      <loop iterTimes="1" />
+    </wayPoint>
+    <wayPoint fileId="1" line="188" />
+    <endPosition fileId="1" line="194" >
+      <command>
+	<cascadeFunction> cascade_check </cascadeFunction>
+	<argument><![CDATA[
+	_reach(next, root, n)
+	]]>
+	</argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

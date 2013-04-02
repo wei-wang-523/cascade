@@ -1,0 +1,26 @@
+<controlFile>
+  <sourceFile name="list_double.c" id="1" />
+  <theory qname="edu.nyu.cascade.c.theory.LoLLiDArrReachTheory" />
+  <!-- Example: (root)->(pos)->NULL, (n)->NULL -->
+  <run>
+    <startPosition fileId="1" line="121" >
+      <command>
+	<cascadeFunction> cascade_assume </cascadeFunction>
+	<argument><![CDATA[ 
+	_create_acyclic_dlist(x, 2)
+	]]>
+	</argument>
+      </command>
+    </startPosition>
+    <wayPoint fileId="1" line="126" />
+    <endPosition fileId="1" line="129" >
+      <command>
+	<cascadeFunction> cascade_check </cascadeFunction>
+	<argument><![CDATA[		
+	y == prev->next
+	]]>
+	</argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

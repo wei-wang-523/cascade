@@ -1,0 +1,35 @@
+<controlFile>
+  <sourceFile name="list_double.c" id="1" />
+  <theory qname="edu.nyu.cascade.c.theory.LISBQDArrReachTheory" />
+  <!-- Example: (0)->(1)->NULL -->
+  <run>
+    <startPosition fileId="1" line="58" >
+      <command>
+	<cascadeFunction> cascade_assume </cascadeFunction>
+	<argument><![CDATA[
+        _create_acyclic_dlist(root, 2)
+	]]>
+    	</argument>
+      </command>
+    </startPosition>
+    <wayPoint fileId="1" line="62" >
+      <loop iterTimes="1" >
+      	<wayPoint fileId="1" line="64" />
+      </loop>
+    </wayPoint>
+    <wayPoint fileId="1" line="62" >
+      <loop iterTimes="1" >
+      	<wayPoint fileId="1" line="72" />
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="81" >
+      <command>
+	<cascadeFunction> cascade_check </cascadeFunction>
+	<argument><![CDATA[
+	_reach(next, p_true, p_false) || _reach(prev, p_true, p_false)
+	]]>
+	</argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>
