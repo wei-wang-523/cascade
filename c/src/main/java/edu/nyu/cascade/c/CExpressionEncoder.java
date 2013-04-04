@@ -56,17 +56,17 @@ import edu.nyu.cascade.util.RecursionStrategies.BinaryInfixRecursionStrategy;
 import edu.nyu.cascade.util.RecursionStrategies.BinaryRecursionStrategy;
 
 class CExpressionEncoder implements ExpressionEncoder {
-  private static final String FUN_VALID = "_valid";
-  private static final String FUN_IMPLIES = "_implies";
-  private static final String FUN_FORALL = "_forall";
-  private static final String FUN_EXISTS = "_exists";
-  private static final String FUN_REACH = "_reach";
-  private static final String FUN_ALLOCATED = "_allocated";
-  private static final String FUN_ISROOT = "_is_root";
-  private static final String FUN_CREATE_ACYCLIC_LIST = "_create_acyclic_list";
-  private static final String FUN_CREATE_CYCLIC_LIST = "_create_cyclic_list";
-  private static final String FUN_CREATE_ACYCLIC_DLIST = "_create_acyclic_dlist";
-  private static final String FUN_CREATE_CYCLIC_DLIST = "_create_cyclic_dlist";
+  private static final String FUN_VALID = "valid";
+  private static final String FUN_IMPLIES = "implies";
+  private static final String FUN_FORALL = "forall";
+  private static final String FUN_EXISTS = "exists";
+  private static final String FUN_REACH = "reach";
+  private static final String FUN_ALLOCATED = "allocated";
+  private static final String FUN_ISROOT = "is_root";
+  private static final String FUN_CREATE_ACYCLIC_LIST = "create_acyclic_list";
+  private static final String FUN_CREATE_CYCLIC_LIST = "create_cyclic_list";
+  private static final String FUN_CREATE_ACYCLIC_DLIST = "create_acyclic_dlist";
+  private static final String FUN_CREATE_CYCLIC_DLIST = "create_cyclic_dlist";
   
   @SuppressWarnings("unused")
   private class ExpressionVisitor extends Visitor {
