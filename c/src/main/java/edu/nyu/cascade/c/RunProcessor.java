@@ -945,7 +945,7 @@ class RunProcessor {
       /** FIXME: CVC4 has incremental support problem, multiple queries are not supported
        * well. If this assertion statement is added, will have invalid memory access inside
        * CVC4*/
-//      stmts.add(Statement.assertStmt(spec, argExpr));
+      stmts.add(Statement.assertStmt(spec, argExpr));
       
       List<IRStatement> loopPath = Lists.newArrayList();
       
