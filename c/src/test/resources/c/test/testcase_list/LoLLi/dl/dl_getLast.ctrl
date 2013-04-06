@@ -7,7 +7,7 @@
       <command>
 	<cascadeFunction> cascade_assume </cascadeFunction>
 	<argument><![CDATA[ 
-	_create_acyclic_dlist(root, 2)
+	create_acyclic_dlist(root, 2)
 	]]>
 	</argument>
       </command>
@@ -19,7 +19,7 @@
       <command>
 	<cascadeFunction> cascade_check </cascadeFunction>
 	<argument><![CDATA[
-	_reach(next, root, p)
+	reach(next, root, p)
 	]]>
 	</argument>
       </command>

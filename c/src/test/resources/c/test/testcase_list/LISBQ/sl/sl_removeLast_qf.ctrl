@@ -7,7 +7,7 @@
       <command>
 	<cascadeFunction> cascade_assume </cascadeFunction>
 	<argument><![CDATA[ 
-	_create_acyclic_list(root, 2)
+	create_acyclic_list(root, 2)
 	]]>
 	</argument>
         <argument> 1*sizeof(Node) </argument>
@@ -21,8 +21,8 @@
       <command>
 	<cascadeFunction> cascade_check </cascadeFunction>
 	<argument><![CDATA[
-	l->next == 0 && 
-	_forall(Node *v, _implies(_reach(next, root, v), l != v))
+	l->next == 0 &&
+	forall(Node *v, implies(reach(next, root, v), l != v))
 	]]>
 	</argument>
       </command>

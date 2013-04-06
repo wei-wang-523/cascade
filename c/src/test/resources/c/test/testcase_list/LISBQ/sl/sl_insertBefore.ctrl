@@ -7,8 +7,8 @@
       <command>
 	<cascadeFunction> cascade_assume </cascadeFunction>
 	<argument><![CDATA[ 
-	_create_acyclic_list(root, 2) &&
-	_create_acyclic_list(n, 1) &&
+	create_acyclic_list(root, 2) &&
+	create_acyclic_list(n, 1) &&
 	root->next == pos
 	]]>
 	</argument>
@@ -20,7 +20,7 @@
       <command>
 	<cascadeFunction> cascade_check </cascadeFunction>
 	<argument><![CDATA[		
-	_reach(next, root, pos)
+	reach(next, root, pos)
 	]]>
 	</argument>
       </command>

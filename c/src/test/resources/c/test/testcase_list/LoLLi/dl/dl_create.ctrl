@@ -13,7 +13,7 @@
       <command>
 	<cascadeFunction> cascade_check </cascadeFunction>
 	<argument><![CDATA[
-	 _reach(prev, root, 0)
+	 reach(prev, root, 0)
 	]]>
 	</argument>
       </command>

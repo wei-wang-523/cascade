@@ -9,7 +9,7 @@
           <command>
             <cascadeFunction> cascade_assume </cascadeFunction>
             <argument><![CDATA[
-            _is_root(next, curr)
+            is_root(next, curr)
             ]]>
             </argument>
           </command>
@@ -20,7 +20,7 @@
       <command>
 	<cascadeFunction> cascade_check </cascadeFunction>
 	<argument><![CDATA[
-	_is_root(next, root)
+	is_root(next, root)
 	]]>
 	</argument>
       </command>
