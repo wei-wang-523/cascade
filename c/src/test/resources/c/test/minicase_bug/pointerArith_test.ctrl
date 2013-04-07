@@ -5,7 +5,7 @@
       <command>
 	<cascadeFunction> cascade_assume </cascadeFunction>
 	<argument><![CDATA[
-	_allocated(p, sizeof(int)*3)
+	allocated(p, sizeof(int)*3)
 	]]>
 	</argument>
       </command>
@@ -14,7 +14,7 @@
       <command>
 	<cascadeFunction> cascade_check </cascadeFunction>
 	<argument><![CDATA[
-	_valid(p+i)
+	valid(p+i)
 	]]>
 	</argument>
       </command>

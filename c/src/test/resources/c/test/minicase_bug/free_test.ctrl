@@ -6,7 +6,7 @@
       <command>
 	<cascadeFunction> cascade_check </cascadeFunction>
 	<argument><![CDATA[
-	_valid(&p[0][1]) && _valid(&p[1][0])
+	valid(&p[0][1]) && valid(&p[1][0])
 	]]>
 	</argument>
       </command>

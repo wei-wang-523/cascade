@@ -6,7 +6,7 @@
       <command>
 	<cascadeFunction> cascade_check </cascadeFunction>
 	<argument><![CDATA[
-	_valid(&r1->account_number)
+	valid(&r1->account_number)
 	]]>
 	</argument>
       </command>
