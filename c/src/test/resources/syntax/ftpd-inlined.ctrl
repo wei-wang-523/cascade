@@ -5,7 +5,7 @@
       <command>
         <cascadeFunction>cascade_assume</cascadeFunction>
         <argument><![CDATA[
-	_allocated(resolved, 2)
+	allocated(resolved, 2)
 	]]>
 	</argument>
       </command>
@@ -27,7 +27,7 @@
       <command>
         <cascadeFunction>cascade_check</cascadeFunction>
         <argument><![CDATA[
-          _valid(resolved)
+          valid(resolved)
         ]]></argument>
       </command>
     </endPosition>
