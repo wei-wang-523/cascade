@@ -53,5 +53,3 @@ int main(int a, int b, int c){
   
   return equilateral+isoscles + triangle+scalene;
 }
-
-/* cvc4 has problem with >=, I change them into <= correspondingly. */
