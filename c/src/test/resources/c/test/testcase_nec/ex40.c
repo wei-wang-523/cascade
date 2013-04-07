@@ -4,10 +4,10 @@ extern char x[100], y[100];
 extern int i,j,k;
 
 int mainFunc() {  
-  k; // = __NONDET__();
+  k = __NONDET__();
   
   i = 0;
-  while(x[i] != 0){ // _valid(x[i]), after 100 iter
+  while(x[i] != 0){ // valid(x[i]), after 100 iter
     y[i] = x[i];
     i++;
   }

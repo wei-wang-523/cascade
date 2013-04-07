@@ -6,7 +6,7 @@
       <command>
 	<cascadeFunction> cascade_check </cascadeFunction>
 	<argument><![CDATA[
-	_valid(&a[x%32])
+	valid(&a[x%32])
 	]]>
 	</argument>
       </command>

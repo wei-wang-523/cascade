@@ -1,32 +1,28 @@
 <controlFile>
   <sourceFile name="ex46.c" id="1" />
   <run>
-    <startPosition fileId="1" line="12" >
-      <command>
-    	<cascadeFunction> cascade_assume </cascadeFunction>
-    	<argument><![CDATA[
-	h == 2 && w == 1
-	]]>
-	</argument>
-      </command>
-    </startPosition>
-    
-    <wayPoint fileId="1" line="17" >
-      <command>
-    	<cascadeFunction> cascade_assume </cascadeFunction>
-    	<argument> h > 0 </argument>
-      </command>
-    </wayPoint>
-    
+    <startPosition fileId="1" line="12" />    
     <wayPoint fileId="1" line="18" >
       <command>
     	<cascadeFunction> cascade_assume </cascadeFunction>
-    	<argument> w > 0 </argument>
+    	<argument><![CDATA[
+    	h > 0 && w > 0
+    	]]> 
+    	</argument>
       </command>
     </wayPoint>
-    
     <wayPoint fileId="1" line="22" >
-      <loop iterTimes="2" />
+      <loop iterTimes="2" >
+        <wayPoint fileId="1" line="23" >
+	  <command>
+	    <cascadeFunction> cascade_check </cascadeFunction>
+	    <argument><![CDATA[
+	    valid(&lut[0]) && valid(&lut[y])
+	    ]]>
+	    </argument>
+	  </command>
+	</wayPoint>
+      </loop>
     </wayPoint>
     
     <wayPoint fileId="1" line="25" >

@@ -3,8 +3,8 @@ int b;
 int main(){
    int i,n,j;
    int a[1025];
-   int k;
-   if (k){ // __NONDET__()
+
+   if (__NONDET__()){
       n=0;
    } else {
       n=1023;

@@ -3,7 +3,7 @@ int main(){
 
    int * a;
    int i,j;
-   int k; // = __NONDET__();
+   int k = __NONDET__();
 
    if ( k <= 0 ) 
      return -1;

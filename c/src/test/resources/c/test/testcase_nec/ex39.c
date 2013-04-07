@@ -7,8 +7,8 @@ int main(){
   int x,y;
   
   x = 0; y = 0;
-  int k;
-  while(k--) { //(__NONDET__()){
+
+  while(__NONDET__()) {
     x++; y++;
   }
   

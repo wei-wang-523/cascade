@@ -14,8 +14,8 @@ int main(int h, int w){
   DIST **lut; // lookup table, 2D array of structures
   int x, y;
   
-  h = 2; //  ASSUME(h > 0);
-  w = 1; //ASSUME(w > 0);
+  ASSUME(h > 0);
+  ASSUME(w > 0);
    
   lut = (DIST**)malloc(sizeof(DIST*)*h);
   lut[0] = (DIST*)malloc(sizeof(DIST)*h*w);

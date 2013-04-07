@@ -5,22 +5,22 @@
     <wayPoint fileId="1" line="6" /> <!-- c = 0 || b = 0, triag = 1 -->
     <wayPoint fileId="1" line="18" /> <!-- c != 0, b = 0, id = 0, ltriag = 1, utriag = 0-->
     <wayPoint fileId="1" line="30" >
-<!--      <command>
+      <command>
 	<cascadeFunction>cascade_check</cascadeFunction>
 	<argument><![CDATA[
 	id || ltriag || utriag
 	]]>
 	</argument>
-      </command> -->
+      </command>
     </wayPoint>	
     <wayPoint fileId="1" line="32" >
-<!--      <command>
+      <command>
 	<cascadeFunction>cascade_check</cascadeFunction>
 	<argument><![CDATA[
 	!(triag && utriag == ltriag)
 	]]>
 	</argument>
-      </command> -->
+      </command>
     </wayPoint>
     <wayPoint fileId="1" line="35" >
       <command>

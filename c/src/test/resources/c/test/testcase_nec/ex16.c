@@ -10,7 +10,7 @@ int foo (int x, int y){
 	while (i <= x){
 		if (x > 0)
 			y = y+ x;
-		i++; // add i++
+
 	}
 	
 	
@@ -35,4 +35,3 @@ int main(){
 }
 
 //--signed option for negative number
-//LOC 13: while-loop in foo does not terminate, add i++ to let it terminate.

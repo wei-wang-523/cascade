@@ -39,21 +39,7 @@
     <wayPoint fileId="1" line="37" >
       <function funcName="foo" >
 	<wayPoint fileId="1" line="21" >
-	  <loop iterTimes="200" >
-	    <wayPoint fileId="1" line="22" >
-	      <function funcName="copy" >
-		<wayPoint fileId="1" line="8" >
-		  <command>
-		    <cascadeFunction>cascade_check</cascadeFunction>
-		    <argument><![CDATA[
-		    valid(a) && valid(b)
-		    ]]>
-		    </argument>
-		  </command>
-		</wayPoint>
-	      </function>
-	    </wayPoint>
-	  </loop>
+	  <loop iterTimes="200" />
 	</wayPoint>
 	<wayPoint fileId="1" line="25" >
 	  <function funcName="copy">

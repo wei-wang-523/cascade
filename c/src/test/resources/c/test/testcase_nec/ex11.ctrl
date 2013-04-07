@@ -3,13 +3,15 @@
   <run>
     <startPosition fileId="1" line="2" />
     <wayPoint fileId="1" line="9" >
-      <loop iterTimes ="4" >
-        <wayPoint fileId="1" line="14" />
-      </loop>
-    </wayPoint>
-    <wayPoint fileId="1" line="9" >
-      <loop iterTimes="1" >
-      	<wayPoint fileId="1" line="12" />
+      <loop iterTimes ="3" >
+        <wayPoint fileId="1" line="14" >
+          <command>
+            <cascadeFunction>cascade_check</cascadeFunction>
+            <argument><![CDATA[
+            valid(&a[len])
+            ]]></argument>
+          </command>
+        </wayPoint>
       </loop>
     </wayPoint>
     <endPosition fileId="1" line="19" />

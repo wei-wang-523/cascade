@@ -40,7 +40,26 @@
           </function>
         </wayPoint>
         <wayPoint fileId="1" line="22" >
-          <loop iterTimes="50" />
+          <loop iterTimes="50" >
+            <wayPoint fileId="1" line="23" >
+              <command>
+                <cascadeFunction>cascade_check</cascadeFunction>
+                <argument><![CDATA[
+                valid(a+i) && valid(b+i)
+                ]]>
+                </argument>
+              </command>
+            </wayPoint>
+          </loop>
+        </wayPoint>
+        <wayPoint fileId="1" line="26" >
+          <command>
+            <cascadeFunction>cascade_check</cascadeFunction>
+            <argument><![CDATA[
+            valid(a+n) && valid(b+n)
+            ]]>
+            </argument>
+          </command>
         </wayPoint>
       </function>
     </wayPoint>
@@ -57,18 +76,29 @@
           </function>
         </wayPoint>
         <wayPoint fileId="1" line="22" >
-          <loop iterTimes="20" />
+          <loop iterTimes="20" >
+            <wayPoint fileId="1" line="23" >
+              <command>
+                <cascadeFunction>cascade_check</cascadeFunction>
+                <argument><![CDATA[
+                valid(a+i) && valid(b+i)
+                ]]>
+                </argument>
+              </command>
+            </wayPoint>
+          </loop>
+        </wayPoint>
+        <wayPoint fileId="1" line="26" >
+          <command>
+            <cascadeFunction>cascade_check</cascadeFunction>
+            <argument><![CDATA[
+            valid(a+n) && valid(b+n)
+            ]]>
+            </argument>
+          </command>
         </wayPoint>
       </function>
     </wayPoint>
-    <endPosition fileId="1" line="38" >
-      <command>
-	<cascadeFunction> cascade_check </cascadeFunction>
-	<argument><![CDATA[
-	a[50]==b[50]
-	]]>
-	</argument>
-      </command>
-    </endPosition>
+    <endPosition fileId="1" line="38" />
   </run>
 </controlFile>

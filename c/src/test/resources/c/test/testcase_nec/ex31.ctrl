@@ -4,22 +4,32 @@
     <startPosition fileId="1" line="3" />
     <wayPoint fileId="1" line="6" >
       <loop iterTimes="3" >
+        <wayPoint fileId="1" line="7" >
+	  <command>
+	    <cascadeFunction>cascade_check</cascadeFunction>
+	    <argument><![CDATA[
+	    valid(&a[hi]) && valid(&a[lo])
+	    ]]>
+	    </argument>
+	  </command>
+	</wayPoint>
 	<wayPoint fileId="1" line="8" />
       </loop>
     </wayPoint>
     <wayPoint fileId="1" line="6" >
       <loop iterTimes="4" >
+        <wayPoint fileId="1" line="7" >
+	  <command>
+	    <cascadeFunction>cascade_check</cascadeFunction>
+	    <argument><![CDATA[
+	    valid(&a[hi]) && valid(&a[lo])
+	    ]]>
+	    </argument>
+	  </command>
+	</wayPoint>
 	<wayPoint fileId="1" line="10" />
       </loop>
     </wayPoint>
-    <endPosition fileId="1" line="13" >
-      <command>
-	<cascadeFunction>cascade_check</cascadeFunction>
-	<argument><![CDATA[
-	lo >= hi
-	]]>
-	</argument>
-      </command>
-    </endPosition>
+    <endPosition fileId="1" line="13" />
   </run>
 </controlFile>

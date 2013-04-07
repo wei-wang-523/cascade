@@ -3,19 +3,31 @@
   <run>
     <startPosition fileId="1" line="10" />
     <wayPoint fileId="1" line="12" >
-      <loop iterTimes="100" />
+      <loop iterTimes="100" >
+        <wayPoint fileId="1" line="13" >
+          <command>
+            <cascadeFunction>cascade_check</cascadeFunction>
+            <argument><![CDATA[
+            valid(&a[i]) && valid(&b[i])
+            ]]>
+            </argument>
+          </command>
+        </wayPoint>
+      </loop>
     </wayPoint>
     <wayPoint fileId="1" line="18" >
-      <loop iterTimes="100" />
+      <loop iterTimes="100" >
+        <wayPoint fileId="1" line="19" >
+          <command>
+            <cascadeFunction>cascade_check</cascadeFunction>
+            <argument><![CDATA[
+            valid(&b[j])
+            ]]>
+            </argument>
+          </command>
+        </wayPoint>
+      </loop>
     </wayPoint>
-    <endPosition fileId="1" line="25" >
-      <command>
-	<cascadeFunction> cascade_check </cascadeFunction>
-	<argument><![CDATA[
-	b[199] == 0
-	]]>
-	</argument>
-      </command>
-    </endPosition>
+    <endPosition fileId="1" line="25" />
   </run>
 </controlFile>

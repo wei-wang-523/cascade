@@ -10,7 +10,7 @@
       <command>
 	<cascadeFunction> cascade_check </cascadeFunction>
 	<argument><![CDATA[
-	_valid(&a[j]) && _valid(&a[i]) && _valid(&a[b])
+	valid(&a[j]) && valid(&a[i]) && valid(&a[b])
 	]]>
 	</argument>
       </command>

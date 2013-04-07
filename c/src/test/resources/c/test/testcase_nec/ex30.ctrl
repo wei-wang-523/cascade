@@ -6,20 +6,29 @@
       <command>
 	<cascadeFunction>cascade_assume</cascadeFunction>
 	<argument><![CDATA[
-	n < 1000 && n > 0 && n == 3
+	n < 100 && n > 0
 	]]>
 	</argument>
       </command>
     </wayPoint>
     <wayPoint fileId="1" line="33" >
       <function funcName="foo" >
+	<wayPoint fileId="1" line="16" >
+	  <command>
+	    <cascadeFunction>cascade_check</cascadeFunction>
+	    <argument><![CDATA[
+	    valid_malloc(y)
+	    ]]>
+	    </argument>
+	  </command>
+	</wayPoint>
 	<wayPoint fileId="1" line="17" >
-	  <loop iterTimes="6" >
+	  <loop iterTimes="100" >
 	    <wayPoint fileId="1" line="18" >
 	      <command>
 		<cascadeFunction>cascade_check</cascadeFunction>
 		<argument><![CDATA[
-		_valid(&y[i])
+		valid(&y[i])
 		]]>
 		</argument>
 	      </command>
@@ -30,13 +39,22 @@
     </wayPoint>
     <wayPoint fileId="1" line="37" >
       <function funcName="bar" >
+	<wayPoint fileId="1" line="8" >
+	  <command>
+	    <cascadeFunction>cascade_check</cascadeFunction>
+	    <argument><![CDATA[
+	    valid_malloc(w)
+	    ]]>
+	    </argument>
+	  </command>
+	</wayPoint>
 	<wayPoint fileId="1" line="9" >
-	  <loop iterTimes="3" >
+	  <loop iterTimes="100" >
 	    <wayPoint fileId="1" line="10" >
 	      <command>
 		<cascadeFunction>cascade_check</cascadeFunction>
 		<argument><![CDATA[
-		_valid(&(w[i].a)) && _valid(&(w[i].b))
+		valid(&(w[i].a)) && valid(&(w[i].b))
 		]]>
 		</argument>
 	      </command>

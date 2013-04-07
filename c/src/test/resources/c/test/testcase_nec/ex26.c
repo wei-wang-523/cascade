@@ -14,13 +14,13 @@ void g(int * x, int y){
 int main(){
    int i,j;
    for(i=0; i < 100; ++i){
-     g(a,i);
-     g(b,i);
+//     g(a,i);
+//     g(b,i);
      foo(i);
    }
 
    for(j=100;j < 200; ++j){
-     g(b,j);
+//     g(b,j);
      foo(j);
    }
 
