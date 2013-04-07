@@ -5,7 +5,7 @@ struct foo{
 int make_null(struct foo * hoo){
    int i;
    for (i=999; i >= 0; i--)
-      hoo -> x[i]=0;
+      hoo->x[i]=0;
    return 0;
 
 }

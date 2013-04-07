@@ -46,7 +46,7 @@
 		  <command>
 		    <cascadeFunction>cascade_check</cascadeFunction>
 		    <argument><![CDATA[
-		    _valid(a) && _valid(b)
+		    valid(a) && valid(b)
 		    ]]>
 		    </argument>
 		  </command>
@@ -61,7 +61,7 @@
 	      <command>
 		<cascadeFunction>cascade_check</cascadeFunction>
 		<argument><![CDATA[
-		_valid(a) && _valid(b)
+		valid(a) && valid(b)
 		]]>
 		</argument>
 	      </command>

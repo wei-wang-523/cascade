@@ -27,7 +27,7 @@
 	    <wayPoint fileId="1" line="10" >
 	      <loop>
 	        <invariant><![CDATA[
-		_forall(i, _implies(i>=0 && i < x, a[i] == 0))
+		forall(i, implies(i>=0 && i < x, a[i] == 0))
 		]]>
 		</invariant>
 	      </loop>

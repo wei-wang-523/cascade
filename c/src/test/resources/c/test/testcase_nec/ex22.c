@@ -31,8 +31,8 @@ int foo(int * a, int * b, int n){
 int main(){
    int a[100],b[200];
 
-   foo(NULL,a,100);	
-   foo(a,NULL,200);
+//   foo(NULL,a,100);
+//   foo(a,NULL,200);
    foo(a,b,50);
    foo(a,b,20);
    return 2;
@@ -40,4 +40,4 @@ int main(){
 
 // LOC 3: put "return 0" in the next line. 
 // LOC 15: code bug return; add it as return 1.
-// --mem-cell-size 10 --feasibility
+// --mem-cell-size 9

@@ -9,9 +9,9 @@ typedef int data_t;
 typedef size_t idx_t;
 typedef int bool_t;
 
-int nondet; //int __NONDET__();
-//int ASSUME(int);
-//int ASSERT(int);
+int __NONDET__() {int unknown; return unknown;};
+int ASSUME(int);
+int ASSERT(int);
 
 typedef struct {
   data_t resetVal;
@@ -34,34 +34,34 @@ buf_t *bufAlloc(size_t n) {
 }
 
 bool_t bufIdxWritten(const buf_t *buf_, idx_t idx_) {
-  ASSUME(buf_ != NULL );
-  ASSUME(0 <= idx_ );
-  ASSUME(idx_ < buf_->maxNumData);
+//  ASSUME(buf_ != NULL );
+//  ASSUME(0 <= idx_ );
+//  ASSUME(idx_ < buf_->maxNumData);
   return buf_->dataWriteEvidence[idx_] >= 0 &&
     buf_->dataWriteEvidence[idx_] < buf_->numData &&
     buf_->dataIdx[buf_->dataWriteEvidence[idx_]] == idx_;
 }
 
 data_t bufRead(const buf_t *buf_, idx_t idx_) {
-  ASSUME(buf_ != NULL );
-  ASSUME(0 <= idx_ );
-  ASSUME( idx_ < buf_->maxNumData);
+//  ASSUME(buf_ != NULL );
+//  ASSUME(0 <= idx_ );
+//  ASSUME( idx_ < buf_->maxNumData);
   return bufIdxWritten(buf_, idx_) ? buf_->data[buf_->dataWriteEvidence[idx_]] : buf_->resetVal;
 }
 
 void bufReset(buf_t *buf_, data_t resetVal_) {
-  ASSUME(buf_ != NULL);
+//  ASSUME(buf_ != NULL);
   buf_->resetVal = resetVal_;
   buf_->numData = 0;
 }
 
 void bufWrite(buf_t *buf_, idx_t idx_, data_t val_) {
-   ASSUME(buf_!=NULL);
-   ASSUME(0 <= idx_);
-   ASSUME(idx_ < buf_->maxNumData);
+//   ASSUME(buf_!=NULL);
+//   ASSUME(0 <= idx_);
+//   ASSUME(idx_ < buf_->maxNumData);
    idx_t writeDataTo = buf_->dataWriteEvidence[idx_];
    if (!bufIdxWritten(buf_, idx_)) {
-    ASSERT(buf_->numData < buf_->maxNumData);
+//    ASSERT(buf_->numData < buf_->maxNumData);
     buf_->dataIdx[buf_->numData] = idx_;
     buf_->dataWriteEvidence[idx_] = buf_->numData;
     writeDataTo = buf_->numData;
@@ -71,10 +71,10 @@ void bufWrite(buf_t *buf_, idx_t idx_, data_t val_) {
 }
 
 idx_t randomIdx(const buf_t *buf_) {
-  ASSUME(buf_ != NULL);
-  idx_t idx = nondet; // = __NONDET__();
-  ASSUME(0 <= idx);
-  ASSUME(idx < buf_->maxNumData);
+//  ASSUME(buf_ != NULL);
+  idx_t idx = __NONDET__();
+//  ASSUME(0 <= idx);
+//  ASSUME(idx < buf_->maxNumData);
   return idx;
 }
 
@@ -97,8 +97,8 @@ int main(int argc, char *argv[]) {
   
   for (i=0; i<numReads; i++) {
      for (j=0; j<numBufs; j++) {
-       datum = (data_t)nondet; //__NONDET__();
-       shouldReset = nondet; // __NONDET__();
+       datum = (data_t) __NONDET__();
+       shouldReset = __NONDET__();
         datumOut = (data_t)0;
         if (shouldReset)
            bufReset(bufs[j], datum);

@@ -10,7 +10,7 @@
 	<cascadeFunction> cascade_check
 	</cascadeFunction>
 	<argument><![CDATA[
-	_valid(&(q[-1]))
+	valid(&(q[-1]))
 	]]>
 	</argument>
       </command>

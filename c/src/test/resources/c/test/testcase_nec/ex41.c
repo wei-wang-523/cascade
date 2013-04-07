@@ -10,7 +10,7 @@ void mainFunc() {
 
   i = from;
   j = 0;
-  while(x[i] != 0 && i < to){ // _valid(&x[i]), from > 100
+  while(x[i] != 0 && i < to){ // valid(&x[i]), from > 100
     z[j] = x[i]; // copy x to z
     i++;
     j++;

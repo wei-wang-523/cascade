@@ -7,7 +7,7 @@ int mainFunc() {
   k; // = __NONDET__();
   
   i = 0;
-  while(x[i] != 0){ // _valid(&x[i]), after 100 iter
+  while(x[i] != 0){ // _valid(x[i]), after 100 iter
     y[i] = x[i];
     i++;
   }

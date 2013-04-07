@@ -6,8 +6,18 @@
       <loop iterTimes="10" >
 	<wayPoint fileId="1" line="90" >
 	  <function funcName="bufAlloc" >
-	    <wayPoint fileId="1" line="32" >
-	      <loop iterTimes="20" />
+	    <wayPoint fileId="1" line="31" >
+	      <loop iterTimes="20" >
+		<wayPoint fileId="1" line="32" >
+		  <command>
+    		    <cascadeFunction> cascade_check </cascadeFunction>
+    		    <argument><![CDATA[
+		    valid(&b->dataWriteEvidence[i])
+		    ]]>
+		    </argument>
+		  </command>
+		  </wayPoint>
+	      </loop>
 	    </wayPoint>
 	  </function>
 	</wayPoint>

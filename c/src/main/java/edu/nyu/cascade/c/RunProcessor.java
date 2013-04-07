@@ -190,7 +190,8 @@ class RunProcessor {
   private final static ArrayList<String> ReservedFunctions = 
       Lists.newArrayList("valid", "implies", "forall", "exists", "reach", 
           "allocated", "create_acyclic_list", "create_cyclic_list", 
-          "create_acyclic_dlist", "create_cyclic_dlist", "is_root");
+          "create_acyclic_dlist", "create_cyclic_dlist", "is_root",
+          "valid_malloc");
   private final static String TEMP_VAR_PREFIX = "TEMP_VAR_";
   private final static String TEST_VAR_PREFIX = "TEST_VAR_";
   private final Map<File, CSymbolTable> symbolTables;
@@ -951,6 +952,9 @@ class RunProcessor {
       
       // Pick all statements from the loop body
       buildPathToPosition(cfg, block, position, loopPath);
+      
+      // Replace function call
+      checkPath(loopPath, symbolTable);
       
       // Process havoc statements
       { 

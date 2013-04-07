@@ -5,29 +5,12 @@
       <command>
 	<cascadeFunction> cascade_assume </cascadeFunction>
 	<argument><![CDATA[ 
-	_allocated(addr, sizeof(Addr)) 
-	]]>
-	</argument>
-      </command>
-    </startPosition>
-    <wayPoint fileId="1" line="17" >
-      <command>
-	<cascadeFunction> cascade_assume </cascadeFunction>
-	<argument><![CDATA[ 
-	_allocated(buf, sizeof(Buffer))
+	allocated(addr, sizeof(Addr)) && allocated(buf, sizeof(Buffer))
+	&& addr->len == 3
 	]]> 
 	</argument>
       </command>
-    </wayPoint>
-    <wayPoint fileId="1" line="17" >
-      <command>
-	<cascadeFunction> cascade_assume </cascadeFunction>
-	<argument><![CDATA[
-	addr->len == 3
-	]]>
-	</argument>
-      </command>
-    </wayPoint>
+    </startPosition>
     <wayPoint fileId="1" line="23">
       <function funcName="f1" >
         <wayPoint fileId="1" line="39" >
@@ -36,15 +19,13 @@
               <command>
 		<cascadeFunction> cascade_check </cascadeFunction>
 		<argument><![CDATA[
-		_valid(&addr->dat[i - 1])
+		valid(&addr->dat[i - 1])
 		]]>
 		</argument>
       	      </command>
             </wayPoint>
-            <wayPoint fileId="1" line="44" />
           </loop>
         </wayPoint>
-        <wayPoint fileId="1" line="51" />
       </function>
     </wayPoint>
     <endPosition fileId="1" line="24" />

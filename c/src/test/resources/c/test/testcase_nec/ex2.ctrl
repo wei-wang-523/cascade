@@ -5,7 +5,7 @@
       <command>
       	<cascadeFunction> cascade_assume </cascadeFunction>
       	<argument><![CDATA[
-      	n == 3
+      	n == 1024
       	]]>
       	</argument>
       </command>
@@ -14,12 +14,12 @@
     <wayPoint fileId="1" line="31" >
       <function funcName="test" >
       	<wayPoint fileId="1" line="8" >
-      	  <loop iterTimes="3" >
+      	  <loop iterTimes="1024" >
             <wayPoint fileId="1" line="10" >
 	      <command>
 		<cascadeFunction> cascade_check </cascadeFunction>
 		<argument><![CDATA[
-		_valid(&a[i])
+		valid(&a[i])
 		]]>
 		</argument>
 	      </command>

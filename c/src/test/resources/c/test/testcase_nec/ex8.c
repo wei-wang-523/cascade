@@ -9,8 +9,8 @@ int main(){
   a= malloc( k * sizeof(int));
   
   for (i =0 ; i != k; i++)
-    if (a[i]) //return 1;
-      return 1;
+    if (a[i]) return 1;
+
   
   return 0;
   
@@ -18,5 +18,3 @@ int main(){
 
 // LOC5: ignore __NONDET__();
 // LOC19: move "return 1" to the next line for CfgBuilder to analyze.
-
-/* Feasibility. */

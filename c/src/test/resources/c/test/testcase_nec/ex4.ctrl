@@ -8,7 +8,7 @@
           <command>
             <cascadeFunction> cascade_check </cascadeFunction>
             <argument><![CDATA[
-            _valid(&a[x])
+            valid(&a[x])
             ]]>
             </argument>
           </command>
@@ -22,7 +22,7 @@
           <command>
             <cascadeFunction> cascade_check </cascadeFunction>
             <argument><![CDATA[
-            _valid(&a[x])
+            valid(&a[x])
             ]]>
             </argument>
           </command>

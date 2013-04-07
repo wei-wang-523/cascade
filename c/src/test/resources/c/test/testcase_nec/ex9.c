@@ -23,7 +23,7 @@ int main(){
 
    // n = __NONDET__();
    
-   if (n <= 0 || n >= 255){ // n>=1024
+   if (n <= 0 || n >= 1024){
       n=5;
       a = (int *) malloc(n * sizeof(int));
    } else {
