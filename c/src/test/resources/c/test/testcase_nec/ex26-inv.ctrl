@@ -1,0 +1,25 @@
+<controlFile>
+  <sourceFile name="ex26.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="14" />
+    <wayPoint fileId="1" line="16" >
+      <loop>
+        <invariant><![CDATA[
+        i >= 0 && i <= 100 &&
+        implies(i >= 0 && i < 100, valid(&a[i]) && valid(&b[2*i]))
+        ]]>
+        </invariant>
+      </loop>
+    </wayPoint>
+    <wayPoint fileId="1" line="22" >
+      <loop>
+        <invariant><![CDATA[
+        j >= 100 && j <= 200 &&
+        implies(j >= 100 && j < 200, valid(&b[2*j]))
+        ]]>
+        </invariant>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="28" />
+  </run>
+</controlFile>
