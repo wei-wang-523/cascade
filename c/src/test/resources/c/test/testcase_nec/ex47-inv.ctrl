@@ -6,7 +6,7 @@
       <command>
     	<cascadeFunction> cascade_assume </cascadeFunction>
     	<argument><![CDATA[
-	h > 0 && w > 0 && k > 0 && k < h*w
+	h > 0 && w > 0 && k > 0 && k < h*w 
 	]]>
 	</argument>
       </command>
@@ -14,8 +14,8 @@
     <wayPoint fileId="1" line="18" >
       <loop>
         <invariant><![CDATA[
-	y >= 0 && y <= h && valid(&lut[0]) && 
-	implies(y >= 0 && y < h, lut[y] == lut[0] + w*y)
+	y >= 0 && y <= h && 
+	implies(y > 0 && y <= h, lut[y-1] == lut[0] + w*(y-1))
 	]]>
     	</invariant>
       </loop>
