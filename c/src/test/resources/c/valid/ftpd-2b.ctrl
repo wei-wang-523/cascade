@@ -37,7 +37,7 @@
               <command>
                 <cascadeFunction> cascade_check </cascadeFunction>
                 <argument><![CDATA[
-                _valid(dest)
+                valid(dest)
                 ]]>
                 </argument>
               </command>
