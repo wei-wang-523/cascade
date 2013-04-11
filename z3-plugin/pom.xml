@@ -99,13 +99,14 @@
               <goal>test</goal>
             </goals>
             <configuration>
-              <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm>
+<!--              <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm> -->
               <fork>always</fork>
             </configuration>
           </execution>
         </executions>
         <configuration>
           <environmentVariables>
+            <LD_LIBRARY_PATH>${z3.libdir}</LD_LIBRARY_PATH>
             <DYLD_LIBRARY_PATH>${z3.libdir}</DYLD_LIBRARY_PATH>
           </environmentVariables>
           <!-- <systemProperties> -->
@@ -114,7 +115,7 @@
           <!--     <value>${z3.libdir}</value> -->
           <!--   </property> -->
           <!-- </systemProperties> -->
-          <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm>
+<!--          <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm> -->
           <fork>always</fork>
         </configuration>
       </plugin>
