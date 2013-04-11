@@ -99,7 +99,7 @@
               <goal>test</goal>
             </goals>
             <configuration>
-              <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm>
+<!--              <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm> -->
               <fork>always</fork>
             </configuration>
           </execution>
@@ -107,6 +107,7 @@
         <configuration>
           <environmentVariables>
             <LD_LIBRARY_PATH>${cvc4.libdir}:${cvc4.jni.libdir}</LD_LIBRARY_PATH>
+            <DYLD_LIBRARY_PATH>${cvc4.libdir}:${cvc4.jni.libdir}</DYLD_LIBRARY_PATH>
           </environmentVariables>
           <!-- <systemProperties> -->
           <!--   <property> -->
@@ -114,7 +115,7 @@
           <!--     <value>${cvc4.libdir}</value> -->
           <!--   </property> -->
           <!-- </systemProperties> -->
-          <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm>
+<!--          <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm> -->
           <fork>always</fork>
         </configuration>
       </plugin>
