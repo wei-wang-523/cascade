@@ -140,16 +140,16 @@
             <goals>
               <goal>test</goal>
             </goals>
-            <configuration>
+<!--            <configuration>
               <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm>
               <fork>always</fork>
-            </configuration>
+            </configuration> -->
           </execution>
         </executions>
-        <configuration>
+<!--        <configuration>
           <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm>
           <fork>always</fork>
-        </configuration>
+        </configuration> -->
       </plugin>
     </plugins>
   </build>
