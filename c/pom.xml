@@ -5,6 +5,7 @@
   <artifactId>cascade-c</artifactId>
   <name>Cascade/C</name>
   <version>0.0.2-SNAPSHOT</version>
+  <build.version>${buildNumber}</build.version>
   <url>http://cs.nyu.edu/acsys/cascade</url>
 
   <description>
@@ -68,7 +69,7 @@
       <scope>system</scope>
       <systemPath>${z3.jar}</systemPath>
     </dependency>
-<!--    <dependency>
+    <dependency>
       <groupId>edu.nyu.cascade</groupId>
       <artifactId>z3-plugin</artifactId>
       <version>0.0.2-SNAPSHOT</version>
@@ -81,7 +82,7 @@
       <version>0.0.2-SNAPSHOT</version>
       <type>jar</type>
       <scope>compile</scope>
-    </dependency> -->
+    </dependency>
     <dependency>
       <groupId>com.google.inject</groupId>
       <artifactId>guice</artifactId>
@@ -90,7 +91,7 @@
   </dependencies>
 
   <build>
-    <finalName>${project.artifactId}-${project.version}-r${buildNumber}</finalName>
+    <finalName>${project.artifactId}-${project.version}-r${project.build.version}</finalName>
     <resources>
       <resource>
         <directory>${project.basedir}/src/main/resources</directory>
