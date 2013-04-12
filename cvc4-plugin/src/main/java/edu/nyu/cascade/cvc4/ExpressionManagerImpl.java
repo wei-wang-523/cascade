@@ -11,7 +11,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.inject.internal.Maps;
+import com.google.common.collect.Maps;
 
 import edu.nyu.acsys.CVC4.ArrayStoreAll;
 import edu.nyu.acsys.CVC4.Expr;

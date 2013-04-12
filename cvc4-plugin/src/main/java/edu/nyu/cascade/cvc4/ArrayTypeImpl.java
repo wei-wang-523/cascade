@@ -1,6 +1,6 @@
 package edu.nyu.cascade.cvc4;
 
-import com.google.inject.internal.Preconditions;
+import com.google.common.base.Preconditions;
 
 import edu.nyu.acsys.CVC4.Exception;
 import edu.nyu.cascade.prover.Expression;

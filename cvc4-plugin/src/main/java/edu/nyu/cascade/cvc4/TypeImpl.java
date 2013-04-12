@@ -3,7 +3,7 @@ package edu.nyu.cascade.cvc4;
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import com.google.inject.internal.Preconditions;
+import com.google.common.base.Preconditions;
 
 import edu.nyu.acsys.CVC4.DatatypeUnresolvedType;
 import edu.nyu.acsys.CVC4.Expr;
