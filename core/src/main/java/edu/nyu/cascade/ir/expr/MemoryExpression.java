@@ -1,6 +1,6 @@
 package edu.nyu.cascade.ir.expr;
 
-import com.google.inject.internal.Preconditions;
+import com.google.common.base.Preconditions;
 
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;

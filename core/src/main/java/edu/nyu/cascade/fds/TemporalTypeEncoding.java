@@ -2,7 +2,7 @@ package edu.nyu.cascade.fds;
 
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
-import com.google.inject.internal.Preconditions;
+import com.google.common.base.Preconditions;
 
 import edu.nyu.cascade.ir.expr.TypeEncoding;
 import edu.nyu.cascade.prover.Expression;

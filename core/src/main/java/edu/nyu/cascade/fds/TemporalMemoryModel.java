@@ -1,6 +1,6 @@
 package edu.nyu.cascade.fds;
 
-import com.google.inject.internal.Preconditions;
+import com.google.common.base.Preconditions;
 
 import edu.nyu.cascade.ir.expr.AbstractMemoryModel;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;

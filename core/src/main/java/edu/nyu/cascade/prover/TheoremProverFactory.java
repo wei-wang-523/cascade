@@ -16,9 +16,9 @@ import org.apache.commons.cli.OptionBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.inject.internal.Lists;
 
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Preferences;

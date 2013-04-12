@@ -8,7 +8,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.inject.internal.Sets;
+import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.prover.ArrayVariableExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;

@@ -2,7 +2,7 @@ package edu.nyu.cascade.ir.expr;
 
 import java.util.List;
 
-import com.google.inject.internal.Preconditions;
+import com.google.common.base.Preconditions;
 
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;

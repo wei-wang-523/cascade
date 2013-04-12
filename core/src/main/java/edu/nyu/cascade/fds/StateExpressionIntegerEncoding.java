@@ -2,9 +2,9 @@ package edu.nyu.cascade.fds;
 
 import java.util.Arrays;
 
+import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
-import com.google.inject.internal.Preconditions;
 
 import edu.nyu.cascade.ir.expr.AbstractTypeEncoding;
 import edu.nyu.cascade.ir.expr.IntegerEncoding;
