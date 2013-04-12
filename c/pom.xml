@@ -5,7 +5,6 @@
   <artifactId>cascade-c</artifactId>
   <name>Cascade/C</name>
   <version>0.0.2-SNAPSHOT</version>
-  <build.version>${buildNumber}</build.version>
   <url>http://cs.nyu.edu/acsys/cascade</url>
 
   <description>
@@ -91,7 +90,7 @@
   </dependencies>
 
   <build>
-    <finalName>${project.artifactId}-${project.version}-r${project.build.version}</finalName>
+    <finalName>${project.artifactId}-${project.version}-r${build.version}</finalName>
     <resources>
       <resource>
         <directory>${project.basedir}/src/main/resources</directory>
@@ -277,8 +276,11 @@
       </plugin>
     </plugins>
   </build>
-<!--  <profiles>
+  <profiles>
     <profile>
+      <build.version>${buildNumber}</build.version>
+    </profile>
+<!--    <profile>
       <id>cvc4-default</id>
       <activation>
         <activeByDefault>true</activeByDefault>
@@ -302,6 +304,6 @@
         <z3.libdir>${z3.basedir}</z3.libdir>
         <z3.jar>${z3.basedir}/com.microsoft.z3.jar</z3.jar>
       </properties>
-    </profile>
-  </profiles> -->
+    </profile> -->
+  </profiles> 
 </project>
