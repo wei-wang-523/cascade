@@ -15,7 +15,7 @@ import org.apache.commons.cli.OptionBuilder;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.inject.internal.Maps;
+import com.google.common.collect.Maps;
 
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
@@ -90,7 +90,7 @@ public class TheoremProverImpl implements TheoremProver {
   private static final String OPTION_TP_STATS = "z3-stats";
   private static final String OPTION_PBQI = "z3-pbqi";
   private static final String OPTION_MBQI = "z3-mbqi";
-
+  private static long z3_time = 0;
   private static final Pattern p = Pattern.compile("(^|\\n|\\r\\n?)");
 
   public static void debugCall(String string) {
@@ -304,7 +304,8 @@ public class TheoremProverImpl implements TheoremProver {
       long time = System.currentTimeMillis();
       Status z3QueryResult = getSolver().Check();
       time = System.currentTimeMillis() - time;
-      IOUtils.err().println("Z3 took time: " + time/1000.0 + "s");
+      z3_time += time;
+      IOUtils.err().println("Z3 took time: " + z3_time/1000.0 + "s");
       IOUtils.debug().pln(z3QueryResult.toString());
       ValidityResult.Type resultType = convertZ3QueryResult(z3QueryResult);
 

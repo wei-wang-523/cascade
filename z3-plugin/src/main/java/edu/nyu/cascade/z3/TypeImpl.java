@@ -2,7 +2,7 @@ package edu.nyu.cascade.z3;
 
 import java.util.List;
 
-import com.google.inject.internal.Preconditions;
+import com.google.common.base.Preconditions;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Sort;

@@ -1,7 +1,7 @@
 package edu.nyu.cascade.z3;
 
 import com.google.common.collect.ComputationException;
-import com.google.inject.internal.Preconditions;
+import com.google.common.base.Preconditions;
 import com.microsoft.z3.Sort;
 import com.microsoft.z3.Z3Exception;
 
