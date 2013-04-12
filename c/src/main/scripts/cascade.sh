@@ -7,7 +7,7 @@ CVC4_JNI_LIB_DIR="${cvc4.jni.libdir}"
 CVC4_JAR="${cvc4.jar}"
 
 CASCADE_BIN_DIR="${project.build.directory}"
-CASCADE_JAR="$CASCADE_BIN_DIR/${project.build.finalName}-${project.build.version}-jar-with-dependencies.jar"
+CASCADE_JAR="$CASCADE_BIN_DIR/${project.build.finalName}-${project.properties.build.version}-jar-with-dependencies.jar"
 
 DYLD_LIBRARY_PATH=$Z3_LIB_DIR:$CVC4_LIB_DIR:$CVC4_JNI_LIB_DIR:$DYLD_LIBRARY_PATH
 LD_LIBRARY_PATH=$Z3_LIB_DIR:$CVC4_LIB_DIR:$CVC4_JNI_LIB_DIR:$LD_LIBRARY_PATH
