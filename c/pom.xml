@@ -94,7 +94,7 @@
   </properties>
 
   <build>
-    <finalName>${project.artifactId}-${project.version}-r${build.version}</finalName>
+    <finalName>${project.artifactId}-${project.version}-r${buildNumber}</finalName>
     <resources>
       <resource>
         <directory>${project.basedir}/src/main/resources</directory>
