@@ -49,13 +49,31 @@
       <scope>compile</scope>
     </dependency>
     <!-- We shouldn't really have this as a hard dependency, but it makes life 
-	 much easier for now. -->
+	 much easier for now. Test with ubuntu and maven3, without them, maven
+         cannot load these jar via ${user.home}/.m2/settings.xml, and will 
+         complain about non-absolute-path of systemPath with system scope. The
+         reason we won't add absolute path here is to prevent users to set pom
+         file when use it, instead just set settings.xml. -->
     <dependency>
-    	<groupId>edu.nyu.cascade</groupId>
-    	<artifactId>z3-plugin</artifactId>
-    	<version>0.0.2-SNAPSHOT</version>
-    	<type>jar</type>
-    	<scope>compile</scope>
+      <groupId>edu.nyu.cvc4</groupId>
+      <artifactId>cvc4</artifactId>
+      <version>${cvc4.version}</version>
+      <scope>system</scope>
+      <systemPath>${cvc4.jar}</systemPath>
+    </dependency>
+    <dependency>
+      <groupId>com.microsoft.z3</groupId>
+      <artifactId>z3</artifactId>
+      <version>${z3.version}</version>
+      <scope>system</scope>
+      <systemPath>${z3.jar}</systemPath>
+    </dependency>
+    <dependency>
+      <groupId>edu.nyu.cascade</groupId>
+      <artifactId>z3-plugin</artifactId>
+      <version>0.0.2-SNAPSHOT</version>
+      <type>jar</type>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>edu.nyu.cascade</groupId>
