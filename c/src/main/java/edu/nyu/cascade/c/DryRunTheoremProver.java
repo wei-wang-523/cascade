@@ -6,7 +6,7 @@ import java.util.List;
 import org.apache.commons.cli.Option;
 
 import com.google.common.collect.ImmutableList;
-import com.google.inject.internal.Sets;
+import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.ArrayVariableExpression;

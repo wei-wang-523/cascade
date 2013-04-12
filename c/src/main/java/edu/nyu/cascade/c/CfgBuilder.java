@@ -726,13 +726,15 @@ public class CfgBuilder extends Visitor {
         } else {
           resultStmt = Statement.alloc(node, lhsExpr, sizeExpr);
         }
+      } else if("__NONDET__".equals(funNode.getString(0))) {
+        resultStmt = Statement.havoc(node, lhsExpr);
       } else { /* For other function call, treat it as non-function call */
         if (!"=".equals(assignOperator)) {
           rhsExpr = CExpression.create(node,symbolTable.getCurrentScope());
         }
         resultStmt = Statement.assign(node, lhsExpr, rhsExpr);
       }
-    } 
+    }
     /* For other function call, as x = y, add assign statement */
     else { 
       /* The assignment operator may be one of +=, -=, et al., in which case the
@@ -1019,6 +1021,7 @@ public class CfgBuilder extends Visitor {
     
     String funcName = funNode.getString(0);
     if("malloc".equals(funcName)) {
+    } else if("__NONDET__".equals(funcName)) {
     } else if("free".equals(funcName)) {
       addStatement(Statement.free(node, expressionOf(node.getNode(1).getNode(0))));
     } else {

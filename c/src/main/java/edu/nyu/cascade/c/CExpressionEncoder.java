@@ -26,10 +26,10 @@ import xtc.tree.VisitingException;
 import xtc.tree.Visitor;
 import xtc.util.SymbolTable.Scope;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ComputationException;
 import com.google.common.collect.Lists;
-import com.google.inject.internal.Maps;
-import com.google.inject.internal.Preconditions;
+import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.SymbolTable;

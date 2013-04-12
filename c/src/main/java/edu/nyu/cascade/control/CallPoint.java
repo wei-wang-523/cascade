@@ -5,7 +5,7 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
-import com.google.inject.internal.Lists;
+import com.google.common.collect.Lists;
 
 public class CallPoint {
 
@@ -15,7 +15,7 @@ public class CallPoint {
       throws ControlFileException {
     String funcName = callPos.getFuncName();
     BigInteger funcId = callPos.getFuncId();
-    List<Position> wayPoint = Lists.newArrayList();   
+    List<Position> wayPoint = Lists.newArrayList();
     for(edu.nyu.cascade.control.jaxb.Position pos : callPos.getWayPoint())
       wayPoint.add(Position.valueOf(pos, sourceFiles));
     return new CallPoint(funcName, funcId, wayPoint);

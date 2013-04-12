@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.base.Preconditions;
-import com.google.inject.internal.Lists;
+import com.google.common.collect.Lists;
 
 import edu.nyu.cascade.control.jaxb.InsertionType;
 import edu.nyu.cascade.control.jaxb.Position.Command;
