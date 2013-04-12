@@ -89,6 +89,10 @@
     </dependency>
   </dependencies>
 
+  <properties>
+    <build.version>${buildNumber}</build.version>
+  </properties>
+
   <build>
     <finalName>${project.artifactId}-${project.version}-r${build.version}</finalName>
     <resources>
@@ -277,10 +281,6 @@
     </plugins>
   </build>
   <profiles>
-    <profile>
-      <id>dev</id>
-      <build.version>${buildNumber}</build.version>
-    </profile>
 <!--    <profile>
       <id>cvc4-default</id>
       <activation>
