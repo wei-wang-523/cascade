@@ -90,11 +90,11 @@
   </dependencies>
 
   <properties>
-    <build.version>${buildNumber}</build.version>
+    <build_version>${buildNumber}</build_version>
   </properties>
 
   <build>
-    <finalName>${project.artifactId}-${project.version}-r${buildNumber}</finalName>
+    <finalName>${project.artifactId}-${project.version}-r${build_version}</finalName>
     <resources>
       <resource>
         <directory>${project.basedir}/src/main/resources</directory>
