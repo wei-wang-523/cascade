@@ -121,18 +121,4 @@
       </plugin>
     </plugins>
   </build>
-  <profiles>
-    <profile>
-      <id>z3-default</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <z3.version>4.3.1</z3.version>
-        <z3.basedir>/Users/Wei/Workspace/resource/z3/build/</z3.basedir>
-        <z3.libdir>${z3.basedir}</z3.libdir>
-        <z3.jar>${z3.basedir}com.microsoft.z3.jar</z3.jar>
-      </properties>
-    </profile>
-  </profiles>
 </project>
