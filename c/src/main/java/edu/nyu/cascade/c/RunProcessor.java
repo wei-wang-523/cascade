@@ -20,6 +20,7 @@ import xtc.type.NumberT;
 import xtc.util.Pair;
 import xtc.util.SymbolTable.Scope;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -187,6 +188,125 @@ class RunProcessor {
     this.TEMP_VAR_POSTFIX = 0;
   }
   
+  final static class Path {
+    List<IRStatement> stmts = null;
+    IRBasicBlock destBlock = null;
+    IRBasicBlock srcBlock = null;
+    
+    static Path create() {
+      return new Path(null, null, null);
+    }
+    
+    static Path create(ImmutableList<? extends IRStatement> stmts, 
+        IRBasicBlock srcBlock, IRBasicBlock destBlock) {
+      return new Path(stmts, srcBlock, destBlock);
+    }
+    
+    Path(ImmutableList<? extends IRStatement> stmts, IRBasicBlock srcBlock, IRBasicBlock destBlock) {
+      this.destBlock = destBlock;
+      this.srcBlock = srcBlock;
+      this.stmts = Lists.newArrayList(stmts);
+    }
+    
+    void setDestBlock(IRBasicBlock block) {
+      destBlock = block;
+    }
+    
+    void setSrcBlock(IRBasicBlock block) {
+      srcBlock = block;
+    }
+    
+    void addStatement(IRStatement stmt) {
+      if(stmts != null) stmts.add(stmt);
+      else  stmts = Lists.newArrayList(stmt);
+    }
+    
+    void addStatement(int index, IRStatement stmt) {
+      if(stmts != null) stmts.add(index, stmt);
+      else  stmts = Lists.newArrayList(stmt);
+    }
+    
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder().append('(').append(srcBlock.getId())
+          .append(": ").append(destBlock.getId()).append(')').append(stmts);
+      return sb.toString();
+    }
+    
+    @Override
+    public boolean equals(Object other) {
+      if(!(other instanceof Path)) return false;
+      Path otherPath = (Path) other;
+      return this.srcBlock.equals(otherPath.srcBlock) &&
+          this.destBlock.equals(otherPath.destBlock) &&
+          this.stmts.equals(otherPath.stmts);
+    }
+  }
+  
+  final static class Graph {
+    Map<Path, Set<Path>> predecessorMap = null;
+    Path srcPath = null;
+    Path destPath = null;
+    
+    static Graph create() {
+      return new Graph(null, null, null);
+    }
+    
+    static Graph create(Map<Path, Set<Path>> map, 
+        Path srcPath, Path destPath) {
+      return new Graph(map, srcPath, destPath);
+    }
+    
+    Graph(Map<Path, Set<Path>> map, Path srcPath, Path destPath) {
+      this.destPath = destPath;
+      this.srcPath = srcPath;
+      this.predecessorMap = map;
+    }
+    
+    boolean isEmpty() {
+      return (destPath == null) && (srcPath == null) && (predecessorMap == null);
+    }
+    
+    IRBasicBlock getDestBlock() {
+      if(destPath != null)
+        return destPath.destBlock;
+      else
+        return null;
+    }
+    
+    IRBasicBlock getSrcBlock() {
+      if(srcPath != null)
+        return srcPath.srcBlock;
+      else
+        return null;
+    }
+    
+    void appendPrefixGraph(Graph preGraph) {
+      Map<Path, Set<Path>> preMap = preGraph.predecessorMap;
+      Path preDestPath = preGraph.destPath;
+
+      Set<Path> predecessorPaths = this.predecessorMap.get(this.srcPath);
+      if(predecessorPaths == null)
+        predecessorPaths = Sets.newHashSet();
+      predecessorPaths.add(preDestPath);
+      this.predecessorMap.put(this.srcPath, predecessorPaths);
+      this.predecessorMap.putAll(preMap);
+    }
+    
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      for(Path key : predecessorMap.keySet()) {
+        sb.append(key).append("--> [");
+        for(Path value : predecessorMap.get(key)) {
+          sb.append(value).append(',');
+        }
+        sb.append("]\n");
+      }
+      return sb.toString();
+    }
+  }
+  
   private final static ArrayList<String> ReservedFunctions = 
       Lists.newArrayList("valid", "implies", "forall", "exists", "reach", 
           "allocated", "create_acyclic_list", "create_cyclic_list", 
@@ -245,11 +365,7 @@ class RunProcessor {
     }
   }
 
-  /**
-   * Incorporate the command for the given position into the given path.
-   * 
-   * @throws RunProcessorException
-   */
+  /** Incorporate the command for the given position into the given path. */
   void processPosition(Position position, CSymbolTable symbolTable,
       List<IRStatement> path) throws RunProcessorException {
     List<Command> cmds = position.getCommands();
@@ -306,20 +422,38 @@ class RunProcessor {
 
   /**
    * Find a path in the CFG to the given position and add the statements along
-   * the path to the <code>List</code> <code>path</code>. If more than one path
+   * the path to the List path. If more than one path
    * to the position exists in the CFG, one will be chosen arbitrarily. Raises
-   * <code>PathBuilderException</code> if no path to the position can be found.
+   * PathBuilderException if no path to the position can be found.
    * 
-   * The behavior if <code>position</code> is not within a basic block depends
-   * on the property <code>position.matchAfter</code>: if <code>true</code>, the
-   * path will terminate at the nearest subsequent block; if <code>false</code>,
+   * The behavior if position is not within a basic block depends
+   * on the property position.matchAfter: if true, the
+   * path will terminate at the nearest subsequent block; if false,
    * it will terminate after the nearest preceding block.
    * 
    * In this implementation, the path chosen will always be the shortest path.
    * If there is more than one shortest path, one will be chosen arbitrarily.
    * 
-   * @throws RunProcessorException
    */
+  private Graph buildPathGraphToPosition(IRControlFlowGraph cfg,
+      IRBasicBlock block, IRLocation pos) 
+          throws RunProcessorException {
+    IRBasicBlock target;
+    if(pos instanceof Position) {
+      target = cfg.splitAt(pos, InsertionType.AFTER.equals(
+          ((Position)pos).getInsertionType()));
+    } else {
+      throw new RunProcessorException("Bad position: " + pos);
+    }      
+
+    if( target==null ) {
+      throw new RunProcessorException("Bad position: " + pos);
+    }
+    IOUtils.debug().pln("Searching for path:").incr().pln(
+        "Source: " + block + "\nTarget: " + target).decr().flush();
+    return buildPathGraphToBlock(cfg, block, target);
+  }
+  
   private IRBasicBlock buildPathToPosition(IRControlFlowGraph cfg,
       IRBasicBlock block, IRLocation pos, List<IRStatement> path) 
           throws RunProcessorException {
@@ -338,12 +472,170 @@ class RunProcessor {
         "Source: " + block + "\nTarget: " + target).decr().flush();
     return buildPathToBlock(cfg, block, target, path);
   }
+  
+  /**
+   * Find a path map in the CFG to the given start block and target block and 
+   * store it in cfg.
+   */
+  private Map<IRBasicBlock, Set<IREdge<?>>> buildPathMap(IRControlFlowGraph cfg,
+      IRBasicBlock start, IRBasicBlock target) throws RunProcessorException {
+    Map<IRBasicBlock, Set<IREdge<?>>> pathMap = Maps.newHashMap();
+    Set<IREdge<?>> visited = Sets.newLinkedHashSet();
+    breathFirstSearch(cfg, start, target, pathMap, visited);
+    return pathMap;
+  }
+  
+  private void breathFirstSearch(IRControlFlowGraph cfg,
+      IRBasicBlock start, IRBasicBlock target, Map<IRBasicBlock,
+      Set<IREdge<?>>> pathMap, Set<IREdge<?>> visited) throws RunProcessorException {
+    
+    for(IREdge<?> e : cfg.getIncomingEdges(target)) {
+      if(visited.contains(e))   continue;
+      IRBasicBlock v = e.getSource();
+      if(v.equals(start)) {
+        visited.add(e);
+        for(IREdge<?> ve : visited) {
+          IRBasicBlock tgt = ve.getTarget();
+          Set<IREdge<?>> edges = pathMap.get(tgt);
+          if(edges == null) edges = Sets.newHashSet();
+          edges.add(ve);
+          pathMap.put(tgt, edges);
+        }
+        visited.remove(e);
+      }     
+    }
+    
+    for(IREdge<?> e : cfg.getIncomingEdges(target)) {
+      IRBasicBlock v = e.getSource();
+      if(visited.contains(e) || v.equals(start)) {
+        continue;
+      }
+      visited.add(e);
+      breathFirstSearch(cfg, start, v, pathMap, visited);
+      visited.remove(e);
+    }
+  }
+  
+  final class PairKey {
+    public final IRBasicBlock a;
+    public final IRBasicBlock b;
+
+    PairKey(IRBasicBlock a, IRBasicBlock b) { this.a = a; this.b = b; }
+
+    PairKey make(IRBasicBlock a, IRBasicBlock b) { return new PairKey(a, b); }
+
+    public int hashCode() {
+      return (a != null ? a.hashCode() : 0) + 31 * (b != null ? b.hashCode() : 0);
+    }
+
+    public boolean equals(Object o) {
+      if (o == null || o.getClass() != this.getClass()) { return false; }
+      PairKey that = (PairKey) o;
+      return (a == null ? that.a == null : a.equals(that.a))
+          && (b == null ? that.b == null : b.equals(that.b));
+    }
+  }
+  
+  /** Build a path graph from the path Map built from cfg. */
+  private Graph buildPathGraph(IRControlFlowGraph cfg, IRBasicBlock start, IRBasicBlock target, 
+      Map<IRBasicBlock, Set<IREdge<?>>> pathMap,
+      Map<PairKey, Graph> graphSet) throws RunProcessorException {
+    PairKey pairKey = new PairKey(start, target);
+    if(graphSet.containsKey(pairKey))   return graphSet.get(pairKey);
+    
+    /* Add statements along the path from target to start */
+    IRBasicBlock u = target;
+    IOUtils.debug().pln("The path:").incr().flush();
+    
+    Graph resGraph = null;
+    
+    if(start.equals(u))     return null;
+    
+    IOUtils.debug().pln(u.toString()).flush();
+    
+    /* Iterate loops for iterTimes - backward unrolling*/
+    int iterTimes = u.getIterTimes();
+    u.clearIterTimes();
+    while(iterTimes > 0) {
+      Graph loopGraph = buildPathGraphToBlock(cfg, u, u);
+      if(resGraph == null)    resGraph = loopGraph;
+      else resGraph.appendPrefixGraph(loopGraph);
+      u = resGraph.getSrcBlock();
+      iterTimes--;
+    }
+    
+    /* Create a graph for current block */
+    Path uPath = Path.create(u.getStatements(), u, u);
+    Map<Path, Set<Path>> uMap = Maps.newHashMap();
+    Graph uGraph = Graph.create(uMap, uPath, uPath);
+    /* Get all the predecessor graphs for uGraph */
+    Object[] edges = pathMap.get(u).toArray();
+    if(edges.length == 1) {
+      IREdge<?> e = (IREdge<?>) edges[0];
+      Graph branchGraph = buildPathGraph(cfg, start, e.getSource(), pathMap, graphSet);
+      if(branchGraph != null) {        
+        addEdgeToGraphSrc(uGraph, e);
+//        IOUtils.err().println("Before append uGraph: " + uGraph.predecessorMap);
+//        IOUtils.err().println("Before append branchGraph: " + branchGraph.predecessorMap);
+        uGraph.appendPrefixGraph(branchGraph);
+//        IOUtils.err().println("After append: " + uGraph.predecessorMap);
+        uGraph.srcPath = branchGraph.srcPath;
+      }
+    } else {
+      Path branchSrcPath = null;
+      for(Object edge : edges) {
+        IREdge<?> e = (IREdge<?>) edge;
+        Graph branchGraph = buildPathGraph(cfg, start, e.getSource(), pathMap, graphSet);
+        assert(branchGraph != null);
+        addEdgeToGraphDest(branchGraph, e);
+//        IOUtils.err().println("Before append: " + uGraph.predecessorMap);
+//        IOUtils.err().println("Before append branchGraph: " + branchGraph.predecessorMap);
+        uGraph.appendPrefixGraph(branchGraph);
+//        IOUtils.err().println("After append: " + uGraph.predecessorMap);
+        assert(branchSrcPath == null || branchSrcPath.equals(branchGraph.srcPath));
+        branchSrcPath = branchGraph.srcPath;
+      }
+      uGraph.srcPath = branchSrcPath;
+    }
+    
+    if(resGraph != null)    resGraph.appendPrefixGraph(uGraph);
+    else                    resGraph = uGraph;
+    
+    graphSet.put(pairKey, resGraph);
+    return resGraph;
+  }
+  
+  private void addEdgeToGraphDest(Graph graph, IREdge<?> e) {
+    if (e.getGuard() != null) {
+      Statement stmt = Statement.assumeStmt(e.getSourceNode(), e.getGuard());
+      if(graph.srcPath == graph.destPath) {
+        graph.destPath.addStatement(stmt);
+        graph.destPath.setDestBlock(e.getTarget());
+      } else {
+        graph.destPath.addStatement(stmt);
+        graph.destPath.setDestBlock(e.getTarget());
+      }
+    }
+  }
+  
+  private void addEdgeToGraphSrc(Graph graph, IREdge<?> e) {
+    if (e.getGuard() != null) {
+      Statement stmt = Statement.assumeStmt(e.getSourceNode(), e.getGuard());
+      if(graph.srcPath == graph.destPath) {
+        graph.srcPath.addStatement(0, stmt);
+        graph.srcPath.setSrcBlock(e.getSource());
+      } else {
+        graph.srcPath.addStatement(stmt);
+        graph.srcPath.setSrcBlock(e.getSource());
+      }
+    }
+  }
 
   /**
    * Find a path in the CFG to the given start block and target block, and add
-   * the statements along the path to the <code>list</code> <code>path</code>. 
+   * the statements along the path to the list path. 
    * If more than one path to the position exists in the CFG, one will be chosen
-   * arbitrarily. Raises <code>PathBuilderException</code> if no path can be 
+   * arbitrarily. Raises PathBuilderException if no path can be 
    * found.
    * 
    * In this implementation, the path chosen will always be the shortest path.
@@ -352,9 +644,46 @@ class RunProcessor {
    * @throws RunProcessorException
    */
   
+  private Graph buildPathGraphToBlock(IRControlFlowGraph cfg,
+      IRBasicBlock start, IRBasicBlock target) 
+          throws RunProcessorException {
+    /*
+     * Find all paths from block to target, using a backwards BFS. 
+     * pathMap will associate each block with its "next hops" in the path.
+     */  
+    Map<IRBasicBlock, Set<IREdge<?>>> pathMap = buildPathMap(cfg, start, target);
+
+    if (pathMap == null) {
+      /* The two blocks aren't connected! */
+      IOUtils.err().println("No path found.");
+      throw new RunProcessorException("Invalid run");
+    }
+
+    /* Add statements along the path from target to start */
+    Map<PairKey, Graph> graphSet = Maps.newHashMap();
+    Graph graph = buildPathGraph(cfg, start, target, pathMap, graphSet);
+    
+    IOUtils.debug().decr().flush();
+
+    return graph;
+  }
+
+  /**
+   * Find a path in the CFG to the given start block and target block, and add
+   * the statements along the path to the list path. 
+   * If more than one path to the position exists in the CFG, one will be chosen
+   * arbitrarily. Raises PathBuilderException if no path can be 
+   * found.
+   * 
+   * In this implementation, the path chosen will always be the shortest path.
+   * If there is more than one shortest path, one will be chosen arbitrarily.
+   * 
+   */
+  
   private IRBasicBlock buildPathToBlock(IRControlFlowGraph cfg,
       IRBasicBlock start, IRBasicBlock target, List<IRStatement> path) 
           throws RunProcessorException {
+    
     /*
      * Find the shortest path from block to target, using a backwards
      * breadth-first search. pathMap will associate each block with its
@@ -482,8 +811,7 @@ class RunProcessor {
     return cfg;
   }
 
-  /** Find the CFG for function call <code>Statement</code>. 
-   * @throws RunProcessorException */
+  /** Find the CFG for function call Statement. */
   private IRControlFlowGraph getCFGForStatement(IRStatement stmt) 
       throws RunProcessorException {
     Node bestNode = findFuncDeclareNode(stmt);
@@ -491,8 +819,7 @@ class RunProcessor {
     return cfg;
   }
   
-  /** Get the function declare <code>Node</code> for the function call statement. 
-   * @throws RunProcessorException */
+  /** Get the function declare Node for the function call statement. */
   private Node findFuncDeclareNode (IRStatement stmt) throws RunProcessorException {
     String name = ((Statement) stmt).getOperand(0).toString();
     
@@ -524,30 +851,43 @@ class RunProcessor {
     return bestNode;
   }
   
-  /** Collect a list <code>Statement</code> from function body. */
+  /** 
+   * Collect a list Statement from function body, func is the function
+   * section in the control file, might with loop position and way points
+   * nested inside.
+   */
   private List<IRStatement> collectStmtFromFunction(IRStatement stmt) 
       throws RunProcessorException {
+    return collectStmtFromFunction(stmt, null);
+  }
+  
+  private List<IRStatement> collectStmtFromFunction(IRStatement stmt, CallPoint func) 
+      throws RunProcessorException {
     List<IRStatement> path = Lists.newArrayList();
-    IRControlFlowGraph cfg = getCFGForStatement(stmt);
-    if(cfg == null) {
+    IRControlFlowGraph funcCfg = getCFGForStatement(stmt);
+    if(funcCfg == null) {
       System.err.println("Cannot find cfg for statement: " + stmt);
-    } else {
-      IRBasicBlock entry = cfg.getEntry();
-      IRBasicBlock exit = cfg.getExit();
-      buildPathToBlock(cfg, entry, exit, path);
+    } else {     
+      IRLocation funcStart = funcCfg.getEntry().getStartLocation();
+      IRLocation funcEnd = funcCfg.getExit().getEndLocation();
+      List<Position> wayPoints = null;
+      if(func != null) func.getWayPoint();
+      path.addAll(processRun(funcStart, funcEnd, wayPoints));
     }
     return path;
   }
-
-  /** Create the assign <code>Statements</code> from arguments to parameters. 
-   * @throws RunProcessorException */
+  
+  /** 
+   * Create the assign statements from arguments to parameters. 
+   * E.g. repStmt: TEMP_VAR_1 := addOne(x, TEMP_VAR_0), rmvStmt: addOne(x,returnOne());
+   * repStmt is a flattened version of function call stmt, rmvStmt is not.
+   * It's the reason why both are required arguments.
+   */
   private List<IRStatement> assignArgToParam(IRStatement stmt) 
       throws RunProcessorException {
     return assignArgToParam(null, stmt); 
   }
   
-  /** Create the assign <code>Statements</code> from arguments to parameters. 
-   * @throws RunProcessorException */
   private List<IRStatement> assignArgToParam(IRStatement repStmt, IRStatement rmvStmt) 
       throws RunProcessorException {
     if(!rmvStmt.getType().equals(StatementType.CALL)) {
@@ -645,8 +985,7 @@ class RunProcessor {
     return assignments; 
   }
 
-  /** Replace the last return statement as assign statement. 
-   * @throws RunProcessorException */
+  /** Replace the last return statement as assign statement. */
   private IRStatement replaceReturnStmt(IRStatement returnStmt, IRStatement assignStmt) 
       throws RunProcessorException {
     if(!returnStmt.getType().equals(StatementType.RETURN)) {
@@ -659,17 +998,20 @@ class RunProcessor {
   }
   
   /**
-   * Collect <code>list</code> of all the relevant <code>Statement</code>
-   * including assign arguments to parameters, statements in function body
-   * and return statement.
-   * @throws RunProcessorException 
+   * Function inlining for call statement
+   * 1) assign statements to assign arguments to parameters, 
+   * 2) statements collected from the function body.
+   * 3) return statement
    */
-  private List<IRStatement> getStmtForAssignCall(IRStatement lhsStmt, IRStatement rhsStmt) 
+  private List<IRStatement> getStmtForAssignCall(IRStatement lhsStmt, IRStatement rhsStmt, CallPoint func) 
       throws RunProcessorException {
-      List<IRStatement> func_path = assignArgToParam(lhsStmt, rhsStmt);
-      func_path.addAll(collectStmtFromFunction(rhsStmt));
+      List<IRStatement> func_path = Lists.newArrayList();
+      List<IRStatement> paramPassStmts = assignArgToParam(lhsStmt, rhsStmt);
+      List<IRStatement> funcStmts = collectStmtFromFunction(rhsStmt, func);
+      func_path.addAll(paramPassStmts);
+      func_path.addAll(funcStmts);
       
-      //  Pick the last statement from func_path - return statement.
+      // Pick the last statement from func_path - return statement.
       if(!func_path.isEmpty()) {
         IRStatement returnStmt = func_path.remove(func_path.size()-1);
         func_path.add(replaceReturnStmt(returnStmt, lhsStmt));
@@ -678,10 +1020,9 @@ class RunProcessor {
   }
   
   /**
-   * Collect <code>List</code> of all relevant <code>Statement</code>
-   * including assign statements to assign arguments to parameters, 
-   * and the statements collected from the function body. 
-   * @throws RunProcessorException 
+   * Function inlining for call statement
+   * 1) assign statements to assign arguments to parameters, 
+   * 2) statements collected from the function body.
    */
   private List<IRStatement> getStmtForCall(IRStatement stmt) throws RunProcessorException {
     if(!stmt.getType().equals(StatementType.CALL)) {
@@ -696,15 +1037,7 @@ class RunProcessor {
    * Replace all the function call node with a temporary var node, and return the 
    * function call node list to keep the insertion order of the "pairs", otherwise, 
    * "pairs" will be arbitrary order.
-   * @throws RunProcessorException 
-   * @param node
-   * @param symbolTable
-   * @param scope
-   * @param pairs
-   * @return
-   * @throws RunProcessorException
-   */
-  
+   */  
   private LinkedHashMap<Node, Node> replaceFuncCallwithVar(Node node, CSymbolTable symbolTable, Scope scope) 
       throws RunProcessorException {
     Node resNode = node; 
@@ -769,10 +1102,7 @@ class RunProcessor {
     return funcNodeReplaceMap;
   }
   
-  /**
-   * Collect auxiliary list of <code>IRStatement</code>s of 
-   * <code>Statement</code> stmt if it has function call node nested inside.
-   */
+  /** Flatten function call statement if it has function call nested inside. */
   private List<IRStatement> pickFuncCallFromStmt(IRStatement stmt, CSymbolTable symbolTable) 
       throws RunProcessorException {  
     List<IRStatement> assignStmts = Lists.newArrayList();
@@ -839,74 +1169,97 @@ class RunProcessor {
   /**
    * Substitute the rhs of each element in pathRep with the related element of 
    * pathRmv. The element in pathRep is in form as "TEMP_VAR_0 := addOne(x)". 
-   * addOne(x) is created in <code>IRStatement stmt, CSymbolTable symbolTable
-   * </code>. Those info is incorrect.
+   * addOne(x) is created in stmt is generated based on symbolTable, whose info is incorrect.
    * 
-   * However, pathRmv's element has the corresponding statement - addOne(x) directly 
+   * But, pathRmv's element has the corresponding statement - addOne(x) directly 
    * picked from cfg, whose info is correct. Here, we substitute the "addOne(x)" 
    * in pathRep to the "addOne(x)" in pathRmv.
    */
   private List<IRStatement> substitutePath(List<IRStatement> pathRep, List<IRStatement> pathRmv) 
       throws RunProcessorException {
-    assert(pathRep.size() == pathRmv.size()) :
-      "RunProcessor::substitutePath - invalid size.";
+    return substitutePath(pathRep, pathRmv, null);
+  }
+  
+  private List<IRStatement> substitutePath(List<IRStatement> pathRep, List<IRStatement> pathRmv, 
+      List<CallPoint> funcs) 
+      throws RunProcessorException {
+    Preconditions.checkArgument(pathRep.size() == pathRmv.size());
+    Preconditions.checkArgument(funcs == null || funcs.size() == pathRep.size() - 1);
+    
     List<IRStatement> pathRes = Lists.newArrayList();
     int lastIndex = pathRep.size()-1;
     for(int i=0; i<lastIndex; i++) {
       IRStatement stmtRep = pathRep.get(i);
       IRStatement stmtRmv = pathRmv.get(i);
-      pathRes.addAll(getStmtForAssignCall(stmtRep, stmtRmv));
+      CallPoint func = null;
+      if(funcs != null) func = funcs.get(i);
+      pathRes.addAll(getStmtForAssignCall(stmtRep, stmtRmv, func));
     }
     pathRes.add(pathRep.get(lastIndex));
     return pathRes;
   }
   
   /**
-   * Check path based on <code>CSymbolTable</code> symbolTable, replace 
-   * function call within any <code>Statement</code> and process single 
-   * function call <code>Statement</code>.
+   * Check path based on symbolTable, flatten function call statement,
+   * and process function inlining.
    */
-  private void checkPath(List<IRStatement> path, CSymbolTable symbolTable) 
+  private List<IRStatement> checkPath(CSymbolTable symbolTable, List<IRStatement> path) 
       throws RunProcessorException {
+    return checkPath(symbolTable, path, null);
+  }
+ 
+  /**
+   * If callPos is not null, it means we are process the function call statement with 
+   * specification of the symbolic run in the control file; and the path is the 
+   * statements flatten from that single function call statement.
+   */
+  private List<IRStatement> checkPath(CSymbolTable symbolTable, List<IRStatement> path, 
+      Position callPos) throws RunProcessorException {
     IOUtils.debug().pln("Checking path...");
-    for(int i=path.size()-1; i>=0; i--) {     
+    List<IRStatement> resPath = Lists.newArrayList(path);
+    for(int i=resPath.size()-1; i>=0; i--) {     
       int oldPostfix = this.TEMP_VAR_POSTFIX;
-      IRStatement stmt = path.get(i);
+      IRStatement stmt = resPath.get(i);
       List<IRStatement> stmtRep = pickFuncCallFromStmt(stmt, symbolTable);
       if(!stmtRep.isEmpty()) {
         List<IRStatement> stmtRmv = Lists.newArrayList();
-        for(int j = TEMP_VAR_POSTFIX-oldPostfix; j>=0; j--) {
-          int k = i - (TEMP_VAR_POSTFIX - oldPostfix);
+        int distPostfix = TEMP_VAR_POSTFIX-oldPostfix;
+        for(int j = distPostfix; j>=0; j--) {
+          int k = i - distPostfix;
           assert(k>=0);
-          stmtRmv.add(path.remove(k));
+          stmtRmv.add(resPath.remove(k));
         }
-        List<IRStatement> resPath = substitutePath(stmtRep, stmtRmv);
-        path.addAll(i-(TEMP_VAR_POSTFIX-oldPostfix), resPath);
-        i = i - (TEMP_VAR_POSTFIX-oldPostfix) + resPath.size();
+        List<IRStatement> callPath = null;
+        if(callPos != null)
+          callPath = substitutePath(stmtRep, stmtRmv, callPos.getFunctions());
+        else
+          callPath = substitutePath(stmtRep, stmtRmv);
+        
+        resPath.addAll(i-distPostfix, callPath);
+        i = i - distPostfix + callPath.size();
       } else if(stmt.getType().equals(StatementType.CALL)) {
         if(findFuncDeclareNode(stmt) != null) { 
-          path.remove(i); // Remove CALL statement
-          List<IRStatement> resPath = getStmtForCall(stmt);
-          path.addAll(i, resPath);
-          i = i + resPath.size();
+          resPath.remove(i); // Remove CALL statement
+          List<IRStatement> callPath = getStmtForCall(stmt);
+          resPath.addAll(i, callPath);
+          i = i + callPath.size();
         } // Else, for undeclared function, do nothing.
       }
     }
+    return resPath;
   }
   
   /**
    * Add tmpPath into path, before do that, check the tmpPath by call 
-   * <code>checkPath(...)</code>, and clear the tmpPath.
+   * checkPath(...), and clear the tmpPath.
    */
   private void addTmpPathToPath(List<IRStatement> path, List<IRStatement> tmpPath, 
       CSymbolTable symbolTable) throws RunProcessorException {
-    checkPath(tmpPath, symbolTable);
+    tmpPath = checkPath(symbolTable, tmpPath);
     path.addAll(tmpPath);
-    tmpPath.clear();
   }
   
-  /** Remove way points before callPoint from wayPoints, return them. 
-   * @throws RunProcessorException */
+  /** Remove way points before callPoint from wayPoints, return them. */
   private List<Position> waypointsBeforeCall(List<Position> wayPoints) 
       throws RunProcessorException {
     List<Position> resWaypoints = Lists.newArrayList();
@@ -922,14 +1275,7 @@ class RunProcessor {
     return resWaypoints;
   }
   
-  /**
-   * Parse the invariant to a
-   * @param position
-   * @param symbolTable
-   * @param invariant
-   * @return assume statement
-   * @throws RunProcessorException
-   */
+  /** Parse the invariant of loop. */
   private List<IRStatement> processInvariant(IRControlFlowGraph cfg,
       IRBasicBlock block, Position position, 
       CSymbolTable symbolTable) throws RunProcessorException {
@@ -954,7 +1300,7 @@ class RunProcessor {
       buildPathToPosition(cfg, block, position, loopPath);
       
       // Replace function call
-      checkPath(loopPath, symbolTable);
+      loopPath = checkPath(symbolTable, loopPath);
       
       // Process havoc statements
       { 
@@ -1032,122 +1378,101 @@ class RunProcessor {
     IRControlFlowGraph cfg = getCFGForLocation(start);
     Scope oldScope = symbolTable.getCurrentScope();
     symbolTable.enterScope(cfg);
-
-    // Start position    
-    IRBasicBlock block = cfg.splitAt(start, true);
+    
     List<IRStatement> path = Lists.newArrayList();
-    List<IRStatement> tmpPath = Lists.newArrayList();
+    IRBasicBlock block = null;
+
+    // Start position  
+    {
+      block = cfg.splitAt(start, true);
     
-    IOUtils.debug().pln("<startPosition> " + start.toString()).flush();
-    if(start instanceof Position)
-      processPosition((Position)start, symbolTable, tmpPath);
-    addTmpPathToPath(path, tmpPath, symbolTable);
+      IOUtils.debug().pln("<startPosition> " + start.toString()).flush();
+      List<IRStatement> startPath = Lists.newArrayList();
+      
+      if(start instanceof Position)
+        processPosition((Position)start, symbolTable, startPath);
+      addTmpPathToPath(path, startPath, symbolTable);
+      startPath.clear();
+    }
     
-    List<Position> wayPoints = loopPointsUnroll(cfg, waypoints);
-    
-    while(!wayPoints.isEmpty()) {
-      // Way points before call position 
-      List<Position> tmpWaypoints = waypointsBeforeCall(wayPoints);
-      for(Position pos : tmpWaypoints) {
-        if (block == null)      break;
-        IOUtils.debug().pln("<wayPoint> " + pos.toString()).flush();
-        block = buildPathToPosition(cfg, block, pos, tmpPath);
-        Scope currScope = symbolTable.getCurrentScope();
-        if(block.getScope() != null)   symbolTable.setScope(block.getScope());
-        if(pos.getInvariant() != null)
-          tmpPath.addAll(processInvariant(cfg, block, pos, symbolTable));
-        processPosition(pos, symbolTable, tmpPath);
-        symbolTable.setScope(currScope);
-        addTmpPathToPath(path, tmpPath, symbolTable);
-      }
+    if(waypoints != null && !waypoints.isEmpty()) { 
+      List<Position> wayPoints = loopPointsUnroll(cfg, waypoints);
       
-      if(wayPoints.isEmpty())   break;
-      
-      Position callPos = wayPoints.remove(0);  // call position
-      IOUtils.debug().pln("<callPoint> " + callPos.toString()).flush();
-  
-      // The blocks from last way point to the call position (not include call position)
-      IRBasicBlock target = cfg.splitAt(callPos, true); // Split before callPos
-      block = buildPathToBlock(cfg, block, target, tmpPath);
-      addTmpPathToPath(path, tmpPath, symbolTable);
-     
-      /* Call position, all stmt in tmpPath are related to the expression in callPos.line. */
-      target = cfg.splitAt(callPos, false);
-      block = buildPathToBlock(cfg, block, target, tmpPath);      
-      IRStatement targetStmt = (Statement) tmpPath.get(tmpPath.size()-1);       
-      List<IRStatement> stmtRep = pickFuncCallFromStmt(targetStmt, symbolTable);
-      List<IRStatement> stmtRmv = Lists.newArrayList(tmpPath);
-      tmpPath.clear();
-    
-      if(!targetStmt.getType().equals(StatementType.CALL) && stmtRep.isEmpty()) {
-        throw new RunProcessorException("Invalid call position: " + callPos);
-      }
-      
-      /* Add targetStmt into stmtRep; while stmtRmv has the same statement. */
-      if(stmtRep.isEmpty())     stmtRep.add(targetStmt);
-      
-      /* Add all the side-effect statements to tmpPath first. For now, the 
-       * reason of stmtRep.size > stmtRmv.size is string as an argument of 
-       * the function; */
-      while(stmtRep.size() < stmtRmv.size()) {
-        tmpPath.add(stmtRmv.remove(0));
-      }
-      
-      List<CallPoint> functions = Lists.newArrayList(callPos.getFunctions());
-      for(int i=0; i<stmtRep.size(); i++) {
-        Statement rep = (Statement) stmtRep.get(i); // TEMP_VAR_0 := addOne(x);
-        Statement rmv = (Statement) stmtRmv.get(i); // addOne(x);
-        if(i==stmtRep.size()-1 && !rep.getType().equals(StatementType.CALL))
-          tmpPath.add(rep);
-        else {
-          if(functions.isEmpty())
-            tmpPath.addAll(collectStmtFromFunction(rmv));
-          else {
-            String funcName_a = functions.get(0).getFuncName();
-            String funcName_b = rmv.getSourceNode().getNode(0).getString(0);         
-            tmpPath.addAll(assignArgToParam(rep, rmv));
-            if(funcName_a.equals(funcName_b)) { // function mentioned in control file
-              CallPoint func = functions.remove(0);
-              IRControlFlowGraph funcCfg = getCFGForStatement(rmv);
-              IRLocation funcStart = funcCfg.getEntry().getStartLocation();
-              IRLocation funcEnd = funcCfg.getExit().getEndLocation();
-              tmpPath.addAll(processRun(funcStart, funcEnd, func.getWayPoint()));  
-            } else {
-              tmpPath.addAll(collectStmtFromFunction(rmv));
-            }
-          }
-          if(rep.getType().equals(StatementType.ASSIGN)) {
-            IRStatement returnStmt = tmpPath.remove(tmpPath.size()-1);
-            tmpPath.add(replaceReturnStmt(returnStmt, rep));
-          }
+      while(!wayPoints.isEmpty()) {
+        
+        /* Way points before call position */
+        
+        List<Position> tmpWaypoints = waypointsBeforeCall(wayPoints);
+        for(Position pos : tmpWaypoints) {
+          if (block == null)      break;
+          IOUtils.debug().pln("<wayPoint> " + pos.toString()).flush();
+          
+          List<IRStatement> wayPath = Lists.newArrayList();
+          block = buildPathToPosition(cfg, block, pos, wayPath);
+          Scope currScope = symbolTable.getCurrentScope();
+          if(block.getScope() != null)   symbolTable.setScope(block.getScope());
+          if(pos.getInvariant() != null)
+            wayPath.addAll(processInvariant(cfg, block, pos, symbolTable));
+          processPosition(pos, symbolTable, wayPath);
+          symbolTable.setScope(currScope);
+          addTmpPathToPath(path, wayPath, symbolTable);
+          wayPath.clear();
         }
-        path.addAll(tmpPath);
-        tmpPath.clear();
+        
+        if(wayPoints.isEmpty())   break;
+
+        /* The blocks from last way point to the call position (not include call position) */
+        
+        Position callPos = wayPoints.remove(0);  // call position
+        IOUtils.debug().pln("<callPoint> " + callPos.toString()).flush();
+        
+        {
+          List<IRStatement> wayPath = Lists.newArrayList();
+          
+          IRBasicBlock target = cfg.splitAt(callPos, true); // Split before callPos
+          block = buildPathToBlock(cfg, block, target, wayPath);
+          addTmpPathToPath(path, wayPath, symbolTable);
+          wayPath.clear();
+        }
+        
+        /* Call position */
+        {
+          List<IRStatement> wayPath = Lists.newArrayList();
+          
+          IRBasicBlock target = cfg.splitAt(callPos, false);
+          block = buildPathToBlock(cfg, block, target, wayPath); // statements after flatten the function call
+          List<IRStatement> callPath = checkPath(symbolTable, wayPath, callPos);
+          path.addAll(callPath);
+          wayPath.clear();
+        }
       }
-      // assert functions.isEmpty() : "RunProcessor::processRun - too many call positions.";
     }
     
     // End position
-    if (block == null) {
+    if (block == null)
       throw new RunProcessorException("Function ended before end of run.");
-    }
-    if (end == null) {
-      IRBasicBlock endBlock = buildPathToBlock(cfg, block, cfg.getExit(), tmpPath);
-      IOUtils.debug().pln("<endPosition> Null").flush();
-      Scope currScope = symbolTable.getCurrentScope();
-      if(endBlock.getScope() != null) symbolTable.setScope(endBlock.getScope());
-      addTmpPathToPath(path, tmpPath, symbolTable);
-      symbolTable.setScope(currScope);
-    } else {
-      IRBasicBlock endBlock = buildPathToPosition(cfg, block, end, tmpPath);
-      IOUtils.debug().pln("<endPosition> " + end.toString()).flush();
-      Scope currScope = symbolTable.getCurrentScope();
-      if(endBlock.getScope() != null) symbolTable.setScope(endBlock.getScope());
-      processPosition((Position)end, symbolTable, tmpPath);
-      addTmpPathToPath(path, tmpPath, symbolTable);
-      symbolTable.setScope(currScope);
-    }
     
+    {
+      List<IRStatement> endPath = Lists.newArrayList();
+      if (end == null) {
+        IRBasicBlock endBlock = buildPathToBlock(cfg, block, cfg.getExit(), endPath);
+        IOUtils.debug().pln("<endPosition> Null").flush();
+        Scope currScope = symbolTable.getCurrentScope();
+        if(endBlock.getScope() != null) symbolTable.setScope(endBlock.getScope());
+        addTmpPathToPath(path, endPath, symbolTable);
+        endPath.clear();
+        symbolTable.setScope(currScope);
+      } else {
+        IRBasicBlock endBlock = buildPathToPosition(cfg, block, end, endPath);
+        IOUtils.debug().pln("<endPosition> " + end.toString()).flush();
+        Scope currScope = symbolTable.getCurrentScope();
+        if(endBlock.getScope() != null) symbolTable.setScope(endBlock.getScope());
+        processPosition((Position)end, symbolTable, endPath);
+        addTmpPathToPath(path, endPath, symbolTable);
+        endPath.clear();
+        symbolTable.setScope(currScope);
+      }   
+    }
     symbolTable.setScope(oldScope);
     
     return path;
@@ -1155,9 +1480,6 @@ class RunProcessor {
   
   /**
    * Substitute the child nodes in srcNode as nodes in order
-   * @param srcNode
-   * @param nodes
-   * @return substituted node
    */
   private Node substituteNode(Node srcNode, Node ... nodes) {
     String srcNodeName = srcNode.getName();
@@ -1177,9 +1499,6 @@ class RunProcessor {
   
   /**
    * Substitute the child nodes in srcNode as source nodes of exprs
-   * @param srcNode
-   * @param exprs
-   * @return substituted node
    */
   private Node substituteNode(Node srcNode, List<IRExpression> exprs) {
     String srcNodeName = srcNode.getName();
@@ -1198,15 +1517,14 @@ class RunProcessor {
     newNode.setLocation(srcNode.getLocation());
     return newNode;
   }
-  /**
-   * Put argList to operands, since if GNode.create(name, argList), 
-   * then new node only has one operand that is the argList. Here, 
-   * we want to new node has every arg of argList as operand, 
-   * thus the size is desired function, whose argument is Pair
-   * @param argList
-   * @return a new node
-   */
   
+  /**
+   * Put argList to operands, since if use GNode.create(name, argList), 
+   * then newly created node has only one operand - argList. Here, 
+   * we want to new node has multiple operands, each operand is an arg of argList, 
+   * thus we use GNode.create(name, operands), where operands is with type
+   * Pair<? extends Object>.
+   */  
   private Node createNodeWithArgList(String name, List<Object> argList) {
     Pair<Object> operands = null;
     for(Object o : argList) {
