@@ -157,6 +157,7 @@ public class CfgBuilder extends Visitor {
    * Should be incremented by every expression visited and decremented when the
    * visitor returns.
    */
+  private static final String FUNCTION_CALL_LABEL = "funcCall";
   private int expressionDepth;
   private int TEST_VAR_POSTFIX;
   private int STRING_VAR_POSTFIX;
@@ -710,7 +711,7 @@ public class CfgBuilder extends Visitor {
     
     Statement resultStmt;
 
-    /* Function call as x = f(x) should be dealt differently */
+    /* Function call as x = f(x) should be operated differently */
     if(rhsNodePrime.getName().equals("FunctionCall")) {
       Node funNode = rhsNodePrime.getNode(0);
       
@@ -733,6 +734,7 @@ public class CfgBuilder extends Visitor {
           rhsExpr = CExpression.create(node,symbolTable.getCurrentScope());
         }
         resultStmt = Statement.assign(node, lhsExpr, rhsExpr);
+        resultStmt.addPreLabel(FUNCTION_CALL_LABEL);
       }
     }
     /* For other function call, as x = y, add assign statement */
@@ -1169,12 +1171,14 @@ public class CfgBuilder extends Visitor {
     Guard ifBranch = Guard.create(assignExpr);
     Guard elseBranch = ifBranch.negate();
 
+    BasicBlock entryBlock = currentCfg.newSwitchBlock(node.getLocation(), symbolTable.getCurrentScope());
     BasicBlock ifBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
     BasicBlock elseBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
     BasicBlock exitBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
 
-    currentCfg.addEdge(currentBlock, ifBranch, ifBlock);
-    currentCfg.addEdge(currentBlock, elseBranch, elseBlock);
+    currentCfg.addEdge(currentBlock, entryBlock);
+    currentCfg.addEdge(entryBlock, ifBranch, ifBlock);
+    currentCfg.addEdge(entryBlock, elseBranch, elseBlock);
 
     /* Add the location of the conditional test to the current block */
     currentBlock.addLocation(assignExpr.getLocation());
@@ -1217,11 +1221,13 @@ public class CfgBuilder extends Visitor {
     Guard ifBranch = Guard.create(assignExpr);
     Guard elseBranch = ifBranch.negate();
     
+    BasicBlock entryBlock = currentCfg.newSwitchBlock(node.getLocation(), symbolTable.getCurrentScope());
     BasicBlock ifBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
     BasicBlock exitBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
 
-    currentCfg.addEdge(currentBlock, ifBranch, ifBlock);
-    currentCfg.addEdge(currentBlock, elseBranch, exitBlock);
+    currentCfg.addEdge(currentBlock, entryBlock);
+    currentCfg.addEdge(entryBlock, ifBranch, ifBlock);
+    currentCfg.addEdge(entryBlock, elseBranch, exitBlock);
     
     /* Add the location of the conditional test to the current block */
     currentBlock.addLocation(assignExpr.getLocation());
