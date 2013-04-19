@@ -21,6 +21,45 @@ public interface PathEncoding    {
    */
   ExpressionManager getExpressionManager();
 
+  Expression assume(Iterable<? extends Expression> prefixes, ExpressionClosure bool);
+  Expression assume(Iterable<? extends Expression> prefixes, IRExpression expr);
+  
+  /**
+   * Add assumptions about memory safe. If option --sound-alloc either 
+   * --order-alloc is enabled, memory is assumed to be safe, which means there
+   * is no alias or regions overlapping issue. Otherwise, just returns true.
+   * @param pre
+   * @param bool
+   * @return boolean expression
+   */
+  Expression assumeMemorySafe(Iterable<? extends Expression> prefixes);
+
+  Expression assign(Iterable<? extends Expression> prefixes, ExpressionClosure lval, ExpressionClosure rval);
+  Expression assign(Iterable<? extends Expression> prefixes, IRExpression lval, IRExpression rval);
+  
+  Expression fieldAssign(Iterable<? extends Expression> prefixes, ExpressionClosure lval, String field, 
+      ExpressionClosure rval);
+  Expression fieldAssign(Iterable<? extends Expression> prefixes, IRExpression lval, String field, 
+      IRExpression rval);
+  
+  Expression alloc(Iterable<? extends Expression> prefixes, ExpressionClosure ptr, ExpressionClosure size);
+  Expression alloc(Iterable<? extends Expression> prefixes, IRExpression ptr, IRExpression size);
+
+  Expression declareArray(Iterable<? extends Expression> prefixes, ExpressionClosure ptr, ExpressionClosure size);
+  Expression declareArray(Iterable<? extends Expression> prefixes, IRExpression ptr, IRExpression size);
+
+  Expression declareStruct(Iterable<? extends Expression> prefixes, ExpressionClosure ptr, ExpressionClosure size);
+  Expression declareStruct(Iterable<? extends Expression> prefixes, IRExpression ptr, IRExpression size);
+  
+  Expression free(Iterable<? extends Expression> prefixes, ExpressionClosure ptr);
+  Expression free(Iterable<? extends Expression> prefixes, IRExpression ptr);
+  
+  Expression havoc(Iterable<? extends Expression> prefixes, IRExpression lval);
+  Expression havoc(Iterable<? extends Expression> prefixes, ExpressionClosure lval);
+
+  Expression noop(Iterable<? extends Expression> prefixes);
+  
+  
   Expression assume(Expression pre, ExpressionClosure bool);
   Expression assume(Expression pre, IRExpression expr);
   
@@ -31,7 +70,7 @@ public interface PathEncoding    {
    * @param pre
    * @param bool
    * @return boolean expression
-   */
+   */  
   Expression assumeMemorySafe(Expression pre);
 
   Expression assign(Expression pre, ExpressionClosure lval, ExpressionClosure rval);
@@ -58,7 +97,7 @@ public interface PathEncoding    {
   Expression havoc(Expression pre, ExpressionClosure lval);
 
   Expression emptyPath();
-  Expression noop(Expression pre);
+  Expression noop(Expression expr);
   
   ValidityResult<?> checkAssertion(Expression prefix, ExpressionClosure p) throws PathFactoryException;
 

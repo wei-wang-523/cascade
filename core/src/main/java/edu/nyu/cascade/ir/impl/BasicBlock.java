@@ -10,6 +10,7 @@ import xtc.tree.Node;
 import xtc.tree.Printer;
 import xtc.util.SymbolTable.Scope;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -30,7 +31,7 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
   }
 
   public static BasicBlock loopBlock(Location loc) {
-    return new BasicBlock(Type.LOOP,loc);
+    return new BasicBlock(Type.LOOP, loc);
   }
 
   public static BasicBlock entryBlock(Location loc) {
@@ -42,7 +43,11 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
   }
 
   public static BasicBlock switchBlock(Location loc) {
-    return new BasicBlock(Type.SWITCH,loc);
+    return new BasicBlock(Type.SWITCH, loc);
+  }
+  
+  public static BasicBlock mergeBlock(IRBasicBlock switchBlock) {
+    return new BasicBlock(Type.MERGE, switchBlock);
   }
   
   private final BigInteger id;
@@ -52,6 +57,7 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
   private final Set<String> preLabels, postLabels;
   private int iterTimes;
   private Scope scope;
+  private IRBasicBlock swichBlock;
   
   private BasicBlock() {
     this(Type.BLOCK);
@@ -69,6 +75,12 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
     this.endLocation = IRLocations.ofLocation(loc);
   }
 
+  private BasicBlock(Type type, IRBasicBlock switchBlock) {
+    this(type, Collections.<IRStatement> emptyList());
+    Preconditions.checkArgument(switchBlock.getType().equals(IRBasicBlock.Type.SWITCH));
+    this.swichBlock = switchBlock;
+  }
+  
   private BasicBlock(Type type, List<IRStatement> statements) {
     this.id = nextId;
     this.type = type;
@@ -118,6 +130,7 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
     }
   }
 
+  @Override
   public BigInteger getId() {
     return id;
   }  
@@ -138,8 +151,13 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
   }
   
   @Override
+  public void setIterTimes(int iterTimes) {
+    this.iterTimes = iterTimes;
+  }
+  
+  @Override
   public void clearIterTimes() {
-    iterTimes = 0;
+    this.iterTimes = 0;
   }
 
   @Override
@@ -288,8 +306,14 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
   public void addPreLabels(Iterable<String> preLabels) {
     Iterables.addAll(this.preLabels,preLabels);
   }
+  
   public void addPostLabels(Iterable<String> postLabels) {
     Iterables.addAll(this.postLabels,postLabels);
+  }
+  
+  public IRBasicBlock getSwitchBlock() {
+    Preconditions.checkArgument(type.equals(IRBasicBlock.Type.MERGE));
+    return this.swichBlock;
   }
 
 }

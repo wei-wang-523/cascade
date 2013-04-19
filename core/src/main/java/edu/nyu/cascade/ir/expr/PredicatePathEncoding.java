@@ -163,4 +163,72 @@ public class PredicatePathEncoding extends
         state.eq(getExpressionEncoder().getMemoryModel().havoc(statePrime,
             lval.eval(statePrime)))).exists(statePrime));
   }
+
+  @Override
+  public Expression assume(Iterable<? extends Expression> prefixes,
+      ExpressionClosure bool) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public Expression assumeMemorySafe(Iterable<? extends Expression> prefixes) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public Expression assign(Iterable<? extends Expression> prefixes,
+      ExpressionClosure lval, ExpressionClosure rval) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public Expression fieldAssign(Iterable<? extends Expression> prefixes,
+      ExpressionClosure lval, String field, ExpressionClosure rval) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public Expression alloc(Iterable<? extends Expression> prefixes,
+      ExpressionClosure ptr, ExpressionClosure size) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public Expression declareArray(Iterable<? extends Expression> prefixes,
+      ExpressionClosure ptr, ExpressionClosure size) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public Expression declareStruct(Iterable<? extends Expression> prefixes,
+      ExpressionClosure ptr, ExpressionClosure size) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public Expression free(Iterable<? extends Expression> prefixes,
+      ExpressionClosure ptr) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public Expression havoc(Iterable<? extends Expression> prefixes,
+      ExpressionClosure lval) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public Expression noop(Iterable<? extends Expression> prefixes) {
+    // TODO Auto-generated method stub
+    return null;
+  }
 }

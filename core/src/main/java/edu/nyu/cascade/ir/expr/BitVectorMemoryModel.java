@@ -392,7 +392,7 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
   
   @Override
   public TupleType getStateType() {
-    return getExpressionManager().tupleType("state", memType, memType);
+    return getExpressionManager().tupleType("memState", memType, memType);
   }
 
   @Override

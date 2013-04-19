@@ -1,5 +1,6 @@
 package edu.nyu.cascade.ir;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import xtc.tree.Node;
@@ -23,6 +24,10 @@ public interface IRBasicBlock {
      * each case label.
      */
     SWITCH,
+    /**
+     * A swich-merge block. The block merges the N paths of following a switch block.
+     */
+    MERGE,
     /**
      * A call block. The block has a single statement (the call) and a single
      * successor.
@@ -60,6 +65,8 @@ public interface IRBasicBlock {
   
   int getIterTimes();
   
+  void setIterTimes(int iterTimes);
+  
   void clearIterTimes();
   
   /** Returns true if the start and end location are defined for this block. */
@@ -75,6 +82,8 @@ public interface IRBasicBlock {
   
   ImmutableSet<String> getPreLabels();
   ImmutableSet<String> getPostLabels();
+  
+  BigInteger getId();
   
   void setScope(Scope scope);
   Scope getScope();
