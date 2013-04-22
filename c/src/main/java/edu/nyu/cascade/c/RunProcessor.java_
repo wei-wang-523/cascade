@@ -616,16 +616,15 @@ final class Graph {
     for(IRStatement stmt : currPath.stmts) {
       if(stmt.getType() == StatementType.ASSIGN) {
         IRExpressionImpl lval = (IRExpressionImpl) ((Statement) stmt).getOperand(0);
-        if(stmt != currPath.getLastStmt()) {
-          havocStmts.add(Statement.havoc(lval.getSourceNode(), lval));
-        }
+        havocStmts.add(Statement.havoc(lval.getSourceNode(), lval));
       }           
     }
     return havocStmts;
   }
   
   List<IRStatement> collectHavocStmts() {
-    return collectHavocStmts(destPath);
+    List<IRStatement> resStmts = collectHavocStmts(destPath);
+    return resStmts;
   }
   
   @Override
@@ -1709,23 +1708,22 @@ class RunProcessor {
       CExpression argExpr = CExpression.create(spec,symbolTable.getCurrentScope());
       IOUtils.debug().pln(argExpr.toString()).flush();
       
+      assert(position.getLoops().size() == 1); 
+      // Pick all statements from the loop body
+      Graph loopGraph = buildPathGraphToPosition(cfg, block, position);
+      
       List<IRStatement> preStmts = Lists.newArrayList();
-      List<IRStatement> postStmts = Lists.newArrayList();
       
       /** FIXME: CVC4 has incremental support problem, multiple queries are not supported
        * well. If this assertion statement is added, will have invalid memory access inside
        * CVC4*/
-      preStmts.add(Statement.assertStmt(spec, argExpr));
-      
-      // Pick all statements from the loop body
-      Graph loopGraph = buildPathGraphToPosition(cfg, block, position);
-      
+      preStmts.add(Statement.assertStmt(spec, argExpr));      
       // Process havoc statements
-      assert(position.getLoops().size() == 1); // only one loop is specified for the invariant
-      
       preStmts.addAll(loopGraph.collectHavocStmts());
       preStmts.add(loopGraph.getLastStmt());
       preStmts.add(Statement.assumeStmt(spec, argExpr));
+
+      List<IRStatement> postStmts = Lists.newArrayList();
       
       postStmts.add(Statement.assertStmt(spec, argExpr));
       
@@ -1819,7 +1817,7 @@ class RunProcessor {
           if(block.getScope() != null)   symbolTable.setScope(block.getScope());
           if(pos.getInvariant() != null) {
             Graph invariantGraph = processInvariant(cfg, block, pos, symbolTable);
-            block = invariantGraph.getDestBlock();
+            block = cfg.splitAt(pos);
             
             wayGraph.appendPostGraph(invariantGraph);        
           }
