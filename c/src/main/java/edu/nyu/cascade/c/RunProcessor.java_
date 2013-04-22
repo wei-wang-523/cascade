@@ -1817,7 +1817,7 @@ class RunProcessor {
           if(block.getScope() != null)   symbolTable.setScope(block.getScope());
           if(pos.getInvariant() != null) {
             Graph invariantGraph = processInvariant(cfg, block, pos, symbolTable);
-            block = cfg.splitAt(pos);
+            block = cfg.splitAt(pos, false);
             
             wayGraph.appendPostGraph(invariantGraph);        
           }
