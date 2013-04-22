@@ -585,7 +585,6 @@ final class Graph {
       }
       Path simplifyPath = (Path) simplifyPaths.toArray()[0];
       Path pathPrime = Path.mergePath(simplifyPath, path);
-      IOUtils.out().println("(" + simplifyPath + ", " + path + ") --> " + pathPrime);
       predecessorMap.remove(path);
       if(predecessorMap.containsKey(simplifyPath)) {
         Set<Path> prePathsPrime = predecessorMap.get(simplifyPath);
@@ -1719,7 +1718,8 @@ class RunProcessor {
        * CVC4*/
       preStmts.add(Statement.assertStmt(spec, argExpr));      
       // Process havoc statements
-      preStmts.addAll(loopGraph.collectHavocStmts());
+      List<IRStatement> havocStmts = loopGraph.collectHavocStmts();
+      preStmts.addAll(havocStmts.subList(0, havocStmts.size()-1));
       preStmts.add(loopGraph.getLastStmt());
       preStmts.add(Statement.assumeStmt(spec, argExpr));
 
@@ -1966,5 +1966,4 @@ class RunProcessor {
   public void enableFeasibilityChecking() {
     pathEncoder.setFeasibilityChecking(true);
   }
-
 }
