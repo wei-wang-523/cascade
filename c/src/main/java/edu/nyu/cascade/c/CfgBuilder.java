@@ -157,7 +157,6 @@ public class CfgBuilder extends Visitor {
    * Should be incremented by every expression visited and decremented when the
    * visitor returns.
    */
-  private static final String FUNCTION_CALL_LABEL = "funcCall";
   private int expressionDepth;
   private int TEST_VAR_POSTFIX;
   private int STRING_VAR_POSTFIX;
@@ -734,7 +733,6 @@ public class CfgBuilder extends Visitor {
           rhsExpr = CExpression.create(node,symbolTable.getCurrentScope());
         }
         resultStmt = Statement.assign(node, lhsExpr, rhsExpr);
-        resultStmt.addPreLabel(FUNCTION_CALL_LABEL);
       }
     }
     /* For other function call, as x = y, add assign statement */
