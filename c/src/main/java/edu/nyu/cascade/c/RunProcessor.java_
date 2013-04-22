@@ -11,7 +11,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import xtc.parser.ParseException;
 import xtc.parser.Result;
@@ -298,6 +297,7 @@ final class Path {
   Expression guard = null;
   
   static Path createSingleton(List<? extends IRStatement> stmts) {
+    if(stmts == null || stmts.isEmpty()) return null;
     return create(stmts, null, null);
   }
   
@@ -385,12 +385,6 @@ final class Path {
     return new EqualsBuilder().append(srcBlock, otherPath.srcBlock)
         .append(destBlock, otherPath.destBlock).append(stmts, otherPath.stmts)
         .isEquals();
-  }
-  
-  @Override
-  public int hashCode() {
-    return new HashCodeBuilder(17,31).append(srcBlock).append(destBlock)
-        .append(stmts).hashCode();
   }
 }
 
@@ -515,18 +509,36 @@ final class Graph {
     destPath = path;
   }
   
-  boolean hasReturnStmt() {
-    if(destPath == null || destPath.isEmpty())  return false;
-    int size = destPath.stmts.size();
-    IRStatement stmt = destPath.stmts.get(size-1);
-    return stmt.getType().equals(IRStatement.StatementType.RETURN);
+  private boolean hasReturnStmt(Path path) {
+    if(path == null || path.isEmpty())  {
+      Set<Path> prePaths = predecessorMap.get(path);
+      if(prePaths.size() > 1) return false;
+      Path prePath = (Path) prePaths.toArray()[0];
+      return hasReturnStmt(prePath);
+    } else {
+      IRStatement stmt = path.stmts.get(path.stmts.size()-1);
+      return stmt.getType().equals(IRStatement.StatementType.RETURN);
+    }
   }
   
-  IRStatement removeReturnStmt() {
+  boolean hasReturnStmt() {
+    return hasReturnStmt(destPath);
+  }
+  
+  private IRStatement getReturnStmt(Path path) {
+    if(path == null || path.isEmpty())  {
+      Set<Path> prePaths = predecessorMap.get(path);
+      Path prePath = (Path) prePaths.toArray()[0];
+      return getReturnStmt(prePath);
+    } else {
+      IRStatement stmt = path.stmts.get(path.stmts.size()-1);
+      return stmt;
+    }
+  }
+  
+  IRStatement getReturnStmt() {
     Preconditions.checkArgument(hasReturnStmt());
-    int size = destPath.stmts.size();
-    IRStatement stmt = destPath.stmts.remove(size-1);
-    return stmt;
+    return getReturnStmt(destPath);
   }
   
   
@@ -1216,7 +1228,10 @@ class RunProcessor {
       assert("SimpleDeclarator".equals(paramNode.getName()));
       IRExpressionImpl param = CExpression.create(paramNode, paramScope);
       IRExpressionImpl arg = (IRExpressionImpl) args.get(i);
-      Statement assign = Statement.assign(paramNode, param, arg);
+      Node assignNode = GNode.create("AssignmentExpression", 
+          paramNode, "=", arg.getSourceNode());
+      assignNode.setLocation(paramNode.getLocation());
+      Statement assign = Statement.assign(assignNode, param, arg);
       assignments.add(assign);
     }    
     return assignments; 
@@ -1228,7 +1243,10 @@ class RunProcessor {
     Preconditions.checkArgument(returnStmt.getType().equals(StatementType.RETURN));
     IRExpressionImpl lExpr = (IRExpressionImpl) ((Statement) assignStmt).getOperand(0);
     IRExpressionImpl rExpr = (IRExpressionImpl) ((Statement) returnStmt).getOperand(0);
-    IRStatement assignResult = Statement.assign(assignStmt.getSourceNode(), lExpr, rExpr);
+    Node assignNode = GNode.create("AssignmentExpression", 
+        lExpr.getSourceNode(), "=", rExpr.getSourceNode());
+    assignNode.setLocation(assignStmt.getSourceNode().getLocation());
+    IRStatement assignResult = Statement.assign(assignNode, lExpr, rExpr);
     return assignResult;
   }
   
@@ -1246,7 +1264,7 @@ class RunProcessor {
       
       // Pick the last statement from func_path - return statement.
       if(funcGraph.hasReturnStmt()) {
-        IRStatement returnStmt = funcGraph.removeReturnStmt();
+        IRStatement returnStmt = funcGraph.getReturnStmt();
         IRStatement replaceStmt = replaceReturnStmt(returnStmt, lhsStmt);
         funcGraph.appendPostPath(Path.createSingleton(replaceStmt));
       }
@@ -1759,10 +1777,11 @@ class RunProcessor {
         Position callPos = wayPoints.remove(0);  // call position
         IOUtils.debug().pln("<callPoint> " + callPos.toString()).flush();
         
-        {          
-          IRBasicBlock target = cfg.splitAt(callPos, true); // Split before callPos
+        { // Split before callPos, target before the call position
+          IRBasicBlock target = cfg.splitAt(callPos, true, false); 
           Graph wayGraph = buildPathGraphToBlock(cfg, block, target);
-          block = wayGraph.getDestBlock();
+          // Split before callPos, block after the call position
+          block = cfg.splitAt(callPos, true);
           
           if(graph == null)     graph = wayGraph;
           else                  graph.appendPostGraph(wayGraph);
@@ -1775,8 +1794,9 @@ class RunProcessor {
           Graph targetGraph = buildPathGraphToBlock(cfg, block, target);
           Path targetPath = targetGraph.srcPath;
           Graph callGraph = functionInlinePath(symbolTable, targetPath, callPos);
-          
           graph.appendPostGraph(callGraph);
+          
+          block = targetGraph.getDestBlock();
         }
       }
     }
