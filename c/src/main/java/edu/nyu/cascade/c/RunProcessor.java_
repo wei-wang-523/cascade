@@ -247,6 +247,11 @@ final class PathEncoder {
       Set<Path> prePaths = graph.predecessorMap.get(currPath);
       if(prePaths == null) {
         preConds = Lists.newArrayList(pathEncoding.emptyPath());
+//      } else if(prePaths.size() == 1) {
+//        Path prePath = (Path) prePaths.toArray()[0];
+//        Expression preCond = encodePath(graph, prePath, pathExprMap);
+//        if(preCond == null) return null;
+//        curr
       } else {
         /* Collect the preconditions of pre-paths */
         preConds = Lists.newArrayList();
@@ -291,9 +296,9 @@ final class PathEncoder {
 }
 
 final class Path {
+  final IRBasicBlock srcBlock;
   final List<IRStatement> stmts;
   final IRBasicBlock destBlock;
-  final IRBasicBlock srcBlock;
   Expression guard = null;
   
   static Path createSingleton(List<? extends IRStatement> stmts) {
@@ -367,10 +372,19 @@ final class Path {
     return resPaths;
   }
   
+  static Path mergePath(Path path1, Path path2) {
+    IRBasicBlock srcBlockPrime = path1.srcBlock;
+    IRBasicBlock destBlockPrime = path2.destBlock;
+    List<IRStatement> stmtsPrime = Lists.newArrayList(path1.stmts);
+    stmtsPrime.addAll(path2.stmts);
+    Path resPath = Path.create(stmtsPrime, srcBlockPrime, destBlockPrime);
+    return resPath;
+  }
+  
   @Override
   public String toString() {
     String srcId = srcBlock == null ? "null" : srcBlock.getId().toString();
-    String destId = destBlock == null ? "null" : srcBlock.getId().toString();
+    String destId = destBlock == null ? "null" : destBlock.getId().toString();
     StringBuilder sb = new StringBuilder().append('(').append(srcId)
         .append(": ").append(destId).append(')').append(stmts);
     return sb.toString();
@@ -386,9 +400,15 @@ final class Path {
         .append(destBlock, otherPath.destBlock).append(stmts, otherPath.stmts)
         .isEquals();
   }
+  
+//  @Override
+//  public int hashCode() {
+//    return new HashCodeBuilder(31, 17).append(srcBlock).append(srcBlock).append(stmts).hashCode();
+//  }
 }
 
 final class Graph {
+  private final static String COND_ASSUME_LABEL = "COND_ASSUME";
   Map<Path, Set<Path>> predecessorMap = null;
   Path srcPath = null;
   Path destPath = null;
@@ -468,8 +488,9 @@ final class Graph {
     });
     if(!sameSrcPath)   throw new RunProcessorException("Invalid graph");
     
-    for(Graph preGraph : preGraphs)
+    for(Graph preGraph : preGraphs) {
       predecessorMap.putAll(preGraph.predecessorMap);
+    }
     
     Iterable<Path> preDestPaths = Iterables.transform(preGraphs, new Function<Graph, Path>(){
       @Override
@@ -541,6 +562,44 @@ final class Graph {
     return getReturnStmt(destPath);
   }
   
+  private Path simplify(Path path, Map<Path, Path> replaceMap) {
+    if(replaceMap.containsKey(path)) 
+      return replaceMap.get(path);
+    Set<Path> prePaths = predecessorMap.get(path);
+    if(prePaths == null)    return path;
+    
+    Set<Path> simplifyPaths = Sets.newHashSet();
+    for(Path prePath : prePaths)    simplifyPaths.add(simplify(prePath, replaceMap));
+    if(simplifyPaths.size() > 1) { 
+      predecessorMap.put(path, simplifyPaths);
+      return path;
+    } else {
+      // Path with first statement is conditional assume statement
+      if(path.stmts.size() > 0 && 
+          path.stmts.get(0).getPreLabels().contains(COND_ASSUME_LABEL)) {
+        predecessorMap.put(path, simplifyPaths);
+        return path;
+      }
+      Path simplifyPath = (Path) simplifyPaths.toArray()[0];
+      Path pathPrime = Path.mergePath(simplifyPath, path);
+      IOUtils.out().println("(" + simplifyPath + ", " + path + ") --> " + pathPrime);
+      predecessorMap.remove(path);
+      if(predecessorMap.containsKey(simplifyPath)) {
+        Set<Path> prePathsPrime = predecessorMap.get(simplifyPath);
+        predecessorMap.remove(simplifyPath);
+        predecessorMap.put(pathPrime, prePathsPrime);
+      }
+      if(simplifyPath.equals(srcPath)) srcPath = pathPrime;
+      replaceMap.put(path, pathPrime);
+      return pathPrime;
+    }
+  }
+  
+  /** Simplify the graph */
+  void simplify() {
+    Map<Path, Path> replaceMap = Maps.newHashMap();
+    destPath = simplify(destPath, replaceMap);
+  }
   
   /** find all havoc statement */
   List<IRStatement> collectHavocStmts(Path currPath) {
@@ -625,7 +684,7 @@ class RunProcessor {
       
       Path globalPath = Path.createSingleton(CfgBuilder.getGlobalStmts(run));
       if(globalPath != null)    graph.appendPrePath(globalPath);
-      
+      graph.simplify();
       pathEncoder.encodeGraph(graph);      
       
       return pathEncoder.runIsValid();
