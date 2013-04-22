@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -1503,10 +1504,8 @@ class RunProcessor {
   }
   
   private Graph getGraphForAllAssignCallStmt(List<IRStatement> pathRep, List<IRStatement> pathRmv, 
-      List<CallPoint> funcs) 
-      throws RunProcessorException {
+      List<CallPoint> funcs) throws RunProcessorException {
     Preconditions.checkArgument(pathRep.size() == pathRmv.size());
-    Preconditions.checkArgument(funcs == null || funcs.size() == pathRep.size() - 1);
     
     Graph graph = null;
     int lastIndex = pathRep.size()-1;
@@ -1514,7 +1513,21 @@ class RunProcessor {
       IRStatement stmtRep = pathRep.get(i);
       IRStatement stmtRmv = pathRmv.get(i);
       CallPoint func = null;
-      if(funcs != null) func = funcs.get(i);
+      if(funcs != null) {
+        Node funcNode = stmtRmv.getSourceNode();
+        assert(funcNode.getName().equals("FunctionCall") 
+            && funcNode.getNode(0).getName().equals("PrimaryIdentifier"));
+        String funcName = funcNode.getNode(0).getString(0);
+        Iterator<CallPoint> itr = funcs.iterator();
+        while(itr.hasNext()) {
+          CallPoint callPos = itr.next();
+          if(callPos.getFuncName().equals(funcName)) {
+            func = callPos;
+            itr.remove();
+            break;
+          }
+        }
+      }
       Graph tmpGraph = getGraphForAssignCallStmt(stmtRep, stmtRmv, func);
       if(graph == null)     graph = tmpGraph;
       else                  graph.appendPostGraph(tmpGraph);
