@@ -364,11 +364,19 @@ final class Path {
     Preconditions.checkArgument(index >= 0 && index <= stmts.size());
     List<Path> resPaths = Lists.newArrayList();
     IRBasicBlock splitBlock = null;
-    if(index == stmts.size())   splitBlock = destBlock;
-    else                        splitBlock = getBlock(index);
-    resPaths.add(Path.create(stmts.subList(0, index), srcBlock, splitBlock));
-    resPaths.add(Path.create(stmts.subList(index, stmts.size()), splitBlock, destBlock));
-    
+    if(index == 0) {
+      resPaths.add(null);
+      resPaths.add(this);
+    } else if(index == stmts.size()){
+      resPaths.add(this);
+      resPaths.add(null);
+    } else {
+      splitBlock = getBlock(index);
+      Path path_1 = Path.create(stmts.subList(0, index), srcBlock, splitBlock);
+      Path path_2 = Path.create(stmts.subList(index, stmts.size()), splitBlock, destBlock);
+      resPaths.add(path_1);
+      resPaths.add(path_2);
+    }
     return resPaths;
   }
   
@@ -400,11 +408,6 @@ final class Path {
         .append(destBlock, otherPath.destBlock).append(stmts, otherPath.stmts)
         .isEquals();
   }
-  
-//  @Override
-//  public int hashCode() {
-//    return new HashCodeBuilder(31, 17).append(srcBlock).append(srcBlock).append(stmts).hashCode();
-//  }
 }
 
 final class Graph {
@@ -1602,7 +1605,7 @@ class RunProcessor {
     Path tmpPath = path;
     List<CallPoint> funcs = null;
     if(callPos != null) funcs = Lists.newArrayList(callPos.getFunctions());
-    while(!tmpPath.isEmpty() && tmpPath != null) {
+    while(tmpPath != null && !tmpPath.isEmpty()) {
       
       int lastIndex = tmpPath.stmts.size()-1;
       IRStatement last_stmt = tmpPath.getLastStmt();
