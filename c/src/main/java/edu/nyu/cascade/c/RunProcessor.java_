@@ -824,7 +824,14 @@ class RunProcessor {
     
     for(IREdge<?> e : cfg.getIncomingEdges(target)) {
       if(visited.contains(e))   continue;
+      
       IRBasicBlock v = e.getSource();
+      
+      /* Ignore the cycle */
+      if(target.getType().equals(IRBasicBlock.Type.LOOP) && 
+          v.getScope().getParent().equals(target.getScope()))
+        continue;
+      
       if(v.equals(start)) {
         visited.add(e);
         for(IREdge<?> ve : visited) {
@@ -836,11 +843,11 @@ class RunProcessor {
         }
         visited.remove(e);
         continue;
-      } else {
-        visited.add(e);
-        depthFirstSearch(cfg, start, v, pathMap, visited);
-        visited.remove(e);
-      }
+      } 
+      
+      visited.add(e);
+      depthFirstSearch(cfg, start, v, pathMap, visited);
+      visited.remove(e);
     }
   }
   
@@ -877,21 +884,21 @@ class RunProcessor {
     Map<IRBasicBlock, Path> blockPathMap = Maps.newHashMap();
     for(Entry<IRBasicBlock, Set<IREdge<?>>> pair : pathMap.entrySet()) {
       IRBasicBlock block = pair.getKey();
-      Path path = null;
-      if(blockPathMap.containsKey(block))
-        path = blockPathMap.get(block);
-      else {
+      
+      /* build path for block */
+      Path path = blockPathMap.get(block);
+      if(path == null) {
         path = Path.create(block.getStatements(), block, block);
         blockPathMap.put(block, path);
       }
       blockPathMap.put(block, path);
+      
+      /* build the set of pre-paths */
       Set<Path> prePaths = Sets.newHashSet();
       for(IREdge<?> edge : pair.getValue()) {
         IRBasicBlock srcBlock = edge.getSource();
-        Path srcPath = null;
-        if(blockPathMap.containsKey(srcBlock))
-          srcPath = blockPathMap.get(srcBlock);
-        else {
+        Path srcPath = blockPathMap.get(srcBlock);
+        if(srcPath == null) {
           srcPath = Path.create(srcBlock.getStatements(), srcBlock, srcBlock);
           blockPathMap.put(srcBlock, srcPath);
         }
@@ -906,6 +913,27 @@ class RunProcessor {
           prePaths.add(srcPath);
         }
       }
+      
+      /* Unrolling loops for loop block with positive iteration times */
+      if(block.getType().equals(IRBasicBlock.Type.LOOP) && 
+          block.getIterTimes() > 0) {
+        int iterTimes = block.getIterTimes();
+        block.clearIterTimes();
+        Set<Path> preLoopPaths = prePaths;
+        Path destLoopPath = null;
+        while(iterTimes > 0) {
+          Graph loopGraph = buildPathGraphToBlock(cfg, block, block);
+          predecessorMap.putAll(loopGraph.predecessorMap);
+          
+          predecessorMap.put(loopGraph.srcPath, preLoopPaths);
+          destLoopPath = loopGraph.destPath;
+          preLoopPaths = Sets.newHashSet(destLoopPath);         
+          iterTimes--;
+        }
+        predecessorMap.put(path, Sets.newHashSet(destLoopPath));
+        continue;
+      }
+      
       predecessorMap.put(path, prePaths);
     }
 
