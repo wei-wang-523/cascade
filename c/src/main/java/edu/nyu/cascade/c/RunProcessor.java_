@@ -971,12 +971,44 @@ class RunProcessor {
       throw new RunProcessorException("Invalid run");
     }
 
-    /* Add statements along the path from target to start */
-    Map<PairKey, Graph> graphSet = Maps.newHashMap();
-    Graph graph = buildPathGraph(cfg, start, target, pathMap, graphSet);
-    
-    IOUtils.debug().decr().flush();
+    Map<Path, Set<Path>> predecessorMap = Maps.newHashMap();
+    Map<IRBasicBlock, Path> blockPathMap = Maps.newHashMap();
+    for(Entry<IRBasicBlock, Set<IREdge<?>>> pair : pathMap.entrySet()) {
+      IRBasicBlock block = pair.getKey();
+      Path path = null;
+      if(blockPathMap.containsKey(block))
+        path = blockPathMap.get(block);
+      else {
+        path = Path.create(block.getStatements(), block, block);
+        blockPathMap.put(block, path);
+      }
+      blockPathMap.put(block, path);
+      Set<Path> prePaths = Sets.newHashSet();
+      for(IREdge<?> edge : pair.getValue()) {
+        IRBasicBlock srcBlock = edge.getSource();
+        Path srcPath = null;
+        if(blockPathMap.containsKey(srcBlock))
+          srcPath = blockPathMap.get(srcBlock);
+        else {
+          srcPath = Path.create(srcBlock.getStatements(), srcBlock, srcBlock);
+          blockPathMap.put(srcBlock, srcPath);
+        }
+        
+        if (edge.getGuard() != null) { // edge has guard
+          Statement stmt = Statement.assumeStmt(edge.getSourceNode(), edge.getGuard());
+          stmt.addPreLabel(COND_ASSUME_LABEL);
+          Path edgePath  = Path.createSingleton(stmt);
+          predecessorMap.put(edgePath, Sets.newHashSet(srcPath));
+          prePaths.add(edgePath);
+        } else {
+          prePaths.add(srcPath);
+        }
+      }
+      predecessorMap.put(path, prePaths);
+    }
 
+    Graph graph = Graph.create(predecessorMap, blockPathMap.get(start), blockPathMap.get(target));
+    
     return graph;
   }
 
