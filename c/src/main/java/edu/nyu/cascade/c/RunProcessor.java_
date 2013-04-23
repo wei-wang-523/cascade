@@ -785,26 +785,6 @@ class RunProcessor {
         "Source: " + block + "\nTarget: " + target).decr().flush();
     return buildPathGraphToBlock(cfg, block, target);
   }
-
-  /**
-  private IRBasicBlock buildPathToPosition(IRControlFlowGraph cfg,
-      IRBasicBlock block, IRLocation pos, List<IRStatement> path) 
-          throws RunProcessorException {
-    IRBasicBlock target;
-    if(pos instanceof Position) {
-      target = cfg.splitAt(pos, InsertionType.AFTER.equals(
-          ((Position)pos).getInsertionType()));
-    } else {
-      throw new RunProcessorException("Bad position: " + pos);
-    }      
-
-    if( target==null ) {
-      throw new RunProcessorException("Bad position: " + pos);
-    }
-    IOUtils.debug().pln("Searching for path:").incr().pln(
-        "Source: " + block + "\nTarget: " + target).decr().flush();
-    return buildPathToBlock(cfg, block, target, path);
-  } */
   
   /**
    * Find a path map in the CFG to the given start block and target block and 
@@ -822,34 +802,74 @@ class RunProcessor {
       IRBasicBlock start, IRBasicBlock target, Map<IRBasicBlock,
       Set<IREdge<?>>> pathMap, Set<IREdge<?>> visited) throws RunProcessorException {
     
-    for(IREdge<?> e : cfg.getIncomingEdges(target)) {
-      if(visited.contains(e))   continue;
-      
-      IRBasicBlock v = e.getSource();
-      
-      /* Ignore the cycle */
-      if(target.getType().equals(IRBasicBlock.Type.LOOP) && 
-          v.getScope().getParent().equals(target.getScope()))
-        continue;
-      
-      if(v.equals(start)) {
+    if(start.equals(target) && start.getType().equals(IRBasicBlock.Type.LOOP)) {
+      for (IREdge<?> e : cfg.getIncomingEdges(target)) {
         visited.add(e);
-        for(IREdge<?> ve : visited) {
-          IRBasicBlock tgt = ve.getTarget();
-          Set<IREdge<?>> edges = pathMap.get(tgt);
-          if(edges == null) edges = Sets.newHashSet();
-          edges.add(ve);
-          pathMap.put(tgt, edges);
-        }
+        depthFirstSearch(cfg, start, e.getSource(), pathMap, visited);
         visited.remove(e);
-        continue;
-      } 
-      
-      visited.add(e);
-      depthFirstSearch(cfg, start, v, pathMap, visited);
-      visited.remove(e);
+      }
+    } else {
+      for(IREdge<?> e : cfg.getIncomingEdges(target)) {
+        if(visited.contains(e))   continue;
+        
+        IRBasicBlock v = e.getSource();
+        
+        /* Ignore the cycle */
+        if(target.getType().equals(IRBasicBlock.Type.LOOP) && 
+            v.getScope().getParent().equals(target.getScope()))
+          continue;
+        
+        if(v.equals(start)) {
+          visited.add(e);
+          for(IREdge<?> ve : visited) {
+            IRBasicBlock tgt = ve.getTarget();
+            Set<IREdge<?>> edges = pathMap.get(tgt);
+            if(edges == null) edges = Sets.newHashSet();
+            edges.add(ve);
+            pathMap.put(tgt, edges);
+          }
+          visited.remove(e);
+          continue;
+        } 
+        
+        visited.add(e);
+        depthFirstSearch(cfg, start, v, pathMap, visited);
+        visited.remove(e);
+      }
     }
   }
+  
+  /**
+   * Unrolling loop block for <code>iterTimes</code> times
+   * @throws RunProcessorException 
+   */
+  Graph loopUnrolling(IRControlFlowGraph cfg, IRBasicBlock u, int iterTimes) 
+      throws RunProcessorException {
+    Preconditions.checkArgument(u.getType().equals(IRBasicBlock.Type.LOOP));
+    Preconditions.checkArgument(iterTimes > 0);
+    Graph loopGraph = null;
+    while(iterTimes > 0) {
+      Graph singleLoop = buildPathGraphToBlock(cfg, u, u);
+      if(loopGraph == null) 
+        loopGraph = singleLoop;
+      else { // Tricky part to merge two loop graph
+        
+        /* loopGraph.destPath != singleLoop.srcPath */
+        assert(loopGraph.destPath.equals(singleLoop.srcPath)); 
+        
+        Set<Path> preLoopPaths = loopGraph.predecessorMap.remove(loopGraph.destPath);        
+        loopGraph.predecessorMap.put(singleLoop.srcPath, preLoopPaths);
+        
+        Set<Path> preSinglePaths = singleLoop.predecessorMap.remove(singleLoop.srcPath);
+        singleLoop.predecessorMap.put(loopGraph.destPath, preSinglePaths);
+        
+        loopGraph.predecessorMap.putAll(singleLoop.predecessorMap);
+      }
+      iterTimes--;
+    }
+    return loopGraph;
+  }
+  
   
   /**
    * Find a path in the CFG to the given start block and target block, and add
@@ -919,18 +939,18 @@ class RunProcessor {
           block.getIterTimes() > 0) {
         int iterTimes = block.getIterTimes();
         block.clearIterTimes();
-        Set<Path> preLoopPaths = prePaths;
-        Path destLoopPath = null;
-        while(iterTimes > 0) {
-          Graph loopGraph = buildPathGraphToBlock(cfg, block, block);
-          predecessorMap.putAll(loopGraph.predecessorMap);
-          
-          predecessorMap.put(loopGraph.srcPath, preLoopPaths);
-          destLoopPath = loopGraph.destPath;
-          preLoopPaths = Sets.newHashSet(destLoopPath);         
-          iterTimes--;
-        }
-        predecessorMap.put(path, Sets.newHashSet(destLoopPath));
+        Graph loopGraph = loopUnrolling(cfg, block ,iterTimes);
+        
+        assert(loopGraph.destPath.equals(path));
+        Set<Path> preLoopPaths = loopGraph.predecessorMap.remove(loopGraph.destPath);
+        loopGraph.predecessorMap.put(path, preLoopPaths);
+
+        Set<Path> preGraphPaths = predecessorMap.remove(path);
+        predecessorMap.put(loopGraph.destPath, preGraphPaths);
+        
+        predecessorMap.putAll(loopGraph.predecessorMap);
+        
+        predecessorMap.put(loopGraph.srcPath, prePaths);
         continue;
       }
       
@@ -1882,6 +1902,7 @@ class RunProcessor {
     graph.appendPrePath(startPath);
     graph.appendPostPath(endPath);
 
+    graph.simplify();
     graph = functionInlineGraph(symbolTable, graph);
     
     symbolTable.setScope(oldScope);
