@@ -814,11 +814,11 @@ class RunProcessor {
       IRBasicBlock start, IRBasicBlock target) throws RunProcessorException {
     Map<IRBasicBlock, Set<IREdge<?>>> pathMap = Maps.newHashMap();
     Set<IREdge<?>> visited = Sets.newLinkedHashSet();
-    breathFirstSearch(cfg, start, target, pathMap, visited);
+    depthFirstSearch(cfg, start, target, pathMap, visited);
     return pathMap;
   }
   
-  private void breathFirstSearch(IRControlFlowGraph cfg,
+  private void depthFirstSearch(IRControlFlowGraph cfg,
       IRBasicBlock start, IRBasicBlock target, Map<IRBasicBlock,
       Set<IREdge<?>>> pathMap, Set<IREdge<?>> visited) throws RunProcessorException {
     
@@ -835,114 +835,15 @@ class RunProcessor {
           pathMap.put(tgt, edges);
         }
         visited.remove(e);
-      }     
-    }
-    
-    for(IREdge<?> e : cfg.getIncomingEdges(target)) {
-      IRBasicBlock v = e.getSource();
-      if(visited.contains(e) || v.equals(start)) {
         continue;
-      }
-      visited.add(e);
-      breathFirstSearch(cfg, start, v, pathMap, visited);
-      visited.remove(e);
-    }
-  }
-  
-  final class PairKey {
-    public final IRBasicBlock a;
-    public final IRBasicBlock b;
-
-    PairKey(IRBasicBlock a, IRBasicBlock b) { this.a = a; this.b = b; }
-
-    PairKey make(IRBasicBlock a, IRBasicBlock b) { return new PairKey(a, b); }
-
-    public int hashCode() {
-      return (a != null ? a.hashCode() : 0) + 31 * (b != null ? b.hashCode() : 0);
-    }
-
-    public boolean equals(Object o) {
-      if (o == null || o.getClass() != this.getClass()) { return false; }
-      PairKey that = (PairKey) o;
-      return (a == null ? that.a == null : a.equals(that.a))
-          && (b == null ? that.b == null : b.equals(that.b));
-    }
-  }
-  
-  /** Build a path graph from the path Map built from cfg. */
-  private Graph buildPathGraph(IRControlFlowGraph cfg, IRBasicBlock start, IRBasicBlock target, 
-      final Map<IRBasicBlock, Set<IREdge<?>>> pathMap,
-      Map<PairKey, Graph> graphSet) throws RunProcessorException {
-    PairKey pairKey = new PairKey(start, target);
-    if(graphSet.containsKey(pairKey))   return graphSet.get(pairKey);
-    
-    /* Add statements along the path from target to start */
-    IRBasicBlock u = target;
-    IOUtils.debug().pln("The path:").incr().flush();
-    
-    Graph resGraph = null;
-    
-    if(start.equals(u)) {
-      resGraph = Graph.createSingleton(Path.create(u.getStatements(), u, u));;
-      graphSet.put(pairKey, resGraph);
-      return Graph.createSingleton(Path.create(u.getStatements(), u, u));
-    }
-    IOUtils.debug().pln(u.toString()).flush();
-    
-    /* Iterate loops for iterTimes - backward unrolling*/
-    int iterTimes = u.getIterTimes();
-    u.clearIterTimes();
-    while(iterTimes > 0) {
-      Graph loopGraph = buildPathGraphToBlock(cfg, u, u);
-      if(resGraph == null)    resGraph = loopGraph;
-      else {
-        resGraph.appendPreGraph(loopGraph);
-        resGraph.setSrcPath(loopGraph.srcPath);
-      }
-      u = resGraph.getSrcBlock();
-      iterTimes--;
-    }
-    
-    /* Create a graph for current block */
-    Path uPath = Path.create(u.getStatements(), u, u);
-    Map<Path, Set<Path>> uMap = Maps.newHashMap();
-    Graph uGraph = Graph.create(uMap, uPath, uPath);
-    if(!pathMap.isEmpty()) {
-      /* Get all the predecessor graphs for uGraph */
-      Object[] edges = pathMap.get(u).toArray();
-      if(edges.length == 1) {
-        IREdge<?> e = (IREdge<?>) edges[0];
-        Graph branchGraph = buildPathGraph(cfg, start, e.getSource(), pathMap, graphSet);
-        if(branchGraph != null) {
-          addEdgeToGraphSrc(uGraph, e);
-          uGraph.appendPreGraph(branchGraph);
-        }
       } else {
-        List<Graph> branchGraphs = Lists.newArrayList();
-        for(Object edge : edges) {
-          IREdge<?> e = (IREdge<?>) edge;
-          Graph branchGraph = buildPathGraph(cfg, start, e.getSource(), pathMap, graphSet);
-          branchGraphs.add(branchGraph);
-        }
-        uGraph.appendAllPreGraph(branchGraphs);
+        visited.add(e);
+        depthFirstSearch(cfg, start, v, pathMap, visited);
+        visited.remove(e);
       }
     }
-    
-    if(resGraph != null)    resGraph.appendPreGraph(uGraph);
-    else                    resGraph = uGraph;
-    
-    graphSet.put(pairKey, resGraph);
-    return resGraph;
   }
   
-  private void addEdgeToGraphSrc(Graph graph, IREdge<?> e) {
-    if (e.getGuard() != null) {
-      Statement stmt = Statement.assumeStmt(e.getSourceNode(), e.getGuard());
-      stmt.addPreLabel(COND_ASSUME_LABEL);
-      graph.appendPrePath(Path.createSingleton(stmt));
-    }
-  }
-
   /**
    * Find a path in the CFG to the given start block and target block, and add
    * the statements along the path to the list path. 
@@ -971,6 +872,7 @@ class RunProcessor {
       throw new RunProcessorException("Invalid run");
     }
 
+    /* Build predecessor map based on path map */
     Map<Path, Set<Path>> predecessorMap = Maps.newHashMap();
     Map<IRBasicBlock, Path> blockPathMap = Maps.newHashMap();
     for(Entry<IRBasicBlock, Set<IREdge<?>>> pair : pathMap.entrySet()) {
