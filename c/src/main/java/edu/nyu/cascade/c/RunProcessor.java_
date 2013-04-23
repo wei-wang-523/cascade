@@ -1133,12 +1133,16 @@ class RunProcessor {
   
   /** Get the function declare Node for the function call statement. */
   private Node findFuncDeclareNode (IRStatement stmt) throws RunProcessorException {
-    String name = ((Statement) stmt).getOperand(0).toString();
-    
+    Preconditions.checkArgument(stmt.getType().equals(StatementType.CALL));
+    String funcName = ((Statement) stmt).getOperand(0).toString();    
     File file = stmt.getLocation().getFile();
     CSymbolTable symbolTable = symbolTables.get(file);
-
-    IRVarInfo info = symbolTable.lookup(name);
+    return findFuncDeclareNode(symbolTable, funcName);
+  }
+  
+  private Node findFuncDeclareNode (CSymbolTable symbolTable, String funcName) 
+      throws RunProcessorException {
+    IRVarInfo info = symbolTable.lookup(funcName);
     if(info == null)    return null; // For undeclared function.
     Location funcDeclareLoc = info.getDeclarationNode().getLocation();
     
@@ -1158,7 +1162,7 @@ class RunProcessor {
     
     if(bestNode == null) {
       // FIXME: continue find in the parent scope or stays at root scope initially?
-      System.err.println("Cannot find the function declaration node for " + stmt);
+      System.err.println("Cannot find the function declaration node for " + funcName);
     }
     return bestNode;
   }
@@ -1561,11 +1565,8 @@ class RunProcessor {
       String funcName = srcNode.getNode(0).getString(0);
       // Do not touch the reserved functions
       if(ReservedFunctions.contains(funcName))  return false;
-      
-      IRVarInfo info = symbolTable.lookup(funcName);
-      if(info == null)
-        throw new RunProcessorException("Undeclared function: " + funcName);
-      return true;
+      Node funcNode = findFuncDeclareNode(symbolTable, funcName);
+      return (funcNode != null);
     }
     for(int i=0; i<srcNode.size(); i++) {
       Object arg = srcNode.get(i);
