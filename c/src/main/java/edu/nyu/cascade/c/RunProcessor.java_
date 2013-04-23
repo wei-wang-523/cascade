@@ -882,9 +882,11 @@ class RunProcessor {
     
     Graph resGraph = null;
     
-    if(start.equals(u))
+    if(start.equals(u)) {
+      resGraph = Graph.createSingleton(Path.create(u.getStatements(), u, u));;
+      graphSet.put(pairKey, resGraph);
       return Graph.createSingleton(Path.create(u.getStatements(), u, u));
-    
+    }
     IOUtils.debug().pln(u.toString()).flush();
     
     /* Iterate loops for iterTimes - backward unrolling*/
