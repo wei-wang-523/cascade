@@ -442,10 +442,12 @@ final class Graph {
   }
   
   IRBasicBlock getDestBlock() {
+    if(destPath == null)    return null;
     return destPath.destBlock;
   }
   
   IRBasicBlock getSrcBlock() {
+    if(srcPath == null)     return null;
     return srcPath.srcBlock;
   }
   
@@ -896,7 +898,9 @@ class RunProcessor {
 
     /* Build predecessor map based on path map */
     Map<Path, Set<Path>> predecessorMap = Maps.newHashMap();
+    
     Map<IRBasicBlock, Path> blockPathMap = Maps.newHashMap();
+    
     for(Entry<IRBasicBlock, Set<IREdge<?>>> pair : pathMap.entrySet()) {
       IRBasicBlock block = pair.getKey();
       
@@ -906,7 +910,6 @@ class RunProcessor {
         path = Path.create(block.getStatements(), block, block);
         blockPathMap.put(block, path);
       }
-      blockPathMap.put(block, path);
       
       /* build the set of pre-paths */
       Set<Path> prePaths = Sets.newHashSet();
@@ -952,8 +955,14 @@ class RunProcessor {
       predecessorMap.put(path, prePaths);
     }
 
-    Graph graph = Graph.create(predecessorMap, blockPathMap.get(start), blockPathMap.get(target));
-    
+    Graph graph = null;
+    if(predecessorMap.isEmpty()) { // start == target and start.type != LOOP
+      if(start != target || (start == target && start.getType().equals(IRBasicBlock.Type.LOOP))) 
+        throw new RunProcessorException("Failure to build graph from " + start + " to " + target);
+      graph = Graph.createSingleton(Path.create(start.getStatements(), start, start));
+    } else {
+      graph = Graph.create(predecessorMap, blockPathMap.get(start), blockPathMap.get(target));
+    }
     return graph;
   }
 
