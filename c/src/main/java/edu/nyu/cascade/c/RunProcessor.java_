@@ -9,6 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.Set;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
@@ -791,13 +792,68 @@ class RunProcessor {
       IRBasicBlock start, IRBasicBlock target) throws RunProcessorException {
     Map<IRBasicBlock, Set<IREdge<?>>> pathMap = Maps.newHashMap();
     Set<IREdge<?>> visited = Sets.newLinkedHashSet();
-    depthFirstSearch(cfg, start, target, pathMap, visited);
+    depthFirstSearch(cfg, start, target, pathMap, visited);   
+    
+    Queue<List<IREdge<?>>> queue = Lists.newLinkedList();
+    List<IREdge<?>> emptyList = Lists.newArrayList();
+    queue.add(emptyList);
+    Map<IRBasicBlock, Set<IREdge<?>>> pathMapNew = 
+        breadthFirstSearch(cfg, start, target, queue);
+    return pathMapNew;
+  }
+  
+  private Map<IRBasicBlock, Set<IREdge<?>>> breadthFirstSearch(
+      IRControlFlowGraph cfg,  IRBasicBlock start, IRBasicBlock target, 
+      Queue<List<IREdge<?>>> queue) throws RunProcessorException {
+    Map<IRBasicBlock, Set<IREdge<?>>> pathMap = Maps.newHashMap();
+    boolean loop = start.equals(target) && start.getType().equals(IRBasicBlock.Type.LOOP);
+    if(loop) {
+      queue.remove();
+      assert(queue.isEmpty());
+      for (IREdge<?> ve : cfg.getIncomingEdges(target)) {
+        List<IREdge<?>> path = Lists.newArrayList();
+        path.add(ve);
+        queue.add(path);
+      }
+    }
+    
+    while(!queue.isEmpty()) {
+      /* get the first path from the queue */
+      List<IREdge<?>> path = queue.poll();
+      /* get the last node from the path */
+      IRBasicBlock head = path.isEmpty() ? target : path.get(path.size()-1).getSource();
+      /* path found */
+      if(head.equals(start)) {
+        for(IREdge<?> ve : path) {
+          IRBasicBlock tgt = ve.getTarget();
+          Set<IREdge<?>> edges = pathMap.get(tgt);
+          if(edges == null) edges = Sets.newHashSet();
+          edges.add(ve);
+          pathMap.put(tgt, edges);
+        }
+      } else {
+        for(IREdge<?> ve : cfg.getIncomingEdges(head)) {
+          final IRBasicBlock src = ve.getSource();
+          boolean visited = Iterables.any(path, new Predicate<IREdge<?>>(){
+            @Override
+            public boolean apply(IREdge<?> edge) {
+             return edge.getTarget().equals(src); 
+            }
+          });
+          if(visited && (!loop || src != start))    continue;
+          List<IREdge<?>> newPath = Lists.newArrayList(path);
+          newPath.add(ve);
+          queue.add(newPath);
+        }
+      }
+    }
     return pathMap;
   }
   
   private void depthFirstSearch(IRControlFlowGraph cfg,
-      IRBasicBlock start, IRBasicBlock target, Map<IRBasicBlock,
-      Set<IREdge<?>>> pathMap, Set<IREdge<?>> visited) throws RunProcessorException {
+      IRBasicBlock start, IRBasicBlock target, 
+      Map<IRBasicBlock, Set<IREdge<?>>> pathMap, Set<IREdge<?>> visited) 
+          throws RunProcessorException {
     
     if(start.equals(target) && start.getType().equals(IRBasicBlock.Type.LOOP)) {
       for (IREdge<?> e : cfg.getIncomingEdges(target)) {
