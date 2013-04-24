@@ -840,7 +840,8 @@ class RunProcessor {
              return edge.getTarget().equals(src); 
             }
           });
-          if(visited && (!loop || src != start))    continue;
+          if(visited && (!loop || src != start)) continue;
+          
           List<IREdge<?>> newPath = Lists.newArrayList(path);
           newPath.add(ve);
           queue.add(newPath);
