@@ -11,8 +11,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
-
-import org.apache.commons.lang.builder.EqualsBuilder;
+import java.util.Stack;
 
 import xtc.parser.ParseException;
 import xtc.parser.Result;
@@ -202,7 +201,7 @@ final class PathEncoder {
       for(IRStatement stmt : currPath.stmts) {
         preCond = encodeStatement(stmt, preCond);
         if(stmt.getPreLabels().contains(COND_ASSUME_LABEL))
-          currPath.setGuard(preCond);
+          currPath.addGuard(preCond);
         succeed = checkPreCondition(preCond, stmt);
         if(!succeed) {
           if (runIsValid() && !runIsFeasible())
@@ -213,13 +212,13 @@ final class PathEncoder {
     } else { // size > 1
       for(int i = 0; i < currPath.stmts.size(); i++) {
         IRStatement stmt = currPath.stmts.get(i);
-        // First statement
+        // First statement cannot be conditional assume statement
         if(i == 0)  preCond = encodeStatement(stmt, preConds, preGuards);
         else        preCond = encodeStatement(stmt, preCond);
         
         // This stmt is conditional control flow graph guard
         if(stmt.getPreLabels().contains(COND_ASSUME_LABEL))
-          currPath.setGuard(preCond);
+          currPath.addGuard(preCond);
         
         succeed = checkPreCondition(preCond, stmt);
         if(!succeed) {
@@ -257,12 +256,19 @@ final class PathEncoder {
           if(preCond == null)  return null;
           preConds.add(preCond);
           if(prePath.hasGuard()) {
+            Expression guard = prePath.guards.peek();
             if(preGuards == null) 
-              preGuards = Lists.newArrayList(prePath.guard);
+              preGuards = Lists.newArrayList(guard);
             else
-              preGuards.add(prePath.guard);
+              preGuards.add(guard);
           }
         }
+        Stack<Expression> prefixGuards = ((Path) prePaths.toArray()[0]).guards;
+        if(prePaths.size() > 1) {
+          prefixGuards.pop();
+        }
+        if(prefixGuards != null && !prefixGuards.isEmpty()) 
+          currPath.setGuards(prefixGuards);
       }
     }
     Expression pathExpr = encodePathWithPreConds(currPath, preConds, preGuards);
@@ -296,7 +302,7 @@ final class Path {
   final IRBasicBlock srcBlock;
   final List<IRStatement> stmts;
   final IRBasicBlock destBlock;
-  Expression guard = null;
+  Stack<Expression> guards = null;
   
   static Path createSingleton(List<? extends IRStatement> stmts) {
     if(stmts == null || stmts.isEmpty()) return null;
@@ -319,13 +325,20 @@ final class Path {
     this.stmts = Lists.newArrayList(stmts);
   }
   
-  void setGuard(Expression guard) {
-    Preconditions.checkArgument(guard.isTuple());
-    this.guard = guard.asTuple().getChild(1);
+  void addGuard(Expression expr) {
+    Preconditions.checkArgument(expr.isTuple());
+    Expression guard = expr.asTuple().getChild(1);
+    if(guards == null)  guards = new Stack<Expression>();
+    guards.push(guard);
+  }
+  
+  void setGuards(Stack<Expression> guards) {
+    Preconditions.checkArgument(this.guards == null);
+    this.guards = guards;
   }
   
   boolean hasGuard() {
-    return guard != null;
+    return guards != null && !guards.isEmpty();
   }
   
   boolean isEmpty() {
@@ -352,9 +365,9 @@ final class Path {
     if(index == 0)      return srcBlock;
     
     IRLocation pos = stmts.get(index).getLocation();
-    if(pos.isWithin(srcBlock))          return srcBlock;
-    else if(pos.isWithin(destBlock))    return destBlock;
-    else return getBlock(index-1);
+    if(srcBlock != null && pos.isWithin(srcBlock))      return srcBlock;
+    if(destBlock != null && pos.isWithin(destBlock))    return destBlock;
+    return getBlock(index-1);
   }
   
   List<Path> split(int index) {
@@ -395,8 +408,7 @@ final class Path {
     return sb.toString();
   }
   
-  @Override
-  public boolean equals(Object other) {
+/*  public boolean equals(Object other) {
     if(other == null)   return false;
     if(!(other instanceof Path)) return false;
     if(other == this) return true;
@@ -404,7 +416,7 @@ final class Path {
     return new EqualsBuilder().append(srcBlock, otherPath.srcBlock)
         .append(destBlock, otherPath.destBlock).append(stmts, otherPath.stmts)
         .isEquals();
-  }
+  }*/
 }
 
 final class Graph {
@@ -414,7 +426,7 @@ final class Graph {
   Path destPath = null;
   
   static Graph createSingleton(Path path) {
-    Map<Path, Set<Path>> emptyMap = Maps.newHashMap();
+    Map<Path, Set<Path>> emptyMap = Maps.newLinkedHashMap();
     return new Graph(emptyMap, path, path);
   }
   
@@ -480,18 +492,24 @@ final class Graph {
   }
   
   void appendAllPreGraph(Iterable<Graph> preGraphs) throws RunProcessorException { 
-    Preconditions.checkArgument(!Iterables.isEmpty(preGraphs) && preGraphs != null);
+    Preconditions.checkArgument(preGraphs != null && !Iterables.isEmpty(preGraphs));
     final Path preSrcPath = Iterables.get(preGraphs, 0).srcPath;
     boolean sameSrcPath = Iterables.all(preGraphs, new Predicate<Graph>(){
       @Override
       public boolean apply(Graph graph) {
-        return graph.srcPath.equals(preSrcPath);
+        return graph.srcPath==preSrcPath;
       }
     });
     if(!sameSrcPath)   throw new RunProcessorException("Invalid graph");
     
     for(Graph preGraph : preGraphs) {
-      predecessorMap.putAll(preGraph.predecessorMap);
+      for(Entry<Path, Set<Path>> entry: preGraph.predecessorMap.entrySet()) {
+        Path keyPath = entry.getKey();
+        Set<Path> prePaths = entry.getValue();
+        if(predecessorMap.containsKey(keyPath))
+          prePaths.addAll(predecessorMap.get(keyPath));
+        predecessorMap.put(keyPath, prePaths);
+      }
     }
     
     Iterable<Path> preDestPaths = Iterables.transform(preGraphs, new Function<Graph, Path>(){
@@ -564,7 +582,7 @@ final class Graph {
     return getReturnStmt(destPath);
   }
   
-  private Path simplify(Path path, Map<Path, Path> replaceMap) {
+  private Path simplify(Path path, Map<Path, Path> replaceMap) throws RunProcessorException {
     if(replaceMap.containsKey(path)) 
       return replaceMap.get(path);
     Set<Path> prePaths = predecessorMap.get(path);
@@ -572,6 +590,7 @@ final class Graph {
     
     Set<Path> simplifyPaths = Sets.newHashSet();
     for(Path prePath : prePaths)    simplifyPaths.add(simplify(prePath, replaceMap));
+    assert(simplifyPaths.size() >= 1);
     if(simplifyPaths.size() > 1) { 
       predecessorMap.put(path, simplifyPaths);
       return path;
@@ -581,23 +600,25 @@ final class Graph {
           path.stmts.get(0).getPreLabels().contains(COND_ASSUME_LABEL)) {
         predecessorMap.put(path, simplifyPaths);
         return path;
+      } else {
+        Path simplifyPath = (Path) simplifyPaths.toArray()[0];
+        Path pathPrime = Path.mergePath(simplifyPath, path);
+        assert(!pathPrime.equals(path));
+        predecessorMap.remove(path);
+        if(predecessorMap.containsKey(simplifyPath)) {
+          Set<Path> prePathsPrime = predecessorMap.remove(simplifyPath);
+          predecessorMap.put(pathPrime, prePathsPrime);
+        }
+        if(simplifyPath.equals(srcPath)) srcPath = pathPrime;
+        replaceMap.put(path, pathPrime);
+        return pathPrime;
       }
-      Path simplifyPath = (Path) simplifyPaths.toArray()[0];
-      Path pathPrime = Path.mergePath(simplifyPath, path);
-      predecessorMap.remove(path);
-      if(predecessorMap.containsKey(simplifyPath)) {
-        Set<Path> prePathsPrime = predecessorMap.get(simplifyPath);
-        predecessorMap.remove(simplifyPath);
-        predecessorMap.put(pathPrime, prePathsPrime);
-      }
-      if(simplifyPath.equals(srcPath)) srcPath = pathPrime;
-      replaceMap.put(path, pathPrime);
-      return pathPrime;
     }
   }
   
-  /** Simplify the graph */
-  void simplify() {
+  /** Simplify the graph 
+   * @throws RunProcessorException */
+  void simplify() throws RunProcessorException {
     Map<Path, Path> replaceMap = Maps.newHashMap();
     destPath = simplify(destPath, replaceMap);
   }
@@ -631,6 +652,24 @@ final class Graph {
     sb.append(srcPath).append("-->").append(destPath);
     return sb.toString();
   }
+  
+  boolean isValid() {
+    Map<Path, Set<Path>> map = Maps.newLinkedHashMap(predecessorMap);
+    Queue<Path> queue = Lists.newLinkedList();
+    queue.add(destPath);
+    
+    while(!queue.isEmpty()) {
+      Path path = queue.poll();
+      Set<Path> prePaths = map.remove(path);
+      if(prePaths == null) continue;
+      for(Path prePath : prePaths) {
+        if(!queue.contains(prePath))
+          queue.add(prePath);
+      }
+    }
+    
+    return map.isEmpty();
+  }
 }
 
 /**
@@ -654,7 +693,7 @@ class RunProcessor {
       Lists.newArrayList("valid", "implies", "forall", "exists", "reach", 
           "allocated", "create_acyclic_list", "create_cyclic_list", 
           "create_acyclic_dlist", "create_cyclic_dlist", "is_root",
-          "valid_malloc", "malloc", "free", "array_allocated");
+          "valid_malloc", "malloc", "free", "array_allocated", "__NONDET__");
   private final static String TEMP_VAR_PREFIX = "TEMP_VAR_";
   private final static String COND_ASSUME_LABEL = "COND_ASSUME";
   private final Map<File, CSymbolTable> symbolTables;
@@ -662,6 +701,7 @@ class RunProcessor {
   private final CAnalyzer cAnalyzer;
   private final PathEncoder pathEncoder;
   private int TEMP_VAR_POSTFIX;
+  private int inline = 0;
 
   /**
    * Process a run: build the path through the CFG that it represents, convert
@@ -790,9 +830,9 @@ class RunProcessor {
    */
   private Map<IRBasicBlock, Set<IREdge<?>>> buildPathMap(IRControlFlowGraph cfg,
       IRBasicBlock start, IRBasicBlock target) throws RunProcessorException {
-    Map<IRBasicBlock, Set<IREdge<?>>> pathMap = Maps.newHashMap();
-    Set<IREdge<?>> visited = Sets.newLinkedHashSet();
-    depthFirstSearch(cfg, start, target, pathMap, visited);   
+//    Map<IRBasicBlock, Set<IREdge<?>>> pathMap = Maps.newHashMap();
+//    Set<IREdge<?>> visited = Sets.newLinkedHashSet();
+//    depthFirstSearch(cfg, start, target, pathMap, visited);   
     
     Queue<List<IREdge<?>>> queue = Lists.newLinkedList();
     List<IREdge<?>> emptyList = Lists.newArrayList();
@@ -851,7 +891,7 @@ class RunProcessor {
     return pathMap;
   }
   
-  private void depthFirstSearch(IRControlFlowGraph cfg,
+/*  private void depthFirstSearch(IRControlFlowGraph cfg,
       IRBasicBlock start, IRBasicBlock target, 
       Map<IRBasicBlock, Set<IREdge<?>>> pathMap, Set<IREdge<?>> visited) 
           throws RunProcessorException {
@@ -868,7 +908,7 @@ class RunProcessor {
         
         IRBasicBlock v = e.getSource();
         
-        /* Ignore the cycle */
+         Ignore the cycle 
         if(target.getType().equals(IRBasicBlock.Type.LOOP) && 
             v.getScope().getParent().equals(target.getScope()))
           continue;
@@ -891,7 +931,7 @@ class RunProcessor {
         visited.remove(e);
       }
     }
-  }
+  }*/
   
   /**
    * Unrolling loop block for <code>iterTimes</code> times
@@ -954,7 +994,7 @@ class RunProcessor {
     }
 
     /* Build predecessor map based on path map */
-    Map<Path, Set<Path>> predecessorMap = Maps.newHashMap();
+    Map<Path, Set<Path>> predecessorMap = Maps.newLinkedHashMap();
     
     Map<IRBasicBlock, Path> blockPathMap = Maps.newHashMap();
     
@@ -1595,7 +1635,10 @@ class RunProcessor {
    */
   private Graph functionInlineGraph(CSymbolTable symbolTable, Graph graph) 
       throws RunProcessorException {
-    return functionInlineGraph(symbolTable, graph, graph.destPath);
+    inline++;
+    if(inline > 1) return graph;
+    Map<Path, Graph> pathGraphMap = Maps.newHashMap();
+    return functionInlineGraph(symbolTable, graph, graph.destPath, pathGraphMap);
   }
   
   private boolean hasFunctionCall(IRStatement stmt) throws RunProcessorException {
@@ -1622,24 +1665,31 @@ class RunProcessor {
     return false;
   }
   
-  private Graph functionInlineGraph(CSymbolTable symbolTable, final Graph graph, Path destPath) 
-      throws RunProcessorException {
+  private Graph functionInlineGraph(CSymbolTable symbolTable, final Graph graph, Path destPath,
+      Map<Path, Graph> pathGraphMap) throws RunProcessorException {
     Preconditions.checkArgument(graph != null);
-    Graph resGraph = functionInlinePath(symbolTable, destPath, null);
-    if(resGraph == null)    throw new RunProcessorException("Invalid graph.");
+    Graph destGraph = functionInlinePath(symbolTable, destPath);
     
-    Map<Path, Set<Path>> map = graph.predecessorMap;
+    if(destGraph == null)    
+      throw new RunProcessorException("Invalid graph for path: " + destPath);
     
-    if(!map.containsKey(destPath))
-      return resGraph;
-    Set<Path> prePaths = map.get(destPath);  
-    List<Graph> preGraphs = Lists.newArrayList();
-    for(Path prePath : prePaths) {
-      Graph preGraph = functionInlineGraph(symbolTable, graph, prePath);
-      preGraphs.add(preGraph);
+    Map<Path, Set<Path>> map = graph.predecessorMap;    
+    if(map.containsKey(destPath)) {
+      Set<Path> prePaths = map.get(destPath);  
+      List<Graph> preGraphs = Lists.newArrayList();
+      for(Path prePath : prePaths) {
+        Graph preGraph = pathGraphMap.containsKey(prePath) ? 
+            pathGraphMap.get(prePath) : 
+              functionInlineGraph(symbolTable, graph, prePath, pathGraphMap);
+        assert(preGraph.isValid());
+        preGraphs.add(preGraph);
+      }
+      assert(destGraph.isValid());
+      destGraph.appendAllPreGraph(preGraphs);
+      assert(destGraph.isValid());
     }
-    resGraph.appendAllPreGraph(preGraphs);
-    return resGraph;
+    pathGraphMap.put(destPath, destGraph);
+    return destGraph;
   }
   
   private CallPoint findCallPointForStmt(IRStatement stmt, List<CallPoint> callPoints) {
@@ -1657,6 +1707,11 @@ class RunProcessor {
     return null;
   }
   
+  private Graph functionInlinePath(CSymbolTable symbolTable, Path path) 
+      throws RunProcessorException {
+    return functionInlinePath(symbolTable, path, null);
+  }
+    
   private Graph functionInlinePath(CSymbolTable symbolTable, Path path, 
       Position callPos) throws RunProcessorException {
     Preconditions.checkArgument(path != null);   
@@ -1962,9 +2017,9 @@ class RunProcessor {
     
     graph.appendPrePath(startPath);
     graph.appendPostPath(endPath);
-    
+//    graph.simplify();
     graph = functionInlineGraph(symbolTable, graph);
-    
+    assert(graph.isValid());
     symbolTable.setScope(oldScope);
     
     return graph;
