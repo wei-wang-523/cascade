@@ -13,6 +13,8 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.Stack;
 
+import org.apache.commons.lang.builder.EqualsBuilder;
+
 import xtc.parser.ParseException;
 import xtc.parser.Result;
 import xtc.tree.GNode;
@@ -408,7 +410,7 @@ final class Path {
     return sb.toString();
   }
   
-/*  public boolean equals(Object other) {
+  public boolean isCopyOf(Object other) {
     if(other == null)   return false;
     if(!(other instanceof Path)) return false;
     if(other == this) return true;
@@ -416,7 +418,7 @@ final class Path {
     return new EqualsBuilder().append(srcBlock, otherPath.srcBlock)
         .append(destBlock, otherPath.destBlock).append(stmts, otherPath.stmts)
         .isEquals();
-  }*/
+  }
 }
 
 final class Graph {
@@ -623,7 +625,7 @@ final class Graph {
     destPath = simplify(destPath, replaceMap);
   }
   
-  /** find all havoc statement */
+/**  
   List<IRStatement> collectHavocStmts(Path currPath) {
     List<IRStatement> havocStmts = Lists.newArrayList();
     
@@ -639,10 +641,24 @@ final class Graph {
       }           
     }
     return havocStmts;
-  }
+  }*/
   
+  /** find all havoc statement */
   List<IRStatement> collectHavocStmts() {
-    List<IRStatement> resStmts = collectHavocStmts(destPath);
+    Queue<Path> queue = Lists.newLinkedList();
+    List<IRStatement> resStmts = Lists.newArrayList();
+    queue.add(destPath);
+    while(!queue.isEmpty()) {
+      Path currPath = queue.poll();
+      for(IRStatement stmt : currPath.stmts) {
+        if(stmt.getType() == StatementType.ASSIGN) {
+          IRExpressionImpl lval = (IRExpressionImpl) ((Statement) stmt).getOperand(0);
+          resStmts.add(Statement.havoc(lval.getSourceNode(), lval));
+        }           
+      }
+      if(predecessorMap.containsKey(currPath))
+        queue.addAll(predecessorMap.get(currPath));
+    }
     return resStmts;
   }
   
@@ -701,7 +717,6 @@ class RunProcessor {
   private final CAnalyzer cAnalyzer;
   private final PathEncoder pathEncoder;
   private int TEMP_VAR_POSTFIX;
-  private int inline = 0;
 
   /**
    * Process a run: build the path through the CFG that it represents, convert
@@ -846,7 +861,7 @@ class RunProcessor {
       IRControlFlowGraph cfg,  IRBasicBlock start, IRBasicBlock target, 
       Queue<List<IREdge<?>>> queue) throws RunProcessorException {
     Map<IRBasicBlock, Set<IREdge<?>>> pathMap = Maps.newHashMap();
-    boolean loop = start.equals(target) && start.getType().equals(IRBasicBlock.Type.LOOP);
+    boolean loop = start.equals(target); /*&& start.getType().equals(IRBasicBlock.Type.LOOP);*/
     if(loop) {
       queue.remove();
       assert(queue.isEmpty());
@@ -947,9 +962,8 @@ class RunProcessor {
       if(loopGraph == null) 
         loopGraph = singleLoop;
       else { // Tricky part to merge two loop graph
-        
         /* loopGraph.destPath != singleLoop.srcPath */
-        assert(loopGraph.destPath.equals(singleLoop.srcPath)); 
+        assert(loopGraph.destPath.isCopyOf(singleLoop.srcPath)); 
         
         Set<Path> preLoopPaths = loopGraph.predecessorMap.remove(loopGraph.destPath);        
         loopGraph.predecessorMap.put(singleLoop.srcPath, preLoopPaths);
@@ -1036,7 +1050,7 @@ class RunProcessor {
         block.clearIterTimes();
         Graph loopGraph = loopUnrolling(cfg, block ,iterTimes);
         
-        assert(loopGraph.destPath.equals(path));
+        assert(loopGraph.destPath.isCopyOf(path));
         Set<Path> preLoopPaths = loopGraph.predecessorMap.remove(loopGraph.destPath);
         loopGraph.predecessorMap.put(path, preLoopPaths);
 
@@ -1635,8 +1649,6 @@ class RunProcessor {
    */
   private Graph functionInlineGraph(CSymbolTable symbolTable, Graph graph) 
       throws RunProcessorException {
-    inline++;
-    if(inline > 1) return graph;
     Map<Path, Graph> pathGraphMap = Maps.newHashMap();
     return functionInlineGraph(symbolTable, graph, graph.destPath, pathGraphMap);
   }
@@ -1681,12 +1693,9 @@ class RunProcessor {
         Graph preGraph = pathGraphMap.containsKey(prePath) ? 
             pathGraphMap.get(prePath) : 
               functionInlineGraph(symbolTable, graph, prePath, pathGraphMap);
-        assert(preGraph.isValid());
         preGraphs.add(preGraph);
       }
-      assert(destGraph.isValid());
       destGraph.appendAllPreGraph(preGraphs);
-      assert(destGraph.isValid());
     }
     pathGraphMap.put(destPath, destGraph);
     return destGraph;
