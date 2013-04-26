@@ -1293,6 +1293,8 @@ public class CfgBuilder extends Visitor {
             Node sizeNode = valNode.getNode(1).getNode(0);
             CExpression sizeExpr = expressionOf(sizeNode);            
             stmt = Statement.alloc(node, varExpr, sizeExpr);
+          } else if("__NONDET__".equals(funNode.getString(0))) {        
+            stmt = Statement.havoc(node, varExpr);
           } else {
             stmt = Statement.assign(node, varExpr, valExpr);
           }
