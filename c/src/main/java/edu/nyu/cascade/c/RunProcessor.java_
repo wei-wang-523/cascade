@@ -591,7 +591,8 @@ final class Graph {
     if(prePaths == null)    return path;
     
     Set<Path> simplifyPaths = Sets.newHashSet();
-    for(Path prePath : prePaths)    simplifyPaths.add(simplify(prePath, replaceMap));
+    for(Path prePath : prePaths)    
+      simplifyPaths.add(simplify(prePath, replaceMap));
     assert(simplifyPaths.size() >= 1);
     if(simplifyPaths.size() > 1) { 
       predecessorMap.put(path, simplifyPaths);
@@ -1261,7 +1262,7 @@ class RunProcessor {
     
     if(bestNode == null) {
       // FIXME: continue find in the parent scope or stays at root scope initially?
-      System.err.println("Cannot find the function declaration node for " + funcName);
+      IOUtils.debug().pln("Cannot find the function declaration node for " + funcName);
     }
     return bestNode;
   }
@@ -1741,18 +1742,25 @@ class RunProcessor {
       /* function call statement f(x) with declared function */
       if(last_stmt.getType().equals(StatementType.CALL) && 
           findFuncDeclareNode(last_stmt) != null) {
+        
+        IRStatement funcCallStmt = last_stmt;
+        int splitIndex = lastIndex;
+        
         List<IRStatement> stmtRep = pickFuncCallFromStmt(last_stmt, symbolTable);
-        int splitIndex = lastIndex - stmtRep.size() + 1;
+        /* special case function with function as argument f(g(x), 1) */
+        if(stmtRep != null && !stmtRep.isEmpty()) { 
+          splitIndex = lastIndex - stmtRep.size() + 1;
+          funcCallStmt = stmtRep.get(stmtRep.size()-1);
+        }
         List<Path> paths = tmpPath.split(splitIndex);
         tmpPath = paths.get(0);
         
         Graph callGraph = null;
-        IRStatement last_stmtRep = stmtRep.get(stmtRep.size()-1);
         if(funcs != null) {
-          CallPoint call = findCallPointForStmt(last_stmtRep, funcs);
-          callGraph = getGraphForCallStmt(last_stmtRep, call);
+          CallPoint call = findCallPointForStmt(funcCallStmt, funcs);
+          callGraph = getGraphForCallStmt(funcCallStmt, call);
         } else {
-          callGraph = getGraphForCallStmt(last_stmtRep);
+          callGraph = getGraphForCallStmt(funcCallStmt);
         }
         if(resGraph == null)    resGraph = callGraph;
         else                    resGraph.appendPreGraph(callGraph);
@@ -2031,7 +2039,7 @@ class RunProcessor {
     
     graph.appendPrePath(startPath);
     graph.appendPostPath(endPath);
-    graph.simplify();
+//    graph.simplify();
     graph = functionInlineGraph(symbolTable, graph);
     assert(graph.isValid());
     symbolTable.setScope(oldScope);
