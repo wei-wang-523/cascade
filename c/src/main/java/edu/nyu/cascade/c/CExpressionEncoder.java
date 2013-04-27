@@ -128,9 +128,17 @@ class CExpressionEncoder implements ExpressionEncoder {
         throw new VisitingException("Expression Factory failure", e);
       }
     }
+    
+    public Expression visitConditionalExpression(GNode node) 
+        throws VisitingException {
+      Expression condition = encodeBoolean(node.getNode(0));
+      Expression trueCase = (Expression) dispatch(node.getNode(1));
+      Expression falseCase = (Expression) dispatch(node.getNode(2));
+      return getExpressionManager().ifThenElse(condition, trueCase, falseCase);
+    }
 
     public Expression visitAdditiveExpression(GNode node)
-        throws ExpressionFactoryException {
+        throws VisitingException {
       // FIXED: handle varying pointer sizes
       /* [chris 12/3/2010] Note that this ignores pointer arithmetic, so any 
        * non-char* arithmetic will be wrong
