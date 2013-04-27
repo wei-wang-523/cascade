@@ -718,7 +718,6 @@ class RunProcessor {
   private final CAnalyzer cAnalyzer;
   private final PathEncoder pathEncoder;
   private int TEMP_VAR_POSTFIX;
-  private int hitCount = 0;
 
   /**
    * Process a run: build the path through the CFG that it represents, convert
@@ -742,8 +741,7 @@ class RunProcessor {
       Path globalPath = Path.createSingleton(CfgBuilder.getGlobalStmts(run));
       if(globalPath != null)    graph.appendPrePath(globalPath);
       graph.simplify();
-      pathEncoder.encodeGraph(graph);      
-      IOUtils.err().println("Hit count: " + this.hitCount);
+      pathEncoder.encodeGraph(graph);
       return pathEncoder.runIsValid();
     } catch (PathFactoryException e) {
       throw new RunProcessorException(e);
@@ -863,7 +861,7 @@ class RunProcessor {
       IRControlFlowGraph cfg,  IRBasicBlock start, IRBasicBlock target, 
       Queue<List<IREdge<?>>> queue) throws RunProcessorException {
     Map<IRBasicBlock, Set<IREdge<?>>> pathMap = Maps.newHashMap();
-    boolean loop = start.equals(target); /*&& start.getType().equals(IRBasicBlock.Type.LOOP);*/
+    boolean loop = start.equals(target); /* && start.getType().equals(IRBasicBlock.Type.LOOP);*/
     if(loop) {
       queue.remove();
       assert(queue.isEmpty());
@@ -875,23 +873,23 @@ class RunProcessor {
     }
     
     while(!queue.isEmpty()) {
-      /* get the first path from the queue */
-      List<IREdge<?>> path = queue.poll();
-      /* get the last node from the path */
-      IRBasicBlock head = path.isEmpty() ? target : path.get(path.size()-1).getSource();
-      /* path found */
+      /* get the first set of edges from the queue */
+      List<IREdge<?>> edges = queue.poll();
+      /* get the last node from the last edge */
+      IRBasicBlock head = edges.isEmpty() ? target : edges.get(edges.size()-1).getSource();
+      /* reach the start node */
       if(head.equals(start)) {
-        for(IREdge<?> ve : path) {
+        for(IREdge<?> ve : edges) {
           IRBasicBlock tgt = ve.getTarget();
-          Set<IREdge<?>> edges = pathMap.get(tgt);
-          if(edges == null) edges = Sets.newHashSet();
-          edges.add(ve);
-          pathMap.put(tgt, edges);
+          Set<IREdge<?>> edgesPrime = pathMap.get(tgt);
+          if(edgesPrime == null) edgesPrime = Sets.newHashSet();
+          edgesPrime.add(ve);
+          pathMap.put(tgt, edgesPrime);
         }
       } else {
         for(IREdge<?> ve : cfg.getIncomingEdges(head)) {
           final IRBasicBlock src = ve.getSource();
-          boolean visited = Iterables.any(path, new Predicate<IREdge<?>>(){
+          boolean visited = Iterables.any(edges, new Predicate<IREdge<?>>(){
             @Override
             public boolean apply(IREdge<?> edge) {
              return edge.getTarget().equals(src); 
@@ -899,9 +897,9 @@ class RunProcessor {
           });
           if(visited && (!loop || src != start)) continue;
           
-          List<IREdge<?>> newPath = Lists.newArrayList(path);
-          newPath.add(ve);
-          queue.add(newPath);
+          List<IREdge<?>> edgesPrime = Lists.newArrayList(edges);
+          edgesPrime.add(ve);
+          queue.add(edgesPrime);
         }
       }
     }
@@ -1651,8 +1649,74 @@ class RunProcessor {
    */
   private Graph functionInlineGraph(CSymbolTable symbolTable, Graph graph) 
       throws RunProcessorException {
-    Map<Path, Graph> pathGraphMap = Maps.newHashMap();
-    return functionInlineGraph(symbolTable, graph, graph.destPath, pathGraphMap);
+    /* Map the function path to its successor paths */
+    Map<Path, Graph> funcPathMap = Maps.newHashMap();
+    
+    Queue<Path> queue = Lists.newLinkedList();
+    queue.add(graph.destPath);
+    List<Path> visited = Lists.newLinkedList();
+    while(!queue.isEmpty()) {
+      Path currPath = queue.poll();
+      if(visited.contains(currPath))    continue;
+      
+      if(Iterables.any(currPath.stmts, new Predicate<IRStatement>(){
+        @Override
+        public boolean apply(IRStatement stmt) {
+//          return stmt.getType().equals(StatementType.CALL);
+          boolean res = false;
+          try {
+            res = stmt.getType().equals(StatementType.CALL) && 
+                findFuncDeclareNode(stmt) != null;
+          } catch (RunProcessorException e) {
+            IOUtils.err().println(e.getStackTrace());
+          }
+          return res;
+        }})) {
+        funcPathMap.put(currPath, null);
+      }
+      Set<Path> prePaths = graph.predecessorMap.get(currPath);
+      if(prePaths != null)  queue.addAll(prePaths);     
+    }
+    
+    IOUtils.err().println("Function path size: " + funcPathMap.size());
+    
+    if(funcPathMap.size() == 0) return graph;
+    
+    for(Path keyPath : funcPathMap.keySet()) {
+      Graph funcGraph = functionInlinePath(symbolTable, keyPath);
+      funcPathMap.put(keyPath, funcGraph);
+    }
+    
+    /* New graph predecessor map */
+    Map<Path, Set<Path>> predecessorMap = Maps.newHashMap();
+    
+    for(Entry<Path, Set<Path>> entry : graph.predecessorMap.entrySet()) { 
+      Set<Path> prePaths = Sets.newHashSet(entry.getValue());
+      for(Path prePath : entry.getValue()) {
+        if(funcPathMap.containsKey(prePath)) {
+          Graph funcGraph = funcPathMap.get(prePath);
+          prePaths.remove(prePath);
+          prePaths.add(funcGraph.destPath);
+        }
+      }
+      
+      Path keyPath = entry.getKey();
+      if(funcPathMap.containsKey(keyPath)) {
+        Graph funcGraph = funcPathMap.get(keyPath);
+        predecessorMap.put(funcGraph.srcPath, prePaths);
+      } else {
+        predecessorMap.put(keyPath, prePaths);
+      }
+    }
+    
+    for(Path keyPath : funcPathMap.keySet()) {
+      predecessorMap.putAll(funcPathMap.get(keyPath).predecessorMap);
+    }
+    
+    Path srcPath = funcPathMap.containsKey(graph.srcPath) ? funcPathMap.get(graph.srcPath).srcPath : graph.srcPath;
+    Path destPath = funcPathMap.containsKey(graph.destPath) ? funcPathMap.get(graph.destPath).destPath : graph.destPath;
+    
+    return Graph.create(predecessorMap, srcPath, destPath);
   }
   
   private boolean hasFunctionCall(IRStatement stmt) throws RunProcessorException {
@@ -1679,7 +1743,8 @@ class RunProcessor {
     return false;
   }
   
-  private Graph functionInlineGraph(CSymbolTable symbolTable, final Graph graph, Path destPath,
+/** 
+   private Graph functionInlineGraph(CSymbolTable symbolTable, final Graph graph, Path destPath,
       Map<Path, Graph> pathGraphMap) throws RunProcessorException {
     Preconditions.checkArgument(graph != null);
     
@@ -1703,6 +1768,13 @@ class RunProcessor {
     pathGraphMap.put(destPath, destGraph);
     return destGraph;
   }
+  
+  private Graph functionInlineGraph(CSymbolTable symbolTable, Graph graph) 
+      throws RunProcessorException {
+    Map<Path, Graph> pathGraphMap = Maps.newHashMap();
+    return functionInlineGraph(symbolTable, graph, graph.destPath, pathGraphMap);
+  }
+  */
   
   private CallPoint findCallPointForStmt(IRStatement stmt, List<CallPoint> callPoints) {
     Preconditions.checkArgument(stmt.getType().equals(StatementType.CALL));
@@ -1728,18 +1800,6 @@ class RunProcessor {
       Position callPos) throws RunProcessorException {
     Preconditions.checkArgument(path != null);
     
-    boolean hasFunction = Iterables.any(path.stmts, new Predicate<IRStatement>(){
-      @Override
-      public boolean apply(IRStatement stmt) {
-        return stmt.getType().equals(StatementType.CALL);
-      }
-    });
-    
-    if(!hasFunction || path.isEmpty()) {
-      hitCount++;
-      return Graph.createSingleton(path);
-    }
-
     Graph resGraph = null;
     Path tmpPath = path;
     List<CallPoint> funcs = null;
