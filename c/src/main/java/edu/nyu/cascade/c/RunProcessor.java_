@@ -718,6 +718,7 @@ class RunProcessor {
   private final CAnalyzer cAnalyzer;
   private final PathEncoder pathEncoder;
   private int TEMP_VAR_POSTFIX;
+  private int hitCount = 0;
 
   /**
    * Process a run: build the path through the CFG that it represents, convert
@@ -742,7 +743,7 @@ class RunProcessor {
       if(globalPath != null)    graph.appendPrePath(globalPath);
       graph.simplify();
       pathEncoder.encodeGraph(graph);      
-      
+      IOUtils.err().println("Hit count: " + this.hitCount);
       return pathEncoder.runIsValid();
     } catch (PathFactoryException e) {
       throw new RunProcessorException(e);
@@ -1725,10 +1726,19 @@ class RunProcessor {
     
   private Graph functionInlinePath(CSymbolTable symbolTable, Path path, 
       Position callPos) throws RunProcessorException {
-    Preconditions.checkArgument(path != null);   
-    IOUtils.debug().pln("Checking path...");
+    Preconditions.checkArgument(path != null);
     
-    if(path.isEmpty())  return Graph.createSingleton(path);
+    boolean hasFunction = Iterables.any(path.stmts, new Predicate<IRStatement>(){
+      @Override
+      public boolean apply(IRStatement stmt) {
+        return stmt.getType().equals(StatementType.CALL);
+      }
+    });
+    
+    if(!hasFunction || path.isEmpty()) {
+      hitCount++;
+      return Graph.createSingleton(path);
+    }
 
     Graph resGraph = null;
     Path tmpPath = path;
