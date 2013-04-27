@@ -653,7 +653,7 @@ final class Graph {
       for(IRStatement stmt : currPath.stmts) {
         if(stmt.getType() == StatementType.ASSIGN) {
           IRExpressionImpl lval = (IRExpressionImpl) ((Statement) stmt).getOperand(0);
-          resStmts.add(Statement.havoc(lval.getSourceNode(), lval));
+          resStmts.add(0, Statement.havoc(lval.getSourceNode(), lval));
         }           
       }
       if(predecessorMap.containsKey(currPath))
@@ -825,7 +825,7 @@ class RunProcessor {
       IRBasicBlock block, IRLocation pos) throws RunProcessorException {
     IRBasicBlock target;
     if(pos instanceof Position) {
-      target = cfg.splitAt(pos, InsertionType.AFTER.equals(
+      target = cfg.splitAt(pos, InsertionType.BEFORE.equals(
           ((Position)pos).getInsertionType()));
     } else {
       throw new RunProcessorException("Bad position: " + pos);
@@ -1680,6 +1680,7 @@ class RunProcessor {
   private Graph functionInlineGraph(CSymbolTable symbolTable, final Graph graph, Path destPath,
       Map<Path, Graph> pathGraphMap) throws RunProcessorException {
     Preconditions.checkArgument(graph != null);
+    
     Graph destGraph = functionInlinePath(symbolTable, destPath);
     
     if(destGraph == null)    
@@ -1740,15 +1741,18 @@ class RunProcessor {
       /* function call statement f(x) with declared function */
       if(last_stmt.getType().equals(StatementType.CALL) && 
           findFuncDeclareNode(last_stmt) != null) {
-        int splitIndex = lastIndex;
+        List<IRStatement> stmtRep = pickFuncCallFromStmt(last_stmt, symbolTable);
+        int splitIndex = lastIndex - stmtRep.size() + 1;
         List<Path> paths = tmpPath.split(splitIndex);
         tmpPath = paths.get(0);
+        
         Graph callGraph = null;
+        IRStatement last_stmtRep = stmtRep.get(stmtRep.size()-1);
         if(funcs != null) {
-          CallPoint call = findCallPointForStmt(last_stmt, funcs);
-          callGraph = getGraphForCallStmt(last_stmt, call);
+          CallPoint call = findCallPointForStmt(last_stmtRep, funcs);
+          callGraph = getGraphForCallStmt(last_stmtRep, call);
         } else {
-          callGraph = getGraphForCallStmt(last_stmt);
+          callGraph = getGraphForCallStmt(last_stmtRep);
         }
         if(resGraph == null)    resGraph = callGraph;
         else                    resGraph.appendPreGraph(callGraph);
@@ -1849,7 +1853,7 @@ class RunProcessor {
       // Process havoc statements
       List<IRStatement> havocStmts = loopGraph.collectHavocStmts();
       preStmts.addAll(havocStmts.subList(0, havocStmts.size()-1));
-      preStmts.add(loopGraph.getLastStmt());
+      preStmts.addAll(loopGraph.destPath.stmts);
       preStmts.add(Statement.assumeStmt(spec, argExpr));
 
       List<IRStatement> postStmts = Lists.newArrayList();
@@ -1940,7 +1944,7 @@ class RunProcessor {
           IOUtils.debug().pln("<wayPoint> " + pos.toString()).flush();
           
           Graph wayGraph = buildPathGraphToPosition(cfg, block, pos);
-          block = wayGraph.getDestBlock();
+          block = cfg.splitAt(pos, false);
           
           Scope currScope = symbolTable.getCurrentScope();
           if(block.getScope() != null)   symbolTable.setScope(block.getScope());
@@ -1970,7 +1974,7 @@ class RunProcessor {
           IRBasicBlock target = cfg.splitAt(callPos, true, false); 
           Graph wayGraph = buildPathGraphToBlock(cfg, block, target);
           // Split before callPos, block after the call position
-          block = cfg.splitAt(callPos, true);
+          block = cfg.splitAt(callPos, true, false);
           
           if(graph == null)     graph = wayGraph;
           else                  graph.appendPostGraph(wayGraph);
@@ -1978,14 +1982,15 @@ class RunProcessor {
         
         /* Call position */
         {
-          IRBasicBlock target = cfg.splitAt(callPos, false);
+          IRBasicBlock target = cfg.splitAt(callPos, false, false);
           // statements after flatten the function call
           Graph targetGraph = buildPathGraphToBlock(cfg, block, target);
+          assert(targetGraph.srcPath == targetGraph.destPath);
           Path targetPath = targetGraph.srcPath;
           Graph callGraph = functionInlinePath(symbolTable, targetPath, callPos);
           graph.appendPostGraph(callGraph);
           
-          block = targetGraph.getDestBlock();
+          block = cfg.splitAt(callPos, false);
         }
       }
     }
@@ -2026,7 +2031,7 @@ class RunProcessor {
     
     graph.appendPrePath(startPath);
     graph.appendPostPath(endPath);
-//    graph.simplify();
+    graph.simplify();
     graph = functionInlineGraph(symbolTable, graph);
     assert(graph.isValid());
     symbolTable.setScope(oldScope);
