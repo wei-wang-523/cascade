@@ -27,8 +27,8 @@ void memcpy(int* pvTo, int* pvFrom, int size)
 	int* pbTo = pvTo; 	
 	int* pbFrom = pvFrom; 
 	
-	while(size-->0)
-		*(pbTo+size) = *(pbFrom+size);
+	while(size-->0) {
+		*(pbTo+size) = *(pbFrom+size); }
 }
 
 void push_back(Vector *vct, int value)
