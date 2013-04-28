@@ -86,8 +86,7 @@ class RunProcessorException extends Exception {
  */
 
 final class PathEncoder {
-  private PathEncoding pathEncoding;  // the encoding to use for the path
-//  private Expression path;  // the expression representing the encoded path 
+  private PathEncoding pathEncoding;
   private boolean runIsValid, runIsFeasible, checkFeasibility;
   private boolean succeed;
   private final static String COND_ASSUME_LABEL = "COND_ASSUME";
@@ -110,7 +109,6 @@ final class PathEncoder {
    * Prepare this encoder for a new path.
    */
   void reset() {
-//    path = pathEncoding.emptyPath();
     runIsValid = true;
     runIsFeasible = true;
   }
@@ -214,11 +212,11 @@ final class PathEncoder {
     } else { // size > 1
       for(int i = 0; i < currPath.stmts.size(); i++) {
         IRStatement stmt = currPath.stmts.get(i);
-        // First statement cannot be conditional assume statement
+        /* First statement cannot be conditional assume statement */
         if(i == 0)  preCond = encodeStatement(stmt, preConds, preGuards);
         else        preCond = encodeStatement(stmt, preCond);
         
-        // This stmt is conditional control flow graph guard
+        /* This stmt is conditional control flow graph guard */
         if(stmt.getPreLabels().contains(COND_ASSUME_LABEL))
           currPath.addGuard(preCond);
         
@@ -631,7 +629,7 @@ final class Graph {
     Set<Path> visited = Sets.newHashSet();
     while(!queue.isEmpty()) {
       Path topPath = queue.poll();
-      if(visited.contains(topPath)) continue; // visited
+      if(visited.contains(topPath)) continue; // skip visited
       
       Path currPath = topPath;
       Set<Path> prePaths = predecessorMap.get(currPath);
@@ -676,8 +674,7 @@ final class Graph {
       destPath = replaceMap.get(destPath);
   }
   
-  /** Simplify the graph 
-   * @throws RunProcessorException */
+  /** Simplify the graph */
   void simplify() throws RunProcessorException {
     long startTime = System.currentTimeMillis();
 //    simplify_DFS();
@@ -1021,8 +1018,8 @@ class RunProcessor {
       Graph singleLoop = buildPathGraphToBlock(cfg, u, u);
       if(loopGraph == null) 
         loopGraph = singleLoop;
-      else { // Tricky part to merge two loop graph
-        /* loopGraph.destPath != singleLoop.srcPath */
+      else { /* Tricky part to merge two loop graph */
+        // loopGraph.destPath != singleLoop.srcPath 
         assert(loopGraph.destPath.isCopyOf(singleLoop.srcPath)); 
         
         Set<Path> preLoopPaths = loopGraph.predecessorMap.remove(loopGraph.destPath);        
@@ -1302,7 +1299,7 @@ class RunProcessor {
   private Node findFuncDeclareNode (CSymbolTable symbolTable, String funcName) 
       throws RunProcessorException {
     IRVarInfo info = symbolTable.lookup(funcName);
-    if(info == null)    return null; // For undeclared function.
+    if(info == null)    return null; /* For undeclared function. */
     Location funcDeclareLoc = info.getDeclarationNode().getLocation();
     
     String funcFile = funcDeclareLoc.file;
@@ -1320,7 +1317,7 @@ class RunProcessor {
     }
     
     if(bestNode == null) {
-      // FIXME: continue find in the parent scope or stays at root scope initially?
+      /* FIXME: continue find in the parent scope or stays at root scope initially? */
       IOUtils.debug().pln("Cannot find the function declaration node for " + funcName);
     }
     return bestNode;
@@ -1372,7 +1369,7 @@ class RunProcessor {
     
     if(defNode == null)     return assignments;
     
-    // Pick the new scope for the function declaration    
+    /* Pick the new scope for the function declaration */  
     File file = new File(defNode.getLocation().file);
     CSymbolTable symbolTable = symbolTables.get(file);  
     Scope paramScope = symbolTable.getScope(defNode);
@@ -1395,7 +1392,7 @@ class RunProcessor {
     
     if(paramDeclare == null)    return assignments;
     
-    // Pick all arguments
+    /* Pick all arguments */
     List<IRExpression> args = Lists.newArrayList(rmvStmt.getOperands());
     args = args.subList(1, args.size());
     
@@ -1441,11 +1438,11 @@ class RunProcessor {
     if(paramDeclare.size() != args.size()) {
       throw new RunProcessorException("#arg does not match with #param.");
     }
-    // Generate assign statement one by one
+    /* Generate assign statement one by one */
     for(int i=0; i < paramDeclare.size(); i++) {
       Node paramNode = paramDeclare.getNode(i);
       paramNode = paramNode.getNode(1);
-      // Pointer parameter declaration
+      /* Pointer parameter declaration */
       if("PointerDeclarator".equals(paramNode.getName()))
         paramNode = paramNode.getNode(1);
       
@@ -1486,7 +1483,7 @@ class RunProcessor {
       Graph funcGraph = collectStmtFromFunction(rhsStmt, func);
       funcGraph.appendPrePath(Path.createSingleton(paramPassStmts));
       
-      // Pick the last statement from func_path - return statement.
+      /* Pick the last statement from func_path - return statement. */
       if(funcGraph.hasReturnStmt()) {
         IRStatement returnStmt = funcGraph.getReturnStmt();
         IRStatement replaceStmt = replaceReturnStmt(returnStmt, lhsStmt);
@@ -1519,13 +1516,16 @@ class RunProcessor {
    * function call node list to keep the insertion order of the "pairs", otherwise, 
    * "pairs" will be arbitrary order.
    */  
-  private LinkedHashMap<Node, Node> replaceFuncCallwithVar(Node node, CSymbolTable symbolTable, Scope scope) 
+  private LinkedHashMap<Node, Node> replaceFuncCallwithVar(Node node,
+      CSymbolTable symbolTable, Scope scope) 
       throws RunProcessorException {
     Node resNode = node; 
     LinkedHashMap<Node, Node> funcNodeReplaceMap = Maps.newLinkedHashMap();
-    // replace operands of node if we can find the replace candidate operands from "funcNodeReplaceMap"
+    /* replace operands of node if we can find the replace candidate operands 
+     * from "funcNodeReplaceMap"
+     */
     if(!node.isEmpty()) {
-      // Collect operands of node
+      /* Collect operands of node */
       boolean updated = false;
       List<Object> argList = Lists.newArrayList();
       for(int i=0; i<node.size(); i++) {
@@ -1533,30 +1533,31 @@ class RunProcessor {
         Object substituteArg = arg;
         if(arg instanceof Node) {
           Node argNode = (Node) arg;
-          // update "argList" if we can find new pair by step into the operands of argx
+          /* update "argList" if we can find new pair by step into the operands of arg */
           funcNodeReplaceMap.putAll(replaceFuncCallwithVar(argNode, symbolTable, scope));
-          if(funcNodeReplaceMap.containsKey(argNode)) { // substitute arg
+          if(funcNodeReplaceMap.containsKey(argNode)) { /* substitute arg */
             substituteArg = funcNodeReplaceMap.get(argNode);
             updated = true;
           }
         }
         argList.add(substituteArg);
       }
-      if(updated) { // compose a substituted node
+      if(updated) { /* compose a substituted node */
         resNode = createNodeWithArgList(node.getName(), argList);
         resNode.setLocation(node.getLocation());
         resNode.setProperty(xtc.Constants.SCOPE, scope.getQualifiedName());
       }
     } 
     
-    // build pairs by replace function call to temp_var if such function call
-    // node hasn't been replaced before
+    /* build pairs by replace function call to temp_var if such function call
+     * node hasn't been replaced before
+     */
     if(!funcNodeReplaceMap.containsKey(resNode) && "FunctionCall".equals(resNode.getName())) {
       String resFuncName = resNode.getNode(0).getString(0);
       if(!ReservedFunctions.contains(resFuncName)) {
         if(symbolTable.lookup(resFuncName) == null)
           throw new RunProcessorException("Undeclared function: " + resFuncName);
-        // Create temporary variable node for function call node.
+        /* Create temporary variable node for function call node. */
         String varName = TEMP_VAR_PREFIX + (TEMP_VAR_POSTFIX++);
         GNode varNode = GNode.create("PrimaryIdentifier", varName);
         varNode.setLocation(node.getLocation());
@@ -1794,7 +1795,7 @@ class RunProcessor {
       throws RunProcessorException {
     if(srcNode.getName().equals("FunctionCall")) {
       String funcName = srcNode.getNode(0).getString(0);
-      // Do not touch the reserved functions
+      /* Do not touch the reserved functions */
       if(ReservedFunctions.contains(funcName))  return false;
       Node funcNode = findFuncDeclareNode(symbolTable, funcName);
       return (funcNode != null);
@@ -1984,7 +1985,7 @@ class RunProcessor {
       IOUtils.debug().pln(argExpr.toString()).flush();
       
       assert(position.getLoops().size() == 1); 
-      // Pick all statements from the loop body
+      /* Pick all statements from the loop body */
       Graph loopGraph = buildPathGraphToPosition(cfg, block, position);
       
       List<IRStatement> preStmts = Lists.newArrayList();
@@ -1993,7 +1994,7 @@ class RunProcessor {
        * well. If this assertion statement is added, will have invalid memory access inside
        * CVC4*/
       preStmts.add(Statement.assertStmt(spec, argExpr));      
-      // Process havoc statements
+      /* Process havoc statements */
       List<IRStatement> havocStmts = loopGraph.collectHavocStmts();
       preStmts.addAll(havocStmts.subList(0, havocStmts.size()-1));
       preStmts.addAll(loopGraph.destPath.stmts);
@@ -2020,14 +2021,12 @@ class RunProcessor {
     List<Position> resWaypoints = Lists.newArrayList();
     for(Position pos : wayPoints) {
       if(pos.hasLoop()) {
-        // Clear default iteration times in loop block if users specify iteration times in ctrl file
+        /* Clear default iteration times if users specify it in ctrl file */
         cfg.bestBlockForPosition(pos).clearIterTimes();
        
         for(LoopPoint loopPos : pos.getLoops()) { 
-          // Ignore loop iteration times when have loop invariant
+          /* Ignore loop iteration times when have loop invariant */
           if(loopPos.getInvariant() != null) {
-//            if(pos.getInvariant() != null)
-//              throw new RunProcessorException("Multiple invariants for one loop.");
             pos.setInvariant(loopPos.getInvariant());
             resWaypoints.add(pos);
             continue;
@@ -2040,8 +2039,9 @@ class RunProcessor {
           }
           
           LoopPoint lastLoopPos = pos.getLoops().get(pos.getLoops().size()-1);
-          // if last loop point doesn't contains wayPoint, add iteration times to hit the entry
-          // block of the loop and exit
+          /* if last loop point doesn't contains wayPoint, add iteration times 
+           * to hit the entry block of the loop and exit
+           */
           if(lastLoopPos.getWayPoint().isEmpty()) 
             resWaypoints.add(pos);
         }
@@ -2065,7 +2065,7 @@ class RunProcessor {
     Path startPath = null;
     Path endPath = null;
 
-    // Start position  
+    /* Start position */
     {
       IOUtils.debug().pln("<startPosition> " + start.toString()).flush();      
       if(start instanceof Position)
@@ -2079,8 +2079,7 @@ class RunProcessor {
       
       while(!wayPoints.isEmpty()) {
         
-        /* Way points before call position */
-        
+        /* Way points before call position */        
         List<Position> tmpWaypoints = waypointsBeforeCall(wayPoints);
         for(Position pos : tmpWaypoints) {
           if (block == null)      break;
@@ -2108,15 +2107,14 @@ class RunProcessor {
         
         if(wayPoints.isEmpty())   break;
 
-        /* The blocks from last way point to the call position (not include call position) */
-        
-        Position callPos = wayPoints.remove(0);  // call position
+        /* The blocks from last way point to the call position (not include call position) */       
+        Position callPos = wayPoints.remove(0);
         IOUtils.debug().pln("<callPoint> " + callPos.toString()).flush();
         
-        { // Split before callPos, target before the call position
+        { /* Split before callPos, target before the call position */
           IRBasicBlock target = cfg.splitAt(callPos, true, false); 
           Graph wayGraph = buildPathGraphToBlock(cfg, block, target);
-          // Split before callPos, block after the call position
+          /* Split before callPos, block after the call position */
           block = cfg.splitAt(callPos, true, false);
           
           if(graph == null)     graph = wayGraph;
@@ -2126,7 +2124,7 @@ class RunProcessor {
         /* Call position */
         {
           IRBasicBlock target = cfg.splitAt(callPos, false, false);
-          // statements after flatten the function call
+          /* statements after flatten the function call */
           Graph targetGraph = buildPathGraphToBlock(cfg, block, target);
           assert(targetGraph.srcPath == targetGraph.destPath);
           Path targetPath = targetGraph.srcPath;
@@ -2138,7 +2136,7 @@ class RunProcessor {
       }
     }
     
-    // End position
+    /* End position */
     if (block == null)
       throw new RunProcessorException("Function ended before end of run.");
     
@@ -2182,9 +2180,7 @@ class RunProcessor {
     return graph;
   }
   
-  /**
-   * Substitute the child nodes in srcNode as nodes in order
-   */
+  /** Substitute the child nodes in srcNode as nodes in order */
   private Node substituteNode(Node srcNode, Node ... nodes) {
     String srcNodeName = srcNode.getName();
     List<Object> argList = Lists.newArrayList();
@@ -2201,9 +2197,7 @@ class RunProcessor {
     return newNode;
   }
   
-  /**
-   * Substitute the child nodes in srcNode as source nodes of exprs
-   */
+  /** Substitute the child nodes in srcNode as source nodes of <code>exprs</code> */
   private Node substituteNode(Node srcNode, List<IRExpression> exprs) {
     String srcNodeName = srcNode.getName();
     List<Object> argList = Lists.newArrayList();
