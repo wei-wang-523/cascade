@@ -2,7 +2,7 @@
   <sourceFile name="ex12.c" id="1" />
   <run>
     <startPosition fileId="1" line="4" />
-    <wayPoint fileId="1" line="8" >
+    <wayPoint fileId="1" line="16" >
       <loop>
         <invariant><![CDATA[
         j >= 0 && j <= 20 && i == j+2 && 
