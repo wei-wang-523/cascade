@@ -84,6 +84,7 @@ public class Main {
   private static final String OPTION_MARK_AST = "optionMarkAST";
   private static final String OPTION_PEDANTIC = "pedantic";
   private static final String OPTION_INTERNAL_PEDANTIC = "optionPedantic";
+  private static final String OPTION_PROCESS = "process";
   @SuppressWarnings("static-access")
   private static final Options options = new Options() //
       .addOption(OPTION_HELP_SHORT, OPTION_HELP, false, //
@@ -170,6 +171,13 @@ public class Main {
               .withDescription("Enable partial instantiation.") //
               .hasArg() //
               .withArgName("fld: field; elt: element; fld-of-elt: field of element") //
+              .withType(String.class)
+              .create()) //
+      .addOption(
+          OptionBuilder.withLongOpt(OPTION_PROCESS) //
+              .withDescription("Process single path or multiple path.") //
+              .hasArg() //
+              .withArgName("seq, nonseq") //
               .withType(String.class)
               .create()) //
       .addOption(
@@ -601,8 +609,17 @@ public class Main {
             CExpressionEncoder encoder = CExpressionEncoder.create(encoding,
                 memoryModel, symbolTables);
 
-            RunProcessor runProcessor = new RunProcessor(symbolTables, cfgs,
+            RunProcessor runProcessor = null;
+            
+            if( Preferences.isSet(OPTION_PROCESS) && 
+                Preferences.getString(OPTION_PROCESS).equals("nonseq")) {
+              runProcessor = new RunNonSeqProcessor(symbolTables, cfgs,
+                    cAnalyzer, encoder);
+            } else {
+              runProcessor = new RunSeqProcessor(symbolTables, cfgs,
                 cAnalyzer, encoder);
+            }
+            
             if( Preferences.isSet(OPTION_FEASIBILITY)) {
               runProcessor.enableFeasibilityChecking();
             }
