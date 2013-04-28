@@ -299,7 +299,7 @@ class RunSeqProcessor implements RunProcessor {
           throws RunProcessorException {
     IRBasicBlock target;
     if(pos instanceof Position) {
-      target = cfg.splitAt(pos, InsertionType.AFTER.equals(
+      target = cfg.splitAt(pos, InsertionType.BEFORE.equals(
           ((Position)pos).getInsertionType()));
     } else {
       throw new RunProcessorException("Bad position: " + pos);
