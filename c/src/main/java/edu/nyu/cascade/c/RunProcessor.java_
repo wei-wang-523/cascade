@@ -265,7 +265,7 @@ final class PathEncoder {
               preGuards.add(guard);
           }
         }
-        Stack<Expression> prefixGuards = ((Path) prePaths.toArray()[0]).guards;
+        Stack<Expression> prefixGuards = (prePaths.iterator().next()).guards;
         if(prePaths.size() > 1) {
           prefixGuards.pop();
         }
@@ -473,7 +473,7 @@ final class Graph {
       
       Set<Path> prePaths = predecessorMap.get(currPath);
       if(prePaths.size() > 1)   return null;      
-      currPath = (Path) prePaths.toArray()[0];
+      currPath = prePaths.iterator().next();
     }    
     return currPath.getLastStmt();
   }
@@ -556,7 +556,7 @@ final class Graph {
     if(path == null || path.isEmpty())  {
       Set<Path> prePaths = predecessorMap.get(path);
       if(prePaths.size() > 1) return false;
-      Path prePath = (Path) prePaths.toArray()[0];
+      Path prePath = prePaths.iterator().next();
       return hasReturnStmt(prePath);
     } else {
       IRStatement stmt = path.stmts.get(path.stmts.size()-1);
@@ -571,7 +571,7 @@ final class Graph {
   private IRStatement getReturnStmt(Path path) {
     if(path == null || path.isEmpty())  {
       Set<Path> prePaths = predecessorMap.get(path);
-      Path prePath = (Path) prePaths.toArray()[0];
+      Path prePath = prePaths.iterator().next();
       return getReturnStmt(prePath);
     } else {
       IRStatement stmt = path.stmts.get(path.stmts.size()-1);
@@ -584,7 +584,7 @@ final class Graph {
     return getReturnStmt(destPath);
   }
   
-  private Path simplify(Path path, Map<Path, Path> replaceMap) throws RunProcessorException {
+  private Path simplify_DFS(Path path, Map<Path, Path> replaceMap) throws RunProcessorException {
     if(replaceMap.containsKey(path)) 
       return replaceMap.get(path);
     Set<Path> prePaths = predecessorMap.get(path);
@@ -592,7 +592,7 @@ final class Graph {
     
     Set<Path> simplifyPaths = Sets.newHashSet();
     for(Path prePath : prePaths)    
-      simplifyPaths.add(simplify(prePath, replaceMap));
+      simplifyPaths.add(simplify_DFS(prePath, replaceMap));
     assert(simplifyPaths.size() >= 1);
     if(simplifyPaths.size() > 1) { 
       predecessorMap.put(path, simplifyPaths);
@@ -604,7 +604,7 @@ final class Graph {
         predecessorMap.put(path, simplifyPaths);
         return path;
       } else {
-        Path simplifyPath = (Path) simplifyPaths.toArray()[0];
+        Path simplifyPath = simplifyPaths.iterator().next();
         Path pathPrime = Path.mergePath(simplifyPath, path);
         assert(!pathPrime.equals(path));
         predecessorMap.remove(path);
@@ -619,14 +619,74 @@ final class Graph {
     }
   }
   
+  void simplify_DFS() throws RunProcessorException {
+    Map<Path, Path> replaceMap = Maps.newHashMap();
+    destPath = simplify_DFS(destPath, replaceMap);
+  }
+  
+  private void simplify_BFS() throws RunProcessorException {
+    Queue<Path> queue = Lists.newLinkedList();
+    queue.add(destPath);
+    Map<Path, Path> replaceMap = Maps.newHashMap();
+    Set<Path> visited = Sets.newHashSet();
+    while(!queue.isEmpty()) {
+      Path topPath = queue.poll();
+      if(visited.contains(topPath)) continue; // visited
+      
+      Path currPath = topPath;
+      Set<Path> prePaths = predecessorMap.get(currPath);
+      /* It's okay to merge prePath with currPath */
+      while(prePaths != null && prePaths.size() == 1 && (currPath.stmts.size() == 0 || 
+          !currPath.stmts.get(0).getPreLabels().contains(COND_ASSUME_LABEL))) {
+        Path prePath = prePaths.iterator().next();
+        currPath = Path.mergePath(prePath, currPath);  
+        prePaths = predecessorMap.remove(prePath);
+        visited.add(prePath);
+        if(prePath == srcPath)  srcPath = currPath;
+      }
+      
+      if(topPath != currPath) { // Merge happens
+        replaceMap.put(topPath, currPath);
+        predecessorMap.remove(topPath);
+        if(prePaths != null)
+          predecessorMap.put(currPath, prePaths);
+      }
+      
+      if(prePaths != null)      queue.addAll(prePaths);
+      visited.add(topPath);
+    }
+    
+    if(replaceMap.isEmpty())    return;
+    
+    /* Iterate predecessor map */
+    Map<Path, Set<Path>> predecessorMapPrime = Maps.newHashMap();
+    for(Entry<Path, Set<Path>> entry : predecessorMap.entrySet()) {
+      Set<Path> valuePrime = Sets.newHashSet();
+      for(Path prePath : entry.getValue()) {
+        if(replaceMap.containsKey(prePath))
+          valuePrime.add(replaceMap.get(prePath));
+        else
+          valuePrime.add(prePath);
+      }
+      predecessorMapPrime.put(entry.getKey(), valuePrime);
+    }
+    
+    predecessorMap = predecessorMapPrime;    
+    if(replaceMap.containsKey(destPath))
+      destPath = replaceMap.get(destPath);
+  }
+  
   /** Simplify the graph 
    * @throws RunProcessorException */
   void simplify() throws RunProcessorException {
-    Map<Path, Path> replaceMap = Maps.newHashMap();
-    destPath = simplify(destPath, replaceMap);
+    long startTime = System.currentTimeMillis();
+//    simplify_DFS();
+    simplify_BFS();
+    double time = (System.currentTimeMillis() - startTime)/1000.0;
+    IOUtils.err().println("Simplify takes time: " + time);
   }
   
-/**  
+/*  
   List<IRStatement> collectHavocStmts(Path currPath) {
     List<IRStatement> havocStmts = Lists.newArrayList();
     
@@ -1649,9 +1709,10 @@ class RunProcessor {
    */
   private Graph functionInlineGraph(CSymbolTable symbolTable, Graph graph) 
       throws RunProcessorException {
-    /* Map the function path to its successor paths */
+    /* Map the function path to its graph */
     Map<Path, Graph> funcPathMap = Maps.newHashMap();
     
+    /* BFS traverse the graph's paths, collect those with function call statement */
     Queue<Path> queue = Lists.newLinkedList();
     queue.add(graph.destPath);
     List<Path> visited = Lists.newLinkedList();
@@ -1662,7 +1723,6 @@ class RunProcessor {
       if(Iterables.any(currPath.stmts, new Predicate<IRStatement>(){
         @Override
         public boolean apply(IRStatement stmt) {
-//          return stmt.getType().equals(StatementType.CALL);
           boolean res = false;
           try {
             res = stmt.getType().equals(StatementType.CALL) && 
@@ -1680,18 +1740,21 @@ class RunProcessor {
     
     IOUtils.err().println("Function path size: " + funcPathMap.size());
     
+    /* No function call, no change */
     if(funcPathMap.size() == 0) return graph;
     
+    /* Call function inlining for each path with function call */
     for(Path keyPath : funcPathMap.keySet()) {
       Graph funcGraph = functionInlinePath(symbolTable, keyPath);
       funcPathMap.put(keyPath, funcGraph);
     }
     
-    /* New graph predecessor map */
+    /* Generate a new graph predecessor map */
     Map<Path, Set<Path>> predecessorMap = Maps.newHashMap();
     
     for(Entry<Path, Set<Path>> entry : graph.predecessorMap.entrySet()) { 
       Set<Path> prePaths = Sets.newHashSet(entry.getValue());
+      /* Update the value, if contains function call path */
       for(Path prePath : entry.getValue()) {
         if(funcPathMap.containsKey(prePath)) {
           Graph funcGraph = funcPathMap.get(prePath);
@@ -1700,6 +1763,7 @@ class RunProcessor {
         }
       }
       
+      /* Update the key, if it is function call path */
       Path keyPath = entry.getKey();
       if(funcPathMap.containsKey(keyPath)) {
         Graph funcGraph = funcPathMap.get(keyPath);
@@ -1709,12 +1773,13 @@ class RunProcessor {
       }
     }
     
-    for(Path keyPath : funcPathMap.keySet()) {
+    for(Path keyPath : funcPathMap.keySet())
       predecessorMap.putAll(funcPathMap.get(keyPath).predecessorMap);
-    }
     
-    Path srcPath = funcPathMap.containsKey(graph.srcPath) ? funcPathMap.get(graph.srcPath).srcPath : graph.srcPath;
-    Path destPath = funcPathMap.containsKey(graph.destPath) ? funcPathMap.get(graph.destPath).destPath : graph.destPath;
+    Path srcPath = funcPathMap.containsKey(graph.srcPath) ? 
+        funcPathMap.get(graph.srcPath).srcPath : graph.srcPath;
+    Path destPath = funcPathMap.containsKey(graph.destPath) ? 
+        funcPathMap.get(graph.destPath).destPath : graph.destPath;
     
     return Graph.create(predecessorMap, srcPath, destPath);
   }
@@ -1792,7 +1857,7 @@ class RunProcessor {
   }
   
   private Graph functionInlinePath(CSymbolTable symbolTable, Path path) 
-      throws RunProcessorException {
+      throws RunProcessorException {    
     return functionInlinePath(symbolTable, path, null);
   }
     
