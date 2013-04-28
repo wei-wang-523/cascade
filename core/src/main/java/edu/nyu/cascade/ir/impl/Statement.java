@@ -268,7 +268,7 @@ public class Statement implements IRStatement {
       return factory.noop(prefix);
       
     default:
-      IOUtils.err().println( getType() == CALL ? 
+      IOUtils.debug().pln( getType() == CALL ? 
           "Statement.getPostCondition: Igonring statement type: " 
               + getType() + ", with undeclared function " 
               + getOperand(0).toString()    :
@@ -279,7 +279,8 @@ public class Statement implements IRStatement {
   }
   
   @Override
-  public Expression getPostCondition(final PathEncoding factory, Iterable<? extends Expression> prefixes) {
+  public Expression getPostCondition(final PathEncoding factory, Iterable<? extends Expression> prefixes,
+      Iterable<? extends Expression> preGuards) {
     Preconditions.checkArgument(
         Iterables.all(prefixes, new Predicate<Expression>(){
           @Override
@@ -290,39 +291,39 @@ public class Statement implements IRStatement {
         );
     switch (getType()) {
     case ASSIGN: 
-      return factory.assign(prefixes, getOperand(0), getOperand(1));
+      return factory.assign(prefixes, preGuards, getOperand(0), getOperand(1));
     case FIELD_ASSIGN: {
-      return factory.fieldAssign(prefixes, getOperand(0), getOperand(1).toString(), getOperand(2));
+      return factory.fieldAssign(prefixes, preGuards, getOperand(0), getOperand(1).toString(), getOperand(2));
     }
     case ASSERT: {
-      return factory.assumeMemorySafe(prefixes);
+      return factory.assumeMemorySafe(prefixes, preGuards);
     }
     case ASSUME:
     case AWAIT:
-      return factory.assume(prefixes, getOperand(0));
+      return factory.assume(prefixes, preGuards, getOperand(0));
     case ALLOC:
-        return factory.alloc(prefixes, getOperand(0), getOperand(1));      
+        return factory.alloc(prefixes, preGuards, getOperand(0), getOperand(1));      
     case DECLARE_ARRAY:
-        return factory.declareArray(prefixes, getOperand(0), getOperand(1));
+        return factory.declareArray(prefixes, preGuards, getOperand(0), getOperand(1));
     case DECLARE_STRUCT:
-      return factory.declareStruct(prefixes, getOperand(0), getOperand(1));
+      return factory.declareStruct(prefixes, preGuards, getOperand(0), getOperand(1));
     case FREE:
-      return factory.free(prefixes, getOperand(0));
+      return factory.free(prefixes, preGuards, getOperand(0));
     case HAVOC:
-      return factory.havoc(prefixes, getOperand(0));
+      return factory.havoc(prefixes, preGuards, getOperand(0));
     case CRITICAL_SECTION:
     case NON_CRITICAL_SECTION:
     case SKIP:
-      return factory.noop(prefixes);
+      return factory.noop(prefixes, preGuards);
       
     default:
-      IOUtils.err().println( getType() == CALL ? 
+      IOUtils.debug().pln( getType() == CALL ? 
           "Statement.getPostCondition: Igonring statement type: " 
               + getType() + ", with undeclared function " 
               + getOperand(0).toString()    :
           "Statement.getPostCondition: Ignoring statement type: "
               + getType());
-      return factory.noop(prefixes);
+      return factory.noop(prefixes, preGuards);
     }
   }
   

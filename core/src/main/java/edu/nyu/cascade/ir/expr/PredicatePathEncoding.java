@@ -166,68 +166,75 @@ public class PredicatePathEncoding extends
 
   @Override
   public Expression assume(Iterable<? extends Expression> prefixes,
-      ExpressionClosure bool) {
+      Iterable<? extends Expression> preGuards, ExpressionClosure bool) {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
-  public Expression assumeMemorySafe(Iterable<? extends Expression> prefixes) {
+  public Expression assumeMemorySafe(Iterable<? extends Expression> prefixes,
+      Iterable<? extends Expression> preGuards) {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public Expression assign(Iterable<? extends Expression> prefixes,
-      ExpressionClosure lval, ExpressionClosure rval) {
+      Iterable<? extends Expression> preGuards, ExpressionClosure lval,
+      ExpressionClosure rval) {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public Expression fieldAssign(Iterable<? extends Expression> prefixes,
-      ExpressionClosure lval, String field, ExpressionClosure rval) {
+      Iterable<? extends Expression> preGuards, ExpressionClosure lval,
+      String field, ExpressionClosure rval) {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public Expression alloc(Iterable<? extends Expression> prefixes,
-      ExpressionClosure ptr, ExpressionClosure size) {
+      Iterable<? extends Expression> preGuards, ExpressionClosure ptr,
+      ExpressionClosure size) {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public Expression declareArray(Iterable<? extends Expression> prefixes,
-      ExpressionClosure ptr, ExpressionClosure size) {
+      Iterable<? extends Expression> preGuards, ExpressionClosure ptr,
+      ExpressionClosure size) {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public Expression declareStruct(Iterable<? extends Expression> prefixes,
-      ExpressionClosure ptr, ExpressionClosure size) {
+      Iterable<? extends Expression> preGuards, ExpressionClosure ptr,
+      ExpressionClosure size) {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public Expression free(Iterable<? extends Expression> prefixes,
-      ExpressionClosure ptr) {
+      Iterable<? extends Expression> preGuards, ExpressionClosure ptr) {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public Expression havoc(Iterable<? extends Expression> prefixes,
-      ExpressionClosure lval) {
+      Iterable<? extends Expression> preGuards, ExpressionClosure lval) {
     // TODO Auto-generated method stub
     return null;
   }
 
   @Override
-  public Expression noop(Iterable<? extends Expression> prefixes) {
+  public Expression noop(Iterable<? extends Expression> prefixes,
+      Iterable<? extends Expression> preGuards) {
     // TODO Auto-generated method stub
     return null;
   }

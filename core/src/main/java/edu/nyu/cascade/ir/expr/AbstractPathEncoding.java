@@ -32,9 +32,10 @@ public abstract class AbstractPathEncoding implements
   
   @Override
   public Expression assign(Iterable<? extends Expression> pre, 
+      Iterable<? extends Expression> preGuards,
       IRExpression lhs, IRExpression rhs) {
     ExpressionEncoder encoder = getExpressionEncoder();
-    return assign(pre, lhs.toLval(encoder), rhs.toExpression(encoder));
+    return assign(pre, preGuards, lhs.toLval(encoder), rhs.toExpression(encoder));
   }
 
   @Override
@@ -43,8 +44,9 @@ public abstract class AbstractPathEncoding implements
   }
   
   @Override
-  public Expression assume(Iterable<? extends Expression> pre, IRExpression b) {
-    return assume(pre, b.toBoolean(getExpressionEncoder()));
+  public Expression assume(Iterable<? extends Expression> pre, 
+      Iterable<? extends Expression> preGuards, IRExpression b) {
+    return assume(pre, preGuards, b.toBoolean(getExpressionEncoder()));
   }
   
   @Override
@@ -54,10 +56,11 @@ public abstract class AbstractPathEncoding implements
   }
   
   @Override
-  public Expression alloc(Iterable<? extends Expression> pre, IRExpression ptr, 
+  public Expression alloc(Iterable<? extends Expression> pre, 
+      Iterable<? extends Expression> preGuards, IRExpression ptr, 
       IRExpression size) {
     ExpressionEncoder encoder = getExpressionEncoder();
-    return alloc(pre, ptr.toLval(encoder), size.toExpression(encoder));
+    return alloc(pre, preGuards, ptr.toLval(encoder), size.toExpression(encoder));
   }
   
   @Override
@@ -67,9 +70,10 @@ public abstract class AbstractPathEncoding implements
   }
   
   @Override
-  public Expression declareArray(Iterable<? extends Expression> pre, IRExpression ptr, IRExpression size) {
+  public Expression declareArray(Iterable<? extends Expression> pre, 
+      Iterable<? extends Expression> preGuards, IRExpression ptr, IRExpression size) {
     ExpressionEncoder encoder = getExpressionEncoder();
-    return declareArray(pre, ptr.toLval(encoder), size.toExpression(encoder));
+    return declareArray(pre, preGuards, ptr.toLval(encoder), size.toExpression(encoder));
   }
   
   @Override
@@ -79,9 +83,10 @@ public abstract class AbstractPathEncoding implements
   }
   
   @Override
-  public Expression declareStruct(Iterable<? extends Expression> pre, IRExpression ptr, IRExpression size) {
+  public Expression declareStruct(Iterable<? extends Expression> pre, 
+      Iterable<? extends Expression> preGuards, IRExpression ptr, IRExpression size) {
     ExpressionEncoder encoder = getExpressionEncoder();
-    return declareStruct(pre, ptr.toLval(encoder), size.toExpression(encoder));
+    return declareStruct(pre, preGuards, ptr.toLval(encoder), size.toExpression(encoder));
   }
   
   @Override
@@ -91,9 +96,10 @@ public abstract class AbstractPathEncoding implements
   }
   
   @Override
-  public Expression free(Iterable<? extends Expression> pre, IRExpression ptr) {
+  public Expression free(Iterable<? extends Expression> pre, 
+      Iterable<? extends Expression> preGuards, IRExpression ptr) {
     ExpressionEncoder encoder = getExpressionEncoder();
-    return free(pre, ptr.toExpression(encoder));
+    return free(pre, preGuards, ptr.toExpression(encoder));
   }
   
   @Override
@@ -103,9 +109,10 @@ public abstract class AbstractPathEncoding implements
   }
   
   @Override
-  public Expression fieldAssign(Iterable<? extends Expression> pre, IRExpression lhs, String field, IRExpression rhs) {
+  public Expression fieldAssign(Iterable<? extends Expression> pre, 
+      Iterable<? extends Expression> preGuards, IRExpression lhs, String field, IRExpression rhs) {
     ExpressionEncoder encoder = getExpressionEncoder();
-    return fieldAssign(pre, lhs.toExpression(encoder), field, rhs.toExpression(encoder));
+    return fieldAssign(pre, preGuards, lhs.toExpression(encoder), field, rhs.toExpression(encoder));
   }
 
   @Override
@@ -115,9 +122,10 @@ public abstract class AbstractPathEncoding implements
   }
   
   @Override
-  public Expression havoc(Iterable<? extends Expression> pre, IRExpression lhs) {
+  public Expression havoc(Iterable<? extends Expression> pre, 
+      Iterable<? extends Expression> preGuards, IRExpression lhs) {
     ExpressionEncoder encoder = getExpressionEncoder();
-    return havoc(pre, lhs.toLval(encoder));
+    return havoc(pre, preGuards, lhs.toLval(encoder));
   }
   
   @Override

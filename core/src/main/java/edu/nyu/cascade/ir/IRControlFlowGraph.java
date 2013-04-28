@@ -81,8 +81,13 @@ public interface IRControlFlowGraph {
    * true, then the CFG will be split <em>before</em> the source line; otherwise,
    * it will be split <em>after</em> the source line.
    * 
+   * If <code>getSucc</code> is false, return the block before the position
+   * 
    * Returns <code>null</code> if the CFG cannot be split at <code>position</code>.
    */
+  public IRBasicBlock splitAt(IRLocation position, boolean insertBefore, boolean getSucc);
+  
+  /** Equivalent to <code>splitAt(location,insertBefore,true)</code> */
   public IRBasicBlock splitAt(IRLocation location, boolean insertBefore);
   
   /** Equivalent to <code>splitAt(location,true)</code> */
@@ -100,4 +105,5 @@ public interface IRControlFlowGraph {
 
   /** Pretty-print the CFG to the given <code>Printer</code>. */
   void format(Printer printer);
+
 }

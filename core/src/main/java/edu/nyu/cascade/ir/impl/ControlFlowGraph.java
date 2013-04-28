@@ -306,11 +306,16 @@ public class ControlFlowGraph implements IRControlFlowGraph {
 
   @Override
   public BasicBlock splitAt(IRLocation position) {
-    return splitAt(position, true);
+    return splitAt(position, true, true);
   }
 
   @Override
   public BasicBlock splitAt(IRLocation position, boolean insertBefore) {
+    return splitAt(position, insertBefore, true);
+  }
+  
+  @Override
+  public BasicBlock splitAt(IRLocation position, boolean insertBefore, boolean getSucc) {
     BasicBlock block = bestBlockForPosition(position/* , insertBefore */);
     IOUtils
         .debug()
@@ -352,10 +357,10 @@ public class ControlFlowGraph implements IRControlFlowGraph {
           formatBlock(IOUtils.debug(), dummy);
           IOUtils.debug().pln();
           formatBlock(IOUtils.debug(), block);
-          return dummy;
+          return getSucc ? dummy : pred;
         } else {
           IOUtils.debug().pln("Block unchanged.");
-          return block;
+          return getSucc ? block : e.getTarget();
         }
       } else {
         /* We have more than one edge. All must come before position. */
@@ -382,11 +387,27 @@ public class ControlFlowGraph implements IRControlFlowGraph {
      * signal failure).
      */
     if (position.follows(block, insertBefore)) {
-      for (Edge e : getOutgoingEdges(block)) {
+      Set<Edge> outEdges = getOutgoingEdges(block);
+      for (Edge e : outEdges) {
         if (e.getGuard() != null && e.getGuard().getLocation().strictFollows(block)
             && position.follows(e.getGuard(), insertBefore)) {
           IOUtils.debug().pln("Bad split. Position follows a guard.").flush();
           return null; // give up
+        }
+      }
+      
+      if(outEdges.size() == 1) {
+        /*
+         * Special case: if there's only one out-edge, we can re-configure the
+         * CFG so that the position comes before it, at the cost of introducing
+         * some non-determinism (since the guarded edge is no longer attached
+         * directly to its source, and the dummy edge is unguarded).
+         */
+        assert (outEdges.iterator().hasNext());
+        Edge e = outEdges.iterator().next();
+        if (e.getGuard() == null) {
+          IOUtils.debug().pln("Block unchanged.");
+          return getSucc? e.getTarget() : block;
         }
       }
       
@@ -399,7 +420,7 @@ public class ControlFlowGraph implements IRControlFlowGraph {
       formatBlock(IOUtils.debug(), block);
       IOUtils.debug().pln();
       formatBlock(IOUtils.debug(), dummy);
-      return dummy;
+      return getSucc? dummy : block;
     }
 
     /* The position neither precedes nor follows the block. I.e., we have to 
@@ -416,7 +437,7 @@ public class ControlFlowGraph implements IRControlFlowGraph {
     formatBlock(IOUtils.debug(), block);
     IOUtils.debug().pln();
     formatBlock(IOUtils.debug(), succ);
-    return succ;
+    return getSucc ? succ : block;
   }
 
   @Override
