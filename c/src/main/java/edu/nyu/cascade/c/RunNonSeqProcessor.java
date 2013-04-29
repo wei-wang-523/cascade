@@ -2125,6 +2125,7 @@ class RunNonSeqProcessor implements RunProcessor {
       } else {
         endBlock = getTargetBlock(cfg, block, end);
         IOUtils.debug().pln("<endPosition> " + end.toString()).flush();
+        endPath = Path.createSingleton(processPosition((Position)end, symbolTable));
       }
       Graph endGraph = buildPathGraphToBlock(cfg, block, endBlock);   
       Scope currScope = symbolTable.getCurrentScope();
@@ -2132,8 +2133,6 @@ class RunNonSeqProcessor implements RunProcessor {
       
       if(graph == null)     graph = endGraph;
       else                  graph.appendPostGraph(endGraph);
-      
-      endPath = Path.createSingleton(processPosition((Position)end, symbolTable));
       
       symbolTable.setScope(currScope);
         
