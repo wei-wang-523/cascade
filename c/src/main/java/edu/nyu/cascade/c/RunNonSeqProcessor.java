@@ -12,8 +12,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.Stack;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-
 import xtc.parser.ParseException;
 import xtc.parser.Result;
 import xtc.tree.GNode;
@@ -397,9 +395,9 @@ final class Path {
     if(!(other instanceof Path)) return false;
     if(other == this) return true;
     Path otherPath = (Path) other;
-    return new EqualsBuilder().append(srcBlock, otherPath.srcBlock)
-        .append(destBlock, otherPath.destBlock).append(stmts, otherPath.stmts)
-        .isEquals();
+    return srcBlock.equals(otherPath.srcBlock) && 
+      destBlock.equals(otherPath.destBlock) && 
+      stmts.equals(otherPath.stmts);
   }
 }
 
@@ -855,7 +853,7 @@ class RunNonSeqProcessor implements RunProcessor {
    * If there is more than one shortest path, one will be chosen arbitrarily.
    * 
    */
-  private Graph buildPathGraphToPosition(IRControlFlowGraph cfg,
+  private IRBasicBlock getTargetBlock(IRControlFlowGraph cfg,
       IRBasicBlock block, IRLocation pos) throws RunProcessorException {
     IRBasicBlock target;
     if(pos instanceof Position) {
@@ -870,7 +868,7 @@ class RunNonSeqProcessor implements RunProcessor {
     }
     IOUtils.debug().pln("Searching for path:").incr().pln(
         "Source: " + block + "\nTarget: " + target).decr().flush();
-    return buildPathGraphToBlock(cfg, block, target);
+    return target;
   }
   
   /**
@@ -1963,7 +1961,8 @@ class RunNonSeqProcessor implements RunProcessor {
       
       assert(position.getLoops().size() == 1); 
       /* Pick all statements from the loop body */
-      Graph loopGraph = buildPathGraphToPosition(cfg, block, position);
+      IRBasicBlock target = getTargetBlock(cfg, block, position);
+      Graph loopGraph = buildPathGraphToBlock(cfg, block, target);
       
       List<IRStatement> preStmts = Lists.newArrayList();
       
@@ -2062,7 +2061,8 @@ class RunNonSeqProcessor implements RunProcessor {
           if (block == null)      break;
           IOUtils.debug().pln("<wayPoint> " + pos.toString()).flush();
           
-          Graph wayGraph = buildPathGraphToPosition(cfg, block, pos);
+          IRBasicBlock target = getTargetBlock(cfg, block, pos);
+          Graph wayGraph = buildPathGraphToBlock(cfg, block, target);
           block = cfg.splitAt(pos, false);
           
           Scope currScope = symbolTable.getCurrentScope();
@@ -2118,33 +2118,25 @@ class RunNonSeqProcessor implements RunProcessor {
       throw new RunProcessorException("Function ended before end of run.");
     
     {
+      IRBasicBlock endBlock = null;
       if (end == null) {
-        Graph endGraph = buildPathGraphToBlock(cfg, block, cfg.getExit());
-        IRBasicBlock endBlock = endGraph.getDestBlock();        
+        endBlock = cfg.getExit();
         IOUtils.debug().pln("<endPosition> Null").flush();
-        
-        Scope currScope = symbolTable.getCurrentScope();
-        if(endBlock.getScope() != null) symbolTable.setScope(endBlock.getScope());
-        
-        if(graph == null)     graph = endGraph;
-        else                  graph.appendPostGraph(endGraph);
-        
-        symbolTable.setScope(currScope);
       } else {
-        Graph endGraph = buildPathGraphToPosition(cfg, block, end);        
-        IRBasicBlock endBlock = endGraph.getDestBlock();
+        endBlock = getTargetBlock(cfg, block, end);
         IOUtils.debug().pln("<endPosition> " + end.toString()).flush();
+      }
+      Graph endGraph = buildPathGraphToBlock(cfg, block, endBlock);   
+      Scope currScope = symbolTable.getCurrentScope();
+      if(endBlock.getScope() != null) symbolTable.setScope(endBlock.getScope());
+      
+      if(graph == null)     graph = endGraph;
+      else                  graph.appendPostGraph(endGraph);
+      
+      endPath = Path.createSingleton(processPosition((Position)end, symbolTable));
+      
+      symbolTable.setScope(currScope);
         
-        Scope currScope = symbolTable.getCurrentScope();
-        if(endBlock.getScope() != null) symbolTable.setScope(endBlock.getScope());
-        
-        if(graph == null)     graph = endGraph;
-        else                  graph.appendPostGraph(endGraph);
-        
-        endPath = Path.createSingleton(processPosition((Position)end, symbolTable));
-        
-        symbolTable.setScope(currScope);
-      }   
     }
     
     graph.appendPrePath(startPath);

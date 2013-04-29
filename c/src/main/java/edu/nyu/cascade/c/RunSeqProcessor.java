@@ -294,8 +294,8 @@ class RunSeqProcessor implements RunProcessor {
    * 
    */
   
-  private IRBasicBlock buildPathToPosition(IRControlFlowGraph cfg,
-      IRBasicBlock block, IRLocation pos, List<IRStatement> path) 
+  private IRBasicBlock getTargetBlock(IRControlFlowGraph cfg,
+      IRBasicBlock block, IRLocation pos) 
           throws RunProcessorException {
     IRBasicBlock target;
     if(pos instanceof Position) {
@@ -310,7 +310,7 @@ class RunSeqProcessor implements RunProcessor {
     }
     IOUtils.debug().pln("Searching for path:").incr().pln(
         "Source: " + block + "\nTarget: " + target).decr().flush();
-    return buildPathToBlock(cfg, block, target, path);
+    return target;
   }
 
   /**
@@ -325,10 +325,10 @@ class RunSeqProcessor implements RunProcessor {
    * 
    */
   
-  private IRBasicBlock buildPathToBlock(IRControlFlowGraph cfg,
-      IRBasicBlock start, IRBasicBlock target, List<IRStatement> path) 
+  private List<IRStatement> buildPathToBlock(IRControlFlowGraph cfg,
+      IRBasicBlock start, IRBasicBlock target) 
           throws RunProcessorException {
-    
+    List<IRStatement> path = Lists.newArrayList();
     /*
      * Find the shortest path from block to target, using a backwards
      * breadth-first search. pathMap will associate each block with its
@@ -394,7 +394,7 @@ class RunSeqProcessor implements RunProcessor {
       int iterTimes = u.getIterTimes();
       while(iterTimes > 0) {
         u.clearIterTimes();
-        u = buildPathToBlock(cfg, u, u, path);
+        path.addAll(buildPathToBlock(cfg, u, u));
         iterTimes--;
       }
       path.addAll(u.getStatements());
@@ -405,7 +405,7 @@ class RunSeqProcessor implements RunProcessor {
     }
     IOUtils.debug().decr().flush();
 
-    return target;
+    return path;
   }
   
   private void addEdgeToPath(List<IRStatement> path, IREdge<?> e) {
@@ -920,6 +920,7 @@ class RunSeqProcessor implements RunProcessor {
     return resWaypoints;
   }
   
+  
   /** Parse the invariant of loop. */
   private List<IRStatement> processInvariant(IRControlFlowGraph cfg,
       IRBasicBlock block, Position position, 
@@ -939,10 +940,12 @@ class RunSeqProcessor implements RunProcessor {
        * CVC4*/
       stmts.add(Statement.assertStmt(spec, argExpr));
       
-      List<IRStatement> loopPath = Lists.newArrayList();
-      
       // Pick all statements from the loop body
-      buildPathToPosition(cfg, block, position, loopPath);
+      IRBasicBlock target = getTargetBlock(cfg, block, position);
+      List<IRStatement> loopPath = buildPathToBlock(cfg, block, target);
+      
+      assert(target.getStatements().size() == 1);
+      IRStatement last_stmt = target.getStatements().get(0);
       
       // Replace function call
       loopPath = checkPath(symbolTable, loopPath);
@@ -955,20 +958,16 @@ class RunSeqProcessor implements RunProcessor {
         for(IRStatement stmt : loopPath) {
           if(stmt.getType() == StatementType.ASSIGN) {
             IRExpressionImpl lval = (IRExpressionImpl) ((Statement) stmt).getOperand(0);
-            if(stmt == loopPath.get(loopPath.size()-1)) {// last statement
-              if(!lval.toString().startsWith(TEST_VAR_PREFIX))
-                throw new RunProcessorException("Invalid last statement in the loop.");
-              havocStmts.add(stmt);
-            } else {
-              havocStmts.add(Statement.havoc(lval.getSourceNode(), lval));
-            }
+            havocStmts.add(Statement.havoc(lval.getSourceNode(), lval));
           }           
         }
-        stmts.addAll(havocStmts);        
+        stmts.addAll(havocStmts);
+        stmts.add(last_stmt);
       }
       
       stmts.add(Statement.assumeStmt(spec, argExpr));
       stmts.addAll(loopPath);
+      stmts.add(last_stmt);
       stmts.add(Statement.assertStmt(spec, argExpr));
       
     } catch (IOException e) {
@@ -1052,8 +1051,10 @@ class RunSeqProcessor implements RunProcessor {
           if (block == null)      break;
           IOUtils.debug().pln("<wayPoint> " + pos.toString()).flush();
           
-          List<IRStatement> wayPath = Lists.newArrayList();
-          block = buildPathToPosition(cfg, block, pos, wayPath);
+          IRBasicBlock target = getTargetBlock(cfg, block, pos);
+          List<IRStatement> wayPath = buildPathToBlock(cfg, block, target);
+          block = cfg.splitAt(pos, false);
+          
           Scope currScope = symbolTable.getCurrentScope();
           if(block.getScope() != null)   symbolTable.setScope(block.getScope());
           if(pos.getInvariant() != null)
@@ -1072,20 +1073,18 @@ class RunSeqProcessor implements RunProcessor {
         IOUtils.debug().pln("<callPoint> " + callPos.toString()).flush();
         
         {
-          List<IRStatement> wayPath = Lists.newArrayList();
-          
           IRBasicBlock target = cfg.splitAt(callPos, true); // Split before callPos
-          block = buildPathToBlock(cfg, block, target, wayPath);
+          List<IRStatement> wayPath = buildPathToBlock(cfg, block, target);
           addTmpPathToPath(path, wayPath, symbolTable);
           wayPath.clear();
         }
         
         /* Call position */
         {
-          List<IRStatement> wayPath = Lists.newArrayList();
-          
           IRBasicBlock target = cfg.splitAt(callPos, false);
-          block = buildPathToBlock(cfg, block, target, wayPath); // statements after flatten the function call
+          // statements after flatten the function calls
+          List<IRStatement> wayPath = buildPathToBlock(cfg, block, target); 
+          block = target;
           List<IRStatement> callPath = checkPath(symbolTable, wayPath, callPos);
           path.addAll(callPath);
           wayPath.clear();
@@ -1097,26 +1096,22 @@ class RunSeqProcessor implements RunProcessor {
     if (block == null)
       throw new RunProcessorException("Function ended before end of run.");
     
-    {
-      List<IRStatement> endPath = Lists.newArrayList();
+    { 
+      IRBasicBlock endBlock;
       if (end == null) {
-        IRBasicBlock endBlock = buildPathToBlock(cfg, block, cfg.getExit(), endPath);
+        endBlock = cfg.getExit();
         IOUtils.debug().pln("<endPosition> Null").flush();
-        Scope currScope = symbolTable.getCurrentScope();
-        if(endBlock.getScope() != null) symbolTable.setScope(endBlock.getScope());
-        addTmpPathToPath(path, endPath, symbolTable);
-        endPath.clear();
-        symbolTable.setScope(currScope);
       } else {
-        IRBasicBlock endBlock = buildPathToPosition(cfg, block, end, endPath);
+        endBlock = getTargetBlock(cfg, block, end);
         IOUtils.debug().pln("<endPosition> " + end.toString()).flush();
-        Scope currScope = symbolTable.getCurrentScope();
-        if(endBlock.getScope() != null) symbolTable.setScope(endBlock.getScope());
-        processPosition((Position)end, symbolTable, endPath);
-        addTmpPathToPath(path, endPath, symbolTable);
-        endPath.clear();
-        symbolTable.setScope(currScope);
-      }   
+      }
+      List<IRStatement> endPath = buildPathToBlock(cfg, block, endBlock);
+      
+      Scope currScope = symbolTable.getCurrentScope();
+      if(endBlock.getScope() != null) symbolTable.setScope(endBlock.getScope());
+      addTmpPathToPath(path, endPath, symbolTable);
+      endPath.clear();
+      symbolTable.setScope(currScope);
     }
     symbolTable.setScope(oldScope);
     
