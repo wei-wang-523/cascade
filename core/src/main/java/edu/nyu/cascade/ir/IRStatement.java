@@ -99,8 +99,6 @@ public interface IRStatement {
    * @throws ExpressionFactoryException 
    */
   Expression getPostCondition(PathEncoding factory, Expression precondition);
-  Expression getPostCondition(PathEncoding factory, Iterable<? extends Expression> precondition, 
-      Iterable<? extends Expression> preGuards);
   
   StatementType getType();
   ImmutableList<IRExpression> getOperands();

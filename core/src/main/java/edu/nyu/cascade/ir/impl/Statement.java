@@ -32,7 +32,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRLocation;
@@ -275,55 +274,6 @@ public class Statement implements IRStatement {
           "Statement.getPostCondition: Ignoring statement type: "
               + getType());
       return factory.noop(prefix);
-    }
-  }
-  
-  @Override
-  public Expression getPostCondition(final PathEncoding factory, Iterable<? extends Expression> prefixes,
-      Iterable<? extends Expression> preGuards) {
-    Preconditions.checkArgument(
-        Iterables.all(prefixes, new Predicate<Expression>(){
-          @Override
-          public boolean apply(Expression prefix) {
-            return factory.getPathType().equals( prefix.getType() );
-          }
-        })
-        );
-    switch (getType()) {
-    case ASSIGN: 
-      return factory.assign(prefixes, preGuards, getOperand(0), getOperand(1));
-    case FIELD_ASSIGN: {
-      return factory.fieldAssign(prefixes, preGuards, getOperand(0), getOperand(1).toString(), getOperand(2));
-    }
-    case ASSERT: {
-      return factory.assumeMemorySafe(prefixes, preGuards);
-    }
-    case ASSUME:
-    case AWAIT:
-      return factory.assume(prefixes, preGuards, getOperand(0));
-    case ALLOC:
-        return factory.alloc(prefixes, preGuards, getOperand(0), getOperand(1));      
-    case DECLARE_ARRAY:
-        return factory.declareArray(prefixes, preGuards, getOperand(0), getOperand(1));
-    case DECLARE_STRUCT:
-      return factory.declareStruct(prefixes, preGuards, getOperand(0), getOperand(1));
-    case FREE:
-      return factory.free(prefixes, preGuards, getOperand(0));
-    case HAVOC:
-      return factory.havoc(prefixes, preGuards, getOperand(0));
-    case CRITICAL_SECTION:
-    case NON_CRITICAL_SECTION:
-    case SKIP:
-      return factory.noop(prefixes, preGuards);
-      
-    default:
-      IOUtils.debug().pln( getType() == CALL ? 
-          "Statement.getPostCondition: Igonring statement type: " 
-              + getType() + ", with undeclared function " 
-              + getOperand(0).toString()    :
-          "Statement.getPostCondition: Ignoring statement type: "
-              + getType());
-      return factory.noop(prefixes, preGuards);
     }
   }
   
