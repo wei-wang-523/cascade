@@ -158,11 +158,17 @@ public class MainTest {
   public void testDryRun() {
 //    IOUtils.enableDebug();
     TestUtils.checkDirectory(programs_location, ctrlFileFilter,
-	parserTest("--dry-run"), false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, 
-        parserTest("--dry-run"), false);
+        parserTest("--dry-run", "--process", "seq"), false);
+    TestUtils.checkDirectory(programs_location, ctrlFileFilter,
+        parserTest("--dry-run", "--process", "nonseq"), false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
+        parserTest("--dry-run", "--process", "seq"), false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
+        parserTest("--dry-run", "--process", "nonseq"), false);
 //    TestUtils.checkDirectory(nec_programs_location, ctrlFileFilter, 
-//        parserTest("--dry-run"), false);
+//        parserTest("--dry-run", "--process", "seq"), false);
+//    TestUtils.checkDirectory(nec_programs_location, ctrlFileFilter, 
+//        parserTest("--dry-run", "--process", "nonseq"), false);
   }
 
   /** FIXME: This is really a test for tp-tp */
