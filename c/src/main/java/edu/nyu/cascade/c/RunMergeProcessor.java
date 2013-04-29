@@ -149,22 +149,6 @@ final class PathMergeEncoder {
     return postCond;
   }
   
-  /** Encode statement stmt, with a collection of pre-conditions 
-   * @param preGuards */
-  Expression encodeStatement(IRStatement stmt, final Iterable<Expression> preConds, 
-      Iterable<Expression> preGuards) throws PathFactoryException {
-    Preconditions.checkArgument(preConds != null && !Iterables.isEmpty(preConds));
-    Preconditions.checkArgument(preGuards != null && !Iterables.isEmpty(preGuards));
-    Preconditions.checkArgument(Iterables.size(preGuards) == Iterables.size(preGuards));
-    
-    /* Precondition is OK, encode the postcondition. */
-    IOUtils.out().println(stmt.getLocation() + " " + stmt); 
-    Expression  postCond = stmt.getPostCondition(pathEncoding, preConds, preGuards);
-    if(IOUtils.debugEnabled())
-      IOUtils.debug().pln("Post-condition: " + postCond).flush();
-    return postCond;
-  }
-  
   /**
    * Encode current path with a collection of pre-conditions;
    * return null, if encoding of one pre-path failed
@@ -178,38 +162,25 @@ final class PathMergeEncoder {
     Expression preCond = null;
     
     int size = Iterables.size(preConds);
-    if(size == 1) {
-      preCond = Iterables.get(preConds, 0);
-      for(IRStatement stmt : currPath.stmts) {
-        preCond = encodeStatement(stmt, preCond);
-        if(stmt.getPreLabels().contains(COND_ASSUME_LABEL))
-          currPath.addGuard(preCond);
-        succeed = checkPreCondition(preCond, stmt);
-        if(!succeed) {
-          if (runIsValid() && !runIsFeasible())
-            IOUtils.err().println("WARNING: path assumptions are unsatisfiable");
-          return null;
-        }
-      }
-    } else { // size > 1
-      for(int i = 0; i < currPath.stmts.size(); i++) {
-        IRStatement stmt = currPath.stmts.get(i);
-        /* First statement cannot be conditional assume statement */
-        if(i == 0)  preCond = encodeStatement(stmt, preConds, preGuards);
-        else        preCond = encodeStatement(stmt, preCond);
-        
-        /* This stmt is conditional control flow graph guard */
-        if(stmt.getPreLabels().contains(COND_ASSUME_LABEL))
-          currPath.addGuard(preCond);
-        
-        succeed = checkPreCondition(preCond, stmt);
-        if(!succeed) {
-          if (runIsValid() && !runIsFeasible())
-            IOUtils.err().println("WARNING: path assumptions are unsatisfiable");
-          return null;
-        }
+    if(size == 1)   preCond = Iterables.get(preConds, 0);
+    /* more than one preConds and preGuards, merge it before encode statement */
+    else    preCond = pathEncoding.noop(preConds, preGuards);      
+
+    for(IRStatement stmt : currPath.stmts) {
+      preCond = encodeStatement(stmt, preCond);
+      
+      /* This stmt is conditional control flow graph guard */
+      if(stmt.getPreLabels().contains(COND_ASSUME_LABEL))
+        currPath.addGuard(preCond);
+      
+      succeed = checkPreCondition(preCond, stmt);
+      if(!succeed) {
+        if (runIsValid() && !runIsFeasible())
+          IOUtils.err().println("WARNING: path assumptions are unsatisfiable");
+        return null;
       }
     }
+    
     return preCond;
   }
   

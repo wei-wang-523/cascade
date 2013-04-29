@@ -1031,9 +1031,11 @@ class RunSeqProcessor implements RunProcessor {
       block = cfg.splitAt(start, true);
     
       IOUtils.debug().pln("<startPosition> " + start.toString()).flush();
-      List<IRStatement> startPath = processPosition((Position)start, symbolTable);
-      addTmpPathToPath(path, startPath, symbolTable);
-      startPath.clear();
+      if(start instanceof Position) {
+        List<IRStatement> startPath = processPosition((Position)start, symbolTable);
+        addTmpPathToPath(path, startPath, symbolTable);
+        startPath.clear();
+      }
     }
     
     if(waypoints != null && !waypoints.isEmpty()) { 
@@ -1102,10 +1104,12 @@ class RunSeqProcessor implements RunProcessor {
       } else {
         endBlock = getTargetBlock(cfg, block, end);
         IOUtils.debug().pln("<endPosition> " + end.toString()).flush();
-        endCommands = processPosition((Position) end, symbolTable);
+        if(end instanceof Position)
+          endCommands = processPosition((Position) end, symbolTable);
       }
       List<IRStatement> endPath = buildPathToBlock(cfg, block, endBlock);
       if(endCommands != null)   endPath.addAll(endCommands);
+      
       Scope currScope = symbolTable.getCurrentScope();
       if(endBlock.getScope() != null) symbolTable.setScope(endBlock.getScope());
       addTmpPathToPath(path, endPath, symbolTable);
