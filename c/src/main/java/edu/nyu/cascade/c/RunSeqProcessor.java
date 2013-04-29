@@ -224,8 +224,10 @@ class RunSeqProcessor implements RunProcessor {
   }
 
   /** Incorporate the command for the given position into the given path. */
-  void processPosition(Position position, CSymbolTable symbolTable,
-      List<IRStatement> path) throws RunProcessorException {
+  List<IRStatement> processPosition(Position position, CSymbolTable symbolTable) 
+      throws RunProcessorException {
+    Preconditions.checkArgument(position != null);
+    List<IRStatement> path = Lists.newArrayList();
     List<Command> cmds = position.getCommands();
     for(Command cmd : cmds) {
       try {
@@ -276,6 +278,7 @@ class RunSeqProcessor implements RunProcessor {
       }
     }
 
+    return path;
   }
 
   /**
@@ -944,30 +947,27 @@ class RunSeqProcessor implements RunProcessor {
       IRBasicBlock target = getTargetBlock(cfg, block, position);
       List<IRStatement> loopPath = buildPathToBlock(cfg, block, target);
       
-      assert(target.getStatements().size() == 1);
-      IRStatement last_stmt = target.getStatements().get(0);
-      
       // Replace function call
       loopPath = checkPath(symbolTable, loopPath);
       
       // Process havoc statements
       { 
-        assert(position.getLoops().size() == 1); // only one loop is specified for the invariant
+        /* only one loop is specified for the invariant */
+        assert(position.getLoops().size() == 1); 
 
         List<IRStatement> havocStmts = Lists.newArrayList();
-        for(IRStatement stmt : loopPath) {
+        /* First statement is conditional guard variable assignment statement*/
+        for(IRStatement stmt : loopPath.subList(1, loopPath.size())) {
           if(stmt.getType() == StatementType.ASSIGN) {
             IRExpressionImpl lval = (IRExpressionImpl) ((Statement) stmt).getOperand(0);
             havocStmts.add(Statement.havoc(lval.getSourceNode(), lval));
           }           
         }
         stmts.addAll(havocStmts);
-        stmts.add(last_stmt);
       }
       
       stmts.add(Statement.assumeStmt(spec, argExpr));
       stmts.addAll(loopPath);
-      stmts.add(last_stmt);
       stmts.add(Statement.assertStmt(spec, argExpr));
       
     } catch (IOException e) {
@@ -1031,10 +1031,7 @@ class RunSeqProcessor implements RunProcessor {
       block = cfg.splitAt(start, true);
     
       IOUtils.debug().pln("<startPosition> " + start.toString()).flush();
-      List<IRStatement> startPath = Lists.newArrayList();
-      
-      if(start instanceof Position)
-        processPosition((Position)start, symbolTable, startPath);
+      List<IRStatement> startPath = processPosition((Position)start, symbolTable);
       addTmpPathToPath(path, startPath, symbolTable);
       startPath.clear();
     }
@@ -1053,13 +1050,13 @@ class RunSeqProcessor implements RunProcessor {
           
           IRBasicBlock target = getTargetBlock(cfg, block, pos);
           List<IRStatement> wayPath = buildPathToBlock(cfg, block, target);
-          block = cfg.splitAt(pos, false);
+          block = target;
           
           Scope currScope = symbolTable.getCurrentScope();
           if(block.getScope() != null)   symbolTable.setScope(block.getScope());
           if(pos.getInvariant() != null)
             wayPath.addAll(processInvariant(cfg, block, pos, symbolTable));
-          processPosition(pos, symbolTable, wayPath);
+          wayPath.addAll(processPosition(pos, symbolTable));
           symbolTable.setScope(currScope);
           addTmpPathToPath(path, wayPath, symbolTable);
           wayPath.clear();
@@ -1098,15 +1095,17 @@ class RunSeqProcessor implements RunProcessor {
     
     { 
       IRBasicBlock endBlock;
+      List<IRStatement> endCommands = null;
       if (end == null) {
         endBlock = cfg.getExit();
         IOUtils.debug().pln("<endPosition> Null").flush();
       } else {
         endBlock = getTargetBlock(cfg, block, end);
         IOUtils.debug().pln("<endPosition> " + end.toString()).flush();
+        endCommands = processPosition((Position) end, symbolTable);
       }
       List<IRStatement> endPath = buildPathToBlock(cfg, block, endBlock);
-      
+      if(endCommands != null)   endPath.addAll(endCommands);
       Scope currScope = symbolTable.getCurrentScope();
       if(endBlock.getScope() != null) symbolTable.setScope(endBlock.getScope());
       addTmpPathToPath(path, endPath, symbolTable);
