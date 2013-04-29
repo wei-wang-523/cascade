@@ -67,20 +67,20 @@ import edu.nyu.cascade.c.CSpecParser;
  * (x := 0; assume x > 0; assert false) is invalid but infeasible).
  */
 
-final class PathNonSeqEncoder {
+final class PathMergeEncoder {
   private PathEncoding pathEncoding;
   private boolean runIsValid, runIsFeasible, checkFeasibility;
   private boolean succeed;
   private final static String COND_ASSUME_LABEL = "COND_ASSUME";
 
-  PathNonSeqEncoder(PathEncoding pathEncoding) {
+  PathMergeEncoder(PathEncoding pathEncoding) {
     this.pathEncoding = pathEncoding;
     checkFeasibility = false;
     reset();
   }
 
-  static PathNonSeqEncoder create(PathEncoding encoding) {
-    return new PathNonSeqEncoder(encoding);
+  static PathMergeEncoder create(PathEncoding encoding) {
+    return new PathMergeEncoder(encoding);
   }
 
   ExpressionEncoder getExpressionEncoder() {
@@ -732,23 +732,23 @@ final class Graph {
  * A processor for control file runs (i.e., non-looping paths annotated
  * through the program).
  */
-class RunNonSeqProcessor implements RunProcessor {
+class RunMergeProcessor implements RunProcessor {
   
-  public RunNonSeqProcessor(Map<File, CSymbolTable> symbolTables,
+  public RunMergeProcessor(Map<File, CSymbolTable> symbolTables,
       Map<Node, IRControlFlowGraph> cfgs, CAnalyzer cAnalyzer,
       CExpressionEncoder exprEncoder)
       throws RunProcessorException {
     this.symbolTables = symbolTables;
     this.cfgs = cfgs;
     this.cAnalyzer = cAnalyzer;
-    this.pathEncoder = PathNonSeqEncoder.create(SimplePathEncoding.create(exprEncoder));
+    this.pathEncoder = PathMergeEncoder.create(SimplePathEncoding.create(exprEncoder));
     this.TEMP_VAR_POSTFIX = 0;
   }
   
   private final Map<File, CSymbolTable> symbolTables;
   private final Map<Node, IRControlFlowGraph> cfgs;
   private final CAnalyzer cAnalyzer;
-  private final PathNonSeqEncoder pathEncoder;
+  private final PathMergeEncoder pathEncoder;
   private int TEMP_VAR_POSTFIX;
 
   /**

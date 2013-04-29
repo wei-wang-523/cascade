@@ -84,7 +84,7 @@ public class Main {
   private static final String OPTION_MARK_AST = "optionMarkAST";
   private static final String OPTION_PEDANTIC = "pedantic";
   private static final String OPTION_INTERNAL_PEDANTIC = "optionPedantic";
-  private static final String OPTION_PROCESS = "process";
+  private static final String OPTION_MERGE_PATH = "merge-path";
   @SuppressWarnings("static-access")
   private static final Options options = new Options() //
       .addOption(OPTION_HELP_SHORT, OPTION_HELP, false, //
@@ -174,11 +174,8 @@ public class Main {
               .withType(String.class)
               .create()) //
       .addOption(
-          OptionBuilder.withLongOpt(OPTION_PROCESS) //
-              .withDescription("Process single path or multiple path.") //
-              .hasArg() //
-              .withArgName("seq, nonseq") //
-              .withType(String.class)
+          OptionBuilder.withLongOpt(OPTION_MERGE_PATH) //
+              .withDescription("Merge multiple paths in analysis.") //
               .create()) //
       .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_TOTAL_INST) //
@@ -611,9 +608,8 @@ public class Main {
 
             RunProcessor runProcessor = null;
             
-            if( Preferences.isSet(OPTION_PROCESS) && 
-                Preferences.getString(OPTION_PROCESS).equals("nonseq")) {
-              runProcessor = new RunNonSeqProcessor(symbolTables, cfgs,
+            if( Preferences.isSet(OPTION_MERGE_PATH) ) {
+              runProcessor = new RunMergeProcessor(symbolTables, cfgs,
                     cAnalyzer, encoder);
             } else {
               runProcessor = new RunSeqProcessor(symbolTables, cfgs,
