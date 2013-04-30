@@ -519,7 +519,7 @@ class RunSeqProcessor implements RunProcessor {
       IRLocation funcStart = funcCfg.getEntry().getStartLocation();
       IRLocation funcEnd = funcCfg.getExit().getEndLocation();
       List<Position> wayPoints = null;
-      if(func != null) func.getWayPoint();
+      if(func != null) wayPoints = func.getWayPoint();
       path.addAll(processRun(funcStart, funcEnd, wayPoints));
     }
     return path;
@@ -873,7 +873,6 @@ class RunSeqProcessor implements RunProcessor {
         List<IRStatement> stmtRmv = Lists.newArrayList();
 //        int distPostfix = stmtRep.size();
         int distPostfix = TEMP_VAR_POSTFIX-oldPostfix;
-        assert(distPostfix == stmtRep.size());
         for(int j = distPostfix; j>=0; j--) {
           int k = i - distPostfix;
           assert(k>=0);
@@ -1076,6 +1075,7 @@ class RunSeqProcessor implements RunProcessor {
         {
           IRBasicBlock target = cfg.splitAt(callPos, true); // Split before callPos
           List<IRStatement> wayPath = buildPathToBlock(cfg, block, target);
+          block = target;
           addTmpPathToPath(path, wayPath, symbolTable);
           wayPath.clear();
         }
