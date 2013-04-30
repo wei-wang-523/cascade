@@ -345,7 +345,7 @@ class RunSeqProcessor implements RunProcessor {
      * edges and their source nodes into pathMap and visited set
      * before entering into while-loop. It means to avoid labeling
      * start as visited node. */
-    if(start.equals(target) && start.getType().equals(IRBasicBlock.Type.LOOP)) {
+    if(start.equals(target)/* && start.getType().equals(IRBasicBlock.Type.LOOP)*/) {
       for (IREdge<?> e : cfg.getIncomingEdges(start)) {
         IRBasicBlock v = e.getSource();
         if (!visited.contains(v)) {
@@ -383,7 +383,7 @@ class RunSeqProcessor implements RunProcessor {
      * edges and their source nodes into pathMap and visited set
      * before entering into while-loop. It means to avoid labeling
      * start as visited node. */
-    if(start.equals(target) && start.getType().equals(IRBasicBlock.Type.LOOP)) {
+    if(start.equals(target) /* && start.getType().equals(IRBasicBlock.Type.LOOP) */) {
       IOUtils.debug().pln(u.toString()).flush();
       path.addAll(u.getStatements());
       IREdge<?> e = pathMap.get(u);
