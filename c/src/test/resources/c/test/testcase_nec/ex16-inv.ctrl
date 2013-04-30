@@ -20,6 +20,7 @@
             i <= x
             ]]>
             </invariant>
+            <wayPoint fileId="1" line="12" />
           </loop>
         </wayPoint>
       </function>
