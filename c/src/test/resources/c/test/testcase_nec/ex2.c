@@ -18,7 +18,7 @@ int test(int * n ){
 
 int main(){
 
-   int n; //int n = __NONDET__();
+   int n = __NONDET__();
    
    if (n <= 0 || n >= 1024){
 	   exit(1);
