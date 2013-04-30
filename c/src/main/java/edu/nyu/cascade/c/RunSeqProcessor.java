@@ -671,13 +671,19 @@ class RunSeqProcessor implements RunProcessor {
    * Function inlining for call statement
    * 1) assign statements to assign arguments to parameters, 
    * 2) statements collected from the function body.
+   * @throws RunProcessorException 
    */
   private List<IRStatement> getStmtForCall(IRStatement stmt) throws RunProcessorException {
+    return getStmtForCall(stmt, null);
+  }
+  
+  private List<IRStatement> getStmtForCall(IRStatement stmt, CallPoint func) throws RunProcessorException {
     if(!stmt.getType().equals(StatementType.CALL)) {
       throw new RunProcessorException("Invalid statement type: " + stmt);
     }
     List<IRStatement> func_path = assignArgToParam(stmt);
-    func_path.addAll(collectStmtFromFunction(stmt));
+    if(func != null)    func_path.addAll(collectStmtFromFunction(stmt, func));
+    else                func_path.addAll(collectStmtFromFunction(stmt));
     return func_path;
   }
     
@@ -847,6 +853,21 @@ class RunSeqProcessor implements RunProcessor {
     return pathRes;
   }
   
+  private CallPoint findCallPointForStmt(IRStatement stmt, List<CallPoint> callPoints) {
+    Preconditions.checkArgument(stmt.getType().equals(StatementType.CALL));
+    
+    for(int i = callPoints.size()-1; i >=0; i++) {
+      CallPoint call = callPoints.get(i);
+      String name1 = call.getFuncName();
+      String name2 = ((Statement) stmt).getOperand(0).toString();
+      if(name1.equals(name2)) {
+        callPoints.remove(i);
+        return call;
+      }
+    }
+    return null;
+  }
+  
   /**
    * Check path based on symbolTable, flatten function call statement,
    * and process function inlining.
@@ -889,7 +910,11 @@ class RunSeqProcessor implements RunProcessor {
       } else if(stmt.getType().equals(StatementType.CALL)) {
         if(findFuncDeclareNode(stmt) != null) { 
           resPath.remove(i); // Remove CALL statement
-          List<IRStatement> callPath = getStmtForCall(stmt);
+          List<IRStatement> callPath = null;
+          if(callPos != null)   
+            callPath = getStmtForCall(stmt, findCallPointForStmt(stmt, callPos.getFunctions()));
+          else                  
+            callPath = getStmtForCall(stmt);
           resPath.addAll(i, callPath);
           i = i + callPath.size();
         } // Else, for undeclared function, do nothing.
@@ -926,8 +951,7 @@ class RunSeqProcessor implements RunProcessor {
   
   
   /** Parse the invariant of loop. */
-  private List<IRStatement> processInvariant(IRControlFlowGraph cfg,
-      IRBasicBlock block, Position position, 
+  private List<IRStatement> processInvariant(IRControlFlowGraph cfg, Position position, 
       CSymbolTable symbolTable) throws RunProcessorException {
     List<IRStatement> stmts = Lists.newArrayList();
     try {
@@ -945,8 +969,9 @@ class RunSeqProcessor implements RunProcessor {
       stmts.add(Statement.assertStmt(spec, argExpr));
       
       // Pick all statements from the loop body
-      IRBasicBlock target = getTargetBlock(cfg, block, position);
-      List<IRStatement> loopPath = buildPathToBlock(cfg, block, target);
+      List<Position> wayPoints = position.getLoops().iterator().next().getWayPoint();
+      
+      List<IRStatement> loopPath = processRun(position, position, wayPoints);
       
       // Replace function call
       loopPath = functionInline(symbolTable, loopPath);
@@ -1058,7 +1083,7 @@ class RunSeqProcessor implements RunProcessor {
           Scope currScope = symbolTable.getCurrentScope();
           if(block.getScope() != null)   symbolTable.setScope(block.getScope());
           if(pos.getInvariant() != null)
-            wayPath.addAll(processInvariant(cfg, block, pos, symbolTable));
+            wayPath.addAll(processInvariant(cfg, pos, symbolTable));
           wayPath.addAll(processPosition(pos, symbolTable));
           symbolTable.setScope(currScope);
           addTmpPathToPath(path, wayPath, symbolTable);

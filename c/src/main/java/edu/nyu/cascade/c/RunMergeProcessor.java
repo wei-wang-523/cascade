@@ -491,6 +491,16 @@ final class Graph {
     }
   }
   
+  void addInvariantPath(Path prePath, Path postPath) {
+    if(prePath == null || postPath == null)    return;
+    assert(srcPath == destPath);
+    Set<Path> preDestPaths = predecessorMap.remove(destPath);
+    predecessorMap.put(postPath, preDestPaths);
+    predecessorMap.put(srcPath, Sets.newHashSet(prePath));
+    srcPath = prePath;
+    destPath = postPath;
+  }
+  
   void appendPrePath(Path path) {
     if(path == null)    return;
     predecessorMap.put(srcPath, Sets.newHashSet(path));
@@ -657,10 +667,12 @@ final class Graph {
   /** find all havoc statement */
   List<IRStatement> collectHavocStmts() {
     Queue<Path> queue = Lists.newLinkedList();
+    List<Path> visited = Lists.newArrayList();
     List<IRStatement> resStmts = Lists.newArrayList();
     queue.add(destPath);
     while(!queue.isEmpty()) {
       Path currPath = queue.poll();
+      if(visited.contains(currPath))    continue;
       for(IRStatement stmt : currPath.stmts) {
         if(stmt.getType() == StatementType.ASSIGN) {
           IRExpressionImpl lval = (IRExpressionImpl) ((Statement) stmt).getOperand(0);
@@ -669,6 +681,7 @@ final class Graph {
       }
       if(predecessorMap.containsKey(currPath))
         queue.addAll(predecessorMap.get(currPath));
+      visited.add(currPath);
     }
     return resStmts;
   }
@@ -1682,6 +1695,7 @@ class RunMergeProcessor implements RunProcessor {
         funcPathMap.put(currPath, null);
       }
       Set<Path> prePaths = graph.predecessorMap.get(currPath);
+      visited.add(currPath);
       if(prePaths != null)  queue.addAll(prePaths);     
     }
     
@@ -1917,8 +1931,7 @@ class RunMergeProcessor implements RunProcessor {
   }
   
   /** Parse the invariant of loop. */
-  private Graph processInvariant(IRControlFlowGraph cfg,
-      IRBasicBlock block, Position position, 
+  private Graph processInvariant(IRControlFlowGraph cfg, Position position, 
       CSymbolTable symbolTable) throws RunProcessorException {
     Graph invariantGraph = null;
     try {
@@ -1932,9 +1945,8 @@ class RunMergeProcessor implements RunProcessor {
       
       assert(position.getLoops().size() == 1); 
       /* Pick all statements from the loop body */
-      IRBasicBlock target = getTargetBlock(cfg, block, position);
-      Graph loopGraph = buildPathGraphToBlock(cfg, block, target);
-      
+      Graph loopGraph = processRun(position, position, 
+          position.getLoops().iterator().next().getWayPoint());
       List<IRStatement> preStmts = Lists.newArrayList();
       
       /** FIXME: CVC4 has incremental support problem, multiple queries are not supported
@@ -1944,16 +1956,15 @@ class RunMergeProcessor implements RunProcessor {
       /* Process havoc statements */
       List<IRStatement> havocStmts = loopGraph.collectHavocStmts();
       preStmts.addAll(havocStmts.subList(0, havocStmts.size()-1));
-      preStmts.addAll(loopGraph.destPath.stmts);
       preStmts.add(Statement.assumeStmt(spec, argExpr));
 
       List<IRStatement> postStmts = Lists.newArrayList();
-      
+      postStmts.addAll(loopGraph.destPath.stmts);
       postStmts.add(Statement.assertStmt(spec, argExpr));
       
       invariantGraph = loopGraph;
-      invariantGraph.appendPrePath(Path.createSingleton(preStmts));
-      invariantGraph.appendPostPath(Path.createSingleton(postStmts));
+      loopGraph.addInvariantPath(Path.createSingleton(preStmts), 
+          Path.createSingleton(postStmts));
       
     } catch (IOException e) {
       throw new RunProcessorException("Specification parse failure", e);
@@ -2039,7 +2050,7 @@ class RunMergeProcessor implements RunProcessor {
           Scope currScope = symbolTable.getCurrentScope();
           if(block.getScope() != null)   symbolTable.setScope(block.getScope());
           if(pos.getInvariant() != null) {
-            Graph invariantGraph = processInvariant(cfg, block, pos, symbolTable);
+            Graph invariantGraph = processInvariant(cfg, pos, symbolTable);
             block = cfg.splitAt(pos, false);
             
             wayGraph.appendPostGraph(invariantGraph);        
