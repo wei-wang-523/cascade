@@ -851,9 +851,9 @@ class RunSeqProcessor implements RunProcessor {
    * Check path based on symbolTable, flatten function call statement,
    * and process function inlining.
    */
-  private List<IRStatement> checkPath(CSymbolTable symbolTable, List<IRStatement> path) 
+  private List<IRStatement> functionInline(CSymbolTable symbolTable, List<IRStatement> path) 
       throws RunProcessorException {
-    return checkPath(symbolTable, path, null);
+    return functionInline(symbolTable, path, null);
   }
  
   /**
@@ -861,7 +861,7 @@ class RunSeqProcessor implements RunProcessor {
    * specification of the symbolic run in the control file; and the path is the 
    * statements flatten from that single function call statement.
    */
-  private List<IRStatement> checkPath(CSymbolTable symbolTable, List<IRStatement> path, 
+  private List<IRStatement> functionInline(CSymbolTable symbolTable, List<IRStatement> path, 
       Position callPos) throws RunProcessorException {
     IOUtils.debug().pln("Checking path...");
     List<IRStatement> resPath = Lists.newArrayList(path);
@@ -871,7 +871,9 @@ class RunSeqProcessor implements RunProcessor {
       List<IRStatement> stmtRep = pickFuncCallFromStmt(stmt, symbolTable);
       if(!stmtRep.isEmpty()) {
         List<IRStatement> stmtRmv = Lists.newArrayList();
+//        int distPostfix = stmtRep.size();
         int distPostfix = TEMP_VAR_POSTFIX-oldPostfix;
+        assert(distPostfix == stmtRep.size());
         for(int j = distPostfix; j>=0; j--) {
           int k = i - distPostfix;
           assert(k>=0);
@@ -899,11 +901,11 @@ class RunSeqProcessor implements RunProcessor {
   
   /**
    * Add tmpPath into path, before do that, check the tmpPath by call 
-   * checkPath(...), and clear the tmpPath.
+   * functionInline(...), and clear the tmpPath.
    */
   private void addTmpPathToPath(List<IRStatement> path, List<IRStatement> tmpPath, 
       CSymbolTable symbolTable) throws RunProcessorException {
-    tmpPath = checkPath(symbolTable, tmpPath);
+    tmpPath = functionInline(symbolTable, tmpPath);
     path.addAll(tmpPath);
   }
   
@@ -948,7 +950,7 @@ class RunSeqProcessor implements RunProcessor {
       List<IRStatement> loopPath = buildPathToBlock(cfg, block, target);
       
       // Replace function call
-      loopPath = checkPath(symbolTable, loopPath);
+      loopPath = functionInline(symbolTable, loopPath);
       
       // Process havoc statements
       { 
@@ -1084,7 +1086,7 @@ class RunSeqProcessor implements RunProcessor {
           // statements after flatten the function calls
           List<IRStatement> wayPath = buildPathToBlock(cfg, block, target); 
           block = target;
-          List<IRStatement> callPath = checkPath(symbolTable, wayPath, callPos);
+          List<IRStatement> callPath = functionInline(symbolTable, wayPath, callPos);
           path.addAll(callPath);
           wayPath.clear();
         }

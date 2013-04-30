@@ -629,11 +629,11 @@ final class Graph {
   
   /** Simplify the graph */
   void simplify() throws RunProcessorException {
-    long startTime = System.currentTimeMillis();
+//    long startTime = System.currentTimeMillis();
 //    simplify_DFS();
     simplify_BFS();
-    double time = (System.currentTimeMillis() - startTime)/1000.0;
-    IOUtils.err().println("Simplify takes time: " + time);
+//    double time = (System.currentTimeMillis() - startTime)/1000.0;
+//    IOUtils.err().println("Simplify takes time: " + time);
   }
   
 /*  
@@ -1685,7 +1685,7 @@ class RunMergeProcessor implements RunProcessor {
       if(prePaths != null)  queue.addAll(prePaths);     
     }
     
-    IOUtils.err().println("Function path size: " + funcPathMap.size());
+//    IOUtils.err().println("Function path size: " + funcPathMap.size());
     
     /* No function call, no change */
     if(funcPathMap.size() == 0) return graph;
