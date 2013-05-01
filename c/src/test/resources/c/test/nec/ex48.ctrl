@@ -1,0 +1,67 @@
+<controlFile>
+  <sourceFile name="ex48.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="76" />
+    <wayPoint fileId="1" line="80" >
+      <command>
+    	<cascadeFunction> cascade_assume </cascadeFunction>
+    	<argument><![CDATA[
+	str[0] != '\0'
+	]]>
+	</argument>
+      </command>
+    </wayPoint>
+    <wayPoint fileId="1" line="82" >
+      <function funcName="str_ws_remove" >
+	<wayPoint fileId="1" line="42" >
+	  <function funcName="strlen" >
+	    <wayPoint fileId="1" line="10" >
+	      <loop iterTimes="3" />
+	    </wayPoint>
+	  </function>
+	</wayPoint>
+	<wayPoint fileId="1" line="45" >
+	  <loop iterTimes="1" />
+	</wayPoint>
+	<wayPoint fileId="1" line="45" >
+	  <loop iterTimes="1" >
+	    <wayPoint fileId="1" line="47" />
+	  </loop>
+	</wayPoint>
+	<wayPoint fileId="1" line="51" >
+	  <loop iterTimes="1" />
+	</wayPoint>
+	<wayPoint fileId="1" line="51" >
+	  <loop iterTimes="1" >
+	    <wayPoint fileId="1" line="53" />
+	  </loop>
+	</wayPoint>
+	<wayPoint fileId="1" line="59" />
+	<wayPoint fileId="1" line="72" >
+	  <function funcName="str_sub" >
+	    <wayPoint fileId="1" line="28" >
+	      <function funcName="strlen" >
+		<wayPoint fileId="1" line="10" >
+		  <loop iterTimes="3" />
+		</wayPoint>
+	      </function>
+	    </wayPoint>
+	    <wayPoint fileId="1" line="31" >
+	      <function funcName="memcpy" >
+		<wayPoint fileId="1" line="19" >
+		  <loop iterTimes="1" />
+		</wayPoint>
+	      </function>
+	    </wayPoint>
+	  </function>
+	</wayPoint>
+      </function>
+    </wayPoint>
+    <endPosition fileId="1" line="85" >
+      <command>
+    	<cascadeFunction> cascade_check </cascadeFunction>
+    	<argument> 1==1 </argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>
