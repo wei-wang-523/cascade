@@ -1,0 +1,24 @@
+<controlFile>
+  <sourceFile name="inf6.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="9" />
+    <wayPoint fileId="1" line="12" />
+    <wayPoint fileId="1" line="22" >
+      <command>
+	<cascadeFunction>cascade_assume</cascadeFunction>
+	<argument><![CDATA[
+	b <= 0
+	]]>
+	</argument>
+      </command>
+    </wayPoint>
+    <wayPoint fileId="1" line="26" />
+    <wayPoint fileId="1" line="32" />
+    <endPosition fileId="1" line="35" >
+      <command>
+	<cascadeFunction>cascade_check</cascadeFunction>
+	<argument>flag==0</argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

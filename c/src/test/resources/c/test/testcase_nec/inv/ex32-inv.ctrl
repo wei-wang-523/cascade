@@ -1,0 +1,38 @@
+<controlFile>
+  <sourceFile name="ex32.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="19" />
+    <wayPoint fileId="1" line="21" >
+      <function funcName="no" >
+	<wayPoint fileId="1" line="16" />
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="22" >
+      <function funcName="make_null" >
+	<wayPoint fileId="1" line="7" >
+	  <loop>
+	    <invariant><![CDATA[
+	    i<=999 && i>=-1 &&
+	    implies(i<=999 && i>=0, valid(&hoo->x[i]))
+	    ]]>
+	    </invariant>
+	  </loop>
+	</wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="23" >
+      <function funcName="make_null" >
+	<wayPoint fileId="1" line="7" >
+	  <loop>
+	    <invariant><![CDATA[
+	    i<=999 && i>=-1 &&
+	    implies(i<=999 && i>=0, valid(&hoo->x[i]))
+	    ]]>
+	    </invariant>
+	  </loop>
+	</wayPoint>
+      </function>
+    </wayPoint>
+    <endPosition fileId="1" line="25" />
+  </run>
+</controlFile>

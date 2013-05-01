@@ -1,0 +1,105 @@
+<controlFile>
+  <sourceFile name="ex27.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="30" />
+    <wayPoint fileId="1" line="33" >
+      <function funcName="foo" >
+	<wayPoint fileId="1" line="15" >
+	  <function funcName="check" >
+	    <wayPoint fileId="1" line="3" />
+	  </function>
+	</wayPoint>
+	<wayPoint fileId="1" line="16" />
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="34" >
+      <function funcName="foo" >
+	<wayPoint fileId="1" line="18" >
+	  <function funcName="check" >
+	    <wayPoint fileId="1" line="3" />
+	  </function>
+	</wayPoint>
+	<wayPoint fileId="1" line="19" />
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="35" >
+      <function funcName="foo" >
+	<wayPoint fileId="1" line="21" >
+	  <loop>
+	  	<invariant><![CDATA[
+	  	i >= 0 && i <= n &&
+	  	implies(0 <= i && i < n, valid(a+i) && valid(b+i))
+	  	]]>
+	  	</invariant>
+	  </loop>
+	</wayPoint>
+	<wayPoint fileId="1" line="25" >
+	  <function funcName="copy">
+	    <wayPoint fileId="1" line="8" >
+	      <command>
+		<cascadeFunction>cascade_check</cascadeFunction>
+		<argument><![CDATA[
+		valid(a) && valid(b)
+		]]>
+		</argument>
+	      </command>
+	    </wayPoint>
+	  </function>
+	</wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="36" >
+      <function funcName="foo" >
+	<wayPoint fileId="1" line="21" >
+	  <loop>
+	  	<invariant><![CDATA[
+	  	i >= 0 && i <= n &&
+	  	implies(0 <= i && i < n, valid(a+i) && valid(b+i))
+	  	]]>
+	  	</invariant>
+	  </loop>
+	</wayPoint>
+	<wayPoint fileId="1" line="25" >
+	  <function funcName="copy">
+	    <wayPoint fileId="1" line="8" >
+	      <command>
+		<cascadeFunction>cascade_check</cascadeFunction>
+		<argument><![CDATA[
+		valid(a) && valid(b)
+		]]>
+		</argument>
+	      </command>
+	    </wayPoint>
+	  </function>
+	</wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="37" >
+      <function funcName="foo" >
+	<wayPoint fileId="1" line="21" >
+	  <loop>
+	  	<invariant><![CDATA[
+	  	i >= 0 && i <= n &&
+	  	implies(0 <= i && i < n, valid(a+i) && valid(b+i))
+	  	]]>
+	  	</invariant>
+	  </loop>
+	</wayPoint>
+	<wayPoint fileId="1" line="25" >
+	  <function funcName="copy">
+	    <wayPoint fileId="1" line="8" >
+	      <command>
+		<cascadeFunction>cascade_check</cascadeFunction>
+		<argument><![CDATA[
+		valid(a) && valid(b)
+		]]>
+		</argument>
+	      </command>
+	    </wayPoint>
+	  </function>
+	</wayPoint>
+      </function>
+    </wayPoint>
+    <endPosition fileId="1" line="38" />
+  </run>
+</controlFile>

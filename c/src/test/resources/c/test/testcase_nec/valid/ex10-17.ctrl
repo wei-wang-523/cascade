@@ -1,0 +1,22 @@
+<controlFile>
+  <sourceFile name="ex10.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="16" >
+      <command>
+	<cascadeFunction> cascade_assume </cascadeFunction>
+	<argument><![CDATA[ 
+	allocated(addr, sizeof(Addr)) && allocated(buf, sizeof(Buffer))
+	&& addr->len == 17
+	]]> 
+	</argument>
+      </command>
+    </startPosition>
+    <wayPoint fileId="1" line="17">
+      <command>
+		<cascadeFunction> cascade_assume </cascadeFunction>
+		<argument>addr</argument>
+      </command>
+    </wayPoint>
+    <endPosition fileId="1" line="24" />
+  </run>
+</controlFile>
