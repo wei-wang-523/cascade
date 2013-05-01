@@ -9,6 +9,16 @@
         implies(i >= 0 && i < 100, valid(&a[i]) && valid(&b[2*i]))
         ]]>
         </invariant>
+	<wayPoint fileId="1" line="17" >
+	  <function funcName="g" >
+	    <wayPoint fileId="1" line="8" />
+	  </function>
+	</wayPoint>
+	<wayPoint fileId="1" line="18" >
+	  <function funcName="g" >
+	    <wayPoint fileId="1" line="10" />
+	  </function>
+	</wayPoint>
       </loop>
     </wayPoint>
     <wayPoint fileId="1" line="22" >
@@ -18,6 +28,11 @@
         implies(j >= 100 && j < 200, valid(&b[2*j]))
         ]]>
         </invariant>
+        	<wayPoint fileId="1" line="23" >
+	  <function funcName="g" >
+	    <wayPoint fileId="1" line="10" />
+	  </function>
+	</wayPoint>
       </loop>
     </wayPoint>
     <endPosition fileId="1" line="28" />
