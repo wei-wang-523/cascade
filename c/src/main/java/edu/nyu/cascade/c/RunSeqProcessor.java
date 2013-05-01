@@ -498,7 +498,7 @@ class RunSeqProcessor implements RunProcessor {
     
     if(bestNode == null) {
       // FIXME: continue find in the parent scope or stays at root scope initially?
-      System.err.println("Cannot find the function declaration node for " + stmt);
+      IOUtils.debug().pln("Cannot find the function declaration node for " + stmt);
     }
     return bestNode;
   }
@@ -859,14 +859,13 @@ class RunSeqProcessor implements RunProcessor {
   
   private CallPoint findCallPointForStmt(IRStatement stmt, List<CallPoint> callPoints) {
     Preconditions.checkArgument(stmt.getType().equals(StatementType.CALL));
-    
-    for(int i = callPoints.size()-1; i >=0; i++) {
+    int count = 0;
+    for(int i = 0; i < callPoints.size(); i++) {
       CallPoint call = callPoints.get(i);
       String name1 = call.getFuncName();
       String name2 = ((Statement) stmt).getOperand(0).toString();
       if(name1.equals(name2)) {
-        callPoints.remove(i);
-        return call;
+        if(call.getFuncId().intValue() == ++count) return call;
       }
     }
     return null;
