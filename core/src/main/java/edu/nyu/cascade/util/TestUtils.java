@@ -3,7 +3,11 @@ package edu.nyu.cascade.util;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.security.Permission;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.Callable;
+
+import com.google.common.base.Preconditions;
 
 public class TestUtils {
   public static final String TEST_RESOURCES_DIRECTORY = FileUtils.RESOURCES_DIRECTORY;
@@ -70,6 +74,37 @@ public class TestUtils {
       }
     }
 
+  }
+  
+  public static void checkFile(File dir, Map<Tester<File>, String[]> optMap, 
+      boolean shouldFail) {
+    // Get all test files
+    Preconditions.checkArgument(optMap != null);
+    for (Entry<Tester<File>, String[]> optFiles : optMap.entrySet()) {
+      Tester<File> tester = optFiles.getKey();
+      for(String test : optFiles.getValue()) {
+        // Try to parse the file
+        File testFile = new File(dir, test);
+
+        // We catch any failure here so we can compare it to shouldFail below.
+        AssertionError failure = null;
+        try {
+          tester.runTest(testFile);
+        } catch (AssertionError e) {
+          failure = e;
+        }
+
+        if (failure != null && !shouldFail) {
+          // The test failed when it shouldn't have
+          throw failure;
+        } else if (failure == null && shouldFail) {
+          // The test didn't fail when it should have
+          throw new AssertionError("Expected failure succeeded: " + testFile);
+        } else {
+          // System.out.println("OK");
+        }
+      }
+    }
   }
 
   @SuppressWarnings("serial")
