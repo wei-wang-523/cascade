@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 import org.junit.Test;
@@ -14,6 +15,7 @@ import xtc.parser.ParseException;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.c.Main;
 import edu.nyu.cascade.util.TestUtils.ExitException;
@@ -21,6 +23,7 @@ import edu.nyu.cascade.util.TestUtils;
 import edu.nyu.cascade.util.FileUtils;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Preferences;
+import edu.nyu.cascade.util.TestUtils.Tester;
 
 public class MainTest {
   private static final File programs_location = FileUtils
@@ -33,8 +36,8 @@ public class MainTest {
       "test");
   private static final File mini_programs_location = new File(programs_test_location,
       "minicase_bug");
-//  private static final File nec_programs_location = new File(programs_test_location,
-//      "testcase_nec");
+  private static final File nec_programs_location = new File(programs_test_location,
+      "testcase_nec");
   private static final FilenameFilter cFileFilter = new FilenameFilter() {
     public boolean accept(File dir, String name) {
       return name.endsWith(".c");
@@ -81,6 +84,8 @@ public class MainTest {
         try {
           List<String> argList = Lists.newArrayList(args);
           argList.add(f.toString());
+/*          argList.add("--smt2-file");
+          argList.add("/Users/Wei/Workspace/tmp/nec/" + f.getName().replaceFirst("ctrl", "smt2"));*/
           runCascade(argList.toArray(new String[0]));
         } catch (ParseException e) {
           throw new AssertionError(e);
@@ -119,7 +124,6 @@ public class MainTest {
 
   @Test
   public void testPrograms() {
-//    IOUtils.enableDebug();
     TestUtils.checkDirectory(programs_location, cFileFilter,
         parserTest("--parsec"), false);
   }
@@ -156,7 +160,6 @@ public class MainTest {
   
   @Test
   public void testDryRun() {
-//    IOUtils.enableDebug();
     TestUtils.checkDirectory(programs_location, ctrlFileFilter,
         parserTest("--dry-run"), false);
     TestUtils.checkDirectory(programs_location, ctrlFileFilter,
@@ -165,10 +168,118 @@ public class MainTest {
         parserTest("--dry-run"), false);
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
         parserTest("--dry-run", "--merge-path"), false);
-//    TestUtils.checkDirectory(nec_programs_location, ctrlFileFilter, 
-//        parserTest("--dry-run", "--process", "seq"), false);
-//    TestUtils.checkDirectory(nec_programs_location, ctrlFileFilter, 
-//        parserTest("--dry-run", "--process", "nonseq"), false);
+  }
+  
+  private Map<Tester<File>, String[]> validOptMap() {
+    Map<Tester<File>, String[]> optMap = Maps.newLinkedHashMap();
+    Tester<File> mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--sound-alloc", "--prover", "z3");
+    Tester<File> mem_10 = parserTest("--feasibility", "--mem-cell-size", "10", "--sound-alloc", "--prover", "z3");
+    Tester<File> mem_13 = parserTest("--feasibility", "--mem-cell-size", "13", "--sound-alloc", "--prover", "z3");
+    Tester<File> sound = parserTest("--feasibility", "--sound-alloc", "--prover", "z3");
+    Tester<File> signed = parserTest("--feasibility", "--signed", "--sound-alloc", "--prover", "z3");
+    
+    String[] mem_11_bnc = {"ex1-3.ctrl", "ex2-3.ctrl", "ex9-3.ctrl"};
+    String[] mem_10_bnc = {"ex25-3.ctrl"};
+    String[] mem_13_bnc = {"ex23-36.ctrl"};
+    String[] sound_bnc = {"ex5.ctrl", "ex6.ctrl", "ex7-3.ctrl", "ex10-3.ctrl", 
+        "ex10-17.ctrl", "ex11.ctrl", "ex15.ctrl", "ex17.ctrl", "ex18-10.ctrl", "ex31-7.ctrl",
+        "ex34.ctrl", "ex40-3.ctrl", "ex49-3.ctrl", "inf6a.ctrl", "inf6b.ctrl", "inf8a.ctrl",
+        "inf8b.ctrl"};
+    String[] signed_bnc = {"ex14-10.ctrl"};
+    
+    optMap.put(signed, signed_bnc);
+    optMap.put(sound, sound_bnc);
+    optMap.put(mem_13, mem_13_bnc);
+    optMap.put(mem_10, mem_10_bnc);
+    optMap.put(mem_11, mem_11_bnc);
+    
+    return optMap;
+  }
+  
+  private Map<Tester<File>, String[]> invalidOptMap() {
+    Map<Tester<File>, String[]> optMap = Maps.newLinkedHashMap();
+    Tester<File> sgn_mem_11 = parserTest("--mem-cell-size", "11", "--sound-alloc", "--signed", "--prover", "z3");
+    Tester<File> mem_9 = parserTest("--mem-cell-size", "9", "--sound-alloc", "--prover", "z3");
+    Tester<File> sound = parserTest("--sound-alloc", "--prover", "z3");
+    Tester<File> sgn = parserTest("--signed", "--sound-alloc", "--prover", "z3");
+    Tester<File> fea_sgn = parserTest("--feasibility", "--signed", "--sound-alloc", "--prover", "z3");
+    
+    String[] sgn_mem_11_bnc = {"ex20-1.ctrl"};
+    String[] fea_sgn_bnc = {"ex16-4.ctrl", "ex19-3.ctrl", "ex39-3.ctrl"};
+    String[] mem_9_bnc = {"ex41-3.ctrl", "ex26-200.ctrl"};
+    String[] sound_bnc = {"ex3-10.ctrl", "ex4-10.ctrl", "ex8.ctrl", "ex12-10.ctrl", 
+        "ex30.ctrl", "ex43.ctrl", "ex46-3.ctrl", "ex47-2.ctrl", "inf1.ctrl", "inf5.ctrl"};
+    String[] sgn_bnc = {"ex13.ctrl", "ex37.ctrl", "inf2.ctrl", "inf4.ctrl"};
+    
+    optMap.put(sgn, sgn_bnc);
+    optMap.put(sound, sound_bnc);
+    optMap.put(mem_9, mem_9_bnc);
+    optMap.put(sgn_mem_11, sgn_mem_11_bnc);
+    optMap.put(fea_sgn, fea_sgn_bnc);
+    
+    return optMap;
+  }
+  
+  private Map<Tester<File>, String[]> invValidOptMap() {
+    Map<Tester<File>, String[]> optMap = Maps.newLinkedHashMap();
+    Tester<File> mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--sound-alloc", "--prover", "z3");
+    Tester<File> mem_10 = parserTest("--feasibility", "--mem-cell-size", "10", "--sound-alloc", "--prover", "z3");
+    Tester<File> mem_9 = parserTest("--feasibility", "--mem-cell-size", "9", "--sound-alloc", "--prover", "z3");
+    Tester<File> mem_13 = parserTest("--feasibility", "--mem-cell-size", "13", "--sound-alloc", "--prover", "z3");
+    Tester<File> sound = parserTest("--feasibility", "--sound-alloc", "--prover", "z3");
+    Tester<File> sgn = parserTest("--feasibility", "--signed", "--sound-alloc", "--prover", "z3");
+    
+    String[] mem_11_bnc = {/*"ex1-inv.ctrl",*/ "ex2-inv.ctrl", "ex9-inv.ctrl"};
+    String[] mem_10_bnc = {"ex25-inv.ctrl"};
+    String[] mem_9_bnc = {"ex22-inv.ctrl"};
+    String[] mem_13_bnc = {"ex23-inv.ctrl"};
+    String[] sound_bnc = {"ex7-inv.ctrl", "ex10-inv.ctrl", "ex17-inv.ctrl", "ex18-inv.ctrl", "ex31-inv.ctrl"};
+    String[] sgn_bnc = {"ex14-inv.ctrl"};
+    
+    optMap.put(sgn, sgn_bnc);
+    optMap.put(sound, sound_bnc);
+    optMap.put(mem_13, mem_13_bnc);
+    optMap.put(mem_11, mem_11_bnc);
+    optMap.put(mem_10, mem_10_bnc);
+    optMap.put(mem_9, mem_9_bnc);
+    
+    return optMap;
+  }
+  
+  private Map<Tester<File>, String[]> invInvalidOptMap() {
+    Map<Tester<File>, String[]> optMap = Maps.newLinkedHashMap();
+    Tester<File> sgn_mem_11 = parserTest("--mem-cell-size", "11", "--sound-alloc", "--signed", "--prover", "z3");
+    Tester<File> mem_9 = parserTest("--mem-cell-size", "9", "--sound-alloc", "--prover", "z3");
+    Tester<File> sound = parserTest("--sound-alloc", "--prover", "z3");
+    Tester<File> sgn = parserTest("--sound-alloc", "--signed", "--prover", "z3");
+    Tester<File> fea_sgn = parserTest("--feasibility", "--signed", "--sound-alloc", "--prover", "z3");
+    
+    String[] sgn_mem_11_bnc = {"ex19-inv.ctrl", "ex20-inv.ctrl"};
+    String[] fea_sgn_bnc = {"ex16-inv.ctrl"};
+    String[] mem_9_bnc = {"ex41-inv.ctrl", "ex26-inv.ctrl"};
+    String[] sound_bnc = {"ex3-inv.ctrl", "ex4-inv.ctrl", "ex8-inv.ctrl", "ex12-inv.ctrl", 
+        "ex40-inv.ctrl", "ex43-inv.ctrl", "ex46-inv.ctrl", "ex47-inv.ctrl", "ex49-inv.ctrl"};
+    String[] sgn_bnc = {"ex39-inv.ctrl"};
+    
+    
+    optMap.put(sound, sound_bnc);
+    optMap.put(sgn, sgn_bnc);
+    optMap.put(mem_9, mem_9_bnc);
+    optMap.put(sgn_mem_11, sgn_mem_11_bnc);
+    optMap.put(fea_sgn, fea_sgn_bnc);
+    
+    return optMap;
+  }
+  
+  @Test
+  public void testNecBenchmark() {
+    final File valid_nec_location = new File(nec_programs_location, "valid");
+    TestUtils.checkFile(valid_nec_location, validOptMap(), false);
+    final File invalid_nec_location = new File(nec_programs_location, "invalid");
+    TestUtils.checkFile(invalid_nec_location, invalidOptMap(), false);
+    final File inv_nec_location = new File(nec_programs_location, "inv");
+    TestUtils.checkFile(inv_nec_location, invValidOptMap(), false);
+    TestUtils.checkFile(inv_nec_location, invInvalidOptMap(), false);
   }
 
   /** FIXME: This is really a test for tp-tp */
