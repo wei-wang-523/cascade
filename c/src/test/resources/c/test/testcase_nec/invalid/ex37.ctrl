@@ -1,5 +1,5 @@
 <controlFile>
-  <sourceFile name="ex37.c" id="1" />
+  <sourceFile name="../ex37.c" id="1" />
   <run>
     <startPosition fileId="1" line="10" />
     <wayPoint fileId="1" line="13" >

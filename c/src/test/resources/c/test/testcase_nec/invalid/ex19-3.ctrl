@@ -1,5 +1,5 @@
 <controlFile>
-  <sourceFile name="ex19.c" id="1" />
+  <sourceFile name="../ex19.c" id="1" />
   <run>
     <startPosition fileId="1" line="2" >
       <command>

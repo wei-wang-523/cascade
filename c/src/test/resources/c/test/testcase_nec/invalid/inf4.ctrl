@@ -1,5 +1,5 @@
 <controlFile>
-  <sourceFile name="inf4.c" id="1" />
+  <sourceFile name="../inf4.c" id="1" />
   <run>
     <startPosition fileId="1" line="7" >
       <command>
