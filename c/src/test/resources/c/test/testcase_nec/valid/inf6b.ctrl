@@ -1,5 +1,5 @@
 <controlFile>
-  <sourceFile name="inf6.c" id="1" />
+  <sourceFile name="../inf6.c" id="1" />
   <run>
     <startPosition fileId="1" line="9" />
     <wayPoint fileId="1" line="15" />
