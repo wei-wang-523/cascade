@@ -171,7 +171,7 @@ final class PathMergeEncoder {
       
       /* This stmt is conditional control flow graph guard */
       if(stmt.getPreLabels().contains(COND_ASSUME_LABEL))
-        currPath.addGuard(preCond);
+        currPath.addGuard(preCond.asTuple().getChild(1));
       
       succeed = checkPreCondition(preCond, stmt);
       if(!succeed) {
@@ -209,19 +209,16 @@ final class PathMergeEncoder {
           if(preCond == null)  return null;
           preConds.add(preCond);
           if(prePath.hasGuard()) {
-            Expression guard = prePath.guards.peek();
+            Expression guard = pathEncoding.getExpressionManager().and(prePath.guards);
             if(preGuards == null) 
               preGuards = Lists.newArrayList(guard);
             else
               preGuards.add(guard);
           }
         }
-        Stack<Expression> prefixGuards = (prePaths.iterator().next()).guards;
-        if(prePaths.size() > 1) {
-          prefixGuards.pop();
+        if(preGuards != null && !preGuards.isEmpty()) {
+          currPath.addGuard(pathEncoding.getExpressionManager().or(preGuards));
         }
-        if(prefixGuards != null && !prefixGuards.isEmpty()) 
-          currPath.setGuards(prefixGuards);
       }
     }
     Expression pathExpr = encodePathWithPreConds(currPath, preConds, preGuards);
@@ -278,9 +275,8 @@ final class Path {
     this.stmts = Lists.newArrayList(stmts);
   }
   
-  void addGuard(Expression expr) {
-    Preconditions.checkArgument(expr.isTuple());
-    Expression guard = expr.asTuple().getChild(1);
+  void addGuard(Expression guard) {
+    Preconditions.checkArgument(guard.isBoolean());
     if(guards == null)  guards = new Stack<Expression>();
     guards.push(guard);
   }
