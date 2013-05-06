@@ -365,7 +365,7 @@ public class TheoremProverImpl implements TheoremProver {
         
         try {
           for (VariableExpression e: exprManager.getVariables()) {
-            if(e.getName().startsWith("m_") || e.getName().startsWith("regionSize_"))
+            if(e.getName().startsWith("m_") || e.getName().startsWith("alloc_"))
               continue;
             Expr eValue = getSmtEngine().getValue(exprManager.toCvc4Expr(e));
             ctrex.add(e.eq((ExpressionImpl) exprManager.toExpression(eValue)));
