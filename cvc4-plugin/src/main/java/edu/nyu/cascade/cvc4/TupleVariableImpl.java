@@ -40,12 +40,11 @@ public final class TupleVariableImpl extends VariableExpressionImpl implements
     }
   }
 
-  /** Create a new integer variable. */
+  /** Create a new record variable. */
   TupleVariableImpl(ExpressionManagerImpl em, String name, List<Type> typeArgs, boolean fresh) {
     super(em, name, em.tupleType(typeArgs), fresh);
   }
-
-  /** Create a new variable of an integer subtype (e.g., a range type). */
+  
   TupleVariableImpl(ExpressionManagerImpl em, String name, Type type, boolean fresh) {
     super(em, name, type, fresh);
     Preconditions.checkArgument(type.isTuple());
@@ -68,7 +67,7 @@ public final class TupleVariableImpl extends VariableExpressionImpl implements
 
   @Override
   public Expression index(int i) {
-    return getType().index(this, i);
+    return TupleExpressionImpl.mkTupleIndex(getExpressionManager(), this, i);
   }
 
   @Override
@@ -78,6 +77,6 @@ public final class TupleVariableImpl extends VariableExpressionImpl implements
 
   @Override
   public TupleExpression update(int index, Expression val) {
-    return getType().update(this, index, val);
+    return TupleExpressionImpl.mkUpdate(getExpressionManager(), this, index, val);
   }
 }

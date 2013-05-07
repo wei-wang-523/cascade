@@ -68,7 +68,7 @@ public final class TupleBoundVariableImpl extends BoundVariableExpressionImpl im
 
   @Override
   public Expression index(int i) {
-    return getType().index(this, i);
+    return TupleExpressionImpl.mkTupleIndex(getExpressionManager(), this, i);
   }
 
   @Override
@@ -78,6 +78,6 @@ public final class TupleBoundVariableImpl extends BoundVariableExpressionImpl im
 
   @Override
   public TupleExpression update(int index, Expression val) {
-    return getType().update(this, index, val);
+    return TupleExpressionImpl.mkUpdate(getExpressionManager(), this, index, val);
   }
 }

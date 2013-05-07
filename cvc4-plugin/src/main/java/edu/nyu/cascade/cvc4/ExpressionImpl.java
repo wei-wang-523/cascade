@@ -1,11 +1,9 @@
 package edu.nyu.cascade.cvc4;
 
 import static edu.nyu.cascade.prover.Expression.Kind.APPLY;
-import static edu.nyu.cascade.prover.Expression.Kind.ARRAY_INDEX;
 import static edu.nyu.cascade.prover.Expression.Kind.CONSTANT;
 import static edu.nyu.cascade.prover.Expression.Kind.IF_THEN_ELSE;
 import static edu.nyu.cascade.prover.Expression.Kind.SUBST;
-import static edu.nyu.cascade.prover.Expression.Kind.TUPLE_INDEX;
 import static edu.nyu.cascade.prover.Expression.Kind.VARIABLE;
 import static edu.nyu.cascade.prover.Expression.Kind.NULL_EXPR;
 
@@ -29,7 +27,9 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.FunctionExpression;
 import edu.nyu.cascade.prover.InductiveExpression;
+import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TupleExpression;
+import edu.nyu.cascade.prover.UninterpretedExpression;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
@@ -37,8 +37,10 @@ import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.RationalType;
+import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.util.Identifiers;
 
 /**
@@ -106,21 +108,6 @@ public class ExpressionImpl implements Expression {
             return em.mkConst(edu.nyu.acsys.CVC4.Kind.NULL_EXPR);
           }
         });
-    return result;
-  }
-
-  static ExpressionImpl mkArrayIndex(
-      ExpressionManagerImpl exprManager, Expression array,
-      Expression index) {
-    Preconditions.checkArgument(array.isArray());
-    ExpressionImpl result = new ExpressionImpl(exprManager, ARRAY_INDEX,
-        new BinaryConstructionStrategy() {
-          @Override
-          public Expr apply(ExprManager em, Expr left, Expr right) {
-            return em.mkExpr(edu.nyu.acsys.CVC4.Kind.SELECT, left, right);
-          }
-        }, array, index);
-    result.setType(array.asArray().getElementType());
     return result;
   }
 
@@ -212,21 +199,6 @@ public class ExpressionImpl implements Expression {
           }
         }, subs);
     result.setType(e.getType());
-    return result;
-  }
-
-  static ExpressionImpl mkTupleIndex(ExpressionManagerImpl exprManager,
-      Expression tuple, final int index) {
-    ExpressionImpl result = new ExpressionImpl(exprManager, TUPLE_INDEX,
-        new UnaryConstructionStrategy() {
-          @Override
-          public Expr apply(ExprManager em, Expr tuple) {
-            // FIXME: tuple update is not supported by CVC4 yet
-            throw new UnsupportedOperationException("Unsupported cvc4 operation");
-            /*return em.tupleSelectExpr(tuple, index);*/
-          }
-        }, tuple);
-    result.setType(tuple.getType().asTuple().getElementTypes().get(index));
     return result;
   }
 
@@ -977,7 +949,7 @@ public class ExpressionImpl implements Expression {
   @Override
   public InductiveExpression asInductive() {
     Preconditions.checkState(isInductive());
-    return getExpressionManager().asInductiveExpression(this);
+    return getExpressionManager().asInductive(this);
   }
 
   @Override
@@ -1012,5 +984,27 @@ public class ExpressionImpl implements Expression {
   public BoundVariableListExpressionImpl asBoundVariableList() {
     Preconditions.checkState(isBoundVariableList());
     return getExpressionManager().asBoundVariableList(this);
+  }
+
+  @Override
+  public RecordExpression asRecord() {
+    Preconditions.checkState(isRecord());
+    return getExpressionManager().asRecord(this);
+  }
+
+  @Override
+  public UninterpretedExpression asUninterpreted() {
+    Preconditions.checkState(isUninterpreted());
+    return getExpressionManager().asUninterpreted(this);
+  }
+
+  @Override
+  public boolean isRecord() {
+    return getType() instanceof RecordType;
+  }
+
+  @Override
+  public boolean isUninterpreted() {
+    return getType() instanceof UninterpretedType;
   }
 }

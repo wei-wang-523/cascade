@@ -81,12 +81,6 @@ public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
   }
 
   @Override
-  public ExpressionImpl index(Expression array,
-      Expression index) {
-    return ExpressionImpl.mkArrayIndex(getExpressionManager(),array, index);
-  }
-
-  @Override
   public ExpressionImpl importExpression(
       Expression expression) {
     switch( expression.getKind() ) {
@@ -97,18 +91,12 @@ public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
       
     case ARRAY_UPDATE:
       assert( expression.getArity() == 3 );
-      return update((Expression) expression.getChild(0),
+      return ArrayExpressionImpl.mkUpdate(getExpressionManager(), (Expression) expression.getChild(0),
           (Expression) expression.getChild(1), (Expression) expression
               .getChild(2));
     
     default:
       return super.importExpression(expression);
     }
-  }
-
-  @Override
-  public ArrayExpressionImpl update(Expression array,
-      Expression index, Expression value) {
-    return ArrayExpressionImpl.mkUpdate(getExpressionManager(), array, index, value);
   }
 }

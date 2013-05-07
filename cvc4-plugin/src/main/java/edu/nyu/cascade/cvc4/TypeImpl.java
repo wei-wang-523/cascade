@@ -21,8 +21,10 @@ import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.MultiplicativeType;
 import edu.nyu.cascade.prover.type.RationalType;
+import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.prover.type.UninterpretedType;
 
 public abstract class TypeImpl implements Type {
   static interface BinaryConstructionStrategy {
@@ -361,4 +363,27 @@ public abstract class TypeImpl implements Type {
     Preconditions.checkState(isTuple());
     return (TupleType)this;
   }
+  
+  @Override
+  public boolean isRecord() {
+    return this instanceof RecordType;
+  }
+  
+  @Override
+  public RecordType asRecord() {
+    Preconditions.checkState(isRecord());
+    return (RecordType)this;
+  }
+  
+  @Override
+  public boolean isUninterpreted() {
+    return this instanceof UninterpretedType;
+  }
+  
+  @Override
+  public UninterpretedType asUninterpreted() {
+    Preconditions.checkState(isRecord());
+    return (UninterpretedType)this;
+  }
+  
 }

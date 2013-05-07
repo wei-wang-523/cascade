@@ -1,6 +1,7 @@
 package edu.nyu.cascade.cvc4;
 
 import static edu.nyu.cascade.prover.Expression.Kind.TUPLE;
+import static edu.nyu.cascade.prover.Expression.Kind.TUPLE_INDEX;
 import static edu.nyu.cascade.prover.Expression.Kind.TUPLE_UPDATE;
 
 import java.util.List;
@@ -12,6 +13,7 @@ import com.google.common.collect.Lists;
 import edu.nyu.acsys.CVC4.Exception;
 import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.acsys.CVC4.ExprManager;
+import edu.nyu.acsys.CVC4.Rational;
 import edu.nyu.acsys.CVC4.vectorExpr;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TupleExpression;
@@ -19,15 +21,30 @@ import edu.nyu.cascade.prover.type.Type;
 
 public final class TupleExpressionImpl extends ExpressionImpl implements
     TupleExpression {
-  static TupleExpressionImpl create(ExpressionManagerImpl exprManager,
+  static TupleExpressionImpl create(ExpressionManagerImpl exprManager, Type type,
       Expression first, Expression... rest) {
-    return new TupleExpressionImpl(exprManager, Lists.asList(first, rest));
+    return new TupleExpressionImpl(exprManager, type, Lists.asList(first, rest));
   }
 
-  static TupleExpressionImpl create(ExpressionManagerImpl exprManager,
+  static TupleExpressionImpl create(ExpressionManagerImpl exprManager, Type type,
       Iterable<? extends Expression> elements) {
     Preconditions.checkArgument(!Iterables.isEmpty(elements));
-    return new TupleExpressionImpl(exprManager, elements);
+    return new TupleExpressionImpl(exprManager, type, elements);
+  }
+  
+
+  static ExpressionImpl mkTupleIndex(ExpressionManagerImpl exprManager,
+      Expression tuple, final int index) {
+    ExpressionImpl result = new ExpressionImpl(exprManager, TUPLE_INDEX,
+        new UnaryConstructionStrategy() {
+          @Override
+          public Expr apply(ExprManager em, Expr tuple) {
+            Expr indexExpr = em.mkConst(new Rational(index));
+            return em.mkExpr(edu.nyu.acsys.CVC4.Kind.TUPLE_SELECT, tuple, indexExpr);
+          }
+        }, tuple);
+    result.setType(tuple.getType().asTuple().getElementTypes().get(index));
+    return result;
   }
 
   static TupleExpressionImpl mkUpdate(ExpressionManagerImpl exprManager,
@@ -43,9 +60,9 @@ public final class TupleExpressionImpl extends ExpressionImpl implements
 
           @Override
           public Expr apply(ExprManager em, Expr tuple, Expr val) {
-            // FIXME: tuple update is not supported by CVC4 yet
-            throw new UnsupportedOperationException("Unsupported cvc4 operation");
-            /*return em.tupleUpdateExpr(tuple, index, val);*/
+            Expr indexExpr = em.mkConst(new Rational(index));
+            return em.mkExpr(
+                edu.nyu.acsys.CVC4.Kind.TUPLE_UPDATE, tuple, indexExpr, val);
           }
         }, tuple, val, tuple.getType());
   }
@@ -57,7 +74,7 @@ public final class TupleExpressionImpl extends ExpressionImpl implements
     setType(TupleTypeImpl.valueOf(exprManager,t));
   }
 
-  private TupleExpressionImpl(ExpressionManagerImpl exprManager,
+  private TupleExpressionImpl(ExpressionManagerImpl exprManager, Type type,
       Iterable<? extends Expression> elements) {
     super(exprManager, TUPLE, new NaryConstructionStrategy() {
       @Override
@@ -68,17 +85,7 @@ public final class TupleExpressionImpl extends ExpressionImpl implements
         return em.mkExpr(edu.nyu.acsys.CVC4.Kind.TUPLE, argsExpr);
       }
     }, elements);
-
-    List<Type> types = Lists.newArrayList();
-    // IType[] types = new IType[Iterables.size(elements)];
-    for (Expression t : elements) {
-      types.add(t.getType());
-    }
-    /*
-     * types[0] = first.getType(); for( int i=0 ; i < rest.length ; i++ ) {
-     * types[i+1] = rest[i].getType(); }
-     */
-    setType(TupleTypeImpl.create(exprManager, types));
+    setType(type);
   }
 
   private TupleExpressionImpl(ExpressionImpl tuple) {
@@ -92,7 +99,7 @@ public final class TupleExpressionImpl extends ExpressionImpl implements
 
   @Override
   public Expression index(int i) {
-    return ExpressionImpl.mkTupleIndex(getExpressionManager(), this, i);
+    return mkTupleIndex(getExpressionManager(), this, i);
   }
 
   @Override
@@ -108,10 +115,17 @@ public final class TupleExpressionImpl extends ExpressionImpl implements
   static TupleExpressionImpl valueOf(ExpressionManagerImpl exprManager,
       ExpressionImpl expr) {
     Preconditions.checkArgument(expr.isTuple());
-    if( expr instanceof TupleExpressionImpl ) {
-      return (TupleExpressionImpl) expr;
-    } else {
-      return new TupleExpressionImpl((ExpressionImpl) expr);
+    if (exprManager.equals(expr.getExpressionManager())) {
+      if( expr instanceof TupleExpressionImpl ) {
+        return (TupleExpressionImpl) expr;
+      } else {
+        return new TupleExpressionImpl((ExpressionImpl) expr);
+      }
+    }
+
+    switch (expr.getKind()) {
+    default:
+      throw new UnsupportedOperationException();
     }
   }
 }

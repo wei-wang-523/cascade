@@ -128,12 +128,19 @@ public class InductiveExpressionImpl extends ExpressionImpl implements
     return TestExpressionImpl.create(getExpressionManager(),constructor,this);
   }
 
-  static InductiveExpressionImpl valueOf(ExpressionImpl expr) {
+  static InductiveExpressionImpl valueOf(ExpressionManagerImpl exprManager, ExpressionImpl expr) {
     Preconditions.checkArgument(expr.isInductive());
-    if( expr instanceof InductiveExpressionImpl ) {
-      return (InductiveExpressionImpl) expr;
-    } else {
-      return new InductiveExpressionImpl(expr);
+    if (exprManager.equals(expr.getExpressionManager())) {
+      if( expr instanceof InductiveExpressionImpl ) {
+        return (InductiveExpressionImpl) expr;
+      } else {
+        return new InductiveExpressionImpl(expr);
+      }
+    }
+
+    switch (expr.getKind()) {
+    default:
+      throw new UnsupportedOperationException();
     }
   }
 }

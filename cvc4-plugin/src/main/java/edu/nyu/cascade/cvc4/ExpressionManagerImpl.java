@@ -28,8 +28,10 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.FunctionExpression;
 import edu.nyu.cascade.prover.InductiveExpression;
+import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.TupleExpression;
+import edu.nyu.cascade.prover.UninterpretedExpression;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
@@ -39,10 +41,12 @@ import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.RationalType;
+import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.prover.type.Type.DomainType;
+import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.util.Identifiers;
 
 /**
@@ -1127,7 +1131,12 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       Vector<Expression> args = new Vector();
       for(int i = 0; i < e.getNumChildren(); i++)
         args.add((Expression) toExpression(e.getChild(i)));
-      return (ExpressionImpl) tuple(args);
+      return (ExpressionImpl) tuple(toType(e.getType()), args);
+    } else if (e.getKind() == edu.nyu.acsys.CVC4.Kind.RECORD) {
+      Vector<Expression> args = new Vector();
+      for(int i = 0; i < e.getNumChildren(); i++)
+        args.add((Expression) toExpression(e.getChild(i)));
+      return (ExpressionImpl) record(toType(e.getType()), args);
     } else if (e.getKind() == edu.nyu.acsys.CVC4.Kind.STORE_ALL) {
       ArrayStoreAll arrayStore = e.getConstArrayStoreAll();
       Expr expr = arrayStore.getExpr();
@@ -1244,16 +1253,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     return booleanType().tt();
   }
   
-  public TupleExpressionImpl tuple(Expression first, Expression... rest) {
-    Preconditions.checkArgument(rest.length > 0);
-    return TupleExpressionImpl.create(this,first, rest);
-  }
-  
-  public TupleExpressionImpl tuple(Iterable<? extends Expression> elements) {
-    Preconditions.checkArgument(Iterables.size(elements) >= 2);
-    return TupleExpressionImpl.create(this,elements);
-  }
-  
   public BoundVariableListExpressionImpl asBoundVariableList(
       Expression expression)  {
     Preconditions.checkArgument(((ExpressionImpl)expression).isBoundVariableList());
@@ -1304,8 +1303,8 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   }
 
   @Override
-  public TupleExpressionImpl update(Expression tuple, int i, Expression val) {
-    return asTupleType(tuple.getType()).update(tuple, i, val);
+  public TupleExpressionImpl update(Expression tuple, int index, Expression val) {
+    return TupleExpressionImpl.mkUpdate(this, tuple, index, val);
   }
 
   @Override
@@ -1332,12 +1331,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   @Override
   public TupleExpression asTuple(Expression e) {
     return TupleExpressionImpl.valueOf(this,importExpression(e));
-  }
-
-  @Override
-  public InductiveExpressionImpl asInductiveExpression(Expression e) {
-    Preconditions.checkArgument(e.isInductive());
-    return InductiveExpressionImpl.valueOf(importExpression(e));
   }
   
   @Override
@@ -1408,13 +1401,15 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
 
   @Override
   public TupleExpression tuple(Type type, Expression first, Expression... rest) {
-    return tuple(first, rest);
+    Preconditions.checkArgument(rest.length > 0);
+    return TupleExpressionImpl.create(this, type, first, rest);
   }
 
   @Override
   public TupleExpression tuple(Type type,
       Iterable<? extends Expression> elements) {
-    return tuple(elements);
+    Preconditions.checkArgument(Iterables.size(elements) >= 2);
+    return TupleExpressionImpl.create(this, type, elements);
   }
 
   @Override
@@ -1431,5 +1426,63 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   public Expression boundExpression(int index, Type type) {
     // TODO Auto-generated method stub
     return null;
+  }
+
+  @Override
+  public RecordType asRecordType(Type t) {
+    return RecordTypeImpl.valueOf(this, importType(t));
+  }
+
+  @Override
+  public RecordExpression record(Type type, Iterable<? extends Expression> args) {
+    return RecordExpressionImpl.create(this, type, args);
+  }
+
+  @Override
+  public RecordExpression record(Type type, Expression arg) {
+    return RecordExpressionImpl.create(this, type, arg);
+  }
+
+  @Override
+  public RecordTypeImpl recordType(String tname, Iterable<String> elementNames,
+      Iterable<? extends Type> elementTypes) {
+    return RecordTypeImpl.create(this, tname, elementNames, elementTypes);
+  }
+
+  @Override
+  public RecordTypeImpl recordType(String tname, String elementName, Type elementType) {
+    return RecordTypeImpl.create(this, tname, elementName, elementType);
+  }
+
+  @Override
+  public UninterpretedType uninterpretedType(String name) {
+    return UninterpretedTypeImpl.create(this, name);
+  }
+
+  @Override
+  public RecordExpression update(Expression record, String fieldName,
+      Expression val) {
+    return RecordExpressionImpl.mkUpdate(this, record, fieldName, val);
+  }
+
+  @Override
+  public RecordExpression asRecord(Expression e) {
+    return RecordExpressionImpl.valueOf(this, importExpression(e));
+  }
+
+  @Override
+  public InductiveExpression asInductive(Expression e) {
+    return InductiveExpressionImpl.valueOf(this, importExpression(e));
+  }
+
+  @Override
+  public UninterpretedExpression asUninterpreted(Expression e) {
+    return UninterpretedExpressionImpl.valueOf(this, importExpression(e));
+  }
+
+  @Override
+  public RecordExpression record(Type r1, Expression first, Expression... rest) {
+    Preconditions.checkArgument(rest.length > 0);
+    return RecordExpressionImpl.create(this, r1, first, rest);
   }
 }

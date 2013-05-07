@@ -1,6 +1,7 @@
 package edu.nyu.cascade.cvc4;
 
 import static edu.nyu.cascade.prover.Expression.Kind.ARRAY_UPDATE;
+import static edu.nyu.cascade.prover.Expression.Kind.ARRAY_INDEX;
 import static edu.nyu.cascade.prover.Expression.Kind.ARRAY_STORE_ALL;
 
 import com.google.common.base.Preconditions;
@@ -29,6 +30,21 @@ public final class ArrayExpressionImpl
             return em.mkExpr(edu.nyu.acsys.CVC4.Kind.STORE, arg1, arg2, arg3);
           }
         }, array, index, value);
+  }
+  
+  static ExpressionImpl mkArrayIndex(
+      ExpressionManagerImpl exprManager, Expression array,
+      Expression index) {
+    Preconditions.checkArgument(array.isArray());
+    ExpressionImpl result = new ExpressionImpl(exprManager, ARRAY_INDEX,
+        new BinaryConstructionStrategy() {
+          @Override
+          public Expr apply(ExprManager em, Expr left, Expr right) {
+            return em.mkExpr(edu.nyu.acsys.CVC4.Kind.SELECT, left, right);
+          }
+        }, array, index);
+    result.setType(array.asArray().getElementType());
+    return result;
   }
   
   static ArrayExpressionImpl mkStoreAll(

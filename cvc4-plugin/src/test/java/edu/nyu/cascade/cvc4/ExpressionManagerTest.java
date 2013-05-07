@@ -16,11 +16,13 @@ import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.FunctionVariableExpression;
+import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.InductiveType;
+import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type.DomainType;
@@ -75,7 +77,7 @@ public class ExpressionManagerTest {
     assertEquals(intType, arrayType2.getIndexType());
     assertEquals(boolType, arrayType2.getElementType());
   }
-
+  
   @Test
   public void testBitVectorOne() {
     Expression one = exprManager.bitVectorOne(1);
@@ -521,14 +523,15 @@ public class ExpressionManagerTest {
 /*    TupleExpression tuple = exprManager.tuple(one);
     assertEquals(ImmutableList.of(one), tuple.getChildren());
     assertEquals(ImmutableList.of(intType), tuple.getType().getElementTypes());*/
-
-    TupleExpression tuple = exprManager.tuple(one, two);
+    TupleType t1 = exprManager.tupleType("t1", one.getType(), two.getType());
+    TupleExpression tuple = exprManager.tuple(t1, one, two);
     assertEquals(ImmutableList.of(one, two), tuple.getChildren());
     assertEquals(ImmutableList.of(intType, intType), tuple
         .getType()
         .getElementTypes());
 
-    tuple = exprManager.tuple(three, half, one);
+    TupleType t2 = exprManager.tupleType("t2", three.getType(), half.getType(), one.getType());
+    tuple = exprManager.tuple(t2, three, half, one);
     assertEquals(ImmutableList.of(three, half, one), tuple.getChildren());
     assertEquals(ImmutableList.of(intType, ratType, intType), tuple
         .getType()
@@ -547,6 +550,48 @@ public class ExpressionManagerTest {
 
     tupleType = exprManager.tupleType(ratType, intType, ratType);
     assertEquals(ImmutableList.of(ratType, intType, ratType), tupleType
+        .getElementTypes());
+  }
+  
+  @Test
+  public void testRecord() {
+    Expression one = exprManager.one();
+    Expression two = exprManager.constant(2);
+    Expression three = exprManager.constant(3);
+    Expression half = exprManager.rationalConstant(1, 2);
+
+    /** Record expression must have more than one child */
+    RecordType r1 = exprManager.recordType("record_1", ImmutableList.of("fld_1", "fld_2"),
+        ImmutableList.of(one.getType(), two.getType()));
+    RecordExpression record_1 = exprManager.record(r1, one, two);
+    assertEquals(ImmutableList.of(one, two), record_1.getChildren());
+    assertEquals(ImmutableList.of(intType, intType), record_1
+        .getType()
+        .getElementTypes());
+
+    RecordType r2 = exprManager.recordType("record_2",  ImmutableList.of("fld_1", "fld_2", "fld_3"),
+        ImmutableList.of(three.getType(), half.getType(), one.getType()));
+    RecordExpression record_2 = exprManager.record(r2, three, half, one);
+    assertEquals(ImmutableList.of(three, half, one), record_2.getChildren());
+    assertEquals(ImmutableList.of(intType, ratType, intType), record_2
+        .getType()
+        .getElementTypes());
+  }
+  
+  @Test
+  public void testRecordType() {
+    RecordType recordType = exprManager.recordType("record_1", "fld_1", intType);
+    assertEquals(ImmutableList.of(intType), recordType.getElementTypes());
+    
+    RecordType recordType_2 = exprManager.recordType("record_2", ImmutableList.of("fld_1", "fld_2"), 
+        ImmutableList.of(intType, intType));
+    assertEquals(ImmutableList.of(intType, intType), recordType_2
+        .getElementTypes());
+    
+    RecordType recordType_3 = exprManager.recordType("record_3", 
+        ImmutableList.of("fld_1", "fld_2", "fld_3"),
+        ImmutableList.of(ratType, intType, ratType));
+    assertEquals(ImmutableList.of(ratType, intType, ratType), recordType_3
         .getElementTypes());
   }
 
