@@ -1,9 +1,7 @@
 package edu.nyu.cascade.z3;
 
-import com.google.common.collect.ComputationException;
 import com.google.common.base.Preconditions;
 import com.microsoft.z3.Sort;
-import com.microsoft.z3.Z3Exception;
 
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
@@ -52,11 +50,7 @@ public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 
   @Override
   public ArrayVariableImpl variable(String name, boolean fresh) {
-    try {
-      return ArrayVariableImpl.create(getExpressionManager(),name,this,fresh);
-    } catch (Z3Exception e) {
-      throw new ComputationException(e);
-    }
+    return ArrayVariableImpl.create(getExpressionManager(),name,this,fresh);
   }
 
   @Override
@@ -81,14 +75,12 @@ public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
   }
 
   @Override
-  public ExpressionImpl index(Expression array,
-      Expression index) {
-    return ExpressionImpl.mkArrayIndex(getExpressionManager(),array, index);
+  public VariableExpressionImpl boundVariable(String name, boolean fresh) {
+    throw new UnsupportedOperationException("bound variable is not supported in z3.");
   }
-
+  
   @Override
-  public ExpressionImpl importExpression(
-      Expression expression) {
+  public ExpressionImpl importExpression(Expression expression) {
     switch( expression.getKind() ) {
 /*    case ARRAY_INDEX:
       assert( expression.getArity() == 2);
@@ -97,23 +89,12 @@ public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
       
     case ARRAY_UPDATE:
       assert( expression.getArity() == 3 );
-      return update((Expression) expression.getChild(0),
+      return ArrayExpressionImpl.mkUpdate(getExpressionManager(), (Expression) expression.getChild(0),
           (Expression) expression.getChild(1), (Expression) expression
               .getChild(2));
     
     default:
       return super.importExpression(expression);
     }
-  }
-
-  @Override
-  public ArrayExpressionImpl update(Expression array,
-      Expression index, Expression value) {
-    return ArrayExpressionImpl.mkUpdate(getExpressionManager(), array, index, value);
-  }
-
-  @Override
-  public VariableExpressionImpl boundVariable(String name, boolean fresh) {
-    throw new UnsupportedOperationException("bound variable is not supported in z3.");
   }
 }

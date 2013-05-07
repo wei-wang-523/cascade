@@ -1,8 +1,6 @@
 package edu.nyu.cascade.z3;
 
 import com.google.common.base.Preconditions;
-import com.microsoft.z3.Z3Exception;
-
 import edu.nyu.cascade.prover.ArrayVariableExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.Type;
@@ -21,8 +19,7 @@ public final class ArrayVariableImpl
   }
 
   static ArrayVariableImpl create(
-      ExpressionManagerImpl exprManager, String name, ArrayTypeImpl type, boolean fresh) 
-          throws Z3Exception {
+      ExpressionManagerImpl exprManager, String name, ArrayTypeImpl type, boolean fresh) {
     return new ArrayVariableImpl(exprManager,name, type, fresh);
   }
 

@@ -1,5 +1,6 @@
 package edu.nyu.cascade.z3;
 
+import static edu.nyu.cascade.prover.Expression.Kind.ARRAY_INDEX;
 import static edu.nyu.cascade.prover.Expression.Kind.ARRAY_STORE_ALL;
 import static edu.nyu.cascade.prover.Expression.Kind.ARRAY_UPDATE;
 
@@ -37,6 +38,26 @@ public final class ArrayExpressionImpl
         }
       }
     }, array, index, value);
+  }
+  
+  static ExpressionImpl mkArrayIndex(
+      ExpressionManagerImpl exprManager, Expression array,
+      Expression index) {
+    Preconditions.checkArgument(array.isArray());
+    ExpressionImpl result;
+    result = new ExpressionImpl(exprManager, ARRAY_INDEX,
+        new BinaryConstructionStrategy() {
+          @Override
+          public Expr apply(Context ctx, Expr left, Expr right) {
+              try {
+                return ctx.MkSelect((ArrayExpr)left, right);
+              } catch (Z3Exception e) {
+                throw new TheoremProverException(e);
+              }
+          }
+        }, array, index);
+    result.setType(array.asArray().getElementType());
+    return result;
   }
   
   static ArrayExpressionImpl mkStoreAll(

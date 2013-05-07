@@ -23,8 +23,10 @@ import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.MultiplicativeType;
 import edu.nyu.cascade.prover.type.RationalType;
+import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.prover.type.UninterpretedType;
 
 public abstract class TypeImpl implements Type {
   static interface BinaryConstructionStrategy {
@@ -129,10 +131,7 @@ public abstract class TypeImpl implements Type {
   @Override
   public ExpressionImpl importExpression(Expression expression) {
     final int arity = expression.getArity();
-    switch( expression.getKind() ) {
-//    case CONSTANT:
-      
-      
+    switch( expression.getKind() ) {  
     case SUBST:
       assert( arity % 2 == 1 );
       Expression orig = (Expression) expression.getChild(0);
@@ -310,5 +309,27 @@ public abstract class TypeImpl implements Type {
   public TupleType asTuple() {
     Preconditions.checkState(isTuple());
     return (TupleType)this;
+  }
+  
+  @Override
+  public boolean isRecord() {
+    return this instanceof RecordType;
+  }
+  
+  @Override
+  public RecordType asRecord() {
+    Preconditions.checkState(isRecord());
+    return (RecordType)this;
+  }
+  
+  @Override
+  public UninterpretedType asUninterpreted() {
+    Preconditions.checkState(isUninterpreted());
+    return (UninterpretedType)this;
+  }
+  
+  @Override
+  public boolean isUninterpreted() {
+    return this instanceof UninterpretedType;
   }
 }

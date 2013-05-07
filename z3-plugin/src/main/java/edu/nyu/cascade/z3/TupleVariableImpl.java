@@ -67,17 +67,17 @@ public final class TupleVariableImpl extends VariableExpressionImpl implements
   }
 
   @Override
-  public Expression index(int i) {
-    return getType().index(this, i);
-  }
-
-  @Override
   public int size() {
     return getType().size();
   }
 
   @Override
+  public Expression index(int i) {
+    return TupleExpressionImpl.mkTupleIndex(getExpressionManager(), this, i);
+  }
+
+  @Override
   public TupleExpression update(int index, Expression val) {
-    return getType().update(this, index, val);
+    return TupleExpressionImpl.mkUpdate(getExpressionManager(), this, index, val);
   }
 }

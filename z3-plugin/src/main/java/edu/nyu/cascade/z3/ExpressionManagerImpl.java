@@ -34,8 +34,10 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.FunctionExpression;
 import edu.nyu.cascade.prover.InductiveExpression;
+import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.TupleExpression;
+import edu.nyu.cascade.prover.UninterpretedExpression;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
@@ -45,6 +47,7 @@ import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.RationalType;
+import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
@@ -220,8 +223,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     return IntegerVariableImpl.valueOf(this,importExpression(expression));
   }
   
-
-  
   @Override
   public RationalExpressionImpl asRationalExpression(
       Expression expression)  {
@@ -239,6 +240,11 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     return TupleTypeImpl.valueOf(this, importType(t));
   }
 
+  @Override
+  public RecordTypeImpl asRecordType(Type t) {
+    return RecordTypeImpl.valueOf(this, importType(t));
+  }
+  
   @Override
   public FunctionExpression asFunctionExpression(
       Expression expression) {
@@ -635,6 +641,8 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       return (TypeImpl) rationalType();
     } else if ((Type)type instanceof TupleType) {
       return (TypeImpl) asTupleType((Type) type);
+    } else if ((Type)type instanceof RecordType) {
+      return (TypeImpl) asRecordType((Type) type);
     } else {
       throw new UnsupportedOperationException("Unimplemented type conversion: " + type);
     }
@@ -1118,6 +1126,11 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     Preconditions.checkArgument(rest.length > 0);
     return TupleExpressionImpl.create(this, type, first, rest);
   }
+  
+  @Override
+  public UninterpretedTypeImpl uninterpretedType(String name) {
+    return UninterpretedTypeImpl.create(this, name);
+  }
 
   @Override
   public TupleExpressionImpl tuple(Type type, Iterable<? extends Expression> elements) {
@@ -1138,6 +1151,18 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   }
 
   @Override
+  public RecordTypeImpl recordType(String tname, Iterable<String> elemenNames, 
+      Iterable<? extends Type> elementTypes) {
+    Preconditions.checkArgument(Iterables.size(elementTypes) == Iterables.size(elemenNames));
+    return RecordTypeImpl.create(this, tname, elemenNames, elementTypes);
+  }
+  
+  @Override
+  public RecordType recordType(String tname, String elemName, Type elemType) {
+    return RecordTypeImpl.create(this, tname, elemName, elemType);
+  }
+  
+  @Override
   public TypeImpl universalType() {
     throw new UnsupportedOperationException("universalType() is not supported in Z3.");
   }
@@ -1150,7 +1175,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
 
   @Override
   public TupleExpressionImpl update(Expression tuple, int i, Expression val) {
-    return asTupleType(tuple.getType()).update(tuple, i, val);
+    return TupleExpressionImpl.mkUpdate(this, tuple, i, val);
   }
 
   @Override
@@ -1180,7 +1205,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   }
 
   @Override
-  public InductiveExpressionImpl asInductiveExpression(Expression e) {
+  public InductiveExpressionImpl asInductive(Expression e) {
     Preconditions.checkArgument(e.isInductive());
     return InductiveExpressionImpl.valueOf(importExpression(e));
   }
@@ -1228,5 +1253,36 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   public Expression applyExpr(Expression fun, Expression first,
       Expression... rest) {
     return fun.getType().asFunction().apply(first, rest);
+  }
+
+  @Override
+  public RecordExpression record(Type type, Iterable<? extends Expression> args) {
+    return RecordExpressionImpl.create(this, type, args);
+  }
+
+  @Override
+  public RecordExpression record(Type type, Expression arg) {
+    return RecordExpressionImpl.create(this, type, arg);
+  }
+  
+  @Override
+  public RecordExpression record(Type type, Expression first, Expression... rest) {
+    return RecordExpressionImpl.create(this, type, first, rest);
+  }
+
+  @Override
+  public RecordExpression update(Expression record, String fieldName,
+      Expression val) {
+    return RecordExpressionImpl.mkUpdate(this, record, fieldName, val);
+  }
+
+  @Override
+  public RecordExpression asRecord(Expression e) {
+    return RecordExpressionImpl.valueOf(this, importExpression(e));
+  }
+
+  @Override
+  public UninterpretedExpression asUninterpreted(Expression e) {
+    return UninterpretedExpressionImpl.valueOf(this,importExpression(e));
   }
 }

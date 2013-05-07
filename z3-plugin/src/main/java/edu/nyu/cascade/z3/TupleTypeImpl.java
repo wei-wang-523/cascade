@@ -8,7 +8,6 @@ import com.microsoft.z3.Sort;
 import com.microsoft.z3.Symbol;
 import com.microsoft.z3.Z3Exception;
 
-import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
@@ -83,17 +82,6 @@ public final class TupleTypeImpl extends TypeImpl implements TupleType {
   @Override
   public String getName() {
     return typeName;
-  }
-
-  @Override
-  public ExpressionImpl index(Expression tuple, int index) {
-    throw new UnsupportedOperationException("tuple index is not supported in z3.");
-  }
-
-  @Override
-  public TupleExpressionImpl update(Expression tuple, int index,
-      Expression val) {
-    return TupleExpressionImpl.mkUpdate(getExpressionManager(), tuple, index, val);
   }
 
   @Override

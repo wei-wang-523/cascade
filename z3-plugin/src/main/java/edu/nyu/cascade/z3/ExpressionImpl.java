@@ -1,7 +1,6 @@
 package edu.nyu.cascade.z3;
 
 import static edu.nyu.cascade.prover.Expression.Kind.APPLY;
-import static edu.nyu.cascade.prover.Expression.Kind.ARRAY_INDEX;
 import static edu.nyu.cascade.prover.Expression.Kind.CONSTANT;
 import static edu.nyu.cascade.prover.Expression.Kind.IF_THEN_ELSE;
 import static edu.nyu.cascade.prover.Expression.Kind.SUBST;
@@ -20,7 +19,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-import com.microsoft.z3.ArrayExpr;
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Context;
@@ -34,8 +32,10 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.FunctionExpression;
 import edu.nyu.cascade.prover.InductiveExpression;
+import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.TupleExpression;
+import edu.nyu.cascade.prover.UninterpretedExpression;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
@@ -43,8 +43,10 @@ import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.RationalType;
+import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.util.Identifiers;
 
 /**
@@ -95,8 +97,11 @@ public class ExpressionImpl implements Expression {
   static interface VariableConstructionStrategy {
     Expr apply(Context ctx, String name, Sort type) throws Z3Exception;
   }
-
   
+  static interface ConstantConstructionStrategy {
+    Expr apply(Context ctx, String name, Sort type) throws Z3Exception;
+  }
+
   static ExpressionImpl mkNullExpr(ExpressionManagerImpl exprManager) {
     ExpressionImpl result = new ExpressionImpl(exprManager, NULL_EXPR,
         new NullaryConstructionStrategy() {
@@ -106,26 +111,6 @@ public class ExpressionImpl implements Expression {
             throw new TheoremProverException("Null expr is not supported in Z3");
           }
         });
-    return result;
-  }
-  
-  static ExpressionImpl mkArrayIndex(
-      ExpressionManagerImpl exprManager, Expression array,
-      Expression index) {
-    Preconditions.checkArgument(array.isArray());
-    ExpressionImpl result;
-    result = new ExpressionImpl(exprManager, ARRAY_INDEX,
-        new BinaryConstructionStrategy() {
-          @Override
-          public Expr apply(Context ctx, Expr left, Expr right) {
-              try {
-                return ctx.MkSelect((ArrayExpr)left, right);
-              } catch (Z3Exception e) {
-                throw new TheoremProverException(e);
-              }
-          }
-        }, array, index);
-    result.setType(array.asArray().getElementType());
     return result;
   }
 
@@ -608,6 +593,29 @@ public class ExpressionImpl implements Expression {
   }
   
   protected ExpressionImpl(ExpressionManagerImpl em,
+      ConstantConstructionStrategy strategy, String name, Type itype,
+      boolean uniquify)  {
+    this(em, Kind.CONSTANT, itype);
+    assert( type != null );
+
+    String actualName = uniquify ? Identifiers.uniquify(name) : name;
+
+    this.name = actualName;
+    setConstant(true);
+    setIsVariable(false);
+
+    try {
+      // Get the z3 expression manager
+      Context z3_ctx = em.getTheoremProver().getZ3Context();
+      
+      // Create the new expression
+      setZ3Expression(strategy.apply(z3_ctx, actualName, type.getZ3Type()));
+    } catch (Z3Exception e) {
+      throw new TheoremProverException(e);
+    }
+  }
+  
+  protected ExpressionImpl(ExpressionManagerImpl em,
       BoundConstructionStrategy strategy, int index, Type itype)  {
     this(em, Kind.BOUND, itype);
     assert( type != null );
@@ -985,8 +993,14 @@ public class ExpressionImpl implements Expression {
   @Override
   public InductiveExpression asInductive() {
     Preconditions.checkState(isInductive());
-    return getExpressionManager().asInductiveExpression(this);
+    return getExpressionManager().asInductive(this);
   }
+  
+  @Override
+  public boolean isInductive() {
+    return getType() instanceof InductiveType;
+  }
+  
 
   @Override
   public TupleExpression asTuple() {
@@ -1000,7 +1014,23 @@ public class ExpressionImpl implements Expression {
   }
 
   @Override
-  public boolean isInductive() {
-    return getType() instanceof InductiveType;
+  public RecordExpression asRecord() {
+    Preconditions.checkState(isRecord());
+    return getExpressionManager().asRecord(this);
+  }
+
+  @Override
+  public boolean isRecord() {
+    return getType() instanceof RecordType;
+  }
+
+  @Override
+  public UninterpretedExpression asUninterpreted() {
+    return getExpressionManager().asUninterpreted(this);
+  }
+
+  @Override
+  public boolean isUninterpreted() {
+    return getType() instanceof UninterpretedType;
   }
 }

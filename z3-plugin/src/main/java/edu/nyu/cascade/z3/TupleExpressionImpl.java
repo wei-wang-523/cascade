@@ -1,5 +1,6 @@
 package edu.nyu.cascade.z3;
 
+import static edu.nyu.cascade.prover.Expression.Kind.TUPLE_INDEX;
 import static edu.nyu.cascade.prover.Expression.Kind.TUPLE;
 import static edu.nyu.cascade.prover.Expression.Kind.TUPLE_UPDATE;
 
@@ -46,17 +47,39 @@ public final class TupleExpressionImpl extends ExpressionImpl implements
           throw new UnsupportedOperationException("Unsupported z3 operation");
           /*return em.tupleUpdateExpr(tuple, index, val);*/
         }
-      }, tuple, val, tuple.getType());
+      }, tuple, val);
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
     }
   }
+  
+  static ExpressionImpl mkTupleIndex(
+      ExpressionManagerImpl exprManager, Expression tuple,
+      final int index) {
+    Preconditions.checkArgument(tuple.isTuple());
+    ExpressionImpl result;
+    result = new ExpressionImpl(exprManager, TUPLE_INDEX,
+        new UnaryConstructionStrategy() {
+          @Override
+          public Expr apply(Context ctx, Expr expr) {
+              try {
+                TupleSort tupleSort = (TupleSort) expr.Sort();
+                return tupleSort.FieldDecls()[index].Apply(expr);
+              } catch (Z3Exception e) {
+                throw new TheoremProverException(e);
+              }
+          }
+        }, tuple);
+    result.setType((Type) 
+        tuple.asTuple().getType().getElementTypes().toArray()[index]);
+    return result;
+  }
 
   private TupleExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-      BinaryConstructionStrategy strategy, Expression left,
-      Expression right, Type t) throws Z3Exception {
-    super(exprManager, kind, strategy, left, right);
-    setType(TupleTypeImpl.valueOf(exprManager,t));
+      BinaryConstructionStrategy strategy, Expression tuple,
+      Expression value) throws Z3Exception {
+    super(exprManager, kind, strategy, tuple, value);
+    setType(TupleTypeImpl.valueOf(exprManager, tuple.getType()));
   }
 
   private TupleExpressionImpl(final ExpressionManagerImpl exprManager, final Type type,
@@ -86,14 +109,7 @@ public final class TupleExpressionImpl extends ExpressionImpl implements
 
   @Override
   public Expression index(int i) {
-    TupleSort tupleSort = (TupleSort) getExpressionManager().toZ3Type(getType());
-    Expr expr = null;
-    try {
-      expr = tupleSort.FieldDecls()[i].Apply(getZ3Expression());
-    } catch (Z3Exception e) {
-      throw new TheoremProverException(e);
-    }    
-    return getExpressionManager().toExpression(expr);
+    return mkTupleIndex(getExpressionManager(), this, i);
   }
 
   @Override

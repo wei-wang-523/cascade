@@ -43,8 +43,6 @@ public class InductiveExpressionImpl extends ExpressionImpl implements
       return new InductiveExpressionImpl(ConstructorImpl.valueOf(constructor), args);
     }
   }
-
-//  private final ConstructorImpl constructor;
   
   private InductiveExpressionImpl(final ConstructorImpl constructor) {
     super(constructor.getExpressionManager(), Kind.DATATYPE_CONSTRUCT,
@@ -58,8 +56,6 @@ public class InductiveExpressionImpl extends ExpressionImpl implements
             }
           }
         });
-
-//    this.constructor = constructor;
 
     assert (getChildren() != null);
     assert (getChildren().size() == 0);
