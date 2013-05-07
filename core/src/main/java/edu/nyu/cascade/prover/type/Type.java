@@ -25,6 +25,8 @@ public interface Type {
     FUNCTION,
     DATATYPE,
     TUPLE,
+    RECORD,
+    UNINTERPRETED,
     FUNARGS
   }
 
@@ -145,5 +147,10 @@ public interface Type {
   
   boolean isTuple();
   TupleType asTuple();
+  
+  boolean isRecord();
+  RecordType asRecord();
 
+  boolean isUninterpreted();
+  UninterpretedType asUninterpreted();
 }

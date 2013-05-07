@@ -201,11 +201,26 @@ public interface Expression {
     TUPLE_INDEX,
     /** A type expression. */
     TYPE,
+    /** A record of values (e.g., (1, 3, 2)). Two or more children. */
+    RECORD,
+    /**
+     * Updating a record field with a new value. Three children: the record, the
+     * field of the element, and the new value. The new value must have the same
+     * type as the old value at same fields.
+     */
+    RECORD_UPDATE,
+    /**
+     * Selecting one field of record. Two children: the tuple and the field. .
+     */
+    RECORD_SELECT,
+    /** A type expression. */
     /**
      * A type stub (e.g., a reference to a mutually recursive type, before a
      * call to {@link ExpressionManager#dataTypes}).
      */
     TYPE_STUB,
+    /** Uninterpreted expression, zero child */
+    UNINTERPRETED,
     /** Unary negation. One child. */
     UNARY_MINUS,
     /**
@@ -367,6 +382,8 @@ public interface Expression {
   ArrayExpression asArray();
   InductiveExpression asInductive();
   TupleExpression asTuple();
+  RecordExpression asRecord();
+  UninterpretedExpression asUninterpreted();
 
   boolean isArray();
   boolean isBoolean();
@@ -376,6 +393,7 @@ public interface Expression {
   boolean isRational();
   boolean isTuple();
   boolean isInductive();
-
+  boolean isRecord();
+  boolean isUninterpreted();
 
 }

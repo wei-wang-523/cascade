@@ -15,7 +15,9 @@ import edu.nyu.cascade.prover.InductiveExpression;
 import edu.nyu.cascade.prover.IntegerVariableExpression;
 import edu.nyu.cascade.prover.RationalExpression;
 import edu.nyu.cascade.prover.RationalVariableExpression;
+import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TupleExpression;
+import edu.nyu.cascade.prover.UninterpretedExpression;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ComparableType;
 import edu.nyu.cascade.prover.type.FunctionType;
@@ -323,5 +325,25 @@ public class IntegerStateExpressionImpl implements IntegerStateExpression {
   @Override
   public Expression setNode(GNode node) {
     return expr.setNode(node);
+  }
+
+  @Override
+  public RecordExpression asRecord() {
+    return expr.asRecord();
+  }
+
+  @Override
+  public UninterpretedExpression asUninterpreted() {
+    return expr.asUninterpreted();
+  }
+
+  @Override
+  public boolean isRecord() {
+    return expr.isRecord();
+  }
+
+  @Override
+  public boolean isUninterpreted() {
+    return expr.isUninterpreted();
   }
 }

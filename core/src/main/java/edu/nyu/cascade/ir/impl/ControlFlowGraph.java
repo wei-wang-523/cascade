@@ -19,6 +19,7 @@ import edu.nyu.cascade.ir.IRBooleanExpression;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.IRLocation;
 import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Pair;
 
 public class ControlFlowGraph implements IRControlFlowGraph {
   private final Node sourceNode;
@@ -305,17 +306,12 @@ public class ControlFlowGraph implements IRControlFlowGraph {
   }
 
   @Override
-  public BasicBlock splitAt(IRLocation position) {
-    return splitAt(position, true, true);
+  public Pair<BasicBlock, BasicBlock> splitAt(IRLocation position) {
+    return splitAt(position, true);
   }
 
   @Override
-  public BasicBlock splitAt(IRLocation position, boolean insertBefore) {
-    return splitAt(position, insertBefore, true);
-  }
-  
-  @Override
-  public BasicBlock splitAt(IRLocation position, boolean insertBefore, boolean getSucc) {
+  public Pair<BasicBlock, BasicBlock> splitAt(IRLocation position, boolean insertBefore) {
     BasicBlock block = bestBlockForPosition(position/* , insertBefore */);
     IOUtils
         .debug()
@@ -332,8 +328,10 @@ public class ControlFlowGraph implements IRControlFlowGraph {
      */
     if (position.precedes(block, !insertBefore)) {
       Set<Edge> inEdges = getIncomingEdges(block);
-
-      if (inEdges.size() == 1) {
+      if(inEdges.size() == 0) {
+        IOUtils.debug().pln("Block unchanged.");
+        return Pair.of(null, block);
+      } else if (inEdges.size() == 1) {
         /*
          * Special case: if there's only one in-edge, we can re-configure the
          * CFG so that the position comes before it, at the cost of introducing
@@ -343,24 +341,39 @@ public class ControlFlowGraph implements IRControlFlowGraph {
         assert (inEdges.iterator().hasNext());
         Edge e = inEdges.iterator().next();
         /* guard.loc <= block.loc && pos.loc < guard.loc */
-        if (e.getGuard() != null && e.getGuard().getLocation().precedes(block)
-            && position.precedes(e.getGuard(), !insertBefore)) {
-          /* Create a dummy predecessor */
-          BasicBlock pred = e.getSource();
-          BasicBlock dummy = newBlock(pred.getScope());
+        if (e.getGuard() != null && e.getGuard().getLocation().precedes(block)) {
+          if(position.precedes(e.getGuard(), !insertBefore)) {
+            /* Create a dummy predecessor */
+            BasicBlock pred = e.getSource();
+            BasicBlock dummy = newBlock(pred.getScope());
 
-          removeEdge(e);
-          addEdge(pred, dummy);
-          addEdge(dummy, e.getGuard(), block);
+            removeEdge(e);
+            addEdge(pred, dummy);
+            addEdge(dummy, e.getGuard(), block);
 
-          IOUtils.debug().pln("New blocks:");
-          formatBlock(IOUtils.debug(), dummy);
-          IOUtils.debug().pln();
-          formatBlock(IOUtils.debug(), block);
-          return getSucc ? dummy : pred;
+            IOUtils.debug().pln("New blocks:");
+            formatBlock(IOUtils.debug(), dummy);
+            IOUtils.debug().pln();
+            formatBlock(IOUtils.debug(), block);
+            return Pair.of(dummy, block);
+          } else {
+            /* Create a dummy predecessor */
+            BasicBlock pred = e.getSource();
+            BasicBlock dummy = newBlock(pred.getScope());
+
+            removeEdge(e);
+            addEdge(pred, e.getGuard(), dummy);
+            addEdge(dummy, block);
+
+            IOUtils.debug().pln("New blocks:");
+            formatBlock(IOUtils.debug(), dummy);
+            IOUtils.debug().pln();
+            formatBlock(IOUtils.debug(), block);
+            return Pair.of(dummy, block);
+          }
         } else {
           IOUtils.debug().pln("Block unchanged.");
-          return getSucc ? block : e.getTarget();
+          return Pair.of(e.getSource(), block);
         }
       } else {
         /* We have more than one edge. All must come before position. */
@@ -374,8 +387,22 @@ public class ControlFlowGraph implements IRControlFlowGraph {
             return null; // give up
           }
         }
-        IOUtils.debug().pln("Block unchanged.");
-        return block;
+        
+        BasicBlock dummy = newBlock(block.getScope());
+        for(Object o : inEdges.toArray()) {
+          Edge e = (Edge) o;
+          removeEdge((Edge)e);
+          addEdge(e.getSource(), e.getGuard(), dummy);
+        }
+        addEdge(dummy, block);
+        IOUtils.debug().pln("New blocks:");
+        formatBlock(IOUtils.debug(), dummy);
+        IOUtils.debug().pln();
+        formatBlock(IOUtils.debug(), block);
+        return Pair.of(dummy, block);
+        
+//        IOUtils.debug().pln("Block unchanged.");
+//        return Pair.of(null, block);
       }
     }
     
@@ -407,7 +434,7 @@ public class ControlFlowGraph implements IRControlFlowGraph {
         Edge e = outEdges.iterator().next();
         if (e.getGuard() == null) {
           IOUtils.debug().pln("Block unchanged.");
-          return getSucc? e.getTarget() : block;
+          return Pair.of(block, e.getTarget());
         }
       }
       
@@ -420,24 +447,24 @@ public class ControlFlowGraph implements IRControlFlowGraph {
       formatBlock(IOUtils.debug(), block);
       IOUtils.debug().pln();
       formatBlock(IOUtils.debug(), dummy);
-      return getSucc? dummy : block;
+      return Pair.of(block, dummy);
     }
 
     /* The position neither precedes nor follows the block. I.e., we have to 
      * split the block in the middle.
      */
     assert (position.isWithin(block));
-    BasicBlock succ = insertBefore ? block.splitBefore(position) : block
+    BasicBlock dummy = insertBefore ? block.splitBefore(position) : block
         .splitAfter(position);
 
-    moveEdgesToSource(getOutgoingEdges(block), succ);
-    addEdge(block, succ);
+    moveEdgesToSource(getOutgoingEdges(block), dummy);
+    addEdge(block, dummy);
 
     IOUtils.debug().pln("New blocks:");
     formatBlock(IOUtils.debug(), block);
     IOUtils.debug().pln();
-    formatBlock(IOUtils.debug(), succ);
-    return getSucc ? succ : block;
+    formatBlock(IOUtils.debug(), dummy);
+    return Pair.of(block, dummy);
   }
 
   @Override

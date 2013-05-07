@@ -29,7 +29,7 @@ import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
 public class BitVectorMemoryModel extends AbstractMemoryModel {  
   protected static final String REGION_VARIABLE_NAME = "region";
   protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
-  protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "regionSize";
+  protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "alloc";
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
@@ -138,8 +138,8 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
     heapRegions.add(locVar); // For dynamic memory allocation, add to the end of regions;
     
     Expression memory = state.getChild(0).asArray().update(ptr, locVar);
-    Expression regionSize = state.getChild(1).asArray().update(locVar, size);    
-    return exprManager.tuple(getStateType(), memory, regionSize);
+    Expression alloc = state.getChild(1).asArray().update(locVar, size);    
+    return exprManager.tuple(getStateType(), memory, alloc);
   }
   
   @Override
@@ -154,8 +154,8 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
     stackRegions.add(ptr); // For stack allocated region, add ptr directly to stackRegions;
     rvals.add((VariableExpression) ptr); // Add ptr to rvals (removed variables)
     
-    Expression regionSize = state.getChild(1).asArray().update(ptr, size);  
-    return exprManager.tuple(getStateType(), state.getChild(0), regionSize);
+    Expression alloc = state.getChild(1).asArray().update(ptr, size);  
+    return exprManager.tuple(getStateType(), state.getChild(0), alloc);
   }
   
   @Override
@@ -170,8 +170,8 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
     stackRegions.add(ptr); // For stack allocated region, add ptr directly to stackRegions;
     rvals.add((VariableExpression) ptr); // Add ptr to rvals (removed variables)
     
-    Expression regionSize = state.getChild(1).asArray().update(ptr, size);  
-    return exprManager.tuple(getStateType(), state.getChild(0), regionSize);
+    Expression alloc = state.getChild(1).asArray().update(ptr, size);  
+    return exprManager.tuple(getStateType(), state.getChild(0), alloc);
   }
   
   /* TODO: This will fail for automatically allocated addresses (e.g., the
@@ -190,10 +190,10 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
     
     try {
       ExpressionManager exprManager = getExpressionManager();
-      Expression regionSize = state.getChild(1);
+      Expression alloc = state.getChild(1);
       
       for( Expression locVar : regions ) {
-        Expression sizeVar = regionSize.asArray().index(locVar);
+        Expression sizeVar = alloc.asArray().index(locVar);
         BitVectorExpression regionBound = exprManager.plus(addressType
             .getSize(), locVar, sizeVar);
         disjs.add(locVar.asBitVector().lessThanOrEqual(ptr)
@@ -211,16 +211,16 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptr.getType().equals( addressType )); 
     
     ExpressionManager exprManager = getExpressionManager();
-    Expression regionSize = state.getChild(1);
+    Expression alloc = state.getChild(1);
     
     try {
       BitVectorExpression regionZero = getExpressionEncoding().getIntegerEncoding()
           .zero().asBitVector();
-      regionSize = regionSize.asArray().update(ptr, regionZero);
+      alloc = alloc.asArray().update(ptr, regionZero);
     } catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
     }   
-    return exprManager.tuple(getStateType(), state.getChild(0), regionSize);
+    return exprManager.tuple(getStateType(), state.getChild(0), alloc);
   }
 
   @Override
@@ -266,7 +266,7 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
     ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
     try {
       ExpressionManager exprManager = getExpressionManager();
-      Expression regionSize = state.getChild(1);
+      Expression alloc = state.getChild(1);
       List<Expression> regions = Lists.newArrayList();
       /* Collect all the regions. */
       regions.addAll(stackRegions);
@@ -284,7 +284,7 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
         
         /* Collect constraints for memory regions */
         for (Expression locVar : regions) {
-          Expression sizeVar = regionSize.asArray().index(locVar);
+          Expression sizeVar = alloc.asArray().index(locVar);
           BitVectorExpression regionBound = exprManager.plus(addressType
               .getSize(), locVar, sizeVar);
 
@@ -301,7 +301,7 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
           // TODO: Could optimize using commutativity
           for (Expression locVar2 : regions) {
             if (!locVar.equals(locVar2)) {
-              Expression sizeVar2 = regionSize.asArray().index(locVar2);
+              Expression sizeVar2 = alloc.asArray().index(locVar2);
 
               builder.add(exprManager.or(exprManager.lessThanOrEqual(exprManager.plus(
                   addressType.getSize(), locVar2, sizeVar2), locVar),
@@ -338,7 +338,7 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
         for (Expression locVar : regions) {
           builder.add(exprManager.lessThan(regionBound, locVar));
 
-          Expression sizeVar = regionSize.asArray().index(locVar);
+          Expression sizeVar = alloc.asArray().index(locVar);
           regionBound = exprManager
               .plus(addressType.getSize(), locVar, sizeVar);
 
@@ -367,8 +367,8 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
     heapRegions.add(locVar); // For dynamic memory allocation, add to heap regions;
     
     Expression memory = state.getChild(0).asArray().update(ptr, locVar);
-    Expression regionSize = state.getChild(1).asArray().update(locVar, size);
-    Expression statePrime = exprManager.tuple(getStateType(), memory, regionSize);
+    Expression alloc = state.getChild(1).asArray().update(locVar, size);
+    Expression statePrime = exprManager.tuple(getStateType(), memory, alloc);
     
     setCurrentState(state, statePrime);
     
@@ -380,9 +380,9 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
     Expression memVar = exprManager.variable(DEFAULT_MEMORY_VARIABLE_NAME, 
         memType, true);
-    Expression regionSizeVar = exprManager.variable(DEFAULT_REGION_SIZE_VARIABLE_NAME, 
+    Expression allocVar = exprManager.variable(DEFAULT_REGION_SIZE_VARIABLE_NAME, 
         memType, true);
-    return exprManager.tuple(getStateType(), memVar, regionSizeVar);
+    return exprManager.tuple(getStateType(), memVar, allocVar);
   }
   
   @Override

@@ -117,7 +117,7 @@ public class ReachMemoryModel extends BitVectorMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
     
     ArrayExpression memory = state.getChild(0).asArray();
-    ArrayExpression regionSize = state.getChild(1).asArray();
+    ArrayExpression alloc = state.getChild(1).asArray();
     
     int length = exprManager.valueOfIntegerConstant(lengthExpr);
    
@@ -141,7 +141,7 @@ public class ReachMemoryModel extends BitVectorMemoryModel {
     Map<String, Expression> fldLocMap = Maps.newLinkedHashMap();
 
     for(int i = 1; i<=length; i++) {
-      regionSize = regionSize.update(newRegions.get(i), 
+      alloc = alloc.update(newRegions.get(i), 
           exprManager.bitVectorConstant(size, addressType.getSize()));
       int fld_index = 0;
       for(String fld : fldOffMap.keySet()) {
@@ -182,7 +182,7 @@ public class ReachMemoryModel extends BitVectorMemoryModel {
       }
     }
     
-    Expression statePrime = exprManager.tuple(getStateType(), memory, regionSize);    
+    Expression statePrime = exprManager.tuple(getStateType(), memory, alloc);    
     setCurrentState(state, statePrime);
     return exprManager.and(builder.build());
   }

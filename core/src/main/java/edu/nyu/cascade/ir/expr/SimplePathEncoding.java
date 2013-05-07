@@ -14,6 +14,7 @@ import com.google.common.collect.Lists;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 
 public class SimplePathEncoding extends AbstractPathEncoding {
@@ -209,19 +210,34 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     Preconditions.checkArgument(Iterables.size(prefixes) == Iterables.size(preGuards));
     ExpressionManager exprManager = getExpressionManager();
     
-    List<Expression> mem = Lists.newArrayList();
-    List<Expression> regionSize = Lists.newArrayList();
+    
+    Expression resMemState = null;
+    if(getMemoryModel().getStateType().isTuple()) {
+      TupleType tupleType = getMemoryModel().getStateType().asTuple();
+      int size = tupleType.getElementTypes().size();
+      List<Expression> stateElem = Lists.newArrayListWithCapacity(size);
+      for(int i = 0; i < size; i++) {
+        List<Expression> mem = Lists.newArrayList();
+        for(Expression prefix : prefixes) {
+          mem.add(prefix.asTuple().getChild(0).asTuple().getChild(i));   
+        }
+        stateElem.add(getITEExpression(mem, preGuards));
+      }
+      resMemState = exprManager.tuple(getMemoryModel().getStateType(), stateElem);
+    } else {
+      List<Expression> mem = Lists.newArrayList();
+      for(Expression prefix : prefixes) {
+        mem.add(prefix.asTuple().getChild(0));
+      }
+      resMemState = getITEExpression(mem, preGuards);
+    }
+    
     List<Expression> pc = Lists.newArrayList();
     for(Expression prefix : prefixes) {
-      mem.add(prefix.asTuple().getChild(0).asTuple().getChild(0));
-      regionSize.add(prefix.asTuple().getChild(0).asTuple().getChild(1));
-      pc.add(prefix.asTuple().getChild(1));      
+      pc.add(prefix.asTuple().getChild(1));
     }
-    Expression resMem = getITEExpression(mem, preGuards);
-    Expression resRegionSize = getITEExpression(regionSize, preGuards);
-    Expression resPc = getITEExpression(pc, preGuards);
-    Expression resMemState = exprManager.tuple(getMemoryModel().getStateType(), resMem, resRegionSize);
+    Expression resPC = getITEExpression(pc, preGuards); 
     
-    return exprManager.tuple(stateType, resMemState, resPc);
+    return exprManager.tuple(getPathType(), resMemState, resPC);
   }
 }

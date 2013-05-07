@@ -16,6 +16,8 @@ package edu.nyu.cascade.ir;
 
 import java.util.Set;
 
+import edu.nyu.cascade.util.Pair;
+
 import xtc.tree.Location;
 import xtc.tree.Node;
 import xtc.tree.Printer;
@@ -81,17 +83,12 @@ public interface IRControlFlowGraph {
    * true, then the CFG will be split <em>before</em> the source line; otherwise,
    * it will be split <em>after</em> the source line.
    * 
-   * If <code>getSucc</code> is false, return the block before the position
-   * 
    * Returns <code>null</code> if the CFG cannot be split at <code>position</code>.
    */
-  public IRBasicBlock splitAt(IRLocation position, boolean insertBefore, boolean getSucc);
-  
-  /** Equivalent to <code>splitAt(location,insertBefore,true)</code> */
-  public IRBasicBlock splitAt(IRLocation location, boolean insertBefore);
+  public Pair<? extends IRBasicBlock, ? extends IRBasicBlock> splitAt(IRLocation location, boolean insertBefore);
   
   /** Equivalent to <code>splitAt(location,true)</code> */
-  public IRBasicBlock splitAt(IRLocation location);
+  public Pair<? extends IRBasicBlock, ? extends IRBasicBlock> splitAt(IRLocation location);
 
   /** Get the source node of the declaration for this CFG. */
   Node getSourceNode();

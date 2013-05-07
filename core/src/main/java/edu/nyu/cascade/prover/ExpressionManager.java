@@ -15,9 +15,11 @@ import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.RationalType;
+import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.prover.type.UninterpretedType;
 
 /**
  * Expression manager interface provides the methods to construct expressions. A
@@ -157,6 +159,8 @@ public interface ExpressionManager {
       Expression expression);
 
   TupleType asTupleType(Type t);
+  
+  RecordType asRecordType(Type t);
 
   /* UnaryFunctionExpression asUnaryFunctionExpression(
       Expression expression);
@@ -661,8 +665,7 @@ public interface ExpressionManager {
    *          an expression of type <code>a</code>
    * @return the expression <code>array[index]</code>, of type <code>b</code>
    */
-   Expression index(
-      Expression array, Expression index);
+  Expression index(Expression array, Expression index);
 
   Expression index(Expression tuple, int index);
 
@@ -994,6 +997,19 @@ public interface ExpressionManager {
   TupleType tupleType(String tname, Iterable<? extends Type> elementTypes);
 
   TupleType tupleType(String tname, Type firstType, Type... elementTypes);
+  
+  RecordExpression record(Type type, Iterable<? extends Expression> args);
+
+  RecordExpression record(Type type, Expression arg);
+  
+  RecordExpression record(Type type, Expression first, Expression... rest);
+
+  RecordType recordType(String tname, Iterable<String> names, 
+      Iterable<? extends Type> elementTypes);
+
+  RecordType recordType(String tname, String name, Type elementType);
+
+  UninterpretedType uninterpretedType(String name);
 
   /** The super-type of all value types. (Optional) */
   Type universalType();
@@ -1015,6 +1031,9 @@ public interface ExpressionManager {
       Expression value);
 
   TupleExpression update(Expression tuple, int i,
+      Expression val);
+  
+  RecordExpression update(Expression record, String fieldName,
       Expression val);
 
   /**
@@ -1046,7 +1065,11 @@ public interface ExpressionManager {
 
   TupleExpression asTuple(Expression e);
   
-  InductiveExpression asInductiveExpression(Expression e);
+  RecordExpression asRecord(Expression e);
+  
+  InductiveExpression asInductive(Expression e);
+  
+  UninterpretedExpression asUninterpreted(Expression e);
 
   ArrayExpression asArray(Expression e);
 
@@ -1081,4 +1104,5 @@ public interface ExpressionManager {
    * @return
    */
   Expression boundExpression(int index, Type type);
+
 }
