@@ -1,7 +1,7 @@
 <controlFile>
   <sourceFile name="ftpd-inlined.c" id="1" /> 
   <run>
-    <startPosition fileId="1" line="5">
+    <startPosition fileId="1" line="3">
       <command>
         <cascadeFunction>cascade_assume</cascadeFunction>
         <argument><![CDATA[

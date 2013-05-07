@@ -1179,9 +1179,9 @@ public class CfgBuilder extends Visitor {
     currentCfg.addEdge(entryBlock, elseBranch, elseBlock);
 
     /* Add the location of the conditional test to the current block */
-    currentBlock.addLocation(assignExpr.getLocation());
+    entryBlock.addLocation(assignExpr.getLocation());
     /* Add the statements to the current block */
-    addAndFlushPostStatements(currentBlock);
+    addAndFlushPostStatements(entryBlock);
     
     currentBlock = ifBlock;
     dispatch(ifPart);
@@ -1230,7 +1230,7 @@ public class CfgBuilder extends Visitor {
     /* Add the location of the conditional test to the current block */
     currentBlock.addLocation(assignExpr.getLocation());
     /* Add the statements to the current block */
-    addAndFlushPostStatements(currentBlock);
+    addAndFlushPostStatements(entryBlock);
 
     currentBlock = ifBlock;
     dispatch(ifPart);

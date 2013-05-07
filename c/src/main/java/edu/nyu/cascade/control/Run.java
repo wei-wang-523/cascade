@@ -12,8 +12,12 @@ import com.google.common.collect.Lists;
 public class Run {
   public static Run valueOf(edu.nyu.cascade.control.jaxb.ControlFile.Run run,
      Map<BigInteger,File> sourceFiles) throws ControlFileException {
-    Position startPosition = Position.valueOf( run.getStartPosition(), sourceFiles );
-    Position endPosition = Position.valueOf(run.getEndPosition(), sourceFiles);
+    Position startPosition = null;
+    if(run.getStartPosition() != null)
+      startPosition = Position.valueOf( run.getStartPosition(), sourceFiles );
+    Position endPosition = null;
+    if(run.getEndPosition() != null)
+      endPosition = Position.valueOf(run.getEndPosition(), sourceFiles);
     List<Position> wayPoints = Lists.newArrayList();
     for( edu.nyu.cascade.control.jaxb.Position position : run.getWayPoint() ) {
       wayPoints.add( Position.valueOf( position, sourceFiles ) );

@@ -20,10 +20,12 @@ import edu.nyu.cascade.prover.IntegerExpression;
 import edu.nyu.cascade.prover.IntegerVariableExpression;
 import edu.nyu.cascade.prover.RationalExpression;
 import edu.nyu.cascade.prover.RationalVariableExpression;
+import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.SatResult;
 import edu.nyu.cascade.prover.TheoremProver;
 import edu.nyu.cascade.prover.TheoremProverFactory.Capability;
 import edu.nyu.cascade.prover.TupleExpression;
+import edu.nyu.cascade.prover.UninterpretedExpression;
 import edu.nyu.cascade.prover.ValidityResult;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
@@ -34,9 +36,11 @@ import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.RationalType;
+import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.prover.type.UninterpretedType;
 
 /**
  * An <code>ITheoremProver</code> implementation that delegates to an underlying
@@ -142,10 +146,6 @@ final class DryRunTheoremProver implements TheoremProver {
     @Override
     public FunctionType asFunctionType(Type t) {
       return exprManager.asFunctionType(t);
-    }
-
-    public InductiveExpression asInductiveExpression(Expression e) {
-      return exprManager.asInductiveExpression(e);
     }
 
     @Override
@@ -1006,6 +1006,64 @@ final class DryRunTheoremProver implements TheoremProver {
     @Override
     public Expression boundExpression(int index, Type type) {
       return exprManager.boundExpression(index, type);
+    }
+
+    @Override
+    public UninterpretedType uninterpretedType(String name) {
+      return exprManager.uninterpretedType(name);
+    }
+
+    @Override
+    public RecordExpression record(Type type, Iterable<? extends Expression> args) {
+      return exprManager.record(type, args);
+    }
+
+    @Override
+    public RecordExpression record(Type type, Expression arg) {
+      return exprManager.record(type, arg);
+    }
+
+    @Override
+    public RecordType recordType(String tname, Iterable<String> names,
+        Iterable<? extends Type> elementTypes) {
+      return exprManager.recordType(tname, names, elementTypes);
+    }
+
+    @Override
+    public RecordType recordType(String tname, String name, Type elementType) {
+      return exprManager.recordType(tname, name, elementType);
+    }
+
+    @Override
+    public RecordExpression update(Expression record, String fieldName,
+        Expression val) {
+      return exprManager.update(record, fieldName, val);
+    }
+
+    @Override
+    public RecordType asRecordType(Type t) {
+      return exprManager.asRecordType(t);
+    }
+
+    @Override
+    public RecordExpression asRecord(Expression e) {
+      return exprManager.asRecord(e);
+    }
+
+    @Override
+    public InductiveExpression asInductive(Expression e) {
+      return exprManager.asInductive(e);
+    }
+
+    @Override
+    public UninterpretedExpression asUninterpreted(Expression e) {
+      return exprManager.asUninterpreted(e);
+    }
+
+    @Override
+    public RecordExpression record(Type type, Expression first,
+        Expression... rest) {
+      return exprManager.record(type, first, rest);
     }
   }
 

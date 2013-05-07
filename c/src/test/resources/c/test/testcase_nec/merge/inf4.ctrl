@@ -1,6 +1,5 @@
 <controlFile>
-  <sourceFile name="inf4.c" id="1" />
-  <theory qname="edu.nyu.cascade.c.theory.SimpleTheory" />
+  <sourceFile name="../inf4.c" id="1" />
   <run>
     <startPosition fileId="1" line="7" />
     <endPosition fileId="1" line="49" >

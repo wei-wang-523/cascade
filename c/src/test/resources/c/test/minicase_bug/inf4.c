@@ -7,14 +7,14 @@ int equilateral;
 int main(int a, int b, int c){
   isoscles=scalene=triangle=equilateral=0;
   
-  if (a > 0 && b > 0 && c > 0 && a < b +c){ // a = 129, b = 128, c = 2
-    triangle = 1;
+  if (a > 0 && b > 0 && c > 0 && a < b +c){ // a = 2, b = 1, c = 3
+    triangle = 1; //*
   } else {
     triangle=-1;
   }
 
   if (a >= b){
-    if ( b >= a){
+    if ( b >= a){ //*
       isoscles = 1;
     }
   } 
@@ -25,7 +25,7 @@ int main(int a, int b, int c){
     }
   }
 
-  if (a >= b){
+  if (a >= b){ //*
     if (b >= c){
       if (c >= a){
     	  equilateral =1;
@@ -40,12 +40,12 @@ int main(int a, int b, int c){
       scalene=1;
     }
   }
-  if (triangle == 1){
+  if (triangle == 1){ //*
     if (equilateral == 1){
 		ASSERT(isoscles == 1);
 		ASSERT(scalene== 0);
-    } else {
-      if (isoscles == 0){
+    } else { //*
+      if (isoscles == 0){ //*
 		  ASSERT(scalene==1);
       }
     }

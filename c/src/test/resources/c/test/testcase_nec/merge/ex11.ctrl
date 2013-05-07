@@ -4,7 +4,7 @@
     <startPosition fileId="1" line="2" />
     <wayPoint fileId="1" line="9" >
       <loop iterTimes ="3" >
-        <wayPoint fileId="1" line="14">
+        <wayPoint fileId="1" line="14" insert="before">
           <command>
             <cascadeFunction>cascade_check</cascadeFunction>
             <argument><![CDATA[

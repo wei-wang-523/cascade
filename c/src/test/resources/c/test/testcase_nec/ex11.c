@@ -10,7 +10,7 @@ int main(){
 
       if (len==4)
          len =0;
-      
+
       a[len]=0;
 
       len++;

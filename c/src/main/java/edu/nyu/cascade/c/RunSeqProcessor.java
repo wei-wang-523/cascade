@@ -303,7 +303,7 @@ class RunSeqProcessor implements RunProcessor {
     IRBasicBlock target;
     if(pos instanceof Position) {
       target = cfg.splitAt(pos, InsertionType.BEFORE.equals(
-          ((Position)pos).getInsertionType()));
+          ((Position)pos).getInsertionType())).snd();
     } else {
       throw new RunProcessorException("Bad position: " + pos);
     }      
@@ -1057,7 +1057,7 @@ class RunSeqProcessor implements RunProcessor {
 
     // Start position  
     {
-      block = cfg.splitAt(start, true);
+      block = cfg.splitAt(start, true).snd();
     
       IOUtils.debug().pln("<startPosition> " + start.toString()).flush();
       if(start instanceof Position) {
@@ -1101,7 +1101,7 @@ class RunSeqProcessor implements RunProcessor {
         IOUtils.debug().pln("<callPoint> " + callPos.toString()).flush();
         
         {
-          IRBasicBlock target = cfg.splitAt(callPos, true); // Split before callPos
+          IRBasicBlock target = cfg.splitAt(callPos, true).snd(); // Split before callPos
           List<IRStatement> wayPath = buildPathToBlock(cfg, block, target);
           block = target;
           addTmpPathToPath(path, wayPath, symbolTable);
@@ -1110,7 +1110,7 @@ class RunSeqProcessor implements RunProcessor {
         
         /* Call position */
         {
-          IRBasicBlock target = cfg.splitAt(callPos, false);
+          IRBasicBlock target = cfg.splitAt(callPos, false).snd();
           // statements after flatten the function calls
           List<IRStatement> wayPath = buildPathToBlock(cfg, block, target); 
           block = target;

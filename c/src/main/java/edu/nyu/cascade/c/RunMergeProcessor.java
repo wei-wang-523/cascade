@@ -18,7 +18,6 @@ import xtc.tree.GNode;
 import xtc.tree.Location;
 import xtc.tree.Node;
 import xtc.type.NumberT;
-import xtc.util.Pair;
 import xtc.util.SymbolTable.Scope;
 
 import com.google.common.base.Function;
@@ -58,6 +57,7 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.SatResult;
 import edu.nyu.cascade.prover.ValidityResult;
 import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.c.CSpecParser;
 
@@ -114,7 +114,7 @@ final class PathMergeEncoder {
       IOUtils.debug().pln("Checking pre-condition: " + pre).flush();
       ValidityResult<?> result = pathEncoding.checkAssertion(preCond, pre);
 
-      IOUtils.debug().pln("Result: " + result).flush();
+      IOUtils.out().println("Result: " + result);
       runIsValid = result.isValid();
       
       if (!runIsValid) {
@@ -162,10 +162,13 @@ final class PathMergeEncoder {
     Expression preCond = null;
     
     int size = Iterables.size(preConds);
-    if(size == 1)   preCond = Iterables.get(preConds, 0);
-    /* more than one preConds and preGuards, merge it before encode statement */
-    else    preCond = pathEncoding.noop(preConds, preGuards);      
-
+    if(size == 1) {
+      preCond = Iterables.get(preConds, 0);
+    } else {
+      /* more than one preConds and preGuards, merge it before encode statement */
+      preCond = pathEncoding.noop(preConds, preGuards);      
+    }
+    
     for(IRStatement stmt : currPath.stmts) {
       preCond = encodeStatement(stmt, preCond);
       
@@ -497,6 +500,16 @@ final class Graph {
     destPath = postPath;
   }
   
+  void insertBefore(Path destPath, Path insertPath) {
+    Preconditions.checkArgument(destPath != null);
+    if(insertPath == null)  return;
+    Set<Path> prePaths = predecessorMap.remove(destPath);
+    predecessorMap.put(destPath, Sets.newHashSet(insertPath));
+    if(prePaths != null) {
+      predecessorMap.put(insertPath, prePaths);
+    }
+  }
+  
   void appendPrePath(Path path) {
     if(path == null)    return;
     predecessorMap.put(srcPath, Sets.newHashSet(path));
@@ -512,7 +525,6 @@ final class Graph {
   private boolean hasReturnStmt(Path path) {
     if(path == null || path.isEmpty())  {
       Set<Path> prePaths = predecessorMap.get(path);
-      if(prePaths.size() > 1) return false;
       Path prePath = prePaths.iterator().next();
       return hasReturnStmt(prePath);
     } else {
@@ -539,6 +551,60 @@ final class Graph {
   IRStatement getReturnStmt() {
     Preconditions.checkArgument(hasReturnStmt());
     return getReturnStmt(destPath);
+  }
+  
+  /** Replace the last return statement as assign statement. */
+  private IRStatement replaceReturnStmt(IRStatement returnStmt, IRStatement assignStmt) {
+    Preconditions.checkArgument(returnStmt.getType().equals(StatementType.RETURN));
+    IRExpressionImpl lExpr = (IRExpressionImpl) ((Statement) assignStmt).getOperand(0);
+    IRExpressionImpl rExpr = (IRExpressionImpl) ((Statement) returnStmt).getOperand(0);
+    Node assignNode = GNode.create("AssignmentExpression", 
+        lExpr.getSourceNode(), "=", rExpr.getSourceNode());
+    assignNode.setLocation(assignStmt.getSourceNode().getLocation());
+    IRStatement assignResult = Statement.assign(assignNode, lExpr, rExpr);
+    return assignResult;
+  }
+  
+  /**
+   * Replace the return statement with assign statement, return true if replace
+   * actually happened
+   */
+  public boolean replaceReturnStmt(IRStatement assignStmt) {
+    Preconditions.checkArgument(assignStmt.getType().equals(StatementType.ASSIGN));
+    Queue<Path> queue = Lists.newLinkedList();
+    queue.add(destPath);
+    Map<Path, Set<Path>> successorMap = Maps.newHashMap();
+    while(!queue.isEmpty()) {
+      Path currPath = queue.poll();
+      if(currPath.isEmpty()) {
+        for(Path prePath : predecessorMap.get(currPath)) {
+          queue.add(prePath);
+          Set<Path> succPaths = null;
+          if(successorMap.containsKey(prePath))
+            succPaths = successorMap.get(prePath);
+          else
+            succPaths = Sets.newHashSet();
+          succPaths.add(currPath);
+          successorMap.put(prePath, succPaths);
+        }
+      } else {
+        IRStatement lastStmt = currPath.getLastStmt();
+        if(lastStmt.getType().equals(StatementType.RETURN)) {
+          IRStatement assignResult = replaceReturnStmt(lastStmt, assignStmt);
+          Path newPath = Path.createSingleton(assignResult);
+          predecessorMap.put(newPath, Sets.newHashSet(currPath));
+          for(Path succPath : successorMap.get(currPath)) {
+            Set<Path> prePaths = predecessorMap.get(succPath);
+            prePaths.remove(currPath);
+            prePaths.add(newPath);
+            predecessorMap.put(succPath, prePaths);
+          }
+        } else {
+          return false;
+        }
+      }
+    }
+    return true;
   }
   
   private Path simplify_DFS(Path path, Map<Path, Path> replaceMap) throws RunProcessorException {
@@ -833,9 +899,10 @@ class RunMergeProcessor implements RunProcessor {
    * If there is more than one shortest path, one will be chosen arbitrarily.
    * 
    */
-  private IRBasicBlock getTargetBlock(IRControlFlowGraph cfg,
-      IRBasicBlock block, IRLocation pos) throws RunProcessorException {
-    IRBasicBlock target;
+  private Pair<? extends IRBasicBlock, ? extends IRBasicBlock> getTargetBlock(
+      IRControlFlowGraph cfg, IRBasicBlock block, IRLocation pos) 
+          throws RunProcessorException {
+    Pair<? extends IRBasicBlock, ? extends IRBasicBlock> target;
     if(pos instanceof Position) {
       target = cfg.splitAt(pos, InsertionType.BEFORE.equals(
           ((Position)pos).getInsertionType()));
@@ -1412,19 +1479,6 @@ class RunMergeProcessor implements RunProcessor {
     }    
     return assignments; 
   }
-
-  /** Replace the last return statement as assign statement. */
-  private IRStatement replaceReturnStmt(IRStatement returnStmt, IRStatement assignStmt) 
-      throws RunProcessorException {
-    Preconditions.checkArgument(returnStmt.getType().equals(StatementType.RETURN));
-    IRExpressionImpl lExpr = (IRExpressionImpl) ((Statement) assignStmt).getOperand(0);
-    IRExpressionImpl rExpr = (IRExpressionImpl) ((Statement) returnStmt).getOperand(0);
-    Node assignNode = GNode.create("AssignmentExpression", 
-        lExpr.getSourceNode(), "=", rExpr.getSourceNode());
-    assignNode.setLocation(assignStmt.getSourceNode().getLocation());
-    IRStatement assignResult = Statement.assign(assignNode, lExpr, rExpr);
-    return assignResult;
-  }
   
   /**
    * Function inlining for call statement
@@ -1434,17 +1488,14 @@ class RunMergeProcessor implements RunProcessor {
    */
   private Graph getGraphForAssignCallStmt(IRStatement lhsStmt, IRStatement rhsStmt, CallPoint func) 
       throws RunProcessorException {
-      List<IRStatement> paramPassStmts = assignArgToParam(lhsStmt, rhsStmt);
-      Graph funcGraph = collectStmtFromFunction(rhsStmt, func);
-      funcGraph.appendPrePath(Path.createSingleton(paramPassStmts));
-      
-      /* Pick the last statement from func_path - return statement. */
-      if(funcGraph.hasReturnStmt()) {
-        IRStatement returnStmt = funcGraph.getReturnStmt();
-        IRStatement replaceStmt = replaceReturnStmt(returnStmt, lhsStmt);
-        funcGraph.appendPostPath(Path.createSingleton(replaceStmt));
-      }
-      return funcGraph;
+    List<IRStatement> paramPassStmts = assignArgToParam(lhsStmt, rhsStmt);
+    Graph funcGraph = collectStmtFromFunction(rhsStmt, func);
+    funcGraph.appendPrePath(Path.createSingleton(paramPassStmts));
+    
+    /* replace all the return statements. */
+    funcGraph.replaceReturnStmt(lhsStmt);
+    
+    return funcGraph;
   }
   
   /**
@@ -2024,7 +2075,7 @@ class RunMergeProcessor implements RunProcessor {
       if(start instanceof Position)
         startPath = Path.createSingleton(processPosition((Position)start, symbolTable));
       
-      block = cfg.splitAt(start, true);
+      block = cfg.splitAt(start, true).snd();
     }
     
     if(waypoints != null && !waypoints.isEmpty()) { 
@@ -2038,21 +2089,27 @@ class RunMergeProcessor implements RunProcessor {
           if (block == null)      break;
           IOUtils.debug().pln("<wayPoint> " + pos.toString()).flush();
           
-          IRBasicBlock target = getTargetBlock(cfg, block, pos);
+          Pair<? extends IRBasicBlock, ? extends IRBasicBlock> pair = 
+              getTargetBlock(cfg, block, pos);
+          IRBasicBlock target = pair.fst();
           Graph wayGraph = buildPathGraphToBlock(cfg, block, target);
-          block = cfg.splitAt(pos, false);
+          block = pair.snd();
           
           Scope currScope = symbolTable.getCurrentScope();
           if(block.getScope() != null)   symbolTable.setScope(block.getScope());
           if(pos.getInvariant() != null) {
             Graph invariantGraph = processInvariant(cfg, pos, symbolTable);
-            block = cfg.splitAt(pos, false);
+            block = cfg.splitAt(pos, false).snd();
             
             wayGraph.appendPostGraph(invariantGraph);        
           }
           
           Path wayPath = Path.createSingleton(processPosition(pos, symbolTable));
-          wayGraph.appendPostPath(wayPath);
+          if(InsertionType.BEFORE.equals(((Position)pos).getInsertionType())) {
+            wayGraph.insertBefore(wayGraph.destPath, wayPath);
+          } else {
+            wayGraph.appendPostPath(wayPath);
+          }
           symbolTable.setScope(currScope);
           
           if(graph == null)     graph = wayGraph;
@@ -2066,10 +2123,11 @@ class RunMergeProcessor implements RunProcessor {
         IOUtils.debug().pln("<callPoint> " + callPos.toString()).flush();
         
         { /* Split before callPos, target before the call position */
-          IRBasicBlock target = cfg.splitAt(callPos, true, false); 
+          Pair<? extends IRBasicBlock, ? extends IRBasicBlock> pair = cfg.splitAt(callPos, true); 
+          IRBasicBlock target = pair.fst();
           Graph wayGraph = buildPathGraphToBlock(cfg, block, target);
           /* Split before callPos, block after the call position */
-          block = cfg.splitAt(callPos, true, false);
+          block = pair.snd();
           
           if(graph == null)     graph = wayGraph;
           else                  graph.appendPostGraph(wayGraph);
@@ -2077,7 +2135,8 @@ class RunMergeProcessor implements RunProcessor {
         
         /* Call position */
         {
-          IRBasicBlock target = cfg.splitAt(callPos, false, false);
+          Pair<? extends IRBasicBlock, ? extends IRBasicBlock> pair = cfg.splitAt(callPos, false); 
+          IRBasicBlock target = pair.fst();
           /* statements after flatten the function call */
           Graph targetGraph = buildPathGraphToBlock(cfg, block, target);
           assert(targetGraph.srcPath == targetGraph.destPath);
@@ -2085,7 +2144,7 @@ class RunMergeProcessor implements RunProcessor {
           Graph callGraph = functionInlinePath(symbolTable, targetPath, callPos);
           graph.appendPostGraph(callGraph);
           
-          block = cfg.splitAt(callPos, false);
+          block = pair.snd();
         }
       }
     }
@@ -2100,7 +2159,9 @@ class RunMergeProcessor implements RunProcessor {
         endBlock = cfg.getExit();
         IOUtils.debug().pln("<endPosition> Null").flush();
       } else {
-        endBlock = getTargetBlock(cfg, block, end);
+        Pair<? extends IRBasicBlock, ? extends IRBasicBlock> pair = 
+            getTargetBlock(cfg, block, end);
+        endBlock = pair.snd();
         IOUtils.debug().pln("<endPosition> " + end.toString()).flush();
         endPath = Path.createSingleton(processPosition((Position)end, symbolTable));
       }
@@ -2169,9 +2230,9 @@ class RunMergeProcessor implements RunProcessor {
    * Pair<? extends Object>.
    */  
   private Node createNodeWithArgList(String name, List<Object> argList) {
-    Pair<Object> operands = null;
+    xtc.util.Pair<Object> operands = null;
     for(Object o : argList) {
-      Pair<Object> pair = new Pair<Object>(o);
+      xtc.util.Pair<Object> pair = new xtc.util.Pair<Object>(o);
       if(operands == null)  operands = pair;
       else  operands = operands.append(pair);
     }

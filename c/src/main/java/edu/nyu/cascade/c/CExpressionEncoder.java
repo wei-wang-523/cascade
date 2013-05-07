@@ -1021,8 +1021,7 @@ class CExpressionEncoder implements ExpressionEncoder {
   public Expression derefMemory(Expression memory, Expression lvalExpr, Type t) {
     Expression resExpr;
     GNode srcNode = lvalExpr.getNode();
-    /* lvalExpr's node without type info, get it for BurstallMemoryModel analysis. 
-     */
+    /* lvalExpr's node with no type info, get it for BurstallMemoryModel analysis. */
     if(!srcNode.hasProperty(xtc.Constants.TYPE))
       srcNode.setProperty(xtc.Constants.TYPE, lookupType(srcNode));
     if(t.isArray())
