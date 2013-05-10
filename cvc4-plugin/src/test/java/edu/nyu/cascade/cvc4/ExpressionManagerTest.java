@@ -544,11 +544,11 @@ public class ExpressionManagerTest {
 /*    TupleType tupleType = exprManager.tupleType(intType);
     assertEquals(ImmutableList.of(intType), tupleType.getElementTypes());*/
 
-    TupleType tupleType = exprManager.tupleType(intType, intType);
+    TupleType tupleType = exprManager.tupleType("tuple_1", intType, intType);
     assertEquals(ImmutableList.of(intType, intType), tupleType
         .getElementTypes());
 
-    tupleType = exprManager.tupleType(ratType, intType, ratType);
+    tupleType = exprManager.tupleType("tuple_2", ratType, intType, ratType);
     assertEquals(ImmutableList.of(ratType, intType, ratType), tupleType
         .getElementTypes());
   }
