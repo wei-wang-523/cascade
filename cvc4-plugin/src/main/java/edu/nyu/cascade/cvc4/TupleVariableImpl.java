@@ -14,8 +14,8 @@ public final class TupleVariableImpl extends VariableExpressionImpl implements
     TupleVariableExpression {
   
   static  TupleVariableImpl create(
-      ExpressionManagerImpl exprManager, String name, List<TypeImpl> args, boolean fresh) {
-    TupleTypeImpl type = exprManager.tupleType(args);
+      ExpressionManagerImpl exprManager, String name, String tname, List<TypeImpl> args, boolean fresh) {
+    TupleTypeImpl type = exprManager.tupleType(tname, args);
 
     return new TupleVariableImpl(exprManager,name, type,fresh);
   }
@@ -41,8 +41,8 @@ public final class TupleVariableImpl extends VariableExpressionImpl implements
   }
 
   /** Create a new record variable. */
-  TupleVariableImpl(ExpressionManagerImpl em, String name, List<Type> typeArgs, boolean fresh) {
-    super(em, name, em.tupleType(typeArgs), fresh);
+  TupleVariableImpl(ExpressionManagerImpl em, String name, String tname, List<Type> typeArgs, boolean fresh) {
+    super(em, name, em.tupleType(tname, typeArgs), fresh);
   }
   
   TupleVariableImpl(ExpressionManagerImpl em, String name, Type type, boolean fresh) {

@@ -1280,16 +1280,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     return BoundVariableListExpressionImpl.create(this,elements);
   }
 
-  public TupleTypeImpl tupleType(Iterable<? extends Type> elementTypes) {
-    Preconditions.checkArgument(Iterables.size(elementTypes) >= 2);
-    return TupleTypeImpl.create(this, elementTypes);
-  }
-  
-  public TupleTypeImpl tupleType(Type firstType, Type... otherTypes) {
-    Preconditions.checkArgument(otherTypes.length > 0);
-    return TupleTypeImpl.create(this, firstType, otherTypes);
-  }
-
   @Override
   public TypeImpl universalType() {
     throw new UnsupportedOperationException("AnyType() is not supported in CVC4.");
@@ -1413,13 +1403,13 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   }
 
   @Override
-  public TupleType tupleType(String tname, Iterable<? extends Type> elementTypes) {
-    return tupleType(elementTypes);
+  public TupleTypeImpl tupleType(String tname, Iterable<? extends Type> elementTypes) {
+    return TupleTypeImpl.create(this, tname, elementTypes);
   }
 
   @Override
-  public TupleType tupleType(String tname, Type firstType, Type... elementTypes) {
-    return tupleType(firstType, elementTypes);
+  public TupleTypeImpl tupleType(String tname, Type firstType, Type... elementTypes) {
+    return TupleTypeImpl.create(this, tname, firstType, elementTypes);
   }
 
   @Override
@@ -1452,6 +1442,11 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   @Override
   public RecordTypeImpl recordType(String tname, String elementName, Type elementType) {
     return RecordTypeImpl.create(this, tname, elementName, elementType);
+  }
+  
+  @Override
+  public RecordTypeImpl recordType(String tname) {
+    return RecordTypeImpl.create(this, tname);
   }
 
   @Override

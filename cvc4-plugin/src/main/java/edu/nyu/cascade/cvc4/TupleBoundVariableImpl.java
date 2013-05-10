@@ -14,8 +14,8 @@ public final class TupleBoundVariableImpl extends BoundVariableExpressionImpl im
     TupleVariableExpression {
   
   static  TupleBoundVariableImpl create(
-      ExpressionManagerImpl exprManager, String name, List<TypeImpl> args, boolean fresh) {
-    TupleTypeImpl type = exprManager.tupleType(args);
+      ExpressionManagerImpl exprManager, String name, String tname, List<TypeImpl> args, boolean fresh) {
+    TupleTypeImpl type = exprManager.tupleType(tname, args);
 
     return new TupleBoundVariableImpl(exprManager,name, type,fresh);
   }
@@ -41,8 +41,8 @@ public final class TupleBoundVariableImpl extends BoundVariableExpressionImpl im
   }
 
   /** Create a new integer variable. */
-  TupleBoundVariableImpl(ExpressionManagerImpl em, String name, List<Type> typeArgs, boolean fresh) {
-    super(em, name, em.tupleType(typeArgs), fresh);
+  TupleBoundVariableImpl(ExpressionManagerImpl em, String name, String tname, List<Type> typeArgs, boolean fresh) {
+    super(em, name, em.tupleType(tname, typeArgs), fresh);
   }
 
   /** Create a new variable of an integer subtype (e.g., a range type). */

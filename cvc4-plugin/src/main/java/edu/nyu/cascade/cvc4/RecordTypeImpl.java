@@ -2,10 +2,10 @@ package edu.nyu.cascade.cvc4;
 
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.inject.internal.Preconditions;
 
 import edu.nyu.acsys.CVC4.Exception;
 import edu.nyu.acsys.CVC4.Record;
@@ -25,6 +25,12 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
       Iterable<? extends Type> elemTypes) {
     return new RecordTypeImpl(em, tname, elemNames, elemTypes);
   }
+  
+  static RecordTypeImpl create(ExpressionManagerImpl em, String tname) {
+    ImmutableList<String> elemNames = ImmutableList.of();
+    ImmutableList<? extends Type> elemTypes = ImmutableList.of();
+    return new RecordTypeImpl(em, tname, elemNames, elemTypes);
+  }
 
   static RecordTypeImpl valueOf(ExpressionManagerImpl em, Type t) {
     if (t instanceof RecordTypeImpl) {
@@ -37,6 +43,7 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
 
   private final ImmutableList<Type> elementTypes;
   private final ImmutableList<String> elementNames;
+  private final String typeName;
 
   private RecordTypeImpl(ExpressionManagerImpl em, String tname, 
       Iterable<String> fields, Iterable<? extends Type> types) {
@@ -44,6 +51,7 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
     Preconditions.checkArgument(Iterables.size(fields) == Iterables.size(types));
     this.elementTypes = ImmutableList.copyOf(types);
     this.elementNames = ImmutableList.copyOf(fields);
+    this.typeName = tname;
     
     vectorType cvc4Types = new vectorType();
     for (Type t : elementTypes) {
@@ -77,7 +85,7 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
 
   @Override
   public DomainType getDomainType() {
-    return DomainType.TUPLE;
+    return DomainType.RECORD;
   }
 
   @Override
@@ -97,7 +105,7 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
 
   @Override
   public String getName() {
-    return toString();
+    return typeName;
   }
   
   @Override
@@ -110,5 +118,4 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
   public List<String> getElementNames() {
     return elementNames;
   }
-
 }

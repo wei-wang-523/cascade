@@ -10,30 +10,33 @@ import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 
 public final class TupleTypeImpl extends TypeImpl implements TupleType {
-  static TupleTypeImpl create(ExpressionManagerImpl em, Type firstType,
+  static TupleTypeImpl create(ExpressionManagerImpl em, String tname, Type firstType,
       Type... otherTypes) {
-    return new TupleTypeImpl(em, Lists.asList(firstType, otherTypes));
+    return new TupleTypeImpl(em, tname, Lists.asList(firstType, otherTypes));
   }
 
-  static TupleTypeImpl create(ExpressionManagerImpl em,
+  static TupleTypeImpl create(ExpressionManagerImpl em, String tname, 
       Iterable<? extends Type> types) {
-    return new TupleTypeImpl(em, types);
+    return new TupleTypeImpl(em, tname, types);
   }
 
   static TupleTypeImpl valueOf(ExpressionManagerImpl em, Type t) {
     if (t instanceof TupleTypeImpl) {
       return (TupleTypeImpl) t;
     } else {
-      return create(em, ((TupleType) t).getElementTypes());
+      return create(em, ((TupleType) t).getName(), ((TupleType) t).getElementTypes());
     }
   }
 
   private final ImmutableList<Type> elementTypes;
+  private final String typeName;
 
-  private TupleTypeImpl(ExpressionManagerImpl em, Iterable<? extends Type> types) {
+  private TupleTypeImpl(ExpressionManagerImpl em, String tname, Iterable<? extends Type> types) {
     super(em);
 
     this.elementTypes = ImmutableList.copyOf(types);
+    this.typeName = tname;
+    
     vectorType cvc4Types = new vectorType();
     for (Type t : elementTypes) {
       cvc4Types.add(em.toCvc4Type(t));
@@ -79,6 +82,6 @@ public final class TupleTypeImpl extends TypeImpl implements TupleType {
 
   @Override
   public String getName() {
-    return toString();
+    return typeName;
   }
 }
