@@ -19,7 +19,7 @@ public class ExpressionClosures {
     return new ExpressionClosure() {
       @Override
       public Expression eval(Expression mem) {
-        Preconditions.checkArgument(mem.getType().equals( arg1.getInputType() ));
+//        Preconditions.checkArgument(mem.getType().equals( arg1.getInputType() ));
         return arg1.eval(mem).eq(arg2.eval(mem));
       }
 

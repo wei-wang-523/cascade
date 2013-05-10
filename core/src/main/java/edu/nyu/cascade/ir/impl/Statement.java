@@ -238,7 +238,7 @@ public class Statement implements IRStatement {
 
   @Override
   public Expression getPostCondition(PathEncoding factory, Expression prefix) {
-    Preconditions.checkArgument( factory.getPathType().equals( prefix.getType() ));
+//    Preconditions.checkArgument( factory.getPathType().equals( prefix.getType() ));
     switch (getType()) {
     case ASSIGN: 
       return factory.assign(prefix, getOperand(0), getOperand(1));

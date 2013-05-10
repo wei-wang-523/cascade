@@ -1008,6 +1008,8 @@ public interface ExpressionManager {
       Iterable<? extends Type> elementTypes);
 
   RecordType recordType(String tname, String name, Type elementType);
+  
+  RecordType recordType(String tname);
 
   UninterpretedType uninterpretedType(String name);
 
