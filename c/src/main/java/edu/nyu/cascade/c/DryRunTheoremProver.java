@@ -1033,7 +1033,12 @@ final class DryRunTheoremProver implements TheoremProver {
     public RecordType recordType(String tname, String name, Type elementType) {
       return exprManager.recordType(tname, name, elementType);
     }
-
+    
+    @Override
+    public RecordType recordType(String tname) {
+      return exprManager.recordType(tname);
+    }
+    
     @Override
     public RecordExpression update(Expression record, String fieldName,
         Expression val) {
