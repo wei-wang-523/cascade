@@ -1149,6 +1149,11 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     Preconditions.checkArgument(otherTypes.length > 0);
     return TupleTypeImpl.create(this, tname, firstType, otherTypes);
   }
+  
+  @Override
+  public RecordTypeImpl recordType(String tname) {
+    return RecordTypeImpl.create(this, tname);
+  }
 
   @Override
   public RecordTypeImpl recordType(String tname, Iterable<String> elemenNames, 

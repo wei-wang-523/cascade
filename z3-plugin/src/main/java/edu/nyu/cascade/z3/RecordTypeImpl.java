@@ -11,15 +11,23 @@ import com.microsoft.z3.Z3Exception;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Identifiers;
 
 public final class RecordTypeImpl extends TypeImpl implements RecordType {
-  static RecordTypeImpl create(ExpressionManagerImpl em, String name, 
+  static RecordTypeImpl create(ExpressionManagerImpl em, String tname, 
       Iterable<String> elemNames, Iterable<? extends Type> elemTypes) {
-    return new RecordTypeImpl(em, name, elemNames, elemTypes);
+    return new RecordTypeImpl(em, tname, elemNames, elemTypes);
   }
 
-  static RecordTypeImpl create(ExpressionManagerImpl em, String name, String elemName, Type elemType) {
-    return new RecordTypeImpl(em, name, Lists.newArrayList(elemName), Lists.newArrayList(elemType));
+  static RecordTypeImpl create(ExpressionManagerImpl em, String tname, String elemName, Type elemType) {
+    return new RecordTypeImpl(em, tname, Lists.newArrayList(elemName), Lists.newArrayList(elemType));
+  }
+  
+  static RecordTypeImpl create(ExpressionManagerImpl em, String tname) {
+    ImmutableList<String> elemNames = ImmutableList.of();
+    ImmutableList<? extends Type> elemTypes = ImmutableList.of();
+    return new RecordTypeImpl(em, tname, elemNames, elemTypes);
   }
 
   static RecordTypeImpl valueOf(ExpressionManagerImpl em, Type t) {
@@ -39,8 +47,12 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
       Iterable<String> elemNames, Iterable<? extends Type> elemTypes) {
     super(em);
     this.elementTypes = ImmutableList.copyOf(elemTypes);
-    this.typeName = name;
+    this.typeName = Identifiers.uniquify(name);
     this.elementNames = ImmutableList.copyOf(elemNames);
+    
+    StringBuilder sb = new StringBuilder();
+    sb.append("() ( (" + typeName + "\n                          (mk-" + typeName); // Type parameter
+    
     try {
       Context z3_context = em.getTheoremProver().getZ3Context();
       Sort[] z3Types = new Sort[Iterables.size(elemTypes)];
@@ -49,10 +61,16 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
       for (int i = 0; i < Iterables.size(elemTypes); i++) {
         z3Types[i] = em.toZ3Type(Iterables.get(elemTypes, i));
         refs[i] = 0;
+        sb.append(" \n                             (" + Iterables.get(elemNames, i) + " " + z3Types[i] + ")");
       }
       Constructor[] cons = new Constructor[]{
-          z3_context.MkConstructor(name, "is-" + name, symbols, z3Types, refs)};
+          z3_context.MkConstructor("mk-" + typeName, "is-" + typeName, symbols, z3Types, refs)};
       setZ3Type(z3_context.MkDatatypeSort(name, cons));
+      sb.append(")))");
+      if(IOUtils.debugEnabled())
+        TheoremProverImpl.debugCommand("(declare-datatypes " + sb.toString() + ")");
+      if(IOUtils.tpFileEnabled())
+        TheoremProverImpl.z3FileCommand("(declare-datatypes " + sb.toString() + ")");
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
     }
