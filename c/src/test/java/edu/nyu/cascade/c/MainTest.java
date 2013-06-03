@@ -161,14 +161,14 @@ public class MainTest {
   
   @Test
   public void testDryRun() {
-    TestUtils.checkDirectory(programs_location, ctrlFileFilter,
-        parserTest("--dry-run"), false);
-    TestUtils.checkDirectory(programs_location, ctrlFileFilter,
-        parserTest("--dry-run", "--merge-path"), false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
-        parserTest("--dry-run"), false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
-        parserTest("--dry-run", "--merge-path"), false);
+      TestUtils.checkDirectory(programs_location, ctrlFileFilter,
+			       parserTest("--dry-run"), false);
+      TestUtils.checkDirectory(programs_location, ctrlFileFilter,
+			       parserTest("--dry-run", "--merge-path"), false);
+      TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
+			       parserTest("--dry-run"), false);
+      TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
+			       parserTest("--dry-run", "--merge-path"), false);
   }
   
   private Map<Tester<File>, String[]> validOptMap() {
