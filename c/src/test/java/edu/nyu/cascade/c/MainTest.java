@@ -286,6 +286,7 @@ public class MainTest {
 
   /** FIXME: This is really a test for tp-tp */
   @Test
+  @Ignore
   public void testLogTp() {
     TestUtils.checkDirectory(programs_location, ctrlFileFilter,
         parserTest("--parse-only", "--prover", "cvc4", "--cvc4-log", "foo.cvc"), false);
