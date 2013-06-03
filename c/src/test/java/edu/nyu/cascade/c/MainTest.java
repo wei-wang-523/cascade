@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import xtc.parser.ParseException;
@@ -272,6 +273,7 @@ public class MainTest {
   }
   
   @Test
+  @Ignore
   public void testNecBenchmark() {
     final File valid_nec_location = new File(nec_programs_location, "valid");
     TestUtils.checkFile(valid_nec_location, validOptMap(), false);
