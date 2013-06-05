@@ -94,6 +94,7 @@
     <resources>
       <resource>
         <directory>${project.basedir}/src/main/resources</directory>
+	<filtering>true</filtering>
         <targetPath>META-INF</targetPath>
       </resource>
       <resource>
