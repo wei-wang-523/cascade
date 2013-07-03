@@ -275,8 +275,10 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
   }
   
   @Override
-  public void addLval(VariableExpression p) {
-    lvals.add(p);
+  public VariableExpression createLval(String name) {
+    VariableExpression res = getExpressionManager().variable(name, ptrType, true);
+    lvals.add(res);
+    return res;
   }
   
   @Override

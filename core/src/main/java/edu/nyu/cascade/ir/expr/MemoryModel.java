@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableSet;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
 
 public interface MemoryModel {
@@ -117,10 +116,11 @@ public interface MemoryModel {
   Expression freshState();
  
   /**
-   * Store left variables <code>p</code> to the auxiliary structure to 
-   * ensure that right variables and left variables won't overlap
-   * @param p
+   * create a left variables with <code>name</code> and store it 
+   * to the auxiliary structure to ensure that right variables and 
+   * left variables won't overlap
+   * @param name
    */
-  void addLval(VariableExpression p);
+  Expression createLval(String name);
 
 }

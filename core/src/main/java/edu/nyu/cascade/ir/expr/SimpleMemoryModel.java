@@ -177,16 +177,16 @@ public class SimpleMemoryModel extends AbstractMemoryModel {
   }
   
   @Override
-  public void addLval(VariableExpression var) {
-    ExpressionManager exprManager = getExpressionManager(); 
-    
-    String varName = var.getName().substring(8);
+  public VariableExpression createLval(String name) {
+    ExpressionManager exprManager = getExpressionManager();    
+    String varName = name.substring(8);
     Constructor cons = exprManager.constructor("mk_" + varName);
     InductiveType idxType = exprManager.dataType("idx_" + varName, cons);
     // FIXME: cellType is bv(k), k should be dynamic not static
     ArrayExpression varArray = exprManager.
         arrayVar("arr_of_" + varName, idxType, cellType, true).asArray();
     lvals.put(varName, varArray);
+    return exprManager.variable(name, cellType, true);
   }
   
   @Override

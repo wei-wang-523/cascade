@@ -78,9 +78,9 @@ public class UnimplementedMemoryModel implements MemoryModel {
   }
   
   @Override
-  public void addLval(VariableExpression p) {
+  public VariableExpression createLval(String name) {
     // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("addLval");
+    throw new UnsupportedOperationException("createLval");
   }
   
   @Override

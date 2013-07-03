@@ -244,7 +244,6 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
     
     Expression memory = state.getChild(0); 
     memory = memory.asArray().update(lval, rval);  
-    
     return getExpressionManager().tuple(getStateType(), memory, state.getChild(1));
   }
 
@@ -257,8 +256,10 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
   }
   
   @Override
-  public void addLval(VariableExpression p) {
-    lvals.add(p);
+  public VariableExpression createLval(String name) {
+    VariableExpression res = getExpressionManager().variable(name, addressType, true);
+    lvals.add(res);
+    return res;
   }
   
   @Override

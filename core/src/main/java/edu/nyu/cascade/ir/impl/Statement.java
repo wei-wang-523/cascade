@@ -20,6 +20,7 @@ import static edu.nyu.cascade.ir.IRStatement.StatementType.RETURN;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.SEND;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.SKIP;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -154,7 +155,7 @@ public class Statement implements IRStatement {
     // ArrayList<IExpression> arrayList) {
     this.sourceNode = sourceNode;
     this.type = type;
-    this.operands = ImmutableList.of(operands);
+    this.operands = ImmutableList.copyOf(Arrays.asList(operands));
     this.location = IRLocations.ofNode(sourceNode);
     this.preLabels = Sets.newHashSet();
     this.postLabels = Sets.newHashSet();

@@ -11,20 +11,27 @@ import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.TupleType;
+import edu.nyu.cascade.prover.type.UninterpretedType;
 
 public class PointerIntegerEncoding extends
     AbstractTypeEncoding<TupleExpression> implements
     IntegerEncoding<TupleExpression>, PointerEncoding<TupleExpression> {
   private static final String UNKNOWN_VARIABLE_NAME = "bv_encoding_unknown";
-  private static final String CONST_VARIABLE_NAME = "const";
+  private static final String REF_TYPE_NAME = "ref-type";
+  private static final String CONST_VARIABLE_NAME = "$ConstantT";
   private static TupleType type;
-  private static BitVectorType elemType;
+  private static UninterpretedType refType;
+  private static BitVectorType offType;
+  private static VariableExpression constTypeVar;
   
   public static PointerIntegerEncoding create(ExpressionManager exprManager, int size) {
-    elemType = exprManager.bitVectorType(size);
-    type = exprManager.tupleType("pointer", elemType, elemType);
+    refType = exprManager.uninterpretedType(REF_TYPE_NAME);
+    offType = exprManager.bitVectorType(size);
+    type = exprManager.tupleType("ptrType", refType, offType);
+    constTypeVar = exprManager.variable(CONST_VARIABLE_NAME, refType, false);
     return new PointerIntegerEncoding(exprManager, type);
   }
   
@@ -32,19 +39,19 @@ public class PointerIntegerEncoding extends
     super(exprManager, type);
   }
   
-  private boolean isConstant(BitVectorExpression expr) {
+  private boolean isConstant(Expression expr) {
     return expr.isVariable() && 
         CONST_VARIABLE_NAME.equals(expr.asVariable().getName());
   }
   
-  private BitVectorExpression chooseRef(BitVectorExpression lhs, BitVectorExpression rhs) {
+  private Expression chooseRef(Expression lhs, Expression rhs) {
     Preconditions.checkArgument(!(isConstant(lhs) && isConstant(rhs)));
     return isConstant(lhs) ? rhs : lhs;
   }
   
-  private BitVectorExpression chooseRef(Iterable <? extends BitVectorExpression> refs) {
-    BitVectorExpression res = null;
-    for(BitVectorExpression ref : refs) {
+  private Expression chooseRef(Iterable <? extends Expression> refs) {
+    Expression res = null;
+    for(Expression ref : refs) {
       if(isConstant(ref)) continue;
       if(res == null) res = ref;
       else 
@@ -53,35 +60,29 @@ public class PointerIntegerEncoding extends
     return res;
   }
   
-  private BitVectorType getElemType() {
-    return elemType;
+  public VariableExpression getConstTypeVar() {
+    return constTypeVar;
   }
   
   public TupleExpression castToPointer(BitVectorExpression expr) {
-    BitVectorExpression lhsRes = getExpressionManager().variable(CONST_VARIABLE_NAME,
-        getElemType(), false).asBitVector();
-    return getExpressionManager().tuple(type, lhsRes, expr);
+    return getExpressionManager().tuple(type, constTypeVar, expr);
   }
   
   @Override
   public TupleExpression bitwiseAnd(TupleExpression lhs,
       TupleExpression rhs) {
     Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
-    BitVectorExpression lhs_0 = lhs.index(0).asBitVector();
+    Expression lhsRes = chooseRef(lhs.index(0), rhs.index(0));
     BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
-    BitVectorExpression rhs_0 = rhs.index(0).asBitVector();
     BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
-    BitVectorExpression lhsRes = chooseRef(lhs_0, rhs_0);
     BitVectorExpression rhsRes = lhs_1.and(rhs_1);
     return getExpressionManager().tuple(type, lhsRes, rhsRes);
   }
 
   @Override
   public TupleExpression constant(int c) {
-    BitVectorExpression lhsRes = getExpressionManager().variable(CONST_VARIABLE_NAME,
-        getElemType(), false).asBitVector();
-    BitVectorExpression rhsRes = getExpressionManager().bitVectorConstant(c, getElemType().getSize());
-    return getExpressionManager().tuple(type, lhsRes, rhsRes);
+    BitVectorExpression rhsRes = getExpressionManager().bitVectorConstant(c, offType.getSize());
+    return getExpressionManager().tuple(type, constTypeVar, rhsRes);
   }
 
   @Override
@@ -104,11 +105,9 @@ public class PointerIntegerEncoding extends
   public BooleanExpression greaterThan(TupleExpression lhs,
       TupleExpression rhs) {
     Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
-    BitVectorExpression lhs_0 = lhs.index(0).asBitVector();
-    BitVectorExpression rhs_0 = rhs.index(0).asBitVector();
     BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
     BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
-    BooleanExpression cond1 = lhs_0.eq(rhs_0);
+    BooleanExpression cond1 = lhs.index(0).eq(rhs.index(0));
     BooleanExpression cond2 = getExpressionManager().greaterThan(lhs_1, rhs_1);
     return cond1.and(cond2);
   }
@@ -117,11 +116,9 @@ public class PointerIntegerEncoding extends
   public BooleanExpression signedGreaterThan(TupleExpression lhs,
       TupleExpression rhs) {
     Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
-    BitVectorExpression lhs_0 = lhs.index(0).asBitVector();
-    BitVectorExpression rhs_0 = rhs.index(0).asBitVector();
     BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
     BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
-    BooleanExpression cond1 = lhs_0.eq(rhs_0);
+    BooleanExpression cond1 = lhs.index(0).eq(rhs.index(0));
     BooleanExpression cond2 = getExpressionManager().signedGreaterThan(lhs_1, rhs_1);
     return cond1.and(cond2);
   }
@@ -130,11 +127,9 @@ public class PointerIntegerEncoding extends
   public BooleanExpression greaterThanOrEqual(TupleExpression lhs,
       TupleExpression rhs) {
     Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
-    BitVectorExpression lhs_0 = lhs.index(0).asBitVector();
-    BitVectorExpression rhs_0 = rhs.index(0).asBitVector();
     BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
     BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
-    BooleanExpression cond1 = lhs_0.eq(rhs_0);
+    BooleanExpression cond1 = lhs.index(0).eq(rhs.index(0));
     BooleanExpression cond2 = getExpressionManager().greaterThanOrEqual(lhs_1, rhs_1);
     return cond1.and(cond2);
   }
@@ -143,11 +138,9 @@ public class PointerIntegerEncoding extends
   public BooleanExpression signedGreaterThanOrEqual(TupleExpression lhs,
       TupleExpression rhs) {
     Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);    
-    BitVectorExpression lhs_0 = lhs.index(0).asBitVector();
-    BitVectorExpression rhs_0 = rhs.index(0).asBitVector();
     BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
     BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
-    BooleanExpression cond1 = lhs_0.eq(rhs_0);
+    BooleanExpression cond1 = lhs.index(0).eq(rhs.index(0));
     BooleanExpression cond2 = getExpressionManager().signedGreaterThanOrEqual(lhs_1, rhs_1);
     return cond1.and(cond2);
   }
@@ -167,11 +160,9 @@ public class PointerIntegerEncoding extends
   public BooleanExpression lessThan(TupleExpression lhs,
       TupleExpression rhs) {
     Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
-    BitVectorExpression lhs_0 = lhs.index(0).asBitVector();
-    BitVectorExpression rhs_0 = rhs.index(0).asBitVector();
     BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
     BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
-    BooleanExpression cond1 = lhs_0.eq(rhs_0);
+    BooleanExpression cond1 = lhs.index(0).eq(rhs.index(0));
     BooleanExpression cond2 = getExpressionManager().lessThan(lhs_1, rhs_1);
     return cond1.and(cond2);
   }
@@ -180,11 +171,9 @@ public class PointerIntegerEncoding extends
   public BooleanExpression signedLessThan(TupleExpression lhs,
       TupleExpression rhs) {
     Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
-    BitVectorExpression lhs_0 = lhs.index(0).asBitVector();
-    BitVectorExpression rhs_0 = rhs.index(0).asBitVector();
     BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
     BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
-    BooleanExpression cond1 = lhs_0.eq(rhs_0);
+    BooleanExpression cond1 = lhs.index(0).eq(rhs.index(0));
     BooleanExpression cond2 = getExpressionManager().signedLessThan(lhs_1, rhs_1);
     return cond1.and(cond2);
   }
@@ -193,11 +182,9 @@ public class PointerIntegerEncoding extends
   public BooleanExpression lessThanOrEqual(TupleExpression lhs,
       TupleExpression rhs) {
     Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
-    BitVectorExpression lhs_0 = lhs.index(0).asBitVector();
-    BitVectorExpression rhs_0 = rhs.index(0).asBitVector();
     BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
     BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
-    BooleanExpression cond1 = lhs_0.eq(rhs_0);
+    BooleanExpression cond1 = lhs.index(0).eq(rhs.index(0));
     BooleanExpression cond2 = getExpressionManager().lessThanOrEqual(lhs_1, rhs_1);
     return cond1.and(cond2);
   }
@@ -206,11 +193,9 @@ public class PointerIntegerEncoding extends
   public BooleanExpression signedLessThanOrEqual(TupleExpression lhs,
       TupleExpression rhs) {
     Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
-    BitVectorExpression lhs_0 = lhs.index(0).asBitVector();
-    BitVectorExpression rhs_0 = rhs.index(0).asBitVector();
     BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
     BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
-    BooleanExpression cond1 = lhs_0.eq(rhs_0);
+    BooleanExpression cond1 = lhs.index(0).eq(rhs.index(0));
     BooleanExpression cond2 = getExpressionManager().signedLessThanOrEqual(lhs_1, rhs_1);
     return cond1.and(cond2);
   }
@@ -219,18 +204,16 @@ public class PointerIntegerEncoding extends
   public TupleExpression minus(TupleExpression lhs,
       TupleExpression rhs) {
     Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
-    BitVectorExpression lhs_0 = lhs.index(0).asBitVector();
+    Expression lhsRes = chooseRef(lhs.index(0), rhs.index(0));
     BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
-    BitVectorExpression rhs_0 = rhs.index(0).asBitVector();
     BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
-    BitVectorExpression lhsRes = chooseRef(lhs_0, rhs_0);
     BitVectorExpression rhsRes = lhs_1.minus(rhs_1);
     return getExpressionManager().tuple(type, lhsRes, rhsRes);
   }
 
   private TupleExpression not(TupleExpression expr) {
     Preconditions.checkArgument(expr.size() == 2);
-    BitVectorExpression lhsRes = expr.index(0).asBitVector();
+    Expression lhsRes = expr.index(0);
     BitVectorExpression rhsRes = expr.index(1).asBitVector().not();
     return getExpressionManager().tuple(type, lhsRes, rhsRes);
   }
@@ -252,16 +235,16 @@ public class PointerIntegerEncoding extends
 
   @Override
   public TupleExpression plus(Iterable<? extends TupleExpression> args) {
-    List<BitVectorExpression> lhsList = Lists.newArrayList();
+    List<Expression> lhsList = Lists.newArrayList();
     List<BitVectorExpression> rhsList = Lists.newArrayList();
     for(TupleExpression arg : args) {
       Preconditions.checkArgument(arg.size() == 2);
-      lhsList.add(arg.index(0).asBitVector());
+      lhsList.add(arg.index(0));
       rhsList.add(arg.index(1).asBitVector());
     }
     Expression lhsRes = chooseRef(lhsList);
     Expression rhsRes = getExpressionManager().bitVectorPlus(
-        getElemType().getSize(), rhsList);
+        offType.getSize(), rhsList);
     return getExpressionManager().tuple(type, lhsRes, rhsRes);
   }
 
@@ -274,12 +257,10 @@ public class PointerIntegerEncoding extends
   public TupleExpression plus(TupleExpression lhs,
       TupleExpression rhs) {
     Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
-    BitVectorExpression lhs_0 = lhs.index(0).asBitVector();
+    Expression lhsRes = chooseRef(lhs.index(0), rhs.index(0));
     BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
-    BitVectorExpression rhs_0 = rhs.index(0).asBitVector();
     BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
-    BitVectorExpression lhsRes = chooseRef(lhs_0, rhs_0);
-    BitVectorExpression rhsRes = lhs_1.plus(getElemType().getSize(), rhs_1);
+    BitVectorExpression rhsRes = lhs_1.plus(offType.getSize(), rhs_1);
     return getExpressionManager().tuple(type, lhsRes, rhsRes);
   }
 
@@ -287,12 +268,10 @@ public class PointerIntegerEncoding extends
   public TupleExpression times(TupleExpression lhs,
       TupleExpression rhs) {
     Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
-    BitVectorExpression lhs_0 = lhs.index(0).asBitVector();
+    Expression lhsRes = chooseRef(lhs.index(0), rhs.index(0));
     BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
-    BitVectorExpression rhs_0 = rhs.index(0).asBitVector();
     BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
-    BitVectorExpression lhsRes = chooseRef(lhs_0, rhs_0);
-    BitVectorExpression rhsRes = lhs_1.times(getElemType().getSize(), rhs_1);
+    BitVectorExpression rhsRes = lhs_1.times(offType.getSize(), rhs_1);
     return getExpressionManager().tuple(type, lhsRes, rhsRes);
   }
   
@@ -300,11 +279,9 @@ public class PointerIntegerEncoding extends
   public TupleExpression divide(TupleExpression lhs,
       TupleExpression rhs) {
     Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
-    BitVectorExpression lhs_0 = lhs.index(0).asBitVector();
+    Expression lhsRes = chooseRef(lhs.index(0), rhs.index(0));
     BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
-    BitVectorExpression rhs_0 = rhs.index(0).asBitVector();
     BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
-    BitVectorExpression lhsRes = chooseRef(lhs_0, rhs_0);
     BitVectorExpression rhsRes = lhs_1.divides(rhs_1);
     return getExpressionManager().tuple(type, lhsRes, rhsRes);
   }
@@ -313,11 +290,9 @@ public class PointerIntegerEncoding extends
   public TupleExpression mod(TupleExpression lhs,
       TupleExpression rhs) {
     Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
-    BitVectorExpression lhs_0 = lhs.index(0).asBitVector();
+    Expression lhsRes = chooseRef(lhs.index(0), rhs.index(0));
     BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
-    BitVectorExpression rhs_0 = rhs.index(0).asBitVector();
     BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
-    BitVectorExpression lhsRes = chooseRef(lhs_0, rhs_0);
     BitVectorExpression rhsRes = lhs_1.signedRems(rhs_1);
     return getExpressionManager().tuple(type, lhsRes, rhsRes);
   }
@@ -361,10 +336,8 @@ public class PointerIntegerEncoding extends
   @Override
   public BooleanExpression neq(TupleExpression lhs, TupleExpression rhs) {
     Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
-    BitVectorExpression lhs_0 = lhs.index(0).asBitVector();
     BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
-    BitVectorExpression rhs_0 = rhs.index(0).asBitVector();
     BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
-    return getExpressionManager().or(lhs_0.neq(rhs_0), lhs_1.neq(rhs_1));
+    return getExpressionManager().or(lhs.index(0).neq(rhs.index(0)), lhs_1.neq(rhs_1));
   }
 }

@@ -57,6 +57,8 @@ public class Preferences {
   
   public static final String OPTION_ENCODE_FIELD_ARRAY = "field-array";
   
+  public static final String OPTION_THEORY = "theory";
+  
   public static void clearAll() {
     getProperties().clear();
   }
