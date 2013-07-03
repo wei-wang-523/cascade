@@ -6,7 +6,6 @@ import com.google.inject.assistedinject.FactoryProvider;
 import edu.nyu.cascade.ir.SymbolTableFactory;
 import edu.nyu.cascade.ir.impl.SymbolTableImpl;
 
-@SuppressWarnings("deprecation")
 public class CModule extends AbstractModule {
   @Override
   public void configure() {

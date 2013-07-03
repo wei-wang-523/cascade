@@ -174,6 +174,12 @@ public class Main {
               .withType(String.class)
               .create()) //
       .addOption(
+          OptionBuilder.withLongOpt(Preferences.OPTION_THEORY) //
+              .withDescription("Use a particular theory.") //
+              .hasArg() //
+              .withType(String.class)
+              .create()) //
+      .addOption(
           OptionBuilder.withLongOpt(OPTION_MERGE_PATH) //
               .withDescription("Merge multiple paths in analysis.") //
               .create()) //
@@ -592,11 +598,18 @@ public class Main {
             ExpressionEncoding encoding;
             MemoryModel memoryModel;
             
+            if(Preferences.isSet(Preferences.OPTION_THEORY)) {
+              // TODO: ugly way to append prefix of qname of theory
+              StringBuffer sb = new StringBuffer().append("edu.nyu.cascade.c.theory.");
+              sb.append(Preferences.getString(Preferences.OPTION_THEORY)).append("Theory");
+              theoryId = new TheoryId(sb.toString());
+            }
+            
             if (theoryId != null) {
               Theory theory = theoryId.getInstance(theoremProver.getExpressionManager());
               encoding = theory.getEncoding();
               memoryModel = theory.getMemoryModel();
-            } else {
+            } else {           
               // TODO: Fix bit-vector sizes to agree with encoding              
               encoding = BitVectorExpressionEncoding.create(theoremProver
                   .getExpressionManager(), memCellSize); 

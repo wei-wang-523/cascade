@@ -11,6 +11,7 @@ package edu.nyu.cascade.datatypes;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.util.Arrays;
 import java.util.List;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -166,7 +167,7 @@ public class ListEncoding_Z3 extends ListEncoding {
   }
   
   public Expression applyConsConstr(Expression ... args) {
-    ImmutableList<Expression> newArgs = ImmutableList.of(args);
+    ImmutableList<Expression> newArgs = ImmutableList.copyOf(Arrays.asList(args));
     Preconditions.checkArgument(newArgs.size() == 2);
     return getExpressionManager().construct(consConstr, newArgs);
   }

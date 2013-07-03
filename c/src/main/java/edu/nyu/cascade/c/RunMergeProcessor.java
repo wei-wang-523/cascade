@@ -48,6 +48,7 @@ import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.ir.expr.PathEncoding;
 import edu.nyu.cascade.ir.expr.PathFactoryException;
+//import edu.nyu.cascade.ir.expr.DynamicPathEncoding;
 import edu.nyu.cascade.ir.expr.SimplePathEncoding;
 import edu.nyu.cascade.ir.impl.IRExpressionImpl;
 import edu.nyu.cascade.ir.impl.Statement;
@@ -787,6 +788,7 @@ class RunMergeProcessor implements RunProcessor {
     this.symbolTables = symbolTables;
     this.cfgs = cfgs;
     this.cAnalyzer = cAnalyzer;
+//    this.pathEncoder = PathMergeEncoder.create(DynamicPathEncoding.create(exprEncoder));
     this.pathEncoder = PathMergeEncoder.create(SimplePathEncoding.create(exprEncoder));
     this.TEMP_VAR_POSTFIX = 0;
   }

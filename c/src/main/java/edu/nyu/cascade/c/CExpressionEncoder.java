@@ -39,11 +39,9 @@ import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.ir.expr.MemoryModel;
-import edu.nyu.cascade.ir.expr.PointerExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ReachMemoryModel;
 import edu.nyu.cascade.ir.impl.VarInfo;
 import edu.nyu.cascade.ir.type.IRIntegerType;
-import edu.nyu.cascade.ir.type.IRPointerType;
 import edu.nyu.cascade.ir.type.IRType;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -960,17 +958,8 @@ class CExpressionEncoder implements ExpressionEncoder {
       // TODO: map expressions per-factory
       return (Expression) varInfo.getProperty(VAR_EXPR_MAP);
     } else {
-      Expression iExpr;
-      if(encoding instanceof PointerExpressionEncoding) {
-        iExpr = encoding.variable(VAR_PREFIX + name, IRPointerType
-          .getInstance(IRIntegerType.getInstance(), IRIntegerType
-              .getInstance()), true);
-      } else {
-        iExpr = encoding.variable(VAR_PREFIX + name, IRIntegerType
-            .getInstance(), true);
-      }
-      varInfo.setProperty(CExpressionEncoder.VAR_EXPR_MAP, iExpr);
-      getMemoryModel().addLval((VariableExpression)iExpr);
+      Expression iExpr = getMemoryModel().createLval(VAR_PREFIX + name);
+      varInfo.setProperty(CExpressionEncoder.VAR_EXPR_MAP, iExpr);     
       return iExpr.setNode(node);
     }
   }
