@@ -1,27 +1,24 @@
 package edu.nyu.cascade.z3;
 
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 
-import com.google.common.base.Function;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ComputationException;
-import com.google.common.collect.MapMaker;
 
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 
-public class BitVectorTypeImpl extends TypeImpl implements
-    BitVectorType {
-  private static final ConcurrentMap<ExpressionManagerImpl, ConcurrentMap<Integer, BitVectorTypeImpl>> cache = new MapMaker()
-      .makeComputingMap(new Function<ExpressionManagerImpl, ConcurrentMap<Integer, BitVectorTypeImpl>>() {
-        @Override
-        public ConcurrentMap<Integer, BitVectorTypeImpl> apply(
-            final ExpressionManagerImpl exprManager) {
-          return new MapMaker()
-              .makeComputingMap(new Function<Integer, BitVectorTypeImpl>() {
-                @Override
-                public BitVectorTypeImpl apply(Integer size) {
+public class BitVectorTypeImpl extends TypeImpl implements BitVectorType {  
+  private static final LoadingCache<ExpressionManagerImpl, LoadingCache<Integer, BitVectorTypeImpl>> cache = CacheBuilder
+      .newBuilder().build(
+          new CacheLoader<ExpressionManagerImpl, LoadingCache<Integer, BitVectorTypeImpl>>(){
+            public LoadingCache<Integer, BitVectorTypeImpl> load(final ExpressionManagerImpl exprManager) {
+              return CacheBuilder.newBuilder().build(new CacheLoader<Integer, BitVectorTypeImpl>(){
+                public BitVectorTypeImpl load(Integer size) {
                   try {
                     return new BitVectorTypeImpl(exprManager, size);
                   } catch (TheoremProverException e) {
@@ -29,11 +26,18 @@ public class BitVectorTypeImpl extends TypeImpl implements
                   }
                 }
               });
-        }
-      });
+            }
+          });  
 
   static BitVectorTypeImpl create(ExpressionManagerImpl exprManager, int size) {
-    return cache.get(exprManager).get(size);
+    BitVectorTypeImpl res = null;
+    try {
+      res = cache.get(exprManager).get(size);
+    } catch (ExecutionException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    return res;
   }
 
   static BitVectorTypeImpl valueOf(ExpressionManagerImpl exprManager, Type t) {

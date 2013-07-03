@@ -57,13 +57,12 @@ public final class TupleExpressionImpl extends ExpressionImpl implements
       ExpressionManagerImpl exprManager, Expression tuple,
       final int index) {
     Preconditions.checkArgument(tuple.isTuple());
-    ExpressionImpl result;
-    result = new ExpressionImpl(exprManager, TUPLE_INDEX,
+    final TupleSort tupleSort = (TupleSort) exprManager.toZ3Type(tuple.getType());
+    ExpressionImpl result = new ExpressionImpl(exprManager, TUPLE_INDEX,
         new UnaryConstructionStrategy() {
           @Override
           public Expr apply(Context ctx, Expr expr) {
               try {
-                TupleSort tupleSort = (TupleSort) expr.Sort();
                 return tupleSort.FieldDecls()[index].Apply(expr);
               } catch (Z3Exception e) {
                 throw new TheoremProverException(e);

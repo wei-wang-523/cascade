@@ -26,7 +26,6 @@ public class VariableExpressionImpl extends ExpressionImpl implements
     } else if (e instanceof ExpressionImpl && e.isVariable()) {
       ExpressionImpl ei = (ExpressionImpl) e; 
       assert( exprManager.equals(ei.getExpressionManager()) );
-      /*FIXME: equivalent way to get String name = cvcExpr.getName();*/
       String name = ei.getZ3Expression().toString();
       return new VariableExpressionImpl(exprManager, name, ei.getType(), 
           false);
@@ -67,8 +66,11 @@ public class VariableExpressionImpl extends ExpressionImpl implements
          * bc it's second parameter is a output parameter. Need to change
          * the API so that it only takes the name.
          */
-        TheoremProverImpl.z3FileCommand("(declare-const " + name + " " + type + ")");
-        TheoremProverImpl.debugCommand("(declare-const " + name + " : " + type + ")");
+        StringBuilder sb = new StringBuilder().append(name);
+        /** For variable name contains '#', wrap it in '||' */
+        if(name.indexOf('#') >= 0)   sb.insert(0, '|').append('|');
+        TheoremProverImpl.z3FileCommand("(declare-const " + sb.toString() + " " + type + ")");
+        TheoremProverImpl.debugCommand("(declare-const " + sb.toString() + " : " + type + ")");
         try {
           return ctx.MkConst(name, type);
         } catch (Z3Exception e) {

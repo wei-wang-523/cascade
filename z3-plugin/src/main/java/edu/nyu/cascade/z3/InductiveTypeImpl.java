@@ -2,12 +2,16 @@ package edu.nyu.cascade.z3;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 
-import com.google.common.base.Function;
 import com.google.common.base.Predicate;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -31,15 +35,13 @@ import edu.nyu.cascade.util.IOUtils;
 
 public class InductiveTypeImpl extends TypeImpl implements InductiveType {
   
-  private static ConcurrentMap<ExpressionManagerImpl, ConcurrentMap<String, ConstructorImpl>> constructorCache = new MapMaker()
-      .makeComputingMap(new Function<ExpressionManagerImpl, ConcurrentMap<String, ConstructorImpl>>() {
-        @Override
-        public ConcurrentMap<String, ConstructorImpl> apply(
-            ExpressionManagerImpl from) {
-          return new MapMaker().makeMap();
-        }
-      });
-  
+  private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, ConstructorImpl>> constructorCache = CacheBuilder
+      .newBuilder().build(
+          new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, ConstructorImpl>>(){
+            public ConcurrentMap<String, ConstructorImpl> load(ExpressionManagerImpl expressionManager) {
+              return new MapMaker().makeMap();
+            }
+          });
   
   static class Builder {
     private final List<String> typeNames; 
@@ -298,7 +300,7 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
     private com.microsoft.z3.Constructor z3Constructor;
     
     ConstructorImpl(ExpressionManagerImpl exprManager, String name, Selector...selectors) {
-      this(exprManager, name,ImmutableList.of(selectors));
+      this(exprManager, name, new ImmutableList.Builder<Selector>().add(selectors).build());
     }
     
     ConstructorImpl(ExpressionManagerImpl exprManager, String name, List<? extends Selector> selectors) {
@@ -464,12 +466,24 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
   
   static ConstructorImpl constructor(ExpressionManagerImpl exprManager, String name, Selector... selectors) {
     ConstructorImpl constr = new ConstructorImpl(exprManager, name, selectors);
-    constructorCache.get(exprManager).put(name, constr);
+    try {
+      constructorCache.get(exprManager).put(name, constr);
+    } catch (ExecutionException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
     return constr;
   }
   
   static ConstructorImpl lookupConstructor(ExpressionManagerImpl exprManager, String name) {
-    return constructorCache.get(exprManager).get(name);
+    ConstructorImpl constr = null;
+    try {
+      constr = constructorCache.get(exprManager).get(name);
+    } catch (ExecutionException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    return constr;
   }
   
 /*
@@ -480,7 +494,8 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
 
   static InductiveTypeImpl create(ExpressionManagerImpl expressionManager,
       String name, Constructor... constructors) {
-    return create(expressionManager, name, ImmutableList.of(constructors));
+    return create(expressionManager, name, 
+        ImmutableList.copyOf(Arrays.asList(constructors)));
   }
   
   @SuppressWarnings("unchecked")

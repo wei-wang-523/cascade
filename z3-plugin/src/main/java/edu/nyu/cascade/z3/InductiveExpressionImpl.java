@@ -3,6 +3,8 @@ package edu.nyu.cascade.z3;
 import static com.google.common.base.Preconditions.checkArgument;
 import static edu.nyu.cascade.prover.Expression.Kind.DATATYPE_CONSTRUCT;
 
+import java.util.Arrays;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -30,7 +32,7 @@ public class InductiveExpressionImpl extends ExpressionImpl implements
       Expression... args) {
     checkArgument(constructor.getSelectors().size() == args.length);
     return new InductiveExpressionImpl(ConstructorImpl.valueOf(constructor),
-        ImmutableList.of(args));
+        ImmutableList.copyOf(Arrays.asList(args)));
   }
 
   static InductiveExpressionImpl create(Constructor constructor,

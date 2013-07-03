@@ -1,8 +1,15 @@
 package edu.nyu.cascade.z3;
 
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.MapMaker;
 import com.microsoft.z3.Constructor;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Sort;
@@ -15,13 +22,46 @@ import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 
 public final class RecordTypeImpl extends TypeImpl implements RecordType {
-  static RecordTypeImpl create(ExpressionManagerImpl em, String tname, 
+  
+  private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, RecordTypeImpl>> typeCache = CacheBuilder
+      .newBuilder().build(
+          new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, RecordTypeImpl>>(){
+            public ConcurrentMap<String, RecordTypeImpl> load(ExpressionManagerImpl expressionManager) {
+              return new MapMaker().makeMap();
+            }
+          });
+  
+  static RecordTypeImpl create(ExpressionManagerImpl em, String name, 
       Iterable<String> elemNames, Iterable<? extends Type> elemTypes) {
-    return new RecordTypeImpl(em, tname, elemNames, elemTypes);
+    RecordTypeImpl res = null;
+    try {
+      if(typeCache.get(em).containsKey(name))
+        res = typeCache.get(em).get(name);
+      else {
+        res = new RecordTypeImpl(em, name, elemNames, elemTypes);
+        typeCache.get(em).put(name, res);
+      }
+    } catch (ExecutionException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    return res;
   }
 
-  static RecordTypeImpl create(ExpressionManagerImpl em, String tname, String elemName, Type elemType) {
-    return new RecordTypeImpl(em, tname, Lists.newArrayList(elemName), Lists.newArrayList(elemType));
+  static RecordTypeImpl create(ExpressionManagerImpl em, String name, String elemName, Type elemType) {
+    RecordTypeImpl res = null;
+    try {
+      if(typeCache.get(em).containsKey(name))
+        res = typeCache.get(em).get(name);
+      else {
+        res = new RecordTypeImpl(em, name, Lists.newArrayList(elemName), Lists.newArrayList(elemType));
+        typeCache.get(em).put(name, res);
+      }
+    } catch (ExecutionException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    return res;
   }
   
   static RecordTypeImpl create(ExpressionManagerImpl em, String tname) {

@@ -23,15 +23,15 @@ import static edu.nyu.cascade.prover.Expression.Kind.SREM;
 import static edu.nyu.cascade.prover.Expression.Kind.UNARY_MINUS;
 
 import java.util.Arrays;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.MapMaker;
-
 import com.microsoft.z3.BitVecExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
@@ -45,15 +45,12 @@ import edu.nyu.cascade.prover.type.BitVectorType;
 
 public class BitVectorExpressionImpl extends ExpressionImpl implements
     BitVectorExpression {
-  private static final ConcurrentMap<ExpressionManagerImpl, ConcurrentMap<String, BitVectorExpressionImpl>> cache = new MapMaker()
-      .makeComputingMap(new Function<ExpressionManagerImpl, ConcurrentMap<String, BitVectorExpressionImpl>>() {
-        @Override
-        public ConcurrentMap<String, BitVectorExpressionImpl> apply(
-            final ExpressionManagerImpl exprManager) {
-          return new MapMaker()
-              .makeComputingMap(new Function<String, BitVectorExpressionImpl>() {
-                @Override
-                public BitVectorExpressionImpl apply(String binaryRep) {
+  private static final LoadingCache<ExpressionManagerImpl, LoadingCache<String, BitVectorExpressionImpl>> cache = CacheBuilder
+      .newBuilder().build(
+          new CacheLoader<ExpressionManagerImpl, LoadingCache<String, BitVectorExpressionImpl>>(){
+            public LoadingCache<String, BitVectorExpressionImpl> load(final ExpressionManagerImpl exprManager) {
+              return CacheBuilder.newBuilder().build(new CacheLoader<String, BitVectorExpressionImpl>(){
+                public BitVectorExpressionImpl load(String binaryRep) {
                   try {
                     return new BitVectorExpressionImpl(exprManager, binaryRep);
                   } catch (Z3Exception e) {
@@ -61,8 +58,8 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
                   }
                 }
               });
-        }
-      });
+            }
+          });
 
   /* TODO: AND, OR, XOR have n-ary variants */
 
@@ -163,13 +160,27 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
     }
 
     assert (binary.length() == size);
-    return cache.get(exprManager).get(binary);
+    BitVectorExpressionImpl res = null;
+    try {
+      res = cache.get(exprManager).get(binary);
+    } catch (ExecutionException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    return res;
   }
 
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
       String binary) {
     Preconditions.checkArgument(binary.length() > 0);
-    return cache.get(exprManager).get(binary);
+    BitVectorExpressionImpl res = null;
+    try {
+      res = cache.get(exprManager).get(binary);
+    } catch (ExecutionException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    return res;
   }
   
   /** TODO: merge with caching versions above. All constants go through Rational? 

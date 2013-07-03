@@ -1,11 +1,11 @@
 package edu.nyu.cascade.z3;
 
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 
-import com.google.common.base.Function;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
-import com.google.common.collect.MapMaker;
-
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Z3Exception;
 
@@ -15,15 +15,24 @@ import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.IntegerType;
 
 public class IntegerTypeImpl extends TypeImpl implements IntegerType {
-  private static final ConcurrentMap<ExpressionManagerImpl, IntegerTypeImpl> typeCache = 
-    new MapMaker().makeComputingMap(new Function<ExpressionManagerImpl,IntegerTypeImpl>() {
-      @Override
-      public IntegerTypeImpl apply(ExpressionManagerImpl expressionManager) {
-        return new IntegerTypeImpl(expressionManager);
-      } });
+  
+  private static final LoadingCache<ExpressionManagerImpl, IntegerTypeImpl> typeCache = CacheBuilder
+      .newBuilder().build(
+          new CacheLoader<ExpressionManagerImpl, IntegerTypeImpl>(){
+            public IntegerTypeImpl load(ExpressionManagerImpl expressionManager) {
+              return new IntegerTypeImpl(expressionManager);
+            }
+          });
 
   public static IntegerTypeImpl getInstance(ExpressionManagerImpl expressionManager) {
-    return typeCache.get(expressionManager);
+    IntegerTypeImpl res = null;
+    try {
+      res = typeCache.get(expressionManager);
+    } catch (ExecutionException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    return res;
   }
   
   protected IntegerTypeImpl(ExpressionManagerImpl expressionManager) {
