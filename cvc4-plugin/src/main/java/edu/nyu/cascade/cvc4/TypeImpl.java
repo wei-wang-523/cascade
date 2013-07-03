@@ -382,7 +382,7 @@ public abstract class TypeImpl implements Type {
   
   @Override
   public UninterpretedType asUninterpreted() {
-    Preconditions.checkState(isRecord());
+    Preconditions.checkState(isUninterpreted());
     return (UninterpretedType)this;
   }
   
