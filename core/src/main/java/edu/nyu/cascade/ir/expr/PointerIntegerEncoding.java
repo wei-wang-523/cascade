@@ -297,6 +297,26 @@ public class PointerIntegerEncoding extends
     return getExpressionManager().tuple(type, lhsRes, rhsRes);
   }
   
+  public TupleExpression lshift(TupleExpression lhs,
+      TupleExpression rhs) {
+    Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
+    Expression lhsRes = chooseRef(lhs.index(0), rhs.index(0));
+    BitVectorExpression lhs_1 = lhs.getChild(1).asBitVector();
+    BitVectorExpression rhs_1 = rhs.getChild(1).asBitVector();
+    BitVectorExpression rhsRes = lhs_1.lshift(rhs_1);
+    return getExpressionManager().tuple(type, lhsRes, rhsRes);
+  }
+  
+  public TupleExpression rshift(TupleExpression lhs,
+      TupleExpression rhs) {
+    Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
+    Expression lhsRes = chooseRef(lhs.index(0), rhs.index(0));
+    BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
+    BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
+    BitVectorExpression rhsRes = lhs_1.rshift(rhs_1);
+    return getExpressionManager().tuple(type, lhsRes, rhsRes);
+  }
+  
   @Override
   public BooleanExpression toBoolean(TupleExpression expr) {
     return neq(expr, zero());
@@ -322,7 +342,7 @@ public class PointerIntegerEncoding extends
   public Expression index(TupleExpression x, int i) {
     Preconditions.checkArgument(x.size() == 2);
     Preconditions.checkArgument(i==0 || i==1);
-    return x.index(i);
+    return x.getChild(i);
   }
 
   @Override

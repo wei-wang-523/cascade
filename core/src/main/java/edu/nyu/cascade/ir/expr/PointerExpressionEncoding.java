@@ -228,6 +228,19 @@ public class PointerExpressionEncoding
   }
   
   @Override
+  public Expression lshift(Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
+    return getPointerIntegerEncoding().lshift(lhs.asTuple(), rhs.asTuple());
+  }
+  
+  @Override
+  public Expression rshift(Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
+    return lhs.asTuple().index(1).asBitVector().rshift(
+        rhs.asTuple().index(1).asBitVector());
+  }
+  
+  @Override
   public BooleanExpression toBoolean(Expression expr) {
     Preconditions.checkArgument(expr.isTuple());
     return getPointerIntegerEncoding().toBoolean(expr.asTuple());
