@@ -2,6 +2,7 @@ package edu.nyu.cascade.cvc4;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentMap;
@@ -276,7 +277,7 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
     private InductiveTypeImpl type;
     
     ConstructorImpl(ExpressionManagerImpl exprManager, String name, Selector...selectors) {
-      this(exprManager, name,ImmutableList.of(selectors));
+      this(exprManager, name, ImmutableList.copyOf(Arrays.asList(selectors)));
     }
     
     ConstructorImpl(ExpressionManagerImpl exprManager, String name, List<? extends Selector> selectors) {
@@ -429,7 +430,7 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
 
   static InductiveTypeImpl create(ExpressionManagerImpl expressionManager,
       String name, Constructor... constructors) {
-    return create(expressionManager, name, ImmutableList.of(constructors));
+    return create(expressionManager, name, ImmutableList.copyOf(Arrays.asList(constructors)));
   }
 
   
