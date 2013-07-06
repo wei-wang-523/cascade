@@ -2,6 +2,7 @@ package edu.nyu.cascade.ir.expr;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -264,7 +265,7 @@ public class LISBQwithQFReachEncoding extends ReachEncoding {
   }
 
   private BooleanExpression applyRf(Expression... args) {
-    ImmutableList<Expression> argExprs = ImmutableList.of(args);
+    ImmutableList<Expression> argExprs = ImmutableList.copyOf(Arrays.asList(args));
     Preconditions.checkArgument(argExprs.size() == 3);
     return getExpressionManager().applyExpr(rf, argExprs).asBooleanExpression();
   }

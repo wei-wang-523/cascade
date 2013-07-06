@@ -2,6 +2,7 @@ package edu.nyu.cascade.ir.expr;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.util.Arrays;
 import java.util.List;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -355,13 +356,13 @@ public class LoLLiwithRRReachEncoding extends ReachEncoding {
   }
   
   protected BooleanExpression applyRfAvoid(Expression... args) {
-    ImmutableList<Expression> argExprs = ImmutableList.of(args);
+    ImmutableList<Expression> argExprs = ImmutableList.copyOf(Arrays.asList(args));
     Preconditions.checkArgument(argExprs.size() == 3);
     return getExpressionManager().applyExpr(rf_avoid, argExprs).asBooleanExpression();
   }
   
   protected Expression applyJoin(Expression... args) {
-    ImmutableList<Expression> argExprs = ImmutableList.of(args);
+    ImmutableList<Expression> argExprs = ImmutableList.copyOf(Arrays.asList(args));
     Preconditions.checkArgument(argExprs.size() == 2);
     return getExpressionManager().applyExpr(join, argExprs);
   }
