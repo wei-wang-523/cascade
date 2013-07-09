@@ -20,8 +20,8 @@ public class PointerIntegerEncoding extends
     AbstractTypeEncoding<TupleExpression> implements
     IntegerEncoding<TupleExpression>, PointerEncoding<TupleExpression> {
   private static final String UNKNOWN_VARIABLE_NAME = "bv_encoding_unknown";
-  private static final String REF_TYPE_NAME = "ref-type";
-  private static final String CONST_VARIABLE_NAME = "$ConstantT";
+  private static final String REF_TYPE_NAME = "refType";
+  private static final String CONST_VARIABLE_NAME = "$Constant";
   private static TupleType type;
   private static UninterpretedType refType;
   private static BitVectorType offType;
@@ -314,6 +314,26 @@ public class PointerIntegerEncoding extends
     BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
     BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
     BitVectorExpression rhsRes = lhs_1.rshift(rhs_1);
+    return getExpressionManager().tuple(type, lhsRes, rhsRes);
+  }
+  
+  public TupleExpression rem(TupleExpression lhs,
+      TupleExpression rhs) {
+    Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
+    Expression lhsRes = chooseRef(lhs.index(0), rhs.index(0));
+    BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
+    BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
+    BitVectorExpression rhsRes = lhs_1.rems(rhs_1);
+    return getExpressionManager().tuple(type, lhsRes, rhsRes);
+  }
+  
+  public TupleExpression signedRem(TupleExpression lhs,
+      TupleExpression rhs) {
+    Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
+    Expression lhsRes = chooseRef(lhs.index(0), rhs.index(0));
+    BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
+    BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
+    BitVectorExpression rhsRes = lhs_1.signedRems(rhs_1);
     return getExpressionManager().tuple(type, lhsRes, rhsRes);
   }
   

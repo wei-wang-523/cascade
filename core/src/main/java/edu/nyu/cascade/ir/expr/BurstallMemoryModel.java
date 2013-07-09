@@ -7,6 +7,7 @@ import java.util.Set;
 
 import xtc.tree.Node;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -25,9 +26,11 @@ import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.util.Preferences;
+import edu.nyu.cascade.util.RecursionStrategies;
+import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
 
 public class BurstallMemoryModel extends AbstractMemoryModel {
-  protected static final String TYPE_NAME = "type-name";
+  protected static final String TYPE_NAME = "typeName";
   protected static final String REGION_VARIABLE_NAME = "region";
   protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
   protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "alloc";
@@ -74,8 +77,9 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   }
 
   private final TupleType ptrType; // (ref-type, off-type)
+  private final TupleType idxType; // (type-type, ptrType)
   private final UninterpretedType typeNameType; // typeName-type
-  private final ArrayType memType; // (type-type, ptrType) -> ptrType
+  private final ArrayType memType; // idxType -> ptrType
   private final ArrayType sizeType; // ref-type -> off-type
   
   // lvals: variables in stack
@@ -90,7 +94,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
    * Here, we keep rvals to record those removed addr_of_struct and addr_of_array,
    * and remove them from lvals in getAssumptions().
    */
-  private final Set<VariableExpression> rvals;
+  private final Set<Expression> rvals;
   private final List<Expression> stackRegions, heapRegions;
   
   /** The current state of memory model. It's used to create a back door to
@@ -126,8 +130,9 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     this.heapRegions = Lists.newArrayList();
 
     this.memType = memType;
-    this.typeNameType = memType.getIndexType().asTuple().getElementTypes().get(0).asUninterpreted();
-    this.ptrType = memType.getIndexType().asTuple().getElementTypes().get(1).asTuple();
+    this.idxType = memType.getIndexType().asTuple();
+    this.typeNameType = idxType.getElementTypes().get(0).asUninterpreted();
+    this.ptrType = idxType.getElementTypes().get(1).asTuple();
     this.sizeType = getExpressionManager().arrayType(
         ptrType.getElementTypes().get(0), ptrType.getElementTypes().get(1));
     
@@ -154,7 +159,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     heapRegions.add(refVar); // For dynamic memory allocation, add to the end
     
     Expression typeNameVar = getTypeVar(ptr.getNode());
-    Expression indexPtr = exprManager.tuple(memType.getIndexType(), typeNameVar, ptr);
+    Expression indexPtr = exprManager.tuple(idxType, typeNameVar, ptr);
     Expression memory = state.getChild(0).asArray().update(indexPtr, locVar);
     Expression alloc = state.getChild(1).asArray().update(
         refVar, size.asTuple().index(1));    
@@ -169,7 +174,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(size.getType().equals( ptrType ));
     
     ExpressionManager exprManager = getExpressionManager();
-    VariableExpression stackRegion = (VariableExpression) ptr.getChild(0).getChild(0);
+    Expression stackRegion = ptr.asTuple().index(0);
     stackRegions.add(stackRegion); // For stack allocated region, add ptr directly to stackRegions;
     rvals.add(stackRegion); // Add ptr to rvals (removed variables)
     
@@ -186,7 +191,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     
     ExpressionManager exprManager = getExpressionManager();
     
-    VariableExpression stackRegion = (VariableExpression) ptr.getChild(0).getChild(0);
+    Expression stackRegion = ptr.asTuple().index(0);
     stackRegions.add(stackRegion); // For stack allocated region, add ptr directly to stackRegions;
     rvals.add(stackRegion); // Add ptr to rvals (removed variables)
     
@@ -210,21 +215,23 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     List<BooleanExpression> disjs = Lists.newArrayListWithCapacity(regions.size());
     
     try {
-      PointerExpressionEncoding ptrEncoding = (PointerExpressionEncoding) 
-          getExpressionEncoding();
       ExpressionManager exprManager = getExpressionManager();
       Expression alloc = state.getChild(1);
       
       for( Expression refVar : regions ) {
+        Expression ref_ptr = ptr.asTuple().index(0);
+        Expression off_ptr = ptr.asTuple().index(1);
+        
         Expression sizeZro = exprManager.bitVectorZero(getOffType().getSize());
-        Expression startPos = exprManager.tuple(ptrType, refVar, sizeZro);
         Expression sizeVar = alloc.asArray().index(refVar);
-        Expression endPos = exprManager.tuple(ptrType, refVar, sizeVar);
         /* ptr:(ref_ptr, off), startPos:(ref, 0), endPos:(ref, size);
          * ensure ref_ptr == ref && 0 <= off && off < size
          */
-        disjs.add(ptrEncoding.lessThanOrEqual(startPos, ptr)
-          .and(ptrEncoding.lessThan(ptr, endPos)));
+        disjs.add(
+            exprManager.and(
+                ref_ptr.eq(refVar), 
+                exprManager.lessThanOrEqual(sizeZro, off_ptr),
+                exprManager.lessThan(off_ptr, sizeVar)));
       }
     } catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
@@ -267,7 +274,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
       rval = ptrEncoding.castToPointer(rval);
     }
     Expression typeNameVar = getTypeVar(lval.getNode());
-    Expression index = getExpressionManager().tuple(memType.getIndexType(), typeNameVar, lval);
+    Expression index = getExpressionManager().tuple(idxType, typeNameVar, lval);
     Expression memory = state.getChild(0).asArray().update(index, rval);   
     
     return getExpressionManager().tuple(getStateType(), memory, state.getChild(1));
@@ -280,7 +287,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Expression memory = state.getChild(0);
     ExpressionManager exprManager = getExpressionManager();
     Expression typeNameVar = getTypeVar(p.getNode());
-    Expression indexVar = exprManager.tuple(memType.getIndexType(), typeNameVar, p);
+    Expression indexVar = exprManager.tuple(idxType, typeNameVar, p);
     return memory.asArray().index(indexVar);
   }
   
@@ -294,7 +301,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
 
     Expression rval = getExpressionEncoding().unknown();
     Expression typeNameVar = getTypeVar(lval.getNode());
-    Expression index = getExpressionManager().tuple(memType.getIndexType(), typeNameVar, lval);
+    Expression index = getExpressionManager().tuple(idxType, typeNameVar, lval);
     Expression memory = state.getChild(0).asArray().update(index, rval);   
     
     return getExpressionManager().tuple(getStateType(), memory, state.getChild(1));
@@ -322,16 +329,17 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, getRefType(), true);
     Expression offZero = exprManager.bitVectorZero(getOffType().getSize());
     // locVar: (region_x, 0)
-    Expression locVar = exprManager.tuple(memType.getIndexType(), refVar.asBitVector(), offZero);
+    Expression locVar = exprManager.tuple(ptrType, refVar, offZero);
     
     heapRegions.add(refVar); // For dynamic memory allocation, add to the end
     
     Expression typeNameVar = getTypeVar(ptr.getNode());
-    Expression indexPtr = exprManager.tuple(memType.getIndexType(), typeNameVar, ptr);
+    Expression indexPtr = exprManager.tuple(idxType, typeNameVar, ptr);
     Expression memory = state.getChild(0).asArray().update(indexPtr, locVar);
     Expression alloc = state.getChild(1).asArray().update(refVar, size.asTuple().index(1));
+    Expression statePrime = exprManager.tuple(getStateType(), memory, alloc);
     
-    setCurrentState(state, exprManager.tuple(getStateType(), memory, alloc));
+    setCurrentState(state, statePrime);
     return exprManager.tt();
   }
   
@@ -352,6 +360,10 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
         /* The sound allocation encoding doesn't assume anything about the ordering
          * of lvals and regions. This may lead a blow-up due to case splits.
          */
+        if(regions.size() > 1) {
+          builder.add(exprManager.distinct(regions));
+        }
+        
         if (typeMap.size() > 1) {
           builder.add(exprManager.distinct(typeMap.values()));
         }
@@ -359,30 +371,6 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
         if (lvals.size() > 1) {
           builder.add(exprManager.distinct(lvals));
         }
-        /* Collect constraints for memory regions */
-        /* Expression alloc = state.getChild(1); 
-        for (Expression locVar : regions) {
-          Expression sizeVar = alloc.asArray().index(locVar);
-          Expression regionBound = exprManager.plus(getRefType().getSize(), 
-              locVar, sizeVar);
-
-          // The upper bound of the region won't overflow 
-          builder.add(exprManager.implies(
-              exprManager.greaterThan(sizeVar, exprManager.bitVectorZero(getOffType().getSize())),
-              exprManager.greaterThan(regionBound, locVar)));
-          
-          // Every lval is outside of the region
-          for (VariableExpression lval : lvals) {
-            builder.add(lval.neq(locVar));
-          }
-          // Every other allocated region is non-overlapping
-          // TODO: Could optimize using commutativity
-          for (Expression locVar2 : regions) {
-            if (!locVar.equals(locVar2)) {
-              builder.add(locVar.neq(locVar2));
-            }
-          }
-        }*/
       } else if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
         /* Unsound allocation encoding: just pick an order and assert that
          * the tvals, lvals and regions are allocated in that order. 
@@ -405,24 +393,18 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
           builder.add(ptrEncoding.lessThan(lval, lval2));
           lval = lval2;
         }
-
-        /* Expression alloc = state.getChild(1);
-        Expression refVar = null;
-        if( lval != null )
-          refVar = lval.asTuple().index(0);
-        else
-          refVar = exprManager.bitVectorZero(getOffType().getSize());
-
-        for (Expression locVar : regions) {
-          builder.add(exprManager.lessThan(refVar, locVar));
-
-           The upper bound of the region won't overflow 
-          Expression sizeVar = alloc.asArray().index(locVar);
-          Expression regionBound = exprManager.plus(getRefType().getSize(),
-              locVar, sizeVar);
-          refVar = locVar;
-          builder.add(exprManager.greaterThan(regionBound, locVar));
-        }*/
+        
+        Expression regionVar = null;
+        Iterator<Expression> regionIter = regions.iterator();
+        if( regionIter.hasNext() ) {
+          regionVar = regionIter.next();
+        }
+        
+        while (regionIter.hasNext()) {
+          Expression regionVar2 = regionIter.next();
+          builder.add(ptrEncoding.lessThan(regionVar, regionVar2));
+          regionVar = regionVar2;
+        }
       }
     } catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
@@ -447,7 +429,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   
   @Override
   public TupleType getStateType() {
-    return getExpressionManager().tupleType("state", memType, sizeType);
+    return getExpressionManager().tupleType("memState", memType, sizeType);
   }
 
   @Override
@@ -456,11 +438,30 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
 
     return new ExpressionClosure() {
       @Override
-      public Expression eval(Expression memory) {
+      public Expression eval(final Expression memory) {
         Preconditions.checkArgument(getStateType().equals(memory.getType()) );
-        Expression exprPrime = expr
-            .subst(memoryVar.getChildren(), memory.getChildren());
-        return exprPrime.setNode(expr.getNode());
+        if(!expr.isTuple()) { 
+          // For non-tuple expression evaluation
+          Expression exprPrime = expr
+              .subst(memoryVar.getChildren(), memory.getChildren());
+          return exprPrime.setNode(expr.getNode());
+        } else { 
+          // For tuple expression evaluation over memoryVar, since substitution doesn't return
+          // right children for as tuple expression for state.
+          ExpressionManager exprManager = getExpressionManager();
+          return exprManager.tuple(getStateType(), RecursionStrategies.unaryRecursionOverList(
+              expr.getChildren(),
+              new UnaryRecursionStrategy<Expression, Expression>() {
+            @Override
+            public Expression apply(Expression e) {
+              Expression ePrime = e.subst(ImmutableList.of(memoryVar.getChild(0)), 
+                  ImmutableList.of(memory.getChild(0)));
+              ePrime = ePrime.subst(ImmutableList.of(memoryVar.getChild(1)), 
+                  ImmutableList.of(memory.getChild(1)));
+              return ePrime;
+            }
+          }));
+        }
       }
 
       @Override
