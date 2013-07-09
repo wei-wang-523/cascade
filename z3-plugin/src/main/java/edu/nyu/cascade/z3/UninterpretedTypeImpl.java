@@ -59,10 +59,11 @@ public final class UninterpretedTypeImpl extends TypeImpl implements Uninterpret
     try {
       TheoremProverImpl.debugCall("uninterpretedType");
       setZ3Type(exprManager.getTheoremProver().getZ3Context().MkUninterpretedSort(name));
+      exprManager.addToTypeCache(this);
       if(IOUtils.debugEnabled())
-        TheoremProverImpl.debugCommand("(declare-sort " + name + ")");
+        TheoremProverImpl.debugCommand("(declare-sort " + name + " 0)");
       if(IOUtils.tpFileEnabled())
-        TheoremProverImpl.z3FileCommand("(declare-sort " + name + ")");
+        TheoremProverImpl.z3FileCommand("(declare-sort " + name + " 0)");
     } catch (Exception e) {
       throw new TheoremProverException(e);
     }
@@ -75,12 +76,12 @@ public final class UninterpretedTypeImpl extends TypeImpl implements Uninterpret
 
   @Override
   public String toString() {
-    return "UNINTERPRETED " + " OF "+ name ;
+    return "UNINTERPRETED" + " OF "+ name ;
   }
 
   @Override
   public String getName() {
-    return toString();
+    return name;
   }
 
   @Override

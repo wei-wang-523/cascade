@@ -86,16 +86,17 @@ public final class TupleTypeImpl extends TypeImpl implements TupleType {
     
     try {
       Context z3_context = em.getTheoremProver().getZ3Context();
-      Symbol tname = z3_context.MkSymbol(name);
+      Symbol tname = z3_context.MkSymbol(typeName);
       Sort[] z3Types = new Sort[Iterables.size(types)];
       Symbol[] symbols = new Symbol[Iterables.size(types)];
       for (int i = 0; i < Iterables.size(types); i++) {
         z3Types[i] = em.toZ3Type(Iterables.get(types, i));
-        symbols[i] = z3_context.MkSymbol("_" + i);
+        symbols[i] = z3_context.MkSymbol(typeName + "_" + i);
         sb.append(" \n                             (" + symbols[i] + " " + z3Types[i] + ")");
       }
       setZ3Type(z3_context.MkTupleSort(tname, symbols, z3Types));
       sb.append(")))");
+      em.addToTypeCache(this);
       if(IOUtils.debugEnabled())
         TheoremProverImpl.debugCommand("(declare-datatypes " + sb.toString() + ")");
       if(IOUtils.tpFileEnabled())
@@ -129,9 +130,8 @@ public final class TupleTypeImpl extends TypeImpl implements TupleType {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append(typeName).append('(');
-    for(Type elemType : elementTypes) sb.append(elemType).append(',');
-    sb.delete(sb.lastIndexOf(","), sb.lastIndexOf(","));
-    sb.append(')');
+    for(Type elemType : elementTypes) sb.append(elemType).append(", ");
+    sb.replace(sb.lastIndexOf(","), sb.lastIndexOf(",") + 1, ")");
     return sb.toString();
   }
 

@@ -648,7 +648,7 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
     setZ3Type(z3Type);
     this.name = name;
     this.constructors = ImmutableList.copyOf(constructors);
-    expressionManager.addToInductiveTypeCache(this);
+    expressionManager.addToTypeCache(this);
   }
   
   /** Private constructor for stubs only. */

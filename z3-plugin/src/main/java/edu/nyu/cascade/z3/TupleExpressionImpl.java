@@ -107,7 +107,7 @@ public final class TupleExpressionImpl extends ExpressionImpl implements
   }
 
   @Override
-  public Expression index(int i) {
+  public ExpressionImpl index(int i) {
     return mkTupleIndex(getExpressionManager(), this, i);
   }
 

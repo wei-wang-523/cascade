@@ -9,7 +9,6 @@ import static edu.nyu.cascade.prover.Expression.Kind.NULL_EXPR;
 
 import xtc.tree.GNode;
 
-import java.util.Arrays;
 import java.util.List;
 
 import com.google.common.base.Function;
@@ -183,39 +182,37 @@ public class ExpressionImpl implements Expression {
   }
 
   static ExpressionImpl mkSubst(
-      ExpressionManagerImpl exprManager, Expression e,
+      final ExpressionManagerImpl exprManager, final Expression expr,
       Iterable<? extends Expression> oldExprs,
       Iterable<? extends Expression> newExprs)  {
     Preconditions.checkArgument(Iterables.size(oldExprs) == Iterables
         .size(newExprs));
     
     /* Don't bother to SUBST a constant */
-    if( CONSTANT.equals(e.getKind()) || VARIABLE.equals(e.getKind())) {
-      return exprManager.importExpression(e);
+    if( CONSTANT.equals(expr.getKind()) || VARIABLE.equals(expr.getKind())) {
+      return exprManager.importExpression(expr);
     }
     
-    List<Expression> subs = Lists.newArrayList();
-    subs.add(e);
-    Iterables.addAll(subs, oldExprs);
-    Iterables.addAll(subs, newExprs);
-    ExpressionImpl result = new ExpressionImpl(exprManager, SUBST,
-        new NaryConstructionStrategy() {
-          @Override
-          public Expr apply(Context ctx, Expr[] args) {
-            assert (args.length > 0 && args.length % 2 == 1);
-            Expr expr = args[0];
-            int n = args.length / 2;
-            Expr[] oldExprs = Arrays.copyOfRange(args, 1, n+1);
-            Expr[] newExprs = Arrays.copyOfRange(args, n+1, args.length);
-            try {
-              return expr.Substitute(oldExprs, newExprs);
-            } catch (Z3Exception e) {
-              throw new TheoremProverException(e);
-            }
-          }
-        }, subs);
-    result.setType(e.getType());
-    return result;
+    Expr[] oldArgs = Iterables.toArray(Iterables.transform(oldExprs, new Function<Expression, Expr>(){
+      @Override
+      public Expr apply(Expression expr) {
+        return exprManager.importExpression(expr).getZ3Expression();
+      }
+    }), Expr.class);
+    
+    Expr[] newArgs = Iterables.toArray(Iterables.transform(newExprs, new Function<Expression, Expr>(){
+      @Override
+      public Expr apply(Expression expr) {
+        return exprManager.importExpression(expr).getZ3Expression();
+      }
+    }), Expr.class);
+    
+    try {
+      Expr res = exprManager.toZ3Expr(expr).Substitute(oldArgs, newArgs);
+      return new ExpressionImpl(exprManager, SUBST, res, expr.getType(), exprManager.importExpressions(newExprs));
+    } catch (Z3Exception e) {
+      throw new TheoremProverException(e);
+    }   
   }
   
   /**
@@ -453,6 +450,12 @@ public class ExpressionImpl implements Expression {
   protected ExpressionImpl(ExpressionManagerImpl em, Kind kind, Expr e, Type type) {
     this(em, kind, type);
     setZ3Expression(e);
+  }
+  
+  protected ExpressionImpl(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
+    this(em, kind, expr, type);
+    initChildren(children);
   }
 
   /**
@@ -811,8 +814,8 @@ public class ExpressionImpl implements Expression {
      * the ExpressionManager in the constructors.
      */
 //    checkArgument(!Iterables.isEmpty(subExpressions));
-    children = ImmutableList.copyOf(getExpressionManager().importExpressions(
-        subExpressions));
+    children = new ImmutableList.Builder<ExpressionImpl>().addAll(getExpressionManager().importExpressions(
+        subExpressions)).build();
   }
 
   /*
