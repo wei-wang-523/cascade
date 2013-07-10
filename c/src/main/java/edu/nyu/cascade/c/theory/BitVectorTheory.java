@@ -12,11 +12,11 @@ public class BitVectorTheory implements Theory {
   private final MemoryModel memoryModel;
   
   public BitVectorTheory(ExpressionManager exprManager) {
-    encoding = BitVectorExpressionEncoding.create(exprManager, 8);
-    memoryModel = BitVectorMemoryModel.create(encoding, 8, 8);
+    encoding = BitVectorExpressionEncoding.create(exprManager);
+    memoryModel = BitVectorMemoryModel.create(encoding);
   }
   
-  public BitVectorTheory(ExpressionManager exprManager, int size) {
+/*  public BitVectorTheory(ExpressionManager exprManager, int size) {
     encoding = BitVectorExpressionEncoding.create(exprManager, size);
     memoryModel = BitVectorMemoryModel.create(encoding, 8, size);
   }
@@ -24,7 +24,7 @@ public class BitVectorTheory implements Theory {
   public BitVectorTheory(ExpressionManager exprManager, int size, int length) {
     encoding = BitVectorExpressionEncoding.create(exprManager, size);
     memoryModel = BitVectorMemoryModel.create(encoding, length, size);
-  }
+  }*/
 
   @Override
   public ExpressionEncoding getEncoding() {

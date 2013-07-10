@@ -118,8 +118,7 @@ public class CompressedDomainNamesEncoding_Z3 extends CompressedDomainNamesEncod
 
   public static MemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
-    int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
-    return BitVectorMemoryModel.create(encoding, size, size);
+    return BitVectorMemoryModel.create(encoding);
   }
   
   private final BitVectorIntegerEncoding bitVectorFactory;

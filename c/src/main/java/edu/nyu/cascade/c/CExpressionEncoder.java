@@ -422,7 +422,7 @@ class CExpressionEncoder implements ExpressionEncoder {
     public Expression visitIndirectionExpression(GNode node)
         throws ExpressionFactoryException {
       Expression op = (Expression) dispatch(node.getNode(0));
-      Expression res = getMemoryModel().deref(memory, op);
+      Expression res = getMemoryModel().deref(memory, op.setNode(node));
       return res.setNode(node);
     }
 

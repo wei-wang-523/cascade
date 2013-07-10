@@ -221,7 +221,6 @@ public class Main {
   private Map<Node, IRControlFlowGraph> cfgs;
   private int effortLevel = 0;
   private int tlimit = 0;
-  private int memCellSize = 8;
 
   @Inject
   public Main(SymbolTableFactory symbolTableFactory) {
@@ -384,19 +383,6 @@ public class Main {
         theoremProver.setTimeLimit(tlimit);
       } catch( NumberFormatException e ) {
         IOUtils.err().println("Invalid time level: " + timeLimitStr + "s.");
-        failOnException(e);
-      } catch (TheoremProverException e) {
-        failOnException(e);
-      } 
-    }
-    
-    /* Set the size of memory cell to "memCellSize" */
-    if( Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ) {
-      String memCellSizeStr = Preferences.getString(Preferences.OPTION_MEM_CELL_SIZE);
-      try {
-        memCellSize  = Integer.parseInt(memCellSizeStr);
-      } catch( NumberFormatException e ) {
-        IOUtils.err().println("Invalid memory cell size: " + memCellSize + ".");
         failOnException(e);
       } catch (TheoremProverException e) {
         failOnException(e);
@@ -612,8 +598,8 @@ public class Main {
             } else {           
               // TODO: Fix bit-vector sizes to agree with encoding              
               encoding = BitVectorExpressionEncoding.create(theoremProver
-                  .getExpressionManager(), memCellSize); 
-              memoryModel = BitVectorMemoryModel.create(encoding, memCellSize, memCellSize);
+                  .getExpressionManager()); 
+              memoryModel = BitVectorMemoryModel.create(encoding);
             }
             
             CExpressionEncoder encoder = CExpressionEncoder.create(encoding,
@@ -649,7 +635,7 @@ public class Main {
               IOUtils.debug().incr();
 
               boolean runIsValid = runProcessor.process(run);
-              IOUtils.out().println(runIsValid ? "Valid" : "Invalid");
+              IOUtils.err().println(runIsValid ? "Valid" : "Invalid");
               IOUtils.debug().decr();
               i++;
             }

@@ -12,14 +12,14 @@ public class BurstallTheory implements Theory {
   private final MemoryModel memoryModel;
   
   public BurstallTheory(ExpressionManager exprManager) {
-    encoding = PointerExpressionEncoding.create(exprManager, 8);
+    encoding = PointerExpressionEncoding.create(exprManager);
     memoryModel = BurstallMemoryModel.create(encoding);
   }
   
-  public BurstallTheory(ExpressionManager exprManager, int size) {
+/*  public BurstallTheory(ExpressionManager exprManager, int size) {
     encoding = PointerExpressionEncoding.create(exprManager, size);
     memoryModel = BurstallMemoryModel.create(encoding);
-  }
+  }*/
 
   @Override
   public ExpressionEncoding getEncoding() {

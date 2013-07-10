@@ -39,8 +39,7 @@ public abstract class ListEncoding extends AbstractExpressionEncoding {
 
   public static MemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
-    int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
-    return BitVectorMemoryModel.create(encoding, size, size);
+    return BitVectorMemoryModel.create(encoding);
   }
 
   public static final int DEFAULT_WORD_SIZE = 8;

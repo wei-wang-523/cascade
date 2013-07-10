@@ -12,11 +12,11 @@ public class MonolithicTheory implements Theory {
   private final MemoryModel memoryModel;
   
   public MonolithicTheory(ExpressionManager exprManager) {
-    encoding = PointerExpressionEncoding.create(exprManager, 8);
-    memoryModel = MonolithicMemoryModel.create(encoding, 8, 8);
+    encoding = PointerExpressionEncoding.create(exprManager);
+    memoryModel = MonolithicMemoryModel.create(encoding);
   }
   
-  public MonolithicTheory(ExpressionManager exprManager, int size) {
+/*  public MonolithicTheory(ExpressionManager exprManager, int size) {
     encoding = PointerExpressionEncoding.create(exprManager, size);
     memoryModel = MonolithicMemoryModel.create(encoding, 8, size);
   }
@@ -24,7 +24,7 @@ public class MonolithicTheory implements Theory {
   public MonolithicTheory(ExpressionManager exprManager, int size, int length) {
     encoding = PointerExpressionEncoding.create(exprManager, size);
     memoryModel = MonolithicMemoryModel.create(encoding, length, size);
-  }
+  }*/
 
   @Override
   public ExpressionEncoding getEncoding() {

@@ -12,14 +12,14 @@ public class SimpleTheory implements Theory {
   private final MemoryModel memoryModel;
   
   public SimpleTheory(ExpressionManager exprManager) {
-    encoding = BitVectorExpressionEncoding.create(exprManager, 8);
-    memoryModel = SimpleMemoryModel.create(encoding, 8);
+    encoding = BitVectorExpressionEncoding.create(exprManager);
+    memoryModel = SimpleMemoryModel.create(encoding);
   }
   
-  public SimpleTheory(ExpressionManager exprManager, int size) {
+/*  public SimpleTheory(ExpressionManager exprManager, int size) {
     encoding = BitVectorExpressionEncoding.create(exprManager, size);
     memoryModel = SimpleMemoryModel.create(encoding, size);
-  }
+  }*/
 
   @Override
   public ExpressionEncoding getEncoding() {

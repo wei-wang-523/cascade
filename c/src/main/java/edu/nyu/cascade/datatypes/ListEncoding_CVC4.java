@@ -54,8 +54,7 @@ public class ListEncoding_CVC4 extends ListEncoding {
 
   public static MemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
-    int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
-    return BitVectorMemoryModel.create(encoding, size, size);
+    return BitVectorMemoryModel.create(encoding);
   }
 
   /* The list inductive data type */

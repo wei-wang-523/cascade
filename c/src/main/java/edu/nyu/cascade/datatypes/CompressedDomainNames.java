@@ -18,8 +18,7 @@ public class CompressedDomainNames implements Theory {
       encoding = new CompressedDomainNamesEncoding_CVC4(exprManager);
     else
       throw new IllegalArgumentException("Unknown theorem prover " + tpProviderName);
-    memoryModel = BitVectorMemoryModel.create(encoding,
-        encoding.getAddressSize(), encoding.getWordSize());
+    memoryModel = BitVectorMemoryModel.create(encoding);
   }
 
   @Override
