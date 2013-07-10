@@ -33,18 +33,17 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
-   * @param size the desired size of a pointer
-   * @param size2 the desired size of a memory word (i.e., the unit of a pointer "step")
    * @param exprManager
    * @throws IllegalArgumentException if <code>addressSize</code> is not a multiple of <code>cellSize</code>
    */
   public static BitVectorMemoryModel create(
-      ExpressionEncoding encoding,
-      int size, int size2)
+      ExpressionEncoding encoding)
       throws ExpressionFactoryException {
     ExpressionManager exprManager = encoding.getExpressionManager();
+    int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
+    
     BitVectorType addressType = exprManager.bitVectorType(size);
-    BitVectorType cellType = exprManager.bitVectorType(size2);
+    BitVectorType cellType = exprManager.bitVectorType(size);
 
     ArrayType memArrayType = exprManager.arrayType(addressType, cellType);
 

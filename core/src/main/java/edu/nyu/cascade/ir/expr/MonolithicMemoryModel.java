@@ -31,9 +31,10 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
    * integral number of words.
    */
   public static MonolithicMemoryModel create(
-      ExpressionEncoding encoding,
-      int addressSize, int cellSize)
-      throws ExpressionFactoryException {
+      ExpressionEncoding encoding) throws ExpressionFactoryException {
+    int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
+    int addressSize = size;
+    int cellSize = size;
     ExpressionManager exprManager = encoding.getExpressionManager();
     BitVectorType addressType = exprManager.bitVectorType(addressSize);
     BitVectorType cellType = exprManager.bitVectorType(cellSize);

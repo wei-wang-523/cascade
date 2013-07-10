@@ -106,9 +106,9 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
    */
   private final Map<String, VariableExpression> typeMap;
   
-  /* side-effect assumption, generated in memory operations.
-   * private BooleanExpression sideAssump;
+  /** Restore all the scala type expressions
    */
+  private final Set<VariableExpression> scalaTypeVars;
 
   private BurstallMemoryModel(ExpressionEncoding encoding, ArrayType memType) {
     super(encoding);
@@ -140,6 +140,8 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     /** Put constant type variable into type map */
     VariableExpression constTypeVar = ((PointerIntegerEncoding) pointerEncoding).getConstTypeVar();
     typeMap.put(constTypeVar.getName(), constTypeVar);
+    
+    this.scalaTypeVars = Sets.newHashSet();
   }
   
   @Override
@@ -348,12 +350,25 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
     try {
       ExpressionManager exprManager = getExpressionManager();
-      PointerExpressionEncoding ptrEncoding = (PointerExpressionEncoding) getExpressionEncoding();
-      List<Expression> regions = Lists.newArrayList();
+      PointerExpressionEncoding encoding = (PointerExpressionEncoding) getExpressionEncoding();
+      
+      /* Assume all the scala type index variables has constant values in memory */
+      Expression indexVar = exprManager.variable("indexVar", idxType, true);
+      Expression constRefVar = ((PointerIntegerEncoding) encoding.getPointerEncoding()).getConstTypeVar();
+      List<BooleanExpression> disjs = Lists.newArrayListWithCapacity(scalaTypeVars.size());
+      for(VariableExpression typeVar : scalaTypeVars)
+        disjs.add(indexVar.asTuple().index(0).eq(typeVar));
+      
+      BooleanExpression boolExpr = exprManager.forall(indexVar, 
+          exprManager.implies(exprManager.or(disjs), 
+              state.getChild(0).asArray().index(indexVar).asTuple().index(0).eq(constRefVar)));
+      builder.add(boolExpr);
+      
       /* Collect all the regions. */
-      regions.addAll(stackRegions);
-      regions.addAll(heapRegions);
-      /* Remove all the variable in structVals from lvals. */
+      ImmutableList<Expression> regions = new ImmutableList.Builder<Expression>()
+          .addAll(stackRegions).addAll(heapRegions).build();
+      
+      /* Remove all the variable in structVals from lvals. */      
       lvals.remove(rvals);
       
       if (Preferences.isSet(Preferences.OPTION_SOUND_ALLOC)) {
@@ -390,7 +405,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
         
         while (lvalIter.hasNext()) {
           VariableExpression lval2 = lvalIter.next();
-          builder.add(ptrEncoding.lessThan(lval, lval2));
+          builder.add(encoding.lessThan(lval, lval2));
           lval = lval2;
         }
         
@@ -402,7 +417,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
         
         while (regionIter.hasNext()) {
           Expression regionVar2 = regionIter.next();
-          builder.add(ptrEncoding.lessThan(regionVar, regionVar2));
+          builder.add(encoding.lessThan(regionVar, regionVar2));
           regionVar = regionVar2;
         }
       }
@@ -440,7 +455,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
       @Override
       public Expression eval(final Expression memory) {
         Preconditions.checkArgument(getStateType().equals(memory.getType()) );
-        if(!expr.isTuple()) { 
+        if(!expr.getType().equals(getStateType())) { 
           // For non-tuple expression evaluation
           Expression exprPrime = expr
               .subst(memoryVar.getChildren(), memory.getChildren());
@@ -541,6 +556,9 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
       String baseName = getTypeVarName(((xtc.type.PointerT) baseType).getType());
       String fieldName = node.getString(1);
       resName = baseName + "#" + fieldName;
+    } else if(node.getName().equals("IndirectionExpression")) {
+      xtc.type.Type type = ((xtc.type.PointerT) node.getNode(0).getProperty(xtc.Constants.TYPE)).resolve(); 
+      resName = getTypeVarName(type);
     } else {
       xtc.type.Type type = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
       resName = getTypeVarName(type);
@@ -548,6 +566,9 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     if(typeMap.containsKey(resName))    return typeMap.get(resName);
     VariableExpression res = getExpressionManager().variable(resName, typeNameType, false);
     typeMap.put(resName, res);
+    
+    if(resName.equals("$IntegerT") || resName.equals("$CharT"))
+      scalaTypeVars.add(res);
     return res;
   }
 }

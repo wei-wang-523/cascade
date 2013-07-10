@@ -32,10 +32,9 @@ public class SimpleMemoryModel extends AbstractMemoryModel {
    * @throws IllegalArgumentException if <code>addressSize</code> is not a multiple of <code>cellSize</code>
    */
   public static SimpleMemoryModel create(
-      ExpressionEncoding encoding,
-      int size)
-      throws ExpressionFactoryException {
+      ExpressionEncoding encoding) throws ExpressionFactoryException {
     ExpressionManager exprManager = encoding.getExpressionManager();
+    int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();   
     BitVectorType cellType = exprManager.bitVectorType(size);
 
     return new SimpleMemoryModel(encoding, cellType);

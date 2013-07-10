@@ -12,6 +12,7 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TupleExpression;
+import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.RecursionStrategies;
 import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
 
@@ -21,14 +22,18 @@ public class PointerExpressionEncoding
 
   protected final PointerEncoding<? extends Expression> pointerEncoding;
 
+  private static int cellSize = 8;
+  
   public static PointerExpressionEncoding create(
-      ExpressionManager exprManager,
-      int size) throws ExpressionFactoryException
+      ExpressionManager exprManager) throws ExpressionFactoryException
   {
-    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager,size);
+    if(Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE))
+      cellSize = Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE);
+    
+    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager,cellSize);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new UnimplementedArrayEncoding<ArrayExpression>();
-    PointerEncoding<TupleExpression> pointerEncoding = PointerIntegerEncoding.create(exprManager, size);
+    PointerEncoding<TupleExpression> pointerEncoding = PointerIntegerEncoding.create(exprManager, cellSize);
     return new PointerExpressionEncoding(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
   }
   

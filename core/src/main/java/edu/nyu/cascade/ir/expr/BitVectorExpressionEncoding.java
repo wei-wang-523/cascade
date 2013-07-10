@@ -6,16 +6,19 @@ import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.util.Preferences;
 
 public class BitVectorExpressionEncoding
     extends
     AbstractExpressionEncoding {
 
+  private static int size = 8;
 
   public static BitVectorExpressionEncoding create(
-      ExpressionManager exprManager,
-      int size) throws ExpressionFactoryException
+      ExpressionManager exprManager) throws ExpressionFactoryException
   {
+    if(Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE))
+      size = Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE);
     IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager,size);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new UnimplementedArrayEncoding<ArrayExpression>();
