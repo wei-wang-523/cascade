@@ -17,9 +17,11 @@ import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
 import edu.nyu.cascade.ir.expr.DefaultBooleanEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
+import edu.nyu.cascade.ir.expr.UnimplementedTupleEncoding;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.IntegerExpression;
+import edu.nyu.cascade.prover.TupleExpression;
 
 public abstract class ListEncoding extends AbstractExpressionEncoding {
 
@@ -47,7 +49,8 @@ public abstract class ListEncoding extends AbstractExpressionEncoding {
   public ListEncoding(ExpressionManager exprManager) {
     super(BitVectorIntegerEncoding.create(exprManager, DEFAULT_WORD_SIZE),
         new DefaultBooleanEncoding(exprManager),
-        new DefaultArrayEncoding(exprManager));
+        new DefaultArrayEncoding(exprManager),
+        new UnimplementedTupleEncoding<TupleExpression>());
   }
 
   public abstract IntegerExpression applyLengthList(Expression x) ;

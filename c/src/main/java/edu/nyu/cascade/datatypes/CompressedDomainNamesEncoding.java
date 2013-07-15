@@ -60,11 +60,13 @@ import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
 import edu.nyu.cascade.ir.expr.DefaultBooleanEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
+import edu.nyu.cascade.ir.expr.UnimplementedTupleEncoding;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.Constructor;
 
 /*class Expression {
@@ -143,7 +145,8 @@ public abstract class CompressedDomainNamesEncoding extends AbstractExpressionEn
   public CompressedDomainNamesEncoding(ExpressionManager exprManager) {
     super(BitVectorIntegerEncoding.create(exprManager, DEFAULT_WORD_SIZE),
         new DefaultBooleanEncoding(exprManager),
-        new DefaultArrayEncoding(exprManager));
+        new DefaultArrayEncoding(exprManager),
+        new UnimplementedTupleEncoding<TupleExpression>());
   }
 
   protected abstract ArrayExpression doToBvString(ArrayExpression arr,

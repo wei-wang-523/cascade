@@ -33,7 +33,6 @@ import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.SymbolTable;
-import edu.nyu.cascade.ir.expr.BitVectorExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
@@ -46,7 +45,6 @@ import edu.nyu.cascade.ir.type.IRType;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.VariableExpression;
-import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Preferences;
@@ -75,6 +73,12 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public ExpressionVisitor() {
       memory = getMemoryModel().freshState();
+      StringBuilder sb = new StringBuilder(); 
+      sb.append("fresh memory: (");
+      for(String name : memory.getType().asTuple().getElementTypes().get(0).asRecord().getElementNames())
+        sb.append(name).append(" ");
+      sb.append(")");
+      IOUtils.out().println(sb.toString());
       lvalVisitor = new LvalVisitor(this);
     }
     
@@ -206,12 +210,12 @@ class CExpressionEncoder implements ExpressionEncoder {
     public Expression visitAddressExpression(GNode node) {
       Expression content = (Expression) dispatch(node.getNode(0));
       Expression address = content.getChild(1); //pick x from m[x]
-      ArrayType memType = getMemoryModel().getMemoryType().asArrayType();
-      /** In the burstall memory, the index type differs the elem type. */
-      if(address.getType().equals(memType.getIndexType()) &&
-          !address.getType().equals(memType.getElementType())) {
-        address = address.asTuple().index(1);
-      }
+//      ArrayType memType = getMemoryModel().getMemoryType().asArrayType();
+//      /** In the burstall memory, the index type differs the elem type. */
+//      if(address.getType().equals(memType.getIndexType()) &&
+//          !address.getType().equals(memType.getElementType())) {
+//        address = address.asTuple().index(1);
+//      }
         
       return address.setNode(node);
     }
@@ -575,7 +579,9 @@ class CExpressionEncoder implements ExpressionEncoder {
        */
       Type t = arrayType.get(base);
       if(t == null)     t = lookupType(base);
-      TupleType tupleType = getExpressionManager().tupleType("tuple", ptr.getType(), index.getType());
+      String subscriptType = "subType";
+      TupleType tupleType = getExpressionManager().tupleType(subscriptType, 
+          ptr.getType(), index.getType());
       
       if(t.isArray()) {
         ArrayT arrayT = t.toArray();
@@ -587,7 +593,7 @@ class CExpressionEncoder implements ExpressionEncoder {
           res = getExpressionManager().tuple(tupleType, ptr, index);
         } else {
           Expression sizeOfType = encoding.integerConstant(sizeofType(cellType));
-          if(encoding instanceof BitVectorExpressionEncoding && ptr.isTuple()) {
+          if(ptr.isTuple() && ptr.getType().asTuple().getName().equals(subscriptType)) {
             ptr = encoding.plus(ptr.getChild(0), ptr.getChild(1));
           }
           res = encoding.plus(ptr, encoding.times(index, sizeOfType));
@@ -827,7 +833,9 @@ class CExpressionEncoder implements ExpressionEncoder {
       Type t = arrayType.get(base);
       if(t == null)     t = lookupType(base);
       ptr = derefMemory(memory, ptr, t);
-      TupleType tupleType = getExpressionManager().tupleType("tuple", ptr.getType(), index.getType());
+      String subscriptName = "subType";
+      TupleType tupleType = getExpressionManager().tupleType(subscriptName, 
+          ptr.getType(), index.getType());
       
       if(t.isArray()) {
         ArrayT arrayT = t.toArray();
@@ -839,7 +847,7 @@ class CExpressionEncoder implements ExpressionEncoder {
           arrayType.put(node, cellType);
         } else {
           Expression sizeOfType = encoding.integerConstant(sizeofType(cellType));
-          if(encoding instanceof BitVectorExpressionEncoding && ptr.isTuple()) {
+          if(ptr.isTuple() && ptr.getType().asTuple().getName().equals(subscriptName)) {
             ptr = encoding.plus(ptr.getChild(0), ptr.getChild(1));
           }
           res = encoding.plus(ptr, encoding.times(index, sizeOfType));
@@ -953,15 +961,15 @@ class CExpressionEncoder implements ExpressionEncoder {
   private Expression getLvalBinding(GNode node) throws ExpressionFactoryException {
     IRVarInfo varInfo = lookupVar(node);
     String name = (String) node.get(0);
-
+    Expression iExpr = null;
     if (varInfo.hasProperty(VAR_EXPR_MAP)) {
       // TODO: map expressions per-factory
-      return (Expression) varInfo.getProperty(VAR_EXPR_MAP);
+      iExpr = (Expression) varInfo.getProperty(VAR_EXPR_MAP);     
     } else {
-      Expression iExpr = getMemoryModel().createLval(VAR_PREFIX + name);
+      iExpr = getMemoryModel().createLval(VAR_PREFIX + name);
       varInfo.setProperty(CExpressionEncoder.VAR_EXPR_MAP, iExpr);     
-      return iExpr.setNode(node);
     }
+    return iExpr.setNode(node);
   }
 
   @Override
