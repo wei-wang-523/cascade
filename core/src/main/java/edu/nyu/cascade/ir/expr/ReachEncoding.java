@@ -7,6 +7,7 @@ import edu.nyu.cascade.ir.expr.DefaultBooleanEncoding;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.Preferences;
 
@@ -35,7 +36,8 @@ public abstract class ReachEncoding extends AbstractExpressionEncoding {
   public ReachEncoding(ExpressionManager exprManager) {
     super(BitVectorIntegerEncoding.create(exprManager, DEFAULT_WORD_SIZE),
         new DefaultBooleanEncoding(exprManager),
-        new DefaultArrayEncoding(exprManager));
+        new DefaultArrayEncoding(exprManager),
+        new UnimplementedTupleEncoding<TupleExpression>());
   }
   
   protected InstOpt getInstOpt() {

@@ -3,8 +3,9 @@ package edu.nyu.cascade.ir.expr;
 /** An expression factory that encodes memory as an int-to-int array. */
 
 import java.util.Arrays;
+import java.util.List;
 
-import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
@@ -13,14 +14,8 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.util.Preferences;
-import edu.nyu.cascade.util.RecursionStrategies;
-import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
 
-public class PointerExpressionEncoding
-    extends
-    AbstractExpressionEncoding {
-
-  protected final PointerEncoding<? extends Expression> pointerEncoding;
+public class PointerExpressionEncoding extends AbstractExpressionEncoding {
 
   private static int cellSize = 8;
   
@@ -33,7 +28,7 @@ public class PointerExpressionEncoding
     IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager,cellSize);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new UnimplementedArrayEncoding<ArrayExpression>();
-    PointerEncoding<TupleExpression> pointerEncoding = PointerIntegerEncoding.create(exprManager, cellSize);
+    PointerEncoding pointerEncoding = PointerEncoding.create(exprManager, cellSize);
     return new PointerExpressionEncoding(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
   }
   
@@ -41,146 +36,134 @@ public class PointerExpressionEncoding
       IntegerEncoding<BitVectorExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
-      PointerEncoding<TupleExpression> pointerEncoding)
+      PointerEncoding pointerEncoding)
   {
-    super(integerEncoding,booleanEncoding,arrayEncoding);
-    this.pointerEncoding = pointerEncoding;
+    super(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
   }
   
-  public PointerEncoding<?> getPointerEncoding() {
-    return pointerEncoding;
-  }
-  
-  private PointerIntegerEncoding getPointerIntegerEncoding() {
-    Preconditions.checkState(pointerEncoding instanceof PointerIntegerEncoding);
-    return (PointerIntegerEncoding) pointerEncoding;
-  }
-  
-  public Expression castToPointer(Expression expr) {
-    Preconditions.checkArgument(expr.isBitVector());
-    return getPointerIntegerEncoding().castToPointer(expr.asBitVector());
+  protected PointerEncoding getPointerEncoding() {
+    return (PointerEncoding) getTupleEncoding();
   }
   
   @Override
   public Expression castToBoolean(Expression expr) {
     if(expr.isTuple())
-      return getPointerIntegerEncoding().neq(expr.asTuple(), zero().asTuple());
+      return getPointerEncoding().castToBoolean(expr.asTuple());
     else
       return super.castToBoolean(expr);
   }
   
   @Override
   public Expression castToInteger(Expression expr) {
-    Expression res = expr;
-    if(expr.isTuple()) {
-      if(expr.getArity() == 2 
-          && expr.getChild(0).isBitVector() && expr.getChild(1).isBitVector())
-        res = getExpressionManager().tuple(((PointerIntegerEncoding)pointerEncoding).getType(),
-            castToInteger(expr.asTuple().index(0)), castToInteger(expr.asTuple().index(1)));
-    } else {
-      res = super.castToInteger(expr);
-    }
-    return res;
-  }
-  
-  @Override
-  public Expression bitwiseAnd(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().bitwiseAnd(lhs.asTuple(), rhs.asTuple());
-  }
-  
-  @Override
-  public Expression integerConstant(int c) {
-    return getPointerIntegerEncoding().constant(c);
+    if(expr.isTuple())
+      return expr;
+    else
+      return super.castToInteger(expr);
   }
   
   @Override
   public Expression decr(Expression expr) {
-    Preconditions.checkArgument(expr.isTuple());
-    return getPointerIntegerEncoding().decr(expr.asTuple());
-  }
-  
-  @Override
-  public Expression divide(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().divide(lhs.asTuple(), rhs.asTuple());
-  }
-  
-  @Override
-  public BooleanExpression greaterThan(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().greaterThan(lhs.asTuple(), rhs.asTuple());
-  }
-  
-  @Override
-  public BooleanExpression greaterThanOrEqual(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().greaterThanOrEqual(lhs.asTuple(), rhs.asTuple());
+    if(expr.isTuple())
+      return getPointerEncoding().decr(expr.asTuple());
+    else
+      return super.decr(expr);
   }
   
   @Override
   public Expression incr(Expression expr) {
-    Preconditions.checkArgument(expr.isTuple());
-    return getPointerIntegerEncoding().incr(expr.asTuple());
+    if(expr.isTuple())
+      return getPointerEncoding().incr(expr.asTuple());
+    else
+      return super.incr(expr);
   }
   
-  public Expression indexTuple(Expression expr, int index) {
-    Preconditions.checkArgument(expr.isTuple());
-    return getPointerIntegerEncoding().index(expr.asTuple(), index);
-  }
-  
-  @Override
-  public BooleanExpression lessThan(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().lessThan(lhs.asTuple(), rhs.asTuple());
+  public Expression index(Expression expr, int index) {
+    return getPointerEncoding().index(expr.asTuple(), index);
   }
   
   @Override
-  public BooleanExpression lessThanOrEqual(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().lessThanOrEqual(lhs.asTuple(), rhs.asTuple());
+  public Expression lessThan(Expression lhs, Expression rhs) {
+    if(lhs.isTuple() && rhs.isTuple())
+      return getPointerEncoding().lessThan(lhs.asTuple(), rhs.asTuple());
+    else
+      return super.lessThan(lhs, rhs);
+  }
+  
+  @Override
+  public Expression lessThanOrEqual(Expression lhs, Expression rhs) {
+    if(lhs.isTuple() && rhs.isTuple())
+      return getPointerEncoding().lessThanOrEqual(lhs.asTuple(), rhs.asTuple());
+    else
+      return super.lessThanOrEqual(lhs, rhs);
+  }
+  
+  @Override
+  public Expression greaterThan(Expression lhs, Expression rhs) {
+    if(lhs.isTuple() && rhs.isTuple())
+      return getPointerEncoding().greaterThan(lhs.asTuple(), rhs.asTuple());
+    else
+      return super.greaterThan(lhs, rhs);
+  }
+  
+  @Override
+  public Expression greaterThanOrEqual(Expression lhs, Expression rhs) {
+    if(lhs.isTuple() && rhs.isTuple())
+      return getPointerEncoding().greaterThanOrEqual(lhs.asTuple(), rhs.asTuple());
+    else
+      return super.greaterThanOrEqual(lhs, rhs);
   }
   
   @Override
   public Expression minus(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().minus(lhs.asTuple(), rhs.asTuple());
+    if(lhs.isTuple())
+      return getPointerEncoding().minus(lhs.asTuple(), rhs);
+    else
+      return super.minus(lhs, rhs);
   }
   
   @Override
-  public Expression negate(Expression expr) {
-    Preconditions.checkArgument(expr.isTuple());
-    return getPointerIntegerEncoding().negate(expr.asTuple());
+  public Expression neq(Expression lhs, Expression rhs) {
+    if(lhs.isTuple() || rhs.isTuple()) {
+      PointerEncoding ptrEncoding = getPointerEncoding();
+      if(!lhs.isTuple()) {
+        assert(lhs.equals(ptrEncoding.getNullPtr()));
+        lhs = ptrEncoding.getNullPtr();
+      }
+      if(!rhs.isTuple()) {
+        assert(rhs.equals(ptrEncoding.getNullPtr()));
+        rhs = ptrEncoding.getNullPtr();
+      }
+      return ptrEncoding.neq(lhs.asTuple(), rhs.asTuple());
+    } else
+      return super.neq(lhs, rhs);
   }
   
   @Override
-  public BooleanExpression neq(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().neq(lhs.asTuple(), rhs.asTuple());
-  }
-  
-  @Override
-  public Expression one() {
-    return getPointerIntegerEncoding().one();
+  public Expression eq(Expression lhs, Expression rhs) {
+    if(lhs.isTuple() || rhs.isTuple()) {
+      PointerEncoding ptrEncoding = getPointerEncoding();
+      if(!lhs.isTuple()) {
+        assert(lhs.equals(ptrEncoding.getNullPtr()));
+        lhs = ptrEncoding.getNullPtr();
+      }
+      if(!rhs.isTuple()) {
+        assert(rhs.equals(ptrEncoding.getNullPtr()));
+        rhs = ptrEncoding.getNullPtr();
+      }
+      return getPointerEncoding().eq(lhs.asTuple(), rhs.asTuple());
+    } else
+      return super.eq(lhs, rhs);
   }
   
   @Override
   public Expression plus(Iterable<? extends Expression> exprs) {
-//    List<TupleExpression> tupleExprs = Lists.newArrayList();
-//    for(Expression expr : exprs) {
-//      Preconditions.checkArgument(expr.isTuple());
-//      tupleExprs.add(expr.asTuple());
-//    }
-//    return getPointerIntegerEncoding().plus(tupleExprs);
-    return getPointerIntegerEncoding().plus(
-        RecursionStrategies.unaryRecursionOverList(exprs,
-        new UnaryRecursionStrategy<Expression, TupleExpression>() {
-      @Override
-      public TupleExpression apply(Expression e) {
-        Preconditions.checkArgument(e.isTuple());
-        return e.asTuple();
-      }
-    }));
+    List<? extends Expression> args = Lists.newArrayList(exprs);
+    if(args.get(0).isTuple()) {
+      Expression first = args.remove(0);
+      return getPointerEncoding().plus(first.asTuple(), args);
+    } else {
+      return super.plus(exprs);
+    }
   }
   
   @Override
@@ -191,89 +174,18 @@ public class PointerExpressionEncoding
   
   @Override
   public Expression plus(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().plus(lhs.asTuple(), rhs.asTuple());
-  }
-  
-  @Override
-  public Expression mod(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().mod(lhs.asTuple(), rhs.asTuple());
-  }
-  
-  @Override
-  public BooleanExpression signedGreaterThan(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().signedGreaterThan(lhs.asTuple(), rhs.asTuple());
-  }
-  
-  @Override
-  public BooleanExpression signedGreaterThanOrEqual(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().signedGreaterThanOrEqual(lhs.asTuple(), rhs.asTuple());
-  }
-  
-  
-  @Override
-  public BooleanExpression signedLessThan(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().signedLessThan(lhs.asTuple(), rhs.asTuple());
-  }
-  
-  @Override
-  public BooleanExpression signedLessThanOrEqual(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().signedLessThanOrEqual(lhs.asTuple(), rhs.asTuple());
-  }
-  
-  @Override
-  public Expression times(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().times(lhs.asTuple(), rhs.asTuple());
-  }
-  
-  @Override
-  public Expression lshift(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().lshift(lhs.asTuple(), rhs.asTuple());
-  }
-  
-  @Override
-  public Expression rshift(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().rshift(lhs.asTuple(), rhs.asTuple());
-  }
-  
-  @Override
-  public Expression rem(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().rem(lhs.asTuple(), rhs.asTuple());
-  }
-  
-  @Override
-  public Expression signedRem(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isTuple() && rhs.isTuple());
-    return getPointerIntegerEncoding().signedRem(lhs.asTuple(), rhs.asTuple());
-  }
-  
-  @Override
-  public BooleanExpression toBoolean(Expression expr) {
-    Preconditions.checkArgument(expr.isTuple());
-    return getPointerIntegerEncoding().toBoolean(expr.asTuple());
+    if(lhs.isTuple())
+      return getPointerEncoding().plus(lhs.asTuple(), rhs);
+    else
+      return super.plus(lhs, rhs);
   }
   
   @Override
   public Expression unknown() {
-    return getPointerIntegerEncoding().unknown();
+    return getPointerEncoding().unknown();
   }
   
-  public Expression updateTuple(Expression expr, int index, Expression val) {
-    Preconditions.checkArgument(expr.isTuple());
-    return getPointerIntegerEncoding().update(expr.asTuple(), index, val);
-  }
-  
-  @Override
-  public Expression zero() {
-    return getPointerIntegerEncoding().zero();
+  public Expression update(TupleExpression expr, int index, Expression val) {
+    return getPointerEncoding().update(expr, index, val);
   }
 }

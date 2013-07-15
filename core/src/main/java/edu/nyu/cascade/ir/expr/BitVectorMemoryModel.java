@@ -151,7 +151,7 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
        
     stackRegions.add(ptr); // For stack allocated region, add ptr directly to stackRegions;
-    rvals.add((VariableExpression) ptr); // Add ptr to rvals (removed variables)
+    rvals.add(ptr); // Add ptr to rvals (removed variables)
     
     Expression alloc = state.getChild(1).asArray().update(ptr, size);  
     return exprManager.tuple(getStateType(), state.getChild(0), alloc);
@@ -167,7 +167,7 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
        
     stackRegions.add(ptr); // For stack allocated region, add ptr directly to stackRegions;
-    rvals.add((VariableExpression) ptr); // Add ptr to rvals (removed variables)
+    rvals.add(ptr); // Add ptr to rvals (removed variables)
     
     Expression alloc = state.getChild(1).asArray().update(ptr, size);  
     return exprManager.tuple(getStateType(), state.getChild(0), alloc);

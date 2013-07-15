@@ -57,7 +57,7 @@ public class TemporalExpressionEncodingImpl extends
       BooleanEncoding<? extends StateProperty> booleanEncoding,
       ArrayEncoding<? extends StateExpression> arrayEncoding,
       StateExpression.Factory stateExprFactory) {
-    super(integerEncoding,booleanEncoding,arrayEncoding);
+    super(integerEncoding,booleanEncoding,arrayEncoding, null);
   
     this.stateExprFactory = stateExprFactory;
     this.statePropFactory = StateProperties.createFactory(stateExprFactory);

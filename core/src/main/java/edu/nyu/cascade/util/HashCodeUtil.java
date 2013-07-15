@@ -29,6 +29,7 @@
 package edu.nyu.cascade.util;
 
 import java.lang.reflect.Array;
+import java.util.Iterator;
 
 
 /**
@@ -128,6 +129,20 @@ public final class HashCodeUtil {
         Object item = Array.get(aObject, idx);
         //recursive call!
         result = hash(result, item);
+      }
+    }
+    return result;
+  }
+  
+  public static int hash( int aSeed , Iterable<Object> aObject ) {
+    int result = aSeed;
+    if ( aObject == null) {
+      result = hash(result, 0);
+    }
+    else {
+      Iterator<Object> itr = aObject.iterator();
+      while(itr.hasNext()) {
+        result = hash(result, itr.next());
       }
     }
     return result;

@@ -6,6 +6,7 @@ import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.IntegerExpression;
+import edu.nyu.cascade.prover.TupleExpression;
 
 public class IntExpressionFactory extends AbstractExpressionEncoding {
 //  private static final String UNKNOWN_VARIABLE_NAME = "unknown";
@@ -15,7 +16,8 @@ public class IntExpressionFactory extends AbstractExpressionEncoding {
     IntegerEncoding<IntegerExpression> integerEncoding = new DefaultIntegerEncoding(exprManager);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(exprManager);
-    return new IntExpressionFactory(integerEncoding,booleanEncoding,arrayEncoding);
+    TupleEncoding<TupleExpression> tupleEncoding = new UnimplementedTupleEncoding<TupleExpression>();
+    return new IntExpressionFactory(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
   }
   
 //  private final VariableExpression<ArrayType<IntegerType,IntegerType>> memArray;
@@ -24,8 +26,9 @@ public class IntExpressionFactory extends AbstractExpressionEncoding {
   public IntExpressionFactory(
       IntegerEncoding<IntegerExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
-      ArrayEncoding<ArrayExpression> arrayEncoding) {
-    super(integerEncoding, booleanEncoding, arrayEncoding);
+      ArrayEncoding<ArrayExpression> arrayEncoding,
+      TupleEncoding<TupleExpression> tupleEncoding) {
+    super(integerEncoding, booleanEncoding, arrayEncoding, tupleEncoding);
 //    try {
 //      IntegerType intType = exprManager.integerType();
 //      memArrayType = exprManager.arrayType(intType, intType);

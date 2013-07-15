@@ -34,6 +34,7 @@ public class BurstallExtendMemoryModel extends AbstractMemoryModel {
   protected static final String REGION_VARIABLE_NAME = "region";
   protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
   protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "alloc";
+  protected static final String DEFAULT_CONSTANT_TYPE_NAME = "$Constant";
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
@@ -45,7 +46,7 @@ public class BurstallExtendMemoryModel extends AbstractMemoryModel {
     
     /** pointer type is (refType, offType) */
     PointerEncoding ptrEncoding = ((PointerExpressionEncoding) encoding).getPointerEncoding();
-    TupleType ptrType = ((PointerIntegerEncoding) ptrEncoding).getType();
+    TupleType ptrType = ptrEncoding.getType();
     
     ExpressionManager exprManager = encoding.getExpressionManager();
     UninterpretedType typeNameType = exprManager.uninterpretedType(TYPE_NAME);
@@ -77,11 +78,13 @@ public class BurstallExtendMemoryModel extends AbstractMemoryModel {
   }
 
   private final TupleType ptrType; // (ref-type, off-type)
-  private final TupleType idxType; // (type-type, ptrType)
-  private final UninterpretedType typeNameType; // typeName-type
+  private final TupleType idxType; // (typeName-type, ptrType)
   private final ArrayType memType; // idxType -> ptrType
-  private final ArrayType sizeType; // ref-type -> off-type
-  private final Set<VariableExpression> lvals; // lvals: variables in stack
+  private final ArrayType sizeType; // ref-type -> off-type  
+  private final UninterpretedType typeNameType; // typeName-type
+  
+  private final VariableExpression constRefVar;
+  
   /** when allocate a region_x in stack of array or structure, we just 
    * let addr_of_array == region_x, or addr_of_struct == region_x, 
    * which models exactly what happened in C. It means we should remove 
@@ -92,6 +95,8 @@ public class BurstallExtendMemoryModel extends AbstractMemoryModel {
    * Here, we keep rvals to record those removed addr_of_struct and addr_of_array,
    * and remove them from lvals in getAssumptions().
    */
+  
+  private final Set<VariableExpression> lvals; // lvals: variables in stack
   private final Set<Expression> rvals;
   private final List<Expression> stackRegions, heapRegions;
   
@@ -110,17 +115,6 @@ public class BurstallExtendMemoryModel extends AbstractMemoryModel {
 
   private BurstallExtendMemoryModel(ExpressionEncoding encoding, ArrayType memType) {
     super(encoding);
-    
-    PointerEncoding<?> pointerEncoding = ((PointerExpressionEncoding) encoding)
-        .getPointerEncoding();
-
-    Preconditions.checkArgument(pointerEncoding.getType().isTuple());
-    Preconditions.checkArgument(pointerEncoding.getType().asTuple().size() == 2);
-    Preconditions.checkArgument(memType.getIndexType().asTuple().getElementTypes().get(0)
-        .isUninterpreted());
-    Preconditions.checkArgument(memType.getIndexType().asTuple().getElementTypes().get(1)
-        .equals(pointerEncoding.getType()));
-    Preconditions.checkArgument(memType.getElementType().equals(pointerEncoding.getType()));
   
     this.lvals = Sets.newHashSet();
     this.rvals = Sets.newHashSet();
@@ -136,8 +130,8 @@ public class BurstallExtendMemoryModel extends AbstractMemoryModel {
     
     this.typeMap = Maps.newHashMap();
     /** Put constant type variable into type map */
-    VariableExpression constTypeVar = ((PointerIntegerEncoding) pointerEncoding).getConstTypeVar();
-    typeMap.put(constTypeVar.getName(), constTypeVar);
+    this.constRefVar = getExpressionManager().variable(DEFAULT_CONSTANT_TYPE_NAME, typeNameType, false);
+    typeMap.put(DEFAULT_CONSTANT_TYPE_NAME, constRefVar);
     
     this.scalaTypeVars = Sets.newHashSet();
   }
@@ -267,17 +261,17 @@ public class BurstallExtendMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(state.getType().equals( getStateType() ));
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
-    if(rval.getType().equals(ptrType.getElementTypes().get(1))) {
-      PointerExpressionEncoding ptrEncoding = (PointerExpressionEncoding) 
-          getExpressionEncoding();
-      rval = ptrEncoding.castToInteger(rval).asBitVector();
-      rval = ptrEncoding.castToPointer(rval);
-    }
+    
+    ExpressionManager em = getExpressionManager();
+    
+    if(rval.getType().equals(ptrType.getElementTypes().get(1)))
+      rval = em.tuple(ptrType, this.constRefVar, rval);
+    
     Expression typeNameVar = getTypeVar(lval.getNode());
-    Expression index = getExpressionManager().tuple(idxType, typeNameVar, lval);
+    Expression index = em.tuple(idxType, typeNameVar, lval);
     Expression memory = state.getChild(0).asArray().update(index, rval);   
     
-    return getExpressionManager().tuple(getStateType(), memory, state.getChild(1));
+    return em.tuple(getStateType(), memory, state.getChild(1));
   }
 
   @Override
@@ -352,7 +346,6 @@ public class BurstallExtendMemoryModel extends AbstractMemoryModel {
       
       /* Assume all the scala type index variables has constant values in memory */
       Expression indexVar = exprManager.variable("indexVar", idxType, true);
-      Expression constRefVar = ((PointerIntegerEncoding) encoding.getPointerEncoding()).getConstTypeVar();
       List<BooleanExpression> disjs = Lists.newArrayListWithCapacity(scalaTypeVars.size());
       for(VariableExpression typeVar : scalaTypeVars)
         disjs.add(indexVar.asTuple().index(0).eq(typeVar));
@@ -403,7 +396,7 @@ public class BurstallExtendMemoryModel extends AbstractMemoryModel {
         
         while (lvalIter.hasNext()) {
           VariableExpression lval2 = lvalIter.next();
-          builder.add(encoding.lessThan(lval, lval2));
+          builder.add(encoding.lessThan(lval, lval2).asBooleanExpression());
           lval = lval2;
         }
         
@@ -415,7 +408,7 @@ public class BurstallExtendMemoryModel extends AbstractMemoryModel {
         
         while (regionIter.hasNext()) {
           Expression regionVar2 = regionIter.next();
-          builder.add(encoding.lessThan(regionVar, regionVar2));
+          builder.add(encoding.lessThan(regionVar, regionVar2).asBooleanExpression());
           regionVar = regionVar2;
         }
       }
@@ -565,8 +558,7 @@ public class BurstallExtendMemoryModel extends AbstractMemoryModel {
     VariableExpression res = getExpressionManager().variable(resName, typeNameType, false);
     typeMap.put(resName, res);
     
-    if(resName.equals("$IntegerT") || resName.equals("$CharT"))
-      scalaTypeVars.add(res);
+    if(resName.equals("$IntegerT") || resName.equals("$CharT")) scalaTypeVars.add(res);
     return res;
   }
 }

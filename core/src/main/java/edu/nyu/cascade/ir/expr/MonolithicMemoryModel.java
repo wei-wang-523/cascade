@@ -99,13 +99,6 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
   private MonolithicMemoryModel(ExpressionEncoding encoding, ArrayType memType) {
     super(encoding);
     
-    PointerEncoding<?> pointerEncoding = ((PointerExpressionEncoding) encoding)
-        .getPointerEncoding();
-    Preconditions.checkArgument(pointerEncoding.getType().equals(memType.getIndexType()));
-    Preconditions.checkArgument(pointerEncoding.getType().equals(memType.getElementType()));
-    Preconditions.checkArgument(pointerEncoding.getType().isTuple());
-    Preconditions.checkArgument(pointerEncoding.getType().asTuple().size() == 2);
-  
     this.lvals = Sets.newHashSet();
     this.rvals = Sets.newHashSet();
     this.stackRegions = Lists.newArrayList();
@@ -208,7 +201,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
         /* ptr:(ref_ptr, off), startPos:(ref, 0), endPos:(ref, size);
          * ensure ref_ptr == ref && 0 <= off && off < size
          */
-        disjs.add(ptrEncoding.lessThanOrEqual(startPos, ptr)
+        disjs.add(ptrEncoding.lessThanOrEqual(startPos, ptr).asBooleanExpression()
           .and(ptrEncoding.lessThan(ptr, endPos)));
       }
     } catch (TheoremProverException e) {
@@ -249,7 +242,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
       PointerExpressionEncoding ptrEncoding = (PointerExpressionEncoding) 
           getExpressionEncoding();
       rval = ptrEncoding.castToInteger(rval).asBitVector();
-      rval = ptrEncoding.castToPointer(rval);
+//      rval = ptrEncoding.castToPointer(rval);
     }
     Expression memory = state.getChild(0).asArray().update(lval, rval);   
     
@@ -340,7 +333,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
         
         while (lvalIter.hasNext()) {
           Expression lval2 = lvalIter.next();
-          builder.add(ptrEncoding.lessThan(lval, lval2));
+          builder.add(ptrEncoding.lessThan(lval, lval2).asBooleanExpression());
           lval = lval2;
         }
 

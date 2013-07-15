@@ -6,6 +6,7 @@ import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.IntegerExpression;
+import edu.nyu.cascade.prover.TupleExpression;
 
 public class IntExpressionEncoding extends AbstractExpressionEncoding {
   
@@ -13,13 +14,15 @@ public class IntExpressionEncoding extends AbstractExpressionEncoding {
     IntegerEncoding<IntegerExpression> integerEncoding = new DefaultIntegerEncoding(exprManager);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(exprManager);
-    return new IntExpressionEncoding(integerEncoding,booleanEncoding,arrayEncoding);
+    TupleEncoding<TupleExpression> tupleEncoding = new UnimplementedTupleEncoding<TupleExpression>();
+    return new IntExpressionEncoding(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
   }
 
   public IntExpressionEncoding(
       IntegerEncoding<IntegerExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
-      ArrayEncoding<ArrayExpression> arrayEncoding) {
-    super(integerEncoding, booleanEncoding, arrayEncoding);
+      ArrayEncoding<ArrayExpression> arrayEncoding,
+      TupleEncoding<TupleExpression> tupleEncoding) {
+    super(integerEncoding, booleanEncoding, arrayEncoding, tupleEncoding);
   }
 }

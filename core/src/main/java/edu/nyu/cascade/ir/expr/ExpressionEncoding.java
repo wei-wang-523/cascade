@@ -167,6 +167,11 @@ public interface ExpressionEncoding {
    * The underlying array encoding.
    */
   ArrayEncoding<?> getArrayEncoding();
+  
+  /**
+   * The underlying tuple encoding.
+   */
+  TupleEncoding<?> getTupleEncoding();
 
   /**
    * Get logical assumptions used in the underlying encoding. E.g., if variables

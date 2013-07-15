@@ -43,6 +43,7 @@ import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.ir.expr.PathEncoding;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Preferences;
 
 public class Statement implements IRStatement {
   
@@ -244,7 +245,10 @@ public class Statement implements IRStatement {
     case ASSIGN: 
       return factory.assign(prefix, getOperand(0), getOperand(1));
     case FIELD_ASSIGN: {
-      return factory.fieldAssign(prefix, getOperand(0), getOperand(1).toString(), getOperand(2));
+      if(Preferences.getString(Preferences.OPTION_THEORY).endsWith("Reach"))
+        return factory.fieldAssign(prefix, getOperand(0), getOperand(1).toString(), getOperand(2));
+      else
+        return factory.noop(prefix);
     }
     case ASSERT: {
       return factory.assumeMemorySafe(prefix);
@@ -351,10 +355,12 @@ public class Statement implements IRStatement {
       return "critical";
       
     case FIELD_ASSIGN:
-      if(getOperands().size() == 2)
-        return "f(" + getOperand(0) + ") := " + getOperand(1);
-      else
-        return "f(" + getOperand(0) + "->" + getOperand(1) + ") := " + getOperand(2);
+      if(Preferences.getString(Preferences.OPTION_THEORY).endsWith("Reach")) {
+        if(getOperands().size() == 2)
+          return "f(" + getOperand(0) + ") := " + getOperand(1);
+        else
+          return "f(" + getOperand(0) + "->" + getOperand(1) + ") := " + getOperand(2);
+      }
 
     case FREE: 
       return "free " + getOperand(0);

@@ -43,16 +43,29 @@ public abstract class AbstractExpressionEncoding
 
   protected final ArrayEncoding<? extends Expression> arrayEncoding;
   
+  protected final TupleEncoding<? extends Expression> tupleEncoding;
+  
   protected AbstractExpressionEncoding(ExpressionManager exprManager,
       IntegerEncoding<? extends Expression> integerEncoding,
       BooleanEncoding<? extends Expression> booleanEncoding) {
-    this(integerEncoding,booleanEncoding,UnimplementedArrayEncoding.<Expression>create());
+    this(integerEncoding,booleanEncoding,
+        UnimplementedArrayEncoding.<Expression>create(),
+        UnimplementedTupleEncoding.<Expression>create());
+  }
+  
+  protected AbstractExpressionEncoding(ExpressionManager exprManager,
+      IntegerEncoding<? extends Expression> integerEncoding,
+      BooleanEncoding<? extends Expression> booleanEncoding,
+      ArrayEncoding<? extends Expression> arrayEncoding) {
+    this(integerEncoding,booleanEncoding,arrayEncoding,
+        UnimplementedTupleEncoding.<Expression>create());
   }
   
   protected AbstractExpressionEncoding(
       IntegerEncoding<? extends Expression> integerEncoding,
       BooleanEncoding<? extends Expression> booleanEncoding,
-      ArrayEncoding<? extends Expression> arrayEncoding) {
+      ArrayEncoding<? extends Expression> arrayEncoding,
+      TupleEncoding<? extends Expression> tupleEncoding) {
     Preconditions.checkArgument( integerEncoding.getExpressionManager().equals( booleanEncoding.getExpressionManager()) );
     Preconditions.checkArgument( 
         arrayEncoding instanceof UnimplementedArrayEncoding ||
@@ -67,6 +80,7 @@ public abstract class AbstractExpressionEncoding
     this.integerEncoding = integerEncoding;
     this.booleanEncoding = booleanEncoding;
     this.arrayEncoding = arrayEncoding;
+    this.tupleEncoding = tupleEncoding;
   }
 
   @Override
@@ -322,10 +336,10 @@ public abstract class AbstractExpressionEncoding
     switch (type.getKind()) {
     case ARRAY:
       // TODO(cconway): Handle multi-dimensional arrays
-      List<? extends IRType> typeArgs = type.getTypeArguments();
-      assert( typeArgs.size() == 2 );
-      return getArrayEncoding().getInstance( encodingForType(typeArgs.get(0)),
-          encodingForType(typeArgs.get(1)));
+      List<? extends IRType> typeArgsArr = type.getTypeArguments();
+      assert( typeArgsArr.size() == 2 );
+      return getArrayEncoding().getInstance( encodingForType(typeArgsArr.get(0)),
+          encodingForType(typeArgsArr.get(1)));
 
     case BOOLEAN:
       return getBooleanEncoding();
@@ -334,8 +348,12 @@ public abstract class AbstractExpressionEncoding
     case RANGE:
       return getIntegerEncoding();
       
-    case POINTER:
-      return ((PointerExpressionEncoding) this).getPointerEncoding();
+    case TUPLE:
+      List<? extends IRType> typeArgsPtr = type.getTypeArguments();
+      ImmutableList<TypeEncoding<?>> encodings = new ImmutableList.Builder<TypeEncoding<?>>()
+          .add(encodingForType(typeArgsPtr.get(0)),
+              encodingForType(typeArgsPtr.get(1))).build();
+      return getTupleEncoding().getInstance(encodings);
     }
     throw new UnsupportedOperationException("type=" + type);
   }
@@ -385,6 +403,11 @@ public abstract class AbstractExpressionEncoding
   @Override
   public IntegerEncoding<? extends Expression> getIntegerEncoding() { 
     return integerEncoding; 
+  }
+  
+  @Override
+  public TupleEncoding<? extends Expression> getTupleEncoding() {
+    return tupleEncoding;
   }
 
   @Override
