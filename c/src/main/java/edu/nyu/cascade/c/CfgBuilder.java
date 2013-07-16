@@ -5,7 +5,6 @@ import static edu.nyu.cascade.util.IOUtils.debugC;
 import static edu.nyu.cascade.util.IOUtils.debugEnabled;
 
 import java.io.File;
-import java.math.BigInteger;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
@@ -1549,18 +1548,37 @@ public class CfgBuilder extends Visitor {
 
   public CExpression visitStringConstant(GNode node) {
     // pick the content to create a node for initialization
-    char[] content = node.getString(0).toCharArray();
-    Pair<Object> operands = null;
-    for(int i=1; i<content.length; i++) {
-      char c = (i == content.length - 1) ? '\0' : content[i];
-      // Here, we translate the single character to the char with ASCII code.
-      GNode charConst = GNode.create("CharacterConstant", Character.toString(c));
+    String nullStr = "\u0000";
+    String content = node.getString(0);
+    if(content.equals(nullStr)) {
+      int constVal = 0;
+      GNode charConst = GNode.create("CharacterConstant", "\'\\u0000\'");
       charConst.setLocation(node.getLocation());
-      Type t = (new xtc.type.AnnotatedT(NumberT.CHAR)).constant(BigInteger.valueOf((int) c));
+      Type t = (new xtc.type.AnnotatedT(NumberT.CHAR)).constant(constVal);
+      charConst.setProperty(xtc.Constants.TYPE, t);
+      return expressionOf(charConst);
+    }
+        
+    char[] contentArr = node.getString(0).substring(1).toCharArray(); // content = [", 1, 2, 3, "]
+    Pair<Object> operands = null;
+    for(int i=0; i<contentArr.length; i++) {
+      String str = null;
+      long constVal;
+      if(i == contentArr.length - 1) {
+        str = "\'\\u0000\'";
+        constVal = 0;
+      } else {
+        str = new StringBuilder().append('\'').append(contentArr[i]).append('\'').toString();
+        constVal = (int) contentArr[i];
+      }
+      // Here, we translate the single character to the char with ASCII code.
+      GNode charConst = GNode.create("CharacterConstant", str);
+      charConst.setLocation(node.getLocation());
+      Type t = (new xtc.type.AnnotatedT(NumberT.CHAR)).constant(constVal);
       charConst.setProperty(xtc.Constants.TYPE, t);
       GNode initEntry = GNode.create("InitializerListEntry", null, charConst);
       initEntry.setLocation(node.getLocation());
-      if(i == 1)    operands = new Pair<Object>(initEntry);
+      if(i == 0)    operands = new Pair<Object>(initEntry);
       else          operands = operands.append(new Pair<Object>(initEntry));
     }
     
@@ -1571,7 +1589,7 @@ public class CfgBuilder extends Visitor {
     CExpression stringVarExpr = expressionOf(stringVarNode);
     
     // length * sizeof(char)
-    GNode lhsNode = GNode.create("IntegerConstant", Integer.toString(content.length-1));
+    GNode lhsNode = GNode.create("IntegerConstant", Integer.toString(contentArr.length));
     lhsNode.setLocation(node.getLocation());   
     Node rhsNode = getSizeofTypeNode(IntegerT.CHAR, node);
     GNode sizeNode = GNode.create("MultiplicativeExpression", lhsNode, "*", rhsNode);

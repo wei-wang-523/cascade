@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import xtc.Constants;
 import xtc.type.BooleanT;
+import xtc.type.IntegerT;
 import xtc.type.NumberT;
 import xtc.type.PointerT;
 import xtc.type.StructOrUnionT;
@@ -73,12 +74,6 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public ExpressionVisitor() {
       memory = getMemoryModel().freshState();
-      StringBuilder sb = new StringBuilder(); 
-      sb.append("fresh memory: (");
-      for(String name : memory.getType().asTuple().getElementTypes().get(0).asRecord().getElementNames())
-        sb.append(name).append(" ");
-      sb.append(")");
-      IOUtils.out().println(sb.toString());
       lvalVisitor = new LvalVisitor(this);
     }
     
@@ -268,7 +263,7 @@ class CExpressionEncoder implements ExpressionEncoder {
     public Expression visitCastExpression(GNode node) {
       /* TODO: Deal with conversions */
       IOUtils.debug().pln("Treating cast as no-op.");
-      Type targetType = (Type) node.getNode(0).getProperty(xtc.Constants.TYPE);
+      Type targetType = lookupType(node.getNode(0));
       typeTable.put(node.getNode(1).toString(), targetType);
       Expression res = (Expression) dispatch(node.getNode(1));
       return res.setNode(node);
@@ -276,12 +271,10 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitCharacterConstant(GNode node)
         throws ExpressionFactoryException {
-      if(node.getString(0).equals("\'\\0\'")) {
-        Type t = (new xtc.type.AnnotatedT(NumberT.CHAR)).constant(BigInteger.valueOf((int) 0));
-        node.setProperty(xtc.Constants.TYPE, t);
-        node.set(0, String.valueOf('\0'));
-      }
-      return visitIntegerConstant(node);
+      Type type = (Type) node.getProperty(xtc.Constants.TYPE);
+      int constVal = type.getConstant().bigIntValue().intValue();
+      Expression res = encoding.integerConstant(constVal);
+      return res.setNode(node);
     }
 
     public Expression visitEqualityExpression(GNode node)
@@ -342,16 +335,16 @@ class CExpressionEncoder implements ExpressionEncoder {
           List<Expression> argExprs = (List<Expression>) dispatch(argList);
           res = getExpressionManager().implies(argExprs.get(0), argExprs.get(1));
         } else if( FUN_FORALL.equals(name) || FUN_EXISTS.equals(name)) {
-          int size = argList.size();
           ExpressionManager exprManager = getExpressionManager();
           List<VariableExpression> argVars = Lists.newArrayList();
+          int size = argList.size();
           for(int i=0; i<size-1; i++) {
             GNode argNode = argList.getGeneric(i);
             String argName = argNode.getName().equals("PrimaryIdentifier") ? argNode.getString(0) :
                 argNode.getNode(argNode.size()-1).getString(0);
-            Expression argNodeList = (Expression) dispatch(argNode);
-            VariableExpression argVar = exprManager.variable(argName, 
-                getMemoryModel().getMemoryType().asArrayType().getElementType(), false);
+            assert(lookupType(argNode).isInteger());
+            int cellSize = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
+            VariableExpression argVar = exprManager.variable(argName, exprManager.bitVectorType(cellSize), false);
             argVars.add(argVar);
           }
           List<Expression> args = (List<Expression>) dispatch(argList);
@@ -425,6 +418,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 
     public Expression visitIndirectionExpression(GNode node)
         throws ExpressionFactoryException {
+      lookupType(node);
       Expression op = (Expression) dispatch(node.getNode(0));
       Expression res = getMemoryModel().deref(memory, op.setNode(node));
       return res.setNode(node);
@@ -432,15 +426,18 @@ class CExpressionEncoder implements ExpressionEncoder {
 
     public Expression visitIntegerConstant(GNode node)
         throws ExpressionFactoryException {
-      xtc.type.Type intType = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
+      IntegerT intType = (IntegerT) lookupType(node);
+      assert(intType != null);
       Expression res;
-      if(intType != null && intType.getConstant() != null) {
+      if(intType.getConstant() != null) {
         // Parse string character
         BigInteger constVal = (BigInteger) intType.getConstant().getValue();
         res = encoding.integerConstant(constVal.intValue());
-      } else { 
-    	// Parse int character
-        int constVal = Integer.parseInt(node.getString(0));
+      } else {
+        String numStr = node.getString(0);
+        // for unsigned integer
+        if(numStr.endsWith("U")) numStr = numStr.substring(0, numStr.indexOf('U'));
+        int constVal = Integer.parseInt(numStr);
         res = encoding.integerConstant(constVal);
       }
       return res.setNode(node);
@@ -960,13 +957,12 @@ class CExpressionEncoder implements ExpressionEncoder {
    * */
   private Expression getLvalBinding(GNode node) throws ExpressionFactoryException {
     IRVarInfo varInfo = lookupVar(node);
-    String name = (String) node.get(0);
     Expression iExpr = null;
     if (varInfo.hasProperty(VAR_EXPR_MAP)) {
       // TODO: map expressions per-factory
       iExpr = (Expression) varInfo.getProperty(VAR_EXPR_MAP);     
     } else {
-      iExpr = getMemoryModel().createLval(VAR_PREFIX + name);
+      iExpr = getMemoryModel().createLval(VAR_PREFIX + node.getString(0));
       varInfo.setProperty(CExpressionEncoder.VAR_EXPR_MAP, iExpr);     
     }
     return iExpr.setNode(node);
@@ -1019,8 +1015,8 @@ class CExpressionEncoder implements ExpressionEncoder {
     Expression resExpr;
     GNode srcNode = lvalExpr.getNode();
     /* lvalExpr's node with no type info, get it for BurstallMemoryModel analysis. */
-    if(!srcNode.hasProperty(xtc.Constants.TYPE))
-      srcNode.setProperty(xtc.Constants.TYPE, lookupType(srcNode));
+    lookupType(srcNode);
+    
     if(t.isArray())
       resExpr = lvalExpr;
     else
