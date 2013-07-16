@@ -91,7 +91,7 @@ public final class TupleTypeImpl extends TypeImpl implements TupleType {
       Symbol[] symbols = new Symbol[Iterables.size(types)];
       for (int i = 0; i < Iterables.size(types); i++) {
         z3Types[i] = em.toZ3Type(Iterables.get(types, i));
-        symbols[i] = z3_context.MkSymbol(typeName + "_" + i);
+        symbols[i] = z3_context.MkSymbol(typeName + "@" + i);
         sb.append(" \n                             (" + symbols[i] + " " + z3Types[i] + ")");
       }
       setZ3Type(z3_context.MkTupleSort(tname, symbols, z3Types));
