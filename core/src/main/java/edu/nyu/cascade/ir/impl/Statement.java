@@ -245,7 +245,8 @@ public class Statement implements IRStatement {
     case ASSIGN: 
       return factory.assign(prefix, getOperand(0), getOperand(1));
     case FIELD_ASSIGN: {
-      if(Preferences.getString(Preferences.OPTION_THEORY).endsWith("Reach"))
+      if(Preferences.isSet(Preferences.OPTION_THEORY) 
+          && Preferences.getString(Preferences.OPTION_THEORY).endsWith("Reach"))
         return factory.fieldAssign(prefix, getOperand(0), getOperand(1).toString(), getOperand(2));
       else
         return factory.noop(prefix);
@@ -355,7 +356,8 @@ public class Statement implements IRStatement {
       return "critical";
       
     case FIELD_ASSIGN:
-      if(Preferences.getString(Preferences.OPTION_THEORY).endsWith("Reach")) {
+      if(Preferences.isSet(Preferences.OPTION_THEORY) 
+          && Preferences.getString(Preferences.OPTION_THEORY).endsWith("Reach")) {
         if(getOperands().size() == 2)
           return "f(" + getOperand(0) + ") := " + getOperand(1);
         else

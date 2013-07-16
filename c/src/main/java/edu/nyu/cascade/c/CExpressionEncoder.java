@@ -436,8 +436,17 @@ class CExpressionEncoder implements ExpressionEncoder {
       } else {
         String numStr = node.getString(0);
         // for unsigned integer
-        if(numStr.endsWith("U")) numStr = numStr.substring(0, numStr.indexOf('U'));
-        int constVal = Integer.parseInt(numStr);
+        if(numStr.lastIndexOf('U') >= 0) 
+          numStr = numStr.substring(0, numStr.lastIndexOf('U'));
+        int constVal = 0; 
+        if(numStr.startsWith("0x")) 
+          constVal = Integer.parseInt(numStr.substring(2), 16);
+        else if(numStr.startsWith("0b")) 
+          constVal = Integer.parseInt(numStr.substring(2), 2);
+        else if(numStr.startsWith("0h")) 
+          constVal = Integer.parseInt(numStr.substring(2), 8);
+        else 
+          constVal = Integer.parseInt(numStr);
         res = encoding.integerConstant(constVal);
       }
       return res.setNode(node);
