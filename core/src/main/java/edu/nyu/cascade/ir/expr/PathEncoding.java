@@ -36,7 +36,8 @@ public interface PathEncoding    {
    * @param bool
    * @return boolean expression
    */  
-  Expression assumeMemorySafe(Expression pre);
+  Expression check(Expression pre, ExpressionClosure bool);
+  Expression check(Expression pre, IRExpression expr);
 
   Expression assign(Expression pre, ExpressionClosure lval, ExpressionClosure rval);
   Expression assign(Expression pre, IRExpression lval, IRExpression rval);

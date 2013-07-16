@@ -81,16 +81,8 @@ public class DynamicPathEncoding extends AbstractPathEncoding {
   }
   
   @Override
-  public Expression assumeMemorySafe(Expression pre) {
-    ExpressionManager exprManager = getExpressionManager();
-    Expression mem = pre.asTuple().getChild(0);
-    Expression pc = pre.asTuple().getChild(1);
-    
-    Expression memAssume = exprManager.and(getMemoryModel().getAssumptions(mem));
-    Expression pcPrime = exprManager.ifThenElse(pc, memAssume, exprManager.ff());
-    
-    stateType = exprManager.tupleType(DEFAULT_PATH_STATE, mem.getType(), pcPrime.getType());
-    return exprManager.tuple(stateType, mem, pcPrime);
+  public Expression check(Expression pre, ExpressionClosure expr) {
+    return pre;
   }
 
   @Override
@@ -98,10 +90,12 @@ public class DynamicPathEncoding extends AbstractPathEncoding {
       ExpressionClosure bool) {
     Preconditions.checkArgument( bool.getOutputType().isBoolean() );
     
+    ExpressionManager exprManager = getExpressionManager();
     Expression mem = pre.asTuple().getChild(0);
     Expression pc = pre.asTuple().getChild(1);
     
-    return getExpressionManager().implies(pc, bool.eval(mem));
+    BooleanExpression memorySafe = exprManager.and(getMemoryModel().getAssumptions(mem));
+    return exprManager.implies(pc, memorySafe.implies(bool.eval(mem)));
   }
 
   @Override

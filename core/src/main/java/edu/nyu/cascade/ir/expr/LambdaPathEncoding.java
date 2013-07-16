@@ -117,12 +117,9 @@ public class LambdaPathEncoding extends AbstractPathEncoding {
   }
 
   @Override
-  public Expression assumeMemorySafe(Expression pre) {
-    Preconditions.checkArgument( pre.getType().equals( pathType ) );
-   
-    BooleanExpression result = getExpressionManager().and(getMemoryModel().getAssumptions(pre));
-    
-    return extendPath(pre, stateIsOk.and(result).ifThenElse(state, bottom));
+  public Expression check(Expression pre, ExpressionClosure expr) {
+    Preconditions.checkArgument( pre.getType().equals( pathType ) ); 
+    return pre;
   }
   
   /**
@@ -162,7 +159,8 @@ public class LambdaPathEncoding extends AbstractPathEncoding {
     Preconditions.checkArgument( bool.getInputType().equals( stateType ));
     Preconditions.checkArgument( bool.getOutputType().isBoolean() );
     
-    Expression result = bool.eval(stateVal);
+    BooleanExpression memorySafe = getExpressionManager().and(getMemoryModel().getAssumptions(path));
+    Expression result = memorySafe.implies(bool.eval(stateVal));
 
     return evalWithPath(path, stateIsOk.implies(result)).asBooleanExpression();
   }  

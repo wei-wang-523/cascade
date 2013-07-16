@@ -60,8 +60,8 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     ExpressionClosure currentState = getMemoryModel().getCurrentState();
     if(currentState != null) {
       memPrime = currentState.eval(mem);
+      getMemoryModel().resetCurrentState();
     }
-    getMemoryModel().resetCurrentState();
     
     Expression pcPrime = exprManager.ifThenElse(pc, expr.eval(mem).asBooleanExpression(), 
         exprManager.ff());
@@ -69,15 +69,17 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   }
   
   @Override
-  public Expression assumeMemorySafe(Expression pre) {
-    ExpressionManager exprManager = getExpressionManager();
+  public Expression check(Expression pre, ExpressionClosure bool) {
     Expression mem = pre.asTuple().getChild(0);
     Expression pc = pre.asTuple().getChild(1);
     
-    Expression memAssume = exprManager.and(getMemoryModel().getAssumptions(mem));
-    Expression pcPrime = exprManager.ifThenElse(pc, memAssume, exprManager.ff());
-    
-    return exprManager.tuple(pathType, mem, pcPrime);
+    Expression memPrime = mem;
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    if(currentState != null) {
+      memPrime = currentState.eval(mem);
+      getMemoryModel().resetCurrentState();
+    }
+    return getUpdatedPathState(memPrime, pc);
   }
 
   @Override
@@ -87,10 +89,11 @@ public class SimplePathEncoding extends AbstractPathEncoding {
         pathType.getElementTypes().get(0) ));
     Preconditions.checkArgument( bool.getOutputType().isBoolean() );
     
+    ExpressionManager em = getExpressionManager();
     Expression mem = pre.asTuple().getChild(0);
     Expression pc = pre.asTuple().getChild(1);
-    
-    return getExpressionManager().implies(pc, bool.eval(mem));
+    BooleanExpression memorySafe = em.and(getMemoryModel().getAssumptions(mem));
+    return em.implies(pc, memorySafe.implies(bool.eval(mem)));
   }
 
   @Override

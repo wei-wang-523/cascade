@@ -251,7 +251,7 @@ public class Statement implements IRStatement {
         return factory.noop(prefix);
     }
     case ASSERT: {
-      return factory.assumeMemorySafe(prefix);
+      return factory.check(prefix, getOperand(0));
     }
     case ASSUME:
     case AWAIT:

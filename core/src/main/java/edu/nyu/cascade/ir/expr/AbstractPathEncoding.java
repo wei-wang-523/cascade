@@ -36,6 +36,11 @@ public abstract class AbstractPathEncoding implements
   }
   
   @Override
+  public Expression check(Expression pre, IRExpression b) {
+    return check(pre, b.toBoolean(getExpressionEncoder()));
+  }
+  
+  @Override
   public Expression alloc(Expression pre, IRExpression ptr, IRExpression size) {
     ExpressionEncoder encoder = getExpressionEncoder();
     return alloc(pre, ptr.toLval(encoder), size.toExpression(encoder));

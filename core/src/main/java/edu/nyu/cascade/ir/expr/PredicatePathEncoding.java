@@ -47,9 +47,10 @@ public class PredicatePathEncoding extends
     Preconditions.checkArgument( bool.getInputType().equals( stateType ));
     Preconditions.checkArgument( bool.getOutputType().isBoolean() );
     
+    BooleanExpression memorySafe = getExpressionManager().and(getMemoryModel().getAssumptions(path));
     Expression result = bool.eval(state);
 
-    return forceBool(path,state).implies(result);
+    return forceBool(path,state).implies(memorySafe.implies(result));
   }
 
   /**
@@ -83,11 +84,9 @@ public class PredicatePathEncoding extends
   }
   
   @Override
-  public FunctionExpression assumeMemorySafe(Expression pre) {
+  public FunctionExpression check(Expression pre, ExpressionClosure expr) {
     Preconditions.checkArgument( pre.getType().equals( pathType ) );
-    Expression result = getExpressionManager().and(getMemoryModel().getAssumptions(pre));
-
-    return suspendBool( forceBool(pre,state).and( result ));
+    return suspendBool( forceBool(pre,state));
   }
   
   @Override
