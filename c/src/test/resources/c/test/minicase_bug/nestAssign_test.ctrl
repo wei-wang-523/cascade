@@ -6,7 +6,7 @@
       <command>
 	<cascadeFunction> cascade_check </cascadeFunction>
 	<argument><![CDATA[
-	a == 0 && b == 1
+	a == 0 && b == 2
 	]]>
 	</argument>
       </command>

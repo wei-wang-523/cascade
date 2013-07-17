@@ -6,7 +6,7 @@
       <command>
 	<cascadeFunction> cascade_check </cascadeFunction>
 	<argument><![CDATA[
-	s[3] == '\0'
+	s[3] == '\u0000'
 	]]>
 	</argument>
       </command>
