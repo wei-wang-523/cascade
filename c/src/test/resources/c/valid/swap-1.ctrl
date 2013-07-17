@@ -1,0 +1,29 @@
+<controlFile>
+  <sourceFile name="swap.c" id="1" /> 
+  <run>
+    <startPosition fileId="1" line="8" />
+    <wayPoint fileId="1" line="10" >
+      <function funcName="swap" funcId="1" >
+        <wayPoint fileId="1" line="1" >
+	  <command>
+            <cascadeFunction>  cascade_assume </cascadeFunction>
+            <argument><![CDATA[
+            a < &x && a < &y
+            ]]>
+       	    </argument>
+      	  </command>
+	</wayPoint>
+      </function>
+    </wayPoint>
+    <endPosition fileId="1" line="11">
+      <command>
+        <cascadeFunction>  cascade_check
+        </cascadeFunction>
+        <argument><![CDATA[
+          old_a==*b && old_b==*a
+          ]]>
+        </argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>
