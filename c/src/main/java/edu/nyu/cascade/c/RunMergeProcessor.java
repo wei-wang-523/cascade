@@ -1427,6 +1427,7 @@ class RunMergeProcessor implements RunProcessor {
         for(int i=0; i<args.size(); i++) {
           Node arg_call = args.get(i).getSourceNode();
           Node arg_assign = argNode.getNode(i);
+          if(arg_assign.getName().equals("CastExpression"))  arg_assign = arg_assign.getNode(1);
           if(!arg_call.equals(arg_assign)) {
             if(!arg_assign.getString(0).startsWith(TEMP_VAR_PREFIX)) {
               throw new RunProcessorException("Invalid argument: " + arg_assign);
