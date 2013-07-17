@@ -282,6 +282,10 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
           builder.add(exprManager.distinct(lvals));
         }
         
+        if (regions.size() > 1) {
+          builder.add(exprManager.distinct(regions));
+        }
+        
         /* Collect constraints for memory regions */
         for (Expression locVar : regions) {
           Expression sizeVar = alloc.asArray().index(locVar);
@@ -303,9 +307,13 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
             if (!locVar.equals(locVar2)) {
               Expression sizeVar2 = alloc.asArray().index(locVar2);
 
-              builder.add(exprManager.or(exprManager.lessThanOrEqual(exprManager.plus(
-                  addressType.getSize(), locVar2, sizeVar2), locVar),
-                  exprManager.lessThanOrEqual(regionBound, locVar2)));
+              builder.add(
+                  exprManager.or(
+                      exprManager.lessThanOrEqual(
+                          exprManager.plus(
+                              addressType.getSize(), locVar2, sizeVar2), 
+                              locVar),
+                              exprManager.lessThanOrEqual(regionBound, locVar2)));
             }
           }
         }

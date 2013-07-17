@@ -286,21 +286,12 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
         /* The sound allocation encoding doesn't assume anything about the ordering
          * of lvals and regions. This may lead a blow-up due to case splits.
          */
-        /* Collect all the regions. */
-//        ImmutableList<Expression> regions = new ImmutableList.Builder<Expression>()
-//            .addAll(stackRegions).addAll(heapRegions).build();
-//        if(regions.size() > 1) {
-//          builder.add(exprManager.distinct(regions));
-//        }
-//        
-//        if(lvals.size() > 1) {
-//          builder.add(exprManager.distinct(lvals));
-//        }
-        ImmutableList<Expression> regions = new ImmutableList.Builder<Expression>()
+        ImmutableList<Expression> distinctRef = new ImmutableList.Builder<Expression>()
             .addAll(heapRegions).addAll(lvals).build();
-        if(regions.size() > 1) {
-          builder.add(exprManager.distinct(regions));
+        if(distinctRef.size() > 1) {
+          builder.add(exprManager.distinct(distinctRef));
         }
+        
       } else if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
         throw new UnsupportedOperationException("--order-alloc is not supported in burstall memory model");
       }
