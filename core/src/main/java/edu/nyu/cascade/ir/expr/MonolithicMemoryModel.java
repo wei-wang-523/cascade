@@ -441,7 +441,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
   }
   
   @Override
-  public void resetCurrentState() {
+  public void clearCurrentState() {
     currentState = null;
   }
   

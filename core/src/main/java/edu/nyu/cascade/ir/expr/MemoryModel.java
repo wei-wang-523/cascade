@@ -41,7 +41,7 @@ public interface MemoryModel {
   
   /** Clear current state of memory model to avoid side-effect.
    */
-  void resetCurrentState();
+  void clearCurrentState();
   
   /**
    * Allocate a region with size <code>size</code> to the memory location 

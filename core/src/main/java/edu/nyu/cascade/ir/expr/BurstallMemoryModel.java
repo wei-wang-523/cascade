@@ -9,6 +9,7 @@ import xtc.tree.Node;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -144,7 +145,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     stackRegions.add(stackRegion); 
     
     Expression alloc = state.getChild(1).asArray().update(stackRegion, size);
-    resetCurrentState();
+    clearCurrentState();
     return getUpdatedState(state.getChild(0), alloc);
   }
 
@@ -203,7 +204,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     } catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
     }   
-    resetCurrentState();
+    clearCurrentState();
     return getUpdatedState(state.getChild(0), alloc);
   }
 
@@ -215,7 +216,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
     Expression memory = updateMemState(state.getChild(0), lval, rval);  
-    resetCurrentState();
+    clearCurrentState();
     return getUpdatedState(memory, state.getChild(1));
   }
 
@@ -326,14 +327,14 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
 //    Preconditions.checkArgument(stateType.equals(memoryVar.getType()));
     return new ExpressionClosure() {
       @Override
-      public Expression eval(final Expression memory) {      
+      public Expression eval(final Expression memory) {
         Preconditions.checkArgument(memory.getType().equals(memoryVar.getType()));
-        if(!isState(expr)) { 
+        if(!isState(expr)) {
           // For non-tuple expression evaluation
           Expression exprPrime = expr
               .subst(memoryVar.getChildren(), memory.getChildren());
           return exprPrime.setNode(expr.getNode());
-        } else { 
+        } else {
           // For tuple expression evaluation over memoryVar, since substitution doesn't return
           // right children for as tuple expression for state.
           ExpressionManager exprManager = getExpressionManager();
@@ -369,22 +370,34 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
             }
           });
           
-          memType = exprManager.recordType(Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE),
-              elemMap.keySet(), elemTypes);
-          Expression mem = exprManager.record(memType, elemMap.values());
+          boolean memTypeChanged = Iterables.any(elemMap.keySet(), new Predicate<String>(){
+            @Override
+            public boolean apply(String elemName) {
+              return !memType.asRecord().getElementNames().contains(elemName);
+            }
+          });
           
           Expression alloc = expr.getChild(1);
+          
+          if(memTypeChanged) {
+            memType = exprManager.recordType(Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE),
+                elemMap.keySet(), elemTypes);
+            stateType = exprManager.tupleType(Identifiers.uniquify(DEFAULT_STATE_TYPE), 
+                memType, alloc.getType());
+          }
+          
+          Expression memPrimePrime = exprManager.record(memType, elemMap.values());
+          Expression allocPrime = null;
+          
           if(alloc.isVariable()) { // substitution is useful for variable
             assert(alloc.equals(memoryVar.getChild(1)));
-            alloc = memory.getChild(1);
+            allocPrime = memory.getChild(1);
           } else {
-            alloc = alloc.subst(memoryVar.getChild(0), memory.getChild(0));
-            alloc = alloc.subst(memoryVar.getChild(1), memory.getChild(1));
+            allocPrime = alloc.subst(memoryVar.getChild(0), memory.getChild(0));
+            allocPrime = alloc.subst(memoryVar.getChild(1), memory.getChild(1));
           }
-          stateType = exprManager.tupleType(Identifiers.uniquify(DEFAULT_STATE_TYPE), 
-              memType, alloc.getType());
           
-          return exprManager.tuple(stateType, mem, alloc);
+          return exprManager.tuple(stateType, memPrimePrime, allocPrime);
         }
       }
 
@@ -416,13 +429,13 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   }
   
   @Override
-  public void resetCurrentState() {
+  public void clearCurrentState() {
     currentMemElems.clear();
     currentAlloc = null;
     currentState = null;
   }
   
-  private RecordExpression getUpdatedMemory() {
+  private void updateMemoryType() {
     ExpressionManager em = getExpressionManager();
     
     Iterable<Type> elemTypes = Iterables.transform(currentMemElems.values(), 
@@ -432,11 +445,16 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
         return expr.getType();
       }
     });
-
+    
+    if(elemTypes == null)
+      throw new ExpressionFactoryException("Update memory type failed.");
+    
     memType = em.recordType(Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE), 
         currentMemElems.keySet(), elemTypes);
-        
-    return em.record(memType, currentMemElems.values());
+  }
+  
+  private RecordExpression getUpdatedMemory() {
+    return getExpressionManager().record(memType, currentMemElems.values());
   }
   
   private TupleExpression getUpdatedState(Expression memoryPrime, Expression allocPrime) {
@@ -459,6 +477,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   private RecordExpression updateMemState(Expression memState, Expression lval, Expression rval) {   
     initCurrentMemElems(memState);
     String typeName = getTypeName(lval.getNode()); 
+    boolean memTypeChanged = !currentMemElems.containsKey(typeName);
     // for case: assign null to pointer int* ptr = 0;
     if(typeName.startsWith("$PointerT") && rval.isBitVector()) {
         Preconditions.checkArgument(rval.isConstant() 
@@ -466,8 +485,9 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
         rval = ((PointerExpressionEncoding) getExpressionEncoding()).getPointerEncoding().nullPtr();
     }
     ArrayExpression tgtArray = null;
-    if(currentMemElems.containsKey(typeName)) { // previously declared variable
+    if(memTypeChanged) { // previously declared variable
       tgtArray =  currentMemElems.get(typeName).asArray().update(lval, rval);
+      updateMemoryType();
     } else { // newly type name
       ExpressionManager em = getExpressionManager();
       if(isScalaType(lval.getNode())) {
@@ -503,7 +523,11 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     currentMemElems.put(typeName, tgtArray);
     
     if(currentAlloc == null)  currentAlloc = state.getChild(1);
-    Expression statePrime = getUpdatedState(getUpdatedMemory(), currentAlloc);
+    
+    updateMemoryType();
+    
+    Expression memPrime = getUpdatedMemory();
+    Expression statePrime = getUpdatedState(memPrime, currentAlloc);
     currentState = suspend(state, statePrime);
     return tgtArray.index(p);
   }

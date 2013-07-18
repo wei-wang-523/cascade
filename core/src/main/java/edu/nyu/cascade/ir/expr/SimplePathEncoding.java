@@ -40,7 +40,17 @@ public class SimplePathEncoding extends AbstractPathEncoding {
       ExpressionClosure var, ExpressionClosure val) {
     Expression mem = pre.asTuple().getChild(0);
     
-    Expression memPrime = getMemoryModel().assign(mem, var.eval(mem), val.eval(mem));
+    var.eval(mem);
+    val.eval(mem);
+    
+    Expression memPrime = mem;
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    if(currentState != null) {
+      memPrime = currentState.eval(mem);
+      getMemoryModel().clearCurrentState();
+    }
+    
+    memPrime = getMemoryModel().assign(memPrime, var.eval(mem), val.eval(mem));
     return getUpdatedPathState(memPrime, pre.asTuple().getChild(1));
   }
 
@@ -60,7 +70,7 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     ExpressionClosure currentState = getMemoryModel().getCurrentState();
     if(currentState != null) {
       memPrime = currentState.eval(mem);
-      getMemoryModel().resetCurrentState();
+      getMemoryModel().clearCurrentState();
     }
     
     Expression pcPrime = exprManager.ifThenElse(pc, expr.eval(mem).asBooleanExpression(), 
@@ -77,7 +87,7 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     ExpressionClosure currentState = getMemoryModel().getCurrentState();
     if(currentState != null) {
       memPrime = currentState.eval(mem);
-      getMemoryModel().resetCurrentState();
+      getMemoryModel().clearCurrentState();
     }
     return getUpdatedPathState(memPrime, pc);
   }

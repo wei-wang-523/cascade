@@ -126,8 +126,8 @@ public class UnimplementedMemoryModel implements MemoryModel {
   }
   
   @Override
-  public void resetCurrentState() {
+  public void clearCurrentState() {
     // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("resetCurrentState");    
+    throw new UnsupportedOperationException("clearCurrentState");    
   }
 }

@@ -493,7 +493,7 @@ public class BurstallExtendMemoryModel extends AbstractMemoryModel {
   }
   
   @Override
-  public void resetCurrentState() {
+  public void clearCurrentState() {
     currentState = null;
   }
   
