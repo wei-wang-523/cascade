@@ -14,23 +14,38 @@
     </wayPoint>
     <wayPoint fileId="1" line="34" >
       <function funcName="foo" >
-	<wayPoint fileId="1" line="18" >
-	  <function funcName="check" >
-	    <wayPoint fileId="1" line="3" />
-	  </function>
-	</wayPoint>
-	<wayPoint fileId="1" line="19" />
+        <wayPoint fileId="1" line="15" >
+          <function funcName="check" >
+            <wayPoint fileId="1" line="4" />
+          </function>
+        </wayPoint>
+        <wayPoint fileId="1" line="18" >
+          <function funcName="check" >
+            <wayPoint fileId="1" line="3" />
+          </function>
+        </wayPoint>
+        <wayPoint fileId="1" line="19" />
       </function>
     </wayPoint>
     <wayPoint fileId="1" line="35" >
       <function funcName="foo" >
+        <wayPoint fileId="1" line="15" >
+          <function funcName="check" >
+            <wayPoint fileId="1" line="4" />
+          </function>
+        </wayPoint>
+        <wayPoint fileId="1" line="18" >
+          <function funcName="check" >
+            <wayPoint fileId="1" line="4" />
+          </function>
+        </wayPoint>
 	<wayPoint fileId="1" line="21" >
 	  <loop>
-	  	<invariant><![CDATA[
-	  	i >= 0 && i <= n &&
-	  	implies(0 <= i && i < n, valid(a+i) && valid(b+i))
-	  	]]>
-	  	</invariant>
+	    <invariant><![CDATA[
+	    i >= 0 && i <= n &&
+	    implies(0 <= i && i < n, valid(a+i) && valid(b+i))
+	    ]]>
+	    </invariant>
 	  </loop>
 	</wayPoint>
 	<wayPoint fileId="1" line="25" >
@@ -50,13 +65,23 @@
     </wayPoint>
     <wayPoint fileId="1" line="36" >
       <function funcName="foo" >
+        <wayPoint fileId="1" line="15" >
+          <function funcName="check" >
+            <wayPoint fileId="1" line="4" />
+          </function>
+        </wayPoint>
+        <wayPoint fileId="1" line="18" >
+          <function funcName="check" >
+            <wayPoint fileId="1" line="4" />
+          </function>
+        </wayPoint>
 	<wayPoint fileId="1" line="21" >
 	  <loop>
-	  	<invariant><![CDATA[
-	  	i >= 0 && i <= n &&
-	  	implies(0 <= i && i < n, valid(a+i) && valid(b+i))
-	  	]]>
-	  	</invariant>
+	    <invariant><![CDATA[
+	    i >= 0 && i <= n &&
+	    implies(0 <= i && i < n, valid(a+i) && valid(b+i))
+	    ]]>
+	    </invariant>
 	  </loop>
 	</wayPoint>
 	<wayPoint fileId="1" line="25" >
@@ -76,13 +101,23 @@
     </wayPoint>
     <wayPoint fileId="1" line="37" >
       <function funcName="foo" >
+        <wayPoint fileId="1" line="15" >
+          <function funcName="check" >
+            <wayPoint fileId="1" line="4" />
+          </function>
+        </wayPoint>
+        <wayPoint fileId="1" line="18" >
+          <function funcName="check" >
+            <wayPoint fileId="1" line="4" />
+          </function>
+        </wayPoint>
 	<wayPoint fileId="1" line="21" >
 	  <loop>
-	  	<invariant><![CDATA[
-	  	i >= 0 && i <= n &&
-	  	implies(0 <= i && i < n, valid(a+i) && valid(b+i))
-	  	]]>
-	  	</invariant>
+	    <invariant><![CDATA[
+	    i >= 0 && i <= n &&
+	    implies(0 <= i && i < n, valid(a+i) && valid(b+i))
+	    ]]>
+	    </invariant>
 	  </loop>
 	</wayPoint>
 	<wayPoint fileId="1" line="25" >
