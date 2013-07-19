@@ -4,7 +4,7 @@
     <startPosition fileId="1" line="8" />
     <wayPoint fileId="1" line="10" >
       <function funcName="foo" >
-        <wayPoint fileId="1" line="3" >
+        <wayPoint fileId="1" line="4" >
           <command>
             <cascadeFunction> cascade_check </cascadeFunction>
             <argument><![CDATA[
@@ -16,9 +16,9 @@
       </function>
       <loop iterTimes="10" />
     </wayPoint>
-        <wayPoint fileId="1" line="12" >
+    <wayPoint fileId="1" line="12" >
       <function funcName="foo" >
-        <wayPoint fileId="1" line="3" >
+        <wayPoint fileId="1" line="4" >
           <command>
             <cascadeFunction> cascade_check </cascadeFunction>
             <argument><![CDATA[
@@ -30,6 +30,6 @@
       </function>
       <loop iterTimes="10" />
     </wayPoint>
-    <endPosition fileId="1" line="11" />
+    <endPosition fileId="1" line="14" />
   </run>
 </controlFile>
