@@ -611,7 +611,7 @@ public class Main {
               runProcessor = new RunMergeProcessor(symbolTables, cfgs,
                     cAnalyzer, encoder);
             } else {
-              runProcessor = new RunSeqImpProcessor(symbolTables, cfgs,
+              runProcessor = new RunSeqProcessor(symbolTables, cfgs,
                 cAnalyzer, encoder);
             }
             
