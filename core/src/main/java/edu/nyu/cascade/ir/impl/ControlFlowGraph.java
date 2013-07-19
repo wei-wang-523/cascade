@@ -172,6 +172,14 @@ public class ControlFlowGraph implements IRControlFlowGraph {
    * void addInitialNode(BasicBlock block) { addNode(block);
    * initialNodes.add(block); }
    */
+  
+  private void formatIncomingEdge(Printer printer, BasicBlock block) {
+    printer.incr();
+    for (Edge edge : getIncomingEdges(block)) {
+      printer.indent().pln(edge.toString());
+    }
+    printer.decr();
+  }
 
   private void formatBlock(Printer printer, BasicBlock block) {
     block.format(printer);
@@ -353,6 +361,7 @@ public class ControlFlowGraph implements IRControlFlowGraph {
 
             IOUtils.debug().pln("New blocks:");
             formatBlock(IOUtils.debug(), dummy);
+            formatIncomingEdge(IOUtils.debug(), dummy);
             IOUtils.debug().pln();
             formatBlock(IOUtils.debug(), block);
             return Pair.of(dummy, block);
@@ -367,6 +376,7 @@ public class ControlFlowGraph implements IRControlFlowGraph {
 
             IOUtils.debug().pln("New blocks:");
             formatBlock(IOUtils.debug(), dummy);
+            formatIncomingEdge(IOUtils.debug(), dummy);
             IOUtils.debug().pln();
             formatBlock(IOUtils.debug(), block);
             return Pair.of(dummy, block);
@@ -397,6 +407,7 @@ public class ControlFlowGraph implements IRControlFlowGraph {
         addEdge(dummy, block);
         IOUtils.debug().pln("New blocks:");
         formatBlock(IOUtils.debug(), dummy);
+        formatIncomingEdge(IOUtils.debug(), dummy);
         IOUtils.debug().pln();
         formatBlock(IOUtils.debug(), block);
         return Pair.of(dummy, block);
@@ -447,6 +458,7 @@ public class ControlFlowGraph implements IRControlFlowGraph {
       formatBlock(IOUtils.debug(), block);
       IOUtils.debug().pln();
       formatBlock(IOUtils.debug(), dummy);
+      formatIncomingEdge(IOUtils.debug(), dummy);
       return Pair.of(block, dummy);
     }
 
@@ -464,6 +476,7 @@ public class ControlFlowGraph implements IRControlFlowGraph {
     formatBlock(IOUtils.debug(), block);
     IOUtils.debug().pln();
     formatBlock(IOUtils.debug(), dummy);
+    formatIncomingEdge(IOUtils.debug(), dummy);
     return Pair.of(block, dummy);
   }
 
