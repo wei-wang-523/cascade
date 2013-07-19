@@ -61,7 +61,7 @@ public class VariableExpressionImpl extends ExpressionImpl implements
   protected VariableExpressionImpl(ExpressionManagerImpl exprManager, String name, Type type, boolean fresh) {
     super(exprManager, new VariableConstructionStrategy() {
       @Override
-      public Expr apply(Context ctx, String name, Sort type) {
+      public Expr apply(Context ctx, String name, Sort sort) {
         /* TODO: see if var is already defined. There's a bug in lookupVar
          * bc it's second parameter is a output parameter. Need to change
          * the API so that it only takes the name.
@@ -69,10 +69,10 @@ public class VariableExpressionImpl extends ExpressionImpl implements
         StringBuilder sb = new StringBuilder().append(name);
         /** For variable name contains '#', wrap it in '||' */
         if(name.indexOf('#') >= 0)   sb.insert(0, '|').append('|');
-        TheoremProverImpl.z3FileCommand("(declare-const " + sb.toString() + " " + type + ")");
-        TheoremProverImpl.debugCommand("(declare-const " + sb.toString() + " : " + type + ")");
+        TheoremProverImpl.z3FileCommand("(declare-const " + sb.toString() + " " + sort + ")");
+        TheoremProverImpl.debugCommand("(declare-const " + sb.toString() + " : " + sort + ")");
         try {
-          return ctx.MkConst(name, type);
+          return ctx.MkConst(name, sort);
         } catch (Z3Exception e) {
           throw new TheoremProverException(e);
         }

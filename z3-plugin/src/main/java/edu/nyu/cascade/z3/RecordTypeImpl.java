@@ -105,7 +105,7 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
       }
       Constructor[] cons = new Constructor[]{
           z3_context.MkConstructor("mk-" + typeName, "is-" + typeName, symbols, z3Types, refs)};
-      setZ3Type(z3_context.MkDatatypeSort(name, cons));
+      setZ3Type(z3_context.MkDatatypeSort(typeName, cons));
       sb.append(")))");
       if(IOUtils.debugEnabled())
         TheoremProverImpl.debugCommand("(declare-datatypes " + sb.toString() + ")");
