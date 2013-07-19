@@ -48,6 +48,7 @@ import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.RecursionStrategies.BinaryInfixRecursionStrategy;
 import edu.nyu.cascade.util.RecursionStrategies.BinaryRecursionStrategy;
@@ -585,9 +586,7 @@ class CExpressionEncoder implements ExpressionEncoder {
        */
       Type t = arrayType.get(base);
       if(t == null)     t = lookupType(base);
-      String subscriptType = "subType";
-      TupleType tupleType = getExpressionManager().tupleType(subscriptType, 
-          ptr.getType(), index.getType());
+      String subscriptType = "subscriptType";
       
       if(t.isArray()) {
         ArrayT arrayT = t.toArray();
@@ -596,10 +595,14 @@ class CExpressionEncoder implements ExpressionEncoder {
         if(cellType.isArray()) {
           index = encoding.times(index, bound);
           arrayType.put(node, cellType);
+          TupleType tupleType = getExpressionManager().tupleType(
+              Identifiers.uniquify(subscriptType), 
+              ptr.getType(), index.getType());
           res = getExpressionManager().tuple(tupleType, ptr, index);
         } else {
           Expression sizeOfType = encoding.integerConstant(sizeofType(cellType));
-          if(ptr.isTuple() && ptr.getType().asTuple().getName().equals(subscriptType)) {
+          if(ptr.isTuple() && ptr.getType().asTuple().getName()
+        		  .startsWith(subscriptType)) {
             ptr = encoding.plus(ptr.getChild(0), ptr.getChild(1));
           }
           res = encoding.plus(ptr, encoding.times(index, sizeOfType));
