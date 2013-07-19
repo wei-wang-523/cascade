@@ -14,7 +14,7 @@ int main(){
    
    for (i =0 ; i != k; i++)
       if (a[i] <= 1) 
-	break;
+    	  break;
    i--;
    
    for (j = 0; j < i; ++j)
