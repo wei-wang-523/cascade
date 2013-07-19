@@ -3,10 +3,20 @@
   <run>
     <startPosition fileId="1" line="5" />
     <wayPoint fileId="1" line="11" >
-      <loop iterTimes="1" />
+      <loop>
+        <invariant><![CDATA[
+        x == y && x >= 0
+        ]]>
+        </invariant>
+      </loop>
     </wayPoint>
     <wayPoint fileId="1" line="15" >
-      <loop iterTimes="1" />
+      <loop>
+        <invariant><![CDATA[
+        x >= 0 && x == y
+        ]]>
+        </invariant>
+      </loop>
     </wayPoint>
     <endPosition fileId="1" line="21" >
       <command>

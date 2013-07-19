@@ -1,0 +1,29 @@
+<controlFile>
+  <sourceFile name="../ex49.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="1" />
+    <wayPoint fileId="1" line="3" >
+      <command>
+    	<cascadeFunction> cascade_assume </cascadeFunction>
+    	<argument><![CDATA[
+	n >= 0
+	]]>
+	</argument>
+      </command>
+    </wayPoint>
+    <wayPoint fileId="1" line="5" >
+      <loop>
+        <invariant><![CDATA[
+	i >= 0 && i <= n && sum == (i-1) * i / 2
+	]]>
+	</invariant>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="27" >
+      <command>
+    	<cascadeFunction> cascade_check </cascadeFunction>
+    	<argument> sum >= 0 </argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

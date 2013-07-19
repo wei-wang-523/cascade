@@ -1,0 +1,17 @@
+<controlFile>
+  <sourceFile name="../ex23.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="4" />
+    <wayPoint fileId="1" line="11" >
+      <loop>
+        <invariant><![CDATA[
+        counter >= 0 && counter <= 36 &&
+        z == y * 36 + counter && 
+        implies(counter < 36, valid(&x[z]))
+		]]>
+        </invariant>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="19" />
+  </run>
+</controlFile>
