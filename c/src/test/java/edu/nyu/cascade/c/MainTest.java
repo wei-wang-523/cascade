@@ -174,24 +174,21 @@ public class MainTest {
   private Map<Tester<File>, String[]> validOptMap() {
     Map<Tester<File>, String[]> optMap = Maps.newLinkedHashMap();
     Tester<File> mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
-    Tester<File> mem_10 = parserTest("--feasibility", "--mem-cell-size", "10", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
     Tester<File> mem_13 = parserTest("--feasibility", "--mem-cell-size", "13", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
     Tester<File> sound = parserTest("--feasibility", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
     Tester<File> signed = parserTest("--feasibility", "--signed", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
     
-    String[] mem_11_bnc = {"ex1-3.ctrl", "ex2-3.ctrl", "ex9-3.ctrl"};
-    String[] mem_10_bnc = {"ex25-3.ctrl"};
+    String[] mem_11_bnc = {"ex2-3.ctrl", "ex9-3.ctrl"};
     String[] mem_13_bnc = {"ex23-36.ctrl"};
     String[] sound_bnc = {"ex5.ctrl", "ex6.ctrl", "ex7-3.ctrl", "ex10-3.ctrl", 
         "ex10-17.ctrl", "ex11.ctrl", "ex15.ctrl", "ex17.ctrl", "ex18-10.ctrl", "ex31-7.ctrl",
-        "ex34.ctrl", "ex40-3.ctrl", "ex49-3.ctrl", "inf6a.ctrl", "inf6b.ctrl", "inf8a.ctrl",
+        "ex34.ctrl", "ex40-3.ctrl", "ex46-3.ctrl", "ex49-3.ctrl", "inf6a.ctrl", "inf6b.ctrl", "inf8a.ctrl",
         "inf8b.ctrl"};
     String[] signed_bnc = {"ex14-10.ctrl"};
     
     optMap.put(signed, signed_bnc);
     optMap.put(sound, sound_bnc);
     optMap.put(mem_13, mem_13_bnc);
-    optMap.put(mem_10, mem_10_bnc);
     optMap.put(mem_11, mem_11_bnc);
     
     return optMap;
@@ -204,19 +201,25 @@ public class MainTest {
     Tester<File> sound = parserTest("--sound-alloc", "--prover", "z3", "--theory", "Burstall");
     Tester<File> sgn = parserTest("--signed", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
     Tester<File> fea_sgn = parserTest("--feasibility", "--signed", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
+    Tester<File> fea_mem_10 = parserTest("--feasibility", "--mem-cell-size", "10", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
+    Tester<File> fea_mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
     
     String[] sgn_mem_11_bnc = {"ex20-1.ctrl"};
-    String[] fea_sgn_bnc = {"ex16-4.ctrl", "ex19-3.ctrl", "ex39-3.ctrl"};
     String[] mem_9_bnc = {"ex41-3.ctrl", "ex26-200.ctrl"};
-    String[] sound_bnc = {"ex3-10.ctrl", "ex4-10.ctrl", "ex8.ctrl", "ex12-10.ctrl", 
-        "ex30.ctrl", "ex43.ctrl", "ex46-3.ctrl", "ex47-2.ctrl", "inf1.ctrl", "inf5.ctrl"};
+    String[] sound_bnc = {"ex3-10.ctrl", "ex4-10.ctrl", "ex8.ctrl", "ex12-10.ctrl", "ex30.ctrl", 
+        "ex43.ctrl", "ex47-2.ctrl", "inf1.ctrl", "inf5.ctrl"};
     String[] sgn_bnc = {"ex13.ctrl", "ex37.ctrl", "inf2.ctrl", "inf4.ctrl"};
+    String[] fea_sgn_bnc = {"ex16-4.ctrl", "ex19-3.ctrl", "ex39-3.ctrl"};
+    String[] fea_mem_10_bnc = {"ex25-3.ctrl"};
+    String[] fea_mem_11_bnc = {"ex1-3.ctrl"};
     
     optMap.put(sgn, sgn_bnc);
     optMap.put(sound, sound_bnc);
     optMap.put(mem_9, mem_9_bnc);
     optMap.put(sgn_mem_11, sgn_mem_11_bnc);
     optMap.put(fea_sgn, fea_sgn_bnc);
+    optMap.put(fea_mem_10, fea_mem_10_bnc);
+    optMap.put(fea_mem_11, fea_mem_11_bnc);
     
     return optMap;
   }
@@ -224,24 +227,24 @@ public class MainTest {
   private Map<Tester<File>, String[]> invValidOptMap() {
     Map<Tester<File>, String[]> optMap = Maps.newLinkedHashMap();
     Tester<File> mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
-    Tester<File> mem_10 = parserTest("--feasibility", "--mem-cell-size", "10", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
     Tester<File> mem_9 = parserTest("--feasibility", "--mem-cell-size", "9", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
     Tester<File> mem_13 = parserTest("--feasibility", "--mem-cell-size", "13", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
     Tester<File> sound = parserTest("--feasibility", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
     Tester<File> sgn = parserTest("--feasibility", "--signed", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
+    Tester<File> sgn_mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--sound-alloc", "--signed", "--prover", "z3", "--theory", "Burstall");
     
-    String[] mem_11_bnc = {/*"ex1-inv.ctrl",*/ "ex2-inv.ctrl", "ex9-inv.ctrl"};
-    String[] mem_10_bnc = {"ex25-inv.ctrl"};
-    String[] mem_9_bnc = {"ex22-inv.ctrl"};
+    String[] mem_11_bnc = {"ex1-inv.ctrl", "ex2-inv.ctrl", "ex9-inv.ctrl"};
+    String[] mem_9_bnc = {"ex21-inv.ctrl"};
     String[] mem_13_bnc = {"ex23-inv.ctrl"};
     String[] sound_bnc = {"ex7-inv.ctrl", "ex10-inv.ctrl", "ex17-inv.ctrl", "ex18-inv.ctrl", "ex31-inv.ctrl"};
     String[] sgn_bnc = {"ex14-inv.ctrl"};
+    String[] sgn_mem_11_bnc = {"ex32-inv.ctrl"};
     
     optMap.put(sgn, sgn_bnc);
     optMap.put(sound, sound_bnc);
     optMap.put(mem_13, mem_13_bnc);
     optMap.put(mem_11, mem_11_bnc);
-    optMap.put(mem_10, mem_10_bnc);
+    optMap.put(sgn_mem_11, sgn_mem_11_bnc);
     optMap.put(mem_9, mem_9_bnc);
     
     return optMap;
@@ -254,20 +257,26 @@ public class MainTest {
     Tester<File> sound = parserTest("--sound-alloc", "--prover", "z3", "--theory", "Burstall");
     Tester<File> sgn = parserTest("--sound-alloc", "--signed", "--prover", "z3", "--theory", "Burstall");
     Tester<File> fea_sgn = parserTest("--feasibility", "--signed", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
+    Tester<File> fea_mem_10 = parserTest("--feasibility", "--mem-cell-size", "10", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
+    Tester<File> sgn_mem_9 = parserTest("--mem-cell-size", "9", "--signed", "--sound-alloc", "--prover", "z3", "--theory", "Burstall");
     
-    String[] sgn_mem_11_bnc = {"ex19-inv.ctrl", "ex20-inv.ctrl"};
     String[] fea_sgn_bnc = {"ex16-inv.ctrl"};
-    String[] mem_9_bnc = {"ex41-inv.ctrl", "ex26-inv.ctrl"};
+    String[] sgn_mem_9_bnc = {"ex22-inv.ctrl", "ex27-inv.ctrl"};
+    String[] fea_mem_10_bnc = {"ex25-inv.ctrl"};
+    String[] sgn_mem_11_bnc = {"ex19-inv.ctrl", "ex20-inv.ctrl"};
+    String[] mem_9_bnc = {"ex26-inv.ctrl", "ex41-inv.ctrl"};
     String[] sound_bnc = {"ex3-inv.ctrl", "ex4-inv.ctrl", "ex8-inv.ctrl", "ex12-inv.ctrl", 
-        "ex40-inv.ctrl", "ex43-inv.ctrl", "ex46-inv.ctrl", "ex47-inv.ctrl", "ex49-inv.ctrl"};
+        "ex40-inv.ctrl", "ex43-inv.ctrl",  /*"ex46-inv.ctrl",*/ "ex47-inv.ctrl", "ex49-inv.ctrl"};
     String[] sgn_bnc = {"ex39-inv.ctrl"};
     
     
     optMap.put(sound, sound_bnc);
     optMap.put(sgn, sgn_bnc);
     optMap.put(mem_9, mem_9_bnc);
+    optMap.put(sgn_mem_9, sgn_mem_9_bnc);
     optMap.put(sgn_mem_11, sgn_mem_11_bnc);
     optMap.put(fea_sgn, fea_sgn_bnc);
+    optMap.put(fea_mem_10, fea_mem_10_bnc);
     
     return optMap;
   }
@@ -279,15 +288,16 @@ public class MainTest {
     TestUtils.checkFile(valid_nec_location, validOptMap(), false);
     final File invalid_nec_location = new File(nec_programs_location, "invalid");
     TestUtils.checkFile(invalid_nec_location, invalidOptMap(), false);
-    final File inv_nec_location = new File(nec_programs_location, "inv");
-    TestUtils.checkFile(inv_nec_location, invValidOptMap(), false);
-    TestUtils.checkFile(inv_nec_location, invInvalidOptMap(), false);
+    final File inv_valid_nec_location = new File(nec_programs_location, "inv-valid");
+    TestUtils.checkFile(inv_valid_nec_location, invValidOptMap(), false);
+    final File inv_invalid_nec_location = new File(nec_programs_location, "inv-invalid");
+    TestUtils.checkFile(inv_invalid_nec_location, invInvalidOptMap(), false);
   }
   
   @Test
   public void testMiniBenchmark() {
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
-        parserTest("--feasibility", "--sound-alloc", "--signed", "--prover", "z3"), false);
+        parserTest("--feasibility", "--sound-alloc", "--signed", "--prover", "z3", "--theory", "Burstall"), false);
   }
 
   /** FIXME: This is really a test for tp-tp */
