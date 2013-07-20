@@ -19,9 +19,8 @@ import xtc.tree.Node;
 import xtc.util.SymbolTable.Scope;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
+import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -904,21 +903,22 @@ class RunSeqProcessor implements RunProcessor {
   }
   
   private List<IRStatement> getStmtForAllAssignCallStmt(List<IRStatement> pathRep, List<IRStatement> pathRmv, 
-      List<CallPoint> funcs) throws RunProcessorException {
+      Iterable<CallPoint> funcs) throws RunProcessorException {
     Preconditions.checkArgument(pathRep.size() == pathRmv.size());
     
+    List<CallPoint> funcs_copy = Lists.newArrayList(funcs);
     List<IRStatement> path = null;
     int lastIndex = pathRep.size()-1;
     for(int i=0; i<lastIndex; i++) {
       IRStatement stmtRep = pathRep.get(i);
       IRStatement stmtRmv = pathRmv.get(i);
       CallPoint func = null;
-      if(funcs != null) {
+      if(funcs_copy != null) {
         Node funcNode = stmtRmv.getSourceNode();
         assert(funcNode.getName().equals("FunctionCall") 
             && funcNode.getNode(0).getName().equals("PrimaryIdentifier"));
         String funcName = funcNode.getNode(0).getString(0);
-        Iterator<CallPoint> itr = funcs.iterator();
+        Iterator<CallPoint> itr = funcs_copy.iterator();
         while(itr.hasNext()) {
           CallPoint callPos = itr.next();
           if(callPos.getFuncName().equals(funcName)) {
@@ -1213,18 +1213,15 @@ class RunSeqProcessor implements RunProcessor {
     
     if(startPath != null) path.addAll(0, startPath);
     if(endPath != null) path.addAll(endPath);
-    
-    List<Position> callPos = null;    
+     
     if(unrollWayPoints != null) {
-      callPos = Lists.newArrayList(
-          Iterables.filter(unrollWayPoints, new Predicate<Position>() {
-            @Override public boolean apply(Position wayPoint) {
-              return wayPoint.hasFunctions();
-            }        
-          }));
+      Builder<Position> builder = new ImmutableList.Builder<Position>();
+      for(Position waypoint : unrollWayPoints) {
+        if(waypoint.hasFunctions())
+          builder.add(waypoint);
+      }
+      path = functionInline(symbolTable, path, builder.build());
     }
-    
-    path = functionInline(symbolTable, path, callPos);
     
     symbolTable.setScope(oldScope);
     

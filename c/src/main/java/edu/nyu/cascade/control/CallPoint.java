@@ -2,6 +2,7 @@ package edu.nyu.cascade.control;
 
 import java.io.File;
 import java.math.BigInteger;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -51,6 +52,6 @@ public class CallPoint {
   }
   
   public List<Position> getWayPoint() {
-    return wayPoint;
+    return Collections.unmodifiableList(wayPoint);
   }
 }

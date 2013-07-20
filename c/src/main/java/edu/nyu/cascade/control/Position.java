@@ -2,6 +2,7 @@ package edu.nyu.cascade.control;
 
 import java.io.File;
 import java.math.BigInteger;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -85,7 +86,7 @@ public class Position extends AbstractLocation implements IRLocation  {
   }
 
   public List<Command> getCommands() {
-    return commands;
+    return Collections.unmodifiableList(commands);
   }
 
   public File getFile() {
@@ -105,11 +106,11 @@ public class Position extends AbstractLocation implements IRLocation  {
   }
   
   public List<CallPoint> getFunctions() {
-    return functions;
+    return Collections.unmodifiableList(functions);
   }
   
   public List<LoopPoint> getLoops() {
-    return loops;
+    return Collections.unmodifiableList(loops);
   }
   
   public Boolean hasFunctions() {
