@@ -1216,14 +1216,16 @@ class RunSeqProcessor implements RunProcessor {
     if(startPath != null) path.addAll(0, startPath);
     if(endPath != null) path.addAll(endPath);
      
+    Builder<Position> builder = new ImmutableList.Builder<Position>();
+    
     if(unrollWayPoints != null) {
-      Builder<Position> builder = new ImmutableList.Builder<Position>();
       for(Position waypoint : unrollWayPoints) {
         if(waypoint.hasFunctions())
           builder.add(waypoint);
       }
-      path = functionInline(symbolTable, path, builder.build());
     }
+    
+    path = functionInline(symbolTable, path, builder.build());
     
     symbolTable.setScope(oldScope);
     

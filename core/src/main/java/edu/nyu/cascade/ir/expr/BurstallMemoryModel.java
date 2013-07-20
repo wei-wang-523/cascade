@@ -512,19 +512,18 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     initCurrentMemElems(memState);
     String typeName = getTypeName(lval.getNode()); 
     
-    // for case: assign null to pointer int* ptr = 0;
-    if(typeName.startsWith("$PointerT") && rval.isBitVector()) {
-        Preconditions.checkArgument(rval.isConstant() 
-            && Integer.parseInt(rval.getNode().getString(0)) == 0);
-        rval = ((PointerExpressionEncoding) getExpressionEncoding()).getPointerEncoding().nullPtr();
-    }
-    
     ExpressionManager em = getExpressionManager();
     ArrayExpression tgtArray = null;
     Type currentMemType = null;
     
     boolean declaredType = currentMemElems.containsKey(typeName);
     if(declaredType) { // previously declared variable
+      // for case: assign null to pointer int* ptr = 0;
+      if(typeName.startsWith("$PointerT") && rval.isBitVector()) {
+          Preconditions.checkArgument(rval.isConstant() 
+              && Integer.parseInt(rval.getNode().getString(0)) == 0);
+          rval = ((PointerExpressionEncoding) getExpressionEncoding()).getPointerEncoding().nullPtr();
+      }
       tgtArray =  currentMemElems.get(typeName).asArray().update(lval, rval);
       currentMemElems.put(typeName, tgtArray);
       currentMemType = memState.getType();
@@ -534,6 +533,11 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
         tgtArray = em.variable(typeName, arrType, false).asArray().update(lval, rval);
       } else {
         ArrayType arrType = em.arrayType(ptrType, ptrType);
+        if(rval.isBitVector()) {
+          Preconditions.checkArgument(rval.isConstant() 
+              && Integer.parseInt(rval.getNode().getString(0)) == 0);
+          rval = ((PointerExpressionEncoding) getExpressionEncoding()).getPointerEncoding().nullPtr();
+        }
         tgtArray = em.variable(typeName, arrType, false).asArray().update(lval, rval);
       }
       currentMemElems.put(typeName, tgtArray);
