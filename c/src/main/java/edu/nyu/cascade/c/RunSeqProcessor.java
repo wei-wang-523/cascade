@@ -906,7 +906,9 @@ class RunSeqProcessor implements RunProcessor {
       Iterable<CallPoint> funcs) throws RunProcessorException {
     Preconditions.checkArgument(pathRep.size() == pathRmv.size());
     
-    List<CallPoint> funcs_copy = Lists.newArrayList(funcs);
+    List<CallPoint> funcs_copy = null;
+    if(funcs != null)   funcs_copy = Lists.newArrayList(funcs);
+    
     List<IRStatement> path = null;
     int lastIndex = pathRep.size()-1;
     for(int i=0; i<lastIndex; i++) {
