@@ -361,7 +361,8 @@ public class Statement implements IRStatement {
           return "f(" + getOperand(0) + ") := " + getOperand(1);
         else
           return "f(" + getOperand(0) + "->" + getOperand(1) + ") := " + getOperand(2);
-      }
+      } else 
+        return "skip";
 
     case FREE: 
       return "free " + getOperand(0);
