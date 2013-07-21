@@ -84,7 +84,7 @@ public class Main {
   private static final String OPTION_MARK_AST = "optionMarkAST";
   private static final String OPTION_PEDANTIC = "pedantic";
   private static final String OPTION_INTERNAL_PEDANTIC = "optionPedantic";
-  private static final String OPTION_MERGE_PATH = "merge-path";
+
   @SuppressWarnings("static-access")
   private static final Options options = new Options() //
       .addOption(OPTION_HELP_SHORT, OPTION_HELP, false, //
@@ -180,7 +180,7 @@ public class Main {
               .withType(String.class)
               .create()) //
       .addOption(
-          OptionBuilder.withLongOpt(OPTION_MERGE_PATH) //
+          OptionBuilder.withLongOpt(Preferences.OPTION_MERGE_PATH) //
               .withDescription("Merge multiple paths in analysis.") //
               .create()) //
       .addOption(
@@ -607,7 +607,7 @@ public class Main {
 
             RunProcessor runProcessor = null;
             
-            if( Preferences.isSet(OPTION_MERGE_PATH) ) {
+            if( Preferences.isSet(Preferences.OPTION_MERGE_PATH) ) {
               runProcessor = new RunMergeProcessor(symbolTables, cfgs,
                     cAnalyzer, encoder);
             } else {

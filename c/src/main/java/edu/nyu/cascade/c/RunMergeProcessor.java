@@ -10,17 +10,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
-import java.util.Stack;
 
 import xtc.parser.ParseException;
 import xtc.parser.Result;
 import xtc.tree.GNode;
 import xtc.tree.Location;
 import xtc.tree.Node;
-import xtc.type.NumberT;
 import xtc.util.SymbolTable.Scope;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
@@ -28,6 +25,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableList.Builder;
 
 import edu.nyu.cascade.c.CAnalyzer;
 import edu.nyu.cascade.control.CallPoint;
@@ -57,6 +55,7 @@ import edu.nyu.cascade.ir.type.IRIntegerType;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.SatResult;
 import edu.nyu.cascade.prover.ValidityResult;
+import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.Preferences;
@@ -134,6 +133,7 @@ final class PathMergeEncoder {
         SatResult<?> res = pathEncoding.checkPath(preCond);
         IOUtils.out().println("Result: " + res);
         runIsFeasible = !res.isUnsatisfiable();
+        return runIsFeasible;
       }
     }   
     return true;
@@ -168,6 +168,11 @@ final class PathMergeEncoder {
     } else {
       /* more than one preConds and preGuards, merge it before encode statement */
       preCond = pathEncoding.noop(preConds, preGuards);      
+    }
+    
+    if(Preferences.isSet(Preferences.OPTION_MERGE_PATH)) {
+      Type prePathType = preCond.getType();
+      pathEncoding.setPathType(prePathType);
     }
     
     for(IRStatement stmt : currPath.stmts) {
@@ -249,529 +254,6 @@ final class PathMergeEncoder {
   
   void setFeasibilityChecking(boolean b) {
     checkFeasibility = b;
-  }
-}
-
-final class Path {
-  final IRBasicBlock srcBlock;
-  final List<IRStatement> stmts;
-  final IRBasicBlock destBlock;
-  Stack<Expression> guards = null;
-  
-  static Path createSingleton(List<? extends IRStatement> stmts) {
-    if(stmts == null || stmts.isEmpty()) return null;
-    return create(stmts, null, null);
-  }
-  
-  static Path createSingleton(IRStatement stmt) {
-    List<IRStatement> stmts = Lists.newArrayList(stmt);
-    return create(stmts, null, null);
-  }
-  
-  static Path create(List<? extends IRStatement> stmts, IRBasicBlock srcBlock, 
-      IRBasicBlock destBlock) {
-    return new Path(stmts, srcBlock, destBlock);
-  }
-  
-  Path(List<? extends IRStatement> stmts, IRBasicBlock srcBlock, IRBasicBlock destBlock) {
-    this.destBlock = destBlock;
-    this.srcBlock = srcBlock;
-    this.stmts = Lists.newArrayList(stmts);
-  }
-  
-  void addGuard(Expression guard) {
-    Preconditions.checkArgument(guard.isBoolean());
-    if(guards == null)  guards = new Stack<Expression>();
-    guards.push(guard);
-  }
-  
-  void setGuards(Stack<Expression> guards) {
-    Preconditions.checkArgument(this.guards == null);
-    this.guards = guards;
-  }
-  
-  boolean hasGuard() {
-    return guards != null && !guards.isEmpty();
-  }
-  
-  boolean isEmpty() {
-    return stmts.isEmpty();
-  }
-  
-  boolean hasBlocks() {
-    return srcBlock != null || destBlock != null;
-  }
-  
-  IRStatement getStmt(int index) {
-    Preconditions.checkArgument(index >= 0 && index < stmts.size());
-    return stmts.get(index);
-  }
-  
-  IRStatement getLastStmt() {
-    Preconditions.checkArgument(stmts != null && !stmts.isEmpty());
-    return stmts.get(stmts.size()-1);
-  }
-  
-  IRBasicBlock getBlock(int index) {
-    Preconditions.checkArgument(index >= 0 && index <= stmts.size());
-    if(!hasBlocks())    return null;    
-    if(index == 0)      return srcBlock;
-    
-    IRLocation pos = stmts.get(index).getLocation();
-    if(srcBlock != null && pos.isWithin(srcBlock))      return srcBlock;
-    if(destBlock != null && pos.isWithin(destBlock))    return destBlock;
-    return getBlock(index-1);
-  }
-  
-  List<Path> split(int index) {
-    Preconditions.checkArgument(index >= 0 && index <= stmts.size());
-    List<Path> resPaths = Lists.newArrayList();
-    IRBasicBlock splitBlock = null;
-    if(index == 0) {
-      resPaths.add(null);
-      resPaths.add(this);
-    } else if(index == stmts.size()){
-      resPaths.add(this);
-      resPaths.add(null);
-    } else {
-      splitBlock = getBlock(index);
-      Path path_1 = Path.create(stmts.subList(0, index), srcBlock, splitBlock);
-      Path path_2 = Path.create(stmts.subList(index, stmts.size()), splitBlock, destBlock);
-      resPaths.add(path_1);
-      resPaths.add(path_2);
-    }
-    return resPaths;
-  }
-  
-  static Path mergePath(Path path1, Path path2) {
-    IRBasicBlock srcBlockPrime = path1.srcBlock;
-    IRBasicBlock destBlockPrime = path2.destBlock;
-    List<IRStatement> stmtsPrime = Lists.newArrayList(path1.stmts);
-    stmtsPrime.addAll(path2.stmts);
-    Path resPath = Path.create(stmtsPrime, srcBlockPrime, destBlockPrime);
-    return resPath;
-  }
-  
-  @Override
-  public String toString() {
-    String srcId = srcBlock == null ? "null" : srcBlock.getId().toString();
-    String destId = destBlock == null ? "null" : destBlock.getId().toString();
-    StringBuilder sb = new StringBuilder().append('(').append(srcId)
-        .append(": ").append(destId).append(')').append(stmts);
-    return sb.toString();
-  }
-  
-  public boolean isCopyOf(Object other) {
-    if(other == null)   return false;
-    if(!(other instanceof Path)) return false;
-    if(other == this) return true;
-    Path otherPath = (Path) other;
-    return srcBlock.equals(otherPath.srcBlock) && 
-      destBlock.equals(otherPath.destBlock) && 
-      stmts.equals(otherPath.stmts);
-  }
-}
-
-final class Graph {
-  private final static String COND_ASSUME_LABEL = "COND_ASSUME";
-  Map<Path, Set<Path>> predecessorMap = null;
-  Path srcPath = null;
-  Path destPath = null;
-  
-  static Graph createSingleton(Path path) {
-    Map<Path, Set<Path>> emptyMap = Maps.newLinkedHashMap();
-    return new Graph(emptyMap, path, path);
-  }
-  
-  static Graph create(Map<Path, Set<Path>> map, 
-      Path srcPath, Path destPath) {
-    return new Graph(map, srcPath, destPath);
-  }
-  
-  Graph(Map<Path, Set<Path>> map, Path srcPath, Path destPath) {
-    //FIXME: destPath = destPath.copy() ?
-    this.destPath = destPath;
-    this.srcPath = srcPath;
-    this.predecessorMap = map;
-  }
-  
-  void setDestPath(Path destPath) {
-    this.destPath = destPath;
-  }
-  
-  void setSrcPath(Path srcPath) {
-    this.srcPath = srcPath;
-  }
-  
-  boolean hasEmptyMap() {
-    return predecessorMap.isEmpty();
-  }
-  
-  IRBasicBlock getDestBlock() {
-    if(destPath == null)    return null;
-    return destPath.destBlock;
-  }
-  
-  IRBasicBlock getSrcBlock() {
-    if(srcPath == null)     return null;
-    return srcPath.srcBlock;
-  }
-  
-  IRStatement getLastStmt() {
-    Path currPath = destPath;
-    while(currPath.isEmpty()) {      
-      if(!predecessorMap.containsKey(currPath)) return null;
-      
-      Set<Path> prePaths = predecessorMap.get(currPath);
-      if(prePaths.size() > 1)   return null;      
-      currPath = prePaths.iterator().next();
-    }    
-    return currPath.getLastStmt();
-  }
-  
-  void appendPreGraph(Graph preGraph) { 
-    if(preGraph == null)    return;
-    Map<Path, Set<Path>> preMap = preGraph.predecessorMap;
-    Path preDestPath = preGraph.destPath;
-  
-    predecessorMap.putAll(preMap);
-    if(preDestPath != srcPath) {
-      Set<Path> predecessorPaths = Sets.newHashSet(preDestPath);
-      predecessorMap.put(srcPath, predecessorPaths);
-      srcPath = preGraph.srcPath;
-    } else {
-      srcPath = preGraph.srcPath;
-    }
-  }
-  
-  void appendAllPreGraph(Iterable<Graph> preGraphs) throws RunProcessorException { 
-    Preconditions.checkArgument(preGraphs != null && !Iterables.isEmpty(preGraphs));
-    final Path preSrcPath = Iterables.get(preGraphs, 0).srcPath;
-    boolean sameSrcPath = Iterables.all(preGraphs, new Predicate<Graph>(){
-      @Override
-      public boolean apply(Graph graph) {
-        return graph.srcPath==preSrcPath;
-      }
-    });
-    if(!sameSrcPath)   throw new RunProcessorException("Invalid graph");
-    
-    for(Graph preGraph : preGraphs) {
-      for(Entry<Path, Set<Path>> entry: preGraph.predecessorMap.entrySet()) {
-        Path keyPath = entry.getKey();
-        Set<Path> prePaths = entry.getValue();
-        if(predecessorMap.containsKey(keyPath))
-          prePaths.addAll(predecessorMap.get(keyPath));
-        predecessorMap.put(keyPath, prePaths);
-      }
-    }
-    
-    Iterable<Path> preDestPaths = Iterables.transform(preGraphs, new Function<Graph, Path>(){
-      @Override
-      public Path apply(Graph graph) {
-        return graph.destPath;
-      }
-    });
-    
-    predecessorMap.put(srcPath, Sets.newHashSet(preDestPaths)); 
-    srcPath = preSrcPath;
-  }
-  
-  void appendPostGraph(Graph postGraph) {  
-    if(postGraph == null)   return;
-    Map<Path, Set<Path>> postMap = postGraph.predecessorMap;
-    Path postSrcPath = postGraph.srcPath;
-    
-    predecessorMap.putAll(postMap);
-    if(postSrcPath != destPath) {
-      Set<Path> predecessorPaths = Sets.newHashSet(destPath);
-      predecessorMap.put(postSrcPath, predecessorPaths); 
-      destPath = postGraph.destPath;
-    } else {
-      destPath = postGraph.destPath;
-    }
-  }
-  
-  void addInvariantPath(Path prePath, Path postPath) {
-    if(prePath == null || postPath == null)    return;
-    assert(srcPath == destPath);
-    Set<Path> preDestPaths = predecessorMap.remove(destPath);
-    predecessorMap.put(postPath, preDestPaths);
-    predecessorMap.put(srcPath, Sets.newHashSet(prePath));
-    srcPath = prePath;
-    destPath = postPath;
-  }
-  
-  void insertBefore(Path destPath, Path insertPath) {
-    Preconditions.checkArgument(destPath != null);
-    if(insertPath == null)  return;
-    Set<Path> prePaths = predecessorMap.remove(destPath);
-    predecessorMap.put(destPath, Sets.newHashSet(insertPath));
-    if(prePaths != null) {
-      predecessorMap.put(insertPath, prePaths);
-    }
-  }
-  
-  void appendPrePath(Path path) {
-    if(path == null)    return;
-    predecessorMap.put(srcPath, Sets.newHashSet(path));
-    srcPath = path;
-  }
-  
-  void appendPostPath(Path path) {
-    if(path == null)    return;
-    predecessorMap.put(path, Sets.newHashSet(destPath));
-    destPath = path;
-  }
-  
-  private boolean hasReturnStmt(Path path) {
-    if(path == null || path.isEmpty())  {
-      Set<Path> prePaths = predecessorMap.get(path);
-      Path prePath = prePaths.iterator().next();
-      return hasReturnStmt(prePath);
-    } else {
-      IRStatement stmt = path.stmts.get(path.stmts.size()-1);
-      return stmt.getType().equals(IRStatement.StatementType.RETURN);
-    }
-  }
-  
-  boolean hasReturnStmt() {
-    return hasReturnStmt(destPath);
-  }
-  
-  private IRStatement getReturnStmt(Path path) {
-    if(path == null || path.isEmpty())  {
-      Set<Path> prePaths = predecessorMap.get(path);
-      Path prePath = prePaths.iterator().next();
-      return getReturnStmt(prePath);
-    } else {
-      IRStatement stmt = path.stmts.get(path.stmts.size()-1);
-      return stmt;
-    }
-  }
-  
-  IRStatement getReturnStmt() {
-    Preconditions.checkArgument(hasReturnStmt());
-    return getReturnStmt(destPath);
-  }
-  
-  /** Replace the last return statement as assign statement. */
-  private IRStatement replaceReturnStmt(IRStatement returnStmt, IRStatement assignStmt) {
-    Preconditions.checkArgument(returnStmt.getType().equals(StatementType.RETURN));
-    IRExpressionImpl lExpr = (IRExpressionImpl) ((Statement) assignStmt).getOperand(0);
-    IRExpressionImpl rExpr = (IRExpressionImpl) ((Statement) returnStmt).getOperand(0);
-    Node assignNode = GNode.create("AssignmentExpression", 
-        lExpr.getSourceNode(), "=", rExpr.getSourceNode());
-    assignNode.setLocation(assignStmt.getSourceNode().getLocation());
-    IRStatement assignResult = Statement.assign(assignNode, lExpr, rExpr);
-    return assignResult;
-  }
-  
-  /**
-   * Replace the return statement with assign statement, return true if replace
-   * actually happened
-   */
-  public boolean replaceReturnStmt(IRStatement assignStmt) {
-    Preconditions.checkArgument(assignStmt.getType().equals(StatementType.ASSIGN));
-    Queue<Path> queue = Lists.newLinkedList();
-    queue.add(destPath);
-    Map<Path, Set<Path>> successorMap = Maps.newHashMap();
-    while(!queue.isEmpty()) {
-      Path currPath = queue.poll();
-      if(currPath.isEmpty()) {
-        for(Path prePath : predecessorMap.get(currPath)) {
-          queue.add(prePath);
-          Set<Path> succPaths = null;
-          if(successorMap.containsKey(prePath))
-            succPaths = successorMap.get(prePath);
-          else
-            succPaths = Sets.newHashSet();
-          succPaths.add(currPath);
-          successorMap.put(prePath, succPaths);
-        }
-      } else {
-        IRStatement lastStmt = currPath.getLastStmt();
-        if(lastStmt.getType().equals(StatementType.RETURN)) {
-          IRStatement assignResult = replaceReturnStmt(lastStmt, assignStmt);
-          Path newPath = Path.createSingleton(assignResult);
-          predecessorMap.put(newPath, Sets.newHashSet(currPath));
-          for(Path succPath : successorMap.get(currPath)) {
-            Set<Path> prePaths = predecessorMap.get(succPath);
-            prePaths.remove(currPath);
-            prePaths.add(newPath);
-            predecessorMap.put(succPath, prePaths);
-          }
-        } else {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-  
-  private Path simplify_DFS(Path path, Map<Path, Path> replaceMap) throws RunProcessorException {
-    if(replaceMap.containsKey(path)) 
-      return replaceMap.get(path);
-    Set<Path> prePaths = predecessorMap.get(path);
-    if(prePaths == null)    return path;
-    
-    Set<Path> simplifyPaths = Sets.newHashSet();
-    for(Path prePath : prePaths)    
-      simplifyPaths.add(simplify_DFS(prePath, replaceMap));
-    assert(simplifyPaths.size() >= 1);
-    if(simplifyPaths.size() > 1) { 
-      predecessorMap.put(path, simplifyPaths);
-      return path;
-    } else {
-      // Path with first statement is conditional assume statement
-      if(path.stmts.size() > 0 && 
-          path.stmts.get(0).getPreLabels().contains(COND_ASSUME_LABEL)) {
-        predecessorMap.put(path, simplifyPaths);
-        return path;
-      } else {
-        Path simplifyPath = simplifyPaths.iterator().next();
-        Path pathPrime = Path.mergePath(simplifyPath, path);
-        assert(!pathPrime.equals(path));
-        predecessorMap.remove(path);
-        if(predecessorMap.containsKey(simplifyPath)) {
-          Set<Path> prePathsPrime = predecessorMap.remove(simplifyPath);
-          predecessorMap.put(pathPrime, prePathsPrime);
-        }
-        if(simplifyPath.equals(srcPath)) srcPath = pathPrime;
-        replaceMap.put(path, pathPrime);
-        return pathPrime;
-      }
-    }
-  }
-  
-  void simplify_DFS() throws RunProcessorException {
-    Map<Path, Path> replaceMap = Maps.newHashMap();
-    destPath = simplify_DFS(destPath, replaceMap);
-  }
-  
-  private void simplify_BFS() throws RunProcessorException {
-    Queue<Path> queue = Lists.newLinkedList();
-    queue.add(destPath);
-    Map<Path, Path> replaceMap = Maps.newHashMap();
-    Set<Path> visited = Sets.newHashSet();
-    while(!queue.isEmpty()) {
-      Path topPath = queue.poll();
-      if(visited.contains(topPath)) continue; // skip visited
-      
-      Path currPath = topPath;
-      Set<Path> prePaths = predecessorMap.get(currPath);
-      /* It's okay to merge prePath with currPath */
-      while(prePaths != null && prePaths.size() == 1 && (currPath.stmts.size() == 0 || 
-          !currPath.stmts.get(0).getPreLabels().contains(COND_ASSUME_LABEL))) {
-        Path prePath = prePaths.iterator().next();
-        currPath = Path.mergePath(prePath, currPath);  
-        prePaths = predecessorMap.remove(prePath);
-        visited.add(prePath);
-        if(prePath == srcPath)  srcPath = currPath;
-      }
-      
-      if(topPath != currPath) { // Merge happens
-        replaceMap.put(topPath, currPath);
-        predecessorMap.remove(topPath);
-        if(prePaths != null)
-          predecessorMap.put(currPath, prePaths);
-      }
-      
-      if(prePaths != null)      queue.addAll(prePaths);
-      visited.add(topPath);
-    }
-    
-    if(replaceMap.isEmpty())    return;
-    
-    /* Iterate predecessor map */
-    Map<Path, Set<Path>> predecessorMapPrime = Maps.newHashMap();
-    for(Entry<Path, Set<Path>> entry : predecessorMap.entrySet()) {
-      Set<Path> valuePrime = Sets.newHashSet();
-      for(Path prePath : entry.getValue()) {
-        if(replaceMap.containsKey(prePath))
-          valuePrime.add(replaceMap.get(prePath));
-        else
-          valuePrime.add(prePath);
-      }
-      predecessorMapPrime.put(entry.getKey(), valuePrime);
-    }
-    
-    predecessorMap = predecessorMapPrime;    
-    if(replaceMap.containsKey(destPath))
-      destPath = replaceMap.get(destPath);
-  }
-  
-  /** Simplify the graph */
-  void simplify() throws RunProcessorException {
-//    long startTime = System.currentTimeMillis();
-//    simplify_DFS();
-    simplify_BFS();
-//    double time = (System.currentTimeMillis() - startTime)/1000.0;
-//    IOUtils.err().println("Simplify takes time: " + time);
-  }
-  
-/*  
-  List<IRStatement> collectHavocStmts(Path currPath) {
-    List<IRStatement> havocStmts = Lists.newArrayList();
-    
-    if(!predecessorMap.containsKey(currPath)) return havocStmts;
-    
-    for(Path prePath : predecessorMap.get(currPath)) {
-      havocStmts.addAll(collectHavocStmts(prePath));
-    }
-    for(IRStatement stmt : currPath.stmts) {
-      if(stmt.getType() == StatementType.ASSIGN) {
-        IRExpressionImpl lval = (IRExpressionImpl) ((Statement) stmt).getOperand(0);
-        havocStmts.add(Statement.havoc(lval.getSourceNode(), lval));
-      }           
-    }
-    return havocStmts;
-  }*/
-  
-  /** find all havoc statement */
-  List<IRStatement> collectHavocStmts() {
-    Queue<Path> queue = Lists.newLinkedList();
-    List<Path> visited = Lists.newArrayList();
-    List<IRStatement> resStmts = Lists.newArrayList();
-    queue.add(destPath);
-    while(!queue.isEmpty()) {
-      Path currPath = queue.poll();
-      if(visited.contains(currPath))    continue;
-      for(IRStatement stmt : currPath.stmts) {
-        if(stmt.getType() == StatementType.ASSIGN) {
-          IRExpressionImpl lval = (IRExpressionImpl) ((Statement) stmt).getOperand(0);
-          resStmts.add(0, Statement.havoc(lval.getSourceNode(), lval));
-        }           
-      }
-      if(predecessorMap.containsKey(currPath))
-        queue.addAll(predecessorMap.get(currPath));
-      visited.add(currPath);
-    }
-    return resStmts;
-  }
-  
-  @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append(srcPath).append("-->").append(destPath);
-    return sb.toString();
-  }
-  
-  boolean isValid() {
-    Map<Path, Set<Path>> map = Maps.newLinkedHashMap(predecessorMap);
-    Queue<Path> queue = Lists.newLinkedList();
-    queue.add(destPath);
-    
-    while(!queue.isEmpty()) {
-      Path path = queue.poll();
-      Set<Path> prePaths = map.remove(path);
-      if(prePaths == null) continue;
-      for(Path prePath : prePaths) {
-        if(!queue.contains(prePath))
-          queue.add(prePath);
-      }
-    }
-    
-    return map.isEmpty();
   }
 }
 
@@ -1571,7 +1053,8 @@ class RunMergeProcessor implements RunProcessor {
         GNode varNode = GNode.create("PrimaryIdentifier", varName);
         varNode.setLocation(node.getLocation());
         varNode.setProperty(xtc.Constants.SCOPE, scope.getQualifiedName());
-        varNode.setProperty(xtc.Constants.TYPE, NumberT.INT);
+        if(node.hasProperty(xtc.Constants.TYPE))
+          varNode.setProperty(xtc.Constants.TYPE, node.getProperty(xtc.Constants.TYPE));
         if(node.equals(resNode)) {
           funcNodeReplaceMap.put(node, (Node)varNode); // f(a) : TEMP_VAR_x
         } else {
@@ -1677,8 +1160,11 @@ class RunMergeProcessor implements RunProcessor {
   }
   
   private Graph getGraphForAllAssignCallStmt(List<IRStatement> pathRep, List<IRStatement> pathRmv, 
-      List<CallPoint> funcs) throws RunProcessorException {
+      Iterable<CallPoint> funcs) throws RunProcessorException {
     Preconditions.checkArgument(pathRep.size() == pathRmv.size());
+    
+    List<CallPoint> funcs_copy = null;
+    if(funcs != null)   funcs_copy = Lists.newArrayList(funcs);
     
     Graph graph = null;
     int lastIndex = pathRep.size()-1;
@@ -1686,12 +1172,12 @@ class RunMergeProcessor implements RunProcessor {
       IRStatement stmtRep = pathRep.get(i);
       IRStatement stmtRmv = pathRmv.get(i);
       CallPoint func = null;
-      if(funcs != null) {
+      if(funcs_copy != null) {
         Node funcNode = stmtRmv.getSourceNode();
         assert(funcNode.getName().equals("FunctionCall") 
             && funcNode.getNode(0).getName().equals("PrimaryIdentifier"));
         String funcName = funcNode.getNode(0).getString(0);
-        Iterator<CallPoint> itr = funcs.iterator();
+        Iterator<CallPoint> itr = funcs_copy.iterator();
         while(itr.hasNext()) {
           CallPoint callPos = itr.next();
           if(callPos.getFuncName().equals(funcName)) {
@@ -1717,10 +1203,11 @@ class RunMergeProcessor implements RunProcessor {
    * statements flatten from that single function call statement.
    * @throws RunProcessorException
    */
-  private Graph functionInlineGraph(CSymbolTable symbolTable, Graph graph) 
+  private Graph functionInlineGraph(CSymbolTable symbolTable, Graph graph, 
+      List<Position> callPos) 
       throws RunProcessorException {
     /* Map the function path to its graph */
-    Map<Path, Graph> funcPathMap = Maps.newHashMap();
+    Map<Path, Graph> funcPathMap = Maps.newLinkedHashMap();
     
     /* BFS traverse the graph's paths, collect those with function call statement */
     Queue<Path> queue = Lists.newLinkedList();
@@ -1749,14 +1236,22 @@ class RunMergeProcessor implements RunProcessor {
       if(prePaths != null)  queue.addAll(prePaths);     
     }
     
-//    IOUtils.err().println("Function path size: " + funcPathMap.size());
-    
     /* No function call, no change */
     if(funcPathMap.size() == 0) return graph;
     
+    Iterator<Position> callPosItr = null;
+    if(callPos != null) {
+      callPosItr = Lists.reverse(callPos).iterator();
+    }
+    
     /* Call function inlining for each path with function call */
     for(Path keyPath : funcPathMap.keySet()) {
-      Graph funcGraph = functionInlinePath(symbolTable, keyPath);
+      Graph funcGraph = null;
+      if(callPosItr != null && callPosItr.hasNext()) {
+        funcGraph = functionInlinePath(symbolTable, keyPath, callPosItr);
+      } else {
+        funcGraph = functionInlinePath(symbolTable, keyPath);
+      }
       funcPathMap.put(keyPath, funcGraph);
     }
     
@@ -1787,12 +1282,19 @@ class RunMergeProcessor implements RunProcessor {
     for(Path keyPath : funcPathMap.keySet())
       predecessorMap.putAll(funcPathMap.get(keyPath).predecessorMap);
     
-    Path srcPath = funcPathMap.containsKey(graph.srcPath) ? 
-        funcPathMap.get(graph.srcPath).srcPath : graph.srcPath;
-    Path destPath = funcPathMap.containsKey(graph.destPath) ? 
-        funcPathMap.get(graph.destPath).destPath : graph.destPath;
-    
-    return Graph.create(predecessorMap, srcPath, destPath);
+    if(!(graph.srcPath == graph.destPath)) {
+      Path srcPath = funcPathMap.containsKey(graph.srcPath) ? 
+          funcPathMap.get(graph.srcPath).srcPath : graph.srcPath;
+      Path destPath = funcPathMap.containsKey(graph.destPath) ? 
+          funcPathMap.get(graph.destPath).destPath : graph.destPath;
+      
+      return Graph.create(predecessorMap, srcPath, destPath);
+    } else {
+      Path destPath = funcPathMap.containsKey(graph.destPath) ? 
+          funcPathMap.get(graph.destPath).destPath : graph.destPath;
+          
+      return Graph.create(predecessorMap, destPath, destPath);
+    }
   }
   
   private boolean hasFunctionCall(IRStatement stmt) throws RunProcessorException {
@@ -1865,20 +1367,19 @@ class RunMergeProcessor implements RunProcessor {
     }
     return null;
   }
-  
+    
   private Graph functionInlinePath(CSymbolTable symbolTable, Path path) 
-      throws RunProcessorException {    
+      throws RunProcessorException {
     return functionInlinePath(symbolTable, path, null);
   }
-    
+  
   private Graph functionInlinePath(CSymbolTable symbolTable, Path path, 
-      Position callPos) throws RunProcessorException {
+      Iterator<Position> callPosItr) throws RunProcessorException {
     Preconditions.checkArgument(path != null);
     
     Graph resGraph = null;
     Path tmpPath = path;
-    List<CallPoint> funcs = null;
-    if(callPos != null) funcs = Lists.newArrayList(callPos.getFunctions());
+
     while(tmpPath != null && !tmpPath.isEmpty()) {
       
       int lastIndex = tmpPath.stmts.size()-1;
@@ -1900,9 +1401,20 @@ class RunMergeProcessor implements RunProcessor {
         List<Path> paths = tmpPath.split(splitIndex);
         tmpPath = paths.get(0);
         
+        Position candidatePosition = null;
+        if(callPosItr != null && callPosItr.hasNext())
+          candidatePosition = callPosItr.next();
+        
+        Position callPosition = null;
+        if(candidatePosition != null) {
+          if(candidatePosition.getLine() == last_stmt.getLocation().getLine()) {
+            callPosition = candidatePosition;
+          }
+        }
+        
         Graph callGraph = null;
-        if(funcs != null) {
-          CallPoint call = findCallPointForStmt(funcCallStmt, funcs);
+        if(callPosition != null) {
+          CallPoint call = findCallPointForStmt(funcCallStmt, callPosition.getFunctions());
           callGraph = getGraphForCallStmt(funcCallStmt, call);
         } else {
           callGraph = getGraphForCallStmt(funcCallStmt);
@@ -1919,8 +1431,20 @@ class RunMergeProcessor implements RunProcessor {
         tmpPath = paths.get(0);       
         Path funcPath = paths.get(1);
         Graph callGraph = null;
-        if(callPos != null) {
-          callGraph = getGraphForAllAssignCallStmt(stmtRep, funcPath.stmts, callPos.getFunctions());
+        
+        Position candidatePosition = null;
+        if(callPosItr != null && callPosItr.hasNext())
+          candidatePosition = callPosItr.next();
+        
+        Position callPosition = null;
+        if(candidatePosition != null) {
+          if(candidatePosition.getLine() == last_stmt.getLocation().getLine()) {
+            callPosition = candidatePosition;
+          }
+        }
+        
+        if(callPosition != null) {
+          callGraph = getGraphForAllAssignCallStmt(stmtRep, funcPath.stmts, callPosition.getFunctions());
         } else {
           callGraph = getGraphForAllAssignCallStmt(stmtRep, funcPath.stmts);
         }
@@ -1962,22 +1486,6 @@ class RunMergeProcessor implements RunProcessor {
     tmpPath = checkPath(symbolTable, tmpPath);
     path.addAll(tmpPath);
   }*/
-  
-  /** Remove way points before callPoint from wayPoints, return them. */
-  private List<Position> waypointsBeforeCall(List<Position> wayPoints) 
-      throws RunProcessorException {
-    List<Position> resWaypoints = Lists.newArrayList();
-    while(!wayPoints.isEmpty()) {
-      Position waypoint = wayPoints.get(0);
-      if(!waypoint.hasFunctions()) {
-        Position pos = wayPoints.remove(0);
-        resWaypoints.add(pos);
-      }
-      else
-        break;
-    }
-    return resWaypoints;
-  }
   
   /** Parse the invariant of loop. */
   private Graph processInvariant(IRControlFlowGraph cfg, Position position, 
@@ -2025,6 +1533,7 @@ class RunMergeProcessor implements RunProcessor {
   
   private List<Position> loopPointsUnroll(IRControlFlowGraph cfg, List<Position> wayPoints) 
       throws RunProcessorException {
+    Preconditions.checkArgument(wayPoints != null);
     List<Position> resWaypoints = Lists.newArrayList();
     for(Position pos : wayPoints) {
       if(pos.hasLoop()) {
@@ -2081,74 +1590,39 @@ class RunMergeProcessor implements RunProcessor {
       block = cfg.splitAt(start, true).snd();
     }
     
-    if(waypoints != null && !waypoints.isEmpty()) { 
-      List<Position> wayPoints = loopPointsUnroll(cfg, waypoints);
-      
-      while(!wayPoints.isEmpty()) {
+    List<Position> unrollWayPoints = null;
+    
+    if(waypoints != null) { 
+      unrollWayPoints = loopPointsUnroll(cfg, waypoints);
+      for(Position pos : unrollWayPoints) {
+        if (block == null)      break;
+        IOUtils.debug().pln("<wayPoint> " + pos.toString()).flush();
         
-        /* Way points before call position */        
-        List<Position> tmpWaypoints = waypointsBeforeCall(wayPoints);
-        for(Position pos : tmpWaypoints) {
-          if (block == null)      break;
-          IOUtils.debug().pln("<wayPoint> " + pos.toString()).flush();
-          
-          Pair<? extends IRBasicBlock, ? extends IRBasicBlock> pair = 
-              getTargetBlock(cfg, block, pos);
-          IRBasicBlock target = pair.fst();
-          Graph wayGraph = buildPathGraphToBlock(cfg, block, target);
-          block = pair.snd();
-          
-          Scope currScope = symbolTable.getCurrentScope();
-          if(block.getScope() != null)   symbolTable.setScope(block.getScope());
-          if(pos.getInvariant() != null) {
-            Graph invariantGraph = processInvariant(cfg, pos, symbolTable);
-            block = cfg.splitAt(pos, false).snd();
+        Pair<? extends IRBasicBlock, ? extends IRBasicBlock> pair = 
+            getTargetBlock(cfg, block, pos);
+        IRBasicBlock target = pair.fst();
+        Graph wayGraph = buildPathGraphToBlock(cfg, block, target);
+        block = pair.snd();
             
-            wayGraph.appendPostGraph(invariantGraph);        
-          }
+        Scope currScope = symbolTable.getCurrentScope();
+        if(block.getScope() != null)   symbolTable.setScope(block.getScope());
+        if(pos.getInvariant() != null) {
+          Graph invariantGraph = processInvariant(cfg, pos, symbolTable);
+          block = cfg.splitAt(pos, false).snd();
           
-          Path wayPath = Path.createSingleton(processPosition(pos, symbolTable));
-          if(InsertionType.BEFORE.equals(((Position)pos).getInsertionType())) {
-            wayGraph.insertBefore(wayGraph.destPath, wayPath);
-          } else {
-            wayGraph.appendPostPath(wayPath);
-          }
-          symbolTable.setScope(currScope);
-          
-          if(graph == null)     graph = wayGraph;
-          else                  graph.appendPostGraph(wayGraph);
+          wayGraph.appendPostGraph(invariantGraph);        
         }
-        
-        if(wayPoints.isEmpty())   break;
-
-        /* The blocks from last way point to the call position (not include call position) */       
-        Position callPos = wayPoints.remove(0);
-        IOUtils.debug().pln("<callPoint> " + callPos.toString()).flush();
-        
-        { /* Split before callPos, target before the call position */
-          Pair<? extends IRBasicBlock, ? extends IRBasicBlock> pair = cfg.splitAt(callPos, true); 
-          IRBasicBlock target = pair.fst();
-          Graph wayGraph = buildPathGraphToBlock(cfg, block, target);
-          /* Split before callPos, block after the call position */
-          block = pair.snd();
-          
-          if(graph == null)     graph = wayGraph;
-          else                  graph.appendPostGraph(wayGraph);
-        }
-        
-        /* Call position */
-        {
-          Pair<? extends IRBasicBlock, ? extends IRBasicBlock> pair = cfg.splitAt(callPos, false); 
-          IRBasicBlock target = pair.fst();
-          /* statements after flatten the function call */
-          Graph targetGraph = buildPathGraphToBlock(cfg, block, target);
-          assert(targetGraph.srcPath == targetGraph.destPath);
-          Path targetPath = targetGraph.srcPath;
-          Graph callGraph = functionInlinePath(symbolTable, targetPath, callPos);
-          graph.appendPostGraph(callGraph);
-          
-          block = pair.snd();
-        }
+            
+        Path wayPath = Path.createSingleton(processPosition(pos, symbolTable));
+//        if(InsertionType.BEFORE.equals(((Position)pos).getInsertionType())) {
+//          wayGraph.insertBefore(wayGraph.destPath, wayPath);
+//        } else {
+        wayGraph.appendPostPath(wayPath);
+//        }
+        symbolTable.setScope(currScope);
+            
+        if(graph == null)     graph = wayGraph;
+        else                  graph.appendPostGraph(wayGraph);
       }
     }
     
@@ -2182,8 +1656,19 @@ class RunMergeProcessor implements RunProcessor {
     graph.appendPrePath(startPath);
     graph.appendPostPath(endPath);
 //    graph.simplify();
-    graph = functionInlineGraph(symbolTable, graph);
+    
+    Builder<Position> builder = new ImmutableList.Builder<Position>();    
+    if(unrollWayPoints != null) {
+      for(Position waypoint : unrollWayPoints) {
+        if(waypoint.hasFunctions())
+          builder.add(waypoint);
+      }
+    }
+    
+    graph = functionInlineGraph(symbolTable, graph, builder.build());
+    
     assert(graph.isValid());
+    
     symbolTable.setScope(oldScope);
     
     return graph;

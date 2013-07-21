@@ -159,6 +159,9 @@ final class Graph {
     predecessorMap.put(destPath, Sets.newHashSet(insertPath));
     if(prePaths != null) {
       predecessorMap.put(insertPath, prePaths);
+    } else {
+      assert(this.srcPath == this.destPath);
+      srcPath = insertPath;
     }
   }
   
