@@ -59,6 +59,8 @@ public class Preferences {
   
   public static final String OPTION_THEORY = "theory";
   
+  public static final String OPTION_MERGE_PATH = "merge-path";
+  
   public static void clearAll() {
     getProperties().clear();
   }

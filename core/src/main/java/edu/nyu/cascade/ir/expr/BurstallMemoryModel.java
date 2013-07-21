@@ -9,6 +9,7 @@ import xtc.tree.Node;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -368,6 +369,11 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   public TupleType getStateType() {
     return stateType;
   }
+  
+  public void setStateType(TupleType stateType) {
+    this.stateType = stateType;
+    this.memType = stateType.asTuple().getElementTypes().get(0).asRecord();
+  }
 
   @Override
   public ExpressionClosure suspend(final Expression memoryVar, final Expression expr) {
@@ -463,6 +469,42 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     currentState = null;
   }
   
+  public Expression combinePreMemoryStates(BooleanExpression guard, 
+      RecordExpression mem_1, RecordExpression mem_0) {    
+    
+    RecordType memType_1 = mem_1.getType();
+    final Iterable<String> elemNames_1 = memType_1.getElementNames();
+    
+    RecordType memType_0 = mem_0.getType();
+    final Iterable<String> elemNames_0 = memType_0.getElementNames();
+    
+    Iterable<String> commonElemNames = Iterables.filter(elemNames_1, 
+        new Predicate<String>(){
+      @Override
+      public boolean apply(String elemName) {
+        return Iterables.contains(elemNames_0, elemName);
+      }
+    });
+    
+    List<Expression> elems = Lists.newArrayListWithCapacity(
+        Iterables.size(commonElemNames));
+    List<Type> elemTypes = Lists.newArrayListWithCapacity(
+        Iterables.size(commonElemNames));
+    
+    ExpressionManager em = getExpressionManager();
+    for(String elemName : commonElemNames) {
+      Expression elem = em.ifThenElse(guard, mem_1.select(elemName), mem_0.select(elemName));
+      elems.add(elem);
+      elemTypes.add(elem.getType());
+    } 
+    
+    RecordType recordType = em.recordType(Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME), 
+        commonElemNames, elemTypes);
+    Expression res = em.record(recordType, elems);
+    
+    return res;
+  }
+  
   private RecordType getCurrentMemoryType() {
     ExpressionManager em = getExpressionManager();
     
@@ -486,11 +528,12 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
    * type if state type is changed from the type of state
    * @return a new state
    */
-  private TupleExpression getUpdatedState(Expression state, Expression memoryPrime, Expression allocPrime) {
+  public TupleExpression getUpdatedState(Expression state, Expression memoryPrime, Expression allocPrime) {
     ExpressionManager em = getExpressionManager();
     Type stateTypePrime = null;
     
-    if(state.getType().asTuple().getElementTypes().get(0).equals(memoryPrime.getType())) {
+    if(state != null 
+        && state.getType().asTuple().getElementTypes().get(0).equals(memoryPrime.getType())) {
       stateTypePrime = state.getType();
     } else {
       stateTypePrime = em.tupleType(Identifiers.uniquify(DEFAULT_STATE_TYPE), 
@@ -519,7 +562,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     boolean declaredType = currentMemElems.containsKey(typeName);
     if(declaredType) { // previously declared variable
       // for case: assign null to pointer int* ptr = 0;
-      if(typeName.startsWith("$PointerT") && rval.isBitVector()) {
+      if(!(isScalaType(lval.getNode())) && rval.isBitVector()) {
           Preconditions.checkArgument(rval.isConstant() 
               && Integer.parseInt(rval.getNode().getString(0)) == 0);
           rval = ((PointerExpressionEncoding) getExpressionEncoding()).getPointerEncoding().nullPtr();

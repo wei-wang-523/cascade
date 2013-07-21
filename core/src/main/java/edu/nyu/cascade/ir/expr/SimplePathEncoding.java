@@ -18,6 +18,7 @@ import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.Identifiers;
+import edu.nyu.cascade.util.Preferences;
 
 public class SimplePathEncoding extends AbstractPathEncoding {
   public static <Mem extends Expression> SimplePathEncoding create(
@@ -111,6 +112,19 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   @Override
   public TupleType getPathType() {
     return pathType;
+  }
+  
+  @Override
+  public boolean setPathType(Type pathType) {
+    Preconditions.checkArgument(pathType.isTuple());
+    Preconditions.checkArgument(Preferences.isSet(Preferences.OPTION_MERGE_PATH));
+    if(getMemoryModel() instanceof BurstallMemoryModel) {
+      this.pathType = pathType.asTuple();
+      ((BurstallMemoryModel) getMemoryModel()).setStateType(
+          pathType.asTuple().getElementTypes().get(0).asTuple());
+      return true;
+    } else
+      return false;
   }
 
   @Override
@@ -223,7 +237,13 @@ public class SimplePathEncoding extends AbstractPathEncoding {
       if(i == 1) {
         Expression case_0 = Iterables.get(exprs, 0);
         Expression case_1 = Iterables.get(exprs, 1);
-        resExpr = exprManager.ifThenElse(guard, case_1, case_0);
+        if(!case_0.getType().equals(case_1.getType())) {
+          Preconditions.checkArgument(getMemoryModel() instanceof BurstallMemoryModel);
+          Preconditions.checkArgument(case_0.isRecord() && case_1.isRecord());
+          resExpr = ((BurstallMemoryModel) getMemoryModel())
+              .combinePreMemoryStates(guard, case_1.asRecord(), case_0.asRecord());
+        } else
+          resExpr = exprManager.ifThenElse(guard, case_1, case_0);
       } else {
         Expression case_1 = Iterables.get(exprs, i);
         resExpr = exprManager.ifThenElse(guard, case_1, resExpr);
@@ -246,7 +266,6 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     Preconditions.checkArgument(Iterables.size(prefixes) == Iterables.size(preGuards));
     ExpressionManager exprManager = getExpressionManager();
     
-    
     Expression resMemState = null;
     if(getMemoryModel().getStateType().isTuple()) {
       TupleType tupleType = getMemoryModel().getStateType().asTuple();
@@ -257,9 +276,18 @@ public class SimplePathEncoding extends AbstractPathEncoding {
         for(Expression prefix : prefixes) {
           mem.add(prefix.asTuple().getChild(0).asTuple().getChild(i));   
         }
-        stateElem.add(getITEExpression(mem, preGuards));
+        Expression elem = getITEExpression(mem, preGuards);
+        stateElem.add(elem);
       }
-      resMemState = exprManager.tuple(getMemoryModel().getStateType(), stateElem);
+      
+      MemoryModel mm = getMemoryModel();
+      if(mm instanceof BurstallMemoryModel) {
+        assert(stateElem.size() == 2);
+        resMemState = ((BurstallMemoryModel) mm).getUpdatedState(null, 
+            stateElem.get(0), stateElem.get(1));
+      } else {
+        resMemState = exprManager.tuple(mm.getStateType(), stateElem);
+      }
     } else {
       List<Expression> mem = Lists.newArrayList();
       for(Expression prefix : prefixes) {
