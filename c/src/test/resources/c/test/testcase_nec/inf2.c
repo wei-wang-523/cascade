@@ -24,8 +24,8 @@ st_t * st_alloc(int x, int y){
 }
 
 int st_compact(st_t * st1, st_t * st2){
-  if (st1 -> z > 0 ){
-    if (st2 -> z > 0 ){
+  if (st1 -> z != NULL ){ // st1 -> z > 0
+    if (st2 -> z != NULL ){ // st2 -> z > 0
       ASSERT(st1 -> x > 0);
       ASSERT(st2 -> y > 0);
     } else {

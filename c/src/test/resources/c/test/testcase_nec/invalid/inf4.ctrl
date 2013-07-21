@@ -1,15 +1,7 @@
 <controlFile>
   <sourceFile name="../inf4.c" id="1" />
   <run>
-    <startPosition fileId="1" line="7" >
-      <command>
-        <cascadeFunction> cascade_assume </cascadeFunction>
-	<argument><![CDATA[
-	a == 65 && b == 64 && c == 2
-	]]>
-	</argument>
-      </command>
-    </startPosition>
+    <startPosition fileId="1" line="7" />
     <wayPoint fileId="1" line="11" />
     <wayPoint fileId="1" line="17" />
     <wayPoint fileId="1" line="23" />
