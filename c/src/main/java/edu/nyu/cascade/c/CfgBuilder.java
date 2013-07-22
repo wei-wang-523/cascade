@@ -19,7 +19,10 @@ import xtc.type.NumberT;
 import xtc.type.Type;
 import xtc.util.Pair;
 
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -29,12 +32,14 @@ import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.SymbolTable;
+import edu.nyu.cascade.ir.IRStatement.StatementType;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.ir.impl.BasicBlock;
 import edu.nyu.cascade.ir.impl.CaseGuard;
 import edu.nyu.cascade.ir.impl.ControlFlowGraph;
 import edu.nyu.cascade.ir.impl.DefaultCaseGuard;
 import edu.nyu.cascade.ir.impl.Guard;
+import edu.nyu.cascade.ir.impl.IRExpressionImpl;
 import edu.nyu.cascade.ir.impl.Statement;
 import edu.nyu.cascade.ir.impl.VarInfo;
 import edu.nyu.cascade.ir.type.IRIntegerType;
@@ -1030,8 +1035,14 @@ public class CfgBuilder extends Visitor {
     } else if("ASSUME".equals(funcName)) {
       if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION))
         addStatement(Statement.assumeStmt(node, expressionOf(node.getNode(1).getNode(0))));
+    } else if("INVARIANT".equals(funcName)) {
+      if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION)) {
+        addStatement(Statement.assumeStmt(node, expressionOf(node.getNode(1).getNode(0))));
+        addStatement(Statement.assertStmt(node, expressionOf(node.getNode(1).getNode(0))));
+      }
     } else {
-      addStatement(Statement.functionCall(node, funExpr, argExprs));
+      if(!Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION))
+        addStatement(Statement.functionCall(node, funExpr, argExprs));
     }
     return expressionOf(node);
   }
@@ -1719,29 +1730,84 @@ public class CfgBuilder extends Visitor {
 
     Guard ifBranch = Guard.create(assignExpr);
     Guard elseBranch = ifBranch.negate();
-
+    
     xtc.util.SymbolTable.Scope currentScope = symbolTable.getCurrentScope();
     BasicBlock entryBlock = currentCfg.newLoopBlock(node.getLocation(), currentScope);
     BasicBlock bodyBlock = currentCfg.newBlock(symbolTable.getScope(body));
     BasicBlock exitBlock = currentCfg.newBlock(currentScope);
 
     pushScope(entryBlock, exitBlock);
-
-    currentCfg.addEdge(currentBlock, entryBlock);
-    currentCfg.addEdge(entryBlock, ifBranch, bodyBlock);
-    currentCfg.addEdge(entryBlock, elseBranch, exitBlock);
     
-    /* Add the statements to the current block */
-    addAndFlushPostStatements(entryBlock);
+    Node invariant = body.getNode(0).getNode(0);
+    if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION) 
+        && invariant != null
+        && invariant.getName().equals("FunctionCall") 
+        && invariant.getNode(0).getString(0).equals("INVARIANT")) {
+      BasicBlock invariantBlock = currentCfg.newBlock(symbolTable.getScope(body));
+      
+      body = body.getNode(1);
+      
+      currentCfg.addEdge(currentBlock, entryBlock);
+      currentCfg.addEdge(entryBlock, ifBranch, bodyBlock);
+      currentCfg.addEdge(bodyBlock, elseBranch, exitBlock);
+      
+      /* Add the statements to the current block */
+      addAndFlushPostStatements(entryBlock);
+      
+      currentBlock = bodyBlock;
+      dispatch(body);
+      currentBlock = invariantBlock;
+      dispatch(invariant);
+      
+      List<IRStatement> invStmts = invariantBlock.getStatements();
+      IRStatement assumeStmt = invStmts.get(0);
+      IRStatement assertStmt = invStmts.get(1);
+      
+      ImmutableList<IRStatement> stmts = new ImmutableList.Builder<IRStatement>()
+          .addAll(bodyBlock.getStatements()).build();
+      
+      Iterable<IRStatement> havocStmts = Iterables.transform(
+          Iterables.filter(stmts, new Predicate<IRStatement>(){
+            @Override
+            public boolean apply(IRStatement stmt) {
+              return stmt.getType() == StatementType.ASSIGN;
+            }
+          }), 
+          new Function<IRStatement, IRStatement>() {
+            @Override
+            public IRStatement apply(IRStatement stmt) {
+              IRExpressionImpl lval = (IRExpressionImpl) ((Statement) stmt).getOperand(0);
+              return Statement.havoc(lval.getSourceNode(), lval);
+            }
+          }
+          );
+      
+      ImmutableList<IRStatement> preStmts = new ImmutableList.Builder<IRStatement>()
+          .add(assertStmt).addAll(havocStmts).add(assumeStmt).build();
+      
+      ImmutableList<IRStatement> testStmts = entryBlock.getStatements();
+      
+      entryBlock.addStatements(0, preStmts);
+      
+      bodyBlock.addStatement(assertStmt);
+      bodyBlock.addStatements(testStmts);
+    } else {
+      currentCfg.addEdge(currentBlock, entryBlock);
+      currentCfg.addEdge(entryBlock, ifBranch, bodyBlock);
+      currentCfg.addEdge(bodyBlock, entryBlock);
+      currentCfg.addEdge(entryBlock, elseBranch, exitBlock);
+      
+      /* Add the statements to the current block */
+      addAndFlushPostStatements(entryBlock);
+      
+      currentBlock = bodyBlock;
+      dispatch(body);
+    }
     
-    currentBlock = bodyBlock;
-    dispatch(body);
-    currentCfg.addEdge(currentBlock, entryBlock);
-    
-    closeCurrentBlock(entryBlock);  // close the loop
-    currentBlock = exitBlock;  // exit the loop
+    closeCurrentBlock(entryBlock); // close the loop
+    currentBlock = exitBlock;
     popScope();
-
+    
     if( debugEnabled() ) {
       popAlign();
       debug().decr().flush();
@@ -1785,25 +1851,87 @@ public class CfgBuilder extends Visitor {
 
 	pushScope(initBlock, exitBlock);
 	
-	currentCfg.addEdge(currentBlock, initBlock);
-	currentCfg.addEdge(initBlock, entryBlock);
-	currentCfg.addEdge(entryBlock, ifBranch, bodyBlock);
-    currentCfg.addEdge(incrBlock, entryBlock);
-    currentCfg.addEdge(entryBlock, elseBranch, exitBlock);
-    
-    /* Add the statements to the current block */
-    addAndFlushPostStatements(entryBlock);
+	Node invariant = body.getNode(0).getNode(0);
+	if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION)
+        && invariant != null
+	    && invariant.getName().equals("FunctionCall") 
+	    && invariant.getNode(0).getString(0).equals("INVARIANT")) {
+	  BasicBlock invariantBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+	  
+	  body = body.getNode(1);
+	  
+	  currentCfg.addEdge(currentBlock, initBlock);
+	  currentCfg.addEdge(initBlock, entryBlock);
+	  currentCfg.addEdge(entryBlock, ifBranch, bodyBlock);
+	  currentCfg.addEdge(bodyBlock, incrBlock);
+	  currentCfg.addEdge(incrBlock, elseBranch, exitBlock);
+	  
+      /* Add the statements to the current block */
+      addAndFlushPostStatements(entryBlock);
+      
+      currentBlock = initBlock;   
+      dispatch(init);
+      currentBlock = bodyBlock;
+      dispatch(body);
+      currentBlock = incrBlock;
+      dispatch(incr);
+      currentBlock = invariantBlock;
+      dispatch(invariant);
+      
+      List<IRStatement> invStmts = invariantBlock.getStatements();
+      IRStatement assumeStmt = invStmts.get(0);
+      IRStatement assertStmt = invStmts.get(1);
+      
+      ImmutableList<IRStatement> stmts = new ImmutableList.Builder<IRStatement>()
+          .addAll(bodyBlock.getStatements())
+          .addAll(incrBlock.getStatements()).build();
+      Iterable<IRStatement> havocStmts = Iterables.transform(
+          Iterables.filter(stmts, new Predicate<IRStatement>(){
+            @Override
+            public boolean apply(IRStatement stmt) {
+              return stmt.getType() == StatementType.ASSIGN;
+            }
+          }), 
+          new Function<IRStatement, IRStatement>() {
+            @Override
+            public IRStatement apply(IRStatement stmt) {
+              IRExpressionImpl lval = (IRExpressionImpl) ((Statement) stmt).getOperand(0);
+              return Statement.havoc(lval.getSourceNode(), lval);
+            }
+          }
+          );
+      
+      ImmutableList<IRStatement> preStmts = new ImmutableList.Builder<IRStatement>()
+          .add(assertStmt).addAll(havocStmts).add(assumeStmt).build();
+      
+      ImmutableList<IRStatement> testStmts = entryBlock.getStatements();
+      
+      entryBlock.addStatements(0, preStmts);
+      
+      incrBlock.addStatement(assertStmt);
+      incrBlock.addStatements(testStmts);
+	} else {
+	  currentCfg.addEdge(currentBlock, initBlock);
+	  currentCfg.addEdge(initBlock, entryBlock);
+      currentCfg.addEdge(entryBlock, ifBranch, bodyBlock);
+      currentCfg.addEdge(bodyBlock, incrBlock);
+      currentCfg.addEdge(incrBlock, entryBlock);
+      currentCfg.addEdge(entryBlock, elseBranch, exitBlock);
+      
+      /* Add the statements to the current block */
+      addAndFlushPostStatements(entryBlock);
 
-    currentBlock = initBlock;	
-	dispatch(init);
-	currentBlock = bodyBlock;
-	dispatch(body);
-	currentCfg.addEdge(currentBlock, incrBlock);
-	currentBlock = incrBlock;
-	dispatch(incr);
-	closeCurrentBlock(initBlock); // close the loop
-	currentBlock = exitBlock;
-	popScope();
+      currentBlock = initBlock;   
+      dispatch(init);
+      currentBlock = bodyBlock;
+      dispatch(body);
+      currentBlock = incrBlock;
+      dispatch(incr);
+	}
+	
+    closeCurrentBlock(initBlock); // close the loop
+    currentBlock = exitBlock;
+    popScope();
 
 	if( debugEnabled() ) {
 	    popAlign();
