@@ -184,6 +184,10 @@ public class Main {
               .withDescription("Merge multiple paths in analysis.") //
               .create()) //
       .addOption(
+          OptionBuilder.withLongOpt(Preferences.OPTION_INLINE_ANNOTATION) //
+              .withDescription("Merge multiple paths in analysis.") //
+              .create()) //
+      .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_TOTAL_INST) //
               .withDescription("Enable total instantiation.") //
               .create()) //
