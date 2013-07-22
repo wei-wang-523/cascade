@@ -2,6 +2,7 @@ package edu.nyu.cascade.ir.expr;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.util.Arrays;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
@@ -118,8 +119,8 @@ public class LISBQwithQFArrReachEncoding extends ReachEncoding {
   }
 
   protected BooleanExpression applyRf(Expression... args) {
-    ImmutableList<Expression> argExprs = ImmutableList.of(args);
-    Preconditions.checkArgument(argExprs.size() == 3);
+    Preconditions.checkArgument(args.length == 3);
+    ImmutableList<Expression> argExprs = new ImmutableList.Builder<Expression>().add(args).build();
     return getExpressionManager().applyExpr(rf, argExprs).asBooleanExpression();
   }
   
@@ -293,7 +294,7 @@ public class LISBQwithQFArrReachEncoding extends ReachEncoding {
       xvars[i] = exprManager.variable("x", eltType, true);
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression body = applyRf(xbounds[0], xbounds[0], xbounds[0]);
     axiom.setRule(exprManager.forall(vars, body));
     return axiom;
@@ -309,7 +310,7 @@ public class LISBQwithQFArrReachEncoding extends ReachEncoding {
       xvars[i] = exprManager.variable("x", eltType, true);
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     Expression _let_0 = applyF(xbounds[0]);
     BooleanExpression body = applyRf(xbounds[0], _let_0, _let_0);
     axiom.setRule(exprManager.forall(vars, body));
@@ -326,7 +327,7 @@ public class LISBQwithQFArrReachEncoding extends ReachEncoding {
       xvars[i] = exprManager.variable("x", eltType, true);
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = applyRf(xbounds[1], xbounds[0], xbounds[0]);
     BooleanExpression body = exprManager.or(
         exprManager.eq(xbounds[1], xbounds[0]), 
@@ -345,7 +346,7 @@ public class LISBQwithQFArrReachEncoding extends ReachEncoding {
       xvars[i] = exprManager.variable("x", eltType, true);
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = applyRf(xbounds[1], xbounds[0], xbounds[0]).
         and(applyF(xbounds[1]).eq(xbounds[1]));
     BooleanExpression body = exprManager.eq(xbounds[1], xbounds[0]);
@@ -363,7 +364,7 @@ public class LISBQwithQFArrReachEncoding extends ReachEncoding {
       xvars[i] = exprManager.variable("x", eltType, true);
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = applyRf(xbounds[0], xbounds[1], xbounds[0]);
     BooleanExpression body = exprManager.eq(xbounds[0], xbounds[1]);
     axiom.setRule(exprManager.forall(vars, head.implies(body)));
@@ -380,7 +381,7 @@ public class LISBQwithQFArrReachEncoding extends ReachEncoding {
       xvars[i] = exprManager.variable("x", eltType, true);     
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = exprManager.and(
         applyRf(xbounds[0], xbounds[1], xbounds[1]), 
         applyRf(xbounds[0], xbounds[2], xbounds[2]));
@@ -401,7 +402,7 @@ public class LISBQwithQFArrReachEncoding extends ReachEncoding {
       xvars[i] = exprManager.variable("x", eltType, true);
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = applyRf(xbounds[0], xbounds[1], xbounds[2]);
     BooleanExpression body = exprManager.and(
         applyRf(xbounds[0], xbounds[1], xbounds[1]), 
@@ -420,7 +421,7 @@ public class LISBQwithQFArrReachEncoding extends ReachEncoding {
       xvars[i] = exprManager.variable("x", eltType, true);
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = exprManager.and(
         applyRf(xbounds[0], xbounds[1], xbounds[1]), 
         applyRf(xbounds[1], xbounds[2], xbounds[2]));
@@ -439,7 +440,7 @@ public class LISBQwithQFArrReachEncoding extends ReachEncoding {
       xvars[i] = exprManager.variable("x", eltType, true);
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = exprManager.and(
         applyRf(xbounds[0], xbounds[1], xbounds[2]), 
         applyRf(xbounds[1], xbounds[3], xbounds[2]));
@@ -460,7 +461,7 @@ public class LISBQwithQFArrReachEncoding extends ReachEncoding {
       xvars[i] = exprManager.variable("x", eltType, true);
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = exprManager.and(
         applyRf(xbounds[0], xbounds[1], xbounds[2]), 
         applyRf(xbounds[0], xbounds[3], xbounds[1]));

@@ -226,8 +226,8 @@ public class LISBQwithRRReachEncoding extends ReachEncoding {
   }
 
   protected BooleanExpression applyRf(Expression... args) {
-    ImmutableList<Expression> argExprs = ImmutableList.of(args);
-    Preconditions.checkArgument(argExprs.size() == 3);
+    Preconditions.checkArgument(args.length == 3);
+    ImmutableList<Expression> argExprs = new ImmutableList.Builder<Expression>().add(args).build();
     return getExpressionManager().applyExpr(rf, argExprs).asBooleanExpression();
   }
 

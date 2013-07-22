@@ -2,6 +2,7 @@ package edu.nyu.cascade.ir.expr;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -77,7 +78,7 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
       /* Create function expression */
       nil = getEltExpr(exprManager.bitVectorZero(DEFAULT_WORD_SIZE));
       rf = exprManager.functionType(FUN_RF, 
-          ImmutableList.of(fldType, eltType, eltType, eltType), 
+          (new ImmutableList.Builder<Type>().add(fldType, eltType, eltType, eltType)).build(), 
           exprManager.booleanType());
       
     } catch (TheoremProverException e) {
@@ -118,8 +119,9 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
   }
 
   protected BooleanExpression applyRf(Expression... args) {
-    ImmutableList<Expression> argExprs = ImmutableList.of(args);
-    Preconditions.checkArgument(argExprs.size() == 4);
+    Preconditions.checkArgument(args.length == 4);
+    ImmutableList<Expression> argExprs = 
+        new ImmutableList.Builder<Expression>().add(args).build();
     return getExpressionManager().applyExpr(rf, argExprs).asBooleanExpression();
   }
   
@@ -194,7 +196,8 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
       Iterable<? extends Expression> ground_terms) {
     List<ImmutableList<Expression>> res = Lists.newLinkedList();
     if(size == 1) {
-      for(Expression term : ground_terms)   res.add(ImmutableList.of(term));
+      for(Expression term : ground_terms)   res.add(
+          new ImmutableList.Builder<Expression>().add(term).build());
     } else {
       List<ImmutableList<Expression>> prev_res = collectInstTerms(size-1, ground_terms);
       for(ImmutableList<Expression> prev_list : prev_res) {
@@ -259,7 +262,8 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
         }
         
         if(!(instCand.isNoArrays() && instCand.isNoIndices())) {
-          ImmutableList<? extends Expression> instBodyList = ImmutableList.of(body);
+          ImmutableList<? extends Expression> instBodyList = 
+              new ImmutableList.Builder<Expression>().add(body).build();
           
           if((getInstOpt().equals(InstOpt.ELEMENT) 
               || getInstOpt().equals(InstOpt.FIELD_OF_ELEMENT)) 
@@ -362,7 +366,7 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
     Expression xbound_0 = exprManager.boundExpression(0, fldType);
     axiom.putBoundVar(xbound_0, xvar_0);
     
-    Iterable<? extends VariableExpression> vars = ImmutableList.of(xvar_0);
+    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvar_0));
     BooleanExpression body = applyF(xbound_0, nil).eq(nil);
     axiom.setRule(exprManager.forall(vars, body));
     return axiom;
@@ -384,7 +388,7 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
       }
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression body = applyRf(xbounds[1], xbounds[0], xbounds[0], xbounds[0]);
     axiom.setRule(exprManager.forall(vars, body));
     return axiom;
@@ -406,7 +410,7 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
         }
         axiom.putBoundVar(xbounds[i], xvars[i]);
       }
-      Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+      Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
       Expression _let_0 = applyF(xbounds[1], xbounds[0]);
       BooleanExpression body = applyRf(xbounds[1], xbounds[0], _let_0, _let_0);
       axiom.setRule(exprManager.forall(vars, body));
@@ -421,7 +425,7 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
         }
         axiom.putBoundVar(xbounds[i], xvars[i]);
       }
-      Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+      Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
       Expression _let_0 = applyF(xbounds[0], xbounds[1]);
       BooleanExpression body = applyRf(xbounds[0], xbounds[1], _let_0, _let_0);
       axiom.setRule(exprManager.forall(vars, body));
@@ -445,7 +449,7 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
         }
         axiom.putBoundVar(xbounds[i], xvars[i]);
       }
-      Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+      Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
       BooleanExpression head = applyRf(xbounds[2], xbounds[1], xbounds[0], xbounds[0]);
       BooleanExpression body = exprManager.or(exprManager.eq(xbounds[1], xbounds[0]), 
           applyRf(xbounds[2], xbounds[1], applyF(xbounds[2], xbounds[1]), xbounds[0]));
@@ -461,7 +465,7 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
         }
         axiom.putBoundVar(xbounds[i], xvars[i]);
       }
-      Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+      Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
       BooleanExpression head = applyRf(xbounds[1], xbounds[2], xbounds[0], xbounds[0]);
       BooleanExpression body = exprManager.or(exprManager.eq(xbounds[2], xbounds[0]), 
           applyRf(xbounds[1], xbounds[2], applyF(xbounds[1], xbounds[2]), xbounds[0]));
@@ -486,7 +490,7 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
         }
         axiom.putBoundVar(xbounds[i], xvars[i]);
       }
-      Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+      Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
       BooleanExpression head = applyRf(xbounds[2], xbounds[1], xbounds[0], xbounds[0]).
           and(exprManager.eq(applyF(xbounds[2], xbounds[1]), xbounds[1]));
       BooleanExpression body = exprManager.eq(xbounds[1], xbounds[0]);
@@ -502,7 +506,7 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
         }
         axiom.putBoundVar(xbounds[i], xvars[i]);
       }
-      Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+      Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
       BooleanExpression head = applyRf(xbounds[1], xbounds[2], xbounds[0], xbounds[0]).
           and(exprManager.eq(applyF(xbounds[1], xbounds[2]), xbounds[2]));
       BooleanExpression body = exprManager.eq(xbounds[2], xbounds[0]);
@@ -526,7 +530,7 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
       }
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = applyRf(xbounds[2], xbounds[0], xbounds[1], xbounds[0]);
     BooleanExpression body = exprManager.eq(xbounds[0], xbounds[1]);
     axiom.setRule(exprManager.forall(vars, head.implies(body)));
@@ -548,7 +552,7 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
       }
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = exprManager.and(
         applyRf(xbounds[3], xbounds[0], xbounds[1], xbounds[1]), 
         applyRf(xbounds[3], xbounds[0], xbounds[2], xbounds[2]));
@@ -574,7 +578,7 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
       }
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = applyRf(xbounds[3], xbounds[0], xbounds[1], xbounds[2]);
     BooleanExpression body = exprManager.and(
         applyRf(xbounds[3], xbounds[0], xbounds[1], xbounds[1]), 
@@ -598,7 +602,7 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
       }
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = exprManager.and(
         applyRf(xbounds[3], xbounds[0], xbounds[1], xbounds[1]), 
         applyRf(xbounds[3], xbounds[1], xbounds[2], xbounds[2]));
@@ -622,7 +626,7 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
       }
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = exprManager.and(
         applyRf(xbounds[4], xbounds[0], xbounds[1], xbounds[3]), 
         applyRf(xbounds[4], xbounds[1], xbounds[2], xbounds[3]));
@@ -648,7 +652,7 @@ public class LISBQwithQFDArrReachEncoding extends ReachEncoding {
       }
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Iterables.reverse(ImmutableList.of(xvars));
+    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = exprManager.and(
         applyRf(xbounds[4], xbounds[0], xbounds[2], xbounds[3]), 
         applyRf(xbounds[4], xbounds[0], xbounds[1], xbounds[2]));
