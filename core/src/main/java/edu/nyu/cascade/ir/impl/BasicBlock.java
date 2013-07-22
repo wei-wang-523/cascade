@@ -117,7 +117,7 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
     postLabels.add(label);
   }
   
-  public void addStatement(Statement statement) {
+  public void addStatement(IRStatement statement) {
     statements.add(statement);
     addLocation(statement.getLocation());
   }
@@ -125,6 +125,19 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
   public void addStatements(List<? extends IRStatement> statements) {
     if( !statements.isEmpty() ) {
       this.statements.addAll(statements);
+//      addLocation( statements.get(statements.size()-1).getLocation());
+      addLocation(statements.get(0).getLocation(), statements.get(statements.size()-1).getLocation());
+    }
+  }
+  
+  public void addStatement(int index, IRStatement statement) {
+    statements.add(index, statement);
+    addLocation(statement.getLocation());
+  }
+
+  public void addStatements(int index, List<? extends IRStatement> statements) {
+    if( !statements.isEmpty() ) {
+      this.statements.addAll(index, statements);
 //      addLocation( statements.get(statements.size()-1).getLocation());
       addLocation(statements.get(0).getLocation(), statements.get(statements.size()-1).getLocation());
     }
