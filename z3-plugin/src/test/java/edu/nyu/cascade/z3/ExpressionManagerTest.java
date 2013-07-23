@@ -78,7 +78,7 @@ public class ExpressionManagerTest {
     assertEquals(intType, arrayType.getElementType());
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testArrayType2() {
     // Cannot create a CVC array with boolean elements
     ArrayType arrayType2 = exprManager.arrayType(
