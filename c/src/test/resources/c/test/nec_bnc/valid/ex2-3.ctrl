@@ -1,0 +1,34 @@
+<controlFile>
+  <sourceFile name="../ex2.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="19" />
+    <wayPoint fileId="1" line="22" >
+      <command>
+      	<cascadeFunction> cascade_assume </cascadeFunction>
+      	<argument><![CDATA[
+      	n == 3
+      	]]>
+      	</argument>
+      </command>
+    </wayPoint>
+    <wayPoint fileId="1" line="26" />
+    <wayPoint fileId="1" line="31" >
+      <function funcName="test" >
+      	<wayPoint fileId="1" line="8" >
+      	  <loop iterTimes="3" >
+            <wayPoint fileId="1" line="10" >
+	      <command>
+		<cascadeFunction> cascade_check </cascadeFunction>
+		<argument><![CDATA[
+		valid(&a[i])
+		]]>
+		</argument>
+	      </command>
+            </wayPoint>
+          </loop>
+      	</wayPoint>
+      </function>
+    </wayPoint>
+    <endPosition fileId="1" line="33" />
+  </run>
+</controlFile>

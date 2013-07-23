@@ -1,0 +1,17 @@
+<controlFile>
+  <sourceFile name="dynamic_mem.c" id="1" />
+  <theory qname="edu.nyu.cascade.c.theory.SimpleTheory" />
+  <run>
+    <startPosition fileId="1" line="3" />
+    <wayPoint fileId="1" line="14" >
+      <command>
+	<cascadeFunction> cascade_check </cascadeFunction>
+	<argument><![CDATA[
+	implies(f >= 0, a == 1)
+	]]>
+	</argument>
+      </command>
+    </wayPoint>
+    <endPosition fileId="1" line="16" />
+  </run>
+</controlFile>

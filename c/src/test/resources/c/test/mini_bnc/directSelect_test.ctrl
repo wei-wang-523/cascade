@@ -1,0 +1,15 @@
+<controlFile>
+  <sourceFile name="directSelect_test.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="6" />
+    <endPosition fileId="1" line="9" >
+      <command>
+	<cascadeFunction> cascade_check </cascadeFunction>
+	<argument><![CDATA[
+	buf.dummy == 1
+	]]>
+	</argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

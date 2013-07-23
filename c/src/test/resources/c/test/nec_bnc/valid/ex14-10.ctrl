@@ -1,0 +1,20 @@
+<controlFile>
+  <sourceFile name="../ex14.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="3" />
+    <wayPoint fileId="1" line="7" >
+      <loop iterTimes="10" >
+	<wayPoint fileId="1" line="9">
+	  <command>
+	    <cascadeFunction> cascade_check </cascadeFunction>
+	    <argument><![CDATA[
+	    valid(&a[y])
+	    ]]>
+	    </argument>
+	  </command>
+	</wayPoint>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="13" />
+  </run>
+</controlFile>

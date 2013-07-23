@@ -1,0 +1,39 @@
+<controlFile>
+  <sourceFile name="../ex16.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="20" />
+    <wayPoint fileId="1" line="22">
+      <function funcName="foo" funcId="1" >
+        <wayPoint fileId="1" line="7" />
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="24">
+      <function funcName="foo" funcId="1" >
+        <wayPoint fileId="1" line="17" />
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="26">
+      <function funcName="foo" funcId="1" >
+        <wayPoint fileId="1" line="10" >
+          <loop>
+            <invariant><![CDATA[
+            i <= x
+            ]]>
+            </invariant>
+            <wayPoint fileId="1" line="12" />
+          </loop>
+        </wayPoint>
+        <wayPoint fileId="1" line="15" >
+      <command>
+	<cascadeFunction> cascade_check </cascadeFunction>
+	<argument><![CDATA[
+	i > x
+	]]>
+	</argument>
+      </command>
+        </wayPoint>
+      </function>
+    </wayPoint>
+    <endPosition fileId="1" line="34" />
+  </run>
+</controlFile>

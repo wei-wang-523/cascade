@@ -1,0 +1,20 @@
+<controlFile>
+  <sourceFile name="absext.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="10" />
+    <wayPoint fileId="1" line="13" >
+      <function funcName="abs" >
+        <wayPoint fileId="1" line="6" />
+      </function>
+    </wayPoint>
+    <endPosition fileId="1" line="14" >
+      <command>
+        <cascadeFunction>cascade_check</cascadeFunction>
+        <argument><![CDATA[
+        abs_a >= 0
+        ]]>
+        </argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

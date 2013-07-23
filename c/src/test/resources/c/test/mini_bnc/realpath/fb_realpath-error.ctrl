@@ -1,0 +1,100 @@
+<controlFile>
+  <sourceFile name="realpath-error.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="537" >
+      <command>
+	<cascadeFunction>cascade_assume</cascadeFunction>
+	<argument><![CDATA[
+	_allocated(path, 4)
+	]]>
+	</argument>
+      </command>
+    </startPosition>
+    <wayPoint fileId="1" line="537" >
+      <command>
+        <cascadeFunction>cascade_assume</cascadeFunction>
+	<argument><![CDATA[
+	_allocated(resolved, 4)
+	]]>
+	</argument>
+      </command>
+    </wayPoint>
+    <wayPoint fileId="1" line="601" >
+      <function funcName="strncpy" >
+	<wayPoint fileId="1" line="453" >
+	  <loop iterTimes="2" />
+	</wayPoint>
+	<wayPoint fileId="1" line="459" >
+	  <loop iterTimes="1" />
+	</wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="605" />
+    <wayPoint fileId="1" line="607" >
+      <function funcName="strrchr" >
+	<wayPoint fileId="1" line="468" >
+	  <loop iterTimes="1" >
+	    <wayPoint fileId="1" line="470" />
+	  </loop>
+	</wayPoint>
+	<wayPoint fileId="1" line="468" >
+	  <loop iterTimes="1" >
+	    <wayPoint fileId="1" line="471" />
+	  </loop>
+	</wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="612" />
+    <wayPoint fileId="1" line="641" />
+    <wayPoint fileId="1" line="722" >
+      <function funcName="strcpy" >
+	<wayPoint fileId="1" line="440" >
+	  <loop iterTimes="1" />
+	</wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="760" />
+    <wayPoint fileId="1" line="763" >
+      <function funcName="strlen" funcId="1" >
+	<wayPoint fileId="1" line="430" >
+	  <loop iterTimes="2" />
+	</wayPoint>
+      </function>
+      <function funcName="strlen" funcId="2" >
+	<wayPoint fileId="1" line="430" >
+	  <loop iterTimes="1" />
+	  </wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="768" >
+      <function funcName="strcat" >
+	<wayPoint fileId="1" line="479" >
+	  <loop iterTimes="2" />
+	</wayPoint>
+	<wayPoint fileId="1" line="482" >
+	  <loop iterTimes="1" />
+	</wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="769" >
+      <function funcName="strcat" >
+	<wayPoint fileId="1" line="479" >
+	  <loop iterTimes="3" />
+	</wayPoint>
+	<wayPoint fileId="1" line="482" >
+	  <loop iterTimes="1" />
+	</wayPoint>
+	<wayPoint fileId="1" line="487" >
+	  <command>
+	    <cascadeFunction> cascade_check </cascadeFunction>
+	    <argument><![CDATA[
+	    _valid(dest)
+	    ]]>
+	    </argument>
+	  </command>
+	</wayPoint>
+      </function>
+    </wayPoint>
+    <endPosition fileId="1" line="769" />
+  </run>
+</controlFile>
