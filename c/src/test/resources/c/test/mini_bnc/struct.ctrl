@@ -1,5 +1,5 @@
 <controlFile>
-  <sourceFile name="struct_test.c" id="1" />
+  <sourceFile name="struct.c" id="1" />
   <run>
     <startPosition fileId="1" line="8" />
     <endPosition fileId="1" line="17" >

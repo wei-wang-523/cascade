@@ -1,5 +1,5 @@
 <controlFile>
-  <sourceFile name="subscriptArith_test.c" id="1" />
+  <sourceFile name="subAri.c" id="1" />
   <run>
     <startPosition fileId="1" line="5" />
     <endPosition fileId="1" line="9" >

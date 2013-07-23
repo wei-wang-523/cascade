@@ -1,5 +1,5 @@
 <controlFile>
-  <sourceFile name="pointerVar_test.c" id="1" />
+  <sourceFile name="ptrVar.c" id="1" />
   <run>
     <startPosition fileId="1" line="1" />
     <endPosition fileId="1" line="7" >

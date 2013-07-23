@@ -1,5 +1,5 @@
 <controlFile>
-  <sourceFile name="scope_test.c" id="1" />
+  <sourceFile name="scope.c" id="1" />
   <run>
     <startPosition fileId="1" line="11" />
     <wayPoint fileId="1" line="15" />

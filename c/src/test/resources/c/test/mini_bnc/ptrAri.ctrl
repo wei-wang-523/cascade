@@ -1,5 +1,5 @@
 <controlFile>
-  <sourceFile name="pointerArith_test.c" id="1" />
+  <sourceFile name="ptrAri.c" id="1" />
   <run>
     <startPosition fileId="1" line="1" >
       <command>

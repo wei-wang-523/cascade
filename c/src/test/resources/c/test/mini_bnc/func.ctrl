@@ -1,5 +1,5 @@
 <controlFile>
-  <sourceFile name="funcCall_test.c" id="1" />
+  <sourceFile name="func.c" id="1" />
   <run>
     <startPosition fileId="1" line="10" />
     <endPosition fileId="1" line="14" >

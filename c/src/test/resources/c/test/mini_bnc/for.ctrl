@@ -1,5 +1,5 @@
 <controlFile>
-  <sourceFile name="forLoop_test.c" id="1" />
+  <sourceFile name="for.c" id="1" />
   <run>
     <startPosition fileId="1" line="1" />
     <wayPoint fileId="1" line="4" >
