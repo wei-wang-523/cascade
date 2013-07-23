@@ -1,0 +1,15 @@
+<controlFile>
+  <sourceFile name="subscriptArith_test.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="5" />
+    <endPosition fileId="1" line="9" >
+      <command>
+	<cascadeFunction> cascade_check	</cascadeFunction>
+	<argument><![CDATA[
+	B[0] == A[0] + A[1]
+	]]>
+	</argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

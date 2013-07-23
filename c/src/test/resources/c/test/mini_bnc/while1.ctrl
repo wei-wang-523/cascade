@@ -1,0 +1,21 @@
+<controlFile>
+  <sourceFile name="whileLoop_test.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="1" />
+    <wayPoint fileId="1" line="4" >
+      <loop iterTimes="2" />
+    </wayPoint>
+    <wayPoint fileId="1" line="8" >
+      <loop iterTimes="2" />
+    </wayPoint>
+    <endPosition fileId="1" line="12" >
+      <command>
+	<cascadeFunction> cascade_check </cascadeFunction>
+	<argument><![CDATA[
+	sum == 6
+	]]>
+	</argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

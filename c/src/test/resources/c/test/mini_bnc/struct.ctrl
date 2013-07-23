@@ -1,0 +1,18 @@
+<controlFile>
+  <sourceFile name="struct_test.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="8" />
+    <endPosition fileId="1" line="17" >
+      <command>
+	<cascadeFunction> cascade_check </cascadeFunction>
+	<argument><![CDATA[
+	r.balance == 1 
+	&& s->account_number == 2 
+	&& s->first_name[0] == 'c'
+	&& s->last_name[0] == 'd'
+	]]>
+	</argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

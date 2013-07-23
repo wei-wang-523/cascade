@@ -1,0 +1,15 @@
+<controlFile>
+  <sourceFile name="union_test.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="8" />
+    <endPosition fileId="1" line="19" >
+      <command>
+	<cascadeFunction> cascade_check </cascadeFunction>
+	<argument><![CDATA[
+	data.i == 10 && data.c == 'c'
+	]]>
+	</argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>
