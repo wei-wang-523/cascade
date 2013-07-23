@@ -57,7 +57,6 @@ import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
-import edu.nyu.cascade.prover.type.Type.DomainType;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.z3.InductiveTypeImpl.ConstructorImpl;
@@ -171,8 +170,8 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   @Override
   public ArrayTypeImpl arrayType(
       Type index, Type elem)  {
-    Preconditions.checkArgument(!DomainType.BOOLEAN
-        .equals(elem.getDomainType()));
+//    Preconditions.checkArgument(!DomainType.BOOLEAN
+//        .equals(elem.getDomainType()));
     return ArrayTypeImpl.create(this, index, elem);
   }
   
