@@ -39,6 +39,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "alloc";
   protected static final String DEFAULT_MEMORY_STATE_TYPE = "memType";
   protected static final String DEFAULT_STATE_TYPE = "stateType";
+  protected static final String TEST_VAR = "TEST_VAR";
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
@@ -251,7 +252,10 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     ExpressionManager em = getExpressionManager();
     ArrayExpression tgtArray = null;
     
-    if(isScalaType(p.getNode())) {
+    if(typeName.equals(TEST_VAR)) {
+      ArrayType arrType = em.arrayType(ptrType, em.booleanType());
+      tgtArray = em.variable(typeName, arrType, false).asArray();
+    } else if(isScalaType(p.getNode())) {
       ArrayType arrType = em.arrayType(ptrType, cellType);
       tgtArray = em.variable(typeName, arrType, false).asArray();
     } else {
@@ -473,10 +477,22 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
       RecordExpression mem_1, RecordExpression mem_0) {    
     
     RecordType memType_1 = mem_1.getType();
-    final Iterable<String> elemNames_1 = memType_1.getElementNames();
+    Iterable<String> elemNames_1 = Iterables.transform(memType_1.getElementNames(),
+        new Function<String, String>() {
+      @Override
+      public String apply(String elemName) {
+        return elemName.substring(elemName.indexOf('@')+1);
+      }
+    });
     
     RecordType memType_0 = mem_0.getType();
-    final Iterable<String> elemNames_0 = memType_0.getElementNames();
+    final Iterable<String> elemNames_0 = Iterables.transform(memType_0.getElementNames(),
+        new Function<String, String>() {
+      @Override
+      public String apply(String elemName) {
+        return elemName.substring(elemName.indexOf('@')+1);
+      }
+    });
     
     Iterable<String> commonElemNames = Iterables.filter(elemNames_1, 
         new Predicate<String>(){
@@ -492,14 +508,28 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
         Iterables.size(commonElemNames));
     
     ExpressionManager em = getExpressionManager();
+    final String typeName_1 = memType_1.getName();
+    final String typeName_0 = memType_0.getName();
+    
     for(String elemName : commonElemNames) {
-      Expression elem = em.ifThenElse(guard, mem_1.select(elemName), mem_0.select(elemName));
+      String elemName_1 = typeName_1 + '@' + elemName;
+      String elemName_0 = typeName_0 + '@' + elemName;
+      Expression elem = em.ifThenElse(guard, mem_1.select(elemName_1), mem_0.select(elemName_0));
       elems.add(elem);
       elemTypes.add(elem.getType());
-    } 
+    }
+    
+    final String typeName = Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME);
+    Iterable<String> elemNames = Iterables.transform(commonElemNames, 
+        new Function<String, String>(){
+      @Override
+      public String apply(String elemName) {
+        return elemName + '@' + typeName;
+      }
+    });
     
     RecordType recordType = em.recordType(Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME), 
-        commonElemNames, elemTypes);
+        elemNames, elemTypes);
     Expression res = em.record(recordType, elems);
     
     return res;
@@ -519,8 +549,18 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     if(elemTypes == null)
       throw new ExpressionFactoryException("Update memory type failed.");
     
-    return em.recordType(Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE), 
-        currentMemElems.keySet(), elemTypes);
+    final String typeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
+    
+    Iterable<String> elemNames = Iterables.transform(currentMemElems.keySet(), 
+        new Function<String, String>(){
+      @Override
+      public String apply(String elemName) {
+        int index = elemName.indexOf('@')+1;
+        return typeName + '@' + elemName.substring(index);
+      }
+    });
+    
+    return em.recordType(typeName, elemNames, elemTypes);
   }
   
   /**
@@ -547,7 +587,8 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(memState.isRecord());
     RecordExpression mem = memState.asRecord();
     for(String elemName : mem.getType().getElementNames()) {
-      currentMemElems.put(elemName, mem.select(elemName));
+      int index = elemName.indexOf('@') + 1;
+      currentMemElems.put(elemName.substring(index), mem.select(elemName));
     }
   }
   
@@ -561,17 +602,24 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     
     boolean declaredType = currentMemElems.containsKey(typeName);
     if(declaredType) { // previously declared variable
-      // for case: assign null to pointer int* ptr = 0;
+      // for assign null to pointer int* ptr = 0;
       if(!(isScalaType(lval.getNode())) && rval.isBitVector()) {
           Preconditions.checkArgument(rval.isConstant() 
               && Integer.parseInt(rval.getNode().getString(0)) == 0);
           rval = ((PointerExpressionEncoding) getExpressionEncoding()).getPointerEncoding().nullPtr();
+      } else if(typeName.equals(TEST_VAR)) { // for assign true/false to TEST_VAR_X 
+        rval = getExpressionEncoding().castToBoolean(rval);
       }
+      
       tgtArray =  currentMemElems.get(typeName).asArray().update(lval, rval);
       currentMemElems.put(typeName, tgtArray);
       currentMemType = memState.getType();
     } else { // newly type name
-      if(isScalaType(lval.getNode())) {
+      if(typeName.equals(TEST_VAR)) {
+        ArrayType arrType = em.arrayType(ptrType, em.booleanType());
+        tgtArray = em.variable(typeName, arrType, false).asArray()
+            .update(lval, getExpressionEncoding().castToBoolean(rval));
+      } else if(isScalaType(lval.getNode())) {
         ArrayType arrType = em.arrayType(ptrType, cellType);
         tgtArray = em.variable(typeName, arrType, false).asArray().update(lval, rval);
       } else {
@@ -645,8 +693,12 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
       String fieldName = node.getString(1);
       resName = baseName + "#" + fieldName;
     } else {
-      xtc.type.Type type = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
-      resName = getTypeName(type);
+      if(node.getName().equals("PrimaryIdentifier") && node.getString(0).startsWith(TEST_VAR)) {
+        resName = TEST_VAR;
+      } else {
+        xtc.type.Type type = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
+        resName = getTypeName(type);
+      }
     }
     return resName;
   }
