@@ -23,5 +23,6 @@ int main() {
   s->first_name[0] = 'c';
   s->last_name[0] = 'd';
   acc1* r1 = (acc1 *)s;
+  ASSERT(valid(&r1->account_number));
   return 0;
 }

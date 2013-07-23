@@ -36,9 +36,9 @@ public class MainTest {
   private static final File programs_test_location = new File(programs_c_location,
       "test");
   private static final File mini_programs_location = new File(programs_test_location,
-      "mini");
+      "mini_bnc");
   private static final File nec_programs_location = new File(programs_test_location,
-      "nec");
+      "nec_bnc");
   private static final FilenameFilter cFileFilter = new FilenameFilter() {
     public boolean accept(File dir, String name) {
       return name.endsWith(".c");

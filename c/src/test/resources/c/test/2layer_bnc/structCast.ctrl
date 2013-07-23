@@ -2,14 +2,6 @@
   <sourceFile name="structCast_test.c" id="1" />
   <run>
     <startPosition fileId="1" line="16" />
-    <endPosition fileId="1" line="26" >
-      <command>
-	<cascadeFunction> cascade_check </cascadeFunction>
-	<argument><![CDATA[
-	valid(&r1->account_number)
-	]]>
-	</argument>
-      </command>
-    </endPosition>
+    <endPosition fileId="1" line="27" />
   </run>
 </controlFile>
