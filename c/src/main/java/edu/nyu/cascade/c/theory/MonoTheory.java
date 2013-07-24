@@ -1,17 +1,18 @@
 package edu.nyu.cascade.c.theory;
 
 import edu.nyu.cascade.c.Theory;
+import edu.nyu.cascade.ir.expr.MonolithicExtendMemoryModel;
 import edu.nyu.cascade.ir.expr.MonolithicMemoryModel;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.PointerExpressionEncoding;
 import edu.nyu.cascade.prover.ExpressionManager;
 
-public class MonolithicTheory implements Theory {
+public class MonoTheory implements Theory {
   private final ExpressionEncoding encoding;
   private final MemoryModel memoryModel;
   
-  public MonolithicTheory(ExpressionManager exprManager) {
+  public MonoTheory(ExpressionManager exprManager) {
     encoding = PointerExpressionEncoding.create(exprManager);
     memoryModel = MonolithicMemoryModel.create(encoding);
   }

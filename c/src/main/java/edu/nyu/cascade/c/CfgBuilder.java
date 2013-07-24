@@ -1029,20 +1029,21 @@ public class CfgBuilder extends Visitor {
     } else if("__NONDET__".equals(funcName)) {
     } else if("free".equals(funcName)) {
       addStatement(Statement.free(node, expressionOf(node.getNode(1).getNode(0))));
-    } else if("ASSERT".equals(funcName)) {
-      if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION))
-        addStatement(Statement.assertStmt(node, expressionOf(node.getNode(1).getNode(0))));
-    } else if("ASSUME".equals(funcName)) {
-      if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION))
-        addStatement(Statement.assumeStmt(node, expressionOf(node.getNode(1).getNode(0))));
-    } else if("INVARIANT".equals(funcName)) {
-      if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION)) {
-        addStatement(Statement.assumeStmt(node, expressionOf(node.getNode(1).getNode(0))));
-        addStatement(Statement.assertStmt(node, expressionOf(node.getNode(1).getNode(0))));
-      }
     } else {
-      if(!Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION))
+      if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION)) {
+        if("ASSERT".equals(funcName)) {
+          addStatement(Statement.assertStmt(node, expressionOf(node.getNode(1).getNode(0))));
+        } else if("ASSUME".equals(funcName)) {
+          addStatement(Statement.assumeStmt(node, expressionOf(node.getNode(1).getNode(0))));
+        } else if("INVARIANT".equals(funcName)) {
+          addStatement(Statement.assumeStmt(node, expressionOf(node.getNode(1).getNode(0))));
+          addStatement(Statement.assertStmt(node, expressionOf(node.getNode(1).getNode(0))));
+        } else {
+          addStatement(Statement.functionCall(node, funExpr, argExprs));
+        } 
+      } else {
         addStatement(Statement.functionCall(node, funExpr, argExprs));
+      }
     }
     return expressionOf(node);
   }
@@ -1794,7 +1795,6 @@ public class CfgBuilder extends Visitor {
     } else {
       currentCfg.addEdge(currentBlock, entryBlock);
       currentCfg.addEdge(entryBlock, ifBranch, bodyBlock);
-      currentCfg.addEdge(bodyBlock, entryBlock);
       currentCfg.addEdge(entryBlock, elseBranch, exitBlock);
       
       /* Add the statements to the current block */
@@ -1802,6 +1802,7 @@ public class CfgBuilder extends Visitor {
       
       currentBlock = bodyBlock;
       dispatch(body);
+      currentCfg.addEdge(currentBlock, entryBlock);
     }
     
     closeCurrentBlock(entryBlock); // close the loop
@@ -1851,13 +1852,13 @@ public class CfgBuilder extends Visitor {
 
 	pushScope(initBlock, exitBlock);
 	
-	Node invariant = body.getNode(0).getNode(0);
 	if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION)
-        && invariant != null
-	    && invariant.getName().equals("FunctionCall") 
-	    && invariant.getNode(0).getString(0).equals("INVARIANT")) {
+	    && body.getNode(0) != null
+	    && body.getNode(0).getNode(0) != null
+	    && body.getNode(0).getNode(0).getName().equals("FunctionCall") 
+	    && body.getNode(0).getNode(0).getNode(0).getString(0).equals("INVARIANT")) {
 	  BasicBlock invariantBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
-	  
+	  Node invariant = body.getNode(0).getNode(0);
 	  body = body.getNode(1);
 	  
 	  currentCfg.addEdge(currentBlock, initBlock);
@@ -1914,7 +1915,6 @@ public class CfgBuilder extends Visitor {
 	  currentCfg.addEdge(currentBlock, initBlock);
 	  currentCfg.addEdge(initBlock, entryBlock);
       currentCfg.addEdge(entryBlock, ifBranch, bodyBlock);
-      currentCfg.addEdge(bodyBlock, incrBlock);
       currentCfg.addEdge(incrBlock, entryBlock);
       currentCfg.addEdge(entryBlock, elseBranch, exitBlock);
       
@@ -1925,6 +1925,7 @@ public class CfgBuilder extends Visitor {
       dispatch(init);
       currentBlock = bodyBlock;
       dispatch(body);
+      currentCfg.addEdge(currentBlock, incrBlock);
       currentBlock = incrBlock;
       dispatch(incr);
 	}

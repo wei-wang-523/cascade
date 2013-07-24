@@ -39,6 +39,7 @@ import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.ir.expr.MemoryModel;
+import edu.nyu.cascade.ir.expr.MonolithicMemoryModel;
 import edu.nyu.cascade.ir.expr.ReachMemoryModel;
 import edu.nyu.cascade.ir.impl.VarInfo;
 import edu.nyu.cascade.ir.type.IRIntegerType;
@@ -205,14 +206,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 
     public Expression visitAddressExpression(GNode node) {
       Expression content = (Expression) dispatch(node.getNode(0));
-      Expression address = content.getChild(1); //pick x from m[x]
-//      ArrayType memType = getMemoryModel().getMemoryType().asArrayType();
-//      /** In the burstall memory, the index type differs the elem type. */
-//      if(address.getType().equals(memType.getIndexType()) &&
-//          !address.getType().equals(memType.getElementType())) {
-//        address = address.asTuple().index(1);
-//      }
-        
+      Expression address = getMemoryModel().addressOf(content); 
       return address.setNode(node);
     }
 
