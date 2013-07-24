@@ -28,7 +28,7 @@ import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.RecursionStrategies;
 import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
 
-public class MonolithicMemoryModel extends AbstractMemoryModel {
+public class MonolithicExtendMemoryModel extends AbstractMemoryModel {
   protected static final String REGION_VARIABLE_NAME = "region";
   protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
   protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "alloc";
@@ -39,11 +39,11 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
    */
-  public static MonolithicMemoryModel create(
+  public static MonolithicExtendMemoryModel create(
       ExpressionEncoding encoding)
       throws ExpressionFactoryException {
     Preconditions.checkArgument(encoding instanceof PointerExpressionEncoding);
-    return new MonolithicMemoryModel(encoding);
+    return new MonolithicExtendMemoryModel(encoding);
   }
 
   private final TupleType ptrType; // pointer type = (ref-type, off-type)
@@ -82,7 +82,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
   private final List<Expression> stackRegions, heapRegions;
   private ExpressionClosure currentState = null;
 
-  private MonolithicMemoryModel(ExpressionEncoding encoding) {
+  private MonolithicExtendMemoryModel(ExpressionEncoding encoding) {
     super(encoding);
   
     this.lvals = Sets.newHashSet();
