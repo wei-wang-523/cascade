@@ -113,4 +113,9 @@ public class TemporalMemoryModel extends AbstractMemoryModel {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("clearCurrentState");    
   }
+
+  @Override
+  public Expression addressOf(Expression content) {
+    return content.getChild(1);
+  }
 }

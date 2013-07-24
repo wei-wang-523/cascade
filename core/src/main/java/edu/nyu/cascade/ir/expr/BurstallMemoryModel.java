@@ -331,6 +331,12 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   }
   
   @Override
+  public Expression addressOf(Expression content) {
+    Preconditions.checkArgument(content.getChild(1).getType().equals(ptrType));
+    return content.getChild(1);
+  }
+  
+  @Override
   public ImmutableSet<BooleanExpression> getAssumptions(Expression state) {
     ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
     try {      

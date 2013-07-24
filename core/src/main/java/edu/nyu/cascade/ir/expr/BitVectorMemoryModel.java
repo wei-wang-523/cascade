@@ -462,6 +462,12 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
     currentState = null;
   }
   
+  @Override
+  public Expression addressOf(Expression content) {
+    Preconditions.checkArgument(content.getChild(1).getType().equals(addressType));
+    return content.getChild(1);
+  }
+  
   protected void setCurrentState(Expression state, Expression statePrime) {
     Expression stateTmp = statePrime;
     if(currentState != null)    stateTmp = currentState.eval(statePrime);

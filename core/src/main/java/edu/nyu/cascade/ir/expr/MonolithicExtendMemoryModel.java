@@ -28,7 +28,7 @@ import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.RecursionStrategies;
 import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
 
-public class MonolithicMemoryModel extends AbstractMemoryModel {
+public class MonolithicExtendMemoryModel extends AbstractMemoryModel {
   protected static final String REGION_VARIABLE_NAME = "region";
   protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
   protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "alloc";
@@ -39,11 +39,11 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
    */
-  public static MonolithicMemoryModel create(
+  public static MonolithicExtendMemoryModel create(
       ExpressionEncoding encoding)
       throws ExpressionFactoryException {
     Preconditions.checkArgument(encoding instanceof PointerExpressionEncoding);
-    return new MonolithicMemoryModel(encoding);
+    return new MonolithicExtendMemoryModel(encoding);
   }
 
   private final TupleType ptrType; // pointer type = (ref-type, off-type)
@@ -82,7 +82,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
   private final List<Expression> stackRegions, heapRegions;
   private ExpressionClosure currentState = null;
 
-  private MonolithicMemoryModel(ExpressionEncoding encoding) {
+  private MonolithicExtendMemoryModel(ExpressionEncoding encoding) {
     super(encoding);
   
     this.lvals = Sets.newHashSet();
@@ -106,8 +106,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
 
     /* Create datatype */
     this.cellType = exprManager.dataType(CELL_TYPE_NAME, scalarConstr, ptrConstr);
-    this.memType = exprManager.arrayType(ptrType.getElementTypes().get(0), 
-        exprManager.arrayType(ptrType.getElementTypes().get(1), cellType));
+    this.memType = exprManager.arrayType(ptrType, cellType);
     this.stateType = exprManager.tupleType(DEFAULT_STATE_TYPE, memType, allocType);
   }
   
@@ -238,9 +237,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
   @Override
   public Expression deref(Expression state, Expression p) {
     Preconditions.checkArgument(ptrType.equals(p.getType()));
-    Expression cell = state.getChild(0).asArray()
-        .index(p.asTuple().index(0)).asArray()
-        .index(p.asTuple().index(1));
+    Expression cell = state.getChild(0).asArray().index(p);
     
     if(isScalarType(p.getNode())) {
       return cell.asInductive().select(scalarSel);
@@ -320,7 +317,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
         }
         
       } else if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
-        throw new UnsupportedOperationException("--order-alloc is not supported in monolithic memory model");
+        throw new UnsupportedOperationException("--order-alloc is not supported in burstall memory model");
       }
     } catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
@@ -425,10 +422,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
   
   @Override
   public Expression addressOf(Expression content) {
-    Expression cellVal = content.getChild(0);
-    Expression off = cellVal.getChild(1);
-    Expression ref = cellVal.getChild(0).getChild(1);
-    return getExpressionManager().tuple(ptrType, ref, off);
+    return content.getChild(0).getChild(1);
   }
   
   private Type getRefType() {
@@ -454,13 +448,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
       cellVal = em.construct(ptrConstr, rval);
     }
     
-    Expression refExpr = lval.asTuple().index(0);
-    Expression offExpr = lval.asTuple().index(1);
-    
-    Expression block = memory.asArray().index(refExpr);
-    Expression blockPrime = block.asArray().update(offExpr, cellVal);
-    
-    return memory.asArray().update(refExpr, blockPrime);    
+    return memory.asArray().update(lval, cellVal);    
   }
   
   private void setCurrentState(Expression state, Expression statePrime) {

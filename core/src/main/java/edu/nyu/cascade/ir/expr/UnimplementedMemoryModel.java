@@ -130,4 +130,10 @@ public class UnimplementedMemoryModel implements MemoryModel {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("clearCurrentState");    
   }
+
+  @Override
+  public Expression addressOf(Expression content) {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("addressOf");    
+  }
 }

@@ -338,18 +338,26 @@ public class BurstallExtendMemoryModel extends AbstractMemoryModel {
   }
   
   @Override
+  public Expression addressOf(Expression content) {
+    Preconditions.checkArgument(content.getChild(1).getType().equals(ptrType));
+    return content.getChild(1);
+  }
+  
+  @Override
   public ImmutableSet<BooleanExpression> getAssumptions(Expression state) {
     ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
     try {
       ExpressionManager exprManager = getExpressionManager();
       PointerExpressionEncoding encoding = (PointerExpressionEncoding) getExpressionEncoding();
       
-      /* Assume all the scala type index variables has constant values in memory */
+      /* Assume all the scalar type index variables has constant values in memory */
       Expression indexVar = exprManager.variable("indexVar", idxType, true);
       List<BooleanExpression> disjs = Lists.newArrayListWithCapacity(scalaTypeVars.size());
       for(VariableExpression typeVar : scalaTypeVars)
         disjs.add(indexVar.asTuple().index(0).eq(typeVar));
       
+      /* Assume for all index variable, if its type is scalar type, then its value tuple should 
+       * have constant-ref variable as first argument. */
       BooleanExpression boolExpr = exprManager.forall(indexVar, 
           exprManager.implies(exprManager.or(disjs), 
               state.getChild(0).asArray().index(indexVar).asTuple().index(0).eq(constRefVar)));

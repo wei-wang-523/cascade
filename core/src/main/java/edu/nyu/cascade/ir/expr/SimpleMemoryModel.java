@@ -176,6 +176,11 @@ public class SimpleMemoryModel extends AbstractMemoryModel {
   }
   
   @Override
+  public Expression addressOf(Expression content) {
+    return content.getChild(1);
+  }
+  
+  @Override
   public VariableExpression createLval(String name) {
     ExpressionManager exprManager = getExpressionManager();    
     String varName = name.substring(8);

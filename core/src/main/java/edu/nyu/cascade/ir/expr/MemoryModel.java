@@ -123,4 +123,6 @@ public interface MemoryModel {
    */
   Expression createLval(String name);
 
+  Expression addressOf(Expression content);
+
 }
