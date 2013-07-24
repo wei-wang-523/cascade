@@ -1,7 +1,6 @@
 package edu.nyu.cascade.c.theory;
 
 import edu.nyu.cascade.c.Theory;
-import edu.nyu.cascade.ir.expr.MonolithicExtendMemoryModel;
 import edu.nyu.cascade.ir.expr.MonolithicMemoryModel;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
