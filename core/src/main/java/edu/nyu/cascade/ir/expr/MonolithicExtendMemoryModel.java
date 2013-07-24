@@ -28,7 +28,7 @@ import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.RecursionStrategies;
 import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
 
-public class MonolithicExtendMemoryModel extends AbstractMemoryModel {
+public class MonolithicMemoryModel extends AbstractMemoryModel {
   protected static final String REGION_VARIABLE_NAME = "region";
   protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
   protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "alloc";
@@ -39,11 +39,11 @@ public class MonolithicExtendMemoryModel extends AbstractMemoryModel {
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
    */
-  public static MonolithicExtendMemoryModel create(
+  public static MonolithicMemoryModel create(
       ExpressionEncoding encoding)
       throws ExpressionFactoryException {
     Preconditions.checkArgument(encoding instanceof PointerExpressionEncoding);
-    return new MonolithicExtendMemoryModel(encoding);
+    return new MonolithicMemoryModel(encoding);
   }
 
   private final TupleType ptrType; // pointer type = (ref-type, off-type)
@@ -82,7 +82,7 @@ public class MonolithicExtendMemoryModel extends AbstractMemoryModel {
   private final List<Expression> stackRegions, heapRegions;
   private ExpressionClosure currentState = null;
 
-  private MonolithicExtendMemoryModel(ExpressionEncoding encoding) {
+  private MonolithicMemoryModel(ExpressionEncoding encoding) {
     super(encoding);
   
     this.lvals = Sets.newHashSet();
@@ -106,7 +106,8 @@ public class MonolithicExtendMemoryModel extends AbstractMemoryModel {
 
     /* Create datatype */
     this.cellType = exprManager.dataType(CELL_TYPE_NAME, scalarConstr, ptrConstr);
-    this.memType = exprManager.arrayType(ptrType, cellType);
+    this.memType = exprManager.arrayType(ptrType.getElementTypes().get(0), 
+        exprManager.arrayType(ptrType.getElementTypes().get(1), cellType));
     this.stateType = exprManager.tupleType(DEFAULT_STATE_TYPE, memType, allocType);
   }
   
@@ -237,7 +238,9 @@ public class MonolithicExtendMemoryModel extends AbstractMemoryModel {
   @Override
   public Expression deref(Expression state, Expression p) {
     Preconditions.checkArgument(ptrType.equals(p.getType()));
-    Expression cell = state.getChild(0).asArray().index(p);
+    Expression cell = state.getChild(0).asArray()
+        .index(p.asTuple().index(0)).asArray()
+        .index(p.asTuple().index(1));
     
     if(isScalarType(p.getNode())) {
       return cell.asInductive().select(scalarSel);
@@ -317,7 +320,7 @@ public class MonolithicExtendMemoryModel extends AbstractMemoryModel {
         }
         
       } else if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
-        throw new UnsupportedOperationException("--order-alloc is not supported in burstall memory model");
+        throw new UnsupportedOperationException("--order-alloc is not supported in monolithic memory model");
       }
     } catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
@@ -422,7 +425,10 @@ public class MonolithicExtendMemoryModel extends AbstractMemoryModel {
   
   @Override
   public Expression addressOf(Expression content) {
-    return content.getChild(0).getChild(1);
+    Expression cellVal = content.getChild(0);
+    Expression off = cellVal.getChild(1);
+    Expression ref = cellVal.getChild(0).getChild(1);
+    return getExpressionManager().tuple(ptrType, ref, off);
   }
   
   private Type getRefType() {
@@ -445,10 +451,22 @@ public class MonolithicExtendMemoryModel extends AbstractMemoryModel {
     if(isScalarType(lval.getNode())) {
       cellVal = em.construct(scalarConstr, rval);
     } else {
+      if(rval.isBitVector()) {
+        assert(rval.isConstant() 
+            && Integer.parseInt(rval.getNode().getString(0)) == 0);
+        rval = ((PointerExpressionEncoding) getExpressionEncoding())
+            .getPointerEncoding().nullPtr();
+      }
       cellVal = em.construct(ptrConstr, rval);
     }
     
-    return memory.asArray().update(lval, cellVal);    
+    Expression refExpr = lval.asTuple().index(0);
+    Expression offExpr = lval.asTuple().index(1);
+    
+    Expression block = memory.asArray().index(refExpr);
+    Expression blockPrime = block.asArray().update(offExpr, cellVal);
+    
+    return memory.asArray().update(refExpr, blockPrime);    
   }
   
   private void setCurrentState(Expression state, Expression statePrime) {

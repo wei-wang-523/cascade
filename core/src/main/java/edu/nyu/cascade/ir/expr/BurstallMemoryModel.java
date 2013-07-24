@@ -610,7 +610,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     if(declaredType) { // previously declared variable
       // for assign null to pointer int* ptr = 0;
       if(!(isScalaType(lval.getNode())) && rval.isBitVector()) {
-          Preconditions.checkArgument(rval.isConstant() 
+          assert(rval.isConstant() 
               && Integer.parseInt(rval.getNode().getString(0)) == 0);
           rval = ((PointerExpressionEncoding) getExpressionEncoding()).getPointerEncoding().nullPtr();
       } else if(typeName.equals(TEST_VAR)) { // for assign true/false to TEST_VAR_X 
