@@ -29,7 +29,7 @@ import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.RecursionStrategies;
 import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
 
-public class BurstallExtendMemoryModel extends AbstractMemoryModel {
+public class BurstallVer1MemoryModel extends AbstractMemoryModel {
   protected static final String TYPE_NAME = "typeName";
   protected static final String REGION_VARIABLE_NAME = "region";
   protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
@@ -39,7 +39,7 @@ public class BurstallExtendMemoryModel extends AbstractMemoryModel {
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
    */
-  public static BurstallExtendMemoryModel create(
+  public static BurstallVer1MemoryModel create(
       ExpressionEncoding encoding)
       throws ExpressionFactoryException {
     Preconditions.checkArgument(encoding instanceof PointerExpressionEncoding);
@@ -55,22 +55,22 @@ public class BurstallExtendMemoryModel extends AbstractMemoryModel {
     /** array's type is (indexType, ptrType) */
     ArrayType memArrayType = exprManager.arrayType(indexType, ptrType);
 
-    return new BurstallExtendMemoryModel(encoding, memArrayType);
+    return new BurstallVer1MemoryModel(encoding, memArrayType);
   }
   
   /** Create an expression factory with the given array type to model memory. The size of the 
    * index type of the memory array (i.e., the size of a pointer) must be a multiple of the size
    * of the element type (i.e., the size of a memory word).
    */
-  public static BurstallExtendMemoryModel create(
+  public static BurstallVer1MemoryModel create(
       ExpressionEncoding encoding, 
       ArrayType memArrayType)
       throws ExpressionFactoryException {
     
-    return new BurstallExtendMemoryModel(encoding, memArrayType);
+    return new BurstallVer1MemoryModel(encoding, memArrayType);
   }
 
-  public static BurstallExtendMemoryModel create(ExpressionEncoding encoding,
+  public static BurstallVer1MemoryModel create(ExpressionEncoding encoding,
       ArrayVariableExpression memArray,
       ArrayVariableExpression allocArray) throws ExpressionFactoryException
   {
@@ -113,7 +113,7 @@ public class BurstallExtendMemoryModel extends AbstractMemoryModel {
    */
   private final Set<VariableExpression> scalaTypeVars;
 
-  private BurstallExtendMemoryModel(ExpressionEncoding encoding, ArrayType memType) {
+  private BurstallVer1MemoryModel(ExpressionEncoding encoding, ArrayType memType) {
     super(encoding);
   
     this.lvals = Sets.newHashSet();
