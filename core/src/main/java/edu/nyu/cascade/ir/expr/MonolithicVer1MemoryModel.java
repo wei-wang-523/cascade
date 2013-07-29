@@ -114,7 +114,6 @@ public class MonolithicVer1MemoryModel extends AbstractMemoryModel {
   @Override
   public TupleExpression alloc(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    // FIXME: What if element size and integer size don't agree?
     Preconditions.checkArgument(size.getType().equals( getOffType() ));
     
     ExpressionManager exprManager = getExpressionManager();
@@ -136,7 +135,6 @@ public class MonolithicVer1MemoryModel extends AbstractMemoryModel {
   @Override 
   public TupleExpression declareArray(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    // FIXME: What if element size and integer size don't agree?
     Preconditions.checkArgument(size.getType().equals( getOffType() ));
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
@@ -151,7 +149,6 @@ public class MonolithicVer1MemoryModel extends AbstractMemoryModel {
   @Override 
   public TupleExpression declareStruct(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    // FIXME: What if element size and integer size don't agree?
     Preconditions.checkArgument(size.getType().equals( getOffType() ));
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
@@ -283,7 +280,6 @@ public class MonolithicVer1MemoryModel extends AbstractMemoryModel {
   @Override
   public BooleanExpression allocated(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    // FIXME: What if element size and integer size don't agree?
     Preconditions.checkArgument(size.getType().equals( allocType.getElementType()) );
     
     ExpressionManager exprManager = getExpressionManager();

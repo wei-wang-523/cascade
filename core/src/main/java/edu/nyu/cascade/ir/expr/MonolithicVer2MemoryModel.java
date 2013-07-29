@@ -124,7 +124,6 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
   @Override
   public TupleExpression alloc(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    // FIXME: What if element size and integer size don't agree?
     Preconditions.checkArgument(size.getType().equals( cellType ));
     
     ExpressionManager exprManager = getExpressionManager();
@@ -149,7 +148,6 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
   @Override 
   public TupleExpression declareArray(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    // FIXME: What if element size and integer size don't agree?
     Preconditions.checkArgument(size.getType().equals( scalarType ));
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
@@ -164,7 +162,6 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
   @Override 
   public TupleExpression declareStruct(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    // FIXME: What if element size and integer size don't agree?
     Preconditions.checkArgument(size.getType().equals( scalarType ));
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
@@ -241,7 +238,6 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
       Expression lval,
       Expression rval) {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
-    // FIXME: What if element size and integer size don't agree?
     RecordExpression memory = updateMemState(state.getChild(0), lval, rval);
     TupleExpression statePrime = getUpdatedState(state, memory, state.getChild(1));
     
@@ -299,7 +295,6 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
       Expression state,
       Expression lval) {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
-    // FIXME: What if element size and integer size don't agree?
     Expression rval = null;
     if(isPointer(lval)) {
       rval = getExpressionEncoding().unknown();
@@ -329,7 +324,6 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
   @Override
   public BooleanExpression allocated(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    // FIXME: What if element size and integer size don't agree?
     Preconditions.checkArgument(size.getType().equals( allocType.getElementType()) );
     
     ExpressionManager exprManager = getExpressionManager();
