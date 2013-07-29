@@ -1044,7 +1044,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       } else if (e.IsITE()) {
         Preconditions.checkArgument(e.NumArgs() == 3);
         res = rebuildExpression(Kind.IF_THEN_ELSE, e, toExpressionList(e.Args()));
-      } else if (e.IsConst() && e.IsBool()) {
+      } else if (e.IsBool()) {
         res = (ExpressionImpl) toBooleanExpression(e);
       } else if (e.IsBVNumeral()) {
         int val = ((BitVecNum) e).Int();
@@ -1068,17 +1068,43 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
         Type type = toType(((DatatypeExpr) e).Sort());
         if(type instanceof TupleTypeImpl) {
           res = rebuildExpression(Kind.TUPLE, e, toExpressionList(e.Args()));
-        } 
+        } else if(type instanceof RecordTypeImpl) {
+          res = rebuildExpression(Kind.RECORD, e, toExpressionList(e.Args()));
+        } else if(type instanceof InductiveTypeImpl) {
+          res = rebuildExpression(Kind.DATATYPE_CONSTRUCT, e, toExpressionList(e.Args()));
+        } else {
+          throw new UnsupportedOperationException("Unexpected type: " + type
+              + "\n of expression " + e);
+        }
       } else if (e.FuncDecl() != null) { 
         FuncDecl func = e.FuncDecl();
         if(func != null) { // func apply expression
           Sort[] domains = func.Domain();
-          String funcName = func.Name().toString();
-          if(domains.length == 1 // tuple-index expression
-              && funcName.startsWith(domains[0].Name().toString())) {
-            Expression tupleExpr = toExpression(e.Args()[0]);
-            int idx = Integer.parseInt(funcName.substring(funcName.lastIndexOf("_") + 1));
-            res = ((TupleExpressionImpl) tupleExpr.asTuple()).index(idx);
+          if(domains.length == 1) { // might be tuple select or record select
+            Expression srcExpr = toExpression(e.Args()[0]);
+            if(srcExpr.isTuple()) {
+              String funcName = func.Name().toString();
+              int idx = Integer.parseInt(funcName.substring(funcName.lastIndexOf("@") + 1));
+              res = srcExpr.asTuple().index(idx);
+            } else if(srcExpr.isRecord()) {
+              String funcName = func.Name().toString();
+              res = srcExpr.asRecord().select(funcName);
+            } else if(srcExpr.isInductive()) {
+              String funcName = func.Name().toString();
+              InductiveType type = srcExpr.getType().asInductive();
+              Selector selector = null;
+              for(Constructor con : type.getConstructors()) {
+                for(Selector sel : con.getSelectors()) {
+                  if(funcName.equals(sel.getName())) {
+                    selector = sel; break;
+                  }
+                }
+              }
+              res = srcExpr.asInductive().select(selector);
+            } else {             
+              throw new UnsupportedOperationException("Unexpected expression: " + e
+                  + "\n expression " + e);
+            }
           } else {
             throw new UnsupportedOperationException("Unexpected expression: " + e
                 + "\n expression " + e);

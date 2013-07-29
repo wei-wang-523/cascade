@@ -82,7 +82,7 @@ public final class TupleTypeImpl extends TypeImpl implements TupleType {
     this.typeName = name;
     
     StringBuilder sb = new StringBuilder();
-    sb.append("() ( (" + typeName + "\n                          (mk-" + typeName); // Type parameter
+    sb.append("() ( (" + typeName + "\n                          (" + typeName); // Type parameter
     
     try {
       Context z3_context = em.getTheoremProver().getZ3Context();

@@ -66,8 +66,13 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
               }
           }
         }, record);
-    result.setType((Type) 
-        record.asRecord().getType().getElementTypes().toArray()[index]);
+    
+    Type argType = (Type) record.asRecord().getType().getElementTypes().toArray()[index];
+    result.setType(argType);
+    
+    FunctionDeclarator func = FunctionDeclarator.create(
+        exprManager, name, Lists.newArrayList(record.getType()), argType);
+    result.setFuncDecl(func);
     return result;
   }
 

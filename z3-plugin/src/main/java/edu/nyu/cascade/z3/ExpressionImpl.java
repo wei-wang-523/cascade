@@ -3,7 +3,6 @@ package edu.nyu.cascade.z3;
 import static edu.nyu.cascade.prover.Expression.Kind.APPLY;
 import static edu.nyu.cascade.prover.Expression.Kind.CONSTANT;
 import static edu.nyu.cascade.prover.Expression.Kind.IF_THEN_ELSE;
-import static edu.nyu.cascade.prover.Expression.Kind.SUBST;
 import static edu.nyu.cascade.prover.Expression.Kind.VARIABLE;
 import static edu.nyu.cascade.prover.Expression.Kind.NULL_EXPR;
 
@@ -106,7 +105,6 @@ public class ExpressionImpl implements Expression {
         new NullaryConstructionStrategy() {
           @Override
           public Expr apply(Context ctx) {
-            //FIXME:
             throw new TheoremProverException("Null expr is not supported in Z3");
           }
         });
@@ -209,7 +207,15 @@ public class ExpressionImpl implements Expression {
     
     try {
       Expr res = exprManager.toZ3Expr(expr).Substitute(oldArgs, newArgs);
-      return new ExpressionImpl(exprManager, SUBST, res, expr.getType(), exprManager.importExpressions(newExprs));
+      return new ExpressionImpl(exprManager, expr.getKind(), res, expr.getType(), 
+    		  exprManager.importExpressions(newExprs));
+      
+      /* 
+       * FIXME: slow when attached real children
+       */
+//      List<? extends ExpressionImpl> resChildren = exprManager.toExpressionList(res.Args());
+//      return new ExpressionImpl(exprManager, expr.getKind(), 
+//          res, expr.getType(), exprManager.importExpressions(resChildren));
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
     }   
@@ -260,6 +266,7 @@ public class ExpressionImpl implements Expression {
     setIsVariable(e.isVariable());
     setType(e.getType());
     setNode(e.getNode());
+    setFuncDecl(e.getFuncDecl());
   }
   
   /*
@@ -907,8 +914,8 @@ public class ExpressionImpl implements Expression {
     this.type = getExpressionManager().importType(type);
   }
   
-  protected void setFuncDecl(FunctionDeclarator funcDecl) {
-    this.funcDecl = funcDecl;
+  protected void setFuncDecl(FunctionType funcDecl) {
+    this.funcDecl = (FunctionDeclarator) funcDecl;
   }
 
   @Override

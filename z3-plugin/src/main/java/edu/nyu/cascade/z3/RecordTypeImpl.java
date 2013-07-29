@@ -19,7 +19,6 @@ import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.IOUtils;
-import edu.nyu.cascade.util.Identifiers;
 
 public final class RecordTypeImpl extends TypeImpl implements RecordType {
   
@@ -87,7 +86,7 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
       Iterable<String> elemNames, Iterable<? extends Type> elemTypes) {
     super(em);
     this.elementTypes = ImmutableList.copyOf(elemTypes);
-    this.typeName = Identifiers.uniquify(name);
+    this.typeName = name;
     this.elementNames = ImmutableList.copyOf(elemNames);
     
     StringBuilder sb = new StringBuilder();
@@ -107,6 +106,7 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
           z3_context.MkConstructor("mk-" + typeName, "is-" + typeName, symbols, z3Types, refs)};
       setZ3Type(z3_context.MkDatatypeSort(typeName, cons));
       sb.append(")))");
+      em.addToTypeCache(this);
       if(IOUtils.debugEnabled())
         TheoremProverImpl.debugCommand("(declare-datatypes " + sb.toString() + ")");
       if(IOUtils.tpFileEnabled())
@@ -143,8 +143,13 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
 
   @Override
   public String toString() {
-    return new StringBuilder().append(typeName).append('(')
-        .append(elementTypes).append(')').toString();
+    StringBuilder sb =  new StringBuilder();
+    sb.append(typeName).append('(');
+    for(String elementName : elementNames) {
+      sb.append('\n').append('\t').append(elementName);
+    }
+    sb.append(')');
+    return sb.toString();
   }
 
   @Override
