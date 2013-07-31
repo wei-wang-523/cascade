@@ -6,6 +6,9 @@ import java.util.Set;
 import java.util.Iterator;
 
 import xtc.tree.Node;
+import xtc.type.AliasT;
+import xtc.type.AnnotatedT;
+import xtc.type.Reference;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -33,12 +36,22 @@ import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 
+/**
+ * Burstall memory model, multiple memory arrays for various type.
+ * These arrays types map pointer type to cell type. Cell type is 
+ * union of pointer type and scalar type. The state of memory is 
+ * a record with multiple arrays for various types.
+ * 
+ * @author Wei
+ *
+ */
+
 public class BurstallMemoryModel extends AbstractMemoryModel {
-  protected static final String REGION_VARIABLE_NAME = "region";
-  protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
-  protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "alloc";
-  protected static final String DEFAULT_MEMORY_STATE_TYPE = "memType";
-  protected static final String DEFAULT_STATE_TYPE = "stateType";
+  protected static final String REGION_VARIABLE_NAME = "burstallRegion";
+  protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "burstallM";
+  protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "burstallAlloc";
+  protected static final String DEFAULT_MEMORY_STATE_TYPE = "burstallMemType";
+  protected static final String DEFAULT_STATE_TYPE = "burstallStateType";
   protected static final String TEST_VAR = "TEST_VAR";
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
@@ -423,7 +436,8 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
             elemMap.put(name, elem);
           }
           
-          Expression memPrime = exprManager.record(expr_mem_type, elemMap.values());
+          Expression memPrime = memory_mem;
+          if(!elemMap.isEmpty()) memPrime = exprManager.record(expr_mem_type, elemMap.values());
           
           /* Substitute the alloc of expr to allocPrime */
           Expression allocPrime = null;
@@ -662,49 +676,48 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     return ptrType.getElementTypes().get(1).asBitVectorType();
   }
   
-  private String getTypeName(xtc.type.Type type) {
-    if(type == null) 
-      throw new ExpressionFactoryException("Invalid type.");
-    
+  protected String getTypeName(xtc.type.Type type) {
+    Preconditions.checkArgument(type != null);    
     StringBuffer sb =  new StringBuffer();
-    type = type.resolve();
+    
     if(type.isPointer()) {
       xtc.type.PointerT pType = (xtc.type.PointerT) type;
-      sb.append('$').append(type.getName().substring(9)).append(getTypeName(pType.getType()));
+      sb.append('$').append("PointerT").append(getTypeName(pType.getType()));
     } else if(type.isArray()) {
       xtc.type.ArrayT aType = (xtc.type.ArrayT) type;
-      sb.append('$').append(type.getName().substring(9)).append(getTypeName(aType.getType()));
+      sb.append('$').append("ArrayT").append(getTypeName(aType.getType()));
     } else if(type.isStruct()) {
       sb.append('$').append(type.getName());
     } else if(type.isUnion()) {
       sb.append('$').append(type.getName());
-    } else {
-      sb.append('$').append(type.getName().substring(9));
+    } else if(type.isAnnotated()){
+      AnnotatedT annoType = (AnnotatedT) type;
+      if(annoType.hasShape()) {
+        Reference ref = annoType.getShape();
+        if(ref.hasBase() && ref.hasField()) {
+          xtc.type.Type baseType = ref.getBase().getType();
+          String fieldName = ref.getField();
+          sb.append(getTypeName(baseType)).append('#').append(fieldName);
+        } else {
+          sb.append(getTypeName(ref.getType()));
+        }
+      } else {
+        sb.append(getTypeName(annoType.getType()));
+      }
+    } else if(type.isAlias()) {
+      AliasT aliasType = (AliasT) type;
+      sb.append(getTypeName(aliasType.getType()));
     }
     return sb.toString();
   }
   
-  private String getTypeName(Node node) {
+  protected String getTypeName(Node node) {
     String resName = null;
-    if(node.getName().equals("DirectComponentSelection")) {
-      Node baseNode = node.getNode(0);
-      String baseName = getTypeName((xtc.type.Type) baseNode.getProperty
-          (xtc.Constants.TYPE));
-      String fieldName = node.getString(1);
-      resName = baseName + "#" + fieldName;
-    } else if(node.getName().equals("IndirectComponentSelection")) {
-      Node baseNode = node.getNode(0);
-      xtc.type.Type baseType = (xtc.type.Type) baseNode.getProperty(xtc.Constants.TYPE);
-      String baseName = getTypeName(((xtc.type.PointerT) baseType).getType());
-      String fieldName = node.getString(1);
-      resName = baseName + "#" + fieldName;
+    if(node.getName().equals("PrimaryIdentifier") && node.getString(0).startsWith(TEST_VAR)) {
+      resName = TEST_VAR;
     } else {
-      if(node.getName().equals("PrimaryIdentifier") && node.getString(0).startsWith(TEST_VAR)) {
-        resName = TEST_VAR;
-      } else {
-        xtc.type.Type type = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
-        resName = getTypeName(type);
-      }
+      xtc.type.Type type = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
+      resName = getTypeName(type);
     }
     return resName;
   }
