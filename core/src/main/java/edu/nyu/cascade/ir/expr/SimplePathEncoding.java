@@ -231,7 +231,7 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     Preconditions.checkArgument(Iterables.size(exprs) == Iterables.size(guards));
     ExpressionManager exprManager = getExpressionManager();
     Expression resExpr = null;
-    // have first case as default case
+    // the first case is the default case
     for(int i = 1; i < Iterables.size(guards); i++) {
       BooleanExpression guard = Iterables.get(guards, i).asBooleanExpression();
       if(i == 1) {

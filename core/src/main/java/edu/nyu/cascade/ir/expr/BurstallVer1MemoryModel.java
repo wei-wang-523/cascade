@@ -6,6 +6,10 @@ import java.util.Map;
 import java.util.Set;
 
 import xtc.tree.Node;
+import xtc.type.AliasT;
+import xtc.type.AnnotatedT;
+import xtc.type.Reference;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -29,6 +33,15 @@ import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.RecursionStrategies;
 import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
 
+/**
+ * Burstall memory model, still has a flat memory array, but has 
+ * type as a component of index. The type of array maps (type constant, 
+ * pointer type) to pointer type. Scalar value is also with pointer 
+ * type, but has $Constant as the first element - not works well.
+ * 
+ * @author Wei
+ *
+ */
 public class BurstallVer1MemoryModel extends AbstractMemoryModel {
   protected static final String TYPE_NAME = "typeName";
   protected static final String REGION_VARIABLE_NAME = "region";
@@ -519,50 +532,46 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
     return ptrType.getElementTypes().get(1).asBitVectorType();
   }
   
-  private String getTypeVarName(xtc.type.Type type) {
-    if(type == null) 
-      throw new ExpressionFactoryException("Invalid type.");
-    
+  protected String getTypeName(xtc.type.Type type) {
+    Preconditions.checkArgument(type != null);    
     StringBuffer sb =  new StringBuffer();
-    type = type.resolve();
+    
     if(type.isPointer()) {
       xtc.type.PointerT pType = (xtc.type.PointerT) type;
-      sb.append('$').append(type.getName().substring(9)).append(getTypeVarName(pType.getType()));
+      sb.append('$').append("PointerT").append(getTypeName(pType.getType()));
     } else if(type.isArray()) {
       xtc.type.ArrayT aType = (xtc.type.ArrayT) type;
-      sb.append('$').append(type.getName().substring(9)).append(getTypeVarName(aType.getType()));
+      sb.append('$').append("ArrayT").append(getTypeName(aType.getType()));
     } else if(type.isStruct()) {
       sb.append('$').append(type.getName());
     } else if(type.isUnion()) {
       sb.append('$').append(type.getName());
-    } else {
-      sb.append('$').append(type.getName().substring(9));
+    } else if(type.isAnnotated()){
+      AnnotatedT annoType = (AnnotatedT) type;
+      if(annoType.hasShape()) {
+        Reference ref = annoType.getShape();
+        if(ref.hasBase() && ref.hasField()) {
+          xtc.type.Type baseType = ref.getBase().getType();
+          String fieldName = ref.getField();
+          sb.append(getTypeName(baseType)).append('#').append(fieldName);
+        } else {
+          sb.append(getTypeName(ref.getType()));
+        }
+      } else {
+        sb.append(getTypeName(annoType.getType()));
+      }
+    } else if(type.isAlias()) {
+      AliasT aliasType = (AliasT) type;
+      sb.append(getTypeName(aliasType.getType()));
     }
     return sb.toString();
   }
   
   private VariableExpression getTypeVar(Node node) {
-    String resName = null;
-    if(node.getName().equals("DirectComponentSelection")) {
-      Node baseNode = node.getNode(0);
-      String baseName = getTypeVarName((xtc.type.Type) baseNode.getProperty
-          (xtc.Constants.TYPE));
-      String fieldName = node.getString(1);
-      resName = baseName + "#" + fieldName;
-    } else if(node.getName().equals("IndirectComponentSelection")) {
-      Node baseNode = node.getNode(0);
-      xtc.type.Type baseType = (xtc.type.Type) baseNode.getProperty(xtc.Constants.TYPE);
-      String baseName = getTypeVarName(((xtc.type.PointerT) baseType).getType());
-      String fieldName = node.getString(1);
-      resName = baseName + "#" + fieldName;
-    } else if(node.getName().equals("IndirectionExpression")) {
-      xtc.type.Type type = ((xtc.type.PointerT) node.getNode(0).getProperty(xtc.Constants.TYPE)).resolve(); 
-      resName = getTypeVarName(type);
-    } else {
-      xtc.type.Type type = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
-      resName = getTypeVarName(type);
-    }
-    if(typeMap.containsKey(resName))    return typeMap.get(resName);
+    String resName  = getTypeName((xtc.type.Type) node.getProperty(xtc.Constants.TYPE));
+    if(typeMap.containsKey(resName))    
+      return typeMap.get(resName);
+    
     VariableExpression res = getExpressionManager().variable(resName, typeNameType, false);
     typeMap.put(resName, res);
     

@@ -28,12 +28,20 @@ import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.RecursionStrategies;
 import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
 
+/**
+ * Monolithic memory mode, with a flat memory array. The array type
+ * maps pointer type to cell type, where cell type is union of pointer 
+ * type and scalar type.
+ *  
+ * @author Wei
+ *
+ */
 public class MonolithicMemoryModel extends AbstractMemoryModel {
-  protected static final String REGION_VARIABLE_NAME = "region";
-  protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
-  protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "alloc";
-  protected static final String DEFAULT_MEMORY_STATE_TYPE = "memType";
-  protected static final String DEFAULT_STATE_TYPE = "stateType";
+  protected static final String REGION_VARIABLE_NAME = "monoRegion";
+  protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "monoM";
+  protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "monoAlloc";
+  protected static final String DEFAULT_MEMORY_STATE_TYPE = "monoMemType";
+  protected static final String DEFAULT_STATE_TYPE = "monoStateType";
   protected static final String TEST_VAR = "TEST_VAR";
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
@@ -50,7 +58,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
   private final BitVectorType scalarType;
   private final ArrayType allocType; // ref-type -> off-type
   private final ArrayType memType;
-  private TupleType stateType;
+  private final TupleType stateType;
   
   private static final String CELL_TYPE_NAME = "cell";
   private static final String PTR_CONSTR_NAME = "ptr";
@@ -105,9 +113,9 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
     ptrConstr = exprManager.constructor(PTR_CONSTR_NAME, ptrSel);
 
     /* Create datatype */
-    this.cellType = exprManager.dataType(CELL_TYPE_NAME, scalarConstr, ptrConstr);
-    this.memType = exprManager.arrayType(ptrType, cellType);
-    this.stateType = exprManager.tupleType(DEFAULT_STATE_TYPE, memType, allocType);
+    cellType = exprManager.dataType(CELL_TYPE_NAME, scalarConstr, ptrConstr);
+    memType = exprManager.arrayType(ptrType, cellType);
+    stateType = exprManager.tupleType(DEFAULT_STATE_TYPE, memType, allocType);
   }
   
   @Override

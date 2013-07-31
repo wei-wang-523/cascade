@@ -37,6 +37,19 @@ import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 
+/**
+ * Monolithic memory mode, with a multiple memory arrays for multiple
+ * variables. These arrays map a offset to actual cell, where cell type 
+ * is union of pointer type and scalar type. We also have a default
+ * Merge Array, whenever an alias relation is detected among two arrays
+ * by pointer assignment, just put the (ref, array(off, cell)) into
+ * the Merge Array, where ref is picked from the pointer expression,
+ * array is picked from currentMemElems. However, it is very slow.
+ *  
+ * @author Wei
+ *
+ */
+
 public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
   protected static final String REGION_VARIABLE_NAME = "region";
   protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
@@ -111,7 +124,7 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
     this.allocType = exprManager.arrayType(refType, offType);
     
     List<String> elemNames = Lists.newArrayList(DEFAULT_MERGE_ARRAY_NAME);
-    // Array int (Array ref cell)
+    // Array ref (Array int cell)
     this.mergeArrType = exprManager.arrayType(refType, exprManager.arrayType(scalarType, cellType));
     List<? extends Type> elemTypes = Lists.newArrayList(mergeArrType);
     this.memType = exprManager.recordType(

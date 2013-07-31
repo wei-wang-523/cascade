@@ -37,6 +37,18 @@ import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 
+/**
+ * Monolithic memory mode, with a multiple memory arrays for multiple
+ * variables. These arrays map a pointer to actual cell, where cell type 
+ * is union of pointer type and scalar type. We also have a default
+ * Merge Array, whenever an alias relation is detected among two arrays
+ * by pointer assignment, just put both of them into the Merge Array.
+ * However, currently, we have no clue how to merge arrays based on smtlib.
+ *  
+ * @author Wei
+ *
+ */
+
 public class MonolithicVer3MemoryModel extends AbstractMemoryModel {
   protected static final String REGION_VARIABLE_NAME = "region";
   protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";

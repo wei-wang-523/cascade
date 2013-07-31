@@ -28,6 +28,14 @@ import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.RecursionStrategies;
 import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
 
+/**
+ * Monolithic memory mode, with a flat memory array. The array maps
+ * a reference to a nested array type which maps offset to actual 
+ * cell, where cell type is union of pointer type and scalar type.
+ *  
+ * @author Wei
+ *
+ */
 public class MonolithicVer1MemoryModel extends AbstractMemoryModel {
   protected static final String REGION_VARIABLE_NAME = "region";
   protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
