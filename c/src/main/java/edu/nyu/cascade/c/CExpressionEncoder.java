@@ -12,10 +12,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import xtc.Constants;
+import xtc.type.AnnotatedT;
 import xtc.type.BooleanT;
-import xtc.type.IntegerT;
+import xtc.type.DynamicReference;
+import xtc.type.FieldReference;
+import xtc.type.IndirectReference;
 import xtc.type.NumberT;
 import xtc.type.PointerT;
+import xtc.type.Reference;
 import xtc.type.StructOrUnionT;
 import xtc.type.StructT;
 import xtc.type.Type;
@@ -46,9 +50,7 @@ import edu.nyu.cascade.ir.type.IRType;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.VariableExpression;
-import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.util.IOUtils;
-import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.RecursionStrategies.BinaryInfixRecursionStrategy;
 import edu.nyu.cascade.util.RecursionStrategies.BinaryRecursionStrategy;
@@ -94,7 +96,7 @@ class CExpressionEncoder implements ExpressionEncoder {
       return suspend(encodeInteger(node));
     }
 
-    Expression encodeBoolean(Node node) { return encodeBoolean(node, false); }
+    Expression encodeBoolean(Node node) { return encodeBoolean(node, false).setNode((GNode) node); }
     
     Expression encodeBoolean(Node node, boolean negated) {
       Expression b = coerceToBoolean((Expression) dispatch(node));
@@ -102,7 +104,7 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
 
     Expression encodeInteger(Node node) {
-      return coerceToInteger((Expression) dispatch(node));
+      return coerceToInteger((Expression) dispatch(node)).setNode((GNode) node);
     }
 
     Expression coerceToBoolean(Expression e) {      
@@ -420,12 +422,13 @@ class CExpressionEncoder implements ExpressionEncoder {
 
     public Expression visitIntegerConstant(GNode node)
         throws ExpressionFactoryException {
-      IntegerT intType = (IntegerT) lookupType(node);
-      assert(intType != null);
+      Type type = unwrapped(lookupType(node));     
+      assert(type.isInteger());
+      
       Expression res;
-      if(intType.getConstant() != null) {
+      if(type.hasConstant()) {
         // Parse string character
-        BigInteger constVal = (BigInteger) intType.getConstant().getValue();
+        BigInteger constVal = (BigInteger) type.getConstant().getValue();
         res = encoding.integerConstant(constVal.intValue());
       } else {
         String numStr = node.getString(0);
@@ -502,7 +505,7 @@ class CExpressionEncoder implements ExpressionEncoder {
     public Expression visitPrimaryIdentifier(GNode node)
         throws ExpressionFactoryException {
       Expression binding = getLvalBinding(node);
-      Expression res = derefMemory(memory, binding, lookupType(node));
+      Expression res = derefMemory(memory, binding);
       return res.setNode(node);
     }
 
@@ -556,62 +559,37 @@ class CExpressionEncoder implements ExpressionEncoder {
       return encoding.variable(node.getString(0), IRIntegerType
           .getInstance(), false).setNode(node);
     }
+    
+    private Expression getSubscriptExpression(Node node, Expression idx) {
+      Type type = unwrapped(lookupType(node));
+      assert(type.isArray() || type.isPointer());
+
+      if(!("SubscriptExpression".equals(node.getName()))) {
+        Expression base = (Expression) dispatch(node);
+        return encoding.plus(base, idx);
+      }
+      
+      if(type.isArray()) {
+        Node nestedBaseNode = node.getNode(0);
+        Node nestedIdxNode = node.getNode(1);
+        Expression nestIdx = (Expression) dispatch(nestedIdxNode);
+        Expression factor = encoding.integerConstant((int)((ArrayT) type).getLength());
+        Expression newIdx = encoding.plus(encoding.times(nestIdx, factor), idx);
+        return getSubscriptExpression(nestedBaseNode, newIdx);    
+      } else {
+        Expression baseExpr = (Expression) dispatch(node);
+        return encoding.plus(baseExpr, idx);
+      }   
+    }
 
     public Expression visitSubscriptExpression(GNode node)
         throws ExpressionFactoryException {
       IOUtils.debug().pln(
           "APPROX: Treating pointer as char*");
-      Node base = node.getNode(0);
-      Node offset = node.getNode(1);
-      
-      Expression ptr, index, res;
-      ptr = (Expression)dispatch(base);
-      index = (Expression)dispatch(offset);
-      if(ptr.isTuple() && ptr.getArity() == 2 
-          && ptr.getChild(0).isTuple()
-          && ptr.getChild(1).isTuple()) {
-        index = encoding.plus(ptr.getChild(1), index);
-        ptr = ptr.getChild(0);
-      }
-      
-      /*  Get the type of base node, if cannot pick the type
-       *  from previously built type database arrayType.
-       */
-      Type t = arrayType.get(base);
-      if(t == null)     t = lookupType(base);
-      String subscriptType = "subscriptType";
-      
-      if(t.isArray()) {
-        ArrayT arrayT = t.toArray();
-        Expression bound = encoding.integerConstant((int)arrayT.getLength());
-        Type cellType = arrayT.getType();
-        if(cellType.isArray()) {
-          index = encoding.times(index, bound);
-          arrayType.put(node, cellType);
-          TupleType tupleType = getExpressionManager().tupleType(
-              Identifiers.uniquify(subscriptType), 
-              ptr.getType(), index.getType());
-          res = getExpressionManager().tuple(tupleType, ptr, index);
-        } else {
-          Expression sizeOfType = encoding.integerConstant(sizeofType(cellType));
-          if(ptr.isTuple() && ptr.getType().asTuple().getName()
-        		  .startsWith(subscriptType)) {
-            ptr = encoding.plus(ptr.getChild(0), ptr.getChild(1));
-          }
-          res = encoding.plus(ptr, encoding.times(index, sizeOfType));
-          res = derefMemory(memory, res.setNode(node), cellType);
-          arrayType.clear();
-        }
-      } else if(t.isPointer()) {
-        PointerT pointerT = t.toPointer();
-        Type cellType = pointerT.getType();
-        Expression sizeOfType = encoding.integerConstant(sizeofType(cellType));
-        res = encoding.plus(ptr, encoding.times(index, sizeOfType));
-        res = derefMemory(memory, res.setNode(node), t);
-      } else {
-        res = encoding.unknown();
-      }
-      return res.setNode(node);
+      Node baseNode = node.getNode(0);
+      Expression index = (Expression) dispatch (node.getNode(1));
+      Expression loc = getSubscriptExpression(baseNode, index).setNode(node);
+      return derefMemory(memory, loc).setNode(node);
     }
     
     public Expression visitSizeofExpression(GNode node)
@@ -725,39 +703,38 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitDirectComponentSelection(GNode node) 
         throws ExpressionFactoryException {
-      Node base = node.getNode(0);
-      String fieldName = node.getString(1);
-      Type baseType = lookupType(base);
-      if(!baseType.isStruct() && !baseType.isUnion())
-        throw new ExpressionFactoryException("Invalid type: " + base.toString());
-      // r.balance = addr_of_r + offset(balance), not m[addr_of_r] + offset(balance)
-      Expression baseLoc = (Expression) lvalVisitor.dispatch(node.getGeneric(0));
-      
+      Type type = lookupType(node);
+      assert(type.hasShape());
+      Reference ref = type.getShape();
+      assert(ref.hasBase() && ref.hasField());
+      Type baseType = ref.getBase().getType();   
+      String fieldName = ref.getField();
       int offset = getOffsetOfField(baseType, fieldName);
       if(offset == -1) 
         throw new ExpressionFactoryException("Invalid offset: " + fieldName);
+      Expression baseLoc = (Expression) lvalVisitor.dispatch(node.getNode(0));
       Expression offsetExpr = encoding.integerConstant(offset);
       Expression resLoc = encoding.plus(baseLoc, offsetExpr);
-      Expression res = derefMemory(memory, 
-          resLoc.setNode(node), lookupType(node));
+      Expression res = derefMemory(memory, resLoc.setNode(node));
       return res.setNode(node);
     }
     
     public Expression visitIndirectComponentSelection(GNode node) 
         throws ExpressionFactoryException {
-      Node base = node.getNode(0);
-      String fieldName = node.getString(1);
-      Expression baseLoc = (Expression)dispatch(base);
-      Type baseType = lookupType(base).resolve();
-      if(!baseType.isPointer())
-        throw new ExpressionFactoryException("Invalid type: " + base.toString());
+      Type type = lookupType(node);
+      assert(type.hasShape());
+      Reference ref =  type.getShape();
+      assert(ref.hasBase() && ref.hasField());
+      Type baseType = ref.getBase().getType();   
+      String fieldName = ref.getField();
       int offset = getOffsetOfField(baseType, fieldName);
       if(offset == -1) 
         throw new ExpressionFactoryException("Invalid offset: " + fieldName);
+      
+      Expression baseLoc = (Expression)dispatch(node.getNode(0));
       Expression offsetExpr = encoding.integerConstant(offset);
       Expression resLoc = encoding.plus(baseLoc, offsetExpr);
-      Expression res = derefMemory(memory, 
-          resLoc.setNode(node), lookupType(node));
+      Expression res = derefMemory(memory, resLoc.setNode(node));
       return res.setNode(node);
     }
   }
@@ -812,72 +789,51 @@ class CExpressionEncoder implements ExpressionEncoder {
       return (Expression) exprVisitor.dispatch(node);
     }
     
+    private Expression getSubscriptExpression(Node node, Expression idx) {
+      Type type = unwrapped(lookupType(node));
+      assert(type.isArray() || type.isPointer());
+
+      if(!("SubscriptExpression".equals(node.getName()))) {
+        Expression base = (Expression) exprVisitor.dispatch(node);
+        return encoding.plus(base, idx);
+      }
+      
+      if(type.isArray()) {
+        Node nestedBaseNode = node.getNode(0);
+        Node nestedIdxNode = node.getNode(1);
+        Expression nestIdx = (Expression) exprVisitor.dispatch(nestedIdxNode);
+        Expression factor = encoding.integerConstant((int)((ArrayT) type).getLength());
+        Expression newIdx = encoding.plus(encoding.times(nestIdx, factor), idx);
+        return getSubscriptExpression(nestedBaseNode, newIdx);    
+      } else {
+        Expression base = (Expression) exprVisitor.dispatch(node); 
+        return encoding.plus(base, idx);
+      }  
+    }
+    
     public Expression visitSubscriptExpression(GNode node) 
         throws ExpressionFactoryException {
       IOUtils.debug().pln(
           "APPROX: Treating pointer as char*");
-      Node base = node.getNode(0);
-      Node offset = node.getNode(1);
-      
-      Expression ptr, index, res;
-      ptr = (Expression) dispatch(base);
-      index = (Expression) exprVisitor.dispatch(offset);
-      if(ptr.isTuple() && ptr.getArity() == 2 
-          && ptr.getChild(0).isTuple()
-          && ptr.getChild(1).isTuple()) {
-        index = encoding.plus(ptr.getChild(1), index);
-        ptr = ptr.getChild(0);
-      }
-      
-      /*  Get the type of base node, if cannot pick the type
-       *  from previously built type database arrayType.
-       */
-      Type t = arrayType.get(base);
-      if(t == null)     t = lookupType(base);
-      ptr = derefMemory(memory, ptr, t);
-      String subscriptName = "subType";
-      TupleType tupleType = getExpressionManager().tupleType(subscriptName, 
-          ptr.getType(), index.getType());
-      
-      if(t.isArray()) {
-        ArrayT arrayT = t.toArray();
-        Expression bound = encoding.integerConstant((int)arrayT.getLength());
-        Type cellType = arrayT.getType();
-        if(cellType.isArray()) {
-          index = encoding.times(index, bound);
-          res = getExpressionManager().tuple(tupleType, ptr, index);
-          arrayType.put(node, cellType);
-        } else {
-          Expression sizeOfType = encoding.integerConstant(sizeofType(cellType));
-          if(ptr.isTuple() && ptr.getType().asTuple().getName().equals(subscriptName)) {
-            ptr = encoding.plus(ptr.getChild(0), ptr.getChild(1));
-          }
-          res = encoding.plus(ptr, encoding.times(index, sizeOfType));
-        }
-      } else if(t.isPointer()) {
-        PointerT pointerT = t.toPointer();
-        Type cellType = pointerT.getType();
-        Expression sizeOfType = encoding.integerConstant(sizeofType(cellType));
-        res = encoding.plus(ptr, encoding.times(index, sizeOfType));
-      } else {
-        res = encoding.unknown();
-      }
-      return res.setNode(node);
+      Node baseNode = node.getNode(0);
+      Node idxNode = node.getNode(1);
+      Expression index = (Expression) exprVisitor.dispatch(idxNode);
+      return getSubscriptExpression(baseNode, index).setNode(node);
     }
     
     public Expression visitDirectComponentSelection(GNode node) 
         throws ExpressionFactoryException {
-      Node base = node.getNode(0);
-      Type baseType = lookupType(base);
-      if(!baseType.isStruct() && !baseType.isUnion())
-        throw new ExpressionFactoryException("Invalid type: " + base.toString());
-      String fieldName = node.getString(1);
+      Type type = lookupType(node);
+      assert(type.hasShape());
+      Reference ref = type.getShape();
+      Type baseType = ref.getBase().getType();   
+      String fieldName = ref.getField();
       int offset = getOffsetOfField(baseType, fieldName);
       if(offset == -1) 
         throw new ExpressionFactoryException("Invalid offset: " + fieldName);
       Expression offsetExpr = encoding.integerConstant(offset);
       // r.balance = addr_of_r + offset(balance), not m[addr_of_r] + offset(balance)
-      Expression baseLoc = (Expression) dispatch(base);
+      Expression baseLoc = (Expression) dispatch(node.getNode(0));
       return encoding.plus(baseLoc, offsetExpr).setNode(node);
     }
     
@@ -887,15 +843,18 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitIndirectComponentSelection(GNode node) 
         throws ExpressionFactoryException {
-      Node base = node.getNode(0);
-      Type baseType = lookupType(base).toPointer().getType().resolve();
-      String fieldName = node.getString(1);
+      Type type = lookupType(node);
+      assert(type.hasShape());
+      Reference ref = type.getShape();
+      assert(ref.hasBase() && ref.hasField());
+      Type baseType = ref.getBase().getType();
+      String fieldName = ref.getField();
       int offset = getOffsetOfField(baseType, fieldName);
       if(offset == -1) 
         throw new ExpressionFactoryException("Invalid offset: " + fieldName);
       Expression offsetExpr = encoding.integerConstant(offset);
-      Expression basePtr = (Expression) dispatch(base);
-      Expression baseLoc = derefMemory(memory, basePtr, baseType);
+      Expression basePtr = (Expression) dispatch(node.getNode(0));
+      Expression baseLoc = derefMemory(memory, basePtr);
       return encoding.plus(baseLoc, offsetExpr).setNode(node);
     }
 
@@ -909,8 +868,66 @@ class CExpressionEncoder implements ExpressionEncoder {
         throws ExpressionFactoryException {
       Expression res = (Expression) dispatch(node.getNode(1));
       return res.setNode(node);
-    }
-    
+    } 
+  }
+  
+  
+  @Override
+  public void setScope(Scope scope) {
+    this.scope = scope;
+  }
+  
+  @Override
+  public ExpressionClosure toBoolean(Node node) {
+    return new ExpressionVisitor().toBoolean(node);
+  }
+
+  @Override
+  public ExpressionClosure toBoolean(Node node, boolean negated) {
+    return new ExpressionVisitor().toBoolean(node,negated);
+  }
+
+  @Override
+  public ExpressionClosure toInteger(Node node) {
+    return new ExpressionVisitor().toInteger(node);
+  }
+
+  @Override
+  public ExpressionClosure toLval(Node node) {
+    return new LvalVisitor().toLval(node);
+  }
+
+  @Override
+  public ExpressionClosure toBoolean(Node node, Scope scope) {
+    return toBoolean(node,false,scope);
+  }
+
+  @Override
+  public ExpressionClosure toBoolean(Node node, boolean negated,
+      Scope scope) {
+    Scope oldScope = this.scope;
+    setScope(scope);
+    ExpressionClosure closure = toBoolean(node,negated);
+    setScope(oldScope);
+    return closure;
+  }
+
+  @Override
+  public ExpressionClosure toInteger(Node node, Scope scope) {
+    Scope oldScope = this.scope;
+    setScope(scope);
+    ExpressionClosure closure = toInteger(node);
+    setScope(oldScope);
+    return closure;
+  }
+
+  @Override
+  public ExpressionClosure toLval(Node node, Scope scope) {
+    Scope oldScope = this.scope;
+    setScope(scope);
+    ExpressionClosure closure = toLval(node);
+    setScope(oldScope);
+    return closure;
   }
 
   public static CExpressionEncoder create(
@@ -925,7 +942,6 @@ class CExpressionEncoder implements ExpressionEncoder {
   private final ExpressionEncoding encoding;
   private final MemoryModel memoryModel;
   private final Map<File, ? extends SymbolTable> symbolTables;
-  private Map<GNode, Type> arrayType;
   private Map<String, Type> typeTable;
 
   private Scope scope;
@@ -939,7 +955,6 @@ class CExpressionEncoder implements ExpressionEncoder {
     this.encoding = encoding;
     this.memoryModel = memoryModel;
     this.symbolTables = symbolTables;
-    arrayType = Maps.newHashMap();
     typeTable = Maps.newHashMap();
     scope = null;
   }
@@ -1016,28 +1031,22 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
   }
   
-  public Expression derefMemory(Expression memory, Expression lvalExpr, Type t) {
-    Expression resExpr;
-    GNode srcNode = lvalExpr.getNode();
+  public Expression derefMemory(Expression memory, Expression lvalExpr) {
     /* lvalExpr's node with no type info, get it for BurstallMemoryModel analysis. */
-    lookupType(srcNode);
+    Expression resExpr = null;
     
-    if(t.isArray())
+    GNode srcNode = lvalExpr.getNode();
+    Type t = unwrapped(lookupType(srcNode));
+    if(t.isArray() || t.isStruct() || t.isUnion())
       resExpr = lvalExpr;
     else
-      resExpr = getMemoryModel().deref(memory, lvalExpr);
-    
+      resExpr = getMemoryModel().deref(memory, lvalExpr);   
     return resExpr.setNode(srcNode);
   }
   
   private int sizeofType(Type t) {
     int res = 0;
-    t = t.resolve();
-    
-    while(t.isAlias() || t.isAnnotated()) {
-      t = t.deannotate();
-      t = t.resolve();
-    }
+    t = unwrapped(t);
     
     if (t.isInteger()) 
       res = 1;
@@ -1065,22 +1074,41 @@ class CExpressionEncoder implements ExpressionEncoder {
     return res;
   }
   
-  private Type getTypeOfField(Type t, String name) {
-    if(t.isPointer()) 
-      t = (t.toPointer()).getType().resolve();
-    if(!(t.isStruct() || t.isUnion()))
-        throw new ExpressionFactoryException("Invalid type: " + t.toString());
-    StructOrUnionT struct = t.toStructOrUnion();
-    Type resType = null;
-    for(VariableT elem : struct.getMembers()) {
-      if(elem.getName().equals(name)) {
-        resType = elem.resolve();
+  private Type getTypeOfField(Node baseNode, String name) {
+    Type baseType = unwrapped(lookupType(baseNode));
+    Type structType = baseType;
+    if(baseType.isPointer()) 
+      structType = unwrapped(baseType.toPointer().getType());
+    assert(structType.isStruct() || structType.isUnion());
+    
+    Type fieldType = null;
+    for(VariableT elem : structType.toStructOrUnion().getMembers()) {
+      if(name.equals(elem.getName())) {
+        fieldType = elem;
         break;
       }
     }
-    if(resType == null) 
-      throw new ExpressionFactoryException("Invalid type: " + t.toString() 
-          + "with field" + name);
+    
+    assert(fieldType != null);
+    AnnotatedT resType = new AnnotatedT(fieldType);
+    
+    DynamicReference dynaRef = null;
+    if("PrimaryIdentifier".equals(baseNode.getName())) {
+      String baseName = baseNode.getString(0);
+      dynaRef = new DynamicReference(baseName, baseType);
+    } else {
+      dynaRef = new DynamicReference(baseType);
+    }
+    
+    FieldReference fldRef = null;
+    if(baseType.isPointer()) {
+      IndirectReference indRef = new IndirectReference(dynaRef);
+      fldRef = new FieldReference(indRef, name);
+    } else {
+      fldRef = new FieldReference(dynaRef, name);
+    }
+    
+    resType.shape(fldRef);
     return resType;
   }
   
@@ -1121,6 +1149,14 @@ class CExpressionEncoder implements ExpressionEncoder {
     return -1;
   }
 
+  private Type unwrapped(Type type) {
+    while(type.isAnnotated() || type.isAlias() || type.isVariable()) {
+      type = type.resolve();
+      type = type.deannotate();
+    }
+    return type;
+  }
+  
   private Type lookupType(Node node) throws ExpressionFactoryException {
     Type type = (Type) node.getProperty(xtc.Constants.TYPE);
     /* For the node in the control file that newly appeared in the 
@@ -1146,20 +1182,22 @@ class CExpressionEncoder implements ExpressionEncoder {
              if(symbolTable.lookup(node.getString(0)).getType().equals(
                  edu.nyu.cascade.ir.type.IRIntegerType.getInstance())) {
                type = xtc.type.IntegerT.INT;
+             } else {
+               throw new ExpressionFactoryException("Type not found: " + node.toString());
              }
           }
         } else if("SubscriptExpression".equals(name)) {
-          Type childType = lookupType(node.getNode(0));
+          Type childType = unwrapped(lookupType(node.getNode(0)));
           if(childType.isPointer())  type = childType.toPointer().getType();
           if(childType.isArray())    type = childType.toArray().getType();     
         } else if("AddressExpression".equals(name)) {
           type = new PointerT(lookupType(node.getNode(0)));
         } else if("IndirectionExpression".equals(name)) {
-          Type childType = lookupType(node.getNode(0));
+          Type childType = unwrapped(lookupType(node.getNode(0)));
           if(childType.isPointer())  type = childType.toPointer().getType();
         } else if("AdditiveExpression".equals(name)) {
-          Type childType_a = lookupType(node.getNode(0));
-          Type childType_b = lookupType(node.getNode(2));
+          Type childType_a = unwrapped(lookupType(node.getNode(0)));
+          Type childType_b = unwrapped(lookupType(node.getNode(2)));
           if(childType_a.isPointer() || childType_b.isPointer())
             type = childType_a.isPointer() ? childType_a : childType_b;
           else if(childType_a.isFloat() || childType_b.isFloat())
@@ -1174,14 +1212,14 @@ class CExpressionEncoder implements ExpressionEncoder {
           type = NumberT.CHAR;
         } else if("DirectComponentSelection".equals(name) 
             || "IndirectComponentSelection".equals(name)) {
-          type = getTypeOfField(lookupType(node.getNode(0)), node.getString(1));
+          type = getTypeOfField(node.getNode(0), node.getString(1));
         } else if("EqualityExpression".equals(name) 
             || "RelationalExpression".equals(name)
             || name.startsWith("Logical")) {
           type = new BooleanT();
         } else if("MultiplicativeExpression".equals(name)) {
-          Type childType_a = lookupType(node.getNode(0));
-          Type childType_b = lookupType(node.getNode(2));
+          Type childType_a = unwrapped(lookupType(node.getNode(0)));
+          Type childType_b = unwrapped(lookupType(node.getNode(2)));
           if(childType_a.isFloat() || childType_b.isFloat())
             type = childType_a.isFloat() ? childType_a : childType_b;
           else
@@ -1220,74 +1258,9 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
     
     if (type == null)
-        throw new ExpressionFactoryException("Type not found: " + node.toString());
-      
-    type = type.resolve(); // in case of unexpected type
-    
-    while(type.isAlias() || type.isAnnotated() || type.isVariable()) {
-      type = type.deannotate();
-      type = type.resolve();
-    }
+      throw new ExpressionFactoryException("Type not found: " + node.toString());
     
     node.setProperty(xtc.Constants.TYPE, type);
     return type;
-  }
-  
-  @Override
-  public void setScope(Scope scope) {
-    this.scope = scope;
-  }
-  
-  @Override
-  public ExpressionClosure toBoolean(Node node) {
-    return new ExpressionVisitor().toBoolean(node);
-  }
-
-  @Override
-  public ExpressionClosure toBoolean(Node node, boolean negated) {
-    return new ExpressionVisitor().toBoolean(node,negated);
-  }
-
-  @Override
-  public ExpressionClosure toInteger(Node node) {
-    return new ExpressionVisitor().toInteger(node);
-  }
-
-  @Override
-  public ExpressionClosure toLval(Node node) {
-    return new LvalVisitor().toLval(node);
-  }
-
-  @Override
-  public ExpressionClosure toBoolean(Node node, Scope scope) {
-    return toBoolean(node,false,scope);
-  }
-
-  @Override
-  public ExpressionClosure toBoolean(Node node, boolean negated,
-      Scope scope) {
-    Scope oldScope = this.scope;
-    setScope(scope);
-    ExpressionClosure closure = toBoolean(node,negated);
-    setScope(oldScope);
-    return closure;
-  }
-
-  @Override
-  public ExpressionClosure toInteger(Node node, Scope scope) {
-    Scope oldScope = this.scope;
-    setScope(scope);
-    ExpressionClosure closure = toInteger(node);
-    setScope(oldScope);
-    return closure;
-  }
-
-  @Override
-  public ExpressionClosure toLval(Node node, Scope scope) {
-    Scope oldScope = this.scope;
-    setScope(scope);
-    ExpressionClosure closure = toLval(node);
-    setScope(oldScope);
-    return closure;
   }
 }
