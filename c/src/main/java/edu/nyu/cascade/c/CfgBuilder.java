@@ -171,7 +171,10 @@ public class CfgBuilder extends Visitor {
   private Deque<Scope> scopes;
   private Map<String, BasicBlock> labeledBlocks;
   private List<xtc.util.SymbolTable.Scope> nestedScopes;
-  
+  /**
+   * Store the alias name of struct type or union type
+   */
+  private Map<Type, String> typeAliasMap;   
   /**
    * Whether to treat compoundStatement '{...}' as a new scope in the symbolTable;
    * it's thanks to the functionDefinition and forStatement -- these two kinds of
@@ -191,6 +194,7 @@ public class CfgBuilder extends Visitor {
     compoStmtAsScope = true;
     labeledBlocks = Maps.newHashMap();
     globalStmts = Maps.newHashMap();
+    typeAliasMap = Maps.newHashMap();
     TEST_VAR_POSTFIX = 0;
     MALLOC_VAR_POSTFIX = 0;
     STRING_VAR_POSTFIX = 0;
@@ -553,55 +557,62 @@ public class CfgBuilder extends Visitor {
     return stringNode; 
   }
   
+  private Type unwrapped(Type type) {
+    while(type.isAlias() || type.isAnnotated() || type.isVariable()) {
+      type = type.resolve();
+      type = type.deannotate();
+    }
+    return type;
+  }
+  
   private Type lookupType(Node node) throws ExpressionFactoryException {
     Type type = (Type) node.getProperty(xtc.Constants.TYPE);
-    type = type.resolve();
     if (type == null)
       throw new ExpressionFactoryException("Type not found: " + node);
     return type;
   }
   
   private boolean isAliasName(Node node) throws ExpressionFactoryException {
-    if(node.getName().equals("SimpleDeclarator")) {
-      String name = (String) node.get(0);
-      Type type = symbolTable.lookupType(name).deannotate();
-      if(type.isAlias()) {
-        String aliasName = type.toAlias().getName();
-        return aliasName.equals(name);
-      }
-    }
-    return false;
+    if(!"SimpleDeclarator".equals(node.getName()))  return false;
+    
+    String name = node.getString(0);
+    Type type = symbolTable.lookupType(name);
+    if(!type.isAlias())     return false;
+    
+    String aliasName = type.toAlias().getName();
+    typeAliasMap.put(unwrapped(type), aliasName);
+    return aliasName.equals(name);
   }
   
-  private GNode getSizeofTypeNode(Type t, Node node) {
-    Location loc = node.getLocation(); 
-    while(t.isArray()) // Pick the base type of array
-      t = t.toArray().getType();
-    t = t.resolve();   // Get rid of Alias of type
+  private GNode getSizeofTypeNode(Type type, Node node) {
+    Type resType = unwrapped(type);
     
-    // Pick the base type of "unsigned baseType"
-    String type = t.toString();
-    StringBuffer typeName;
-    GNode node1;
-    
-    if(!t.isStruct() && !t.isUnion()) {
-      if(type.startsWith("unsigned "))
-        typeName = new StringBuffer(type.substring(9, type.length()));
-      else
-        typeName = new StringBuffer(type);  
-      typeName = typeName.replace(0, 1, typeName.substring(0, 1).toUpperCase());
-      node1 = GNode.create(typeName.toString());
-    } else {
-      if(t.isStruct()) {
-        typeName = new StringBuffer(type.substring(7, type.length()));
-        node1 = GNode.create("StructureTypeReference", null, typeName.toString());
-      } else {// t.isUnion()
-        typeName = new StringBuffer(type.substring(6, type.length()));
-        node1 = GNode.create("UnionTypeReference", null, typeName.toString());
+    if(resType.isArray()) { // Pick the base type of array
+      while(resType.isArray()) {
+        resType = unwrapped(resType.toArray().getType());
       }
     }
+    
+    GNode node1 = null; 
+    if(resType.isStruct()) {
+      String typeName = typeAliasMap.containsKey(resType) ? 
+          typeAliasMap.get(resType) : resType.getName();
+      node1 = GNode.create("StructureTypeReference", null, typeName);
+    } else if(resType.isUnion()) {
+      String typeName = typeAliasMap.containsKey(resType) ? 
+          typeAliasMap.get(resType) : resType.getName();
+      node1 = GNode.create("UnionTypeReference", null, typeName);
+    } else {
+      StringBuilder sb = new StringBuilder();
+      String typeName = resType.toString();
+      sb.append(Character.toUpperCase(typeName.charAt(0)));
+      sb.append(typeName.substring(1));
+      node1 = GNode.create(sb.toString());
+    }
+    
+    Location loc = node.getLocation(); 
     node1.setLocation(loc);
-    node1.setProperty(xtc.Constants.TYPE, t);
+    node1.setProperty(xtc.Constants.TYPE, resType);
 
     GNode node2 = GNode.create("SpecifierQualifierList", node1);
     node2.setLocation(loc);
@@ -1067,7 +1078,7 @@ public class CfgBuilder extends Visitor {
     Guard elseBranch = ifBranch.negate();
 
     BasicBlock entryBlock = currentCfg.newLoopBlock(node.getLocation(), 
-    		symbolTable.getCurrentScope());
+            symbolTable.getCurrentScope());
     BasicBlock bodyBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
     BasicBlock exitBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
 
@@ -1270,45 +1281,48 @@ public class CfgBuilder extends Visitor {
 
   public void visitInitializedDeclarator(GNode node) {
     /* If there is an initializer, add as an assignment statement */    
-    Node var = node.getNode(1);
-    CExpression varExpr = recurseOnExpression(var);
+    Node varNode = node.getNode(1);
+    CExpression varExpr = recurseOnExpression(varNode);
     Statement stmt;
     
-    if (var.getName().equals("ArrayDeclarator")) {
-      if(!isAliasName(var.getNode(0))) {
-        CExpression baseExpr = expressionOf(varExpr.getSourceNode().getNode(1).getNode(0));
-        CExpression sizeExpr = expressionOf(varExpr.getSourceNode().getNode(1).getNode(1));
-        Statement declareStmt = Statement.declareArray(varExpr.getSourceNode(), baseExpr, sizeExpr);
+    if ("ArrayDeclarator".equals(varNode.getName())) {
+      if(!isAliasName(varNode.getNode(0))) {
+        Node varNodePrime = varExpr.getSourceNode();
+        CExpression baseExpr = expressionOf(varNodePrime.getNode(1).getNode(0));
+        CExpression sizeExpr = expressionOf(varNodePrime.getNode(1).getNode(1));
+        Statement declareStmt = Statement.declareArray(varNodePrime, baseExpr, sizeExpr);
         addStatementGlobalOrLocal(declareStmt);
         if(null != node.get(4)) {
           GNode valNodeList = node.getGeneric(4);
-          assert(valNodeList.getName().equals("InitializerList"));
-          int dimension = getDimofArray(var);
+          assert("InitializerList".equals(valNodeList.getName()));
+          int dimension = getDimofArray(varNode);
           List<CExpression> indexExprList = Lists.newArrayList();
           initializeArray(baseExpr, valNodeList, dimension, indexExprList);
         }
       }
     } else {
-      if(var.getName().equals("SimpleDeclarator")) {
-        Node varNode = varExpr.getSourceNode();
-        Type varType = lookupType(varNode);
-        if((varType.isStruct() || varType.isUnion()) 
-        		&& !isAliasName(varNode)) {
-          Node sizeNode = getSizeofTypeNode(varType, node);
-          CExpression sizeExpr = expressionOf(sizeNode);
-          Statement declareStmt = Statement.declareStruct(node, varExpr, sizeExpr);
-          addStatementGlobalOrLocal(declareStmt);
+      if("SimpleDeclarator".equals(varNode.getName())) {
+        Node varNodePrime = varExpr.getSourceNode();
+        Type varType = unwrapped(lookupType(varNodePrime));
+        if(varType.isStruct() || varType.isUnion()) {
+          if(!isAliasName(varNode)) {
+            Node sizeNode = getSizeofTypeNode(varType, varNode);
+            CExpression sizeExpr = expressionOf(sizeNode);
+            Statement declareStmt = Statement.declareStruct(node, varExpr, sizeExpr);
+            addStatementGlobalOrLocal(declareStmt);
+          }
         }
       }
       /* Assignment expression is included here, e.g. "int a = 1;" */
-      if (null != node.get(4)) {
-        CExpression valExpr = recurseOnExpression(node.getNode(4));
-        Node valNode = valExpr.getSourceNode();
-        if(valNode.getName().equals("FunctionCall")) {
-          Node funNode = valNode.getNode(0);  
+      if (node.get(4) instanceof Node) {
+        Node valNode = node.getNode(4);
+        CExpression valExpr = recurseOnExpression(valNode);
+        Node valNodePrime = valExpr.getSourceNode();
+        if("FunctionCall".equals(valNodePrime.getName())) {
+          Node funNode = valNodePrime.getNode(0);  
           /* Generate an allocated function for malloc function */
           if("malloc".equals(funNode.getString(0))) {
-            Node sizeNode = valNode.getNode(1).getNode(0);
+            Node sizeNode = valNodePrime.getNode(1).getNode(0);
             CExpression sizeExpr = expressionOf(sizeNode);            
             stmt = Statement.alloc(node, varExpr, sizeExpr);
           } else if("__NONDET__".equals(funNode.getString(0))) {        
@@ -1645,7 +1659,7 @@ public class CfgBuilder extends Visitor {
     // Create side-effect block and duplicate for every case?
 
     BasicBlock entryBlock = currentCfg.newSwitchBlock(node.getLocation(), 
-    		symbolTable.getCurrentScope());
+            symbolTable.getCurrentScope());
     BasicBlock bodyBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
     BasicBlock exitBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
 
@@ -1819,54 +1833,54 @@ public class CfgBuilder extends Visitor {
     Node init = node.getNode(0);
     Node test = node.getNode(1);
     Node incr = node.getNode(2);
-	Node body = node.getNode(3);
-	
-	if (debugEnabled()) {
-	  debug().loc(node).p(' ');
-	  pushAlign();
-	  debug().p(" for(");
-	  IOUtils.debugC(init).p("; ");
-	  IOUtils.debugC(test).p("; ");
-	  IOUtils.debugC(incr).pln(")").incr().flush();
-	}
-	
+    Node body = node.getNode(3);
+    
+    if (debugEnabled()) {
+      debug().loc(node).p(' ');
+      pushAlign();
+      debug().p(" for(");
+      IOUtils.debugC(init).p("; ");
+      IOUtils.debugC(test).p("; ");
+      IOUtils.debugC(incr).pln(")").incr().flush();
+    }
+    
     // ForStatement node has 'scope' property, here enter the scope directly,
     // ignore the following compoundStatement; it means no need to enter scope
     // there, set 'CompoStmtAsScope' as 'false'
     enterScope(node);
     compoStmtAsScope = false;
-	
+    
     GNode assignNode = GNode.create("AssignmentExpression", defineTestVarNode(test), "=", test);
     assignNode.setLocation(test.getLocation());
     CExpression assignExpr = recurseOnExpression(assignNode);
 
     Guard ifBranch = Guard.create(assignExpr);
     Guard elseBranch = ifBranch.negate();
-	
-	BasicBlock entryBlock = currentCfg.newLoopBlock(node.getLocation(), 
-			symbolTable.getCurrentScope());
-	BasicBlock initBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
-	BasicBlock bodyBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
-	BasicBlock incrBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
-	BasicBlock exitBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+    
+    BasicBlock entryBlock = currentCfg.newLoopBlock(node.getLocation(), 
+            symbolTable.getCurrentScope());
+    BasicBlock initBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+    BasicBlock bodyBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+    BasicBlock incrBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+    BasicBlock exitBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
 
-	pushScope(initBlock, exitBlock);
-	
-	if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION)
-	    && body.getNode(0) != null
-	    && body.getNode(0).getNode(0) != null
-	    && body.getNode(0).getNode(0).getName().equals("FunctionCall") 
-	    && body.getNode(0).getNode(0).getNode(0).getString(0).equals("INVARIANT")) {
-	  BasicBlock invariantBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
-	  Node invariant = body.getNode(0).getNode(0);
-	  body = body.getNode(1);
-	  
-	  currentCfg.addEdge(currentBlock, initBlock);
-	  currentCfg.addEdge(initBlock, entryBlock);
-	  currentCfg.addEdge(entryBlock, ifBranch, bodyBlock);
-	  currentCfg.addEdge(bodyBlock, incrBlock);
-	  currentCfg.addEdge(incrBlock, elseBranch, exitBlock);
-	  
+    pushScope(initBlock, exitBlock);
+    
+    if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION)
+        && body.getNode(0) != null
+        && body.getNode(0).getNode(0) != null
+        && body.getNode(0).getNode(0).getName().equals("FunctionCall") 
+        && body.getNode(0).getNode(0).getNode(0).getString(0).equals("INVARIANT")) {
+      BasicBlock invariantBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+      Node invariant = body.getNode(0).getNode(0);
+      body = body.getNode(1);
+      
+      currentCfg.addEdge(currentBlock, initBlock);
+      currentCfg.addEdge(initBlock, entryBlock);
+      currentCfg.addEdge(entryBlock, ifBranch, bodyBlock);
+      currentCfg.addEdge(bodyBlock, incrBlock);
+      currentCfg.addEdge(incrBlock, elseBranch, exitBlock);
+      
       /* Add the statements to the current block */
       addAndFlushPostStatements(entryBlock);
       
@@ -1911,9 +1925,9 @@ public class CfgBuilder extends Visitor {
       
       incrBlock.addStatement(assertStmt);
       incrBlock.addStatements(testStmts);
-	} else {
-	  currentCfg.addEdge(currentBlock, initBlock);
-	  currentCfg.addEdge(initBlock, entryBlock);
+    } else {
+      currentCfg.addEdge(currentBlock, initBlock);
+      currentCfg.addEdge(initBlock, entryBlock);
       currentCfg.addEdge(entryBlock, ifBranch, bodyBlock);
       currentCfg.addEdge(incrBlock, entryBlock);
       currentCfg.addEdge(entryBlock, elseBranch, exitBlock);
@@ -1928,16 +1942,16 @@ public class CfgBuilder extends Visitor {
       currentCfg.addEdge(currentBlock, incrBlock);
       currentBlock = incrBlock;
       dispatch(incr);
-	}
-	
+    }
+    
     closeCurrentBlock(initBlock); // close the loop
     currentBlock = exitBlock;
     popScope();
 
-	if( debugEnabled() ) {
-	    popAlign();
-	    debug().decr().flush();
-	}	
+    if( debugEnabled() ) {
+        popAlign();
+        debug().decr().flush();
+    }   
     exitScope();
   }
 }
