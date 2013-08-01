@@ -9,6 +9,7 @@ import xtc.tree.Node;
 import xtc.type.AliasT;
 import xtc.type.AnnotatedT;
 import xtc.type.Reference;
+import xtc.type.VariableT;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -345,8 +346,16 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   
   @Override
   public Expression addressOf(Expression content) {
-    Preconditions.checkArgument(content.getChild(1).getType().equals(ptrType));
-    return content.getChild(1);
+    xtc.type.Type type = (xtc.type.Type) content.getNode()
+        .getProperty(xtc.Constants.TYPE);
+    while(type.isAlias() || type.isAnnotated()) {
+      type = type.resolve();
+      type = type.deannotate();
+    }
+    if(type.isStruct() || type.isUnion() || type.isArray())
+      return content;
+    else
+      return content.getChild(1);
   }
   
   @Override
@@ -691,7 +700,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     } else if(type.isUnion()) {
       sb.append('$').append(type.getName());
     } else if(type.isAnnotated()){
-      AnnotatedT annoType = (AnnotatedT) type;
+      AnnotatedT annoType = type.toAnnotated();
       if(annoType.hasShape()) {
         Reference ref = annoType.getShape();
         if(ref.hasBase() && ref.hasField()) {
@@ -705,13 +714,23 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
         sb.append(getTypeName(annoType.getType()));
       }
     } else if(type.isAlias()) {
-      AliasT aliasType = (AliasT) type;
+      AliasT aliasType = type.toAlias();
       sb.append(getTypeName(aliasType.getType()));
+    } else if(type.isVariable()) {
+      VariableT varType = (VariableT) type;
+      sb.append(getTypeName(varType.getType()));
+    } else if(type.isInteger()){
+      sb.append('$').append("IntegerT");
+    } else if(type.isFloat()){
+      sb.append('$').append("FloatT");
+    } else {
+      throw new IllegalArgumentException("Cannot parse type " + type.getName());
     }
     return sb.toString();
   }
   
   protected String getTypeName(Node node) {
+    Preconditions.checkArgument(node != null);
     String resName = null;
     if(node.getName().equals("PrimaryIdentifier") && node.getString(0).startsWith(TEST_VAR)) {
       resName = TEST_VAR;

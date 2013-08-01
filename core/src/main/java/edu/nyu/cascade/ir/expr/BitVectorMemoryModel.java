@@ -464,8 +464,15 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
   
   @Override
   public Expression addressOf(Expression content) {
-    Preconditions.checkArgument(content.getChild(1).getType().equals(addressType));
-    return content.getChild(1);
+    xtc.type.Type type = (xtc.type.Type) content.getNode().getProperty(xtc.Constants.TYPE);
+    while(type.isAlias() || type.isAnnotated() || type.isVariable()) {
+      type = type.resolve();
+      type = type.deannotate();
+    }
+    if(type.isArray() || type.isStruct() || type.isUnion())
+      return content;
+    else
+      return content.getChild(1);
   }
   
   protected void setCurrentState(Expression state, Expression statePrime) {
