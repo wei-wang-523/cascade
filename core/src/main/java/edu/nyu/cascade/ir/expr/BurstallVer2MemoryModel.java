@@ -11,7 +11,9 @@ import xtc.type.AliasT;
 import xtc.type.AnnotatedT;
 import xtc.type.ArrayT;
 import xtc.type.Reference;
+import xtc.type.StructOrUnionT;
 import xtc.type.StructT;
+import xtc.type.UnionT;
 import xtc.type.VariableT;
 
 import com.google.common.base.Function;
@@ -821,21 +823,7 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
     }
     
     ExpressionManager em = getExpressionManager();
-    if(!regionType.isStruct()) { // lval point to a non-structure type
-      String elemArrName = getTypeName(regionType);
-      Expression indexExpr = startAddr;
-      if(isScalarType(regionType)) {
-        ArrayExpression elemArr = getTypeArrVar(elemArrName, scalarType);
-        Expression scalarAlias = scalarAliasState.asArray().index(indexExpr);
-        scalarAlias = scalarAlias.asArray().update(elemArr, elemArr);
-        scalarAliasState = scalarAliasState.asArray().update(indexExpr, scalarAlias);
-      } else {
-        ArrayExpression elemArr = getTypeArrVar(elemArrName, ptrType);
-        Expression ptrAlias = ptrAliasState.asArray().index(indexExpr);
-        ptrAlias = ptrAlias.asArray().update(elemArr, elemArr);
-        ptrAliasState = ptrAliasState.asArray().update(indexExpr, ptrAlias);
-      }      
-    } else {
+    if(regionType.isStruct()) {
       Map<String, Type> elemTypes = getMemberTypeOfField(regionType);
       Map<String, Expression> elemOffsets = getOffsetOfField(regionType);
       for(Entry<String, Expression> entry : elemOffsets.entrySet()) {
@@ -853,7 +841,69 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
           ptrAlias = ptrAlias.asArray().update(elemArr, elemArr);
           ptrAliasState = ptrAliasState.asArray().update(indexExpr, ptrAlias);
         }
+      } 
+    } else if(regionType.isUnion()) { 
+      Map<String, Type> elemTypes = getMemberTypeOfField(regionType);
+      Map<String, Integer> elemTypeSizes = getSizeTypeOfField(regionType);
+      int minTypeSize = Integer.MAX_VALUE;
+      String repTypeName = null;
+      for(String elemName : elemTypeSizes.keySet()) {
+        int elemTypeSize = elemTypeSizes.get(elemName);
+        if(minTypeSize > elemTypeSize) {
+          minTypeSize = elemTypeSize; 
+          repTypeName = elemName;
+        }
       }
+      
+      boolean isAllScalarType = Iterables.all(elemTypes.values(), new Predicate<Type>(){
+        @Override
+        public boolean apply(Type argType) {
+          return scalarType.equals(argType);
+        }
+      });
+      
+      boolean isAllPtrType = Iterables.all(elemTypes.values(), new Predicate<Type>(){
+        @Override
+        public boolean apply(Type argType) {
+          return ptrType.equals(argType);
+        }
+      });
+      
+      if(isAllScalarType) {
+        ArrayExpression repArr = getTypeArrVar(repTypeName, scalarType);
+        for(Entry<String, Type> entry : elemTypes.entrySet()) {
+          String elemArrName = entry.getKey();
+          Expression scalarAlias = scalarAliasState.asArray().index(startAddr);
+          ArrayExpression elemArr = getTypeArrVar(elemArrName, scalarType);
+          scalarAlias = scalarAlias.asArray().update(elemArr, repArr);
+          scalarAliasState = scalarAliasState.asArray().update(startAddr, scalarAlias);
+        }
+      } else if(isAllPtrType) {
+        ArrayExpression repArr = getTypeArrVar(repTypeName, ptrType);
+        for(Entry<String, Type> entry : elemTypes.entrySet()) {
+          String elemArrName = entry.getKey();
+          Expression ptrAlias = ptrAliasState.asArray().index(startAddr);
+          ArrayExpression elemArr = getTypeArrVar(elemArrName, ptrType);
+          ptrAlias = ptrAlias.asArray().update(elemArr, repArr);
+          scalarAliasState = scalarAliasState.asArray().update(startAddr, ptrAlias);
+        }
+      } else {
+        throw new ExpressionFactoryException("Union type with both pointer type and scalar type.");
+      }      
+    } else { // lval point to a non-structure type
+      String elemArrName = getTypeName(regionType);
+      Expression indexExpr = startAddr;
+      if(isScalarType(regionType)) {
+        ArrayExpression elemArr = getTypeArrVar(elemArrName, scalarType);
+        Expression scalarAlias = scalarAliasState.asArray().index(indexExpr);
+        scalarAlias = scalarAlias.asArray().update(elemArr, elemArr);
+        scalarAliasState = scalarAliasState.asArray().update(indexExpr, scalarAlias);
+      } else {
+        ArrayExpression elemArr = getTypeArrVar(elemArrName, ptrType);
+        Expression ptrAlias = ptrAliasState.asArray().index(indexExpr);
+        ptrAlias = ptrAlias.asArray().update(elemArr, elemArr);
+        ptrAliasState = ptrAliasState.asArray().update(indexExpr, ptrAlias);
+      }   
     }
     return em.tuple(aliasType, scalarAliasState, ptrAliasState);
   }
@@ -958,7 +1008,6 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
     return type.isInteger() || type.isBoolean() || type.isFloat() || type.isNumber();
   }
   
-  
   private boolean isStructFieldType(xtc.type.Type type) {
     String typeName = getTypeName(type);
     boolean isPointer = typeName.contains("PointerT");
@@ -972,12 +1021,12 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
    * @return a map from member names to member types.
    */
   private Map<String, Type> getMemberTypeOfField(xtc.type.Type type) {
-    if(!type.isStruct())    return null;
+    if(!(type.isStruct() || type.isUnion()))    return null;
     
     Map<String, Type> elemTypes = Maps.newLinkedHashMap();
-    StructT structType = type.toStruct();
-    String structTypeName = getTypeName(structType);
-    for(VariableT elem : structType.getMembers()) {
+    StructOrUnionT structUnionType = type.toStructOrUnion();
+    String structTypeName = getTypeName(structUnionType);
+    for(VariableT elem : structUnionType.getMembers()) {
       // TODO: nested structure type
       String elemName = new StringBuilder().append(structTypeName)
           .append('#').append(elem.getName()).toString();
@@ -990,7 +1039,6 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
     }
     return elemTypes;
   }
-  
   
   /**
    * Get the member offset of each field of structure type, if
@@ -1012,32 +1060,50 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
       String elemName = new StringBuilder().append(structTypeName)
           .append('#').append(elem.getName()).toString();
       Expression offsetExpr = em.bitVectorConstant(offset, size);
-      offset += sizeofType(elem.getType());
+      offset += sizeofXtcType(elem.getType());
       elemOffsets.put(elemName, offsetExpr);
     }
     return elemOffsets;
   }
   
-  
-  private int sizeofType(xtc.type.Type t) {
-    int res = 0;
-    t = unwrapped(t);
+  /**
+   * Get the member type size of each field of union type, if
+   * @param type is not structure type, @return null; otherwise,
+   * @return a map from member names to corresponding offsets.
+   */
+  private Map<String, Integer> getSizeTypeOfField(xtc.type.Type type) {    
+    if(!type.isUnion()) return null;
     
+    Map<String, Integer> elemOffsets = Maps.newLinkedHashMap();    
+    UnionT unionType = type.toUnion();
+    String unionTypeName = getTypeName(unionType);
+    for(VariableT elem : unionType.getMembers()) {
+      // TODO: nested structure type
+      String elemName = new StringBuilder().append(unionTypeName)
+          .append('#').append(elem.getName()).toString();
+      elemOffsets.put(elemName, sizeofXtcType(elem.getType()));
+    }
+    return elemOffsets;
+  }
+  
+  private int sizeofXtcType(xtc.type.Type t) {
+    int res = 0;
+    t = unwrapped(t);   
     if (t.isInteger()) {
       res = 1;
     } else if (t.isPointer()) {
       res = 1;
     } else if (t.isStruct()) {
       for(VariableT elem : t.toStruct().getMembers()) {
-        res += sizeofType(elem.getType());
+        res += sizeofXtcType(elem.getType());
       }
     } else if (t.isUnion()) {
       for(VariableT elem : t.toUnion().getMembers()) {
-        res = Math.max(res, sizeofType(elem.getType()));
+        res = Math.max(res, sizeofXtcType(elem.getType()));
       }
     } else if(t.isArray()) {
       ArrayT array = t.toArray();
-      res = (int) (array.getLength()) * sizeofType(array.getType());
+      res = (int) (array.getLength()) * sizeofXtcType(array.getType());
     } else {
       throw new IllegalArgumentException("Unknown type.");
     }
