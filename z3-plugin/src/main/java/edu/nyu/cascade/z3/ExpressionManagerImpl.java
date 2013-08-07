@@ -179,14 +179,14 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   public ArrayVariableImpl arrayVar(
       String name, Type indexType, Type elementType, boolean fresh)  {
       ArrayTypeImpl t = ArrayTypeImpl.create(this, indexType, elementType);
-      return t.variable(name,true);
+      return t.variable(name,fresh);
   }
   
   @Override
   public VariableExpressionImpl arrayBoundVar(
       String name, Type indexType, Type elementType, boolean fresh)  {
       ArrayTypeImpl t = ArrayTypeImpl.create(this, indexType, elementType);
-      return t.boundVariable(name,true);
+      return t.boundVariable(name,fresh);
   }
 
   @Override 
