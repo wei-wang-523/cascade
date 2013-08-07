@@ -974,7 +974,7 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
   private Map<String, Type> getMemberTypeOfField(xtc.type.Type type) {
     if(!type.isStruct())    return null;
     
-    Map<String, Type> elemTypes = Maps.newHashMap();
+    Map<String, Type> elemTypes = Maps.newLinkedHashMap();
     StructT structType = type.toStruct();
     String structTypeName = getTypeName(structType);
     for(VariableT elem : structType.getMembers()) {
@@ -1000,7 +1000,7 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
   private Map<String, Expression> getOffsetOfField(xtc.type.Type type) {    
     if(!type.isStruct()) return null;
     
-    Map<String, Expression> elemOffsets = Maps.newHashMap();
+    Map<String, Expression> elemOffsets = Maps.newLinkedHashMap();
     ExpressionManager em = getExpressionManager();
     
     StructT structType = type.toStruct();
