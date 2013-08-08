@@ -845,6 +845,7 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
     } else if(regionType.isUnion()) { 
       Map<String, Type> elemTypes = getMemberTypeOfField(regionType);
       Map<String, Integer> elemTypeSizes = getSizeTypeOfField(regionType);
+      // FIXME: to find the minimal type elem to be the rep, or the maximal one?
       int minTypeSize = Integer.MAX_VALUE;
       String repTypeName = null;
       for(String elemName : elemTypeSizes.keySet()) {
@@ -888,7 +889,7 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
           scalarAliasState = scalarAliasState.asArray().update(startAddr, ptrAlias);
         }
       } else {
-        throw new ExpressionFactoryException("Union type with both pointer type and scalar type.");
+        throw new ExpressionFactoryException("Don't support cast pointer to scalar type in Cascade.");
       }      
     } else { // lval point to a non-structure type
       String elemArrName = getTypeName(regionType);
@@ -1021,20 +1022,26 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
    * @return a map from member names to member types.
    */
   private Map<String, Type> getMemberTypeOfField(xtc.type.Type type) {
-    if(!(type.isStruct() || type.isUnion()))    return null;
-    
     Map<String, Type> elemTypes = Maps.newLinkedHashMap();
-    StructOrUnionT structUnionType = type.toStructOrUnion();
-    String structTypeName = getTypeName(structUnionType);
-    for(VariableT elem : structUnionType.getMembers()) {
-      // TODO: nested structure type
-      String elemName = new StringBuilder().append(structTypeName)
-          .append('#').append(elem.getName()).toString();
-      xtc.type.Type elemType = elem.getType();
-      if(isScalarType(elemType)) {
-        elemTypes.put(elemName, scalarType);
-      } else {
-        elemTypes.put(elemName, ptrType);
+    if(!(type.isStruct() || type.isUnion())) {
+      String typeName = getTypeName(type);
+      if(isScalarType(type))
+        elemTypes.put(typeName, scalarType);
+      else
+        elemTypes.put(typeName, ptrType);
+    } else {
+      StructOrUnionT structUnionType = type.toStructOrUnion();
+      String structTypeName = getTypeName(structUnionType);
+      for(VariableT elem : structUnionType.getMembers()) {
+        // TODO: nested structure type
+        String elemName = new StringBuilder().append(structTypeName)
+            .append('#').append(elem.getName()).toString();
+        xtc.type.Type elemType = elem.getType();
+        if(isScalarType(elemType)) {
+          elemTypes.put(elemName, scalarType);
+        } else {
+          elemTypes.put(elemName, ptrType);
+        }
       }
     }
     return elemTypes;
@@ -1045,23 +1052,27 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
    * @param type is not structure type, @return null; otherwise,
    * @return a map from member names to corresponding offsets.
    */
-  private Map<String, Expression> getOffsetOfField(xtc.type.Type type) {    
-    if(!type.isStruct()) return null;
-    
+  private Map<String, Expression> getOffsetOfField(xtc.type.Type type) {
     Map<String, Expression> elemOffsets = Maps.newLinkedHashMap();
     ExpressionManager em = getExpressionManager();
-    
-    StructT structType = type.toStruct();
-    String structTypeName = getTypeName(structType);
-    int offset = 0;
-    int size = getOffType().getSize();
-    for(VariableT elem : structType.getMembers()) {
-      // TODO: nested structure type
-      String elemName = new StringBuilder().append(structTypeName)
-          .append('#').append(elem.getName()).toString();
-      Expression offsetExpr = em.bitVectorConstant(offset, size);
-      offset += sizeofXtcType(elem.getType());
-      elemOffsets.put(elemName, offsetExpr);
+    if(!type.isStruct()) {
+      String typeName = getTypeName(type);
+      int size = getOffType().getSize();
+      Expression offsetExpr = em.bitVectorConstant(0, size);
+      elemOffsets.put(typeName, offsetExpr);
+    } else {
+      StructT structType = type.toStruct();
+      String structTypeName = getTypeName(structType);
+      int offset = 0;
+      int size = getOffType().getSize();
+      for(VariableT elem : structType.getMembers()) {
+        // TODO: nested structure type
+        String elemName = new StringBuilder().append(structTypeName)
+            .append('#').append(elem.getName()).toString();
+        Expression offsetExpr = em.bitVectorConstant(offset, size);
+        offset += sizeofXtcType(elem.getType());
+        elemOffsets.put(elemName, offsetExpr);
+      }
     }
     return elemOffsets;
   }
