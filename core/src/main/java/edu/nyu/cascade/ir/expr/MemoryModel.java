@@ -124,5 +124,11 @@ public interface MemoryModel {
   Expression createLval(String name);
 
   Expression addressOf(Expression content);
+  
+  /**
+   * create a expression with constant <code>value</code>, used for
+   * tuple type expression especially.
+   */
+  Expression castConstant(int value);
 
 }

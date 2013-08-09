@@ -73,4 +73,9 @@ public abstract class AbstractMemoryModel implements MemoryModel {
       }
     };
   }
+  
+  @Override
+  public Expression castConstant(int value) {
+    return encoding.integerConstant(value);
+  }
 }

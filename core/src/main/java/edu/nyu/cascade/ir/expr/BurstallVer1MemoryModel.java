@@ -37,7 +37,7 @@ import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
  * Burstall memory model, still has a flat memory array, but has 
  * type as a component of index. The type of array maps (type constant, 
  * pointer type) to pointer type. Scalar value is also with pointer 
- * type, but has $Constant as the first element - not works well.
+ * type, but has $Constant as the first element - pretty slow.
  * 
  * @author Wei
  *
@@ -47,7 +47,7 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
   protected static final String REGION_VARIABLE_NAME = "region";
   protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
   protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "alloc";
-  protected static final String DEFAULT_CONSTANT_TYPE_NAME = "$Constant";
+  protected static final String DEFAULT_CONSTANT = "$Constant";
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
@@ -97,18 +97,6 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
   private final UninterpretedType typeNameType; // typeName-type
   
   private final VariableExpression constRefVar;
-  
-  /** when allocate a region_x in stack of array or structure, we just 
-   * let addr_of_array == region_x, or addr_of_struct == region_x, 
-   * which models exactly what happened in C. It means we should remove 
-   * addr_of_array or addr_of_struct from lvals, otherwise when do 
-   * --sound-alloc or --order-alloc, we will call getAssumptions(), which
-   * ensures that addr_of_array/addr_of_struct < region_x or addr_of_array
-   * /addr_of_strcut != region_x, and it's conflict with the above equality.
-   * Here, we keep rvals to record those removed addr_of_struct and addr_of_array,
-   * and remove them from lvals in getAssumptions().
-   */
-  
   private final Set<VariableExpression> lvals; // lvals: variables in stack
   private final Set<Expression> rvals;
   private final List<Expression> stackRegions, heapRegions;
@@ -138,13 +126,11 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
     this.idxType = memType.getIndexType().asTuple();
     this.typeNameType = idxType.getElementTypes().get(0).asUninterpreted();
     this.ptrType = idxType.getElementTypes().get(1).asTuple();
-    this.sizeType = getExpressionManager().arrayType(
-        ptrType.getElementTypes().get(0), ptrType.getElementTypes().get(1));
+    this.sizeType = getExpressionManager().arrayType(getRefType(), getOffType());
     
     this.typeMap = Maps.newHashMap();
     /** Put constant type variable into type map */
-    this.constRefVar = getExpressionManager().variable(DEFAULT_CONSTANT_TYPE_NAME, typeNameType, false);
-    typeMap.put(DEFAULT_CONSTANT_TYPE_NAME, constRefVar);
+    this.constRefVar = getExpressionManager().variable(DEFAULT_CONSTANT, getRefType(), false);
     
     this.scalaTypeVars = Sets.newHashSet();
   }
@@ -153,9 +139,6 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
   public TupleExpression alloc(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(state.getType().equals( getStateType() ));
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    // FIXME: What if element size and integer size don't agree?
-    Preconditions.checkArgument(size.getType().equals( ptrType ));
-    
     ExpressionManager exprManager = getExpressionManager();
     
     Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, getRefType(), true);
@@ -168,8 +151,7 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
     Expression typeNameVar = getTypeVar(ptr.getNode());
     Expression indexPtr = exprManager.tuple(idxType, typeNameVar, ptr);
     Expression memory = state.getChild(0).asArray().update(indexPtr, locVar);
-    Expression alloc = state.getChild(1).asArray().update(
-        refVar, size.asTuple().index(1));    
+    Expression alloc = state.getChild(1).asArray().update(refVar, size);    
     return exprManager.tuple(getStateType(), memory, alloc);
   }
   
@@ -277,8 +259,8 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
     
     ExpressionManager em = getExpressionManager();
     
-    if(rval.getType().equals(ptrType.getElementTypes().get(1)))
-      rval = em.tuple(ptrType, this.constRefVar, rval);
+    if(rval.getType().equals(getOffType()))
+      rval = em.tuple(ptrType, constRefVar, rval);
     
     Expression typeNameVar = getTypeVar(lval.getNode());
     Expression index = em.tuple(idxType, typeNameVar, lval);
@@ -577,5 +559,11 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
     
     if(resName.equals("$IntegerT") || resName.equals("$CharT")) scalaTypeVars.add(res);
     return res;
+  }
+  
+  @Override
+  public Expression castConstant(int value) {
+    Expression val = getExpressionEncoding().integerConstant(value);
+    return getExpressionManager().tuple(ptrType, constRefVar, val);
   }
 }

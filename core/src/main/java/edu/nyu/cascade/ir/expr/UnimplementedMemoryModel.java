@@ -136,4 +136,10 @@ public class UnimplementedMemoryModel implements MemoryModel {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("addressOf");    
   }
+
+  @Override
+  public Expression castConstant(int value) {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("castConstant"); 
+  }
 }

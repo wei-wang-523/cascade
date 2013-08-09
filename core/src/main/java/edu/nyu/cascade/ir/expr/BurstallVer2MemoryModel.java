@@ -968,6 +968,13 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
     // The index type name is not $StructType#FieldType, do not analyze alias now.
     if(!isStructFieldType(indexType))  return aliasState;
     
+    /* The index type name is not $StructType#FieldType or no pointer arithmetic, 
+     * do not analyze alias now. 
+     */
+//    if(!(isStructFieldType(indexType) 
+//        || "IndirectExpression".equals(indexExpr.getNode().getName())))  
+//      return aliasState;
+    
     Expression scalarAliasState = aliasState.asTuple().index(0);
     Expression ptrAliasState = aliasState.asTuple().index(1);
     ExpressionManager em = getExpressionManager();

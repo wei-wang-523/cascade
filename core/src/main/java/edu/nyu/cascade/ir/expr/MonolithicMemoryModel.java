@@ -75,17 +75,6 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
     return BitVectorMemoryModel.create(encoding);
   }
   
-  /** when allocate a region_x in stack of array or structure, we just 
-   * let addr_of_array == region_x, or addr_of_struct == region_x, 
-   * which models exactly what happened in C. It means we should remove 
-   * addr_of_array or addr_of_struct from lvals, otherwise when do 
-   * --sound-alloc or --order-alloc, we will call getAssumptions(), which
-   * ensures that addr_of_array/addr_of_struct < region_x or addr_of_array
-   * /addr_of_strcut != region_x, and it's conflict with the above equality.
-   * Here, we keep rvals to record those removed addr_of_struct and addr_of_array,
-   * and remove them from lvals in getAssumptions().
-   */
-  
   private final Set<Expression> lvals; // lvals: variables in stack
   private final List<Expression> stackRegions, heapRegions;
   private ExpressionClosure currentState = null;
