@@ -144,28 +144,35 @@ class CExpressionEncoder implements ExpressionEncoder {
        * non-char* arithmetic will be wrong
        */
       IOUtils.debug().pln("APPROX: Possible pointer arithmetic treated as char*");
+      Type type = unwrapped(lookupType(node));
       Expression res = binaryOp(node, this,
           new BinaryInfixRecursionStrategy<Expression, Expression>() {
             @Override
             public Expression apply(Expression left, String additiveOperator,
                 Expression right) {
               try {
-                Type leftType = lookupType(left.getNode());
-                Type rightType = lookupType(right.getNode());
+                Type leftType = unwrapped(lookupType(left.getNode()));
+                Type rightType = unwrapped(lookupType(right.getNode()));
                 
                 // multiplied by the size of the type of the pointer
-                if(leftType.isPointer() && rightType.isPointer())
+                if((leftType.isPointer() || leftType.isArray()) 
+                    && (rightType.isArray() || rightType.isPointer()))
                   throw new IllegalArgumentException("No arithmetic operation between pointers.");
+                
+                if(rightType.isPointer() || rightType.isArray()) {
+                  Expression tmp = right;
+                  right = left;
+                  left = tmp;
+                }
                 
                 if(leftType.isPointer()) {
                   PointerT pointerT = leftType.toPointer();
                   Type type = pointerT.getType();
                   right = encoding.times(coerceToInteger(right), encoding.integerConstant(sizeofType(type)));
-                } 
-                if(rightType.isPointer()) {
-                  PointerT pointerT = rightType.toPointer();
-                  Type type = pointerT.getType();
-                  left = encoding.times(coerceToInteger(left), encoding.integerConstant(sizeofType(type)));
+                } else if(leftType.isArray()) {
+                  Type cellType = leftType;
+                  while(cellType.isArray()) cellType = unwrapped(cellType.toArray().getType());
+                  right = encoding.times(coerceToInteger(right), encoding.integerConstant(sizeofType(cellType)));
                 }
                 
                 if ("+".equals(additiveOperator)) {
@@ -269,7 +276,7 @@ class CExpressionEncoder implements ExpressionEncoder {
         throws ExpressionFactoryException {
       Type type = (Type) node.getProperty(xtc.Constants.TYPE);
       int constVal = type.getConstant().bigIntValue().intValue();
-      Expression res = encoding.integerConstant(constVal);
+      Expression res = getMemoryModel().castConstant(constVal);
       return res.setNode(node);
     }
 
@@ -425,17 +432,15 @@ class CExpressionEncoder implements ExpressionEncoder {
       Type type = unwrapped(lookupType(node));     
       assert(type.isInteger());
       
-      Expression res;
+      int constVal = 0;
       if(type.hasConstant()) {
         // Parse string character
-        BigInteger constVal = (BigInteger) type.getConstant().getValue();
-        res = encoding.integerConstant(constVal.intValue());
+        constVal = ((BigInteger) type.getConstant().getValue()).intValue();
       } else {
         String numStr = node.getString(0);
         // for unsigned integer
         if(numStr.lastIndexOf('U') >= 0) 
           numStr = numStr.substring(0, numStr.lastIndexOf('U'));
-        int constVal = 0; 
         if(numStr.startsWith("0x")) 
           constVal = Integer.parseInt(numStr.substring(2), 16);
         else if(numStr.startsWith("0b")) 
@@ -444,8 +449,8 @@ class CExpressionEncoder implements ExpressionEncoder {
           constVal = Integer.parseInt(numStr.substring(2), 8);
         else 
           constVal = Integer.parseInt(numStr);
-        res = encoding.integerConstant(constVal);
       }
+      Expression res = getMemoryModel().castConstant(constVal);
       return res.setNode(node);
     }
 
@@ -662,8 +667,8 @@ class CExpressionEncoder implements ExpressionEncoder {
     public Expression visitUnaryMinusExpression(GNode node) 
         throws ExpressionFactoryException {
       Expression rhs = (Expression)dispatch(node.getNode(0));
-      
-      return encoding.minus(encoding.zero(), rhs).setNode(node); 
+      Expression zero = getMemoryModel().castConstant(0);
+      return encoding.minus(zero, rhs).setNode(node); 
     }
     
     public Expression visitMultiplicativeExpression(GNode node) 
