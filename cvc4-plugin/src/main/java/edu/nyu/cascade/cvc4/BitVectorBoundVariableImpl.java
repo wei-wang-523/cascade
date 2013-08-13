@@ -158,4 +158,14 @@ public class BitVectorBoundVariableImpl extends BoundVariableExpressionImpl
     Preconditions.checkArgument(e.isBitVector());
     throw new UnsupportedOperationException("Unsupported signed reminders for BitVector.");
   }
+
+  @Override
+  public BitVectorExpression zeroExtend(int size) {
+    return BitVectorExpressionImpl.mkZeroExtend(getExpressionManager(), size, this);
+  }
+
+  @Override
+  public BitVectorExpression signExtend(int size) {
+    return BitVectorExpressionImpl.mkSignExtend(getExpressionManager(), size, this);
+  }
 }

@@ -168,4 +168,14 @@ public class BitVectorVariableImpl extends VariableExpressionImpl
     // TODO Auto-generated method stub
     return null;
   }
+  
+  @Override
+  public BitVectorExpression zeroExtend(int size) {
+    return BitVectorExpressionImpl.mkZeroExtend(getExpressionManager(), size, this);
+  }
+
+  @Override
+  public BitVectorExpression signExtend(int size) {
+    return BitVectorExpressionImpl.mkSignExtend(getExpressionManager(), size, this);
+  }
 }

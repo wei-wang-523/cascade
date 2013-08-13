@@ -8,6 +8,7 @@ import static edu.nyu.cascade.prover.Expression.Kind.BV_NOR;
 import static edu.nyu.cascade.prover.Expression.Kind.BV_NOT;
 import static edu.nyu.cascade.prover.Expression.Kind.BV_OR;
 import static edu.nyu.cascade.prover.Expression.Kind.BV_SIGN_EXTEND;
+import static edu.nyu.cascade.prover.Expression.Kind.BV_ZERO_EXTEND;
 import static edu.nyu.cascade.prover.Expression.Kind.BV_LSHIFT;
 import static edu.nyu.cascade.prover.Expression.Kind.BV_RSHIFT;
 import static edu.nyu.cascade.prover.Expression.Kind.BV_XNOR;
@@ -24,14 +25,15 @@ import static edu.nyu.cascade.prover.Expression.Kind.UNARY_MINUS;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ComputationException;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.MapMaker;
 
 import edu.nyu.acsys.CVC4.BitVector;
 import edu.nyu.acsys.CVC4.BitVectorExtract;
@@ -48,24 +50,21 @@ import edu.nyu.cascade.prover.type.BitVectorType;
 
 public class BitVectorExpressionImpl extends ExpressionImpl implements
     BitVectorExpression {
-  private static final ConcurrentMap<ExpressionManagerImpl, ConcurrentMap<String, BitVectorExpressionImpl>> cache = new MapMaker()
-      .makeComputingMap(new Function<ExpressionManagerImpl, ConcurrentMap<String, BitVectorExpressionImpl>>() {
-        @Override
-        public ConcurrentMap<String, BitVectorExpressionImpl> apply(
-            final ExpressionManagerImpl exprManager) {
-          return new MapMaker()
-              .makeComputingMap(new Function<String, BitVectorExpressionImpl>() {
-                @Override
-                public BitVectorExpressionImpl apply(String binaryRep) {
-                  try {
-                    return new BitVectorExpressionImpl(exprManager, binaryRep);
-                  } catch (TheoremProverException e) {
-                    throw new ComputationException(e);
+    private static final LoadingCache<ExpressionManagerImpl, LoadingCache<String, BitVectorExpressionImpl>> cache = CacheBuilder
+        .newBuilder().build(
+            new CacheLoader<ExpressionManagerImpl, LoadingCache<String, BitVectorExpressionImpl>>(){
+              public LoadingCache<String, BitVectorExpressionImpl> load(final ExpressionManagerImpl exprManager) {
+                    return CacheBuilder.newBuilder().build(new CacheLoader<String, BitVectorExpressionImpl>(){
+                      public BitVectorExpressionImpl load(String binaryRep) {
+                        try {
+                          return new BitVectorExpressionImpl(exprManager, binaryRep);
+                        } catch (TheoremProverException e) {
+                          throw new ComputationException(e);
+                        }
+                      }
+                    });
                   }
-                }
-              });
-        }
-      });
+                });
 
   /* TODO: AND, OR, XOR have n-ary variants */
 
@@ -166,13 +165,27 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
     }
 
     assert (binary.length() == size);
-    return cache.get(exprManager).get(binary);
+    BitVectorExpressionImpl res = null;
+    try {
+      res = cache.get(exprManager).get(binary);
+    } catch (ExecutionException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    return res;
   }
 
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
       String binary) {
     Preconditions.checkArgument(binary.length() > 0);
-    return cache.get(exprManager).get(binary);
+    BitVectorExpressionImpl res = null;
+    try {
+      res = cache.get(exprManager).get(binary);
+    } catch (ExecutionException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    return res;
   }
   
   /** TODO: merge with caching versions above. All constants go through Rational? */
@@ -409,6 +422,28 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
     } else {
       BitVectorExpressionImpl e = new BitVectorExpressionImpl(exprManager,
           BV_SIGN_EXTEND, new UnaryConstructionStrategy() {
+            @Override
+            public Expr apply(ExprManager em, Expr arg) {
+              Expr sizeExpr = em.mkConst(new BitVectorSize(size));
+              return em.mkExpr(edu.nyu.acsys.CVC4.Kind.BITVECTOR_SIGN_EXTEND,
+                  sizeExpr, arg);
+            }
+          }, arg);
+      e.setType(e.getExpressionManager().bitVectorType(size));
+      return e;
+    }
+  }
+  
+  static BitVectorExpressionImpl mkZeroExtend(ExpressionManagerImpl exprManager,
+      final int size, Expression arg) {
+    Preconditions.checkArgument(arg.isBitVector());
+    Preconditions.checkArgument(size >= arg.asBitVector().getSize());
+    
+    if (arg.asBitVector().getSize() == size) {
+      return valueOf(exprManager,arg);
+    } else {
+      BitVectorExpressionImpl e = new BitVectorExpressionImpl(exprManager,
+          BV_ZERO_EXTEND, new UnaryConstructionStrategy() {
             @Override
             public Expr apply(ExprManager em, Expr arg) {
               Expr sizeExpr = em.mkConst(new BitVectorSize(size));
@@ -775,5 +810,15 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
   public BitVectorExpressionImpl rshift(Expression a) {
     Preconditions.checkArgument(a.isInteger() || a.isBitVector());
     return mkRShift(getExpressionManager(), this, a);
+  }
+
+  @Override
+  public BitVectorExpression zeroExtend(int size) {
+    return mkZeroExtend(getExpressionManager(), size, this);
+  }
+
+  @Override
+  public BitVectorExpression signExtend(int size) {
+    return mkSignExtend(getExpressionManager(), size, this);
   }
 }
