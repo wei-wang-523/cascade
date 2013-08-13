@@ -138,6 +138,8 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
   
   static BooleanExpressionImpl mkBvSLeq(ExpressionManagerImpl exprManager,
       Expression a, Expression b) {
+    Preconditions.checkArgument(a.isBitVector());
+    Preconditions.checkArgument(b.isBitVector());
     return new BooleanExpressionImpl(exprManager, Kind.LEQ,
         new BinaryConstructionStrategy() {
       @Override
@@ -149,6 +151,8 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
 
   static BooleanExpressionImpl mkBvLt(ExpressionManagerImpl exprManager,
       Expression a, Expression b) {
+    Preconditions.checkArgument(a.isBitVector());
+    Preconditions.checkArgument(b.isBitVector());
     return new BooleanExpressionImpl(exprManager, Kind.LT,
         new BinaryConstructionStrategy() {
       @Override
@@ -415,6 +419,7 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
 
   static BooleanExpressionImpl mkOr(ExpressionManagerImpl exprManager,
       Iterable<? extends Expression> args) {
+    for(Expression arg : args) Preconditions.checkArgument(arg.isBoolean());
     return new BooleanExpressionImpl(exprManager, Kind.OR,
         new NaryConstructionStrategy() {
           @Override
@@ -423,6 +428,14 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
             return ctx.MkOr(boolArgs);
           }
         }, args);
+  }
+  
+  static BooleanExpressionImpl mkOr(ExpressionManagerImpl exprManager,
+      Expression first, Expression... rest) {
+    Preconditions.checkArgument(first.isBoolean());
+    for(Expression restElem : rest) Preconditions.checkArgument(restElem.isBoolean());
+    ImmutableList<Expression> args = new ImmutableList.Builder<Expression>().add(first).add(rest).build();
+    return mkOr(exprManager, args);
   }
 
   static BooleanExpressionImpl mkTrue(ExpressionManagerImpl exprManager) {
@@ -542,6 +555,12 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
       Iterable<? extends Expression> subExpressions) {
     super(exprManager, kind, construct, subExpressions);
     setType(exprManager.booleanType());
+  }
+  
+  private BooleanExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
+      NaryConstructionStrategy strategy, Expression first,
+      Expression[] rest) throws Z3Exception {
+    super(exprManager, kind, strategy, first, rest);
   }
 
   private BooleanExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,

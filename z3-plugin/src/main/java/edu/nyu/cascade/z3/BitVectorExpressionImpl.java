@@ -8,6 +8,7 @@ import static edu.nyu.cascade.prover.Expression.Kind.BV_NOR;
 import static edu.nyu.cascade.prover.Expression.Kind.BV_NOT;
 import static edu.nyu.cascade.prover.Expression.Kind.BV_OR;
 import static edu.nyu.cascade.prover.Expression.Kind.BV_SIGN_EXTEND;
+import static edu.nyu.cascade.prover.Expression.Kind.BV_ZERO_EXTEND;
 import static edu.nyu.cascade.prover.Expression.Kind.BV_LSHIFT;
 import static edu.nyu.cascade.prover.Expression.Kind.BV_RSHIFT;
 import static edu.nyu.cascade.prover.Expression.Kind.BV_XNOR;
@@ -190,6 +191,32 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
     return new BitVectorExpressionImpl(exprManager, rat, len);
   }*/
 
+  static BitVectorExpressionImpl mkZeroExtend(ExpressionManagerImpl exprManager,
+      final int size, Expression arg) {
+    Preconditions.checkArgument(arg.isBitVector());
+    Preconditions.checkArgument(size >= arg.asBitVector().getSize());
+    
+    if (arg.asBitVector().getSize() == size) {
+      return valueOf(exprManager,arg);
+    } else {
+      final int argSize = arg.asBitVector().getSize();
+      BitVectorExpressionImpl expr;
+      try {
+        expr = new BitVectorExpressionImpl(exprManager,
+            BV_ZERO_EXTEND, new UnaryConstructionStrategy() {
+          @Override
+          public Expr apply(Context ctx, Expr arg) throws Z3Exception {
+            return ctx.MkZeroExt(size-argSize, (BitVecExpr) arg);
+          }
+        }, arg);
+      } catch (Z3Exception e) {
+        throw new TheoremProverException(e);
+      }
+      expr.setType(expr.getExpressionManager().bitVectorType(size));
+      return expr;
+    }
+  }
+  
   static BitVectorExpressionImpl mkExtract(ExpressionManagerImpl exprManager,
       Expression arg, final int high, final int low) {
     Preconditions.checkArgument(arg.isBitVector());
@@ -473,13 +500,14 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
     if (arg.asBitVector().getSize() == size) {
       return valueOf(exprManager,arg);
     } else {
+      final int argSize = arg.asBitVector().getSize();
       BitVectorExpressionImpl expr;
       try {
         expr = new BitVectorExpressionImpl(exprManager,
             BV_SIGN_EXTEND, new UnaryConstructionStrategy() {
           @Override
           public Expr apply(Context ctx, Expr arg) throws Z3Exception {
-            return ctx.MkZeroExt(size, (BitVecExpr) arg);
+            return ctx.MkSignExt(size-argSize, (BitVecExpr) arg);
           }
         }, arg);
       } catch (Z3Exception e) {
@@ -854,5 +882,17 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
   public BitVectorExpressionImpl rshift(Expression a) {
     Preconditions.checkArgument(a.isInteger() || a.isBitVector());
     return mkRShift(getExpressionManager(), this, a);
+  }
+  
+  @Override
+  public BitVectorExpressionImpl zeroExtend(int size) {
+    return mkZeroExtend(getExpressionManager(), size, this);
+
+  }
+  
+  @Override
+  public BitVectorExpressionImpl signExtend(int size) {
+    return mkSignExtend(getExpressionManager(), size, this);
+
   }
 }

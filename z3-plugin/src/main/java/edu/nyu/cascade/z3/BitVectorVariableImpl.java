@@ -149,13 +149,23 @@ public class BitVectorVariableImpl extends VariableExpressionImpl
 
   @Override
   public BitVectorExpression signedDivides(Expression a) {
-    // TODO Auto-generated method stub
-    return null;
+    Preconditions.checkArgument(a.isBitVector());
+    return BitVectorExpressionImpl.mkSDivide(getExpressionManager(), this, a);
   }
 
   @Override
   public BitVectorExpression signedRems(Expression a) {
-    // TODO Auto-generated method stub
-    return null;
+    Preconditions.checkArgument(a.isBitVector());
+    return BitVectorExpressionImpl.mkSRem(getExpressionManager(), this, a);
+  }
+
+  @Override
+  public BitVectorExpression zeroExtend(int size) {
+    return BitVectorExpressionImpl.mkZeroExtend(getExpressionManager(), size, this);
+  }
+
+  @Override
+  public BitVectorExpression signExtend(int size) {
+    return BitVectorExpressionImpl.mkSignExtend(getExpressionManager(), size, this);
   }
 }
