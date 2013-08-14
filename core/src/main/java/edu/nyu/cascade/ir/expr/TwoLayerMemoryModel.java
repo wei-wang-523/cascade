@@ -397,8 +397,10 @@ public class TwoLayerMemoryModel extends AbstractMemoryModel {
    * FIXME: how to associate each expression with the right region? Also the problem in Mono memory
    */
   private boolean toCollapse(Expression lval, Expression rval) {
-    String lvalTypeName = burstallMem.getTypeName(lval.getNode());
-    String rvalTypeName = burstallMem.getTypeName(rval.getNode());
+    xtc.type.Type lType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type rType = (xtc.type.Type) rval.getNode().getProperty(xtc.Constants.TYPE);
+    String lvalTypeName = burstallMem.getTypeName(lType);
+    String rvalTypeName = burstallMem.getTypeName(rType);
     if(lvalTypeName.equals(rvalTypeName)) {
       return toCollapse(lval) || toCollapse(rval);
     } else {

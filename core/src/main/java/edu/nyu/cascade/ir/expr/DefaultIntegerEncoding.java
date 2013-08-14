@@ -8,6 +8,7 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.IntegerExpression;
+import edu.nyu.cascade.prover.type.Type;
 
 public class DefaultIntegerEncoding extends
     AbstractTypeEncoding<IntegerExpression> implements
@@ -173,6 +174,12 @@ public class DefaultIntegerEncoding extends
   @Override
   public IntegerExpression zero() {
     return getExpressionManager().zero();
+  }
+
+  @Override
+  public IntegerExpression unknown(Type type) {
+    Preconditions.checkArgument(type.isInteger());
+    return type.variable(UNKNOWN_VARIABLE_NAME, true).asIntegerExpression();
   }
 
 }

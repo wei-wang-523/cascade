@@ -138,8 +138,20 @@ public class UnimplementedMemoryModel implements MemoryModel {
   }
 
   @Override
-  public Expression castConstant(int value) {
+  public Expression castConstant(int value, xtc.type.Type type) {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("castConstant"); 
+  }
+
+  @Override
+  public Expression castExpression(Expression src, xtc.type.Type targetType) {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("castExpression"); 
+  }
+
+  @Override
+  public int getSizeofType(xtc.type.Type type) {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("getSizeofType");
   }
 }

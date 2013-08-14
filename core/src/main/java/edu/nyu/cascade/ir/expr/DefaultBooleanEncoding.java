@@ -10,6 +10,8 @@ import edu.nyu.cascade.prover.VariableExpression;
 public class DefaultBooleanEncoding extends
     AbstractTypeEncoding<BooleanExpression> implements
     BooleanEncoding<BooleanExpression> {
+  private static final String UNKNOWN_VARIABLE_NAME = "bool_encoding_unknown";
+  
   public DefaultBooleanEncoding(ExpressionManager exprManager) {
     super(exprManager,exprManager.booleanType());
   }
@@ -89,5 +91,10 @@ public class DefaultBooleanEncoding extends
   @Override
   public boolean isEncodingFor(Expression x) {
     return x.isBoolean();
+  }
+  
+  @Override
+  public BooleanExpression unknown() {
+    return variable(UNKNOWN_VARIABLE_NAME, true);
   }
 }

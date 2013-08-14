@@ -11,6 +11,7 @@ import edu.nyu.cascade.ir.expr.IntegerEncoding;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.prover.type.Type;
 
 public class StateExpressionIntegerEncoding extends
     AbstractTypeEncoding<StateExpression> implements
@@ -210,6 +211,11 @@ public class StateExpressionIntegerEncoding extends
   public IntegerStateExpression ofExpression(Expression x) {
     Preconditions.checkArgument(x.isInteger());
     return wrap(x.asIntegerExpression());
+  }
+
+  @Override
+  public StateExpression unknown(Type type) {
+    throw new UnsupportedOperationException();
   }
 
 }

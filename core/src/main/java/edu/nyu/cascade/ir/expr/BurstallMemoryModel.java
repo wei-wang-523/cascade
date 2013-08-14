@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Iterator;
+import java.util.concurrent.ExecutionException;
 
-import xtc.tree.Node;
 import xtc.type.AliasT;
 import xtc.type.AnnotatedT;
 import xtc.type.Reference;
@@ -14,6 +14,9 @@ import xtc.type.VariableT;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -77,6 +80,17 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   private Expression currentAlloc = null;
   private Expression prevDerefState = null;
   private ExpressionClosure currentState = null;
+  
+  private final LoadingCache<xtc.type.Type, String> cache = CacheBuilder
+      .newBuilder().build(new CacheLoader<xtc.type.Type, String>(){
+        public String load(xtc.type.Type type) {
+          return getTypeName(type);
+        }
+      });
+  
+  private enum CellKind {
+    SCALAR, POINTER, TEST_VAR
+  }
 
   private BurstallMemoryModel(ExpressionEncoding encoding) {
     super(encoding);
@@ -239,36 +253,39 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     
     // Initialization
     if(currentMemElems.isEmpty() || state != prevDerefState) {
-      initCurrentMemElems(state.getChild(0));
+      currentMemElems.putAll(getMemElems(state.getChild(0)));
       prevDerefState = state;
     }
-    if(currentAlloc == null)    
-      currentAlloc = state.getChild(1);
+    if(currentAlloc == null)    currentAlloc = state.getChild(1);
     
-    String typeName = getTypeName(p.getNode());
-    
-    if(currentMemElems.containsKey(typeName)) {
-      return currentMemElems.get(typeName).asArray().index(p);
-    }
-    
-    // Add an element to currentMemElem
     ExpressionManager em = getExpressionManager();
     ArrayExpression tgtArray = null;
     
-    if(typeName.equals(TEST_VAR)) {
-      ArrayType arrType = em.arrayType(ptrType, em.booleanType());
-      tgtArray = em.variable(typeName, arrType, false).asArray();
-    } else if(isScalaType(p.getNode())) {
-      ArrayType arrType = em.arrayType(ptrType, cellType);
-      tgtArray = em.variable(typeName, arrType, false).asArray();
-    } else {
-      ArrayType arrType = em.arrayType(ptrType, ptrType);
-      tgtArray = em.variable(typeName, arrType, false).asArray();
+    try {
+      xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(xtc.Constants.TYPE);
+      String typeName = cache.get(pType);
+      if(currentMemElems.containsKey(typeName)) {
+        return currentMemElems.get(typeName).asArray().index(p);
+      }
+      
+      // Add an element to currentMemElem
+      CellKind kind = getCellKind(pType);
+      if(CellKind.SCALAR.equals(kind)) {
+        ArrayType arrType = em.arrayType(ptrType, cellType);
+        tgtArray = em.variable(typeName, arrType, false).asArray();
+      } else if(CellKind.TEST_VAR.equals(kind)) {
+        ArrayType arrType = em.arrayType(ptrType, em.booleanType());
+        tgtArray = em.variable(typeName, arrType, false).asArray();
+      } else {
+        ArrayType arrType = em.arrayType(ptrType, ptrType);
+        tgtArray = em.variable(typeName, arrType, false).asArray();
+      }
+      currentMemElems.put(typeName, tgtArray);
+    } catch (ExecutionException e) {
+      throw new ExpressionFactoryException(e);
     }
-    currentMemElems.put(typeName, tgtArray);
     
     Type currentMemType = getCurrentMemoryType();
-    
     Expression memPrime = em.record(currentMemType, currentMemElems.values());
     Expression statePrime = getUpdatedState(state, memPrime, currentAlloc);
     currentState = suspend(state, statePrime);
@@ -282,10 +299,14 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
     Expression rval = null;
-    if(isScalaType(lval.getNode())) {
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    CellKind kind = getCellKind(lvalType);
+    if(CellKind.SCALAR.equals(kind)) {
       rval = getExpressionEncoding().getIntegerEncoding().unknown();
-    } else {
+    } else if(CellKind.POINTER.equals(kind)){
       rval = getExpressionEncoding().unknown();
+    } else {
+      rval = getExpressionEncoding().getIntegerEncoding().unknown();
     }
     
     RecordExpression memory = updateMemState(state.getChild(0), lval, rval); 
@@ -335,12 +356,8 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   
   @Override
   public Expression addressOf(Expression content) {
-    xtc.type.Type type = (xtc.type.Type) content.getNode()
-        .getProperty(xtc.Constants.TYPE);
-    while(type.isAlias() || type.isAnnotated()) {
-      type = type.resolve();
-      type = type.deannotate();
-    }
+    xtc.type.Type type = unwrapped((xtc.type.Type) content.getNode()
+        .getProperty(xtc.Constants.TYPE));
     if(type.isStruct() || type.isUnion() || type.isArray())
       return content;
     else
@@ -363,7 +380,8 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
         }
         
       } else if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
-        throw new UnsupportedOperationException("--order-alloc is not supported in burstall memory model");
+        throw new UnsupportedOperationException(
+            "--order-alloc is not supported in burstall memory model");
       }
     } catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
@@ -553,6 +571,17 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     return res;
   }
   
+  private Map<String, Expression> getMemElems(Expression memState) {
+    Preconditions.checkArgument(memState.isRecord());
+    Map<String, Expression> resMap = Maps.newLinkedHashMap();
+    RecordExpression mem = memState.asRecord();
+    for(String elemName : mem.getType().getElementNames()) {
+      int index = elemName.indexOf('@') + 1;
+      resMap.put(elemName.substring(index), mem.select(elemName));
+    }
+    return resMap;
+  }
+  
   private RecordType getCurrentMemoryType() {
     ExpressionManager em = getExpressionManager();
     
@@ -601,69 +630,78 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     return em.tuple(stateTypePrime, memoryPrime, allocPrime);
   }
   
-  private void initCurrentMemElems(Expression memState) {
-    Preconditions.checkArgument(memState.isRecord());
-    RecordExpression mem = memState.asRecord();
-    for(String elemName : mem.getType().getElementNames()) {
-      int index = elemName.indexOf('@') + 1;
-      currentMemElems.put(elemName.substring(index), mem.select(elemName));
-    }
-  }
-  
-  private RecordExpression updateMemState(Expression memState, Expression lval, Expression rval) {   
-    initCurrentMemElems(memState);
-    String typeName = getTypeName(lval.getNode()); 
-    
+  private RecordExpression updateMemState(Expression memState, Expression lval, Expression rval) { 
+    currentMemElems.putAll(getMemElems(memState));
     ExpressionManager em = getExpressionManager();
-    ArrayExpression tgtArray = null;
-    Type currentMemType = null;
+    boolean isMemUpdated = false;
     
-    boolean declaredType = currentMemElems.containsKey(typeName);
-    if(declaredType) { // previously declared variable
-      // for assign null to pointer int* ptr = 0;
-      if(!(isScalaType(lval.getNode())) && rval.isBitVector()) {
-          assert(rval.isConstant() 
-              && Integer.parseInt(rval.getNode().getString(0)) == 0);
-          rval = ((PointerExpressionEncoding) getExpressionEncoding()).getPointerEncoding().nullPtr();
-      } else if(typeName.equals(TEST_VAR)) { // for assign true/false to TEST_VAR_X 
-        rval = getExpressionEncoding().castToBoolean(rval);
+    try {
+      ArrayExpression tgtArray = null;
+      xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+      String lvalTypeName = cache.get(lvalType);
+      if(currentMemElems.containsKey(lvalTypeName)) { // declared type name
+        CellKind kind = getCellKind(lvalType);
+        if(CellKind.POINTER.equals(kind)) {
+          if(!ptrType.equals(rval.getType())) {
+            // for assign null to pointer int* ptr = 0;
+            assert(rval.isConstant() 
+                && Integer.parseInt(rval.getNode().getString(0)) == 0);
+            rval = ((PointerExpressionEncoding) getExpressionEncoding())
+                .getPointerEncoding().nullPtr();
+          }
+        } else if(CellKind.TEST_VAR.equals(kind)) {
+          rval= getExpressionEncoding().castToBoolean(rval);
+          
+        }
+        tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval); 
+      } else { // new type name
+        isMemUpdated = true;
+        CellKind kind = getCellKind(lvalType);
+        ArrayType arrType = null;
+        if(CellKind.TEST_VAR.equals(kind)) {
+          arrType = em.arrayType(ptrType, em.booleanType());
+          rval = getExpressionEncoding().castToBoolean(rval);
+        } else if(CellKind.SCALAR.equals(kind)) {
+          arrType = em.arrayType(ptrType, cellType);
+        } else {
+          arrType = em.arrayType(ptrType, ptrType);
+          if(!ptrType.equals(rval.getType())) {
+            assert(rval.isConstant() 
+                && Integer.parseInt(rval.getNode().getString(0)) == 0);
+            rval = ((PointerExpressionEncoding) getExpressionEncoding())
+                .getPointerEncoding().nullPtr();
+          }
+        }
+        tgtArray = em.variable(lvalTypeName, arrType, false).asArray().update(lval, rval);
       }
       
-      tgtArray =  currentMemElems.get(typeName).asArray().update(lval, rval);
-      currentMemElems.put(typeName, tgtArray);
-      currentMemType = memState.getType();
-    } else { // newly type name
-      if(typeName.equals(TEST_VAR)) {
-        ArrayType arrType = em.arrayType(ptrType, em.booleanType());
-        tgtArray = em.variable(typeName, arrType, false).asArray()
-            .update(lval, getExpressionEncoding().castToBoolean(rval));
-      } else if(isScalaType(lval.getNode())) {
-        ArrayType arrType = em.arrayType(ptrType, cellType);
-        tgtArray = em.variable(typeName, arrType, false).asArray().update(lval, rval);
-      } else {
-        ArrayType arrType = em.arrayType(ptrType, ptrType);
-        if(rval.isBitVector()) {
-          Preconditions.checkArgument(rval.isConstant() 
-              && Integer.parseInt(rval.getNode().getString(0)) == 0);
-          rval = ((PointerExpressionEncoding) getExpressionEncoding()).getPointerEncoding().nullPtr();
-        }
-        tgtArray = em.variable(typeName, arrType, false).asArray().update(lval, rval);
-      }
-      currentMemElems.put(typeName, tgtArray);
-      currentMemType = getCurrentMemoryType();
-    }
+      currentMemElems.put(lvalTypeName, tgtArray);
+    } catch (ExecutionException e) {
+      throw new ExpressionFactoryException(e);
+    } 
     
+    Type currentMemType = isMemUpdated? getCurrentMemoryType() : memState.getType();
     return em.record(currentMemType, currentMemElems.values());
   }
   
-  private boolean isScalaType(Node node) {
-    xtc.type.Type type = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
-    
+  private xtc.type.Type unwrapped(xtc.type.Type type) {
     while(type.isAlias() || type.isAnnotated() || type.isVariable()) {
       type = type.deannotate();
       type = type.resolve();
     }
-    return type.isInteger() || type.isBoolean() || type.isFloat() || type.isNumber();
+    return type;
+  }
+  
+  private CellKind getCellKind(xtc.type.Type type) {
+    Preconditions.checkArgument(type != null);
+    type = unwrapped(type);
+    if(type.isInteger())
+      return CellKind.SCALAR;
+    if(type.isPointer())
+      return CellKind.POINTER;
+    if(type.isLabel() && TEST_VAR.equals(type.toLabel().getName()))
+      return CellKind.TEST_VAR;
+    throw new IllegalArgumentException("Unknown type " + type);
   }
   
   private Type getRefType() {
@@ -677,7 +715,6 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   protected String getTypeName(xtc.type.Type type) {
     Preconditions.checkArgument(type != null);    
     StringBuffer sb =  new StringBuffer();
-    
     if(type.isPointer()) {
       xtc.type.PointerT pType = (xtc.type.PointerT) type;
       sb.append('$').append("PointerT").append(getTypeName(pType.getType()));
@@ -710,23 +747,11 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
       sb.append(getTypeName(varType.getType()));
     } else if(type.isInteger()){
       sb.append('$').append("IntegerT");
-    } else if(type.isFloat()){
-      sb.append('$').append("FloatT");
+    } else if(type.isLabel()){
+      sb.append('$').append(type.toLabel().getName());
     } else {
       throw new IllegalArgumentException("Cannot parse type " + type.getName());
     }
     return sb.toString();
-  }
-  
-  protected String getTypeName(Node node) {
-    Preconditions.checkArgument(node != null);
-    String resName = null;
-    if(node.getName().equals("PrimaryIdentifier") && node.getString(0).startsWith(TEST_VAR)) {
-      resName = TEST_VAR;
-    } else {
-      xtc.type.Type type = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
-      resName = getTypeName(type);
-    }
-    return resName;
   }
 }

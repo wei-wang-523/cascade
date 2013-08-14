@@ -72,6 +72,8 @@ public interface Expression {
     BV_LSHIFT,
     /** Bit-wise RSHIFT. Two children, both bit-vectors. */
     BV_RSHIFT,
+    /** Bit-wise ZERO extend. Two children, size and a bit-vector. */
+    BV_ZERO_EXTEND,
     /** A constant of any type. No children. */
     CONSTANT,
     /**

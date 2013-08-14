@@ -112,4 +112,9 @@ implements
     Preconditions.checkArgument(x.isBoolean());
     return propFactory.valueOf(x.asBooleanExpression());
   }
+
+  @Override
+  public StateProperty unknown() {
+    return unknown();
+  }
 }

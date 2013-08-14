@@ -2,6 +2,8 @@ package edu.nyu.cascade.ir.expr;
 
 //import java.util.List;
 
+import xtc.type.*;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -75,7 +77,42 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   }
   
   @Override
-  public Expression castConstant(int value) {
+  public Expression castConstant(int value, xtc.type.Type type) {
     return encoding.integerConstant(value);
+  }
+  
+  @Override
+  public Expression castExpression(Expression src, xtc.type.Type type) {
+    return src;
+  }
+  
+  @Override
+  public int getSizeofType(xtc.type.Type t) {
+    if (t.isInteger()) {
+      return 1;
+    } else if (t.isPointer()) {
+      return 1;
+    } else if (t.isStruct()) {
+      int res = 0;
+      for(VariableT elem : t.toStruct().getMembers()) {
+        res += getSizeofType(elem.getType());
+      }
+      return res;
+    } else if(t.isUnion()) {
+      int res = 0;
+      for(VariableT elem : t.toUnion().getMembers()) {
+        res = Math.max(res, getSizeofType(elem.getType()));
+      }
+      return res;
+    } else if(t.isArray()) {
+      ArrayT array = t.toArray();
+      return (int) (array.getLength()) * getSizeofType(array.getType());
+    } else if(t.isAlias() || t.isVariable()) {
+      return getSizeofType(t.resolve());
+    } else if(t.isAnnotated()) {
+      return getSizeofType(t.deannotate());
+    } else {
+      throw new IllegalArgumentException("Unknown type.");
+    }
   }
 }

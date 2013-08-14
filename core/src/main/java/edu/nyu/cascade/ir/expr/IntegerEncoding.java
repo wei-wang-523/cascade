@@ -3,6 +3,7 @@ package edu.nyu.cascade.ir.expr;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.VariableExpression;
+import edu.nyu.cascade.prover.type.Type;
 
 public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
   /**
@@ -125,6 +126,7 @@ public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
   VariableExpression toVariable(T expr);
   
   T unknown();
+  T unknown(Type type);
   /**
    * Returns an integer expression representing zero.
    */

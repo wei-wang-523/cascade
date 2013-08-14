@@ -1,53 +1,64 @@
 package edu.nyu.cascade.ir.expr;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Iterator;
+import java.util.concurrent.ExecutionException;
 
-import xtc.tree.Node;
 import xtc.type.AliasT;
 import xtc.type.AnnotatedT;
 import xtc.type.Reference;
+import xtc.type.VariableT;
+import xtc.type.NumberT.Kind;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import edu.nyu.cascade.prover.ArrayVariableExpression;
+import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
+import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
-import edu.nyu.cascade.prover.type.UninterpretedType;
+import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
-import edu.nyu.cascade.util.RecursionStrategies;
-import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
 
 /**
- * Burstall memory model, still has a flat memory array, but has 
- * type as a component of index. The type of array maps (type constant, 
- * pointer type) to pointer type. Scalar value is also with pointer 
- * type, but has $Constant as the first element - pretty slow.
+ * Burstall memory model, multiple memory arrays for various type.
+ * These arrays types map pointer type to cell type. Cell type is 
+ * union of pointer type and INTEGER type. The state of memory is 
+ * a record with multiple arrays for various types. Different type
+ * has different cell type size: CharT is 8, IntegerT and ShorT is 
+ * 16, LongT is 32.
  * 
  * @author Wei
  *
  */
 public class BurstallVer1MemoryModel extends AbstractMemoryModel {
-  protected static final String TYPE_NAME = "typeName";
   protected static final String REGION_VARIABLE_NAME = "region";
   protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
   protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "alloc";
-  protected static final String DEFAULT_CONSTANT = "$Constant";
+  protected static final String DEFAULT_MEMORY_STATE_TYPE = "memType";
+  protected static final String DEFAULT_STATE_TYPE = "stateType";
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
@@ -56,89 +67,62 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
       ExpressionEncoding encoding)
       throws ExpressionFactoryException {
     Preconditions.checkArgument(encoding instanceof PointerExpressionEncoding);
-    
-    /** pointer type is (refType, offType) */
-    PointerEncoding ptrEncoding = ((PointerExpressionEncoding) encoding).getPointerEncoding();
-    TupleType ptrType = ptrEncoding.getType();
-    
-    ExpressionManager exprManager = encoding.getExpressionManager();
-    UninterpretedType typeNameType = exprManager.uninterpretedType(TYPE_NAME);
-    /** array's index type is (typeNameType, ptrType) */
-    TupleType indexType = exprManager.tupleType("idxType", typeNameType, ptrType);
-    /** array's type is (indexType, ptrType) */
-    ArrayType memArrayType = exprManager.arrayType(indexType, ptrType);
-
-    return new BurstallVer1MemoryModel(encoding, memArrayType);
+    return new BurstallVer1MemoryModel(encoding);
   }
+
+  private final TupleType ptrType; // pointer type = (ref-type, off-type)
+  private final BitVectorType cellType; // cell type
+  private final ArrayType allocType; // ref-type -> off-type
+  private RecordType memType; // with multiple array types
+  private TupleType stateType;
   
-  /** Create an expression factory with the given array type to model memory. The size of the 
-   * index type of the memory array (i.e., the size of a pointer) must be a multiple of the size
-   * of the element type (i.e., the size of a memory word).
-   */
-  public static BurstallVer1MemoryModel create(
-      ExpressionEncoding encoding, 
-      ArrayType memArrayType)
-      throws ExpressionFactoryException {
-    
-    return new BurstallVer1MemoryModel(encoding, memArrayType);
-  }
-
-  public static BurstallVer1MemoryModel create(ExpressionEncoding encoding,
-      ArrayVariableExpression memArray,
-      ArrayVariableExpression allocArray) throws ExpressionFactoryException
-  {
-    return create(encoding, memArray.getType());
-  }
-
-  private final TupleType ptrType; // (ref-type, off-type)
-  private final TupleType idxType; // (typeName-type, ptrType)
-  private final ArrayType memType; // idxType -> ptrType
-  private final ArrayType sizeType; // ref-type -> off-type  
-  private final UninterpretedType typeNameType; // typeName-type
-  
-  private final VariableExpression constRefVar;
-  private final Set<VariableExpression> lvals; // lvals: variables in stack
-  private final Set<Expression> rvals;
+  private final Set<Expression> lvals; // lvals: variables in stack
   private final List<Expression> stackRegions, heapRegions;
+  private final Map<String, Expression> currentMemElems;
+  private Expression currentAlloc = null;
+  private Expression prevDerefState = null;
+  private ExpressionClosure currentState = null;
   
-  /** The current state of memory model. It's used to create a back door to
-   * get the memory state update with assume statement (for _allocated predicate)
-   */
-  private ExpressionClosure currentState;
+  private final LoadingCache<xtc.type.Type, String> cache = CacheBuilder
+      .newBuilder().build(new CacheLoader<xtc.type.Type, String>(){
+        public String load(xtc.type.Type type) {
+          return getTypeName(type);
+        }
+      });
   
-  /** Restore the variable expression created for type name
-   */
-  private final Map<String, VariableExpression> typeMap;
-  
-  /** Restore all the scala type expressions
-   */
-  private final Set<VariableExpression> scalaTypeVars;
+  private enum CellKind {
+    INTEGER, POINTER, TEST_VAR
+  }
 
-  private BurstallVer1MemoryModel(ExpressionEncoding encoding, ArrayType memType) {
+  private BurstallVer1MemoryModel(ExpressionEncoding encoding) {
     super(encoding);
   
     this.lvals = Sets.newHashSet();
-    this.rvals = Sets.newHashSet();
     this.stackRegions = Lists.newArrayList();
     this.heapRegions = Lists.newArrayList();
-
-    this.memType = memType;
-    this.idxType = memType.getIndexType().asTuple();
-    this.typeNameType = idxType.getElementTypes().get(0).asUninterpreted();
-    this.ptrType = idxType.getElementTypes().get(1).asTuple();
-    this.sizeType = getExpressionManager().arrayType(getRefType(), getOffType());
+    this.currentMemElems = Maps.newLinkedHashMap();
     
-    this.typeMap = Maps.newHashMap();
-    /** Put constant type variable into type map */
-    this.constRefVar = getExpressionManager().variable(DEFAULT_CONSTANT, getRefType(), false);
+    ExpressionManager exprManager = getExpressionManager();
     
-    this.scalaTypeVars = Sets.newHashSet();
+    this.ptrType = ((PointerExpressionEncoding) encoding).getPointerEncoding().getType();
+    this.cellType = ptrType.getElementTypes().get(1).asBitVectorType();
+    this.allocType = exprManager.arrayType(
+        ptrType.getElementTypes().get(0), ptrType.getElementTypes().get(1));
+    
+    List<String> elemNames = Lists.newArrayList();
+    List<Type> elemTypes = Lists.newArrayList();
+    this.memType = exprManager.recordType(
+        Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE), elemNames, elemTypes);
+    this.stateType = exprManager.tupleType(
+        Identifiers.uniquify(DEFAULT_STATE_TYPE), memType, allocType);
   }
   
   @Override
   public TupleExpression alloc(Expression state, Expression ptr, Expression size) {
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
+    // FIXME: element size and integer size don't agree: cast integer to cell type?
+    Preconditions.checkArgument(size.getType().equals( cellType ));
+    
     ExpressionManager exprManager = getExpressionManager();
     
     Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, getRefType(), true);
@@ -148,44 +132,45 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
     
     heapRegions.add(refVar); // For dynamic memory allocation, add to the end
     
-    Expression typeNameVar = getTypeVar(ptr.getNode());
-    Expression indexPtr = exprManager.tuple(idxType, typeNameVar, ptr);
-    Expression memory = state.getChild(0).asArray().update(indexPtr, locVar);
+    RecordExpression memory = updateMemState(state.getChild(0), ptr, locVar);
     Expression alloc = state.getChild(1).asArray().update(refVar, size);    
-    return exprManager.tuple(getStateType(), memory, alloc);
+    TupleExpression statePrime = getUpdatedState(state, memory, alloc);
+    
+    memType = memory.getType();
+    stateType = statePrime.getType();
+    
+    return statePrime;
   }
   
   @Override 
   public TupleExpression declareArray(Expression state, Expression ptr, Expression size) {
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    // FIXME: What if element size and integer size don't agree?
-    Preconditions.checkArgument(size.getType().equals( ptrType ));
+    // FIXME: element size and integer size don't agree: cast integer to cell type
+    Preconditions.checkArgument(size.getType().equals( cellType ));
     
-    ExpressionManager exprManager = getExpressionManager();
-    Expression stackRegion = ptr.asTuple().index(0);
-    stackRegions.add(stackRegion); // For stack allocated region, add ptr directly to stackRegions;
-    rvals.add(stackRegion); // Add ptr to rvals (removed variables)
+    /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
+    Expression stackRegion = ptr.asTuple().index(0); 
+    /* For stack allocated region, add ptr directly to stackRegions */
+    stackRegions.add(stackRegion);
     
-    Expression alloc = state.getChild(1).asArray().update(stackRegion, size.asTuple().index(1));   
-    return exprManager.tuple(getStateType(), state.getChild(0), alloc);
+    Expression alloc = state.getChild(1).asArray().update(stackRegion, size);
+    return getUpdatedState(state, state.getChild(0), alloc);
   }
   
   @Override 
   public TupleExpression declareStruct(Expression state, Expression ptr, Expression size) {
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    // FIXME: What if element size and integer size don't agree?
-    Preconditions.checkArgument(size.getType().equals( ptrType ));
+    // FIXME: element size and integer size don't agree: cast integer to cell type
+    Preconditions.checkArgument(size.getType().equals( cellType ));
     
-    ExpressionManager exprManager = getExpressionManager();
-    
+    /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
     Expression stackRegion = ptr.asTuple().index(0);
-    stackRegions.add(stackRegion); // For stack allocated region, add ptr directly to stackRegions;
-    rvals.add(stackRegion); // Add ptr to rvals (removed variables)
+    /* For stack allocated region, add ptr directly to stackRegions */
+    stackRegions.add(stackRegion); 
     
-    Expression alloc = state.getChild(1).asArray().update(stackRegion, size.asTuple().index(1));   
-    return exprManager.tuple(getStateType(), state.getChild(0), alloc);
+    Expression alloc = state.getChild(1).asArray().update(stackRegion, size);
+    
+    return getUpdatedState(state, state.getChild(0), alloc);
   }
 
   /* TODO: This will fail for automatically allocated addresses (e.g., the
@@ -193,7 +178,6 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
    */
   @Override
   public BooleanExpression valid(Expression state, Expression ptr) {
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
 
     /* Collect all the regions. */
@@ -229,8 +213,7 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
   }
   
   @Override
-  public TupleExpression free(Expression state, Expression ptr) {   
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
+  public TupleExpression free(Expression state, Expression ptr) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType )); 
     
     ExpressionManager exprManager = getExpressionManager();
@@ -239,13 +222,13 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
     Expression alloc = state.getChild(1);
     
     try {
-        for( Expression locVar : heapRegions )
-          alloc = exprManager.ifThenElse(ptr.asTuple().index(0).eq(locVar), 
-              alloc.asArray().update(locVar, sizeZero), alloc);
+      for( Expression locVar : heapRegions )
+        alloc = exprManager.ifThenElse(ptr.asTuple().index(0).eq(locVar), 
+            alloc.asArray().update(locVar, sizeZero), alloc);
     } catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
-    }   
-    return exprManager.tuple(getStateType(), state.getChild(0), alloc);
+    }
+    return getUpdatedState(state, state.getChild(0), alloc);
   }
 
   @Override
@@ -253,47 +236,103 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
       Expression state,
       Expression lval,
       Expression rval) {
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
-    // FIXME: What if element size and integer size don't agree?
+    xtc.type.Type lType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type rType = (xtc.type.Type) rval.getNode().getProperty(xtc.Constants.TYPE);
+    if(CellKind.INTEGER.equals(getCellKind(lType)) 
+        && CellKind.INTEGER.equals(getCellKind(rType))) {
+      int lval_size = getSizeOfIntegerType(lType);
+      int rval_size = getSizeOfIntegerType(rType);
+      if(lval_size > rval_size) {
+        rval = rval.asBitVector().zeroExtend(lval_size);
+      } else if(lval_size < rval_size) {
+        IOUtils.debug().pln("Explicit cast is missing");
+        rval = rval.asBitVector().extract(lval_size-1, 0);
+      }
+    }
+    RecordExpression memory = updateMemState(state.getChild(0), lval, rval);
+    TupleExpression statePrime = getUpdatedState(state, memory, state.getChild(1));
     
-    ExpressionManager em = getExpressionManager();
+    memType = memory.getType();
+    stateType = statePrime.getType();
     
-    if(rval.getType().equals(getOffType()))
-      rval = em.tuple(ptrType, constRefVar, rval);
-    
-    Expression typeNameVar = getTypeVar(lval.getNode());
-    Expression index = em.tuple(idxType, typeNameVar, lval);
-    Expression memory = state.getChild(0).asArray().update(index, rval);   
-    
-    return em.tuple(getStateType(), memory, state.getChild(1));
+    return statePrime;
   }
 
   @Override
   public Expression deref(Expression state, Expression p) {
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
     Preconditions.checkArgument(ptrType.equals(p.getType()));
-    Expression memory = state.getChild(0);
-    ExpressionManager exprManager = getExpressionManager();
-    Expression typeNameVar = getTypeVar(p.getNode());
-    Expression indexVar = exprManager.tuple(idxType, typeNameVar, p);
-    return memory.asArray().index(indexVar);
+    
+    // Initialization
+    if(currentMemElems.isEmpty() || state != prevDerefState) {
+      currentMemElems.putAll(getMemElems(state.getChild(0)));
+      prevDerefState = state;
+    }
+    if(currentAlloc == null)    currentAlloc = state.getChild(1);
+    
+    ExpressionManager em = getExpressionManager();
+    ArrayExpression tgtArray = null;
+    
+    try {
+      xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(xtc.Constants.TYPE);
+      String typeName = cache.get(pType);
+    
+      if(currentMemElems.containsKey(typeName)) {
+        return currentMemElems.get(typeName).asArray().index(p);
+      }
+      
+      // Add an element to currentMemElem
+      CellKind kind = getCellKind(pType);
+      if(CellKind.TEST_VAR.equals(kind)) {
+        ArrayType arrType = em.arrayType(ptrType, em.booleanType());
+        tgtArray = em.variable(typeName, arrType, false).asArray();
+      } else if(CellKind.INTEGER.equals(kind)) {
+        int size = getSizeOfIntegerType(pType);
+        ArrayType arrType = em.arrayType(ptrType, em.bitVectorType(size));
+        tgtArray = em.variable(typeName, arrType, false).asArray();
+      } else {
+        ArrayType arrType = em.arrayType(ptrType, ptrType);
+        tgtArray = em.variable(typeName, arrType, false).asArray();
+      }
+      currentMemElems.put(typeName, tgtArray);
+    } catch (ExecutionException e) {
+      throw new ExpressionFactoryException(e);
+    }
+    
+    Type currentMemType = getCurrentMemoryType();
+    
+    Expression memPrime = em.record(currentMemType, currentMemElems.values());
+    Expression statePrime = getUpdatedState(state, memPrime, currentAlloc);
+    currentState = suspend(state, statePrime);
+    return tgtArray.index(p);
   }
   
   @Override
   public TupleExpression havoc(
       Expression state,
       Expression lval) {
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
-
-    Expression rval = getExpressionEncoding().unknown();
-    Expression typeNameVar = getTypeVar(lval.getNode());
-    Expression index = getExpressionManager().tuple(idxType, typeNameVar, lval);
-    Expression memory = state.getChild(0).asArray().update(index, rval);   
+    Expression rval = null;
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    CellKind kind = getCellKind(lvalType);
+    if(CellKind.INTEGER.equals(kind)) {
+      int size = getSizeOfIntegerType(lvalType);
+      Type bvType = getExpressionManager().bitVectorType(size);
+      rval = getExpressionEncoding().getIntegerEncoding().unknown(bvType);
+    } else if(CellKind.TEST_VAR.equals(kind)) {
+      rval = getExpressionEncoding().getBooleanEncoding().unknown();
+    } else {
+      rval = getExpressionEncoding().unknown();
+    }
     
-    return getExpressionManager().tuple(getStateType(), memory, state.getChild(1));
+    RecordExpression memory = updateMemState(state.getChild(0), lval, rval); 
+    TupleExpression statePrime = getUpdatedState(state, memory, state.getChild(1));
+    
+    memType = memory.getType();
+    stateType = statePrime.getType();
+        
+    return statePrime;
   }
   
   @Override
@@ -308,10 +347,9 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
   
   @Override
   public BooleanExpression allocated(Expression state, Expression ptr, Expression size) {
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
-    Preconditions.checkArgument(size.getType().equals( ptrType ));
+    Preconditions.checkArgument(size.getType().equals( allocType.getElementType()) );
     
     ExpressionManager exprManager = getExpressionManager();
     
@@ -322,98 +360,44 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
     
     heapRegions.add(refVar); // For dynamic memory allocation, add to the end
     
-    Expression typeNameVar = getTypeVar(ptr.getNode());
-    Expression indexPtr = exprManager.tuple(idxType, typeNameVar, ptr);
-    Expression memory = state.getChild(0).asArray().update(indexPtr, locVar);
-    Expression alloc = state.getChild(1).asArray().update(refVar, size.asTuple().index(1));
-    Expression statePrime = exprManager.tuple(getStateType(), memory, alloc);
+    Expression currentMem = updateMemState(state.getChild(0), ptr, locVar);
     
-    setCurrentState(state, statePrime);
+    if(currentAlloc == null)    currentAlloc = state.getChild(1);
+    currentAlloc = currentAlloc.asArray().update(refVar, size);
+
+    Expression statePrime = getUpdatedState(state, currentMem, currentAlloc);
+    currentState = suspend(state, statePrime);
+    
     return exprManager.tt();
   }
   
   @Override
   public Expression addressOf(Expression content) {
-    Preconditions.checkArgument(content.getChild(1).getType().equals(ptrType));
-    return content.getChild(1);
+    xtc.type.Type type = unwrapped((xtc.type.Type) content.getNode()
+        .getProperty(xtc.Constants.TYPE));
+    if(type.isStruct() || type.isUnion() || type.isArray())
+      return content;
+    else
+      return content.getChild(1);
   }
   
   @Override
   public ImmutableSet<BooleanExpression> getAssumptions(Expression state) {
     ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
-    try {
-      ExpressionManager exprManager = getExpressionManager();
-      PointerExpressionEncoding encoding = (PointerExpressionEncoding) getExpressionEncoding();
-      
-      /* Assume all the scalar type index variables has constant values in memory */
-      Expression indexVar = exprManager.variable("indexVar", idxType, true);
-      List<BooleanExpression> disjs = Lists.newArrayListWithCapacity(scalaTypeVars.size());
-      for(VariableExpression typeVar : scalaTypeVars)
-        disjs.add(indexVar.asTuple().index(0).eq(typeVar));
-      
-      /* Assume for all index variable, if its type is scalar type, then its value tuple should 
-       * have constant-ref variable as first argument. */
-      BooleanExpression boolExpr = exprManager.forall(indexVar, 
-          exprManager.implies(exprManager.or(disjs), 
-              state.getChild(0).asArray().index(indexVar).asTuple().index(0).eq(constRefVar)));
-      builder.add(boolExpr);
-      
-      /* Collect all the regions. */
-      ImmutableList<Expression> regions = new ImmutableList.Builder<Expression>()
-          .addAll(stackRegions).addAll(heapRegions).build();
-      
-      /* Remove all the variable in structVals from lvals. */      
-      lvals.remove(rvals);
-      
+    try {      
       if (Preferences.isSet(Preferences.OPTION_SOUND_ALLOC)) {
+        ExpressionManager exprManager = getExpressionManager();
         /* The sound allocation encoding doesn't assume anything about the ordering
          * of lvals and regions. This may lead a blow-up due to case splits.
          */
-        if(regions.size() > 1) {
-          builder.add(exprManager.distinct(regions));
+        ImmutableList<Expression> distinctRef = new ImmutableList.Builder<Expression>()
+            .addAll(heapRegions).addAll(lvals).build();
+        if(distinctRef.size() > 1) {
+          builder.add(exprManager.distinct(distinctRef));
         }
         
-        if (typeMap.size() > 1) {
-          builder.add(exprManager.distinct(typeMap.values()));
-        }
-        
-        if (lvals.size() > 1) {
-          builder.add(exprManager.distinct(lvals));
-        }
       } else if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
-        /* Unsound allocation encoding: just pick an order and assert that
-         * the tvals, lvals and regions are allocated in that order. 
-         */
-        
-        /* Assert the distinctness on the tvals */
-        if (typeMap.size() > 1) {
-          builder.add(exprManager.distinct(typeMap.values()));
-        }
-       
-        /* Assert the ordering on the lvals */
-        VariableExpression lval = null;
-        Iterator<VariableExpression> lvalIter = lvals.iterator();
-        if( lvalIter.hasNext() ) {
-          lval = lvalIter.next();
-        }
-        
-        while (lvalIter.hasNext()) {
-          VariableExpression lval2 = lvalIter.next();
-          builder.add(encoding.lessThan(lval, lval2).asBooleanExpression());
-          lval = lval2;
-        }
-        
-        Expression regionVar = null;
-        Iterator<Expression> regionIter = regions.iterator();
-        if( regionIter.hasNext() ) {
-          regionVar = regionIter.next();
-        }
-        
-        while (regionIter.hasNext()) {
-          Expression regionVar2 = regionIter.next();
-          builder.add(encoding.lessThan(regionVar, regionVar2).asBooleanExpression());
-          regionVar = regionVar2;
-        }
+        throw new UnsupportedOperationException("--order-alloc is not supported in burstall memory model");
       }
     } catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
@@ -427,49 +411,83 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
     Expression memVar = exprManager.variable(DEFAULT_MEMORY_VARIABLE_NAME, 
         memType, true);
     Expression allocVar = exprManager.variable(DEFAULT_REGION_SIZE_VARIABLE_NAME, 
-        sizeType, true);
-    return exprManager.tuple(getStateType(), memVar, allocVar);
+        allocType, true);
+    return exprManager.tuple(stateType, memVar, allocVar);
   }
   
   @Override
-  public ArrayType getMemoryType() {
+  public RecordType getMemoryType() {
     return memType;
   }
   
   @Override
   public TupleType getStateType() {
-    return getExpressionManager().tupleType("memState", memType, sizeType);
+    return stateType;
+  }
+  
+  public void setStateType(TupleType stateType) {
+    this.stateType = stateType;
+    this.memType = stateType.asTuple().getElementTypes().get(0).asRecord();
   }
 
   @Override
   public ExpressionClosure suspend(final Expression memoryVar, final Expression expr) {
-    Preconditions.checkArgument(getStateType().equals(memoryVar.getType()) );
-
+//    Preconditions.checkArgument(stateType.equals(memoryVar.getType()));
     return new ExpressionClosure() {
       @Override
       public Expression eval(final Expression memory) {
-        Preconditions.checkArgument(getStateType().equals(memory.getType()) );
-        if(!expr.getType().equals(getStateType())) { 
+        Preconditions.checkArgument(memory.getType().equals(memoryVar.getType()));
+        if(!isState(expr)) {
           // For non-tuple expression evaluation
           Expression exprPrime = expr
               .subst(memoryVar.getChildren(), memory.getChildren());
           return exprPrime.setNode(expr.getNode());
-        } else { 
-          // For tuple expression evaluation over memoryVar, since substitution doesn't return
-          // right children for as tuple expression for state.
+        } else {
+          /* For tuple expression evaluation over memoryVar, since substitution doesn't return
+           * right children for as tuple expression for state.
+           */
           ExpressionManager exprManager = getExpressionManager();
-          return exprManager.tuple(getStateType(), RecursionStrategies.unaryRecursionOverList(
-              expr.getChildren(),
-              new UnaryRecursionStrategy<Expression, Expression>() {
-            @Override
-            public Expression apply(Expression e) {
-              Expression ePrime = e.subst(ImmutableList.of(memoryVar.getChild(0)), 
-                  ImmutableList.of(memory.getChild(0)));
-              ePrime = ePrime.subst(ImmutableList.of(memoryVar.getChild(1)), 
-                  ImmutableList.of(memory.getChild(1)));
-              return ePrime;
-            }
-          }));
+          
+          Expression memory_mem = memory.getChild(0);
+          Expression memory_alloc = memory.getChild(1);
+          
+          /* Substitute the memory of expr to memPrime */
+          Expression expr_mem = expr.getChild(0);
+          RecordType expr_mem_type = expr_mem.getType().asRecord();
+          
+          /* Initialize elemMap from the expr_mem */
+          Map<String, Expression> elemMap = Maps.newLinkedHashMap();
+          
+          Iterator<String> nameItr = expr_mem_type.getElementNames().iterator();
+          Iterator<? extends Expression> elemItr = expr_mem.getChildren().iterator();
+          while(nameItr.hasNext() && elemItr.hasNext()) {
+            String name = nameItr.next();
+            Expression elem = elemItr.next();
+            elem = elem.subst(memoryVar.getChild(0), memory_mem);
+            elem = elem.subst(memoryVar.getChild(1), memory_alloc);
+            elemMap.put(name, elem);
+          }
+          
+          Expression memPrime = memory_mem;
+          if(!elemMap.isEmpty()) memPrime = exprManager.record(expr_mem_type, elemMap.values());
+          
+          /* Substitute the alloc of expr to allocPrime */
+          Expression allocPrime = null;
+          
+          Expression alloc = expr.getChild(1);
+          if(alloc.isVariable()) { // substitution makes no effect for variable
+            assert(alloc.equals(memoryVar.getChild(1)));
+            allocPrime = memory.getChild(1);
+          } else {
+            allocPrime = alloc.subst(memoryVar.getChild(0), memory_mem);
+            allocPrime = alloc.subst(memoryVar.getChild(1), memory_alloc);
+          }
+          
+          /* Update memType, allocType and stateType -- static member of memory model */
+          memType = memPrime.getType().asRecord();
+          stateType = expr.getType().asTuple();
+          
+          return exprManager.tuple(expr.getType(), memPrime, allocPrime);
         }
       }
 
@@ -487,6 +505,11 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
       public ExpressionManager getExpressionManager() {
         return expr.getExpressionManager();
       }
+      
+      private boolean isState(Expression expr) {
+        return expr.getType().isTuple() 
+            && expr.getType().asTuple().getName().startsWith(DEFAULT_STATE_TYPE);
+      }
     };
   }
   
@@ -497,13 +520,240 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
   
   @Override
   public void clearCurrentState() {
+    currentMemElems.clear();
+    currentAlloc = null;
     currentState = null;
   }
   
-  protected void setCurrentState(Expression state, Expression statePrime) {
-    Expression stateTmp = statePrime;
-    if(currentState != null)    stateTmp = currentState.eval(statePrime);
-    currentState = suspend(state, stateTmp);
+  @Override
+  public Expression castConstant(int value, xtc.type.Type type) {
+    int size = getSizeOfIntegerType(type);
+    return getExpressionManager().bitVectorConstant(value, size);
+  }
+  
+  @Override
+  public Expression castExpression(Expression src, xtc.type.Type type) {
+    if(!src.isBitVector())  return src;
+
+    Preconditions.checkArgument(CellKind.INTEGER.equals(getCellKind(type)));
+    int srcSize = src.getType().asBitVectorType().getSize();
+    int targetSize = getSizeOfIntegerType(type);
+    if(srcSize < targetSize)
+      return src.asBitVector().zeroExtend(targetSize);
+    else
+      return src.asBitVector().extract(targetSize-1, 0);
+  }
+  
+  public Expression combinePreMemoryStates(BooleanExpression guard, 
+      RecordExpression mem_1, RecordExpression mem_0) {    
+    
+    RecordType memType_1 = mem_1.getType();
+    Iterable<String> elemNames_1 = Iterables.transform(memType_1.getElementNames(),
+        new Function<String, String>() {
+      @Override
+      public String apply(String elemName) {
+        return elemName.substring(elemName.indexOf('@')+1);
+      }
+    });
+    
+    RecordType memType_0 = mem_0.getType();
+    final Iterable<String> elemNames_0 = Iterables.transform(memType_0.getElementNames(),
+        new Function<String, String>() {
+      @Override
+      public String apply(String elemName) {
+        return elemName.substring(elemName.indexOf('@')+1);
+      }
+    });
+    
+    Iterable<String> commonElemNames = Iterables.filter(elemNames_1, 
+        new Predicate<String>(){
+      @Override
+      public boolean apply(String elemName) {
+        return Iterables.contains(elemNames_0, elemName);
+      }
+    });
+    
+    List<Expression> elems = Lists.newArrayListWithCapacity(
+        Iterables.size(commonElemNames));
+    List<Type> elemTypes = Lists.newArrayListWithCapacity(
+        Iterables.size(commonElemNames));
+    
+    ExpressionManager em = getExpressionManager();
+    final String typeName_1 = memType_1.getName();
+    final String typeName_0 = memType_0.getName();
+    
+    for(String elemName : commonElemNames) {
+      String elemName_1 = typeName_1 + '@' + elemName;
+      String elemName_0 = typeName_0 + '@' + elemName;
+      Expression elem = em.ifThenElse(guard, mem_1.select(elemName_1), mem_0.select(elemName_0));
+      elems.add(elem);
+      elemTypes.add(elem.getType());
+    }
+    
+    final String typeName = Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME);
+    Iterable<String> elemNames = Iterables.transform(commonElemNames, 
+        new Function<String, String>(){
+      @Override
+      public String apply(String elemName) {
+        return elemName + '@' + typeName;
+      }
+    });
+    
+    RecordType recordType = em.recordType(Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME), 
+        elemNames, elemTypes);
+    Expression res = em.record(recordType, elems);
+    
+    return res;
+  }
+  
+  private Map<String, Expression> getMemElems(Expression memState) {
+    Preconditions.checkArgument(memState.isRecord());
+    Map<String, Expression> resMap = Maps.newLinkedHashMap();
+    RecordExpression mem = memState.asRecord();
+    for(String elemName : mem.getType().getElementNames()) {
+      int index = elemName.indexOf('@') + 1;
+      resMap.put(elemName.substring(index), mem.select(elemName));
+    }
+    return resMap;
+  }
+  
+  private RecordType getCurrentMemoryType() {
+    ExpressionManager em = getExpressionManager();
+    
+    Iterable<Type> elemTypes = Iterables.transform(currentMemElems.values(), 
+        new Function<Expression, Type>(){
+      @Override
+      public Type apply(Expression expr) {
+        return expr.getType();
+      }
+    });
+    
+    if(elemTypes == null)
+      throw new ExpressionFactoryException("Update memory type failed.");
+    
+    final String typeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
+    
+    Iterable<String> elemNames = Iterables.transform(currentMemElems.keySet(), 
+        new Function<String, String>(){
+      @Override
+      public String apply(String elemName) {
+        int index = elemName.indexOf('@')+1;
+        return typeName + '@' + elemName.substring(index);
+      }
+    });
+    
+    return em.recordType(typeName, elemNames, elemTypes);
+  }
+  
+  /**
+   * Recreate state from @param memoryPrime and @param allocPrime and create a new state
+   * type if state type is changed from the type of state
+   * @return a new state
+   */
+  public TupleExpression getUpdatedState(Expression state, Expression memoryPrime, Expression allocPrime) {
+    ExpressionManager em = getExpressionManager();
+    Type stateTypePrime = null;
+    
+    if(state != null 
+        && state.getType().asTuple().getElementTypes().get(0).equals(memoryPrime.getType())) {
+      stateTypePrime = state.getType();
+    } else {
+      stateTypePrime = em.tupleType(Identifiers.uniquify(DEFAULT_STATE_TYPE), 
+          memoryPrime.getType(), allocPrime.getType());
+    }
+    
+    return em.tuple(stateTypePrime, memoryPrime, allocPrime);
+  }
+  
+  private RecordExpression updateMemState(Expression memState, Expression lval, Expression rval) {
+    currentMemElems.putAll(getMemElems(memState));
+    ExpressionManager em = getExpressionManager();
+    boolean isMemUpdated = false;
+    
+    try {
+      ArrayExpression tgtArray = null;
+      xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+      String lvalTypeName = cache.get(lvalType);
+      if(currentMemElems.containsKey(lvalTypeName)) { // declared type name
+        if(CellKind.TEST_VAR.equals(getCellKind(lvalType))) { // TEST_VAR_X
+          rval = getExpressionEncoding().castToBoolean(rval);
+          tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
+        } else if(CellKind.POINTER.equals(getCellKind(lvalType))) {
+          if(!ptrType.equals(rval.getType())) {
+            // for assign null to pointer int* ptr = 0;
+            assert(rval.isConstant() 
+                && Integer.parseInt(rval.getNode().getString(0)) == 0);
+            rval = ((PointerExpressionEncoding) getExpressionEncoding())
+                .getPointerEncoding().nullPtr();
+          }
+          tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
+        } else {
+          tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
+        }
+        
+      } else { // new type name
+        isMemUpdated = true;
+        CellKind kind = getCellKind(lvalType);
+        ArrayType arrType = null;
+        
+        if(CellKind.TEST_VAR.equals(kind)) {
+          rval = getExpressionEncoding().castToBoolean(rval);
+          arrType = em.arrayType(ptrType, em.booleanType());
+        } else if(CellKind.INTEGER.equals(kind)) {
+          int size = getSizeOfIntegerType(lvalType);
+          arrType = em.arrayType(ptrType, em.bitVectorType(size));
+        } else {
+          arrType = em.arrayType(ptrType, ptrType);
+          if(!ptrType.equals(rval.getType())) {
+            assert(rval.isConstant() 
+              && Integer.parseInt(rval.getNode().getString(0)) == 0);
+            rval = ((PointerExpressionEncoding) getExpressionEncoding())
+              .getPointerEncoding().nullPtr();
+          }
+        }
+        
+        tgtArray = em.variable(lvalTypeName, arrType, false).asArray().update(lval, rval);
+      }      
+      currentMemElems.put(lvalTypeName, tgtArray);
+    } catch (ExecutionException e) {
+      throw new ExpressionFactoryException(e);
+    }
+    
+    Type currentMemType = isMemUpdated? getCurrentMemoryType() : memState.getType();
+    return em.record(currentMemType, currentMemElems.values());
+  }
+  
+  private xtc.type.Type unwrapped(xtc.type.Type type) {
+    while(type.isAlias() || type.isAnnotated() || type.isVariable()) {
+      type = type.deannotate();
+      type = type.resolve();
+    }
+    return type;
+  }
+  
+  private int getSizeOfIntegerType(xtc.type.Type type) {
+    Preconditions.checkArgument(unwrapped(type).isInteger());
+    Kind kind = unwrapped(type).toInteger().getKind();
+    if(kind.equals(Kind.CHAR) || kind.equals(Kind.U_CHAR)) {
+      return 8;
+    } else if(kind.equals(Kind.SHORT) || kind.equals(Kind.INT)
+        || kind.equals(Kind.U_INT)) {
+      return 16;
+    } else if(kind.equals(Kind.LONG)) {
+      return 32;
+    } else {
+      throw new IllegalArgumentException("Unsupported type " + type);
+    }
+  }
+  
+  private CellKind getCellKind(xtc.type.Type type) {
+    Preconditions.checkArgument(type != null);
+    type = unwrapped(type);
+    if(type.isInteger())    return CellKind.INTEGER;
+    if(type.isPointer())    return CellKind.POINTER;
+    if(type.isLabel() && type.toLabel().getName().equals("TEST_VAR"))
+      return CellKind.TEST_VAR;
+    throw new IllegalArgumentException("Unknown type " + type);
   }
   
   private Type getRefType() {
@@ -518,7 +768,9 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(type != null);    
     StringBuffer sb =  new StringBuffer();
     
-    if(type.isPointer()) {
+    if(type.isBoolean()) {
+      sb.append('$').append("BooleanT");
+    } else if(type.isPointer()) {
       xtc.type.PointerT pType = (xtc.type.PointerT) type;
       sb.append('$').append("PointerT").append(getTypeName(pType.getType()));
     } else if(type.isArray()) {
@@ -529,7 +781,7 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
     } else if(type.isUnion()) {
       sb.append('$').append(type.getName());
     } else if(type.isAnnotated()){
-      AnnotatedT annoType = (AnnotatedT) type;
+      AnnotatedT annoType = type.toAnnotated();
       if(annoType.hasShape()) {
         Reference ref = annoType.getShape();
         if(ref.hasBase() && ref.hasField()) {
@@ -543,27 +795,19 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
         sb.append(getTypeName(annoType.getType()));
       }
     } else if(type.isAlias()) {
-      AliasT aliasType = (AliasT) type;
+      AliasT aliasType = type.toAlias();
       sb.append(getTypeName(aliasType.getType()));
+    } else if(type.isVariable()) {
+      VariableT varType = (VariableT) type;
+      sb.append(getTypeName(varType.getType()));
+    } else if(type.isInteger()){
+      Kind kind = unwrapped(type).toInteger().getKind();
+      sb.append('$').append(kind);
+    } else if(type.isLabel()) { 
+      sb.append('$').append(type.toLabel().getName());
+    } else {
+      throw new IllegalArgumentException("Cannot parse type " + type.getName());
     }
     return sb.toString();
-  }
-  
-  private VariableExpression getTypeVar(Node node) {
-    String resName  = getTypeName((xtc.type.Type) node.getProperty(xtc.Constants.TYPE));
-    if(typeMap.containsKey(resName))    
-      return typeMap.get(resName);
-    
-    VariableExpression res = getExpressionManager().variable(resName, typeNameType, false);
-    typeMap.put(resName, res);
-    
-    if(resName.equals("$IntegerT") || resName.equals("$CharT")) scalaTypeVars.add(res);
-    return res;
-  }
-  
-  @Override
-  public Expression castConstant(int value) {
-    Expression val = getExpressionEncoding().integerConstant(value);
-    return getExpressionManager().tuple(ptrType, constRefVar, val);
   }
 }

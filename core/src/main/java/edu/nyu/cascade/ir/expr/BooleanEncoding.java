@@ -24,4 +24,5 @@ public interface BooleanEncoding<T extends Expression> extends TypeEncoding<T> {
   T or(Iterable<? extends T> conjuncts);
   T tt();
   T xor(T lhs, T rhs);
+  T unknown();
 }

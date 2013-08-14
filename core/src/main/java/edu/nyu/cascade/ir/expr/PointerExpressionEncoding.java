@@ -17,7 +17,7 @@ import edu.nyu.cascade.util.Preferences;
 
 public class PointerExpressionEncoding extends AbstractExpressionEncoding {
 
-  private static int cellSize = 8;
+  private static int cellSize = 16;
   
   public static PointerExpressionEncoding create(
       ExpressionManager exprManager) throws ExpressionFactoryException
@@ -143,11 +143,11 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
     if(lhs.isTuple() || rhs.isTuple()) {
       PointerEncoding ptrEncoding = getPointerEncoding();
       if(!lhs.isTuple()) {
-        assert(lhs.equals(ptrEncoding.getNullPtr()));
+        assert(lhs.isInteger() && lhs.isConstant());
         lhs = ptrEncoding.getNullPtr();
       }
       if(!rhs.isTuple()) {
-        assert(rhs.equals(ptrEncoding.getNullPtr()));
+        assert((rhs.isInteger() || rhs.isBitVector()) && rhs.isConstant());
         rhs = ptrEncoding.getNullPtr();
       }
       return getPointerEncoding().eq(lhs.asTuple(), rhs.asTuple());

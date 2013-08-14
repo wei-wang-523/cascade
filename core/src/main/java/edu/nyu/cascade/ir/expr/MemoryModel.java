@@ -129,6 +129,18 @@ public interface MemoryModel {
    * create a expression with constant <code>value</code>, used for
    * tuple type expression especially.
    */
-  Expression castConstant(int value);
+  Expression castConstant(int value, xtc.type.Type type);
+  
+  /**
+   * type conversion with <code>src</code> expression to target
+   * <code>type</code>
+   */
+  Expression castExpression(Expression src, xtc.type.Type targetType);
+  
+  /**
+   * Get the size of type, note that different memory model have different
+   * size of type
+   */
+  int getSizeofType(xtc.type.Type type);
 
 }

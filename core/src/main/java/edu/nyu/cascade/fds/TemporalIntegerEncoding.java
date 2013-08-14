@@ -9,6 +9,7 @@ import com.google.inject.assistedinject.Assisted;
 import edu.nyu.cascade.ir.expr.IntegerEncoding;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.type.Type;
 
 public class TemporalIntegerEncoding<T extends Expression> extends
     TemporalTypeEncoding<T> implements
@@ -227,5 +228,10 @@ public class TemporalIntegerEncoding<T extends Expression> extends
   @Override
   public StateExpression zero() {
     return stateExprFactory.valueOf((Expression) baseEncoding.zero());
+  }
+
+  @Override
+  public StateExpression unknown(Type type) {
+    return stateExprFactory.valueOf((Expression) baseEncoding.unknown(type));
   }
 }

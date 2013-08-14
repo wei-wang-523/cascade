@@ -9,6 +9,7 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.type.BitVectorType;
+import edu.nyu.cascade.prover.type.Type;
 
 public class BitVectorIntegerEncoding extends
     AbstractTypeEncoding<BitVectorExpression> implements
@@ -149,13 +150,19 @@ public class BitVectorIntegerEncoding extends
   @Override
   public BitVectorExpression plus(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-    return lhs.plus(getType().getSize(), rhs);
+    int size = Math.max(lhs.getSize(), rhs.getSize());
+    rhs = rhs.zeroExtend(size);
+    lhs = lhs.zeroExtend(size);
+    return lhs.plus(size, rhs);
   }
 
   @Override
   public BitVectorExpression times(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-    return lhs.times(getType().getSize(), rhs);
+    int size = Math.max(lhs.getSize(), rhs.getSize());
+    rhs = rhs.zeroExtend(size);
+    lhs = lhs.zeroExtend(size);
+    return lhs.times(size, rhs);
   }
   
   @Override
@@ -172,12 +179,20 @@ public class BitVectorIntegerEncoding extends
   
   @Override
   public BooleanExpression toBoolean(BitVectorExpression expr) {
-    return expr.neq(zero());
+    int size = expr.getType().getSize();
+    Expression zero = getExpressionManager().bitVectorConstant(0, size);
+    return expr.neq(zero);
   }
 
   @Override
   public BitVectorExpression unknown() {
     return variable(UNKNOWN_VARIABLE_NAME, true);
+  }
+  
+  @Override
+  public BitVectorExpression unknown(Type type) {
+    Preconditions.checkArgument(type.isBitVectorType());
+    return type.asBitVectorType().variable(UNKNOWN_VARIABLE_NAME, true);
   }
 
   @Override
@@ -189,6 +204,11 @@ public class BitVectorIntegerEncoding extends
   public BitVectorExpression ofExpression(Expression x) {
     Preconditions.checkArgument(x.isBitVector());
     return x.asBitVector();
+  }
+  
+  @Override
+  public boolean isEncodingFor(Expression x) {
+    return x.getType().isBitVectorType();
   }
   
   public BitVectorExpression lshift(BitVectorExpression lhs,

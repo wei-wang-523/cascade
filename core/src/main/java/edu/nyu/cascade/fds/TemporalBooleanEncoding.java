@@ -158,4 +158,9 @@ public class TemporalBooleanEncoding extends
     Preconditions.checkArgument(x.isBoolean());
     return propFactory.valueOf(baseEncoding.ofExpression(x));
   }
+
+  @Override
+  public StateProperty unknown() {
+    return propFactory.valueOf(baseEncoding.unknown());
+  }
 }

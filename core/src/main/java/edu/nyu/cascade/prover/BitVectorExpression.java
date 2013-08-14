@@ -64,4 +64,6 @@ public interface BitVectorExpression extends Expression {
   BitVectorExpression xor(Expression a) ;
   BitVectorExpression lshift(Expression a);
   BitVectorExpression rshift(Expression a);
+  BitVectorExpression zeroExtend(int size);
+  BitVectorExpression signExtend(int size);
 }

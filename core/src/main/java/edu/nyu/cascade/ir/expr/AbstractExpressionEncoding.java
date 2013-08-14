@@ -66,7 +66,8 @@ public abstract class AbstractExpressionEncoding
       BooleanEncoding<? extends Expression> booleanEncoding,
       ArrayEncoding<? extends Expression> arrayEncoding,
       TupleEncoding<? extends Expression> tupleEncoding) {
-    Preconditions.checkArgument( integerEncoding.getExpressionManager().equals( booleanEncoding.getExpressionManager()) );
+    Preconditions.checkArgument( integerEncoding.getExpressionManager().
+        equals( booleanEncoding.getExpressionManager()) );
     Preconditions.checkArgument( 
         arrayEncoding instanceof UnimplementedArrayEncoding ||
         integerEncoding.getExpressionManager().equals( arrayEncoding.getExpressionManager()) );
@@ -357,21 +358,22 @@ public abstract class AbstractExpressionEncoding
     }
     throw new UnsupportedOperationException("type=" + type);
   }
+  
+  private int getMaxSize(Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(lhs.isBitVector() && rhs.isBitVector());
+    return Math.max(lhs.asBitVector().getSize(), rhs.asBitVector().getSize());
+  }
 
   @Override
   public Expression eq(Expression lhs, Expression rhs) {
-      Preconditions.checkArgument(lhs.getType().equals(rhs.getType()));
-      return getBooleanEncoding().ofBooleanExpression( lhs.eq((Expression)rhs) );
-  /*    if (isInteger(lhs) && isInteger(rhs)) {
-        return ofBooleanExpression(getIntegerEncoding().eq(lhs, rhs));
-      } else if (isArray(lhs) && isArray(rhs)) {
-        Preconditions.checkArgument(getArrayInstance(lhs).equals(
-            getArrayInstance(rhs)));
-        return ofBooleanExpression(getArrayInstance(lhs).eq(lhs, rhs));
-      } else {
-        throw new UnsupportedOperationException("eq: " + lhs + "=" + rhs);
-      }
-  */  }
+    if(isInteger(lhs) && isInteger(rhs) && 
+        !lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
+    return getBooleanEncoding().ofBooleanExpression( lhs.eq((Expression)rhs) );
+  }
 
   @Override
   public Expression ff() {
@@ -416,10 +418,14 @@ public abstract class AbstractExpressionEncoding
   }
 
   private <T extends Expression> BooleanExpression greaterThan_(
-      IntegerEncoding<T> ie, Expression a, Expression b) {
-    Preconditions.checkArgument(isInteger(a));
-    Preconditions.checkArgument(isInteger(b));
-    return ie.greaterThan(ie.ofExpression(a), ie.ofExpression(b));
+      IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
+    if(!lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
+    return ie.greaterThan(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
   
   @Override
@@ -428,10 +434,14 @@ public abstract class AbstractExpressionEncoding
   }
 
   private <T extends Expression> BooleanExpression signedGreaterThan_(
-      IntegerEncoding<T> ie, Expression a, Expression b) {
-    Preconditions.checkArgument(isInteger(a));
-    Preconditions.checkArgument(isInteger(b));
-    return ie.signedGreaterThan(ie.ofExpression(a), ie.ofExpression(b));
+      IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
+    if(!lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
+    return ie.signedGreaterThan(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
 
   @Override
@@ -441,10 +451,14 @@ public abstract class AbstractExpressionEncoding
   }
 
   private <T extends Expression> BooleanExpression greaterThanOrEqual_(
-      IntegerEncoding<T> ie, Expression a, Expression b) {
-    Preconditions.checkArgument(isInteger(a));
-    Preconditions.checkArgument(isInteger(b));
-    return ie.greaterThanOrEqual(ie.ofExpression(a), ie.ofExpression(b));
+      IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
+    if(!lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
+    return ie.greaterThanOrEqual(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
   
   @Override
@@ -454,15 +468,18 @@ public abstract class AbstractExpressionEncoding
   }
 
   private <T extends Expression> BooleanExpression signedGreaterThanOrEqual_(
-      IntegerEncoding<T> ie, Expression a, Expression b) {
-    Preconditions.checkArgument(isInteger(a));
-    Preconditions.checkArgument(isInteger(b));
-    return ie.signedGreaterThanOrEqual(ie.ofExpression(a), ie.ofExpression(b));
+      IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
+    if(!lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
+    return ie.signedGreaterThanOrEqual(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
 
   @Override
-  public Expression ifThenElse(Expression bool, Expression thenExpr, Expression elseExpr)
-      {
+  public Expression ifThenElse(Expression bool, Expression thenExpr, Expression elseExpr) {
     return ifThenElse_(getIntegerEncoding(), toBoolean(getBooleanEncoding(),
         bool), thenExpr, elseExpr);
   }
@@ -518,17 +535,25 @@ public abstract class AbstractExpressionEncoding
   }
 
   private <T extends Expression> BooleanExpression lessThan_(IntegerEncoding<T> ie,
-      Expression a, Expression b) {
-    Preconditions.checkArgument(isInteger(a));
-    Preconditions.checkArgument(isInteger(b));
-    return ie.lessThan(ie.ofExpression(a), ie.ofExpression(b));
+      Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
+    if(!lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
+    return ie.lessThan(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
   
   private <T extends Expression> BooleanExpression signedLessThan_(IntegerEncoding<T> ie,
-      Expression a, Expression b) {
-    Preconditions.checkArgument(isInteger(a));
-    Preconditions.checkArgument(isInteger(b));
-    return ie.signedLessThan(ie.ofExpression(a), ie.ofExpression(b));
+      Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
+    if(!lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
+    return ie.signedLessThan(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
 
   @Override
@@ -542,17 +567,25 @@ public abstract class AbstractExpressionEncoding
   }
   
   private <T extends Expression> BooleanExpression lessThanOrEqual_(
-      IntegerEncoding<T> ie, Expression a, Expression b) {
-    Preconditions.checkArgument(isInteger(a));
-    Preconditions.checkArgument(isInteger(b));
-    return ie.lessThanOrEqual(ie.ofExpression(a), ie.ofExpression(b));
+      IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
+    if(!lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
+    return ie.lessThanOrEqual(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
   
   private <T extends Expression> BooleanExpression signedLessThanOrEqual_(
-      IntegerEncoding<T> ie, Expression a, Expression b) {
-    Preconditions.checkArgument(isInteger(a));
-    Preconditions.checkArgument(isInteger(b));
-    return ie.signedLessThanOrEqual(ie.ofExpression(a), ie.ofExpression(b));
+      IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
+    if(!lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
+    return ie.signedLessThanOrEqual(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
 
   @Override
@@ -560,10 +593,15 @@ public abstract class AbstractExpressionEncoding
     return minus_(getIntegerEncoding(), lhs, rhs);
   }
 
-  private <T extends Expression> T minus_(IntegerEncoding<T> ie, Expression a, Expression b) {
-    Preconditions.checkArgument(isInteger(a));
-    Preconditions.checkArgument(isInteger(b));
-    return ie.minus(ie.ofExpression(a), ie.ofExpression(b));
+  private <T extends Expression> T minus_(
+    IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
+    if(!lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
+    return ie.minus(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
   
   @Override
@@ -571,10 +609,15 @@ public abstract class AbstractExpressionEncoding
     return times_(getIntegerEncoding(), lhs, rhs);
   }
 
-  private <T extends Expression> T times_(IntegerEncoding<T> ie, Expression a, Expression b) {
-    Preconditions.checkArgument(isInteger(a));
-    Preconditions.checkArgument(isInteger(b));
-    return ie.times(ie.ofExpression(a), ie.ofExpression(b));
+  private <T extends Expression> T times_(
+      IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
+    if(!lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
+    return ie.times(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
   
   @Override
@@ -582,10 +625,15 @@ public abstract class AbstractExpressionEncoding
     return divide_(getIntegerEncoding(), lhs, rhs);
   }
 
-  private <T extends Expression> T divide_(IntegerEncoding<T> ie, Expression a, Expression b) {
-    Preconditions.checkArgument(isInteger(a));
-    Preconditions.checkArgument(isInteger(b));
-    return ie.divide(ie.ofExpression(a), ie.ofExpression(b));
+  private <T extends Expression> T divide_(
+      IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
+    if(!lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
+    return ie.divide(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
 
   @Override
@@ -593,10 +641,15 @@ public abstract class AbstractExpressionEncoding
     return mod_(getIntegerEncoding(), lhs, rhs);
   }
 
-  private <T extends Expression> T mod_(IntegerEncoding<T> ie, Expression a, Expression b) {
-    Preconditions.checkArgument(isInteger(a));
-    Preconditions.checkArgument(isInteger(b));
-    return ie.mod(ie.ofExpression(a), ie.ofExpression(b));
+  private <T extends Expression> T mod_(
+      IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
+    if(!lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
+    return ie.mod(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
   
   @Override
@@ -604,12 +657,17 @@ public abstract class AbstractExpressionEncoding
     return rem_(getIntegerEncoding(), lhs, rhs);
   }
 
-  private <T extends Expression> Expression rem_(IntegerEncoding<T> ie, Expression a, Expression b) {
-    Preconditions.checkArgument(isInteger(a));
-    Preconditions.checkArgument(isInteger(b));
+  private <T extends Expression> Expression rem_(
+      IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
+    if(!lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
     if(ie instanceof BitVectorIntegerEncoding) {
       BitVectorIntegerEncoding bvIntEncoding = (BitVectorIntegerEncoding) ie;
-      return bvIntEncoding.rem(bvIntEncoding.ofExpression(a), bvIntEncoding.ofExpression(b));
+      return bvIntEncoding.rem(bvIntEncoding.ofExpression(lhs), bvIntEncoding.ofExpression(rhs));
     } else {
       throw new UnsupportedOperationException("rem_ is not supported in integer encoding.");
     }
@@ -620,12 +678,17 @@ public abstract class AbstractExpressionEncoding
     return signedRem_(getIntegerEncoding(), lhs, rhs);
   }
 
-  private <T extends Expression> Expression signedRem_(IntegerEncoding<T> ie, Expression a, Expression b) {
-    Preconditions.checkArgument(isInteger(a));
-    Preconditions.checkArgument(isInteger(b));
+  private <T extends Expression> Expression signedRem_(
+      IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
+    if(!lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
     if(ie instanceof BitVectorIntegerEncoding) {
       BitVectorIntegerEncoding bvIntEncoding = (BitVectorIntegerEncoding) ie;
-      return bvIntEncoding.signedRem(bvIntEncoding.ofExpression(a), bvIntEncoding.ofExpression(b));
+      return bvIntEncoding.signedRem(bvIntEncoding.ofExpression(lhs), bvIntEncoding.ofExpression(rhs));
     } else {
       throw new UnsupportedOperationException("signedRem_ is not supported in integer encoding.");
     }
@@ -636,12 +699,17 @@ public abstract class AbstractExpressionEncoding
     return signedDivide_(getIntegerEncoding(), lhs, rhs);
   }
 
-  private <T extends Expression> Expression signedDivide_(IntegerEncoding<T> ie, Expression a, Expression b) {
-    Preconditions.checkArgument(isInteger(a));
-    Preconditions.checkArgument(isInteger(b));
+  private <T extends Expression> Expression signedDivide_(
+      IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
+    if(!lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
     if(ie instanceof BitVectorIntegerEncoding) {
       BitVectorIntegerEncoding bvIntEncoding = (BitVectorIntegerEncoding) ie;
-      return bvIntEncoding.signedDivide(bvIntEncoding.ofExpression(a), bvIntEncoding.ofExpression(b));
+      return bvIntEncoding.signedDivide(bvIntEncoding.ofExpression(lhs), bvIntEncoding.ofExpression(rhs));
     } else {
       throw new UnsupportedOperationException("signedDivide_ is not supported in integer encoding.");
     }
@@ -659,8 +727,8 @@ public abstract class AbstractExpressionEncoding
   
   @Override
   public Expression neq(Expression lhs, Expression rhs){
-        return not(eq(lhs,rhs));
-      }
+    return not(eq(lhs,rhs));
+  }
 
   @Override
   public Expression nor(Iterable<Expression> disjuncts) {
@@ -704,7 +772,8 @@ public abstract class AbstractExpressionEncoding
     return or_(getBooleanEncoding(),lhs,rhs);
   }
   
-  private <T extends Expression> T or_(BooleanEncoding<T> be, Expression lhs, Expression rhs) {
+  private <T extends Expression> T or_(
+      BooleanEncoding<T> be, Expression lhs, Expression rhs) {
     Preconditions.checkArgument(isBoolean(lhs));
     Preconditions.checkArgument(isBoolean(rhs));
     return be.or(be.ofExpression(lhs), be.ofExpression(rhs));
@@ -730,10 +799,15 @@ public abstract class AbstractExpressionEncoding
     return plus_(getIntegerEncoding(), lhs, rhs);
   }
 
-  private <T extends Expression> T plus_(IntegerEncoding<T> ie, Expression a, Expression b) {
-    Preconditions.checkArgument(isInteger(a));
-    Preconditions.checkArgument(isInteger(b));
-    return ie.plus(ie.ofExpression(a), ie.ofExpression(b));
+  private <T extends Expression> T plus_(
+      IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
+    if(!lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
+    return ie.plus(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
 
   @Override
@@ -772,7 +846,8 @@ public abstract class AbstractExpressionEncoding
     return updateArray_(getArrayEncoding(),array,index,newValue);
   }
 
-  private <T extends Expression> Expression updateArray_(ArrayEncoding<T> ae, Expression array, Expression index, Expression newValue) {
+  private <T extends Expression> Expression updateArray_(ArrayEncoding<T> ae, 
+      Expression array, Expression index, Expression newValue) {
     return ae.update(ae.ofExpression(array), index, newValue);
   }
   
