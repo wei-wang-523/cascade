@@ -12,23 +12,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import xtc.Constants;
-import xtc.type.AnnotatedT;
-import xtc.type.BooleanT;
-import xtc.type.DynamicReference;
-import xtc.type.FieldReference;
-import xtc.type.IndirectReference;
-import xtc.type.NumberT;
-import xtc.type.PointerT;
-import xtc.type.Reference;
-import xtc.type.StructOrUnionT;
-import xtc.type.StructT;
-import xtc.type.Type;
-import xtc.type.ArrayT;
-import xtc.type.VariableT;
-import xtc.tree.GNode;
-import xtc.tree.Node;
-import xtc.tree.VisitingException;
-import xtc.tree.Visitor;
+import xtc.type.*;
+import xtc.tree.*;
 import xtc.util.SymbolTable.Scope;
 
 import com.google.common.base.Preconditions;
@@ -96,7 +81,9 @@ class CExpressionEncoder implements ExpressionEncoder {
       return suspend(encodeInteger(node));
     }
 
-    Expression encodeBoolean(Node node) { return encodeBoolean(node, false).setNode((GNode) node); }
+    Expression encodeBoolean(Node node) {
+      return encodeBoolean(node, false).setNode((GNode) node);
+    }
     
     Expression encodeBoolean(Node node, boolean negated) {
       Expression b = coerceToBoolean((Expression) dispatch(node));
@@ -264,11 +251,13 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
 
     public Expression visitCastExpression(GNode node) {
-      /* TODO: Deal with conversions */
-      IOUtils.debug().pln("Treating cast as no-op.");
-      Type targetType = lookupType(node.getNode(0));
-      typeTable.put(node.getNode(1).toString(), targetType);
-      Expression res = (Expression) dispatch(node.getNode(1));
+      Type targetType = unwrapped(lookupType(node));
+      if(targetType.isPointer()) {
+        /* TODO: Deal with int to pointer conversions */
+        return (Expression) dispatch(node.getNode(1));
+      }
+      Expression src = (Expression) dispatch(node.getNode(1));
+      Expression res = getMemoryModel().castExpression(src, targetType);
       return res.setNode(node);
     }
     
@@ -276,7 +265,7 @@ class CExpressionEncoder implements ExpressionEncoder {
         throws ExpressionFactoryException {
       Type type = (Type) node.getProperty(xtc.Constants.TYPE);
       int constVal = type.getConstant().bigIntValue().intValue();
-      Expression res = getMemoryModel().castConstant(constVal);
+      Expression res = getMemoryModel().castConstant(constVal, type);
       return res.setNode(node);
     }
 
@@ -339,18 +328,18 @@ class CExpressionEncoder implements ExpressionEncoder {
           res = getExpressionManager().implies(argExprs.get(0), argExprs.get(1));
         } else if( FUN_FORALL.equals(name) || FUN_EXISTS.equals(name)) {
           ExpressionManager exprManager = getExpressionManager();
+          List<Expression> args = (List<Expression>) dispatch(argList);
           List<VariableExpression> argVars = Lists.newArrayList();
           int size = argList.size();
           for(int i=0; i<size-1; i++) {
             GNode argNode = argList.getGeneric(i);
-            String argName = argNode.getName().equals("PrimaryIdentifier") ? argNode.getString(0) :
+            String argName = "PrimaryIdentifier".equals(argNode.getName()) ? argNode.getString(0) :
                 argNode.getNode(argNode.size()-1).getString(0);
-            assert(lookupType(argNode).isInteger());
             int cellSize = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
-            VariableExpression argVar = exprManager.variable(argName, exprManager.bitVectorType(cellSize), false);
+            VariableExpression argVar = exprManager.variable(argName, 
+                exprManager.bitVectorType(sizeofType(lookupType(argNode)) * cellSize), false);
             argVars.add(argVar);
           }
-          List<Expression> args = (List<Expression>) dispatch(argList);
           Expression body = args.remove(size-1).subst(args, argVars);
           if( FUN_FORALL.equals(name) )  
             res = exprManager.forall(argVars, body);
@@ -450,18 +439,13 @@ class CExpressionEncoder implements ExpressionEncoder {
         else 
           constVal = Integer.parseInt(numStr);
       }
-      Expression res = getMemoryModel().castConstant(constVal);
+      Expression res = getMemoryModel().castConstant(constVal, type);
       return res.setNode(node);
     }
 
     public Expression visitLogicalAndExpression(GNode node)
         throws ExpressionFactoryException {
-      /*
-       * IBooleanExpression left = ExpressionFactory.exprToBoolean(exprManager,
-       * (Expression) dispatch(node.getNode(0))); IBooleanExpression right =
-       * ExpressionFactory.exprToBoolean(exprManager, (Expression)
-       * dispatch(node.getNode(1)));
-       */
+      lookupType(node);
       Expression left = encodeBoolean(node.getNode(0));
       Expression right = encodeBoolean(node.getNode(1));
       return encoding.and(left, right).setNode(node);
@@ -474,6 +458,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 
     public Expression visitLogicalOrExpression(GNode node)
         throws ExpressionFactoryException {
+      lookupType(node);
       Expression left = encodeBoolean(node.getNode(0));
       Expression right = encodeBoolean(node.getNode(1));
       return encoding.or(left, right).setNode(node);
@@ -524,14 +509,14 @@ class CExpressionEncoder implements ExpressionEncoder {
                 Expression b;
                 if (">".equals(relOp)) {
                   if(Preferences.isSet(Preferences.OPTION_SIGNED_OPERATION))
-                    b = encoding.signedLessThan(coerceToInteger(right), coerceToInteger(left));
+                    b = encoding.signedGreaterThan(coerceToInteger(left), coerceToInteger(right));
                   else
-                    b = encoding.lessThan(coerceToInteger(right), coerceToInteger(left));
+                    b = encoding.greaterThan(coerceToInteger(left), coerceToInteger(right));
                 } else if (">=".equals(relOp)) {
                   if(Preferences.isSet(Preferences.OPTION_SIGNED_OPERATION))
-                    b = encoding.signedLessThanOrEqual(coerceToInteger(right), coerceToInteger(left));
+                    b = encoding.signedGreaterThanOrEqual(coerceToInteger(left), coerceToInteger(right));
                   else
-                    b = encoding.lessThanOrEqual(coerceToInteger(right), coerceToInteger(left));
+                    b = encoding.greaterThanOrEqual(coerceToInteger(left), coerceToInteger(right));
                 } else if ("<".equals(relOp)) {
                   if(Preferences.isSet(Preferences.OPTION_SIGNED_OPERATION))
                     b = encoding.signedLessThan(coerceToInteger(left), coerceToInteger(right));
@@ -571,6 +556,11 @@ class CExpressionEncoder implements ExpressionEncoder {
 
       if(!("SubscriptExpression".equals(node.getName()))) {
         Expression base = (Expression) dispatch(node);
+        if(type.isPointer()) {
+          Type ptoType = type.toPointer().getType();
+          Expression factor = encoding.integerConstant(sizeofType(ptoType));
+          idx = encoding.times(idx, factor);
+        }
         return encoding.plus(base, idx);
       }
       
@@ -582,8 +572,11 @@ class CExpressionEncoder implements ExpressionEncoder {
         Expression newIdx = encoding.plus(encoding.times(nestIdx, factor), idx);
         return getSubscriptExpression(nestedBaseNode, newIdx);    
       } else {
-        Expression baseExpr = (Expression) dispatch(node);
-        return encoding.plus(baseExpr, idx);
+        Expression base = (Expression) dispatch(node);
+        Type ptoType = type.toPointer().getType();
+        Expression factor = encoding.integerConstant(sizeofType(ptoType));
+        Expression newIdx = encoding.times(idx, factor);
+        return encoding.plus(base, newIdx);
       }   
     }
 
@@ -667,7 +660,8 @@ class CExpressionEncoder implements ExpressionEncoder {
     public Expression visitUnaryMinusExpression(GNode node) 
         throws ExpressionFactoryException {
       Expression rhs = (Expression)dispatch(node.getNode(0));
-      Expression zero = getMemoryModel().castConstant(0);
+      Type type = lookupType(node);
+      Expression zero = getMemoryModel().castConstant(0, type);
       return encoding.minus(zero, rhs).setNode(node); 
     }
     
@@ -678,6 +672,7 @@ class CExpressionEncoder implements ExpressionEncoder {
        * non-char* arithmetic will be wrong
        */
       IOUtils.debug().pln("APPROX: Possible pointer arithmetic treated as char*");
+      lookupType(node); // attach type to node's property
       return binaryOp(node, this, 
           new BinaryInfixRecursionStrategy<Expression, Expression>() {
         @Override
@@ -800,7 +795,9 @@ class CExpressionEncoder implements ExpressionEncoder {
 
       if(!("SubscriptExpression".equals(node.getName()))) {
         Expression base = (Expression) exprVisitor.dispatch(node);
-        return encoding.plus(base, idx);
+        Expression factor = encoding.integerConstant(sizeofType(lookupType(node)));
+        Expression newIdx = encoding.times(idx, factor);
+        return encoding.plus(base, newIdx);
       }
       
       if(type.isArray()) {
@@ -811,8 +808,11 @@ class CExpressionEncoder implements ExpressionEncoder {
         Expression newIdx = encoding.plus(encoding.times(nestIdx, factor), idx);
         return getSubscriptExpression(nestedBaseNode, newIdx);    
       } else {
-        Expression base = (Expression) exprVisitor.dispatch(node); 
-        return encoding.plus(base, idx);
+        Expression base = (Expression) exprVisitor.dispatch(node);
+        Type ptoType = type.toPointer().getType();
+        Expression factor = encoding.integerConstant(sizeofType(ptoType));
+        Expression newIdx = encoding.times(idx, factor);
+        return encoding.plus(base, newIdx);
       }  
     }
     
@@ -1050,33 +1050,7 @@ class CExpressionEncoder implements ExpressionEncoder {
   }
   
   private int sizeofType(Type t) {
-    int res = 0;
-    t = unwrapped(t);
-    
-    if (t.isInteger()) 
-      res = 1;
-    else if (t.isPointer())
-      res = 1;
-    else if (t.isStruct() || t.isUnion()) {
-      StructOrUnionT struct = t.toStructOrUnion();
-      if(t.isStruct()) {
-        for(VariableT elem : struct.getMembers()) {
-          res += sizeofType(elem.getType());
-        }
-      } else { // t.isUnion()
-        for(VariableT elem : struct.getMembers()) {
-          res = Math.max(res, sizeofType(elem.getType()));
-        }
-      }
-    }
-    else if(t.isArray()) {
-      ArrayT array = t.toArray();
-      res = (int) (array.getLength()) * sizeofType(array.getType());
-    } 
-    else {
-      throw new IllegalArgumentException("Unknown type.");
-    }
-    return res;
+    return getMemoryModel().getSizeofType(t);
   }
   
   private Type getTypeOfField(Node baseNode, String name) {

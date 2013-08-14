@@ -15,6 +15,7 @@ import xtc.tree.Location;
 import xtc.tree.Node;
 import xtc.tree.Visitor;
 import xtc.type.IntegerT;
+import xtc.type.LabelT;
 import xtc.type.NumberT;
 import xtc.type.Type;
 import xtc.util.Pair;
@@ -517,7 +518,8 @@ public class CfgBuilder extends Visitor {
     varNode.setLocation(test.getLocation());
     // FIXME: such property really helpful?
     varNode.setProperty(xtc.Constants.SCOPE, scope);
-    varNode.setProperty(xtc.Constants.TYPE, (NumberT.INT));
+//    varNode.setProperty(xtc.Constants.TYPE, NumberT.INT);
+    varNode.setProperty(xtc.Constants.TYPE, new LabelT("TEST_VAR"));
     IRVarInfo varInfo = new VarInfo(scope, varName, IRIntegerType.getInstance(), varNode);
     symbolTable.define(varName, varInfo);
     return varNode; 
@@ -831,9 +833,10 @@ public class CfgBuilder extends Visitor {
   }
 
   public CExpression visitCastExpression(GNode node) {
-    /* TODO: Deal with conversions */
-    debug().pln("Treating cast as no-op.");
-    return recurseOnExpression(node.getNode(1));
+    if("FunctionCall".equals(node.getNode(1).getName())) // (int *) malloc(sizeof(int) * 100);
+      return recurseOnExpression(node.getNode(1));
+    else // FIXME: case like (int *) f(1, 2);
+      return expressionOf(node); // (int *)p;
   }
 
   public CExpression visitCharacterConstant(GNode node) {
