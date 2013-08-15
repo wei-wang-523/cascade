@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Iterator;
-import xtc.type.NumberT.Kind;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -633,18 +632,8 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
   }
   
   private int getSizeOfIntegerType(xtc.type.Type type) {
-    Preconditions.checkArgument(unwrapped(type).isInteger());
-    Kind kind = unwrapped(type).toInteger().getKind();
-    if(kind.equals(Kind.CHAR) || kind.equals(Kind.U_CHAR)) {
-      return 8;
-    } else if(kind.equals(Kind.SHORT) || kind.equals(Kind.INT)
-        || kind.equals(Kind.U_INT)) {
-      return 16;
-    } else if(kind.equals(Kind.LONG)) {
-      return 32;
-    } else {
-      throw new IllegalArgumentException("Unsupported type " + type);
-    }
+    //FIXME: Cascade supports int_16 for now, but xtc supports int_32
+    return (int) new xtc.type.C().getSize(type) / 2 * 8;
   }
   
   private Type getRefType() {
