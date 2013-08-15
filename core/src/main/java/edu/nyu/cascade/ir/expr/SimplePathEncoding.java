@@ -118,9 +118,9 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   public boolean setPathType(Type pathType) {
     Preconditions.checkArgument(pathType.isTuple());
     Preconditions.checkArgument(Preferences.isSet(Preferences.OPTION_MERGE_PATH));
-    if(getMemoryModel() instanceof BurstallMemoryModel) {
+    if(getMemoryModel() instanceof AbstractBurstallMemoryModel) {
       this.pathType = pathType.asTuple();
-      ((BurstallMemoryModel) getMemoryModel()).setStateType(
+      ((AbstractBurstallMemoryModel) getMemoryModel()).setStateType(
           pathType.asTuple().getElementTypes().get(0).asTuple());
       return true;
     } else
@@ -238,9 +238,9 @@ public class SimplePathEncoding extends AbstractPathEncoding {
         Expression case_0 = Iterables.get(exprs, 0);
         Expression case_1 = Iterables.get(exprs, 1);
         if(!case_0.getType().equals(case_1.getType())) {
-          Preconditions.checkArgument(getMemoryModel() instanceof BurstallMemoryModel);
+          Preconditions.checkArgument(getMemoryModel() instanceof AbstractBurstallMemoryModel);
           Preconditions.checkArgument(case_0.isRecord() && case_1.isRecord());
-          resExpr = ((BurstallMemoryModel) getMemoryModel())
+          resExpr = ((AbstractBurstallMemoryModel) getMemoryModel())
               .combinePreMemoryStates(guard, case_1.asRecord(), case_0.asRecord());
         } else
           resExpr = exprManager.ifThenElse(guard, case_1, case_0);
@@ -281,9 +281,9 @@ public class SimplePathEncoding extends AbstractPathEncoding {
       }
       
       MemoryModel mm = getMemoryModel();
-      if(mm instanceof BurstallMemoryModel) {
+      if(mm instanceof AbstractBurstallMemoryModel) {
         assert(stateElem.size() == 2);
-        resMemState = ((BurstallMemoryModel) mm).getUpdatedState(null, 
+        resMemState = ((AbstractBurstallMemoryModel) mm).getUpdatedState(null, 
             stateElem.get(0), stateElem.get(1));
       } else {
         resMemState = exprManager.tuple(mm.getStateType(), stateElem);

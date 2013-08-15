@@ -20,7 +20,7 @@ public class TwoLayerMemoryModel extends AbstractMemoryModel {
   protected static final String DEFAULT_BURSTALL_STATE_NAME = "burstallState";
   protected static final String DEFAULT_MONO_STATE_NAME = "monoState";
   
-  protected final BurstallMemoryModel burstallMem;
+  protected final BurstallVer0MemoryModel burstallMem;
   protected final MonolithicMemoryModel monoMem;
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
@@ -38,7 +38,7 @@ public class TwoLayerMemoryModel extends AbstractMemoryModel {
 
   private TwoLayerMemoryModel(ExpressionEncoding encoding) {
     super(encoding);
-    this.burstallMem = BurstallMemoryModel.create(encoding);
+    this.burstallMem = BurstallVer0MemoryModel.create(encoding);
     this.monoMem = MonolithicMemoryModel.create(encoding);
     this.stateType = getExpressionManager().tupleType(
         Identifiers.uniquify(DEFAULT_STATE_TYPE), burstallMem.getStateType(), monoMem.getStateType());

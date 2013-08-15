@@ -52,15 +52,11 @@ import edu.nyu.cascade.util.Preferences;
  *
  */
 
-public class BurstallVer2MemoryModel extends AbstractMemoryModel {
-  protected static final String REGION_VARIABLE_NAME = "region";
-  protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
-  protected static final String DEFAULT_ALLOC_VARIABLE_NAME = "alloc";
+public class BurstallVer2MemoryModel extends AbstractBurstallMemoryModel {
   protected static final String DEFAULT_SCALAR_REP_VARIABLE_NAME = "scalarRep";
   protected static final String DEFAULT_PTR_REP_VARIABLE_NAME = "ptrRep";
   protected static final String DEFAULT_MEMORY_STATE_TYPE = "memType";
   protected static final String DEFAULT_REP_STATE_TYPE = "repType";
-  protected static final String DEFAULT_STATE_TYPE = "stateType";
   protected static final String TEST_VAR = "TEST_VAR";
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
@@ -89,10 +85,6 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
   private Expression currentAlloc = null;
   private Expression prevDerefState = null;
   private ExpressionClosure currentState = null;
-  
-  private enum CellKind {
-    SCALAR, POINTER, TEST_VAR
-  }
   
   private BurstallVer2MemoryModel(ExpressionEncoding encoding) {
     super(encoding);
@@ -440,6 +432,7 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
     return stateType;
   }
   
+  @Override
   public void setStateType(TupleType stateType) {
     this.stateType = stateType;
     this.memType = stateType.asTuple().getElementTypes().get(0).asRecord();
@@ -550,75 +543,18 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
     currentState = null;
   }
   
-  public Expression combinePreMemoryStates(BooleanExpression guard, 
-      RecordExpression mem_1, RecordExpression mem_0) {
-    
-    RecordType memType_1 = mem_1.getType();
-    Iterable<String> elemNames_1 = Iterables.transform(memType_1.getElementNames(),
-        new Function<String, String>() {
-      @Override
-      public String apply(String elemName) {
-        return elemName.substring(elemName.indexOf('@')+1);
-      }
-    });
-    
-    RecordType memType_0 = mem_0.getType();
-    final Iterable<String> elemNames_0 = Iterables.transform(memType_0.getElementNames(),
-        new Function<String, String>() {
-      @Override
-      public String apply(String elemName) {
-        return elemName.substring(elemName.indexOf('@')+1);
-      }
-    });
-    
-    Iterable<String> commonElemNames = Iterables.filter(elemNames_1, 
-        new Predicate<String>(){
-      @Override
-      public boolean apply(String elemName) {
-        return Iterables.contains(elemNames_0, elemName);
-      }
-    });
-    
-    List<Expression> elems = Lists.newArrayListWithCapacity(
-        Iterables.size(commonElemNames));
-    List<Type> elemTypes = Lists.newArrayListWithCapacity(
-        Iterables.size(commonElemNames));
-    
-    ExpressionManager em = getExpressionManager();
-    final String typeName_1 = memType_1.getName();
-    final String typeName_0 = memType_0.getName();
-    
-    for(String elemName : commonElemNames) {
-      String elemName_1 = typeName_1 + '@' + elemName;
-      String elemName_0 = typeName_0 + '@' + elemName;
-      Expression elem = em.ifThenElse(guard, mem_1.select(elemName_1), mem_0.select(elemName_0));
-      elems.add(elem);
-      elemTypes.add(elem.getType());
-    }
-    
-    final String typeName = Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME);
-    Iterable<String> elemNames = Iterables.transform(commonElemNames, 
-        new Function<String, String>(){
-      @Override
-      public String apply(String elemName) {
-        return elemName + '@' + typeName;
-      }
-    });
-    
-    RecordType recordType = em.recordType(Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME), 
-        elemNames, elemTypes);
-    Expression res = em.record(recordType, elems);
-    
-    return res;
-  }
-  
   /**
    * Recreate state from @param memoryPrime and @param allocPrime, @param repPrime 
    * and create a new state type if state type is changed from the type of state
    * @return a new state
    */
-  public TupleExpression getUpdatedState(Expression state, 
-      Expression memoryPrime, Expression allocPrime, Expression repPrime) {
+  @Override
+  public TupleExpression getUpdatedState(Expression state, Expression... elems) {
+    Preconditions.checkArgument(elems.length == 3);
+    Expression memoryPrime = elems[0];
+    Expression allocPrime = elems[1]; 
+    Expression repPrime = elems[2];
+    
     ExpressionManager em = getExpressionManager();
     Type stateTypePrime = null;
     
@@ -930,14 +866,6 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
     return em.tuple(repType, scalarRepState, ptrRepState);
   }
   
-  private xtc.type.Type unwrapped(xtc.type.Type type) {
-    while(type.isAlias() || type.isAnnotated() || type.isVariable()) {
-      type = type.deannotate();
-      type = type.resolve();
-    }
-    return type;
-  }
-  
   private boolean hasView(Node node) {
     xtc.type.Type type = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
     boolean hasRef = type.isAnnotated();
@@ -1031,16 +959,6 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
         .arrayVar(typeName, ptrType, elemType, false);
     typeArrVarInRep.put(typeName, elemArr);
     return elemArr;
-  }
-  
-  private CellKind getCellKind(xtc.type.Type type) {
-    Preconditions.checkArgument(type != null);
-    type = unwrapped(type);
-    if(type.isInteger())    return CellKind.SCALAR;
-    if(type.isPointer())    return CellKind.POINTER;
-    if(type.isLabel() && type.toLabel().getName().equals(TEST_VAR))
-      return CellKind.TEST_VAR;
-    throw new IllegalArgumentException("Unknown type " + type);
   }
   
   private Type getRefType() {

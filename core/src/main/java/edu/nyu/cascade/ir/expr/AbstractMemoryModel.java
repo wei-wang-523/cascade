@@ -2,14 +2,9 @@ package edu.nyu.cascade.ir.expr;
 
 //import java.util.List;
 
-import java.util.concurrent.ExecutionException;
-
 import xtc.type.*;
 
 import com.google.common.base.Preconditions;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -19,13 +14,6 @@ import edu.nyu.cascade.prover.type.Type;
 
 public abstract class AbstractMemoryModel implements MemoryModel {
   private static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
-  
-  private final LoadingCache<xtc.type.Type, String> cache = CacheBuilder
-      .newBuilder().build(new CacheLoader<xtc.type.Type, String>(){
-        public String load(xtc.type.Type type) {
-          return parseTypeName(type);
-        }
-      });
   
   private final ExpressionEncoding encoding;
   
@@ -125,56 +113,5 @@ public abstract class AbstractMemoryModel implements MemoryModel {
     } else {
       throw new IllegalArgumentException("Unknown type.");
     }
-  }
-  
-  public String getTypeName(xtc.type.Type type) {
-    try {
-      return cache.get(type);
-    } catch (ExecutionException e) {
-      throw new ExpressionFactoryException(e);
-    }
-  }
-  
-  private String parseTypeName(xtc.type.Type type) {
-    Preconditions.checkArgument(type != null);     
-    StringBuffer sb =  new StringBuffer();
-    if(type.isPointer()) {
-      xtc.type.Type pType = type.toPointer().getType();
-      sb.append('$').append("PointerT").append(parseTypeName(pType));
-    } else if(type.isArray()) {
-      xtc.type.Type aType = type.toArray().getType();
-      sb.append('$').append("ArrayT").append(parseTypeName(aType));
-    } else if(type.isStruct()) {
-      sb.append('$').append(type.getName());
-    } else if(type.isUnion()) {
-      sb.append('$').append(type.getName());
-    } else if(type.isAnnotated()){
-      AnnotatedT annoType = type.toAnnotated();
-      if(annoType.hasShape()) {
-        Reference ref = annoType.getShape();
-        if(ref instanceof FieldReference) {
-          xtc.type.Type baseType = ref.getBase().getType();
-          String fieldName = ref.getField();
-          sb.append(parseTypeName(baseType)).append('#').append(fieldName);
-        } else {
-          sb.append(parseTypeName(ref.getType()));
-        }
-      } else {
-        sb.append(parseTypeName(annoType.getType()));
-      }
-    } else if(type.isAlias()) {
-      xtc.type.Type aliasType = type.toAlias().getType();
-      sb.append(parseTypeName(aliasType));
-    } else if(type.isVariable()) {
-      xtc.type.Type varType = type.toVariable().getType();
-      sb.append(parseTypeName(varType));
-    } else if(type.isInteger()){
-      sb.append('$').append("IntegerT");
-    } else if(type.isLabel()){
-      sb.append('$').append(type.toLabel().getName());
-    } else {
-      throw new IllegalArgumentException("Cannot parse type " + type.getName());
-    }
-    return sb.toString();
   }
 }

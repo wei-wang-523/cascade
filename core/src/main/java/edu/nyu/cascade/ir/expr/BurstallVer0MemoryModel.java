@@ -40,22 +40,16 @@ import edu.nyu.cascade.util.Preferences;
  *
  */
 
-public class BurstallMemoryModel extends AbstractMemoryModel {
-  protected static final String REGION_VARIABLE_NAME = "burstallRegion";
-  protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "burstallM";
-  protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "burstallAlloc";
-  protected static final String DEFAULT_MEMORY_STATE_TYPE = "burstallMemType";
-  protected static final String DEFAULT_STATE_TYPE = "burstallStateType";
-  protected static final String TEST_VAR = "TEST_VAR";
+public class BurstallVer0MemoryModel extends AbstractBurstallMemoryModel {
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
    */
-  public static BurstallMemoryModel create(
+  public static BurstallVer0MemoryModel create(
       ExpressionEncoding encoding)
       throws ExpressionFactoryException {
     Preconditions.checkArgument(encoding instanceof PointerExpressionEncoding);
-    return new BurstallMemoryModel(encoding);
+    return new BurstallVer0MemoryModel(encoding);
   }
 
   private final TupleType ptrType; // pointer type = (ref-type, off-type)
@@ -71,11 +65,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   private Expression prevDerefState = null;
   private ExpressionClosure currentState = null;
   
-  private enum CellKind {
-    SCALAR, POINTER, TEST_VAR
-  }
-
-  private BurstallMemoryModel(ExpressionEncoding encoding) {
+  private BurstallVer0MemoryModel(ExpressionEncoding encoding) {
     super(encoding);
   
     this.lvals = Sets.newHashSet();
@@ -372,7 +362,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
     Expression memVar = exprManager.variable(DEFAULT_MEMORY_VARIABLE_NAME, 
         memType, true);
-    Expression allocVar = exprManager.variable(DEFAULT_REGION_SIZE_VARIABLE_NAME, 
+    Expression allocVar = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, 
         allocType, true);
     return exprManager.tuple(stateType, memVar, allocVar);
   }
@@ -593,7 +583,12 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
    * type if state type is changed from the type of state
    * @return a new state
    */
-  public TupleExpression getUpdatedState(Expression state, Expression memoryPrime, Expression allocPrime) {
+  @Override
+  public TupleExpression getUpdatedState(Expression state, Expression... elems) {
+    Preconditions.checkArgument(elems.length == 2);
+    Expression memoryPrime = elems[0];
+    Expression allocPrime = elems[1];
+    
     ExpressionManager em = getExpressionManager();
     Type stateTypePrime = null;
     
@@ -653,26 +648,6 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     
     Type currentMemType = isMemUpdated? getCurrentMemoryType() : memState.getType();
     return em.record(currentMemType, currentMemElems.values());
-  }
-  
-  private xtc.type.Type unwrapped(xtc.type.Type type) {
-    while(type.isAlias() || type.isAnnotated() || type.isVariable()) {
-      type = type.deannotate();
-      type = type.resolve();
-    }
-    return type;
-  }
-  
-  private CellKind getCellKind(xtc.type.Type type) {
-    Preconditions.checkArgument(type != null);
-    type = unwrapped(type);
-    if(type.isInteger())
-      return CellKind.SCALAR;
-    if(type.isPointer())
-      return CellKind.POINTER;
-    if(type.isLabel() && TEST_VAR.equals(type.toLabel().getName()))
-      return CellKind.TEST_VAR;
-    throw new IllegalArgumentException("Unknown type " + type);
   }
   
   private Type getRefType() {
