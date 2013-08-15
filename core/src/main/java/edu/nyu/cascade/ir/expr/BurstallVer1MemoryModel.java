@@ -4,20 +4,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Iterator;
-import java.util.concurrent.ExecutionException;
-
-import xtc.type.AliasT;
-import xtc.type.AnnotatedT;
-import xtc.type.Reference;
-import xtc.type.VariableT;
 import xtc.type.NumberT.Kind;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -82,13 +73,6 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
   private Expression currentAlloc = null;
   private Expression prevDerefState = null;
   private ExpressionClosure currentState = null;
-  
-  private final LoadingCache<xtc.type.Type, String> cache = CacheBuilder
-      .newBuilder().build(new CacheLoader<xtc.type.Type, String>(){
-        public String load(xtc.type.Type type) {
-          return getTypeName(type);
-        }
-      });
   
   private enum CellKind {
     INTEGER, POINTER, TEST_VAR
@@ -272,32 +256,27 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
     
     ExpressionManager em = getExpressionManager();
     ArrayExpression tgtArray = null;
-    
-    try {
-      xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(xtc.Constants.TYPE);
-      String typeName = cache.get(pType);
-    
-      if(currentMemElems.containsKey(typeName)) {
-        return currentMemElems.get(typeName).asArray().index(p);
-      }
-      
-      // Add an element to currentMemElem
-      CellKind kind = getCellKind(pType);
-      if(CellKind.TEST_VAR.equals(kind)) {
-        ArrayType arrType = em.arrayType(ptrType, em.booleanType());
-        tgtArray = em.variable(typeName, arrType, false).asArray();
-      } else if(CellKind.INTEGER.equals(kind)) {
-        int size = getSizeOfIntegerType(pType);
-        ArrayType arrType = em.arrayType(ptrType, em.bitVectorType(size));
-        tgtArray = em.variable(typeName, arrType, false).asArray();
-      } else {
-        ArrayType arrType = em.arrayType(ptrType, ptrType);
-        tgtArray = em.variable(typeName, arrType, false).asArray();
-      }
-      currentMemElems.put(typeName, tgtArray);
-    } catch (ExecutionException e) {
-      throw new ExpressionFactoryException(e);
+    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(xtc.Constants.TYPE);
+    String typeName = getTypeName(pType);
+  
+    if(currentMemElems.containsKey(typeName)) {
+      return currentMemElems.get(typeName).asArray().index(p);
     }
+    
+    // Add an element to currentMemElem
+    CellKind kind = getCellKind(pType);
+    if(CellKind.TEST_VAR.equals(kind)) {
+      ArrayType arrType = em.arrayType(ptrType, em.booleanType());
+      tgtArray = em.variable(typeName, arrType, false).asArray();
+    } else if(CellKind.INTEGER.equals(kind)) {
+      int size = getSizeOfIntegerType(pType);
+      ArrayType arrType = em.arrayType(ptrType, em.bitVectorType(size));
+      tgtArray = em.variable(typeName, arrType, false).asArray();
+    } else {
+      ArrayType arrType = em.arrayType(ptrType, ptrType);
+      tgtArray = em.variable(typeName, arrType, false).asArray();
+    }
+    currentMemElems.put(typeName, tgtArray);
     
     Type currentMemType = getCurrentMemoryType();
     
@@ -669,55 +648,50 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
     currentMemElems.putAll(getMemElems(memState));
     ExpressionManager em = getExpressionManager();
     boolean isMemUpdated = false;
-    
-    try {
-      ArrayExpression tgtArray = null;
-      xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
-      String lvalTypeName = cache.get(lvalType);
-      if(currentMemElems.containsKey(lvalTypeName)) { // declared type name
-        if(CellKind.TEST_VAR.equals(getCellKind(lvalType))) { // TEST_VAR_X
-          rval = getExpressionEncoding().castToBoolean(rval);
-          tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
-        } else if(CellKind.POINTER.equals(getCellKind(lvalType))) {
-          if(!ptrType.equals(rval.getType())) {
-            // for assign null to pointer int* ptr = 0;
-            assert(rval.isConstant() 
-                && Integer.parseInt(rval.getNode().getString(0)) == 0);
-            rval = ((PointerExpressionEncoding) getExpressionEncoding())
-                .getPointerEncoding().nullPtr();
-          }
-          tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
-        } else {
-          tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
-        }
-        
-      } else { // new type name
-        isMemUpdated = true;
-        CellKind kind = getCellKind(lvalType);
-        ArrayType arrType = null;
-        
-        if(CellKind.TEST_VAR.equals(kind)) {
-          rval = getExpressionEncoding().castToBoolean(rval);
-          arrType = em.arrayType(ptrType, em.booleanType());
-        } else if(CellKind.INTEGER.equals(kind)) {
-          int size = getSizeOfIntegerType(lvalType);
-          arrType = em.arrayType(ptrType, em.bitVectorType(size));
-        } else {
-          arrType = em.arrayType(ptrType, ptrType);
-          if(!ptrType.equals(rval.getType())) {
-            assert(rval.isConstant() 
+    ArrayExpression tgtArray = null;
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    String lvalTypeName = getTypeName(lvalType);
+    if(currentMemElems.containsKey(lvalTypeName)) { // declared type name
+      if(CellKind.TEST_VAR.equals(getCellKind(lvalType))) { // TEST_VAR_X
+        rval = getExpressionEncoding().castToBoolean(rval);
+        tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
+      } else if(CellKind.POINTER.equals(getCellKind(lvalType))) {
+        if(!ptrType.equals(rval.getType())) {
+          // for assign null to pointer int* ptr = 0;
+          assert(rval.isConstant() 
               && Integer.parseInt(rval.getNode().getString(0)) == 0);
-            rval = ((PointerExpressionEncoding) getExpressionEncoding())
+          rval = ((PointerExpressionEncoding) getExpressionEncoding())
               .getPointerEncoding().nullPtr();
-          }
         }
-        
-        tgtArray = em.variable(lvalTypeName, arrType, false).asArray().update(lval, rval);
-      }      
-      currentMemElems.put(lvalTypeName, tgtArray);
-    } catch (ExecutionException e) {
-      throw new ExpressionFactoryException(e);
-    }
+        tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
+      } else {
+        tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
+      }
+      
+    } else { // new type name
+      isMemUpdated = true;
+      CellKind kind = getCellKind(lvalType);
+      ArrayType arrType = null;
+      
+      if(CellKind.TEST_VAR.equals(kind)) {
+        rval = getExpressionEncoding().castToBoolean(rval);
+        arrType = em.arrayType(ptrType, em.booleanType());
+      } else if(CellKind.INTEGER.equals(kind)) {
+        int size = getSizeOfIntegerType(lvalType);
+        arrType = em.arrayType(ptrType, em.bitVectorType(size));
+      } else {
+        arrType = em.arrayType(ptrType, ptrType);
+        if(!ptrType.equals(rval.getType())) {
+          assert(rval.isConstant() 
+            && Integer.parseInt(rval.getNode().getString(0)) == 0);
+          rval = ((PointerExpressionEncoding) getExpressionEncoding())
+            .getPointerEncoding().nullPtr();
+        }
+      }
+      
+      tgtArray = em.variable(lvalTypeName, arrType, false).asArray().update(lval, rval);
+    }      
+    currentMemElems.put(lvalTypeName, tgtArray);
     
     Type currentMemType = isMemUpdated? getCurrentMemoryType() : memState.getType();
     return em.record(currentMemType, currentMemElems.values());
@@ -762,52 +736,5 @@ public class BurstallVer1MemoryModel extends AbstractMemoryModel {
   
   private BitVectorType getOffType() {
     return ptrType.getElementTypes().get(1).asBitVectorType();
-  }
-  
-  protected String getTypeName(xtc.type.Type type) {
-    Preconditions.checkArgument(type != null);    
-    StringBuffer sb =  new StringBuffer();
-    
-    if(type.isBoolean()) {
-      sb.append('$').append("BooleanT");
-    } else if(type.isPointer()) {
-      xtc.type.PointerT pType = (xtc.type.PointerT) type;
-      sb.append('$').append("PointerT").append(getTypeName(pType.getType()));
-    } else if(type.isArray()) {
-      xtc.type.ArrayT aType = (xtc.type.ArrayT) type;
-      sb.append('$').append("ArrayT").append(getTypeName(aType.getType()));
-    } else if(type.isStruct()) {
-      sb.append('$').append(type.getName());
-    } else if(type.isUnion()) {
-      sb.append('$').append(type.getName());
-    } else if(type.isAnnotated()){
-      AnnotatedT annoType = type.toAnnotated();
-      if(annoType.hasShape()) {
-        Reference ref = annoType.getShape();
-        if(ref.hasBase() && ref.hasField()) {
-          xtc.type.Type baseType = ref.getBase().getType();
-          String fieldName = ref.getField();
-          sb.append(getTypeName(baseType)).append('#').append(fieldName);
-        } else {
-          sb.append(getTypeName(ref.getType()));
-        }
-      } else {
-        sb.append(getTypeName(annoType.getType()));
-      }
-    } else if(type.isAlias()) {
-      AliasT aliasType = type.toAlias();
-      sb.append(getTypeName(aliasType.getType()));
-    } else if(type.isVariable()) {
-      VariableT varType = (VariableT) type;
-      sb.append(getTypeName(varType.getType()));
-    } else if(type.isInteger()){
-      Kind kind = unwrapped(type).toInteger().getKind();
-      sb.append('$').append(kind);
-    } else if(type.isLabel()) { 
-      sb.append('$').append(type.toLabel().getName());
-    } else {
-      throw new IllegalArgumentException("Cannot parse type " + type.getName());
-    }
-    return sb.toString();
   }
 }

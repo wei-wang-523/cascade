@@ -7,14 +7,7 @@ import java.util.Set;
 import java.util.Iterator;
 
 import xtc.tree.Node;
-import xtc.type.AliasT;
-import xtc.type.AnnotatedT;
-import xtc.type.ArrayT;
-import xtc.type.Reference;
-import xtc.type.StructOrUnionT;
-import xtc.type.StructT;
-import xtc.type.UnionT;
-import xtc.type.VariableT;
+import xtc.type.*;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -81,7 +74,7 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
   }
 
   private final TupleType ptrType; // tuple (ref-type, off-type)
-  private final BitVectorType scalarType; // cell type
+  private final BitVectorType cellType; // cell type
   private final ArrayType allocType; // Array refType offType
   private final ArrayType scalarRepType;
   private final ArrayType ptrRepType;
@@ -96,9 +89,9 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
   private Expression currentAlloc = null;
   private Expression prevDerefState = null;
   private ExpressionClosure currentState = null;
-
+  
   private enum CellKind {
-    SCALAR, POINTER
+    SCALAR, POINTER, TEST_VAR
   }
   
   private BurstallVer2MemoryModel(ExpressionEncoding encoding) {
@@ -113,10 +106,10 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
     
     int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
-    scalarType = exprManager.bitVectorType(size);
+    cellType = exprManager.bitVectorType(size);
     ptrType = ((PointerExpressionEncoding) encoding).getPointerEncoding().getType();
     
-    ArrayType scalarArrayType = exprManager.arrayType(ptrType, scalarType);
+    ArrayType scalarArrayType = exprManager.arrayType(ptrType, cellType);
     ArrayType ptrArrayType = exprManager.arrayType(ptrType, ptrType);
     
     scalarRepType = exprManager.arrayType(ptrType, 
@@ -141,7 +134,7 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
   public TupleExpression alloc(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
-    Preconditions.checkArgument(size.getType().equals( scalarType ));
+    Preconditions.checkArgument(size.getType().equals( cellType ));
     
     ExpressionManager exprManager = getExpressionManager();
     
@@ -167,7 +160,7 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
   public TupleExpression declareArray(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
-    Preconditions.checkArgument(size.getType().equals( scalarType ));
+    Preconditions.checkArgument(size.getType().equals( cellType ));
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
     Expression stackRegion = ptr.asTuple().index(0); 
@@ -182,7 +175,7 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
   public TupleExpression declareStruct(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
-    Preconditions.checkArgument(size.getType().equals( scalarType ));
+    Preconditions.checkArgument(size.getType().equals( cellType ));
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
     Expression stackRegion = ptr.asTuple().index(0);
@@ -283,72 +276,65 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
       currentMemElems.putAll(getMemElems(state.getChild(0)));
       prevDerefState = state;
     }
-    if(currentAlloc == null)    
-      currentAlloc = state.getChild(1);
+    if(currentAlloc == null)  currentAlloc = state.getChild(1);
     
-    xtc.type.Type pType = (xtc.type.Type) 
-        p.getNode().getProperty(xtc.Constants.TYPE);
+    
+    ExpressionManager em = getExpressionManager();
+    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(xtc.Constants.TYPE);
     String typeName = getTypeName(pType);
-    
     if(currentMemElems.containsKey(typeName)) {
       ArrayExpression tgtArray = currentMemElems.get(typeName).asArray();
-      if(!hasRepArr(p.getNode())) {
+      if(!hasView(p.getNode())) {
         return tgtArray.index(p);
       } else {
         Expression repState = state.getChild(2);
         Expression scalarRepState = repState.asTuple().index(0);
         Expression ptrRepState = repState.asTuple().index(1);
-        if(scalarType.equals(tgtArray.getType().getElementType())) {
-          ArrayExpression repArr = scalarRepState.asArray().index(p).asArray();
-          return repArr.index(tgtArray).asArray().index(p);
+        ArrayExpression repArr = null;
+        Type elemType = tgtArray.getType().getElementType();
+        assert(cellType.equals(elemType) || ptrType.equals(elemType));
+        if(cellType.equals(elemType)) {
+          repArr = scalarRepState.asArray().index(p).asArray();
         } else {
-          ArrayExpression repArr = ptrRepState.asArray().index(p).asArray();
-          return repArr.index(tgtArray).asArray().index(p);
+          repArr = ptrRepState.asArray().index(p).asArray();
         }
+        return repArr.index(tgtArray).asArray().index(p);
       }
-    }
-    
-    // Add an element to currentMemElem
-    ExpressionManager em = getExpressionManager();
-    ArrayExpression tgtArray = null;
-    
-    if(typeName.equals(TEST_VAR)) {
-      ArrayType arrType = em.arrayType(ptrType, em.booleanType());
-      tgtArray = em.variable(typeName, arrType, false).asArray();
     } else {
       CellKind kind = getCellKind(pType);
+      ArrayExpression tgtArray = null;
       if(CellKind.SCALAR.equals(kind)) {
-        ArrayType arrType = em.arrayType(ptrType, scalarType);
+        ArrayType arrType = em.arrayType(ptrType, cellType);
         tgtArray = em.variable(typeName, arrType, false).asArray();
-      } else {
+      } else if(CellKind.POINTER.equals(kind)){
         ArrayType arrType = em.arrayType(ptrType, ptrType);
         tgtArray = em.variable(typeName, arrType, false).asArray();
+      } else {
+        ArrayType arrType = em.arrayType(ptrType, em.booleanType());
+        tgtArray = em.variable(typeName, arrType, false).asArray();
       }
+      currentMemElems.put(typeName, tgtArray);
+      Type currentMemType = getCurrentMemoryType();  
+      Expression memPrime = em.record(currentMemType, currentMemElems.values());
+      Expression statePrime = getUpdatedState(state, memPrime, currentAlloc, state.getChild(2));
+      currentState = suspend(state, statePrime);
+      return tgtArray.index(p);
     }
-    currentMemElems.put(typeName, tgtArray);
-    
-    Type currentMemType = getCurrentMemoryType();
-    
-    Expression memPrime = em.record(currentMemType, currentMemElems.values());
-    Expression statePrime = getUpdatedState(state, memPrime, currentAlloc, state.getChild(2));
-    currentState = suspend(state, statePrime);
-    return tgtArray.index(p);
   }
   
   @Override
-  public TupleExpression havoc(
-      Expression state,
-      Expression lval) {
+  public TupleExpression havoc(Expression state, Expression lval) {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
     Expression rval = null;
-    xtc.type.Type lvalType = (xtc.type.Type) 
-        lval.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
     CellKind kind = getCellKind(lvalType);
     if(CellKind.SCALAR.equals(kind)) {
       rval = getExpressionEncoding().getIntegerEncoding().unknown();
-    } else {
+    } else if(CellKind.POINTER.equals(kind)){
       rval = getExpressionEncoding().unknown();
+    } else {
+      rval = getExpressionEncoding().getBooleanEncoding().unknown();
     }
     
     RecordExpression memory = updateMemState(state.getChild(0), lval, rval); 
@@ -626,62 +612,6 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
     return res;
   }
   
-  protected String getTypeName(xtc.type.Type type) {
-    Preconditions.checkArgument(type != null);
-    StringBuffer sb =  new StringBuffer();
-    
-    if(type.isPointer()) {
-      xtc.type.PointerT pType = (xtc.type.PointerT) type;
-      sb.append('$').append("PointerT").append(getTypeName(pType.getType()));
-    } else if(type.isArray()) {
-      xtc.type.ArrayT aType = (xtc.type.ArrayT) type;
-      sb.append('$').append("ArrayT").append(getTypeName(aType.getType()));
-    } else if(type.isStruct()) {
-      sb.append('$').append(type.getName());
-    } else if(type.isUnion()) {
-      sb.append('$').append(type.getName());
-    } else if(type.isAnnotated()){
-      AnnotatedT annoType = type.toAnnotated();
-      if(annoType.hasShape()) {
-        Reference ref = annoType.getShape();
-        if(ref.hasBase() && ref.hasField()) {
-          xtc.type.Type baseType = ref.getBase().getType();
-          String fieldName = ref.getField();
-          sb.append(getTypeName(baseType)).append('#').append(fieldName);
-        } else {
-          sb.append(getTypeName(ref.getType()));
-        }
-      } else {
-        sb.append(getTypeName(annoType.getType()));
-      }
-    } else if(type.isAlias()) {
-      AliasT repType = type.toAlias();
-      sb.append(getTypeName(repType.getType()));
-    } else if(type.isVariable()) {
-      VariableT varType = (VariableT) type;
-      sb.append(getTypeName(varType.getType()));
-    } else if(type.isInteger()){
-      sb.append('$').append("IntegerT");
-    } else if(type.isFloat()){
-      sb.append('$').append("FloatT");
-    } else {
-      throw new IllegalArgumentException("Cannot parse type " + type.getName());
-    }
-    return sb.toString();
-  }
-  
-  protected String getTypeName(Node node) {
-    Preconditions.checkArgument(node != null);
-    String resName = null;
-    if(node.getName().equals("PrimaryIdentifier") && node.getString(0).startsWith(TEST_VAR)) {
-      resName = TEST_VAR;
-    } else {
-      xtc.type.Type type = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
-      resName = getTypeName(type);
-    }
-    return resName;
-  }
-  
   /**
    * Recreate state from @param memoryPrime and @param allocPrime, @param repPrime 
    * and create a new state type if state type is changed from the type of state
@@ -762,52 +692,46 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
   private RecordExpression updateMemState(Expression memState, Expression lval, Expression rval) { 
     currentMemElems.putAll(getMemElems(memState));
     xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
-    String lvalTypeName = getTypeName(lvalType); 
-    
     ExpressionManager em = getExpressionManager();
     ArrayExpression tgtArray = null;
-    
     boolean isMemUpdated = false;
+    String lvalTypeName = getTypeName(lvalType);
     if(currentMemElems.containsKey(lvalTypeName)) { // previously declared variable
-      if(lvalTypeName.equals(TEST_VAR)) {  
-        rval = getExpressionEncoding().castToBoolean(rval);
-        tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
-      } else {
-        if(CellKind.POINTER.equals(getCellKind(lvalType))) {
-          if(!ptrType.equals(rval.getType())) {
-            // for assign null to pointer int* ptr = 0;
-            assert(rval.isConstant() 
-                && Integer.parseInt(rval.getNode().getString(0)) == 0);
-            rval = ((PointerExpressionEncoding) getExpressionEncoding())
-                  .getPointerEncoding().nullPtr();
-          }
+      CellKind kind = getCellKind(lvalType);
+      if(CellKind.POINTER.equals(kind)) {
+        if(!ptrType.equals(rval.getType())) {
+          // for assign null to pointer int* ptr = 0;
+          assert(rval.isConstant() 
+              && Integer.parseInt(rval.getNode().getString(0)) == 0);
+          rval = ((PointerExpressionEncoding) getExpressionEncoding())
+              .getPointerEncoding().nullPtr();
         }
-        tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
+      } else if(CellKind.TEST_VAR.equals(kind)) {
+        rval= getExpressionEncoding().castToBoolean(rval);        
       }
+      tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
     } else { // newly type name
       isMemUpdated = true;
-      if(lvalTypeName.equals(TEST_VAR)) {
-        ArrayType arrType = em.arrayType(ptrType, em.booleanType());
-        tgtArray = em.variable(lvalTypeName, arrType, false).asArray()
-            .update(lval, getExpressionEncoding().castToBoolean(rval));
+      CellKind kind = getCellKind(lvalType);
+      ArrayType arrType = null;
+      if(CellKind.TEST_VAR.equals(kind)) {
+        arrType = em.arrayType(ptrType, em.booleanType());
+        rval = getExpressionEncoding().castToBoolean(rval);
+      } else if(CellKind.SCALAR.equals(kind)) {
+        arrType = em.arrayType(ptrType, cellType);
       } else {
-        if(CellKind.SCALAR.equals(getCellKind(lvalType))) {
-          ArrayType arrType = em.arrayType(ptrType, scalarType);
-          tgtArray = em.variable(lvalTypeName, arrType, false).asArray().update(lval, rval);
-        } else {
-          ArrayType arrType = em.arrayType(ptrType, ptrType);
-          if(!ptrType.equals(rval.getType())) {
-            assert(rval.isConstant() 
+        arrType = em.arrayType(ptrType, ptrType);
+        if(!ptrType.equals(rval.getType())) {
+          assert(rval.isConstant() 
               && Integer.parseInt(rval.getNode().getString(0)) == 0);
-            rval = ((PointerExpressionEncoding) getExpressionEncoding())
+          rval = ((PointerExpressionEncoding) getExpressionEncoding())
               .getPointerEncoding().nullPtr();
-          }
-          tgtArray = em.variable(lvalTypeName, arrType, false).asArray().update(lval, rval);
         }
       }
-    }
-    
+      tgtArray = em.variable(lvalTypeName, arrType, false).asArray().update(lval, rval);
+    }    
     currentMemElems.put(lvalTypeName, tgtArray);
+
     Type currentMemType = isMemUpdated? getCurrentMemoryType() : memState.getType();
     return em.record(currentMemType, currentMemElems.values());
   }
@@ -838,15 +762,15 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
     
     ExpressionManager em = getExpressionManager();
     if(regionType.isStruct()) {
-      Map<String, Type> elemTypes = getMemberTypeOfField(regionType);
-      Map<String, Expression> elemOffsets = getOffsetOfField(regionType);
+      Map<String, Type> elemTypes = getElemTypeOfStructUnionField(regionType);
+      Map<String, Expression> elemOffsets = getOffsetOfStructField(regionType);
       for(Entry<String, Expression> entry : elemOffsets.entrySet()) {
         String elemArrName = entry.getKey();
         Expression elemOffset = entry.getValue();
         Expression indexExpr = getExpressionEncoding().plus(startAddr, elemOffset);
-        if(scalarType.equals(elemTypes.get(elemArrName))) { //
+        if(cellType.equals(elemTypes.get(elemArrName))) { //
           Expression scalarRep = scalarRepState.asArray().index(indexExpr);
-          ArrayExpression elemArr = getTypeArrVar(elemArrName, scalarType);
+          ArrayExpression elemArr = getTypeArrVar(elemArrName, cellType);
           scalarRep = scalarRep.asArray().update(elemArr, elemArr);
           scalarRepState = scalarRepState.asArray().update(indexExpr, scalarRep);
         } else {
@@ -857,8 +781,8 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
         }
       } 
     } else if(regionType.isUnion()) { 
-      Map<String, Type> elemTypes = getMemberTypeOfField(regionType);
-      Map<String, Integer> elemTypeSizes = getSizeTypeOfField(regionType);
+      Map<String, Type> elemTypes = getElemTypeOfStructUnionField(regionType);
+      Map<String, Integer> elemTypeSizes = getSizeOfUnionField(regionType);
       // FIXME: to find the minimal type elem to be the rep, or the maximal one?
       int minTypeSize = Integer.MAX_VALUE;
       String repTypeName = null;
@@ -873,7 +797,7 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
       boolean isAllScalarType = Iterables.all(elemTypes.values(), new Predicate<Type>(){
         @Override
         public boolean apply(Type argType) {
-          return scalarType.equals(argType);
+          return cellType.equals(argType);
         }
       });
       
@@ -885,11 +809,11 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
       });
       
       if(isAllScalarType) {
-        ArrayExpression repArr = getTypeArrVar(repTypeName, scalarType);
+        ArrayExpression repArr = getTypeArrVar(repTypeName, cellType);
         for(Entry<String, Type> entry : elemTypes.entrySet()) {
           String elemArrName = entry.getKey();
           Expression scalarRep = scalarRepState.asArray().index(startAddr);
-          ArrayExpression elemArr = getTypeArrVar(elemArrName, scalarType);
+          ArrayExpression elemArr = getTypeArrVar(elemArrName, cellType);
           scalarRep = scalarRep.asArray().update(elemArr, repArr);
           scalarRepState = scalarRepState.asArray().update(startAddr, scalarRep);
         }
@@ -908,17 +832,18 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
     } else { // lval point to a non-structure type
       String elemArrName = getTypeName(regionType);
       Expression indexExpr = startAddr;
-      if(CellKind.SCALAR.equals(getCellKind(regionType))) {
-        ArrayExpression elemArr = getTypeArrVar(elemArrName, scalarType);
+      CellKind kind = getCellKind(regionType);
+      if(CellKind.SCALAR.equals(kind)) {
+        ArrayExpression elemArr = getTypeArrVar(elemArrName, cellType);
         Expression scalarRep = scalarRepState.asArray().index(indexExpr);
         scalarRep = scalarRep.asArray().update(elemArr, elemArr);
         scalarRepState = scalarRepState.asArray().update(indexExpr, scalarRep);
-      } else {
+      } else if(CellKind.POINTER.equals(kind)) {
         ArrayExpression elemArr = getTypeArrVar(elemArrName, ptrType);
         Expression ptrRep = ptrRepState.asArray().index(indexExpr);
         ptrRep = ptrRep.asArray().update(elemArr, elemArr);
         ptrRepState = ptrRepState.asArray().update(indexExpr, ptrRep);
-      }   
+      }
     }
     return em.tuple(repType, scalarRepState, ptrRepState);
   }
@@ -943,9 +868,9 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
     ExpressionEncoding encoding = getExpressionEncoding();
     ExpressionManager em = getExpressionManager();
     
-    Map<String, Expression> lvalFieldOffset = getOffsetOfField(lvalPtrToType);
-    Map<String, Type> lvalMemberTypeOfField = getMemberTypeOfField(lvalPtrToType);
-    Map<String, Type> rvalMemberTypeOfField = getMemberTypeOfField(rvalPtrToType);
+    Map<String, Expression> lvalFieldOffset = getOffsetOfStructField(lvalPtrToType);
+    Map<String, Type> lvalMemberTypeOfField = getElemTypeOfStructUnionField(lvalPtrToType);
+    Map<String, Type> rvalMemberTypeOfField = getElemTypeOfStructUnionField(rvalPtrToType);
     Iterator<Entry<String, Type>> lItr = lvalMemberTypeOfField.entrySet().iterator();
     Iterator<Entry<String, Type>> rItr = rvalMemberTypeOfField.entrySet().iterator();
     while(lItr.hasNext() && rItr.hasNext()) {
@@ -959,7 +884,7 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
       Expression indexExpr = encoding.plus(rval, lvalFieldOffset.get(lMember.getKey()));
       Expression lMemberTypeArr = getTypeArrVar(lMember.getKey(), lMemberType);
       Expression rMemberTypeArr = getTypeArrVar(rMember.getKey(), rMemberType);
-      if(scalarType.equals(lMemberType)) {
+      if(cellType.equals(lMemberType)) {
         Expression scalarRep = scalarRepState.asArray().index(indexExpr);
         Expression representative = scalarRep.asArray().index(rMemberTypeArr);
         scalarRep = scalarRep.asArray().update(lMemberTypeArr, representative);
@@ -976,24 +901,24 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
   
   private Expression updateRep(RecordExpression memState, TupleExpression repState, 
       Expression indexExpr) {    
-    if(!hasRepArr(indexExpr.getNode()))  return repState;
+    if(!hasView(indexExpr.getNode()))  return repState;
     
     xtc.type.Type indexType = (xtc.type.Type) 
         indexExpr.getNode().getProperty(xtc.Constants.TYPE);
-    String indexTypeName = getTypeName(indexType);
-    
+    ExpressionManager em = getExpressionManager();
     Expression scalarRepState = repState.asTuple().index(0);
     Expression ptrRepState = repState.asTuple().index(1);
-    ExpressionManager em = getExpressionManager();
-    
-    if(CellKind.SCALAR.equals(getCellKind(indexType))) {
+
+    String indexTypeName = getTypeName(indexType);
+    CellKind kind = getCellKind(indexType);
+    if(CellKind.SCALAR.equals(kind)) {
       Expression scalarRep = scalarRepState.asArray().index(indexExpr);
-      Expression tgtArray = getTypeArrVar(indexTypeName, scalarType);
+      Expression tgtArray = getTypeArrVar(indexTypeName, cellType);
       Expression previousRep = scalarRep.asArray().index(tgtArray);
       scalarRep = scalarRep.asArray().update(previousRep, tgtArray);
       scalarRep = scalarRep.asArray().update(tgtArray, tgtArray);
       scalarRepState = scalarRepState.asArray().update(indexExpr, scalarRep);
-    } else {
+    } else if(CellKind.POINTER.equals(kind)) {
       Expression ptrRep = ptrRepState.asArray().index(indexExpr);
       Expression tgtArray = getTypeArrVar(indexTypeName, ptrType);
       Expression previousRep = ptrRep.asArray().index(tgtArray);
@@ -1001,6 +926,7 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
       ptrRep = ptrRep.asArray().update(tgtArray, tgtArray);
       ptrRepState = ptrRepState.asArray().update(indexExpr, ptrRep);
     }
+    
     return em.tuple(repType, scalarRepState, ptrRepState);
   }
   
@@ -1012,13 +938,10 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
     return type;
   }
   
-  private boolean hasRepArr(Node node) {
-    if("IndirectionExpression".equals(node.getName()))   return true;
+  private boolean hasView(Node node) {
     xtc.type.Type type = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
-    String typeName = getTypeName(type);
-    boolean isPointer = typeName.startsWith("$PointerT");
-    boolean hasField = typeName.indexOf('#') >= 0;
-    return !isPointer && hasField;
+    boolean hasRef = type.isAnnotated();
+    return hasRef;
   }
   
   /**
@@ -1026,26 +949,29 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
    * @param type is not structure type, @return null; otherwise,
    * @return a map from member names to member types.
    */
-  private Map<String, Type> getMemberTypeOfField(xtc.type.Type type) {
+  private Map<String, Type> getElemTypeOfStructUnionField(xtc.type.Type type) {
     Map<String, Type> elemTypes = Maps.newLinkedHashMap();
+    String typeName = getTypeName(type);
     if(!(type.isStruct() || type.isUnion())) {
-      String typeName = getTypeName(type);
-      if(CellKind.SCALAR.equals(getCellKind(type)))
-        elemTypes.put(typeName, scalarType);
-      else
+      CellKind kind = getCellKind(type);
+      if(CellKind.SCALAR.equals(kind))
+        elemTypes.put(typeName, cellType);
+      else if(CellKind.POINTER.equals(kind))
         elemTypes.put(typeName, ptrType);
     } else {
       StructOrUnionT structUnionType = type.toStructOrUnion();
-      String structTypeName = getTypeName(structUnionType);
       for(VariableT elem : structUnionType.getMembers()) {
         // TODO: nested structure type
-        String elemName = new StringBuilder().append(structTypeName)
+        String elemName = new StringBuilder().append(typeName)
             .append('#').append(elem.getName()).toString();
         xtc.type.Type elemType = elem.getType();
-        if(CellKind.SCALAR.equals(getCellKind(elemType)))
-          elemTypes.put(elemName, scalarType);
-        else
+        CellKind kind = getCellKind(elemType);
+        if(CellKind.SCALAR.equals(kind))
+          elemTypes.put(elemName, cellType);
+        else if(CellKind.POINTER.equals(kind))
           elemTypes.put(elemName, ptrType);
+        else
+          elemTypes.put(elemName, getExpressionManager().booleanType());
       }
     }
     return elemTypes;
@@ -1056,25 +982,23 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
    * @param type is not structure type, @return null; otherwise,
    * @return a map from member names to corresponding offsets.
    */
-  private Map<String, Expression> getOffsetOfField(xtc.type.Type type) {
+  private Map<String, Expression> getOffsetOfStructField(xtc.type.Type type) {
     Map<String, Expression> elemOffsets = Maps.newLinkedHashMap();
     ExpressionManager em = getExpressionManager();
+    String typeName = getTypeName(type);
     if(!type.isStruct()) {
-      String typeName = getTypeName(type);
       int size = getOffType().getSize();
       Expression offsetExpr = em.bitVectorConstant(0, size);
       elemOffsets.put(typeName, offsetExpr);
     } else {
-      StructT structType = type.toStruct();
-      String structTypeName = getTypeName(structType);
       int offset = 0;
       int size = getOffType().getSize();
-      for(VariableT elem : structType.getMembers()) {
+      for(VariableT elem : type.toStruct().getMembers()) {
         // TODO: nested structure type
-        String elemName = new StringBuilder().append(structTypeName)
+        String elemName = new StringBuilder().append(typeName)
             .append('#').append(elem.getName()).toString();
         Expression offsetExpr = em.bitVectorConstant(offset, size);
-        offset += sizeofXtcType(elem.getType());
+        offset += getSizeofType(elem.getType());
         elemOffsets.put(elemName, offsetExpr);
       }
     }
@@ -1086,43 +1010,17 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
    * @param type is not structure type, @return null; otherwise,
    * @return a map from member names to corresponding offsets.
    */
-  private Map<String, Integer> getSizeTypeOfField(xtc.type.Type type) {    
-    if(!type.isUnion()) return null;
-    
+  private Map<String, Integer> getSizeOfUnionField(xtc.type.Type type) {    
+    if(!type.isUnion()) return null;    
     Map<String, Integer> elemOffsets = Maps.newLinkedHashMap();    
-    UnionT unionType = type.toUnion();
-    String unionTypeName = getTypeName(unionType);
-    for(VariableT elem : unionType.getMembers()) {
+    String unionTypeName = getTypeName(type);
+    for(VariableT elem : type.toUnion().getMembers()) {
       // TODO: nested structure type
       String elemName = new StringBuilder().append(unionTypeName)
           .append('#').append(elem.getName()).toString();
-      elemOffsets.put(elemName, sizeofXtcType(elem.getType()));
+      elemOffsets.put(elemName, getSizeofType(elem.getType()));
     }
     return elemOffsets;
-  }
-  
-  private int sizeofXtcType(xtc.type.Type t) {
-    int res = 0;
-    t = unwrapped(t);   
-    if (t.isInteger()) {
-      res = 1;
-    } else if (t.isPointer()) {
-      res = 1;
-    } else if (t.isStruct()) {
-      for(VariableT elem : t.toStruct().getMembers()) {
-        res += sizeofXtcType(elem.getType());
-      }
-    } else if (t.isUnion()) {
-      for(VariableT elem : t.toUnion().getMembers()) {
-        res = Math.max(res, sizeofXtcType(elem.getType()));
-      }
-    } else if(t.isArray()) {
-      ArrayT array = t.toArray();
-      res = (int) (array.getLength()) * sizeofXtcType(array.getType());
-    } else {
-      throw new IllegalArgumentException("Unknown type.");
-    }
-    return res;
   }
   
   private ArrayExpression getTypeArrVar(String typeName, Type elemType) {
@@ -1140,6 +1038,8 @@ public class BurstallVer2MemoryModel extends AbstractMemoryModel {
     type = unwrapped(type);
     if(type.isInteger())    return CellKind.SCALAR;
     if(type.isPointer())    return CellKind.POINTER;
+    if(type.isLabel() && type.toLabel().getName().equals(TEST_VAR))
+      return CellKind.TEST_VAR;
     throw new IllegalArgumentException("Unknown type " + type);
   }
   
