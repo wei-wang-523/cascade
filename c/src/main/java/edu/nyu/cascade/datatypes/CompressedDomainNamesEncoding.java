@@ -140,13 +140,14 @@ public abstract class CompressedDomainNamesEncoding extends AbstractExpressionEn
     return BitVectorMemoryModel.create(encoding);
   }
 
-  public static final int DEFAULT_WORD_SIZE = 8;
+  public static int DEFAULT_WORD_SIZE;
   
   public CompressedDomainNamesEncoding(ExpressionManager exprManager) {
-    super(BitVectorIntegerEncoding.create(exprManager, DEFAULT_WORD_SIZE),
+    super(BitVectorIntegerEncoding.create(exprManager, intCellSize),
         new DefaultBooleanEncoding(exprManager),
         new DefaultArrayEncoding(exprManager),
         new UnimplementedTupleEncoding<TupleExpression>());
+    DEFAULT_WORD_SIZE = intCellSize;
   }
 
   protected abstract ArrayExpression doToBvString(ArrayExpression arr,

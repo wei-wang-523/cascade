@@ -10,14 +10,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import xtc.tree.GNode;
-import xtc.tree.Location;
-import xtc.tree.Node;
-import xtc.tree.Visitor;
-import xtc.type.IntegerT;
-import xtc.type.LabelT;
-import xtc.type.NumberT;
-import xtc.type.Type;
+import xtc.tree.*;
+import xtc.type.*;
 import xtc.util.Pair;
 
 import com.google.common.base.Function;
@@ -170,6 +164,7 @@ public class CfgBuilder extends Visitor {
   private Map<Node, ControlFlowGraph> cfgs;
   private ControlFlowGraph currentCfg;
   private Deque<Scope> scopes;
+  private C cAnalyzer;
   private Map<String, BasicBlock> labeledBlocks;
   private List<xtc.util.SymbolTable.Scope> nestedScopes;
   /**
@@ -193,6 +188,7 @@ public class CfgBuilder extends Visitor {
     scopes = Lists.newLinkedList();
     nestedScopes = Lists.newArrayList();
     compoStmtAsScope = true;
+    cAnalyzer = new C();
     labeledBlocks = Maps.newHashMap();
     globalStmts = Maps.newHashMap();
     typeAliasMap = Maps.newHashMap();
@@ -516,9 +512,7 @@ public class CfgBuilder extends Visitor {
     GNode varNode = GNode.create("PrimaryIdentifier", varName);
     xtc.util.SymbolTable.Scope scope = symbolTable.getCurrentScope();
     varNode.setLocation(test.getLocation());
-    // FIXME: such property really helpful?
     varNode.setProperty(xtc.Constants.SCOPE, scope);
-//    varNode.setProperty(xtc.Constants.TYPE, NumberT.INT);
     varNode.setProperty(xtc.Constants.TYPE, new LabelT("TEST_VAR"));
     IRVarInfo varInfo = new VarInfo(scope, varName, IRIntegerType.getInstance(), varNode);
     symbolTable.define(varName, varInfo);
@@ -530,9 +524,8 @@ public class CfgBuilder extends Visitor {
     GNode varNode = GNode.create("PrimaryIdentifier", varName);
     xtc.util.SymbolTable.Scope scope = symbolTable.getCurrentScope();
     varNode.setLocation(malloc.getLocation());
-    // FIXME: such property really helpful?
     varNode.setProperty(xtc.Constants.SCOPE, scope);
-    varNode.setProperty(xtc.Constants.TYPE, malloc.getProperty(xtc.Constants.TYPE));
+    varNode.setProperty(xtc.Constants.TYPE, lookupType(malloc));
     IRVarInfo varInfo = new VarInfo(scope, varName, IRIntegerType.getInstance(), varNode);
     symbolTable.define(varName, varInfo);
     return varNode; 
@@ -543,9 +536,8 @@ public class CfgBuilder extends Visitor {
     GNode varNode = GNode.create("PrimaryIdentifier", varName);
     xtc.util.SymbolTable.Scope scope = symbolTable.getCurrentScope();
     varNode.setLocation(string.getLocation());
-    // FIXME: such property really helpful?
     varNode.setProperty(xtc.Constants.SCOPE, scope);
-    varNode.setProperty(xtc.Constants.TYPE, (new xtc.type.ArrayT(NumberT.CHAR, 3)));
+    varNode.setProperty(xtc.Constants.TYPE, lookupType(string));
     IRVarInfo varInfo = new VarInfo(scope, varName, IRIntegerType.getInstance(), varNode);
     symbolTable.define(varName, varInfo);
     return varNode; 
@@ -555,6 +547,7 @@ public class CfgBuilder extends Visitor {
     GNode stringNode = GNode.create("StringConstant", string);
     xtc.util.SymbolTable.Scope scope = symbolTable.getCurrentScope();
     stringNode.setLocation(node.getLocation());
+    stringNode.setProperty(xtc.Constants.TYPE, (new ArrayT(NumberT.CHAR, string.length())));
     stringNode.setProperty(xtc.Constants.SCOPE, scope);
     return stringNode; 
   }
@@ -600,28 +593,32 @@ public class CfgBuilder extends Visitor {
       String typeName = typeAliasMap.containsKey(resType) ? 
           typeAliasMap.get(resType) : resType.getName();
       node1 = GNode.create("StructureTypeReference", null, typeName);
+      node1.setLocation(node.getLocation());
+      node1.setProperty(xtc.Constants.TYPE, lookupType(node));
     } else if(resType.isUnion()) {
       String typeName = typeAliasMap.containsKey(resType) ? 
           typeAliasMap.get(resType) : resType.getName();
       node1 = GNode.create("UnionTypeReference", null, typeName);
+      node1.setLocation(node.getLocation());
+      node1.setProperty(xtc.Constants.TYPE, lookupType(node));
     } else {
       StringBuilder sb = new StringBuilder();
       String typeName = resType.toString();
       sb.append(Character.toUpperCase(typeName.charAt(0)));
       sb.append(typeName.substring(1));
       node1 = GNode.create(sb.toString());
+      node1.setLocation(node.getLocation());
     }
-    
-    Location loc = node.getLocation(); 
-    node1.setLocation(loc);
-    node1.setProperty(xtc.Constants.TYPE, resType);
 
     GNode node2 = GNode.create("SpecifierQualifierList", node1);
-    node2.setLocation(loc);
+    node2.setLocation(node.getLocation());
     GNode node3 = GNode.create("TypeName", node2, null);
-    node3.setLocation(loc);
+    node3.setLocation(node.getLocation());
+    node3.setProperty(xtc.Constants.TYPE, resType);
     GNode node4 = GNode.create("SizeofExpression", node3);
-    node4.setLocation(loc);
+    node4.setLocation(node.getLocation());
+    Type t = (new AnnotatedT(NumberT.INT)).constant(cAnalyzer.getSize(resType));
+    node4.setProperty(xtc.Constants.TYPE, t);
     return node4;
   }
   
@@ -630,6 +627,9 @@ public class CfgBuilder extends Visitor {
     GNode node1 = (GNode) region.getSourceNode();
     GNode node2 = (GNode) subscript.getSourceNode();
     GNode node3 = GNode.create("SubscriptExpression", node1, node2);
+    Type baseType = lookupType(node1);
+    Type cellType = unwrapped(baseType).toArray().getType();
+    node3.setProperty(xtc.Constants.TYPE, cellType);
     node1.setLocation(loc);
     node2.setLocation(loc);
     node3.setLocation(loc);
@@ -652,6 +652,7 @@ public class CfgBuilder extends Visitor {
       for(int i=0; i<exprList.size(); i++) {
         GNode val = (GNode) exprList.get(i).getSourceNode();
         GNode indexNode = GNode.create("IntegerConstant", ((Integer)i).toString());
+        indexNode.setProperty(xtc.Constants.TYPE, NumberT.INT);
         indexNode.setLocation(loc);
         indexList.add(0, expressionOf(indexNode));
         initializeArray(var, val, dimension, indexList);
@@ -963,6 +964,10 @@ public class CfgBuilder extends Visitor {
       
       GNode multNode = GNode.create("MultiplicativeExpression", sizeNode, "*", sizeTypeNode);
       multNode.setLocation(node.getLocation()); // n * sizeof(int)
+      long constant = lookupType(sizeNode).getConstant().longValue()
+          * lookupType(sizeTypeNode).getConstant().longValue();
+      Type t = (new AnnotatedT(NumberT.INT)).constant(constant);
+      multNode.setProperty(xtc.Constants.TYPE, t);
         
       GNode funcNode = GNode.create("PrimaryIdentifier", "array_allocated");
       funcNode.setLocation(node.getLocation()); // array_allocated(A, n * sizeof(int))
@@ -981,6 +986,10 @@ public class CfgBuilder extends Visitor {
         
       GNode multNode = GNode.create("MultiplicativeExpression", sizeNode, "*", rhsNode);
       multNode.setLocation(node.getLocation());
+      long constant = lookupType(sizeNode).getConstant().longValue()
+          * lookupType(rhsNode).getConstant().longValue();
+      Type t = (new AnnotatedT(NumberT.INT)).constant(constant);
+      multNode.setProperty(xtc.Constants.TYPE, t);
 
       Node funcNode = GNode.create("PrimaryIdentifier", "array_allocated");
       funcNode.setLocation(node.getLocation());
@@ -1039,8 +1048,11 @@ public class CfgBuilder extends Visitor {
      */
     
     String funcName = funNode.getString(0);
-    if("malloc".equals(funcName)) {
-    } else if("__NONDET__".equals(funcName)) {
+    if("malloc".equals(funcName) 
+        || "__NONDET__".equals(funcName)
+        || "forall".equals(funcName)
+        || "implies".equals(funcName)
+        || "valid".equals(funcName)) {
     } else if("free".equals(funcName)) {
       addStatement(Statement.free(node, expressionOf(node.getNode(1).getNode(0))));
     } else {
@@ -1445,8 +1457,13 @@ public class CfgBuilder extends Visitor {
     CExpression opExpr = recurseOnExpression(opNode);
     GNode oneNode = GNode.create("IntegerConstant", "1");
     oneNode.setLocation(opNode.getLocation());
+    Type t = (new AnnotatedT(NumberT.INT)).constant(1);
+    oneNode.setProperty(xtc.Constants.TYPE, t);
+    
     GNode decNode = GNode.create("AdditiveExpression", opNode, "-", oneNode);
     decNode.setLocation(opNode.getLocation());
+    decNode.setProperty(xtc.Constants.TYPE, lookupType(node));
+    
     Statement stmt = Statement.assign(node, opExpr, CExpression.create(decNode, opExpr.getScope()));
     if(expressionDepth == 0)       addStatement(stmt);
     else                           appendStatements.add(stmt);
@@ -1466,8 +1483,13 @@ public class CfgBuilder extends Visitor {
     CExpression opExpr = recurseOnExpression(opNode);
     GNode oneNode = GNode.create("IntegerConstant", "1");
     oneNode.setLocation(opNode.getLocation());
+    Type t = (new AnnotatedT(NumberT.INT)).constant(1);
+    oneNode.setProperty(xtc.Constants.TYPE, t);
+    
     GNode incNode = GNode.create("AdditiveExpression", opNode, "+", oneNode);
     incNode.setLocation(opNode.getLocation());
+    incNode.setProperty(xtc.Constants.TYPE, lookupType(node));
+    
     Statement stmt = Statement.assign(node, opExpr, CExpression.
         create(incNode, opExpr.getScope()));
     if(expressionDepth == 0)       addStatement(stmt);
@@ -1488,8 +1510,13 @@ public class CfgBuilder extends Visitor {
     CExpression opExpr = recurseOnExpression(opNode);
     GNode oneNode = GNode.create("IntegerConstant", "1");
     oneNode.setLocation(opNode.getLocation());
+    Type t = (new AnnotatedT(NumberT.INT)).constant(1);
+    oneNode.setProperty(xtc.Constants.TYPE, t);
+    
     GNode decNode = GNode.create("AdditiveExpression", opNode, "-", oneNode);
     decNode.setLocation(opNode.getLocation());
+    decNode.setProperty(xtc.Constants.TYPE, lookupType(node));
+    
     addStatement(Statement.assign(node, opExpr, CExpression
         .create(decNode, opExpr.getScope())));
 
@@ -1508,8 +1535,13 @@ public class CfgBuilder extends Visitor {
     CExpression opExpr = recurseOnExpression(opNode);
     GNode oneNode = GNode.create("IntegerConstant", "1");
     oneNode.setLocation(opNode.getLocation());
+    Type t = (new AnnotatedT(NumberT.INT)).constant(1);
+    oneNode.setProperty(xtc.Constants.TYPE, t);
+    
     GNode incNode = GNode.create("AdditiveExpression", opNode, "+", oneNode);
     incNode.setLocation(opNode.getLocation());
+    incNode.setProperty(xtc.Constants.TYPE, lookupType(node));
+    
     addStatement(Statement.assign(node, opExpr, CExpression
         .create(incNode, opExpr.getScope())));
 
@@ -1584,33 +1616,25 @@ public class CfgBuilder extends Visitor {
 
   public CExpression visitStringConstant(GNode node) {
     // pick the content to create a node for initialization
-    String nullStr = "\u0000";
-    String content = node.getString(0);
-    if(content.equals(nullStr)) {
-      int constVal = 0;
+    Reference shape = lookupType(node).getShape();
+    assert(shape.isString());
+    String content = ((StringReference) shape).getLiteral();
+    if(content == null) {
       GNode charConst = GNode.create("CharacterConstant", "\'\\u0000\'");
       charConst.setLocation(node.getLocation());
-      Type t = (new xtc.type.AnnotatedT(NumberT.CHAR)).constant(constVal);
+      Type t = (new AnnotatedT(NumberT.CHAR)).constant(0);
       charConst.setProperty(xtc.Constants.TYPE, t);
       return expressionOf(charConst);
     }
-        
-    char[] contentArr = node.getString(0).substring(1).toCharArray(); // content = [", 1, 2, 3, "]
+
     Pair<Object> operands = null;
-    for(int i=0; i<contentArr.length; i++) {
-      String str = null;
-      long constVal;
-      if(i == contentArr.length - 1) {
-        str = "\'\\u0000\'";
-        constVal = 0;
-      } else {
-        str = new StringBuilder().append('\'').append(contentArr[i]).append('\'').toString();
-        constVal = (int) contentArr[i];
-      }
+    for(int i=0; i<=content.length(); i++) {
+      char c = i == content.length() ? '\u0000' : content.charAt(i);
       // Here, we translate the single character to the char with ASCII code.
-      GNode charConst = GNode.create("CharacterConstant", str);
+      StringBuilder sb = new StringBuilder().append('\'').append(c).append('\'');
+      GNode charConst = GNode.create("CharacterConstant", sb.toString());
       charConst.setLocation(node.getLocation());
-      Type t = (new xtc.type.AnnotatedT(NumberT.CHAR)).constant(constVal);
+      Type t = (new AnnotatedT(NumberT.CHAR)).constant((int) c);
       charConst.setProperty(xtc.Constants.TYPE, t);
       GNode initEntry = GNode.create("InitializerListEntry", null, charConst);
       initEntry.setLocation(node.getLocation());
@@ -1625,12 +1649,19 @@ public class CfgBuilder extends Visitor {
     CExpression stringVarExpr = expressionOf(stringVarNode);
     
     // length * sizeof(char)
-    GNode lhsNode = GNode.create("IntegerConstant", Integer.toString(contentArr.length));
-    lhsNode.setLocation(node.getLocation());   
+    GNode lhsNode = GNode.create("IntegerConstant", Integer.toString(content.length()+1));
+    lhsNode.setLocation(node.getLocation());
+    lhsNode.setProperty(xtc.Constants.TYPE, 
+        (new AnnotatedT(NumberT.INT)).constant(content.length()+1));
+    
     Node rhsNode = getSizeofTypeNode(IntegerT.CHAR, node);
-    GNode sizeNode = GNode.create("MultiplicativeExpression", lhsNode, "*", rhsNode);
-    sizeNode.setLocation(node.getLocation());
-    CExpression sizeExpr = expressionOf(sizeNode);
+    GNode multNode = GNode.create("MultiplicativeExpression", lhsNode, "*", rhsNode);
+    multNode.setLocation(node.getLocation()); // n * sizeof(int)
+    long constant = lookupType(lhsNode).getConstant().longValue()
+        * lookupType(rhsNode).getConstant().longValue();
+    Type t = (new AnnotatedT(NumberT.INT)).constant(constant);
+    multNode.setProperty(xtc.Constants.TYPE, t);
+    CExpression sizeExpr = expressionOf(multNode);
     
     // string_allocated(STRING_VAR_*, length * sizeof(char))   
     Statement declareStmt = Statement.declareArray(node, stringVarExpr, sizeExpr);
@@ -1704,12 +1735,13 @@ public class CfgBuilder extends Visitor {
     recurseOnExpression(node.getNode(0));
     recurseOnExpression(node.getNode(1));
     /* Tag type to the node */
-    Type childType;
-    childType = lookupType(node.getNode(0));
-    if(childType.isPointer())  
-      node.setProperty(xtc.Constants.TYPE, childType.toPointer().getType());
-    if(childType.isArray())
-      node.setProperty(xtc.Constants.TYPE, childType.toArray().getType());
+    if(!node.hasProperty(xtc.Constants.TYPE)) {
+      Type baseType = lookupType(node.getNode(0));
+      assert(baseType.isAnnotated());
+      Reference shape = baseType.getShape();
+      Type type = new AnnotatedT(shape.getType()).shape(shape);
+      node.setProperty(xtc.Constants.TYPE, type);
+    }
     return expressionOf(node);
   }
   

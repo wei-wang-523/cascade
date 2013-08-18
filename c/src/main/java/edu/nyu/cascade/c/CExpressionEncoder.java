@@ -11,7 +11,6 @@ import java.math.BigInteger;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import xtc.Constants;
 import xtc.type.*;
 import xtc.tree.*;
 import xtc.util.SymbolTable.Scope;
@@ -59,10 +58,12 @@ class CExpressionEncoder implements ExpressionEncoder {
     private final Expression memory;
     // New field lvalVisitor to keep code DRY.
     private final LvalVisitor lvalVisitor;
+    private final TypeVisitor typeVisitor;
     
     public ExpressionVisitor() {
       memory = getMemoryModel().freshState();
       lvalVisitor = new LvalVisitor(this);
+      typeVisitor = new TypeVisitor();
     }
     
     public ExpressionClosure toBoolean(Node node) {
@@ -82,6 +83,8 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
 
     Expression encodeBoolean(Node node) {
+      if(!node.hasProperty(xtc.Constants.TYPE))
+        node.setProperty(xtc.Constants.TYPE, typeVisitor.encodeType(node));
       return encodeBoolean(node, false).setNode((GNode) node);
     }
     
@@ -91,6 +94,8 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
 
     Expression encodeInteger(Node node) {
+      if(!node.hasProperty(xtc.Constants.TYPE))
+        node.setProperty(xtc.Constants.TYPE, typeVisitor.encodeType(node));
       return coerceToInteger((Expression) dispatch(node)).setNode((GNode) node);
     }
 
@@ -131,15 +136,15 @@ class CExpressionEncoder implements ExpressionEncoder {
        * non-char* arithmetic will be wrong
        */
       IOUtils.debug().pln("APPROX: Possible pointer arithmetic treated as char*");
-      Type type = unwrapped(lookupType(node));
+      Type type = unwrapped(typeVisitor.encodeType(node));
       Expression res = binaryOp(node, this,
           new BinaryInfixRecursionStrategy<Expression, Expression>() {
             @Override
             public Expression apply(Expression left, String additiveOperator,
                 Expression right) {
               try {
-                Type leftType = unwrapped(lookupType(left.getNode()));
-                Type rightType = unwrapped(lookupType(right.getNode()));
+                Type leftType = unwrapped(typeVisitor.encodeType(left.getNode()));
+                Type rightType = unwrapped(typeVisitor.encodeType(right.getNode()));
                 
                 // multiplied by the size of the type of the pointer
                 if((leftType.isPointer() || leftType.isArray()) 
@@ -251,7 +256,7 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
 
     public Expression visitCastExpression(GNode node) {
-      Type targetType = unwrapped(lookupType(node));
+      Type targetType = unwrapped(typeVisitor.encodeType(node));
       if(targetType.isPointer()) {
         /* TODO: Deal with int to pointer conversions */
         return (Expression) dispatch(node.getNode(1));
@@ -263,8 +268,8 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitCharacterConstant(GNode node)
         throws ExpressionFactoryException {
-      Type type = (Type) node.getProperty(xtc.Constants.TYPE);
-      int constVal = type.getConstant().bigIntValue().intValue();
+      Type type = typeVisitor.encodeType(node);
+      int constVal = (int) type.getConstant().longValue();
       Expression res = getMemoryModel().castConstant(constVal, type);
       return res.setNode(node);
     }
@@ -295,7 +300,7 @@ class CExpressionEncoder implements ExpressionEncoder {
     public List<Expression> visitExpressionList(GNode node) {
       List<Expression> subExprList = Lists.newArrayListWithCapacity(node.size());
       for (Object elem : node) {
-        Expression subExpr = (Expression) dispatch((Node) elem);
+        Expression subExpr = (Expression) dispatch((GNode) elem);
         subExprList.add(subExpr);
       }
       return subExprList;
@@ -329,18 +334,19 @@ class CExpressionEncoder implements ExpressionEncoder {
         } else if( FUN_FORALL.equals(name) || FUN_EXISTS.equals(name)) {
           ExpressionManager exprManager = getExpressionManager();
           List<Expression> args = (List<Expression>) dispatch(argList);
+          int lastIdx = argList.size()-1;
+          Expression body = args.remove(lastIdx);
           List<VariableExpression> argVars = Lists.newArrayList();
-          int size = argList.size();
-          for(int i=0; i<size-1; i++) {
-            GNode argNode = argList.getGeneric(i);
-            String argName = "PrimaryIdentifier".equals(argNode.getName()) ? argNode.getString(0) :
-                argNode.getNode(argNode.size()-1).getString(0);
-            int cellSize = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
-            VariableExpression argVar = exprManager.variable(argName, 
-                exprManager.bitVectorType(sizeofType(lookupType(argNode)) * cellSize), false);
+          for(int idx = 0; idx < lastIdx; idx++) {
+            GNode argNode = argList.getGeneric(idx);
+            assert("PrimaryIdentifier".equals(argNode.getName()));
+            String argName = argNode.getString(0);
+            VariableExpression argVar = exprManager.variable(argName,
+                encoding.getIntegerEncoding().getType(), false);
             argVars.add(argVar);
           }
-          Expression body = args.remove(size-1).subst(args, argVars);
+          body = body.subst(args, argVars);
+
           if( FUN_FORALL.equals(name) )  
             res = exprManager.forall(argVars, body);
           else  
@@ -364,24 +370,24 @@ class CExpressionEncoder implements ExpressionEncoder {
           Node ptrNode = argList.getNode(0);
           Expression ptrExpr = (Expression) lvalVisitor.dispatch(ptrNode);
           Expression length = (Expression) dispatch(argList.getNode(1));
-          Type type = lookupType(ptrNode).toPointer().getType().resolve();
+          Type type = typeVisitor.encodeType(ptrNode).toPointer().getType().resolve();
           int size = sizeofType(type);
-          Map<String, Integer> fldOff = getFieldOffset(type);
+          Map<String, Integer> offMap = getOffsetMap(type);
           
           MemoryModel mm = getMemoryModel();
           if(mm instanceof ReachMemoryModel) {
             if(FUN_CREATE_ACYCLIC_LIST.equals(name))
               res = ((ReachMemoryModel) mm).create_list(memory,
-                  ptrExpr, length, size, fldOff, true, true);
+                  ptrExpr, length, size, offMap, true, true);
             else if(FUN_CREATE_CYCLIC_LIST.equals(name))
               res = ((ReachMemoryModel) mm).create_list(memory,
-                  ptrExpr, length, size, fldOff, false, true);
+                  ptrExpr, length, size, offMap, false, true);
             else if(FUN_CREATE_ACYCLIC_DLIST.equals(name))
               res = ((ReachMemoryModel) mm).create_list(memory,
-                  ptrExpr, length, size, fldOff, true, false);
+                  ptrExpr, length, size, offMap, true, false);
             else
               res = ((ReachMemoryModel) mm).create_list(memory,
-                  ptrExpr, length, size, fldOff, false, false);
+                  ptrExpr, length, size, offMap, false, false);
           } else {
             res = getExpressionManager().tt();
           }
@@ -410,15 +416,15 @@ class CExpressionEncoder implements ExpressionEncoder {
 
     public Expression visitIndirectionExpression(GNode node)
         throws ExpressionFactoryException {
-      lookupType(node);
       Expression op = (Expression) dispatch(node.getNode(0));
-      Expression res = getMemoryModel().deref(memory, op.setNode(node));
+      Type ptrToType = typeVisitor.encodeType(node);
+      Expression res = derefMemory(memory, op.setNode(node));
       return res.setNode(node);
     }
 
     public Expression visitIntegerConstant(GNode node)
         throws ExpressionFactoryException {
-      Type type = unwrapped(lookupType(node));     
+      Type type = unwrapped(typeVisitor.encodeType(node));     
       assert(type.isInteger());
       
       int constVal = 0;
@@ -445,7 +451,6 @@ class CExpressionEncoder implements ExpressionEncoder {
 
     public Expression visitLogicalAndExpression(GNode node)
         throws ExpressionFactoryException {
-      lookupType(node);
       Expression left = encodeBoolean(node.getNode(0));
       Expression right = encodeBoolean(node.getNode(1));
       return encoding.and(left, right).setNode(node);
@@ -458,7 +463,6 @@ class CExpressionEncoder implements ExpressionEncoder {
 
     public Expression visitLogicalOrExpression(GNode node)
         throws ExpressionFactoryException {
-      lookupType(node);
       Expression left = encodeBoolean(node.getNode(0));
       Expression right = encodeBoolean(node.getNode(1));
       return encoding.or(left, right).setNode(node);
@@ -550,18 +554,37 @@ class CExpressionEncoder implements ExpressionEncoder {
           .getInstance(), false).setNode(node);
     }
     
+    private Expression derefMemory(Expression memory, Expression lvalExpr) {
+      /* lvalExpr's node with no type info, get it for BurstallMemoryModel analysis. */
+      Expression resExpr = null;
+      
+      GNode srcNode = lvalExpr.getNode();
+      Type t = unwrapped(typeVisitor.encodeType(srcNode));
+      if(t.isArray() || t.isStruct() || t.isUnion())
+        resExpr = lvalExpr;
+      else
+        resExpr = getMemoryModel().deref(memory, lvalExpr);   
+      return resExpr.setNode(srcNode);
+    }
+    
     private Expression getSubscriptExpression(Node node, Expression idx) {
-      Type type = unwrapped(lookupType(node));
+      Type type = unwrapped(typeVisitor.encodeType(node));
       assert(type.isArray() || type.isPointer());
 
       if(!("SubscriptExpression".equals(node.getName()))) {
-        Expression base = (Expression) dispatch(node);
         if(type.isPointer()) {
+          Expression base = (Expression) dispatch(node);
           Type ptoType = type.toPointer().getType();
           Expression factor = encoding.integerConstant(sizeofType(ptoType));
           idx = encoding.times(idx, factor);
+          return encoding.plus(base, idx);
+        } else {
+          Expression base = (Expression) lvalVisitor.dispatch(node);
+          Type cellType = type.toArray().getType();
+          Expression factor = encoding.integerConstant(sizeofType(cellType));
+          idx = encoding.times(idx, factor);
+          return encoding.plus(base, idx);
         }
-        return encoding.plus(base, idx);
       }
       
       if(type.isArray()) {
@@ -592,23 +615,30 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitSizeofExpression(GNode node)
         throws ExpressionFactoryException {
-      Node typeNode = node.getNode(0);
-      Expression res;
-      if(typeNode.hasProperty(xtc.Constants.TYPE)) { // pointer type (STRUCT *)
-        int size = sizeofType(lookupType(typeNode));
-        return encoding.integerConstant(size).setNode(node);
-      } else if(typeNode.getName().equals("PrimaryIdentifier")){
-        GNode typedef = GNode.create("TypedefName", typeNode.get(0));
-        typedef.setLocation(node.getLocation());
-        GNode specifier = GNode.create("SpecifierQualifierList", typedef);
-        specifier.setLocation(node.getLocation());
-        GNode typename = GNode.create("TypeName", specifier);
-        typename.setLocation(node.getLocation());
-        res = (Expression)dispatch(typename);
-      } else {
-        res = (Expression)dispatch(typeNode);
-      }
-      return res.setNode(node);
+//      if("BurstallFix".equals(Preferences.get(Preferences.OPTION_THEORY))) {
+//        Type type = typeVisitor.encodeType(node);
+//        assert(type.hasConstant());
+//        int value = (int) type.getConstant().longValue();
+//        return encoding.integerConstant(value);
+//      } else {
+        Node typeNode = node.getNode(0);
+        Expression res;
+        if(typeNode.hasProperty(xtc.Constants.TYPE)) { // pointer type (STRUCT *)
+          int size = sizeofType(typeVisitor.encodeType(typeNode));
+          return encoding.integerConstant(size).setNode(node);
+        } else if(typeNode.getName().equals("PrimaryIdentifier")){
+          GNode typedef = GNode.create("TypedefName", typeNode.get(0));
+          typedef.setLocation(node.getLocation());
+          GNode specifier = GNode.create("SpecifierQualifierList", typedef);
+          specifier.setLocation(node.getLocation());
+          GNode typename = GNode.create("TypeName", specifier);
+          typename.setLocation(node.getLocation());
+          res = (Expression)dispatch(typename);
+        } else {
+          res = (Expression)dispatch(typeNode);
+        }
+        return res.setNode(node);
+//      }
     }
     
     public Expression visitTypeName(GNode node)
@@ -625,42 +655,50 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitInt(GNode node)
         throws ExpressionFactoryException {
-      return encoding.integerConstant(1).setNode(node);
+      //FIXME: Int() and Char() won't be visited.
+      int size = sizeofType(typeVisitor.encodeType(node));
+      return encoding.integerConstant(size).setNode(node);
     }    
     
     public Expression visitChar(GNode node)
         throws ExpressionFactoryException {
-      return encoding.integerConstant(1).setNode(node);
+      int size = sizeofType(typeVisitor.encodeType(node));
+      return encoding.integerConstant(size).setNode(node);
     }
     
     public Expression visitPointer(GNode node)
         throws ExpressionFactoryException {
-      return encoding.integerConstant(1).setNode(node);
+      int size = sizeofType(typeVisitor.encodeType(node));
+      return encoding.integerConstant(size).setNode(node);
     }
     
     public Expression visitStructureTypeReference(GNode node) 
         throws ExpressionFactoryException {
-      int size = sizeofType(lookupType(node));
+      int size = sizeofType(typeVisitor.encodeType(node));
       return encoding.integerConstant(size).setNode(node);
     }
     
     public Expression visitUnionTypeReference(GNode node)
         throws ExpressionFactoryException {
-      int size = sizeofType(lookupType(node));
+      int size = sizeofType(typeVisitor.encodeType(node));
       return encoding.integerConstant(size).setNode(node);
     }
     
     public Expression visitTypedefName(GNode node) 
         throws ExpressionFactoryException {
-      Type type = lookupType(node);
-      int size = sizeofType(type);
-      return encoding.integerConstant(size).setNode(node);
+      if("BurstallFix".equals(Preferences.get(Preferences.OPTION_THEORY))) {
+        return ((Expression) dispatch(node.getNode(0))).setNode(node);
+      } else {
+        Type type = typeVisitor.encodeType(node);
+        int size = sizeofType(type);
+        return encoding.integerConstant(size).setNode(node);
+      }
     }
     
     public Expression visitUnaryMinusExpression(GNode node) 
         throws ExpressionFactoryException {
       Expression rhs = (Expression)dispatch(node.getNode(0));
-      Type type = lookupType(node);
+      Type type = typeVisitor.encodeType(node);
       Expression zero = getMemoryModel().castConstant(0, type);
       return encoding.minus(zero, rhs).setNode(node); 
     }
@@ -672,7 +710,6 @@ class CExpressionEncoder implements ExpressionEncoder {
        * non-char* arithmetic will be wrong
        */
       IOUtils.debug().pln("APPROX: Possible pointer arithmetic treated as char*");
-      lookupType(node); // attach type to node's property
       return binaryOp(node, this, 
           new BinaryInfixRecursionStrategy<Expression, Expression>() {
         @Override
@@ -703,15 +740,14 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitDirectComponentSelection(GNode node) 
         throws ExpressionFactoryException {
-      Type type = lookupType(node);
+      Type type = typeVisitor.encodeType(node);
       assert(type.hasShape());
       Reference ref = type.getShape();
       assert(ref.hasBase() && ref.hasField());
-      Type baseType = ref.getBase().getType();   
+      Type baseType = ref.getBase().getType();
+      assert(baseType.isStruct() || baseType.isUnion());
       String fieldName = ref.getField();
-      int offset = getOffsetOfField(baseType, fieldName);
-      if(offset == -1) 
-        throw new ExpressionFactoryException("Invalid offset: " + fieldName);
+      int offset = getOffset(baseType.toStructOrUnion(), fieldName);
       Expression baseLoc = (Expression) lvalVisitor.dispatch(node.getNode(0));
       Expression offsetExpr = encoding.integerConstant(offset);
       Expression resLoc = encoding.plus(baseLoc, offsetExpr);
@@ -721,16 +757,14 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitIndirectComponentSelection(GNode node) 
         throws ExpressionFactoryException {
-      Type type = lookupType(node);
+      Type type = typeVisitor.encodeType(node);
       assert(type.hasShape());
       Reference ref =  type.getShape();
       assert(ref.hasBase() && ref.hasField());
       Type baseType = ref.getBase().getType();   
+      assert(baseType.isStruct() || baseType.isUnion());
       String fieldName = ref.getField();
-      int offset = getOffsetOfField(baseType, fieldName);
-      if(offset == -1) 
-        throw new ExpressionFactoryException("Invalid offset: " + fieldName);
-      
+      int offset = getOffset(baseType.toStructOrUnion(), fieldName);
       Expression baseLoc = (Expression)dispatch(node.getNode(0));
       Expression offsetExpr = encoding.integerConstant(offset);
       Expression resLoc = encoding.plus(baseLoc, offsetExpr);
@@ -742,17 +776,19 @@ class CExpressionEncoder implements ExpressionEncoder {
   @SuppressWarnings("unused")
   private class LvalVisitor extends Visitor {
     private final Expression memory;
-    // New field exprVisitor to keep code DRY.
     private final ExpressionVisitor exprVisitor;
+    private final TypeVisitor typeVisitor;
     
     LvalVisitor() {
       this.exprVisitor = new ExpressionVisitor();
       this.memory = exprVisitor.memory;
+      this.typeVisitor = new TypeVisitor();
     }
 
     LvalVisitor(ExpressionVisitor exprVisitor) {
       this.exprVisitor = exprVisitor;
       this.memory = exprVisitor.memory;
+      this.typeVisitor = new TypeVisitor();
     }
 
     public ExpressionClosure toLval(Node node) {
@@ -760,14 +796,14 @@ class CExpressionEncoder implements ExpressionEncoder {
        *  Find it for BurstallMemoryModel to analyze. 
        */
       if(!node.hasProperty(xtc.Constants.TYPE))
-        node.setProperty(xtc.Constants.TYPE, lookupType(node));
+        node.setProperty(xtc.Constants.TYPE, typeVisitor.encodeType(node));
       return getMemoryModel().suspend(memory, (Expression)dispatch(node));
     }
     
     public Expression visitIndirectionExpression(GNode node)
         throws ExpressionFactoryException {
       Expression op = (Expression) exprVisitor.dispatch(node.getNode(0));
-      xtc.type.Type type = (xtc.type.Type) node.getProperty(Constants.TYPE);
+      Type type = typeVisitor.encodeType(node);
       IOUtils.debug().pln(
           "Indirection expression type: " + type.tag() + type.getName()
               + type.resolve().getName()).flush();
@@ -790,14 +826,23 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
     
     private Expression getSubscriptExpression(Node node, Expression idx) {
-      Type type = unwrapped(lookupType(node));
+      Type type = unwrapped(typeVisitor.encodeType(node));
       assert(type.isArray() || type.isPointer());
 
       if(!("SubscriptExpression".equals(node.getName()))) {
-        Expression base = (Expression) exprVisitor.dispatch(node);
-        Expression factor = encoding.integerConstant(sizeofType(lookupType(node)));
-        Expression newIdx = encoding.times(idx, factor);
-        return encoding.plus(base, newIdx);
+        if(type.isPointer()) {
+          Expression base = (Expression) exprVisitor.dispatch(node);
+          Type ptoType = type.toPointer().getType();
+          Expression factor = encoding.integerConstant(sizeofType(ptoType));
+          idx = encoding.times(idx, factor);
+          return encoding.plus(base, idx);
+        } else {
+          Expression base = (Expression) dispatch(node);
+          Type cellType = type.toArray().getType();
+          Expression factor = encoding.integerConstant(sizeofType(cellType));
+          idx = encoding.times(idx, factor);
+          return encoding.plus(base, idx);
+        }
       }
       
       if(type.isArray()) {
@@ -828,14 +873,13 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitDirectComponentSelection(GNode node) 
         throws ExpressionFactoryException {
-      Type type = lookupType(node);
+      Type type = typeVisitor.encodeType(node);
       assert(type.hasShape());
       Reference ref = type.getShape();
-      Type baseType = ref.getBase().getType();   
+      Type baseType = ref.getBase().getType();
+      assert(baseType.isStruct() || baseType.isUnion());
       String fieldName = ref.getField();
-      int offset = getOffsetOfField(baseType, fieldName);
-      if(offset == -1) 
-        throw new ExpressionFactoryException("Invalid offset: " + fieldName);
+      int offset = getOffset(baseType.toStructOrUnion(), fieldName);
       Expression offsetExpr = encoding.integerConstant(offset);
       // r.balance = addr_of_r + offset(balance), not m[addr_of_r] + offset(balance)
       Expression baseLoc = (Expression) dispatch(node.getNode(0));
@@ -848,18 +892,18 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitIndirectComponentSelection(GNode node) 
         throws ExpressionFactoryException {
-      Type type = lookupType(node);
+      Type type = typeVisitor.encodeType(node);
       assert(type.hasShape());
       Reference ref = type.getShape();
       assert(ref.hasBase() && ref.hasField());
       Type baseType = ref.getBase().getType();
+      assert(baseType.isStruct() || baseType.isUnion());
       String fieldName = ref.getField();
-      int offset = getOffsetOfField(baseType, fieldName);
-      if(offset == -1) 
-        throw new ExpressionFactoryException("Invalid offset: " + fieldName);
+      int offset = getOffset(baseType.toStructOrUnion(), fieldName);
       Expression offsetExpr = encoding.integerConstant(offset);
-      Expression basePtr = (Expression) dispatch(node.getNode(0));
-      Expression baseLoc = derefMemory(memory, basePtr);
+//      Expression basePtr = (Expression) dispatch(node.getNode(0));
+//      Expression baseLoc = derefMemory(memory, basePtr);
+      Expression baseLoc = (Expression) exprVisitor.dispatch(node.getNode(0));
       return encoding.plus(baseLoc, offsetExpr).setNode(node);
     }
 
@@ -947,12 +991,12 @@ class CExpressionEncoder implements ExpressionEncoder {
   private final ExpressionEncoding encoding;
   private final MemoryModel memoryModel;
   private final Map<File, ? extends SymbolTable> symbolTables;
-  private Map<String, Type> typeTable;
-
   private Scope scope;
 
   private static final String VAR_EXPR_MAP = "_Expression_Interpreter_Var_Expr_Map";
   private static final String VAR_PREFIX = "addr_of_";
+  
+  private C cAnalyzer;
 
   private CExpressionEncoder(ExpressionEncoding encoding,
       MemoryModel memoryModel,
@@ -960,8 +1004,8 @@ class CExpressionEncoder implements ExpressionEncoder {
     this.encoding = encoding;
     this.memoryModel = memoryModel;
     this.symbolTables = symbolTables;
-    typeTable = Maps.newHashMap();
     scope = null;
+    cAnalyzer = encoding.getCAnalyzer();
   }
 
   @Override
@@ -1036,82 +1080,59 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
   }
   
-  public Expression derefMemory(Expression memory, Expression lvalExpr) {
-    /* lvalExpr's node with no type info, get it for BurstallMemoryModel analysis. */
-    Expression resExpr = null;
-    
-    GNode srcNode = lvalExpr.getNode();
-    Type t = unwrapped(lookupType(srcNode));
-    if(t.isArray() || t.isStruct() || t.isUnion())
-      resExpr = lvalExpr;
-    else
-      resExpr = getMemoryModel().deref(memory, lvalExpr);   
-    return resExpr.setNode(srcNode);
-  }
-  
   private int sizeofType(Type t) {
-    return getMemoryModel().getSizeofType(t);
-  }
-  
-  private Type getTypeOfField(Node baseNode, String name) {
-    Type baseType = unwrapped(lookupType(baseNode));
-    Type structType = baseType;
-    if(baseType.isPointer()) 
-      structType = unwrapped(baseType.toPointer().getType());
-    assert(structType.isStruct() || structType.isUnion());
+    if("BurstallFix".equals(Preferences.get(Preferences.OPTION_THEORY))) {
+      return (int) cAnalyzer.getSize(t);
+    }
     
-    Type fieldType = null;
-    for(VariableT elem : structType.toStructOrUnion().getMembers()) {
-      if(name.equals(elem.getName())) {
-        fieldType = elem;
-        break;
+    if (t.isInteger()) {
+      return 1;
+    } else if (t.isPointer()) {
+      return 1;
+    } else if (t.isStruct()) {
+      int res = 0;
+      for(VariableT elem : t.toStruct().getMembers()) {
+        res += sizeofType(elem.getType());
       }
-    }
-    
-    assert(fieldType != null);
-    AnnotatedT resType = new AnnotatedT(fieldType);
-    
-    DynamicReference dynaRef = null;
-    if("PrimaryIdentifier".equals(baseNode.getName())) {
-      String baseName = baseNode.getString(0);
-      dynaRef = new DynamicReference(baseName, baseType);
+      return res;
+    } else if(t.isUnion()) {
+      int res = 0;
+      for(VariableT elem : t.toUnion().getMembers()) {
+        res = Math.max(res, sizeofType(elem.getType()));
+      }
+      return res;
+    } else if(t.isArray()) {
+      ArrayT array = t.toArray();
+      return (int) (array.getLength()) * sizeofType(array.getType());
+    } else if(t.isAlias() || t.isVariable()) {
+      return sizeofType(t.resolve());
+    } else if(t.isAnnotated()) {
+      return sizeofType(t.deannotate());
     } else {
-      dynaRef = new DynamicReference(baseType);
+      throw new IllegalArgumentException("Unknown type.");
     }
-    
-    FieldReference fldRef = null;
-    if(baseType.isPointer()) {
-      IndirectReference indRef = new IndirectReference(dynaRef);
-      fldRef = new FieldReference(indRef, name);
-    } else {
-      fldRef = new FieldReference(dynaRef, name);
-    }
-    
-    resType.shape(fldRef);
-    return resType;
   }
   
-  private Map<String, Integer> getFieldOffset(Type t) {
+  private Map<String, Integer> getOffsetMap(Type t) {
     Preconditions.checkArgument(t.isStruct());
-    StructT struct = (StructT) t;
     Map<String, Integer> resMap = Maps.newHashMap();
-    for(VariableT mem: struct.getMembers()) {
+    for(VariableT mem: t.toStruct().getMembers()) {
       if(!(mem.getType().isPointer() 
-          && ((PointerT) mem.getType()).getType().equals(t))) continue;
+          && ((PointerT) mem.getType()).getType().equals(t))) 
+        continue;
       String name = mem.getName();
-      int off = getOffsetOfField(t, name);
+      int off = getOffset(t.toStructOrUnion(), name);
       resMap.put(name, off);
-    }   
+    }
     return resMap;
   }
   
-  private int getOffsetOfField(Type t, String name) {
-    if(t.isPointer()) 
-      t = (t.toPointer()).getType().resolve();
-    if(!(t.isStruct() || t.isUnion()))
-      throw new ExpressionFactoryException("Invalid type: " + t.toString());
-    StructOrUnionT struct = t.toStructOrUnion();
+  private int getOffset(StructOrUnionT t, String name) {
+    if("BurstallFix".equals(Preferences.get(Preferences.OPTION_THEORY))) {
+      return (int) cAnalyzer.getOffset(t.toStructOrUnion(), name);
+    }
     
+    StructOrUnionT struct = t.toStructOrUnion();
     if(struct.isUnion()) return 0;
     
     Iterator<VariableT> itr = struct.getMembers().iterator();
@@ -1136,110 +1157,327 @@ class CExpressionEncoder implements ExpressionEncoder {
     return type;
   }
   
-  private Type lookupType(Node node) throws ExpressionFactoryException {
-    Type type = (Type) node.getProperty(xtc.Constants.TYPE);
-    /* For the node in the control file that newly appeared in the 
-     * quantified formula.
-     */
-    if(type == xtc.type.ErrorT.TYPE) {
-      type = typeTable.get(node.toString());
-    }
-    /* For the node in the control file that cannot get type annotation,
-     * which doesn't go to cfg builder to get type annotation
-     */
-    if(type == null) {
-      File file = new File(node.getLocation().file);
-      SymbolTable symbolTable = symbolTables.get(file);      
-      if (symbolTable == null) 
-        IOUtils.err().println("APPROX: Symbol table not found for file: " + file);
-      else {
-        symbolTable.setScope(scope);
-        String name = node.getName();
-        if("PrimaryIdentifier".equals(name) || "SimpleDeclarator".equals(name)) {
-          type = symbolTable.lookupType(node.getString(0));
-          if(type == null) { // newly defined variable, type info stored in IRVarInfo
-             if(symbolTable.lookup(node.getString(0)).getType().equals(
-                 edu.nyu.cascade.ir.type.IRIntegerType.getInstance())) {
-               type = xtc.type.IntegerT.INT;
-             } else {
-               throw new ExpressionFactoryException("Type not found: " + node.toString());
-             }
-          }
-        } else if("SubscriptExpression".equals(name)) {
-          Type childType = unwrapped(lookupType(node.getNode(0)));
-          if(childType.isPointer())  type = childType.toPointer().getType();
-          if(childType.isArray())    type = childType.toArray().getType();     
-        } else if("AddressExpression".equals(name)) {
-          type = new PointerT(lookupType(node.getNode(0)));
-        } else if("IndirectionExpression".equals(name)) {
-          Type childType = unwrapped(lookupType(node.getNode(0)));
-          if(childType.isPointer())  type = childType.toPointer().getType();
-        } else if("AdditiveExpression".equals(name)) {
-          Type childType_a = unwrapped(lookupType(node.getNode(0)));
-          Type childType_b = unwrapped(lookupType(node.getNode(2)));
-          if(childType_a.isPointer() || childType_b.isPointer())
-            type = childType_a.isPointer() ? childType_a : childType_b;
-          else if(childType_a.isFloat() || childType_b.isFloat())
-            type = childType_a.isFloat() ? childType_a : childType_b;
-          else
-            type = NumberT.INT;
-        } else if("BitwiseAndExpression".equals(name)) {
-          type = new xtc.type.BooleanT();
-        } else if("CastExpression".equals(name)) {
-          type = lookupType(node.getNode(0));
-        } else if("CharacterConstant".equals(name)) {
-          type = NumberT.CHAR;
-        } else if("DirectComponentSelection".equals(name) 
-            || "IndirectComponentSelection".equals(name)) {
-          type = getTypeOfField(node.getNode(0), node.getString(1));
-        } else if("EqualityExpression".equals(name) 
-            || "RelationalExpression".equals(name)
-            || name.startsWith("Logical")) {
-          type = new BooleanT();
-        } else if("MultiplicativeExpression".equals(name)) {
-          Type childType_a = unwrapped(lookupType(node.getNode(0)));
-          Type childType_b = unwrapped(lookupType(node.getNode(2)));
-          if(childType_a.isFloat() || childType_b.isFloat())
-            type = childType_a.isFloat() ? childType_a : childType_b;
-          else
-            type = NumberT.INT;
-        } else if("PostdecrementExpression".equals(name) 
-            || "PostincrementExpression".equals(name)
-            || "PredecrementExpression".equals(name)
-            || "PreincrementExpression".equals(name)) {
-          type = lookupType(node.getNode(0));
-        } else if("SizeofExpression".equals(name)) {
-          type = NumberT.INT;
-        } else if("StringConstant".equals(name)) {
-          type = new ArrayT(NumberT.CHAR);
-        } else if("StructureTypeReference".equals(name)) {
-          Scope currentScope = symbolTable.getCurrentScope();
-          symbolTable.setScope(symbolTable.rootScope());
-          String structName = node.getString(1);
-          /* If name is not like "tag(...)", add tag(...) around it. 
-           * In symbolTable, this kind variables are all in this form.
-           */
-          if(!structName.startsWith("tag(")) structName = "tag(" + structName +")";
-            type = symbolTable.lookupType(structName);
-          symbolTable.setScope(currentScope);
-        } else if("TypedefName".equals(name)) {
-          Scope currentScope = symbolTable.getCurrentScope();
-          symbolTable.setScope(symbolTable.rootScope());
-          String structName = node.getString(0);
-          type = symbolTable.lookupType(structName);
-          symbolTable.setScope(currentScope);
-        } else if("UnaryMinusExpression".equals(name)) {
-          type = NumberT.INT;
-        } else if("IntegerConstant".equals(name)) {
-          type = NumberT.INT;
+  @SuppressWarnings("unused")
+  private class TypeVisitor extends Visitor {
+    public TypeVisitor() { }
+    
+    Type encodeType(Node node) {
+      if(node.hasProperty(xtc.Constants.TYPE)) {
+        Type type = (Type) node.getProperty(xtc.Constants.TYPE);
+        if(!type.equals(ErrorT.TYPE)) {
+          return (Type) node.getProperty(xtc.Constants.TYPE);
         }
       }
+      Type type = (Type) dispatch(node);
+      node.setProperty(xtc.Constants.TYPE, type);
+      return type;
     }
     
-    if (type == null)
-      throw new ExpressionFactoryException("Type not found: " + node.toString());
+    @Override
+    public Type unableToVisit(Node node) throws VisitingException {
+      IOUtils.err()
+          .println(
+              "APPROX: Treating unexpected node type as unknown: "
+                  + node.getName());
+      return ErrorT.TYPE;
+    }
     
-    node.setProperty(xtc.Constants.TYPE, type);
-    return type;
+    public Type visitConditionalExpression(GNode node) {
+      Type condition = (Type) dispatch (node.getNode(0));
+      Type trueCase_type = (Type) dispatch(node.getNode(1));
+      Type falseCase_type = (Type) dispatch(node.getNode(2));
+      assert(unwrapped(trueCase_type).equals(unwrapped(falseCase_type)));
+      return trueCase_type;
+    }
+
+    public Type visitAdditiveExpression(GNode node) {
+      Type lhs_type = (Type) dispatch(node.getNode(0));
+      Type rhs_type = (Type) dispatch(node.getNode(2));
+      
+      Type un_rhs_type = unwrapped(rhs_type);
+      Type un_lhs_type = unwrapped(lhs_type);
+      if(un_rhs_type.isArray() || un_rhs_type.isPointer()) {
+        if(un_rhs_type.isPointer()) return rhs_type;
+        Reference rhs_shape = rhs_type.getShape();
+        return new AnnotatedT(
+            new PointerT(
+                un_rhs_type.toArray().getType())).shape(rhs_shape);
+      }
+      
+      if(un_lhs_type.isArray() || un_lhs_type.isPointer()) {
+        if(un_lhs_type.isPointer()) return lhs_type;
+        Reference lhs_shape = lhs_type.getShape();
+        return new AnnotatedT(
+            new PointerT(
+                un_lhs_type.toArray().getType())).shape(lhs_shape);
+      }
+      
+      return lhs_type;
+    }
+    
+    public Type visitShiftExpression(GNode node) {
+      Type lhs_type = (Type) dispatch(node.getNode(0));
+      Type rhs_type = (Type) dispatch(node.getNode(2));
+      return lhs_type;
+    }
+
+    public Type visitAddressExpression(GNode node) {
+      Type content_type = (Type) dispatch(node.getNode(0));
+      return new PointerT(content_type);
+    }
+
+    public Type visitBitwiseAndExpression(GNode node) {
+      Type lhs_type = (Type) dispatch(node.getNode(0));
+      Type rhs_type = (Type) dispatch(node.getNode(2));
+      assert(unwrapped(lhs_type).equals(unwrapped(rhs_type)));
+      return lhs_type;
+    }
+
+    public Type visitCastExpression(GNode node) {
+      Type targetType = (Type) dispatch(node.getNode(0));
+      Type srcType = (Type) dispatch(node.getNode(1));
+      return targetType;
+    }
+    
+    public Type visitCharacterConstant(GNode node) {
+      return IntegerT.CHAR;
+    }
+
+    public Type visitEqualityExpression(GNode node) {
+      Type lhs_type = (Type) dispatch(node.getNode(0));
+      Type rhs_type = (Type) dispatch(node.getNode(2));
+      assert(unwrapped(lhs_type).equals(unwrapped(rhs_type)));
+      return IntegerT.INT;
+    }
+
+    public List<Type> visitExpressionList(GNode node) {
+      List<Type> subTypeList = Lists.newArrayListWithCapacity(node.size());
+      for (Object elem : node) {
+        Type subType = (Type) dispatch((GNode) elem);
+        subTypeList.add(subType);
+      }
+      return subTypeList;
+    }
+
+    @SuppressWarnings("unchecked")
+    public Type visitFunctionCall(GNode node) {
+      Node funNode = node.getNode(0);
+      Type res;
+      if ("PrimaryIdentifier".equals(funNode.getName())) {
+        String name = funNode.getString(0);
+        Node argList = node.getNode(1);
+        List<Type> argExprs = (List<Type>) dispatch(argList);
+        if(name.equals(FUN_ALLOCATED) 
+            || name.equals(FUN_CREATE_ACYCLIC_DLIST)
+            || name.equals(FUN_CREATE_ACYCLIC_LIST) 
+            || name.equals(FUN_CREATE_CYCLIC_DLIST)
+            || name.equals(FUN_CREATE_CYCLIC_LIST)
+            || name.equals(FUN_EXISTS)
+            || name.equals(FUN_FORALL)
+            || name.equals(FUN_IMPLIES)
+            || name.equals(FUN_ISROOT)
+            || name.equals(FUN_REACH)
+            || name.equals(FUN_VALID)
+            || name.equals(FUN_VALID_MALLOC)) {
+          res = IntegerT.INT;
+        } else {
+          IOUtils.debug().pln(
+              "APPROX: Treating unexpected function call as unknown: "
+                  + node.getName());
+          res = ErrorT.TYPE;
+        }
+      } else {
+        IOUtils.debug().pln(
+            "APPROX: Treating unexpected function call as unknown: "
+                + node.getName());
+        res = ErrorT.TYPE;
+      }
+      return res;
+    }
+
+    public Type visitIndirectionExpression(GNode node) {
+      Type ptrType = (Type) dispatch(node.getNode(0));
+      return unwrapped(ptrType).toPointer().getType();
+    }
+
+    public Type visitIntegerConstant(GNode node) {
+      return IntegerT.INT;
+    }
+
+    public Type visitLogicalAndExpression(GNode node) {
+      Type lhs_type = (Type) dispatch(node.getNode(0));
+      Type rhs_type = (Type) dispatch(node.getNode(1));
+      assert(unwrapped(lhs_type).equals(unwrapped(rhs_type)));
+      return lhs_type;
+    }
+
+    public Type visitLogicalNegationExpression(GNode node) {
+      return (Type) dispatch(node.getNode(0));
+    }
+
+    public Type visitLogicalOrExpression(GNode node) {
+      Type lhs_type = (Type) dispatch(node.getNode(0));
+      Type rhs_type = (Type) dispatch(node.getNode(1));
+      assert(unwrapped(lhs_type).equals(unwrapped(rhs_type)));
+      return lhs_type;
+    }
+
+    public Type visitPreincrementExpression(GNode node) {
+      return (Type) dispatch(node.getNode(0));
+    }
+
+    public Type visitPredecrementExpression(GNode node) {
+      return (Type) dispatch(node.getNode(0));
+    }
+    
+    public Type visitPostincrementExpression(GNode node) {
+      return (Type) dispatch(node.getNode(0));
+    }
+
+    public Type visitPostdecrementExpression(GNode node) {
+      return (Type) dispatch(node.getNode(0));
+    }
+
+    public Type visitPrimaryIdentifier(GNode node) {
+      File file = new File(node.getLocation().file);
+      SymbolTable symbolTable = symbolTables.get(file);
+      /**
+       * Newly declared variable in control file, default type is integer
+       */
+      String varName = node.getString(0);
+      Type type = symbolTable.lookupType(varName);
+      if(type == null) type = IntegerT.INT;
+//      IRType irType = symbolTable.lookup(varName).getType();
+//      if(irType instanceof IRIntegerType) type = IntegerT.INT;
+      return type;
+    }
+
+    public Type visitRelationalExpression(GNode node) {
+      Type lhs_type = (Type) dispatch(node.getNode(0));
+      Type rhs_type = (Type) dispatch(node.getNode(2));
+      assert(unwrapped(lhs_type).equals(unwrapped(rhs_type)));
+      return IntegerT.INT;
+    }
+
+    public Type visitSimpleDeclarator(GNode node) {
+      return (Type) dispatch (node.getNode(0));
+    }
+
+    public Type visitStringConstant(GNode node) {
+      String srcString = node.getString(0);
+      int size = srcString.length();
+      return new ArrayT(IntegerT.CHAR);
+    }
+
+    public Type visitSubscriptExpression(GNode node) {
+      Type baseType = (Type) dispatch (node.getNode(0));
+      Type unwrappedType = unwrapped(baseType);
+      assert(unwrappedType.isPointer() || unwrappedType.isArray());
+      Type res = null;
+      if(unwrappedType.isPointer())  
+        res = unwrappedType.toPointer().getType();
+      else
+        res = unwrappedType.toArray().getType();
+      return res;
+    }
+    
+    public Type visitSizeofExpression(GNode node) {
+      Type type = (Type) dispatch (node.getNode(0));
+      return IntegerT.INT;
+    }
+    
+    public Type visitTypeName(GNode node) {
+      return (Type)dispatch(node.getNode(0));
+    }
+    
+    public Type visitSpecifierQualifierList(GNode node) {
+      return (Type) dispatch(node.getNode(0));
+    }
+    
+    public Type visitInt(GNode node) {
+      return null;
+    }    
+    
+    public Type visitChar(GNode node) {
+      return null;
+    }
+    
+    public Type visitPointer(GNode node) {
+      return null;
+    }
+    
+    public Type visitStructureTypeReference(GNode node) {
+      String structName = node.getString(1);
+      Type type = null;
+      if(!structName.startsWith("tag(")) 
+        structName = "tag(" + structName +")";
+      File file = new File(node.getLocation().file);
+      SymbolTable symbolTable = symbolTables.get(file);
+      type = symbolTable.lookupType(structName);
+      node.setProperty(xtc.Constants.TYPE, type);
+      return type;
+    }
+    
+    public Type visitUnionTypeReference(GNode node) {
+      String unionName = node.getString(1);
+      Type type = null;
+      if(!unionName.startsWith("tag(")) 
+        unionName = "tag(" + unionName +")";
+      File file = new File(node.getLocation().file);
+      SymbolTable symbolTable = symbolTables.get(file);
+      type = symbolTable.lookupType(unionName);
+      node.setProperty(xtc.Constants.TYPE, type);
+      return type;
+    }
+    
+    public Type visitTypedefName(GNode node) {
+      String structName = node.getString(0);
+      File file = new File(node.getLocation().file);
+      SymbolTable symbolTable = symbolTables.get(file);
+      Type type = symbolTable.lookupType(structName);
+      node.setProperty(xtc.Constants.TYPE, type);
+      return type;
+    }
+    
+    public Type visitUnaryMinusExpression(GNode node) {
+      Type baseType = (Type) dispatch (node.getNode(0));
+      node.setProperty(xtc.Constants.TYPE, baseType);
+      return baseType;
+    }
+    
+    public Type visitMultiplicativeExpression(GNode node) {
+      Type lhs_type = (Type) dispatch(node.getNode(0));
+      Type rhs_type = (Type) dispatch(node.getNode(2));
+      assert(unwrapped(lhs_type).equals(unwrapped(rhs_type)));
+      node.setProperty(xtc.Constants.TYPE, lhs_type);
+      return lhs_type;
+    }
+    
+    public Type visitDirectComponentSelection(GNode node) {
+      Type baseType = (Type) dispatch(node.getNode(0));
+      Reference shape = baseType.getShape();
+      baseType = unwrapped(unwrapped(baseType).toPointer().getType());
+      String fieldName = node.getString(1);
+      assert(baseType.isUnion() || baseType.isStruct());
+      FieldReference fieldShape = new FieldReference(shape, fieldName);
+      Type fieldType = baseType.toStructOrUnion().lookup(fieldName);
+      Type resType = (new AnnotatedT(fieldType)).shape(fieldShape);
+      node.setProperty(xtc.Constants.TYPE, resType);
+      return resType;
+    }
+    
+    public Type visitIndirectComponentSelection(GNode node) {
+      Type baseType = (Type) dispatch(node.getNode(0));
+      Reference shape = baseType.getShape();
+      baseType = unwrapped(unwrapped(baseType).toPointer().getType());
+      String fieldName = node.getString(1);
+      assert(baseType.isUnion() || baseType.isStruct());
+      IndirectReference baseShape = new IndirectReference(shape);
+      FieldReference fieldShape = new FieldReference(baseShape, fieldName);
+      Type fieldType = baseType.toStructOrUnion().lookup(fieldName);
+      Type resType = (new AnnotatedT(fieldType)).shape(fieldShape);
+      node.setProperty(xtc.Constants.TYPE, resType);
+      return resType;
+    }
   }
 }

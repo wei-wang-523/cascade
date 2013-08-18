@@ -44,13 +44,14 @@ public abstract class ListEncoding extends AbstractExpressionEncoding {
     return BitVectorMemoryModel.create(encoding);
   }
 
-  public static final int DEFAULT_WORD_SIZE = 8;
+  public static int DEFAULT_WORD_SIZE;
   
   public ListEncoding(ExpressionManager exprManager) {
-    super(BitVectorIntegerEncoding.create(exprManager, DEFAULT_WORD_SIZE),
+    super(BitVectorIntegerEncoding.create(exprManager, intCellSize),
         new DefaultBooleanEncoding(exprManager),
         new DefaultArrayEncoding(exprManager),
         new UnimplementedTupleEncoding<TupleExpression>());
+    DEFAULT_WORD_SIZE = intCellSize;
   }
 
   public abstract IntegerExpression applyLengthList(Expression x) ;
