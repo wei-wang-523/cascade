@@ -629,4 +629,14 @@ public interface ExpressionEncoding {
    * <code>integerConstant(0)</code> in some implementations.
    */
   Expression zero() ;
+  
+  /**
+   * Get the xtc.type.c type analyzer
+   */
+  xtc.type.C getCAnalyzer() ;
+  
+  /**
+   * Get the cell size
+   */
+  int getCellSize() ;
 }

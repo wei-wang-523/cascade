@@ -18,6 +18,7 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
+import edu.nyu.cascade.util.Preferences;
 
 /** An abstract implementation of the <code>ExpressionEncoding</code> interface,
  * with convenience implementations of several methods. 
@@ -36,6 +37,22 @@ public abstract class AbstractExpressionEncoding
 
   private final BiMap<String, Expression> varBindings;
   private final Map<String, IRType> varTypes;
+  private static final int DefaultSize = 8;
+  protected static int cellSize = 
+      Preferences.isSet(Preferences.OPTION_THEORY) ? 
+          Preferences.get(Preferences.OPTION_THEORY).equals("BurstallFix") ? 
+              DefaultSize
+              : Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ?
+                  Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE) 
+                  : DefaultSize
+                  : DefaultSize;
+  protected static xtc.type.C cAnalyzer = new xtc.type.C();
+  protected static int intCellSize = 
+      Preferences.isSet(Preferences.OPTION_THEORY) ?
+          Preferences.get(Preferences.OPTION_THEORY).equals("BurstallFix") ?
+              (int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * cellSize) 
+              : cellSize
+              : cellSize;
 
   protected final IntegerEncoding<? extends Expression> integerEncoding;
 
@@ -859,5 +876,15 @@ public abstract class AbstractExpressionEncoding
   @Override
   public Expression zero() {
     return getIntegerEncoding().zero();
+  }
+  
+  @Override
+  public xtc.type.C getCAnalyzer() {
+    return cAnalyzer;
+  }
+  
+  @Override
+  public int getCellSize() {
+    return cellSize;
   }
 }

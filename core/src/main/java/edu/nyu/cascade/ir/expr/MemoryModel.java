@@ -136,11 +136,4 @@ public interface MemoryModel {
    * <code>type</code>
    */
   Expression castExpression(Expression src, xtc.type.Type targetType);
-  
-  /**
-   * Get the size of type, note that different memory model have different
-   * size of type
-   */
-  int getSizeofType(xtc.type.Type type);
-
 }

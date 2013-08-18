@@ -7,20 +7,15 @@ import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TupleExpression;
-import edu.nyu.cascade.util.Preferences;
 
 public class BitVectorExpressionEncoding
     extends
     AbstractExpressionEncoding {
 
-  private static int size = 8;
-
   public static BitVectorExpressionEncoding create(
       ExpressionManager exprManager) throws ExpressionFactoryException
   {
-    if(Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE))
-      size = Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE);
-    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager,size);
+    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, intCellSize);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new UnimplementedArrayEncoding<ArrayExpression>();
     TupleEncoding<TupleExpression> tupleEncoding = new UnimplementedTupleEncoding<TupleExpression>();

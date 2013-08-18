@@ -13,22 +13,16 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TupleExpression;
-import edu.nyu.cascade.util.Preferences;
 
 public class PointerExpressionEncoding extends AbstractExpressionEncoding {
-
-  private static int cellSize = 16;
   
   public static PointerExpressionEncoding create(
       ExpressionManager exprManager) throws ExpressionFactoryException
-  {
-    if(Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE))
-      cellSize = Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE);
-    
-    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager,cellSize);
+  { 
+    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, intCellSize);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new UnimplementedArrayEncoding<ArrayExpression>();
-    PointerEncoding pointerEncoding = PointerEncoding.create(exprManager, cellSize);
+    PointerEncoding pointerEncoding = PointerEncoding.create(exprManager, intCellSize);
     return new PointerExpressionEncoding(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
   }
   

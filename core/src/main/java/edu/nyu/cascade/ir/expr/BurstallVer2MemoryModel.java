@@ -913,21 +913,20 @@ public class BurstallVer2MemoryModel extends AbstractBurstallMemoryModel {
   private Map<String, Expression> getOffsetOfStructField(xtc.type.Type type) {
     Map<String, Expression> elemOffsets = Maps.newLinkedHashMap();
     ExpressionManager em = getExpressionManager();
+    ExpressionEncoding encoding = getExpressionEncoding();
     String typeName = getTypeName(type);
+    int cellSize = encoding.getCellSize();
     if(!type.isStruct()) {
-      int size = getOffType().getSize();
-      Expression offsetExpr = em.bitVectorConstant(0, size);
+      Expression offsetExpr = em.bitVectorConstant(0, cellSize);
       elemOffsets.put(typeName, offsetExpr);
     } else {
-      int offset = 0;
-      int size = getOffType().getSize();
       for(VariableT elem : type.toStruct().getMembers()) {
         // TODO: nested structure type
-        String elemName = new StringBuilder().append(typeName)
-            .append('#').append(elem.getName()).toString();
-        Expression offsetExpr = em.bitVectorConstant(offset, size);
-        offset += getSizeofType(elem.getType());
-        elemOffsets.put(elemName, offsetExpr);
+        String elemName = getTypeName(elem.getType());
+        int offset = (int) encoding.getCAnalyzer().getOffset(type.toStruct(), elemName) 
+            * cellSize;
+        elemOffsets.put(elemName, 
+            em.bitVectorConstant(offset, cellSize));
       }
     }
     return elemOffsets;
@@ -939,14 +938,15 @@ public class BurstallVer2MemoryModel extends AbstractBurstallMemoryModel {
    * @return a map from member names to corresponding offsets.
    */
   private Map<String, Integer> getSizeOfUnionField(xtc.type.Type type) {    
-    if(!type.isUnion()) return null;    
-    Map<String, Integer> elemOffsets = Maps.newLinkedHashMap();    
-    String unionTypeName = getTypeName(type);
+    Preconditions.checkArgument(type.isUnion()); 
+    Map<String, Integer> elemOffsets = Maps.newLinkedHashMap();
+    ExpressionEncoding encoding = getExpressionEncoding();
+    xtc.type.C cAnalyzer = encoding.getCAnalyzer();
+    int cellSize = encoding.getCellSize();
     for(VariableT elem : type.toUnion().getMembers()) {
-      // TODO: nested structure type
-      String elemName = new StringBuilder().append(unionTypeName)
-          .append('#').append(elem.getName()).toString();
-      elemOffsets.put(elemName, getSizeofType(elem.getType()));
+      String elemName = getTypeName(elem.getType());
+      int size = (int) cAnalyzer.getSize(elem.getType()) * cellSize;
+      elemOffsets.put(elemName, size);
     }
     return elemOffsets;
   }

@@ -681,7 +681,7 @@ public class BurstallVer3MemoryModel extends AbstractBurstallMemoryModel {
 
   private boolean hasView(Node node) {
     xtc.type.Type type = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
-    boolean hasRef = type.hasShape() && !type.getShape().isVariable();
+    boolean hasRef = type.hasShape() && type.isConcrete();
     if(hasRef) {
       int i = 0;
       i++;

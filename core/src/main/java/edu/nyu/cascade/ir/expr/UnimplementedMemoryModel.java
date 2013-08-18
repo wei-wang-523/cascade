@@ -148,10 +148,4 @@ public class UnimplementedMemoryModel implements MemoryModel {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("castExpression"); 
   }
-
-  @Override
-  public int getSizeofType(xtc.type.Type type) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("getSizeofType");
-  }
 }

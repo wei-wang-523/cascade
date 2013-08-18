@@ -79,6 +79,7 @@ public abstract class AbstractBurstallMemoryModel extends AbstractMemoryModel {
   }
   
   protected String getTypeName(xtc.type.Type type) {
+    Preconditions.checkArgument(type != null);
     try {
       return cache.get(type);
     } catch (ExecutionException e) {

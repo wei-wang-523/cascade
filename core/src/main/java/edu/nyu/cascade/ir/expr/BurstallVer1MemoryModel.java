@@ -214,8 +214,8 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
     xtc.type.Type rType = (xtc.type.Type) rval.getNode().getProperty(xtc.Constants.TYPE);
     if(CellKind.SCALAR.equals(getCellKind(lType)) 
         && CellKind.SCALAR.equals(getCellKind(rType))) {
-      int lval_size = getSizeOfIntegerType(lType);
-      int rval_size = getSizeOfIntegerType(rType);
+      int lval_size = getSizeofType(lType);
+      int rval_size = getSizeofType(rType);
       if(lval_size > rval_size) {
         rval = rval.asBitVector().zeroExtend(lval_size);
       } else if(lval_size < rval_size) {
@@ -258,7 +258,7 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
       ArrayType arrType = em.arrayType(ptrType, em.booleanType());
       tgtArray = em.variable(typeName, arrType, false).asArray();
     } else if(CellKind.SCALAR.equals(kind)) {
-      int size = getSizeOfIntegerType(pType);
+      int size = getSizeofType(pType);
       ArrayType arrType = em.arrayType(ptrType, em.bitVectorType(size));
       tgtArray = em.variable(typeName, arrType, false).asArray();
     } else {
@@ -285,7 +285,7 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
     xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
     CellKind kind = getCellKind(lvalType);
     if(CellKind.SCALAR.equals(kind)) {
-      int size = getSizeOfIntegerType(lvalType);
+      int size = getSizeofType(lvalType);
       Type bvType = getExpressionManager().bitVectorType(size);
       rval = getExpressionEncoding().getIntegerEncoding().unknown(bvType);
     } else if(CellKind.TEST_VAR.equals(kind)) {
@@ -362,8 +362,7 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
             .addAll(heapRegions).addAll(lvals).build();
         if(distinctRef.size() > 1) {
           builder.add(exprManager.distinct(distinctRef));
-        }
-        
+        }        
       } else if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
         throw new UnsupportedOperationException("--order-alloc is not supported in burstall memory model");
       }
@@ -496,7 +495,7 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
   
   @Override
   public Expression castConstant(int value, xtc.type.Type type) {
-    int size = getSizeOfIntegerType(type);
+    int size = getSizeofType(type);
     return getExpressionManager().bitVectorConstant(value, size);
   }
   
@@ -506,7 +505,7 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
 
     Preconditions.checkArgument(CellKind.SCALAR.equals(getCellKind(type)));
     int srcSize = src.getType().asBitVectorType().getSize();
-    int targetSize = getSizeOfIntegerType(type);
+    int targetSize = getSizeofType(type);
     if(srcSize < targetSize)
       return src.asBitVector().zeroExtend(targetSize);
     else
@@ -611,7 +610,7 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
         rval = getExpressionEncoding().castToBoolean(rval);
         arrType = em.arrayType(ptrType, em.booleanType());
       } else if(CellKind.SCALAR.equals(kind)) {
-        int size = getSizeOfIntegerType(lvalType);
+        int size = getSizeofType(lvalType);
         arrType = em.arrayType(ptrType, em.bitVectorType(size));
       } else {
         arrType = em.arrayType(ptrType, ptrType);
@@ -631,9 +630,9 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
     return em.record(currentMemType, currentMemElems.values());
   }
   
-  private int getSizeOfIntegerType(xtc.type.Type type) {
-    //FIXME: Cascade supports int_16 for now, but xtc supports int_32
-    return (int) new xtc.type.C().getSize(type) / 2 * 8;
+  private int getSizeofType(xtc.type.Type type) {
+    ExpressionEncoding encoding = getExpressionEncoding();
+    return (int) encoding.getCAnalyzer().getSize(type) * encoding.getCellSize();
   }
   
   private Type getRefType() {
