@@ -5,7 +5,7 @@
     <wayPoint fileId="1" line="6" >
       <loop>
         <invariant><![CDATA[
-	hi <= lo && valid(&a[hi]) && valid(&a[lo])
+	hi <= lo && lo <= 99 && valid(&a[hi]) && valid(&a[lo])
 	]]>
 	</invariant>
       </loop>

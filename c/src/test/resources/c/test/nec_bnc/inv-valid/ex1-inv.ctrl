@@ -6,7 +6,7 @@
       <loop>
         <invariant><![CDATA[
         i>=0 && i<=(1<<9) && j==2*i && q == B + i &&
-        implies(i>0 && i<=(1<<9), B[i-1] == A[j-2] + A[j-1])
+        implies(i>0, B[i-1] == A[j-2] + A[j-1])
         ]]>
         </invariant>
       </loop>
