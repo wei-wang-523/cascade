@@ -136,7 +136,6 @@ class CExpressionEncoder implements ExpressionEncoder {
        * non-char* arithmetic will be wrong
        */
       IOUtils.debug().pln("APPROX: Possible pointer arithmetic treated as char*");
-      Type type = unwrapped(typeVisitor.encodeType(node));
       Expression res = binaryOp(node, this,
           new BinaryInfixRecursionStrategy<Expression, Expression>() {
             @Override
@@ -1199,17 +1198,15 @@ class CExpressionEncoder implements ExpressionEncoder {
       if(un_rhs_type.isArray() || un_rhs_type.isPointer()) {
         if(un_rhs_type.isPointer()) return rhs_type;
         Reference rhs_shape = rhs_type.getShape();
-        return new AnnotatedT(
-            new PointerT(
-                un_rhs_type.toArray().getType())).shape(rhs_shape);
+        return new PointerT(
+                un_rhs_type.toArray().getType());
       }
       
       if(un_lhs_type.isArray() || un_lhs_type.isPointer()) {
         if(un_lhs_type.isPointer()) return lhs_type;
         Reference lhs_shape = lhs_type.getShape();
-        return new AnnotatedT(
-            new PointerT(
-                un_lhs_type.toArray().getType())).shape(lhs_shape);
+        return new PointerT(
+                un_lhs_type.toArray().getType());
       }
       
       return lhs_type;
