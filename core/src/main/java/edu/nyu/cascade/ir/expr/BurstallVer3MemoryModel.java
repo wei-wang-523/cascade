@@ -47,8 +47,7 @@ import edu.nyu.cascade.util.Preferences;
  */
 
 public class BurstallVer3MemoryModel extends AbstractBurstallMemoryModel {
-  protected static final String DEFAULT_SCALAR_VIEW_VARIABLE_NAME = "scalarView";
-  protected static final String DEFAULT_PTR_VIEW_VARIABLE_NAME = "ptrView";
+  protected static final String DEFAULT_VIEW_VARIABLE_NAME = "view";
   protected static final String DEFAULT_VIEW_STATE_TYPE = "viewType";
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
@@ -403,9 +402,8 @@ public class BurstallVer3MemoryModel extends AbstractBurstallMemoryModel {
         memType, true);
     Expression allocVar = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, 
         allocType, true);
-    Expression viewVar = exprManager.tuple(viewType, 
-        exprManager.variable(DEFAULT_SCALAR_VIEW_VARIABLE_NAME, viewType.asTuple().getElementTypes().get(0), true),
-        exprManager.variable(DEFAULT_PTR_VIEW_VARIABLE_NAME, viewType.asTuple().getElementTypes().get(1), true));
+    Expression viewVar = exprManager.variable(DEFAULT_VIEW_VARIABLE_NAME, 
+        viewType, true);
     return exprManager.tuple(stateType, memVar, allocVar, viewVar);
   }
   
@@ -426,7 +424,6 @@ public class BurstallVer3MemoryModel extends AbstractBurstallMemoryModel {
 
   @Override
   public ExpressionClosure suspend(final Expression memoryVar, final Expression expr) {
-//    Preconditions.checkArgument(stateType.equals(memoryVar.getType()));
     return new ExpressionClosure() {
       @Override
       public Expression eval(final Expression memory) {
@@ -680,13 +677,9 @@ public class BurstallVer3MemoryModel extends AbstractBurstallMemoryModel {
   }
 
   private boolean hasView(Node node) {
-    xtc.type.Type type = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
-    boolean hasRef = type.hasShape() && type.isConcrete();
-    if(hasRef) {
-      int i = 0;
-      i++;
-    }
-    return hasRef;
+    Preconditions.checkArgument(node.hasProperty(xtc.Constants.TYPE));
+    CellKind kind = getCellKind((xtc.type.Type) node.getProperty(xtc.Constants.TYPE));
+    return CellKind.SCALAR.equals(kind);
   }
   
   private ArrayExpression getViewVar(String typeName, Type elemType) {

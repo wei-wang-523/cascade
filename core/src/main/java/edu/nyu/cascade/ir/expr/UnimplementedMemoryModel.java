@@ -144,7 +144,7 @@ public class UnimplementedMemoryModel implements MemoryModel {
   }
 
   @Override
-  public Expression castExpression(Expression src, xtc.type.Type targetType) {
+  public Expression castExpression(Expression state, Expression src, xtc.type.Type targetType) {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("castExpression"); 
   }

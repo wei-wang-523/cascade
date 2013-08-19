@@ -135,5 +135,5 @@ public interface MemoryModel {
    * type conversion with <code>src</code> expression to target
    * <code>type</code>
    */
-  Expression castExpression(Expression src, xtc.type.Type targetType);
+  Expression castExpression(Expression state, Expression src, xtc.type.Type targetType);
 }

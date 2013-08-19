@@ -500,10 +500,13 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
   }
   
   @Override
-  public Expression castExpression(Expression src, xtc.type.Type type) {
-    if(!src.isBitVector())  return src;
-
-    Preconditions.checkArgument(CellKind.SCALAR.equals(getCellKind(type)));
+  public Expression castExpression(Expression state, Expression src, xtc.type.Type type) {
+    Preconditions.checkArgument(
+        getCellKind(
+            (xtc.type.Type) src.getNode().getProperty(xtc.Constants.TYPE))
+            .equals(getCellKind(type)));
+    //TODO: ignore pointer cast for now
+    if(!CellKind.SCALAR.equals(getCellKind(type)))  return src;
     int srcSize = src.getType().asBitVectorType().getSize();
     int targetSize = getSizeofType(type);
     if(srcSize < targetSize)

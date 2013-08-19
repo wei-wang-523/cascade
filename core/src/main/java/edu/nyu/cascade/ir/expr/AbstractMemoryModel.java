@@ -79,7 +79,7 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   }
   
   @Override
-  public Expression castExpression(Expression src, xtc.type.Type type) {
+  public Expression castExpression(Expression state, Expression src, xtc.type.Type type) {
     return src;
   }
 }
