@@ -256,12 +256,8 @@ class CExpressionEncoder implements ExpressionEncoder {
 
     public Expression visitCastExpression(GNode node) {
       Type targetType = unwrapped(typeVisitor.encodeType(node));
-      if(targetType.isPointer()) {
-        /* TODO: Deal with int to pointer conversions */
-        return (Expression) dispatch(node.getNode(1));
-      }
       Expression src = (Expression) dispatch(node.getNode(1));
-      Expression res = getMemoryModel().castExpression(src, targetType);
+      Expression res = getMemoryModel().castExpression(memory, src, targetType);
       return res.setNode(node);
     }
     
