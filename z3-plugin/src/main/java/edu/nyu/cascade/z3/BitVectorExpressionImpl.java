@@ -40,6 +40,7 @@ import com.microsoft.z3.Z3Exception;
 
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
+import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.BitVectorType;
@@ -161,27 +162,21 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
     }
 
     assert (binary.length() == size);
-    BitVectorExpressionImpl res = null;
     try {
-      res = cache.get(exprManager).get(binary);
+      return cache.get(exprManager).get(binary);
     } catch (ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new CacheException(e);
     }
-    return res;
   }
 
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
       String binary) {
     Preconditions.checkArgument(binary.length() > 0);
-    BitVectorExpressionImpl res = null;
     try {
-      res = cache.get(exprManager).get(binary);
+      return cache.get(exprManager).get(binary);
     } catch (ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new CacheException(e);
     }
-    return res;
   }
   
   /** TODO: merge with caching versions above. All constants go through Rational? 

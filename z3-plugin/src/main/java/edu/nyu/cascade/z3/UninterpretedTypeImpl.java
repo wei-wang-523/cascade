@@ -9,6 +9,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.MapMaker;
 
+import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.prover.type.UninterpretedType;
@@ -26,19 +27,17 @@ public final class UninterpretedTypeImpl extends TypeImpl implements Uninterpret
           });
   
   static UninterpretedTypeImpl create(ExpressionManagerImpl em, String name) {
-    UninterpretedTypeImpl res = null;
     try {
       if(typeCache.get(em).containsKey(name))
-        res = typeCache.get(em).get(name);
+        return typeCache.get(em).get(name);
       else {
-        res = new UninterpretedTypeImpl(em, name);
+        UninterpretedTypeImpl res = new UninterpretedTypeImpl(em, name);
         typeCache.get(em).put(name, res);
+        return res;
       }
     } catch (ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new CacheException(e);
     }
-    return res;
   }
   
   static UninterpretedTypeImpl valueOf(

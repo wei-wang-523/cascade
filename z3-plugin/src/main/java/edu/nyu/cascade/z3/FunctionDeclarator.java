@@ -1,16 +1,23 @@
 package edu.nyu.cascade.z3;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.MapMaker;
 import com.microsoft.z3.FuncDecl;
 import com.microsoft.z3.Sort;
 import com.microsoft.z3.Z3Exception;
 
+import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.FunctionType;
@@ -19,9 +26,21 @@ import edu.nyu.cascade.util.IOUtils;
 
 public class FunctionDeclarator extends TypeImpl
     implements FunctionType {
+  
+  private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, FunctionDeclarator>> funcCache = CacheBuilder
+      .newBuilder().build(
+          new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, FunctionDeclarator>>(){
+            public ConcurrentMap<String, FunctionDeclarator> load(ExpressionManagerImpl expressionManager) {
+              return new MapMaker().makeMap();
+            }
+          });
+  
   static FunctionDeclarator create(final ExpressionManagerImpl exprManager, String name,
       Iterable<? extends Type> argTypes, Type range) {
     try {
+      if(funcCache.get(exprManager).containsKey(name)) 
+        return funcCache.get(exprManager).get(name);
+      
       Iterable<TypeImpl> argTypes1 = Iterables.transform(argTypes,
           new Function<Type, TypeImpl>() {
             @Override
@@ -45,9 +64,13 @@ public class FunctionDeclarator extends TypeImpl
       if(IOUtils.tpFileEnabled())
         TheoremProverImpl.z3FileCommand(funcDecl.toString().trim());
       
-      return new FunctionDeclarator(exprManager, name, argTypes1, rangeType, funcDecl);
+      FunctionDeclarator func = new FunctionDeclarator(exprManager, name, argTypes1, rangeType, funcDecl);
+      funcCache.get(exprManager).put(name, func);
+      return func;
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
     }
   }
   

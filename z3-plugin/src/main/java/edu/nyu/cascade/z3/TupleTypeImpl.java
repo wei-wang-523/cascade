@@ -15,6 +15,7 @@ import com.microsoft.z3.Sort;
 import com.microsoft.z3.Symbol;
 import com.microsoft.z3.Z3Exception;
 
+import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
@@ -32,37 +33,32 @@ public final class TupleTypeImpl extends TypeImpl implements TupleType {
   
   static TupleTypeImpl create(ExpressionManagerImpl em, String name, Type firstType,
       Type... otherTypes) {
-    TupleTypeImpl res = null;    
     try {
       if(typeCache.get(em).containsKey(name))
-        res = typeCache.get(em).get(name);
+        return typeCache.get(em).get(name);
       else {
-        res = new TupleTypeImpl(em, name, Lists.asList(firstType, otherTypes));
+        TupleTypeImpl res = new TupleTypeImpl(em, name, Lists.asList(firstType, otherTypes));
         typeCache.get(em).put(name, res);
         return res;
       }
     } catch (ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new CacheException(e);
     }
-    return res;
   }
 
   static TupleTypeImpl create(ExpressionManagerImpl em, String name,
       Iterable<? extends Type> types) {
-    TupleTypeImpl res = null;
     try {
       if(typeCache.get(em).containsKey(name))
-        res = typeCache.get(em).get(name);
+        return typeCache.get(em).get(name);
       else {
-        res = new TupleTypeImpl(em, name, types);
+        TupleTypeImpl res = new TupleTypeImpl(em, name, types);
         typeCache.get(em).put(name, res);
+        return res;
       }
     } catch (ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new CacheException(e);
     }
-    return res;
   }
 
   static TupleTypeImpl valueOf(ExpressionManagerImpl em, Type t) {

@@ -7,6 +7,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.microsoft.z3.Z3Exception;
 
+import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.RationalType;
@@ -22,14 +23,11 @@ public class RationalTypeImpl extends TypeImpl implements RationalType {
           });
   
   public static RationalTypeImpl getInstance(ExpressionManagerImpl expressionManager) {
-    RationalTypeImpl res = null;
     try {
-      res = typeCache.get(expressionManager);
+      return typeCache.get(expressionManager);
     } catch (ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new CacheException(e);
     }
-    return res;
   }
 
   private RationalTypeImpl(ExpressionManagerImpl expressionManager) {

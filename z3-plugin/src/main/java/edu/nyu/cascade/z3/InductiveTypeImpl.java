@@ -24,6 +24,7 @@ import com.microsoft.z3.UninterpretedSort;
 import com.microsoft.z3.Z3Exception;
 
 import edu.nyu.cascade.prover.BooleanExpression;
+import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.InductiveExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
@@ -469,21 +470,17 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
     try {
       constructorCache.get(exprManager).put(name, constr);
     } catch (ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new CacheException(e);
     }
     return constr;
   }
   
   static ConstructorImpl lookupConstructor(ExpressionManagerImpl exprManager, String name) {
-    ConstructorImpl constr = null;
     try {
-      constr = constructorCache.get(exprManager).get(name);
+      return constructorCache.get(exprManager).get(name);
     } catch (ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new CacheException(e);
     }
-    return constr;
   }
   
 /*

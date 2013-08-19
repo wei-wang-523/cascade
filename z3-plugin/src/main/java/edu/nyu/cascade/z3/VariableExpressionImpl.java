@@ -2,12 +2,20 @@ package edu.nyu.cascade.z3;
 
 import static edu.nyu.cascade.prover.Expression.Kind.VARIABLE;
 
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+
 import com.google.common.base.Preconditions;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.MapMaker;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Z3Exception;
 import com.microsoft.z3.Sort;
 
+import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.VariableExpression;
@@ -15,6 +23,15 @@ import edu.nyu.cascade.prover.type.Type;
 
 public class VariableExpressionImpl extends ExpressionImpl implements
     VariableExpression {
+  private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, Expr>> varCache = CacheBuilder
+      .newBuilder().build(
+          new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, Expr>>(){
+            public ConcurrentMap<String, Expr> load(ExpressionManagerImpl expressionManager) {
+              return new MapMaker().makeMap();
+            }
+          });
+  
+  
   static VariableExpressionImpl valueOf(
       ExpressionManagerImpl exprManager, Expression e) {
     if (e instanceof VariableExpressionImpl) {
@@ -58,7 +75,7 @@ public class VariableExpressionImpl extends ExpressionImpl implements
     setName(name);
   }
   
-  protected VariableExpressionImpl(ExpressionManagerImpl exprManager, String name, Type type, boolean fresh) {
+  protected VariableExpressionImpl(final ExpressionManagerImpl exprManager, String name, Type type, boolean fresh) {
     super(exprManager, new VariableConstructionStrategy() {
       @Override
       public Expr apply(Context ctx, String name, Sort sort) {
@@ -66,15 +83,23 @@ public class VariableExpressionImpl extends ExpressionImpl implements
          * bc it's second parameter is a output parameter. Need to change
          * the API so that it only takes the name.
          */
-        StringBuilder sb = new StringBuilder().append(name);
-        /** For variable name contains '#', wrap it in '||' */
-        if(name.indexOf('#') >= 0)   sb.insert(0, '|').append('|');
-        TheoremProverImpl.z3FileCommand("(declare-const " + sb.toString() + " " + sort + ")");
-        TheoremProverImpl.debugCommand("(declare-const " + sb.toString() + " : " + sort + ")");
         try {
-          return ctx.MkConst(name, sort);
+          if(varCache.get(exprManager).containsKey(name)) {
+            return varCache.get(exprManager).get(name);
+          }
+          
+          StringBuilder sb = new StringBuilder().append(name);
+          /** For variable name contains '#', wrap it in '||' */
+          if(name.indexOf('#') >= 0)   sb.insert(0, '|').append('|');
+          TheoremProverImpl.z3FileCommand("(declare-const " + sb.toString() + " " + sort + ")");
+          TheoremProverImpl.debugCommand("(declare-const " + sb.toString() + " : " + sort + ")");
+          Expr res = ctx.MkConst(name, sort);
+          varCache.get(exprManager).put(name, res);
+          return res;
         } catch (Z3Exception e) {
           throw new TheoremProverException(e);
+        } catch (ExecutionException e) {
+          throw new CacheException(e);
         }
       }
     }, name, type, fresh);

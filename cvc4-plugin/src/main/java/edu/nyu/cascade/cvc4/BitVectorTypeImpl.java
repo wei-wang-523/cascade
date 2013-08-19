@@ -7,6 +7,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ComputationException;
 import edu.nyu.acsys.CVC4.Exception;
+import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.BitVectorType;
@@ -31,14 +32,11 @@ public class BitVectorTypeImpl extends TypeImpl implements
           }); 
 
   static BitVectorTypeImpl create(ExpressionManagerImpl exprManager, int size) {
-    BitVectorTypeImpl res = null;
     try {
-      res = cache.get(exprManager).get(size);
+      return cache.get(exprManager).get(size);
     } catch (ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new CacheException(e);
     }
-    return res;
   }
 
   static BitVectorTypeImpl valueOf(ExpressionManagerImpl exprManager, Type t) {

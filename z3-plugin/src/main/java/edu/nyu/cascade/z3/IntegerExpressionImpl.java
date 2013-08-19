@@ -22,6 +22,7 @@ import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Z3Exception;
 import com.microsoft.z3.Context;
 
+import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.IntegerExpression;
 import edu.nyu.cascade.prover.RationalExpression;
@@ -43,25 +44,19 @@ public final class IntegerExpressionImpl extends ExpressionImpl implements
           });
 
   static IntegerExpressionImpl mkConstant(ExpressionManagerImpl em, long c) {
-    IntegerExpressionImpl res = null;
     try {
-      res = constantCache.get(em).get((int)c);
+      return constantCache.get(em).get((int)c);
     } catch (ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new CacheException(e);
     }
-    return res;
   }
   
   static IntegerExpressionImpl mkConstant(ExpressionManagerImpl em, int c) {
-    IntegerExpressionImpl res = null;
     try {
-      res = constantCache.get(em).get(c);
+      return constantCache.get(em).get(c);
     } catch (ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new CacheException(e);
     }
-    return res;
   }
 
   static IntegerExpressionImpl mkMinus(ExpressionManagerImpl exprManager,

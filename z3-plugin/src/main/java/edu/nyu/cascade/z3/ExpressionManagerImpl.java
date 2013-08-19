@@ -38,6 +38,7 @@ import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.Expression.Kind;
+import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.FunctionExpression;
 import edu.nyu.cascade.prover.InductiveExpression;
 import edu.nyu.cascade.prover.RecordExpression;
@@ -119,8 +120,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       Preconditions.checkArgument(!typeCache.get(this).containsKey(type.getName()));
       typeCache.get(this).put(type.getName(), type);
     } catch (ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new CacheException(e);
     }
   }
 
@@ -639,14 +639,12 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   }
   
   ExpressionImpl rebuildExpression(Kind kind, Expr expr, Iterable<? extends ExpressionImpl> args) {
-    ExpressionImpl res = null;
     try {
       Type type = toType(expr.Sort());
-      res = new ExpressionImpl(this, kind, expr, type, args);
+      return new ExpressionImpl(this, kind, expr, type, args);
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
     }
-    return res;
   }
 
   @Override
@@ -723,10 +721,8 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     try {
       return typeCache.get(this).get(name);
     } catch (ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new CacheException(e);
     }
-    return null;
   }
   
   @Override
@@ -890,91 +886,91 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   BooleanExpressionImpl toBooleanExpression(Expr e) throws TheoremProverException {
     IOUtils.debug().indent().incr().pln(">> toBooleanExpression(" + e.toString() + ")");
     try {
-    if (e.IsBVNOT() || e.IsNot()) {
-      Preconditions.checkArgument(e.NumArgs() == 1);
-      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.NOT, e, toExpressionList(e.Args())));
-    } else if (e.IsLE() || e.IsBVSLE() || e.IsBVULE()) {
-      Preconditions.checkArgument(e.NumArgs() == 2);
-      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.LEQ, e, toExpressionList(e.Args())));
-    } else if (e.IsLT() || e.IsBVSLT() || e.IsBVULT()) {
-      Preconditions.checkArgument(e.NumArgs() == 2);
-      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.LT, e, toExpressionList(e.Args())));
-    } else if (e.IsGE() || e.IsBVSGE() || e.IsBVUGE()) {
-      Preconditions.checkArgument(e.NumArgs() == 2);
-      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.GEQ, e, toExpressionList(e.Args())));
-    } else if (e.IsGT() || e.IsBVSGT() || e.IsBVUGT()) {
-      Preconditions.checkArgument(e.NumArgs() == 2);
-      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.GT, e, toExpressionList(e.Args())));
-    } else if (e.IsEq()) {
-      Preconditions.checkArgument(e.NumArgs() == 2);
-      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.EQUAL, e, toExpressionList(e.Args())));
-    } else if (e.IsAnd()) {
-      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.AND, e, toExpressionList(e.Args())));
-    } else if (e.IsOr()) {
-      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.OR, e, toExpressionList(e.Args())));
-    } else if (e.IsXor()) {
-      Preconditions.checkArgument(e.NumArgs() == 2);
-      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.XOR, e, toExpressionList(e.Args())));
-    } else if (e.IsImplies()) {
-      Preconditions.checkArgument(e.NumArgs() == 2);
-      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.IMPLIES, e, toExpressionList(e.Args())));
-    } else if (e.IsIff()) {
-      Preconditions.checkArgument(e.NumArgs() == 2);
-      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.IFF, e, toExpressionList(e.Args())));
-    } else if (e.IsBool() && e.IsConst()) {
-      Preconditions.checkArgument(e.NumArgs() == 0);
-      if(e.equals(getTheoremProver().getZ3Context().MkTrue()))
-        return tt();
-      else
-        return ff();
-    } else if (e.IsQuantifier()) {
-      Quantifier qtf = (Quantifier) e;
-      int size = qtf.NumBound();
-      boolean isForall = qtf.IsUniversal();
-      Expr z3_body = qtf.Body();
-      Symbol[] names = qtf.BoundVariableNames();
-      Sort[] sorts = qtf.BoundVariableSorts();
-      
-      List<VariableExpression> vars = Lists.newArrayList();
-      for(int i = 0; i < size; i++) {
-        VariableExpression var = VariableExpressionImpl
-            .valueOfVariable(this, names[i].toString(), toType(sorts[i])).asVariable();
-        vars.add(var);
-      }
-      
-      BooleanExpression body = toBooleanExpression(z3_body);
-      
-      List<Expression> triggers = null;     
-      if(qtf.NumPatterns() > 0) {
-        triggers = Lists.newArrayList();
-        for(Pattern ptn : qtf.Patterns()) {
-          Expr[] terms = ptn.Terms();
-          for(Expr term : terms)
-            triggers.add(toExpression(term));
+      if (e.IsBVNOT() || e.IsNot()) {
+        Preconditions.checkArgument(e.NumArgs() == 1);
+        return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.NOT, e, toExpressionList(e.Args())));
+      } else if (e.IsLE() || e.IsBVSLE() || e.IsBVULE()) {
+        Preconditions.checkArgument(e.NumArgs() == 2);
+        return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.LEQ, e, toExpressionList(e.Args())));
+      } else if (e.IsLT() || e.IsBVSLT() || e.IsBVULT()) {
+        Preconditions.checkArgument(e.NumArgs() == 2);
+        return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.LT, e, toExpressionList(e.Args())));
+      } else if (e.IsGE() || e.IsBVSGE() || e.IsBVUGE()) {
+        Preconditions.checkArgument(e.NumArgs() == 2);
+        return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.GEQ, e, toExpressionList(e.Args())));
+      } else if (e.IsGT() || e.IsBVSGT() || e.IsBVUGT()) {
+        Preconditions.checkArgument(e.NumArgs() == 2);
+        return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.GT, e, toExpressionList(e.Args())));
+      } else if (e.IsEq()) {
+        Preconditions.checkArgument(e.NumArgs() == 2);
+        return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.EQUAL, e, toExpressionList(e.Args())));
+      } else if (e.IsAnd()) {
+        return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.AND, e, toExpressionList(e.Args())));
+      } else if (e.IsOr()) {
+        return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.OR, e, toExpressionList(e.Args())));
+      } else if (e.IsXor()) {
+        Preconditions.checkArgument(e.NumArgs() == 2);
+        return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.XOR, e, toExpressionList(e.Args())));
+      } else if (e.IsImplies()) {
+        Preconditions.checkArgument(e.NumArgs() == 2);
+        return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.IMPLIES, e, toExpressionList(e.Args())));
+      } else if (e.IsIff()) {
+        Preconditions.checkArgument(e.NumArgs() == 2);
+        return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.IFF, e, toExpressionList(e.Args())));
+      } else if (e.IsBool() && e.IsConst()) {
+        Preconditions.checkArgument(e.NumArgs() == 0);
+        if(e.equals(getTheoremProver().getZ3Context().MkTrue()))
+          return tt();
+        else
+          return ff();
+      } else if (e.IsQuantifier()) {
+        Quantifier qtf = (Quantifier) e;
+        int size = qtf.NumBound();
+        boolean isForall = qtf.IsUniversal();
+        Expr z3_body = qtf.Body();
+        Symbol[] names = qtf.BoundVariableNames();
+        Sort[] sorts = qtf.BoundVariableSorts();
+        
+        List<VariableExpression> vars = Lists.newArrayList();
+        for(int i = 0; i < size; i++) {
+          VariableExpression var = VariableExpressionImpl
+              .valueOfVariable(this, names[i].toString(), toType(sorts[i])).asVariable();
+          vars.add(var);
         }
-      }
-      
-      List<Expression> noTriggers = null;     
-      if(qtf.NumNoPatterns() > 0) {
-        noTriggers = Lists.newArrayList();
-        for(Pattern nptn : qtf.NoPatterns()) {
-          Expr[] terms = nptn.Terms();
-          for(Expr term : terms)
-            noTriggers.add(toExpression(term));
+        
+        BooleanExpression body = toBooleanExpression(z3_body);
+        
+        List<Expression> triggers = null;     
+        if(qtf.NumPatterns() > 0) {
+          triggers = Lists.newArrayList();
+          for(Pattern ptn : qtf.Patterns()) {
+            Expr[] terms = ptn.Terms();
+            for(Expr term : terms)
+              triggers.add(toExpression(term));
+          }
         }
+        
+        List<Expression> noTriggers = null;     
+        if(qtf.NumNoPatterns() > 0) {
+          noTriggers = Lists.newArrayList();
+          for(Pattern nptn : qtf.NoPatterns()) {
+            Expr[] terms = nptn.Terms();
+            for(Expr term : terms)
+              noTriggers.add(toExpression(term));
+          }
+        }
+        
+        if(isForall)  return forall(vars, body, triggers, noTriggers);
+        else  return exists(vars, body, triggers, noTriggers);
+        
+      } else if ( e.FuncDecl().Name() != null
+            /* e.getKind() == edu.nyu.acsys.Z3.Kind.LAMBDA || 
+             * e.getKind() == edu.nyu.acsys.Z3.Kind.APPLY 
+             */ ) {
+        return BooleanExpressionImpl.valueOf(this, (ExpressionImpl)toExpression(e));  
+      } else {
+        throw new UnsupportedOperationException("Unexpected expression: " + e);
       }
-      
-      if(isForall)  return forall(vars, body, triggers, noTriggers);
-      else  return exists(vars, body, triggers, noTriggers);
-      
-    } else if ( e.FuncDecl().Name() != null
-          /* e.getKind() == edu.nyu.acsys.Z3.Kind.LAMBDA || 
-           * e.getKind() == edu.nyu.acsys.Z3.Kind.APPLY 
-           */ ) {
-      return BooleanExpressionImpl.valueOf(this, (ExpressionImpl)toExpression(e));  
-    } else {
-      throw new UnsupportedOperationException("Unexpected expression: " + e);
-    }
     } catch (Z3Exception ex) {
       throw new TheoremProverException(ex);
     }

@@ -3,6 +3,7 @@ package edu.nyu.cascade.z3;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 
+import com.google.common.base.Function;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -15,6 +16,7 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Sort;
 import com.microsoft.z3.Z3Exception;
 
+import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Type;
@@ -32,35 +34,32 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
   
   static RecordTypeImpl create(ExpressionManagerImpl em, String name, 
       Iterable<String> elemNames, Iterable<? extends Type> elemTypes) {
-    RecordTypeImpl res = null;
     try {
+      RecordTypeImpl res = null;
       if(typeCache.get(em).containsKey(name))
         res = typeCache.get(em).get(name);
       else {
         res = new RecordTypeImpl(em, name, elemNames, elemTypes);
         typeCache.get(em).put(name, res);
       }
+      return res;
     } catch (ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new CacheException(e);
     }
-    return res;
   }
 
   static RecordTypeImpl create(ExpressionManagerImpl em, String name, String elemName, Type elemType) {
-    RecordTypeImpl res = null;
     try {
       if(typeCache.get(em).containsKey(name))
-        res = typeCache.get(em).get(name);
+        return typeCache.get(em).get(name);
       else {
-        res = new RecordTypeImpl(em, name, Lists.newArrayList(elemName), Lists.newArrayList(elemType));
+        RecordTypeImpl res = new RecordTypeImpl(em, name, Lists.newArrayList(elemName), Lists.newArrayList(elemType));
         typeCache.get(em).put(name, res);
+        return res;
       }
     } catch (ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new CacheException(e);
     }
-    return res;
   }
   
   static RecordTypeImpl create(ExpressionManagerImpl em, String tname) {
@@ -95,7 +94,17 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
     try {
       Context z3_context = em.getTheoremProver().getZ3Context();
       Sort[] z3Types = new Sort[Iterables.size(elemTypes)];
-      String[] symbols = Iterables.toArray(elemNames, String.class);
+      String[] symbols = Iterables.toArray(
+          Iterables.transform(elemNames, new Function<String, String>(){
+            @Override
+            public String apply(String arg) {
+              if(arg.indexOf('#') >= 0) {
+                StringBuilder sb = new StringBuilder();
+                return sb.append('|').append(arg).append('|').toString();
+              }
+              return arg;
+            }
+          }), String.class);
       int[] refs = new int[Iterables.size(elemTypes)];
       for (int i = 0; i < Iterables.size(elemTypes); i++) {
         z3Types[i] = em.toZ3Type(Iterables.get(elemTypes, i));

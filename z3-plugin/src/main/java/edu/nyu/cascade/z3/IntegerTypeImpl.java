@@ -10,6 +10,7 @@ import com.microsoft.z3.Expr;
 import com.microsoft.z3.Z3Exception;
 
 import edu.nyu.cascade.prover.BooleanExpression;
+import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.IntegerType;
@@ -25,14 +26,11 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
           });
 
   public static IntegerTypeImpl getInstance(ExpressionManagerImpl expressionManager) {
-    IntegerTypeImpl res = null;
     try {
-      res = typeCache.get(expressionManager);
+      return typeCache.get(expressionManager);
     } catch (ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new CacheException(e);
     }
-    return res;
   }
   
   protected IntegerTypeImpl(ExpressionManagerImpl expressionManager) {
