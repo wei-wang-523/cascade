@@ -2,8 +2,6 @@ package edu.nyu.cascade.ir.expr;
 
 import java.util.List;
 import java.util.Set;
-import xtc.tree.Node;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -36,26 +34,21 @@ import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
  * @author Wei
  *
  */
-public class MonolithicMemoryModel extends AbstractMemoryModel {
-  protected static final String REGION_VARIABLE_NAME = "monoRegion";
-  protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "monoM";
-  protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "monoAlloc";
-  protected static final String DEFAULT_MEMORY_STATE_TYPE = "monoMemType";
-  protected static final String DEFAULT_STATE_TYPE = "monoStateType";
-  protected static final String TEST_VAR = "TEST_VAR";
+public class MonolithicVer0MemoryModel extends AbstractMonoMemoryModel {
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
    */
-  public static MonolithicMemoryModel create(
+  public static MonolithicVer0MemoryModel create(
       ExpressionEncoding encoding)
       throws ExpressionFactoryException {
     Preconditions.checkArgument(encoding instanceof PointerExpressionEncoding);
-    return new MonolithicMemoryModel(encoding);
+    return new MonolithicVer0MemoryModel(encoding);
   }
 
   private final TupleType ptrType; // pointer type = (ref-type, off-type)
-  private final BitVectorType scalarType;
+  private final BitVectorType scalarType, offType;
+  private final Type refType;
   private final ArrayType allocType; // ref-type -> off-type
   private final ArrayType memType;
   private final TupleType stateType;
@@ -66,7 +59,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
   private static final String PTR_SELECTOR_NAME = "ptr-sel";
   private static final String SCALAR_SELECTOR_NAME = "scalar-sel";
   
-  private final InductiveType cellType; // The list inductive data type
+  private final InductiveType cellType; // The union data type of scalar type and pointer type
   private final Constructor ptrConstr, scalarConstr; // The constructors for cell type
   private final Selector ptrSel, scalarSel; // The selectors for cell type
 
@@ -79,7 +72,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
   private final List<Expression> stackRegions, heapRegions;
   private ExpressionClosure currentState = null;
 
-  private MonolithicMemoryModel(ExpressionEncoding encoding) {
+  private MonolithicVer0MemoryModel(ExpressionEncoding encoding) {
     super(encoding);
   
     this.lvals = Sets.newHashSet();
@@ -92,8 +85,9 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
     this.scalarType = exprManager.bitVectorType(size);
     
     this.ptrType = ((PointerExpressionEncoding) encoding).getPointerEncoding().getType();
-    this.allocType = exprManager.arrayType(
-        ptrType.getElementTypes().get(0), ptrType.getElementTypes().get(1));
+    this.refType = ptrType.getElementTypes().get(0);
+    this.offType = ptrType.getElementTypes().get(1).asBitVectorType();
+    this.allocType = exprManager.arrayType(refType, offType);
     
     scalarSel = exprManager.selector(SCALAR_SELECTOR_NAME, scalarType);
     scalarConstr = exprManager.constructor(SCALAR_CONSTR_NAME, scalarSel);
@@ -111,12 +105,12 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
   public TupleExpression alloc(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
-    Preconditions.checkArgument(size.getType().equals( getOffType() ));
+    Preconditions.checkArgument(size.getType().equals( offType ));
     
     ExpressionManager exprManager = getExpressionManager();
     
-    Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, getRefType(), true);
-    Expression offZero = exprManager.bitVectorZero(getOffType().getSize());
+    Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, refType, true);
+    Expression offZero = exprManager.bitVectorZero(offType.getSize());
     // locVar: (region_x, 0)
     Expression locVar = exprManager.tuple(ptrType, refVar, offZero);
     
@@ -133,7 +127,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
   public TupleExpression declareArray(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
-    Preconditions.checkArgument(size.getType().equals( getOffType() ));
+    Preconditions.checkArgument(size.getType().equals( offType ));
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
     Expression stackRegion = ptr.asTuple().index(0); 
@@ -148,7 +142,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
   public TupleExpression declareStruct(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
-    Preconditions.checkArgument(size.getType().equals( getOffType() ));
+    Preconditions.checkArgument(size.getType().equals( offType ));
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
     Expression stackRegion = ptr.asTuple().index(0);
@@ -182,7 +176,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
       Expression off_ptr = ptr.asTuple().index(1);
       
       for( Expression refVar : regions ) {        
-        Expression sizeZro = exprManager.bitVectorZero(getOffType().getSize());
+        Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
         Expression sizeVar = alloc.asArray().index(refVar);
         /* ptr:(ref_ptr, off), startPos:(ref, 0), endPos:(ref, size);
          * ensure ref_ptr == ref && 0 <= off && off < size
@@ -205,7 +199,7 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
     
     ExpressionManager exprManager = getExpressionManager();
     
-    Expression sizeZero = exprManager.bitVectorZero(getOffType().getSize());
+    Expression sizeZero = exprManager.bitVectorZero(offType.getSize());
     Expression alloc = state.getChild(1);
     
     try {
@@ -236,7 +230,10 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptrType.equals(p.getType()));
     Expression cell = state.getChild(0).asArray().index(p);
     
-    if(isScalarType(p.getNode())) {
+    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(xtc.Constants.TYPE);
+    CellKind kind = getCellKind(pType);
+    assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
+    if(CellKind.SCALAR.equals(kind)) {
       return cell.asInductive().select(scalarSel);
     } else {
       return cell.asInductive().select(ptrSel);
@@ -250,9 +247,12 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
     
     ExpressionManager em = getExpressionManager();
-    
     Expression rval = null;
-    if(isScalarType(lval.getNode())) {
+    
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    CellKind kind = getCellKind(lvalType);
+    assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
+    if(CellKind.SCALAR.equals(kind)) {
       rval = getExpressionEncoding().getIntegerEncoding().unknown();
     } else {
       rval = getExpressionEncoding().unknown();
@@ -267,8 +267,8 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
   @Override
   public Expression createLval(String name) {
     ExpressionManager exprManager = getExpressionManager();
-    VariableExpression ref = exprManager.variable(name, getRefType(), true);
-    Expression off = exprManager.bitVectorZero(getOffType().getSize());
+    VariableExpression ref = exprManager.variable(name, refType, true);
+    Expression off = exprManager.bitVectorZero(offType.getSize());
     Expression res = exprManager.tuple(ptrType, ref, off);
     lvals.add(ref);
     return res;
@@ -278,12 +278,12 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
   public BooleanExpression allocated(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
-    Preconditions.checkArgument(size.getType().equals( allocType.getElementType()) );
+    Preconditions.checkArgument(size.getType().equals( offType ));
     
     ExpressionManager exprManager = getExpressionManager();
     
-    Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, getRefType(), true);
-    Expression offZero = exprManager.bitVectorZero(getOffType().getSize());
+    Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, refType, true);
+    Expression offZero = exprManager.bitVectorZero(offType.getSize());
     // locVar: (region_x, 0)
     Expression locVar = exprManager.tuple(ptrType, refVar, offZero);
     
@@ -407,39 +407,25 @@ public class MonolithicMemoryModel extends AbstractMemoryModel {
     currentState = null;
   }
   
-  private boolean isScalarType(Node node) {
-    xtc.type.Type type = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
-    
-    while(type.isAlias() || type.isAnnotated() || type.isVariable()) {
-      type = type.deannotate();
-      type = type.resolve();
-    }
-    return type.isInteger() || type.isBoolean() || type.isFloat() || type.isNumber();
-  }
-  
   @Override
   public Expression addressOf(Expression content) {
     return content.getChild(0).getChild(1);
   }
   
-  private Type getRefType() {
-    return ptrType.getElementTypes().get(0);
-  }
-  
-  private BitVectorType getOffType() {
-    return ptrType.getElementTypes().get(1).asBitVectorType();
-  }
-  
-  private ArrayExpression updateMemoryState(Expression memory, Expression lval, Expression rval) {
+  @Override
+  protected ArrayExpression updateMemoryState(Expression memory, Expression lval, Expression rval) {
     Preconditions.checkArgument(memory.getType().equals(memType));
     Preconditions.checkArgument(lval.getType().equals(ptrType));
     Preconditions.checkArgument(rval.getType().equals(ptrType) || rval.getType().equals(scalarType));
     
     ExpressionManager em = getExpressionManager();
-    
     // Compose the cell value with rval
     Expression cellVal = null;
-    if(isScalarType(lval.getNode())) {
+    
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    CellKind kind = getCellKind(lvalType);
+    assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
+    if(CellKind.SCALAR.equals(kind)) {
       cellVal = em.construct(scalarConstr, rval);
     } else {
       if(rval.isBitVector()) {
