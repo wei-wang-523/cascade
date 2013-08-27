@@ -62,11 +62,18 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import edu.nyu.cascade.ir.expr.ArrayEncoding;
 import edu.nyu.cascade.ir.expr.BitVectorIntegerEncoding;
 import edu.nyu.cascade.ir.expr.BitVectorMemoryModel;
+import edu.nyu.cascade.ir.expr.BooleanEncoding;
+import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
+import edu.nyu.cascade.ir.expr.DefaultBooleanEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
+import edu.nyu.cascade.ir.expr.IntegerEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
+import edu.nyu.cascade.ir.expr.TupleEncoding;
+import edu.nyu.cascade.ir.expr.UnimplementedTupleEncoding;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.ArrayVariableExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
@@ -74,6 +81,7 @@ import edu.nyu.cascade.prover.BitVectorVariableExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.VariableExpression;
@@ -168,15 +176,49 @@ public class CompressedDomainNamesEncoding_Z3 extends CompressedDomainNamesEncod
 
   private boolean useFrameAxiom;
 
-  public static final int DEFAULT_WORD_SIZE = 8;
+  public static int DEFAULT_WORD_SIZE;
   
-  public CompressedDomainNamesEncoding_Z3(ExpressionManager exprManager) {
-    super(exprManager);
+  public static CompressedDomainNamesEncoding_Z3 create(
+      ExpressionManager expressionManager) throws ExpressionFactoryException {
+    int cellSize = 
+        Preferences.isSet(Preferences.OPTION_THEORY) ? 
+            Preferences.get(Preferences.OPTION_THEORY).equals("BurstallFix") ? 
+                DefaultSize
+                : Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ?
+                    Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE) 
+                    : DefaultSize
+                    : DefaultSize;
+
+    int intCellSize = 
+        Preferences.isSet(Preferences.OPTION_THEORY) ?
+            Preferences.get(Preferences.OPTION_THEORY).equals("BurstallFix") ?
+                (int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * cellSize) 
+                : cellSize
+                : cellSize;
+    
+    DEFAULT_WORD_SIZE = intCellSize;
+    
+    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(expressionManager, intCellSize);
+    BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(expressionManager);
+    ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(expressionManager);
+    TupleEncoding<TupleExpression> tupleEncoding = new UnimplementedTupleEncoding<TupleExpression>();
+    
+    return new CompressedDomainNamesEncoding_Z3(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
+    
+  }
+  
+  public CompressedDomainNamesEncoding_Z3(
+      IntegerEncoding<BitVectorExpression> integerEncoding,
+      BooleanEncoding<BooleanExpression> booleanEncoding,
+      ArrayEncoding<ArrayExpression> arrayEncoding,
+      TupleEncoding<TupleExpression> tupleEncoding) {
+    super(integerEncoding, booleanEncoding, arrayEncoding, tupleEncoding);
 
     try {
       explicitUndefined = Preferences.isSet(OPTION_EXPLICIT_UNDEFINED);
       useFrameAxiom = Preferences.isSet(OPTION_FRAME_AXIOM);
       
+      ExpressionManager exprManager = getExpressionManager();
       BitVectorType wordType = exprManager.bitVectorType(DEFAULT_WORD_SIZE);
       BitVectorType charType = exprManager.bitVectorType(8);
       BitVectorType lenType = exprManager.bitVectorType(6);

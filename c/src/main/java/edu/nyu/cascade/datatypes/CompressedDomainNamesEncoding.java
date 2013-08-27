@@ -54,18 +54,17 @@ import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import edu.nyu.cascade.ir.expr.AbstractExpressionEncoding;
-import edu.nyu.cascade.ir.expr.BitVectorIntegerEncoding;
+import edu.nyu.cascade.ir.expr.ArrayEncoding;
 import edu.nyu.cascade.ir.expr.BitVectorMemoryModel;
-import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
-import edu.nyu.cascade.ir.expr.DefaultBooleanEncoding;
+import edu.nyu.cascade.ir.expr.BooleanEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
+import edu.nyu.cascade.ir.expr.IntegerEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
-import edu.nyu.cascade.ir.expr.UnimplementedTupleEncoding;
+import edu.nyu.cascade.ir.expr.TupleEncoding;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.Constructor;
 
@@ -101,19 +100,15 @@ import edu.nyu.cascade.prover.type.Constructor;
 public abstract class CompressedDomainNamesEncoding extends AbstractExpressionEncoding {
 
   protected static final String MEM_ARRAY_NAME = "m";
-
   protected static final String DATATYPE_NAME = "Dn";
-
   protected static final String LABEL_CONSTR_NAME = "clabel";
   
   protected static final String LENGTH_SELECTOR_NAME = "len";
   protected static final String LABEL_SELECTOR_NAME = "slabel";
   protected static final String REST_SELECTOR_NAME = "rest";
 
-  protected static final String INDIRECT_CONSTR_NAME = "indirect";
-  
+  protected static final String INDIRECT_CONSTR_NAME = "indirect";  
   protected static final String OFFSET_SELECTOR_NAME = "offset";
-
   protected static final String NULL_CONSTR_NAME = "nullt";
 
   protected static final String FUN_DN = DATATYPE_NAME;
@@ -126,28 +121,24 @@ public abstract class CompressedDomainNamesEncoding extends AbstractExpressionEn
   protected static final String FUN_IS_LABEL = "is_label";
   protected static final String FUN_IS_INDIRECT = "is_indirect";
   protected static final String FUN_IS_NULLT = "is_nullt";
-
-  public static final String DATATYPES_EXPLICIT_UNDEFINED = "dt_explicit_undef";
-
+  
   protected static final String UNDEF_CONSTR_NAME = "undefined";
-
+  
+  public static final String DATATYPES_EXPLICIT_UNDEFINED = "dt_explicit_undef";
   public static final String OPTION_EXPLICIT_UNDEFINED = "explicit-undef";
-
   public static final String OPTION_FRAME_AXIOM = "frame-axiom";
 
   public static MemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
     return BitVectorMemoryModel.create(encoding);
   }
-
-  public static int DEFAULT_WORD_SIZE;
   
-  public CompressedDomainNamesEncoding(ExpressionManager exprManager) {
-    super(BitVectorIntegerEncoding.create(exprManager, intCellSize),
-        new DefaultBooleanEncoding(exprManager),
-        new DefaultArrayEncoding(exprManager),
-        new UnimplementedTupleEncoding<TupleExpression>());
-    DEFAULT_WORD_SIZE = intCellSize;
+  protected CompressedDomainNamesEncoding(
+      IntegerEncoding<BitVectorExpression> integerEncoding,
+      BooleanEncoding<BooleanExpression> booleanEncoding,
+      ArrayEncoding<ArrayExpression> arrayEncoding,
+      TupleEncoding<TupleExpression> tupleEncoding) {
+    super(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
   }
 
   protected abstract ArrayExpression doToBvString(ArrayExpression arr,

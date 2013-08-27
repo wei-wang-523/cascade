@@ -1007,8 +1007,7 @@ class RunMergeProcessor implements RunProcessor {
    * function call node list to keep the insertion order of the "pairs", otherwise, 
    * "pairs" will be arbitrary order.
    */  
-  private LinkedHashMap<Node, Node> replaceFuncCallwithVar(Node node,
-      CSymbolTable symbolTable, Scope scope) 
+  private LinkedHashMap<Node, Node> replaceFuncCallwithVar(Node node, CSymbolTable symbolTable) 
       throws RunProcessorException {
     Node resNode = node; 
     LinkedHashMap<Node, Node> funcNodeReplaceMap = Maps.newLinkedHashMap();
@@ -1025,7 +1024,7 @@ class RunMergeProcessor implements RunProcessor {
         if(arg instanceof Node) {
           Node argNode = (Node) arg;
           /* update "argList" if we can find new pair by step into the operands of arg */
-          funcNodeReplaceMap.putAll(replaceFuncCallwithVar(argNode, symbolTable, scope));
+          funcNodeReplaceMap.putAll(replaceFuncCallwithVar(argNode, symbolTable));
           if(funcNodeReplaceMap.containsKey(argNode)) { /* substitute arg */
             substituteArg = funcNodeReplaceMap.get(argNode);
             updated = true;
@@ -1034,9 +1033,7 @@ class RunMergeProcessor implements RunProcessor {
         argList.add(substituteArg);
       }
       if(updated) { /* compose a substituted node */
-        resNode = createNodeWithArgList(node.getName(), argList);
-        resNode.setLocation(node.getLocation());
-        resNode.setProperty(xtc.Constants.SCOPE, scope.getQualifiedName());
+        resNode = createNodeWithArgList(node, argList);
       }
     } 
     
@@ -1051,22 +1048,20 @@ class RunMergeProcessor implements RunProcessor {
         /* Create temporary variable node for function call node. */
         String varName = TEMP_VAR_PREFIX + (TEMP_VAR_POSTFIX++);
         GNode varNode = GNode.create("PrimaryIdentifier", varName);
+        for(String p : node.properties()) {
+          varNode.setProperty(p, node.getProperty(p));
+        }
         varNode.setLocation(node.getLocation());
-        varNode.setProperty(xtc.Constants.SCOPE, scope.getQualifiedName());
-        if(node.hasProperty(xtc.Constants.TYPE))
-          varNode.setProperty(xtc.Constants.TYPE, node.getProperty(xtc.Constants.TYPE));
+        symbolTable.toXtcSymbolTable().mark(varNode);
         if(node.equals(resNode)) {
           funcNodeReplaceMap.put(node, (Node)varNode); // f(a) : TEMP_VAR_x
         } else {
           funcNodeReplaceMap.put(node, resNode); // g(f(a)) : g(TEMP_VAR_x1)
           funcNodeReplaceMap.put(resNode, (Node)varNode); // g(TEMP_VAR_x1) : TEMP_VAR_x2
         }
+        Scope scope = symbolTable.getCurrentScope();
         IRVarInfo varInfo = new VarInfo(scope, varName, IRIntegerType.getInstance(), varNode);
-
-        Scope oldScope = symbolTable.getCurrentScope();
-        symbolTable.setScope(scope);
         symbolTable.define(varName, varInfo);
-        symbolTable.setScope(oldScope);
       } else {
         if(!node.equals(resNode))  funcNodeReplaceMap.put(node, resNode);
       }
@@ -1088,7 +1083,10 @@ class RunMergeProcessor implements RunProcessor {
     for(IRExpression argExpr : argExprs) {
       Node argNode = argExpr.getSourceNode();
       Scope scope = argExpr.getScope();
-      Map<Node, Node> argPairs = replaceFuncCallwithVar(argNode, symbolTable, scope);
+      Scope currScope = symbolTable.getCurrentScope();
+      symbolTable.setScope(scope);
+      Map<Node, Node> argPairs = replaceFuncCallwithVar(argNode, symbolTable);
+      symbolTable.setScope(currScope);
       pairs.putAll(argPairs);
       if(argPairs.isEmpty())
         argExprsRep.add(argExpr);
@@ -1496,6 +1494,18 @@ class RunMergeProcessor implements RunProcessor {
           position.getFile().getPath());
       Result specResults = specParser.pCSpecExpression(0);
       Node spec = (Node) specParser.value(specResults);
+      /*
+       * TODO: modifications to the symbol table by the analyzer are ignored.
+       */
+      cAnalyzer.analyze(spec, symbolTable.getOriginalSymbolTable());
+      IOUtils
+      .debug()
+      .pln("<ast>")
+      .incr()
+      .format(spec)
+      .decr()
+      .pln("\n</ast>")
+      .flush();
       
       CExpression argExpr = CExpression.create(spec,symbolTable.getCurrentScope());
       IOUtils.debug().pln(argExpr.toString()).flush();
@@ -1676,7 +1686,6 @@ class RunMergeProcessor implements RunProcessor {
   
   /** Substitute the child nodes in srcNode as nodes in order */
   private Node substituteNode(Node srcNode, Node ... nodes) {
-    String srcNodeName = srcNode.getName();
     List<Object> argList = Lists.newArrayList();
     List<Node> candidateList = Lists.newArrayList(nodes);
     for(int i = 0; i < srcNode.size(); i++) {
@@ -1686,14 +1695,12 @@ class RunMergeProcessor implements RunProcessor {
       else  
         argList.add(srcNode.get(i));
     }
-    Node newNode = createNodeWithArgList(srcNodeName, argList);
-    newNode.setLocation(srcNode.getLocation());
+    Node newNode = createNodeWithArgList(srcNode, argList);
     return newNode;
   }
   
   /** Substitute the child nodes in srcNode as source nodes of <code>exprs</code> */
   private Node substituteNode(Node srcNode, List<IRExpression> exprs) {
-    String srcNodeName = srcNode.getName();
     List<Object> argList = Lists.newArrayList();
     List<Node> candidateList = Lists.newArrayList();
     for(IRExpression expr : exprs)
@@ -1705,8 +1712,7 @@ class RunMergeProcessor implements RunProcessor {
       else  
         argList.add(o);
     }
-    Node newNode = createNodeWithArgList(srcNodeName, argList);
-    newNode.setLocation(srcNode.getLocation());
+    Node newNode = createNodeWithArgList(srcNode, argList);
     return newNode;
   }
   
@@ -1717,14 +1723,19 @@ class RunMergeProcessor implements RunProcessor {
    * thus we use GNode.create(name, operands), where operands is with type
    * Pair<? extends Object>.
    */  
-  private Node createNodeWithArgList(String name, List<Object> argList) {
+  private Node createNodeWithArgList(Node srcNode, List<Object> argList) {
     xtc.util.Pair<Object> operands = null;
     for(Object o : argList) {
       xtc.util.Pair<Object> pair = new xtc.util.Pair<Object>(o);
       if(operands == null)  operands = pair;
       else  operands = operands.append(pair);
     }
+    String name = srcNode.getName();
     GNode newNode = GNode.createFromPair(name, operands);
+    for(String p : srcNode.properties()) {
+      newNode.setProperty(p, srcNode.getProperty(p));
+    }
+    newNode.setLocation(srcNode.getLocation());
     return newNode;
   }
   

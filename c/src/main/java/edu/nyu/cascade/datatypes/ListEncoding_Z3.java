@@ -19,14 +19,24 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import edu.nyu.cascade.ir.expr.ArrayEncoding;
+import edu.nyu.cascade.ir.expr.BitVectorIntegerEncoding;
 import edu.nyu.cascade.ir.expr.BitVectorMemoryModel;
+import edu.nyu.cascade.ir.expr.BooleanEncoding;
+import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
+import edu.nyu.cascade.ir.expr.DefaultBooleanEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
+import edu.nyu.cascade.ir.expr.IntegerEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
+import edu.nyu.cascade.ir.expr.TupleEncoding;
+import edu.nyu.cascade.ir.expr.UnimplementedTupleEncoding;
+import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.IntegerExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
@@ -35,22 +45,9 @@ import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.Selector;
+import edu.nyu.cascade.util.Preferences;
 
 public class ListEncoding_Z3 extends ListEncoding {
-
-  private static final String DATATYPE_NAME = "list";
-
-  private static final String CONS_CONSTR_NAME = "cons";
-
-  private static final String NIL_CONSTR_NAME = "nil";
-
-  private static final String HEAD_SELECTOR_NAME = "head";
-  
-  private static final String TAIL_SELECTOR_NAME = "tail";
-  
-  private static final String FUN_LIST = DATATYPE_NAME;
-
-  private static final String FUN_LENGTH_LIST = "lengthList";
 
   public static MemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
@@ -73,31 +70,59 @@ public class ListEncoding_Z3 extends ListEncoding {
   /** The list -> length (int) mapping */
   private final FunctionType lengthList;
 
-  public static final int DEFAULT_WORD_SIZE = 8;
+  public static int DEFAULT_WORD_SIZE;
   
-  public ListEncoding_Z3(ExpressionManager exprManager) {
-    super(exprManager);
+  public static ListEncoding_Z3 create(
+      ExpressionManager exprManager) throws ExpressionFactoryException {
+    int cellSize = 
+        Preferences.isSet(Preferences.OPTION_THEORY) ? 
+            Preferences.get(Preferences.OPTION_THEORY).equals("BurstallFix") ? 
+                DefaultSize
+                : Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ?
+                    Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE) 
+                    : DefaultSize
+                    : DefaultSize;
+
+    int intCellSize = 
+        Preferences.isSet(Preferences.OPTION_THEORY) ?
+            Preferences.get(Preferences.OPTION_THEORY).equals("BurstallFix") ?
+                (int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * cellSize) 
+                : cellSize
+                : cellSize;
+    
+    DEFAULT_WORD_SIZE = intCellSize;
+    
+    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, intCellSize);
+    BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
+    ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(exprManager);
+    TupleEncoding<TupleExpression> tupleEncoding = new UnimplementedTupleEncoding<TupleExpression>();
+    
+    return new ListEncoding_Z3(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
+  }
+  
+  public ListEncoding_Z3(
+      IntegerEncoding<BitVectorExpression> integerEncoding,
+      BooleanEncoding<BooleanExpression> booleanEncoding,
+      ArrayEncoding<ArrayExpression> arrayEncoding,
+      TupleEncoding<TupleExpression> tupleEncoding) {
+    super(integerEncoding, booleanEncoding, arrayEncoding, tupleEncoding);
 
     try {
+      ExpressionManager exprManager = getExpressionManager();
+      
       IntegerType lenType = exprManager.integerType();
       
       /* Create datatype constructors */
-
-      // labelTagSel = exprManager.selector(LABEL_TAG_SELECTOR_NAME, tagType);
       headSel = exprManager.selector(HEAD_SELECTOR_NAME, exprManager.integerType());
       tailSel = exprManager.selector(TAIL_SELECTOR_NAME, exprManager
           .inductiveType(DATATYPE_NAME), 0);
-      consConstr = exprManager.constructor(CONS_CONSTR_NAME, headSel,
-          tailSel);
-
+      consConstr = exprManager.constructor(CONS_CONSTR_NAME, headSel, tailSel);
       nilConstr = exprManager.constructor(NIL_CONSTR_NAME);
 
       /* Create datatype */
       list = exprManager.dataType(DATATYPE_NAME, consConstr, nilConstr);
-      
       lengthList = exprManager.functionType(FUN_LENGTH_LIST, list, lenType);
       
-
       /* Create data constraints */
       ImmutableSet.Builder<BooleanExpression> rewrite_rulesetBuilder = ImmutableSet
           .builder();

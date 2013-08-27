@@ -13,9 +13,9 @@ public class CompressedDomainNames implements Theory {
   public CompressedDomainNames(ExpressionManager exprManager) {
     String tpProviderName = exprManager.getTheoremProver().getProviderName();
     if("z3".equals(tpProviderName))
-      encoding = new CompressedDomainNamesEncoding_Z3(exprManager);
+      encoding = CompressedDomainNamesEncoding_Z3.create(exprManager);
     else if ("cvc4".equals(tpProviderName))
-      encoding = new CompressedDomainNamesEncoding_CVC4(exprManager);
+      encoding = CompressedDomainNamesEncoding_CVC4.create(exprManager);
     else
       throw new IllegalArgumentException("Unknown theorem prover " + tpProviderName);
     memoryModel = BitVectorMemoryModel.create(encoding);

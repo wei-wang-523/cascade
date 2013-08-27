@@ -62,11 +62,18 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import edu.nyu.cascade.ir.expr.ArrayEncoding;
 import edu.nyu.cascade.ir.expr.BitVectorIntegerEncoding;
 import edu.nyu.cascade.ir.expr.BitVectorMemoryModel;
+import edu.nyu.cascade.ir.expr.BooleanEncoding;
+import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
+import edu.nyu.cascade.ir.expr.DefaultBooleanEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
+import edu.nyu.cascade.ir.expr.IntegerEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
+import edu.nyu.cascade.ir.expr.TupleEncoding;
+import edu.nyu.cascade.ir.expr.UnimplementedTupleEncoding;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.ArrayVariableExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
@@ -75,6 +82,7 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TheoremProverException;
+import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
@@ -121,10 +129,8 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
   }
   
   protected final BitVectorIntegerEncoding bitVectorFactory;
-
   /* The Dn inductive data type */
   protected final InductiveType dn;
-  
   /* The constructors for Dn */
   protected final Constructor indirectConstr, nullConstr, labelConstr,
       undefConstr;
@@ -135,14 +141,11 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
   protected final Selector labelSel;
   /* Selector for the "rest" field (a Dn value) in labelConstr */
   protected final Selector restSel;
-
   /* Selector for the offset of an indirect value (a bit vector) in indirectConstr */
   protected final Selector offsetSel ;
 
   protected final ImmutableSet<BooleanExpression> axioms;
-
   protected final HashSet<String> predicates;
-
   protected final HashSet<String> functions;
 
   /** The raw memory (bit vector array) -> Dn value mapping */
@@ -167,13 +170,49 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
 
   protected boolean useFrameAxiom;
   
-  public CompressedDomainNamesEncoding_CVC4(ExpressionManager exprManager) {
-    super(exprManager);
+  protected static int DEFAULT_WORD_SIZE;
+  
+  public static CompressedDomainNamesEncoding_CVC4 create(
+      ExpressionManager exprManager) throws ExpressionFactoryException {
+    int cellSize = 
+        Preferences.isSet(Preferences.OPTION_THEORY) ? 
+            Preferences.get(Preferences.OPTION_THEORY).equals("BurstallFix") ? 
+                DefaultSize
+                : Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ?
+                    Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE) 
+                    : DefaultSize
+                    : DefaultSize;
+
+    int intCellSize = 
+        Preferences.isSet(Preferences.OPTION_THEORY) ?
+            Preferences.get(Preferences.OPTION_THEORY).equals("BurstallFix") ?
+                (int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * cellSize) 
+                : cellSize
+                : cellSize;
+    
+    DEFAULT_WORD_SIZE = intCellSize;
+    
+    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, intCellSize);
+    BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
+    ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(exprManager);
+    TupleEncoding<TupleExpression> tupleEncoding = new UnimplementedTupleEncoding<TupleExpression>();
+    
+    return new CompressedDomainNamesEncoding_CVC4(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
+    
+  }
+  
+  public CompressedDomainNamesEncoding_CVC4(
+      IntegerEncoding<BitVectorExpression> integerEncoding,
+      BooleanEncoding<BooleanExpression> booleanEncoding,
+      ArrayEncoding<ArrayExpression> arrayEncoding,
+      TupleEncoding<TupleExpression> tupleEncoding) {
+    super(integerEncoding, booleanEncoding, arrayEncoding, tupleEncoding);
 
     try {
       explicitUndefined = Preferences.isSet(OPTION_EXPLICIT_UNDEFINED);
       useFrameAxiom = Preferences.isSet(OPTION_FRAME_AXIOM);
       
+      ExpressionManager exprManager = getExpressionManager();
       BitVectorType wordType = exprManager.bitVectorType(DEFAULT_WORD_SIZE);
       BitVectorType charType = exprManager.bitVectorType(8);
       BitVectorType lenType = exprManager.bitVectorType(6);
