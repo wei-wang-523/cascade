@@ -8,7 +8,7 @@ typedef int size_t; // redef type size_t as int
 typedef int data_t;
 typedef size_t idx_t;
 typedef int bool_t;
-
+#define NULL (buf_t *) 0
 int __NONDET__() {int unknown; return unknown;};
 int ASSUME(int);
 int ASSERT(int);
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
   
   for (i=0; i<numWrites; i++) {
     for (j=0; j<numBufs; j++)
-      bufWrite(bufs[j], randomIdx(bufs[j]), nondet/*(data_t)__NONDET__()*/);
+      bufWrite(bufs[j], randomIdx(bufs[j]), (data_t)__NONDET__());
     
   }
   

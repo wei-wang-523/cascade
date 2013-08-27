@@ -8,7 +8,7 @@
 	y >= 0 && y <= 100 &&
 	implies(y >= 0 && y < 100,
 		  y == 0 || (y < 1000 && y > 0 &&
-		  forall(i, implies(0 <= i && i < y, valid(&a[i]))))
+		  forall(j, implies(0 <= j && j < y, valid(&a[j]))))
 	)
 	]]>
 	</invariant>
@@ -20,7 +20,7 @@
 	y >= 0 && y <= 1000 &&
 	implies(y >= 0 && y < 100,
 		  y == 0 || (y < 1000 && y > 0 &&
-		  forall(i, implies(0 <= i && i < y, valid(&a[i]))))
+		  forall(j, implies(0 <= j && j < y, valid(&a[j]))))
 	)
 	]]>
 	</invariant>
@@ -32,7 +32,7 @@
 	y >= 0 && y <= 1000 &&
 	implies(y >= 0 && y < 1000,
 		  y == 0 || (y < 1000 && y > 0 &&
-		  forall(i, implies(0 <= i && i < y, valid(&a[i]))))
+		  forall(j, implies(0 <= j && j < y, valid(&a[j]))))
 	)
 	]]>
 	</invariant>

@@ -44,7 +44,7 @@
 		      <command>
     			<cascadeFunction> cascade_assume </cascadeFunction>
     			<argument><![CDATA[ 
-			bug_ != 0 && 0 <= idx_ && idx_ < buf_->maxNumData 
+			buf_ != 0 && 0 <= idx_ && idx_ < buf_->maxNumData
 			]]>
 			</argument>
 		      </command>
@@ -76,7 +76,7 @@
 		  <command>
 		    <cascadeFunction>cascade_assume</cascadeFunction>
 		    <argument><![CDATA[
-		    buf_ != 0 && 0 <= idx_ && idx_ < buf_->maxNumData
+		    buf_ != 0 && 0 <= idx && idx < buf_->maxNumData
 		    ]]>
 		    </argument>
 		  </command>
@@ -98,7 +98,7 @@
 		      <command>
     			<cascadeFunction> cascade_assume </cascadeFunction>
     			<argument><![CDATA[ 
-			bug_ != 0 && 0 <= idx_ && idx_ < buf_->maxNumData 
+			buf_ != 0 && 0 <= idx_ && idx_ < buf_->maxNumData
 			]]>
 			</argument>
 		      </command>
