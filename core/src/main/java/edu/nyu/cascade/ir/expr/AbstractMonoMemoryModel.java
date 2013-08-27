@@ -18,14 +18,6 @@ public abstract class AbstractMonoMemoryModel extends AbstractMemoryModel {
     
     super(encoding);
   }
-
-  protected static final String REGION_VARIABLE_NAME = "region";
-  protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
-  protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "alloc";
-  protected static final String DEFAULT_MEMORY_STATE_TYPE = "memType";
-  protected static final String DEFAULT_STATE_TYPE = "stateType";
-  protected static final String TEST_VAR = "TEST_VAR";
-  protected static final String TYPE = xtc.Constants.TYPE;
   
   protected enum CellKind {
     SCALAR, POINTER, TEST_VAR

@@ -337,7 +337,7 @@ public class MonolithicVer1MemoryModel extends AbstractMonoMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
     Expression memVar = exprManager.variable(DEFAULT_MEMORY_VARIABLE_NAME, 
         memType, true);
-    Expression allocVar = exprManager.variable(DEFAULT_REGION_SIZE_VARIABLE_NAME, 
+    Expression allocVar = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, 
         allocType, true);
     return exprManager.tuple(stateType, memVar, allocVar);
   }
@@ -419,10 +419,18 @@ public class MonolithicVer1MemoryModel extends AbstractMonoMemoryModel {
   
   @Override
   public Expression addressOf(Expression content) {
-    Expression cellVal = content.getChild(0);
-    Expression off = cellVal.getChild(1);
-    Expression ref = cellVal.getChild(0).getChild(1);
-    return getExpressionManager().tuple(ptrType, ref, off);
+    Preconditions.checkArgument(content.getNode().hasProperty(TYPE));
+    xtc.type.Type contentType = unwrapped((xtc.type.Type) 
+        (content.getNode().getProperty(TYPE)));
+    
+    if(contentType.isUnion() || contentType.isStruct()) {
+      return content;
+    } else {
+      Expression cellVal = content.getChild(0);
+      Expression off = cellVal.getChild(1);
+      Expression ref = cellVal.getChild(0).getChild(1);
+      return getExpressionManager().tuple(ptrType, ref, off);
+    }
   }
   
   @Override

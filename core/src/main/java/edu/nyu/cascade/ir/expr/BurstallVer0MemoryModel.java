@@ -237,7 +237,7 @@ public class BurstallVer0MemoryModel extends AbstractBurstallMemoryModel {
     
     ExpressionManager em = getExpressionManager();
     ArrayExpression tgtArray = null;
-    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
     String typeName = getTypeName(pType);
     if(currentMemElems.containsKey(typeName)) {
       return currentMemElems.get(typeName).asArray().index(p);
@@ -271,7 +271,7 @@ public class BurstallVer0MemoryModel extends AbstractBurstallMemoryModel {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
     Expression rval = null;
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     CellKind kind = getCellKind(lvalType);
     if(CellKind.SCALAR.equals(kind)) {
       rval = getExpressionEncoding().getIntegerEncoding().unknown();
@@ -329,7 +329,7 @@ public class BurstallVer0MemoryModel extends AbstractBurstallMemoryModel {
   @Override
   public Expression addressOf(Expression content) {
     xtc.type.Type type = unwrapped((xtc.type.Type) content.getNode()
-        .getProperty(xtc.Constants.TYPE));
+        .getProperty(TYPE));
     if(type.isStruct() || type.isUnion() || type.isArray())
       return content;
     else
@@ -612,7 +612,7 @@ public class BurstallVer0MemoryModel extends AbstractBurstallMemoryModel {
     ExpressionManager em = getExpressionManager();
     boolean isMemUpdated = false;
     ArrayExpression tgtArray = null;
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     String lvalTypeName = getTypeName(lvalType);
     if(currentMemElems.containsKey(lvalTypeName)) { // declared type name
       CellKind kind = getCellKind(lvalType);

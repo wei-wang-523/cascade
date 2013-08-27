@@ -11,7 +11,13 @@ import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.type.Type;
 
 public abstract class AbstractMemoryModel implements MemoryModel {
-  private static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
+  protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
+  protected static final String REGION_VARIABLE_NAME = "region";
+  protected static final String DEFAULT_ALLOC_VARIABLE_NAME = "alloc";
+  protected static final String DEFAULT_MEMORY_STATE_TYPE = "memType";
+  protected static final String DEFAULT_STATE_TYPE = "stateType";
+  protected static final String TYPE = xtc.Constants.TYPE;
+  protected static final String TEST_VAR = "TEST_VAR";
   
   private final ExpressionEncoding encoding;
   

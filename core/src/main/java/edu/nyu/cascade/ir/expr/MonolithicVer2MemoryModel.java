@@ -398,7 +398,7 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
     Expression memVar = exprManager.variable(DEFAULT_MEMORY_VARIABLE_NAME, 
         memType, true);
-    Expression allocVar = exprManager.variable(DEFAULT_REGION_SIZE_VARIABLE_NAME, 
+    Expression allocVar = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, 
         allocType, true);
     return exprManager.tuple(stateType, memVar, allocVar);
   }
@@ -724,9 +724,9 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
     if(expr.isTuple()) {
       assert(expr.getType().equals(ptrType));
       Expression refExpr = expr.getChild(0);
-      if(refExpr.isVariable()) {
-        resName = refExpr.asVariable().getName();
-      } else {
+//      if(refExpr.isVariable()) {
+//        resName = refExpr.asVariable().getName();
+//      } else {
         if(Kind.TUPLE_INDEX.equals(refExpr.getKind())) {
           Expression arrExpr = refExpr.getChild(0).getChild(0);
           if(arrExpr.isVariable()) {
@@ -741,7 +741,7 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
           }
         }
       }
-    }
+//    }
     return resName == null ? resName : resName.replace("addr", "array");
   }
   
@@ -753,9 +753,9 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
   }
   
   private Expression castRvalToLvalType(Expression lval, Expression rval) {
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     CellKind lvalKind = getCellKind(lvalType);
-    xtc.type.Type rvalType = (xtc.type.Type) rval.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type rvalType = (xtc.type.Type) rval.getNode().getProperty(TYPE);
     CellKind rvalKind = getCellKind(rvalType);
     
     if(lvalKind.equals(rvalKind)) {
@@ -764,16 +764,12 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
       else
         return scalarConstr.apply(rval);
     } else if(CellKind.POINTER.equals(lvalKind) && CellKind.SCALAR.equals(rvalKind)) {
-      return ptrConstr.apply(getNullExpr(rval));
+      assert(rval.isConstant() && Integer.parseInt(rval.getNode().getString(0)) == 0);
+      Expression nullExpr = ptrConstr.apply(((PointerExpressionEncoding) getExpressionEncoding())
+          .getPointerEncoding().nullPtr());;
+      return ptrConstr.apply(nullExpr);
     } else {
       throw new IllegalArgumentException("Assign pointer " + rval + " to constant " + lval);
     }
-  }
-  
-  private Expression getNullExpr(Expression e) {
-    Preconditions.checkArgument(e.isConstant() && e.isBitVector()
-        && Integer.parseInt(e.getNode().getString(0)) == 0);
-    return ptrConstr.apply(((PointerExpressionEncoding) getExpressionEncoding())
-        .getPointerEncoding().nullPtr());
   }
 }
