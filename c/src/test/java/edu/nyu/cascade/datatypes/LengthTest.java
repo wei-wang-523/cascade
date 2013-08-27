@@ -36,9 +36,9 @@ public class LengthTest {
       
       String tpProviderName = theoremProver.getProviderName();
       if("cvc4".equals(tpProviderName))
-        listEncoding = new ListEncoding_CVC4(exprManager);
+        listEncoding = ListEncoding_CVC4.create(exprManager);
       else if("z3".equals(tpProviderName))
-        listEncoding = new ListEncoding_Z3(exprManager);
+        listEncoding = ListEncoding_Z3.create(exprManager);
       else
         throw new IllegalArgumentException("Unsupported theorem prover " + theoremProver);
 //    } catch (FileNotFoundException e) {

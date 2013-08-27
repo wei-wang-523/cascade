@@ -25,9 +25,9 @@ public class CompressedDomainNamesTest {
     exprManager = theoremProver.getExpressionManager();
     String tpProviderName = theoremProver.getProviderName();
     if("z3".equals(tpProviderName))
-      cdn = new CompressedDomainNamesEncoding_Z3(exprManager);
+      cdn = CompressedDomainNamesEncoding_Z3.create(exprManager);
     else if ("cvc4".equals(tpProviderName))
-      cdn = new CompressedDomainNamesEncoding_CVC4(exprManager);
+      cdn = CompressedDomainNamesEncoding_CVC4.create(exprManager);
     else
       throw new IllegalArgumentException("Unknown theorem prover " + tpProviderName);
   }
