@@ -21,7 +21,7 @@ import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.Type;
 
-public class SimpleMemoryModel extends AbstractMemoryModel {
+public class PartitionMemoryModel extends AbstractMemoryModel {
   private static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
   private static final String DEFAULT_MEMORY_STATE_NAME = "memoryState";
   
@@ -31,13 +31,13 @@ public class SimpleMemoryModel extends AbstractMemoryModel {
    * @param exprManager
    * @throws IllegalArgumentException if <code>addressSize</code> is not a multiple of <code>cellSize</code>
    */
-  public static SimpleMemoryModel create(
+  public static PartitionMemoryModel create(
       ExpressionEncoding encoding) throws ExpressionFactoryException {
     ExpressionManager exprManager = encoding.getExpressionManager();
     int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();   
     BitVectorType cellType = exprManager.bitVectorType(size);
 
-    return new SimpleMemoryModel(encoding, cellType);
+    return new PartitionMemoryModel(encoding, cellType);
   }
   
   protected final BitVectorType cellType;
@@ -61,7 +61,7 @@ public class SimpleMemoryModel extends AbstractMemoryModel {
   private ExpressionClosure currentState;
   private final Expression memVar;
   
-  protected SimpleMemoryModel(ExpressionEncoding encoding, BitVectorType cellType) {
+  protected PartitionMemoryModel(ExpressionEncoding encoding, BitVectorType cellType) {
     super(encoding);
     IntegerEncoding<?> integerEncoding = encoding.getIntegerEncoding();
     Preconditions.checkArgument(integerEncoding.getType().equals(cellType));

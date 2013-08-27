@@ -49,8 +49,8 @@ public class DynamicPathEncoding extends AbstractPathEncoding {
     
     MemoryModel mm = getMemoryModel();
     Expression memPrime = mem;
-    if(mm instanceof SimpleMemoryModel) {
-      memPrime = ((SimpleMemoryModel) mm).updateState(mem);
+    if(mm instanceof PartitionMemoryModel) {
+      memPrime = ((PartitionMemoryModel) mm).updateState(mem);
     }
     memPrime = mm.assign(memPrime, var.eval(memPrime), val.eval(memPrime));
     stateType = exprManager.tupleType(DEFAULT_PATH_STATE, memPrime.getType(), pc.getType());
@@ -69,8 +69,8 @@ public class DynamicPathEncoding extends AbstractPathEncoding {
     
     MemoryModel mm = getMemoryModel();
     Expression memPrime = mem;
-    if(mm instanceof SimpleMemoryModel) {
-      memPrime = ((SimpleMemoryModel) mm).updateState(mem);
+    if(mm instanceof PartitionMemoryModel) {
+      memPrime = ((PartitionMemoryModel) mm).updateState(mem);
     }
     
     Expression pcPrime = exprManager.ifThenElse(pc, expr.eval(memPrime).asBooleanExpression(), 
