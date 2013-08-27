@@ -230,7 +230,7 @@ public class MonolithicVer0MemoryModel extends AbstractMonoMemoryModel {
     Preconditions.checkArgument(ptrType.equals(p.getType()));
     Expression cell = state.getChild(0).asArray().index(p);
     
-    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
     CellKind kind = getCellKind(pType);
     assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
     if(CellKind.SCALAR.equals(kind)) {
@@ -249,7 +249,7 @@ public class MonolithicVer0MemoryModel extends AbstractMonoMemoryModel {
     ExpressionManager em = getExpressionManager();
     Expression rval = null;
     
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     CellKind kind = getCellKind(lvalType);
     assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
     if(CellKind.SCALAR.equals(kind)) {
@@ -409,7 +409,15 @@ public class MonolithicVer0MemoryModel extends AbstractMonoMemoryModel {
   
   @Override
   public Expression addressOf(Expression content) {
-    return content.getChild(0).getChild(1);
+    Preconditions.checkArgument(content.getNode().hasProperty(TYPE));
+    xtc.type.Type contentType = unwrapped((xtc.type.Type) 
+        (content.getNode().getProperty(TYPE)));
+    
+    if(contentType.isUnion() || contentType.isStruct()) {
+      return content;
+    } else {
+      return content.getChild(0).getChild(1);
+    }
   }
   
   @Override
@@ -422,7 +430,7 @@ public class MonolithicVer0MemoryModel extends AbstractMonoMemoryModel {
     // Compose the cell value with rval
     Expression cellVal = null;
     
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     CellKind kind = getCellKind(lvalType);
     assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
     if(CellKind.SCALAR.equals(kind)) {

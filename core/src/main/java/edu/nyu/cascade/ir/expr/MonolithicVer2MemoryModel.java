@@ -5,8 +5,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Iterator;
 
-import xtc.tree.Node;
-
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -50,12 +48,7 @@ import edu.nyu.cascade.util.Preferences;
  *
  */
 
-public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
-  protected static final String REGION_VARIABLE_NAME = "region";
-  protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
-  protected static final String DEFAULT_REGION_SIZE_VARIABLE_NAME = "alloc";
-  protected static final String DEFAULT_MEMORY_STATE_TYPE = "memType";
-  protected static final String DEFAULT_STATE_TYPE = "stateType";
+public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
@@ -75,7 +68,8 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
   private static final String DEFAULT_MERGE_ARRAY_NAME = "mergeArray";
 
   private final TupleType ptrType; // pointer type = (ref-type, off-type)
-  private final BitVectorType scalarType; // const type
+  private final Type refType;
+  private final BitVectorType scalarType, offType; // const type
   private final Constructor ptrConstr, scalarConstr; // The constructors for cell type
   private final Selector ptrSel, scalarSel; // The selectors for cell type
   private final InductiveType cellType;
@@ -108,6 +102,9 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
     this.scalarType = exprManager.bitVectorType(size);
     
     this.ptrType = ((PointerExpressionEncoding) encoding).getPointerEncoding().getType();
+    this.refType = ptrType.getElementTypes().get(0);
+    this.offType = ptrType.getElementTypes().get(1).asBitVectorType();
+    this.allocType = exprManager.arrayType(refType, offType);
     
     this.scalarSel = exprManager.selector(SCALAR_SELECTOR_NAME, scalarType);
     this.scalarConstr = exprManager.constructor(SCALAR_CONSTR_NAME, scalarSel);
@@ -117,11 +114,6 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
     
     /* Create datatype for cell */
     this.cellType = exprManager.dataType(CELL_TYPE_NAME, scalarConstr, ptrConstr);
-    
-    Type refType = ptrType.getElementTypes().get(0);
-    Type offType = ptrType.getElementTypes().get(1);
-    
-    this.allocType = exprManager.arrayType(refType, offType);
     
     List<String> elemNames = Lists.newArrayList(DEFAULT_MERGE_ARRAY_NAME);
     // Array ref (Array int cell)
@@ -137,18 +129,18 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
   @Override
   public TupleExpression alloc(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    Preconditions.checkArgument(size.getType().equals( cellType ));
+    Preconditions.checkArgument(size.getType().equals( offType ));
     
     ExpressionManager exprManager = getExpressionManager();
     
-    Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, getRefType(), true);
-    Expression offZero = exprManager.bitVectorZero(getOffType().getSize());
+    Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, refType, true);
+    Expression offZero = exprManager.bitVectorZero(offType.getSize());
     // locVar: (region_x, 0)
     Expression locVar = exprManager.tuple(ptrType, refVar, offZero);
     
     heapRegions.add(refVar); // For dynamic memory allocation, add to the end
     
-    RecordExpression memory = updateMemState(state.getChild(0), ptr, locVar);
+    RecordExpression memory = updateMemoryState(state.getChild(0), ptr, locVar);
     Expression alloc = state.getChild(1).asArray().update(refVar, size);    
     TupleExpression statePrime = getUpdatedState(state, memory, alloc);
     
@@ -161,7 +153,7 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
   @Override 
   public TupleExpression declareArray(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    Preconditions.checkArgument(size.getType().equals( scalarType ));
+    Preconditions.checkArgument(size.getType().equals( offType ));
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
     Expression stackRegion = ptr.asTuple().index(0); 
@@ -175,7 +167,7 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
   @Override 
   public TupleExpression declareStruct(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    Preconditions.checkArgument(size.getType().equals( scalarType ));
+    Preconditions.checkArgument(size.getType().equals( offType ));
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
     Expression stackRegion = ptr.asTuple().index(0);
@@ -209,7 +201,7 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
         Expression ref_ptr = ptr.asTuple().index(0);
         Expression off_ptr = ptr.asTuple().index(1);
         
-        Expression sizeZro = exprManager.bitVectorZero(getOffType().getSize());
+        Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
         Expression sizeVar = alloc.asArray().index(refVar);
         /* ptr:(ref_ptr, off), startPos:(ref, 0), endPos:(ref, size);
          * ensure ref_ptr == ref && 0 <= off && off < size
@@ -232,7 +224,7 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
     
     ExpressionManager exprManager = getExpressionManager();
     
-    Expression sizeZero = exprManager.bitVectorZero(getOffType().getSize());
+    Expression sizeZero = exprManager.bitVectorZero(offType.getSize());
     Expression alloc = state.getChild(1);
     
     try {
@@ -251,7 +243,7 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
       Expression lval,
       Expression rval) {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
-    RecordExpression memory = updateMemState(state.getChild(0), lval, rval);
+    RecordExpression memory = updateMemoryState(state.getChild(0), lval, rval);
     TupleExpression statePrime = getUpdatedState(state, memory, state.getChild(1));
     
     memType = memory.getType();
@@ -296,7 +288,10 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
       }
     }
     
-    if(isPointer(p)) {
+    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
+    CellKind kind = getCellKind(pType);
+    assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
+    if(CellKind.POINTER.equals(kind)) {
       return pValCell.asInductive().select(ptrSel);
     } else {
       return pValCell.asInductive().select(scalarSel);
@@ -309,13 +304,17 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
       Expression lval) {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
     Expression rval = null;
-    if(isPointer(lval)) {
+    
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
+    CellKind kind = getCellKind(lvalType);
+    assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
+    if(CellKind.POINTER.equals(kind)) {
       rval = getExpressionEncoding().unknown();
     } else {
       rval = getExpressionEncoding().getIntegerEncoding().unknown();
     }
     
-    RecordExpression memory = updateMemState(state.getChild(0), lval, rval); 
+    RecordExpression memory = updateMemoryState(state.getChild(0), lval, rval); 
     TupleExpression statePrime = getUpdatedState(state, memory, state.getChild(1));
     
     memType = memory.getType();
@@ -327,8 +326,8 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
   @Override
   public Expression createLval(String name) {
     ExpressionManager exprManager = getExpressionManager();
-    VariableExpression ref = exprManager.variable(name, getRefType(), true);
-    Expression off = exprManager.bitVectorZero(getOffType().getSize());
+    VariableExpression ref = exprManager.variable(name, refType, true);
+    Expression off = exprManager.bitVectorZero(offType.getSize());
     Expression res = exprManager.tuple(ptrType, ref, off);
     lvals.add(ref);
     return res;
@@ -337,18 +336,18 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
   @Override
   public BooleanExpression allocated(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    Preconditions.checkArgument(size.getType().equals( allocType.getElementType()) );
+    Preconditions.checkArgument(size.getType().equals( offType) );
     
     ExpressionManager exprManager = getExpressionManager();
     
-    Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, getRefType(), true);
-    Expression offZero = exprManager.bitVectorZero(getOffType().getSize());
+    Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, refType, true);
+    Expression offZero = exprManager.bitVectorZero(offType.getSize());
     // locVar: (region_x, 0)
     Expression locVar = exprManager.tuple(ptrType, refVar, offZero);
     
     heapRegions.add(refVar); // For dynamic memory allocation, add to the end
     
-    Expression currentMem = updateMemState(state.getChild(0), ptr, locVar);
+    Expression currentMem = updateMemoryState(state.getChild(0), ptr, locVar);
     
     if(currentAlloc == null)    currentAlloc = state.getChild(1);
     currentAlloc = currentAlloc.asArray().update(refVar, size);
@@ -632,7 +631,8 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
     }
   }
   
-  private RecordExpression updateMemState(Expression memState, Expression lval, Expression rval) {   
+  @Override
+  protected RecordExpression updateMemoryState(Expression memState, Expression lval, Expression rval) {   
     initCurrentMemElems(memState);
     
     String lvalArrName = getArrName(lval);
@@ -674,7 +674,10 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
       
     } else { // none of then is in the currentMemElems
       
-      if(isPointer(rval)) { // okay, alias occurs, merge them into merge array        
+      xtc.type.Type rvalType = (xtc.type.Type) rval.getNode().getProperty(TYPE);
+      CellKind kind = getCellKind(rvalType);
+      assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
+      if(CellKind.POINTER.equals(kind)) { // okay, alias occurs, merge them into merge array        
         if(currentMemElems.containsKey(lvalArrName)) {
           ArrayExpression lvalArr = currentMemElems.remove(lvalArrName).asArray();
           memTypeChanged = true;
@@ -716,14 +719,6 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
     return em.record(currentMemType, currentMemElems.values());
   }
   
-  private Type getRefType() {
-    return ptrType.getElementTypes().get(0);
-  }
-  
-  private BitVectorType getOffType() {
-    return ptrType.getElementTypes().get(1).asBitVectorType();
-  }
-  
   private String getArrName(Expression expr) {
     String resName = null;
     if(expr.isTuple()) {
@@ -750,16 +745,6 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
     return resName == null ? resName : resName.replace("addr", "array");
   }
   
-  private boolean isPointer(Expression e) {
-    Node node = e.getNode();
-    xtc.type.Type type = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
-    while(type.isAnnotated() || type.isAlias()) {
-      type = type.resolve();
-      type = type.deannotate();
-    }
-    return type.isPointer();
-  }
-  
   private boolean isInMergeArray(Expression e) {
     String arrName = getArrName(e);
     if(DEFAULT_MERGE_ARRAY_NAME.equals(arrName))    return true;
@@ -768,16 +753,21 @@ public class MonolithicVer2MemoryModel extends AbstractMemoryModel {
   }
   
   private Expression castRvalToLvalType(Expression lval, Expression rval) {
-    if(isPointer(lval) == isPointer(rval)) {
-      if(isPointer(rval))
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    CellKind lvalKind = getCellKind(lvalType);
+    xtc.type.Type rvalType = (xtc.type.Type) rval.getNode().getProperty(xtc.Constants.TYPE);
+    CellKind rvalKind = getCellKind(rvalType);
+    
+    if(lvalKind.equals(rvalKind)) {
+      if(CellKind.POINTER.equals(rvalKind))
         return ptrConstr.apply(rval);
       else
         return scalarConstr.apply(rval);
-    }
-    else if(isPointer(lval) && !isPointer(rval)) 
+    } else if(CellKind.POINTER.equals(lvalKind) && CellKind.SCALAR.equals(rvalKind)) {
       return ptrConstr.apply(getNullExpr(rval));
-    else // !isPointer(lval) && isPointer(rval)
+    } else {
       throw new IllegalArgumentException("Assign pointer " + rval + " to constant " + lval);
+    }
   }
   
   private Expression getNullExpr(Expression e) {

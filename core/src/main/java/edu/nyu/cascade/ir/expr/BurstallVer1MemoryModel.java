@@ -33,11 +33,14 @@ import edu.nyu.cascade.util.Preferences;
 
 /**
  * Burstall memory model, multiple memory arrays for various type.
- * These arrays types map pointer type to cell type. Cell type is 
- * union of pointer type and INTEGER type. The state of memory is 
- * a record with multiple arrays for various types. Different type
- * has different cell type size: CharT is 8, IntegerT and ShorT is 
- * 16, LongT is 32.
+ * These arrays types map pointer type to either pointer type or 
+ * scalar type. 
+ * 
+ * The state of memory is a record with multiple arrays for various 
+ * types. 
+ * 
+ * Different type has different cell type size: CharT is 8, IntegerT 
+ * and ShorT is 16, LongT is 32.
  * 
  * @author Wei
  *
@@ -55,7 +58,8 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
   }
 
   private final TupleType ptrType; // pointer type = (ref-type, off-type)
-  private final BitVectorType cellType; // cell type
+  private final Type refType;
+  private final BitVectorType offType; // offset type
   private final ArrayType allocType; // ref-type -> off-type
   private RecordType memType; // with multiple array types
   private TupleType stateType;
@@ -78,9 +82,9 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
     
     this.ptrType = ((PointerExpressionEncoding) encoding).getPointerEncoding().getType();
-    this.cellType = ptrType.getElementTypes().get(1).asBitVectorType();
-    this.allocType = exprManager.arrayType(
-        ptrType.getElementTypes().get(0), ptrType.getElementTypes().get(1));
+    this.refType = ptrType.getElementTypes().get(0);
+    this.offType = ptrType.getElementTypes().get(1).asBitVectorType();
+    this.allocType = exprManager.arrayType(refType, offType);
     
     List<String> elemNames = Lists.newArrayList();
     List<Type> elemTypes = Lists.newArrayList();
@@ -94,12 +98,12 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
   public TupleExpression alloc(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
     // FIXME: element size and integer size don't agree: cast integer to cell type?
-    Preconditions.checkArgument(size.getType().equals( cellType ));
+    Preconditions.checkArgument(size.getType().equals( offType ));
     
     ExpressionManager exprManager = getExpressionManager();
     
-    Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, getRefType(), true);
-    Expression offZero = exprManager.bitVectorZero(getOffType().getSize());
+    Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, refType, true);
+    Expression offZero = exprManager.bitVectorZero(offType.getSize());
     // locVar: (region_x, 0)
     Expression locVar = exprManager.tuple(ptrType, refVar, offZero);
     
@@ -119,7 +123,7 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
   public TupleExpression declareArray(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
     // FIXME: element size and integer size don't agree: cast integer to cell type
-    Preconditions.checkArgument(size.getType().equals( cellType ));
+    Preconditions.checkArgument(size.getType().equals( offType ));
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
     Expression stackRegion = ptr.asTuple().index(0); 
@@ -134,7 +138,7 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
   public TupleExpression declareStruct(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
     // FIXME: element size and integer size don't agree: cast integer to cell type
-    Preconditions.checkArgument(size.getType().equals( cellType ));
+    Preconditions.checkArgument(size.getType().equals( offType ));
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
     Expression stackRegion = ptr.asTuple().index(0);
@@ -168,7 +172,7 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
         Expression ref_ptr = ptr.asTuple().index(0);
         Expression off_ptr = ptr.asTuple().index(1);
         
-        Expression sizeZro = exprManager.bitVectorZero(getOffType().getSize());
+        Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
         Expression sizeVar = alloc.asArray().index(refVar);
         /* ptr:(ref_ptr, off), startPos:(ref, 0), endPos:(ref, size);
          * ensure ref_ptr == ref && 0 <= off && off < size
@@ -191,7 +195,7 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
     
     ExpressionManager exprManager = getExpressionManager();
     
-    Expression sizeZero = exprManager.bitVectorZero(getOffType().getSize());
+    Expression sizeZero = exprManager.bitVectorZero(offType.getSize());
     Expression alloc = state.getChild(1);
     
     try {
@@ -306,8 +310,8 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
   @Override
   public Expression createLval(String name) {
     ExpressionManager exprManager = getExpressionManager();
-    VariableExpression ref = exprManager.variable(name, getRefType(), true);
-    Expression off = exprManager.bitVectorZero(getOffType().getSize());
+    VariableExpression ref = exprManager.variable(name, refType, true);
+    Expression off = exprManager.bitVectorZero(offType.getSize());
     Expression res = exprManager.tuple(ptrType, ref, off);
     lvals.add(ref);
     return res;
@@ -317,12 +321,12 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
   public BooleanExpression allocated(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
-    Preconditions.checkArgument(size.getType().equals( allocType.getElementType()) );
+    Preconditions.checkArgument(size.getType().equals( offType ));
     
     ExpressionManager exprManager = getExpressionManager();
     
-    Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, getRefType(), true);
-    Expression offZero = exprManager.bitVectorZero(getOffType().getSize());
+    Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, refType, true);
+    Expression offZero = exprManager.bitVectorZero(offType.getSize());
     // locVar: (region_x, 0)
     Expression locVar = exprManager.tuple(ptrType, refVar, offZero);
     
@@ -636,13 +640,5 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
   private int getSizeofType(xtc.type.Type type) {
     ExpressionEncoding encoding = getExpressionEncoding();
     return (int) encoding.getCAnalyzer().getSize(type) * encoding.getCellSize();
-  }
-  
-  private Type getRefType() {
-    return ptrType.getElementTypes().get(0);
-  }
-  
-  private BitVectorType getOffType() {
-    return ptrType.getElementTypes().get(1).asBitVectorType();
   }
 }

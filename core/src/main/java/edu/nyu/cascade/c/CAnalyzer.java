@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.Maps;
+
 import edu.nyu.cascade.util.Identifiers;
 
 import xtc.Constants;
@@ -52,6 +54,7 @@ import xtc.type.EnumeratorT;
 import xtc.type.ErrorT;
 import xtc.type.FieldReference;
 import xtc.type.FunctionT;
+import xtc.type.IntegerT;
 import xtc.type.InternalT;
 import xtc.type.LabelT;
 import xtc.type.NullReference;
@@ -1949,6 +1952,9 @@ public class CAnalyzer extends Visitor {
 
   /** The fully qualified name of the scope for external declarations. */
   protected static final String EXTERN_PATH = Constants.QUALIFIER + EXTERN_SCOPE;
+  
+  /** The name of the bounded variable. */
+  protected static final String BOUND = "bound";
 
   /** The common type operations for C. */
   protected final C cops;
@@ -1999,6 +2005,13 @@ public class CAnalyzer extends Visitor {
    * translation unit.
    */
   protected List<CompletenessCheck> checks;
+  
+  /**
+   * The type cache for bound variable in forall or exists function 
+   * in ctrl file.
+   */
+  protected Map<GNode, Type> bVarTypeMap;
+  
 
   /**
    * Create a new C analyzer.  The newly created analyzer uses {@link
@@ -2023,6 +2036,7 @@ public class CAnalyzer extends Visitor {
     loops        = new ArrayList<Boolean>();
     switches     = new ArrayList<Boolean>();
     checks       = new ArrayList<CompletenessCheck>();
+    bVarTypeMap  = Maps.newConcurrentMap(); 
   }
 
   /**
@@ -4829,6 +4843,7 @@ public class CAnalyzer extends Visitor {
 
       // Process the subscript to ensure that the types are valid.
       final Type type  = processSubscript(n1, base, index);
+      mark(n1, type);
 
       // Return the type as if performing a pointer, integer addition.
       Type result;
@@ -5234,6 +5249,18 @@ public class CAnalyzer extends Visitor {
     Type t1;
     if (GNode.cast(n1).hasName("PrimaryIdentifier")) {
       final String name = GNode.cast(n1).getString(0);
+      /* Marked the bounded variable node in forall and exists function */
+      if("forall".equals(name) || "exists".equals(name)) {
+        Iterator<Object> itr = n2.iterator();
+        while(itr.hasNext()) {
+          Object o = itr.next();
+          if(o instanceof Node) {
+            Node node = (Node) o;
+            if("PrimaryIdentifier".equals(node.getName()))
+              node.setProperty(BOUND, true);
+          }
+        }
+      }
 
       // Support __xtc_trace() diagnostic.
       if ("__xtc_trace".equals(name)) {
@@ -5428,8 +5455,15 @@ public class CAnalyzer extends Visitor {
   public Type visitPrimaryIdentifier(GNode n) {
     Type result = (Type)table.lookup(n.getString(0));
     if (null == result) {
-      runtime.error("'" + n.getString(0) + "' undeclared", n);
-      result = ErrorT.TYPE;
+      if(bVarTypeMap.containsKey(n)) {
+        result = bVarTypeMap.get(n);
+      } else if(n.hasProperty(BOUND)) {
+        result = IntegerT.INT;
+        bVarTypeMap.put(n, result);
+      } else {
+        runtime.error("'" + n.getString(0) + "' undeclared", n);
+        result = ErrorT.TYPE;
+      }
     }
 
     mark(n, result);

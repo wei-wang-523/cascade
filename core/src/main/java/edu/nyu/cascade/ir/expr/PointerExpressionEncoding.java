@@ -13,12 +13,33 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TupleExpression;
+import edu.nyu.cascade.util.Preferences;
 
 public class PointerExpressionEncoding extends AbstractExpressionEncoding {
   
+  private static int CellSize;	
+	
   public static PointerExpressionEncoding create(
       ExpressionManager exprManager) throws ExpressionFactoryException
   { 
+    int cellSize = 
+        Preferences.isSet(Preferences.OPTION_THEORY) ? 
+            Preferences.get(Preferences.OPTION_THEORY).equals("BurstallFix") ? 
+                DefaultSize
+                : Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ?
+                    Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE) 
+                    : DefaultSize
+                    : DefaultSize;
+
+    int intCellSize = 
+        Preferences.isSet(Preferences.OPTION_THEORY) ?
+            Preferences.get(Preferences.OPTION_THEORY).equals("BurstallFix") ?
+                (int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * cellSize) 
+                : cellSize
+                : cellSize;
+    
+    CellSize = intCellSize;
+    
     IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, intCellSize);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new UnimplementedArrayEncoding<ArrayExpression>();
@@ -177,6 +198,11 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
   @Override
   public Expression unknown() {
     return getPointerEncoding().unknown();
+  }
+  
+  @Override
+  public int getCellSize() {
+    return CellSize;
   }
   
   public Expression update(TupleExpression expr, int index, Expression val) {

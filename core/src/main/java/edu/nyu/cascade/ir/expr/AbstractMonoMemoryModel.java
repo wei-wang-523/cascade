@@ -25,6 +25,7 @@ public abstract class AbstractMonoMemoryModel extends AbstractMemoryModel {
   protected static final String DEFAULT_MEMORY_STATE_TYPE = "memType";
   protected static final String DEFAULT_STATE_TYPE = "stateType";
   protected static final String TEST_VAR = "TEST_VAR";
+  protected static final String TYPE = xtc.Constants.TYPE;
   
   protected enum CellKind {
     SCALAR, POINTER, TEST_VAR
@@ -46,7 +47,7 @@ public abstract class AbstractMonoMemoryModel extends AbstractMemoryModel {
     if(type.isPointer())
       return CellKind.POINTER;
     if(type.isLabel() && TEST_VAR.equals(type.toLabel().getName()))
-      return CellKind.TEST_VAR;
+      return CellKind.SCALAR; // TODO: cell type union of scalar, pointer, boolean?
     throw new IllegalArgumentException("Unknown type " + type);
   }  
   
