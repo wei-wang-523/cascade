@@ -254,7 +254,7 @@ public class BurstallVer2MemoryModel extends AbstractBurstallMemoryModel {
     RecordExpression memPrime = updateMemState(mem, lval, rval);
     Expression viewPrime = updateView(mem, view, lval);
     xtc.type.Type lvalType = unwrapped(
-        (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE));
+        (xtc.type.Type) lval.getNode().getProperty(TYPE));
     viewPrime = updateViewState(viewPrime, lvalType, rval);
     
     TupleExpression statePrime = getUpdatedState(state, memPrime, state.getChild(1), viewPrime);
@@ -278,7 +278,7 @@ public class BurstallVer2MemoryModel extends AbstractBurstallMemoryModel {
     if(currentView == null)    currentView = state.getChild(2);
     
     ExpressionManager em = getExpressionManager();
-    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
     String typeName = getTypeName(pType);
     if(currentMemElems.containsKey(typeName)) {
       ArrayExpression tgtArray = currentMemElems.get(typeName).asArray();
@@ -325,7 +325,7 @@ public class BurstallVer2MemoryModel extends AbstractBurstallMemoryModel {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
     Expression rval = null;
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     CellKind kind = getCellKind(lvalType);
     if(CellKind.SCALAR.equals(kind)) {
       rval = getExpressionEncoding().getIntegerEncoding().unknown();
@@ -384,7 +384,7 @@ public class BurstallVer2MemoryModel extends AbstractBurstallMemoryModel {
   @Override
   public Expression addressOf(Expression content) {
     xtc.type.Type type = unwrapped((xtc.type.Type) content.getNode()
-        .getProperty(xtc.Constants.TYPE));
+        .getProperty(TYPE));
     if(type.isStruct() || type.isUnion() || type.isArray())
       return content;
     else
@@ -607,7 +607,7 @@ public class BurstallVer2MemoryModel extends AbstractBurstallMemoryModel {
   public Expression castExpression(Expression state, Expression src, xtc.type.Type targetType) {
     Preconditions.checkArgument(
         getCellKind(
-            (xtc.type.Type) src.getNode().getProperty(xtc.Constants.TYPE))
+            (xtc.type.Type) src.getNode().getProperty(TYPE))
             .equals(getCellKind(targetType)));
     //FIXME: scalar type has same cell size in this model, ignore cast cast
     if(CellKind.POINTER.equals(getCellKind(targetType))) {
@@ -670,7 +670,7 @@ public class BurstallVer2MemoryModel extends AbstractBurstallMemoryModel {
   
   private RecordExpression updateMemState(Expression memState, Expression lval, Expression rval) { 
     currentMemElems.putAll(getMemElems(memState));
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     ExpressionManager em = getExpressionManager();
     ArrayExpression tgtArray = null;
     boolean isMemUpdated = false;
@@ -732,11 +732,11 @@ public class BurstallVer2MemoryModel extends AbstractBurstallMemoryModel {
     Expression startAddr = rval;
     xtc.type.Type regionType = null;
     if(lval != null) {
-      xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+      xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
       assert(CellKind.POINTER.equals(getCellKind(lvalType)));
       regionType = unwrapped(unwrapped(lvalType).toPointer().getType());
     } else {
-      regionType = unwrapped((xtc.type.Type) rval.getNode().getProperty(xtc.Constants.TYPE));
+      regionType = unwrapped((xtc.type.Type) rval.getNode().getProperty(TYPE));
     }
     
     ExpressionManager em = getExpressionManager();
@@ -832,7 +832,7 @@ public class BurstallVer2MemoryModel extends AbstractBurstallMemoryModel {
    * and they point to different type, otherwise, just @return viewState
    */
   private Expression updateViewState(Expression viewState, xtc.type.Type lvalType, Expression rval) {
-    xtc.type.Type rvalType = unwrapped((xtc.type.Type) rval.getNode().getProperty(xtc.Constants.TYPE));
+    xtc.type.Type rvalType = unwrapped((xtc.type.Type) rval.getNode().getProperty(TYPE));
     
     Expression scalarViewState = viewState.asTuple().index(0);
     Expression ptrViewState = viewState.asTuple().index(1);
@@ -882,7 +882,7 @@ public class BurstallVer2MemoryModel extends AbstractBurstallMemoryModel {
     if(!hasView(indexExpr.getNode()))  return viewState;
     
     xtc.type.Type indexType = (xtc.type.Type) 
-        indexExpr.getNode().getProperty(xtc.Constants.TYPE);
+        indexExpr.getNode().getProperty(TYPE);
     ExpressionManager em = getExpressionManager();
     Expression scalarViewState = viewState.asTuple().index(0);
     Expression ptrViewState = viewState.asTuple().index(1);
@@ -909,7 +909,7 @@ public class BurstallVer2MemoryModel extends AbstractBurstallMemoryModel {
   }
   
   private boolean hasView(Node node) {
-    CellKind kind = getCellKind((xtc.type.Type) node.getProperty(xtc.Constants.TYPE));
+    CellKind kind = getCellKind((xtc.type.Type) node.getProperty(TYPE));
     if(!CellKind.SCALAR.equals(kind))    return false;
     return true;
   }

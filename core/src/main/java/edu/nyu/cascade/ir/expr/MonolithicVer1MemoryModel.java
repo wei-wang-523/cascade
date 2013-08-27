@@ -241,7 +241,7 @@ public class MonolithicVer1MemoryModel extends AbstractMonoMemoryModel {
         .index(p.asTuple().index(0)).asArray()
         .index(p.asTuple().index(1));
     
-    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
     CellKind kind = getCellKind(pType);
     assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
     if(CellKind.SCALAR.equals(kind)) {
@@ -260,7 +260,7 @@ public class MonolithicVer1MemoryModel extends AbstractMonoMemoryModel {
     ExpressionManager em = getExpressionManager();   
     Expression rval = null;
     
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     CellKind kind = getCellKind(lvalType);
     assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
     if(CellKind.SCALAR.equals(kind)) {

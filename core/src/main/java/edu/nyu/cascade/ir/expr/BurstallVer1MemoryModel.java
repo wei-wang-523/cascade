@@ -214,8 +214,8 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
       Expression lval,
       Expression rval) {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
-    xtc.type.Type lType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
-    xtc.type.Type rType = (xtc.type.Type) rval.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type lType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
+    xtc.type.Type rType = (xtc.type.Type) rval.getNode().getProperty(TYPE);
     if(CellKind.SCALAR.equals(getCellKind(lType)) 
         && CellKind.SCALAR.equals(getCellKind(rType))) {
       int lval_size = getSizeofType(lType);
@@ -249,7 +249,7 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
     
     ExpressionManager em = getExpressionManager();
     ArrayExpression tgtArray = null;
-    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
     String typeName = getTypeName(pType);
   
     if(currentMemElems.containsKey(typeName)) {
@@ -286,7 +286,7 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
     Expression rval = null;
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     CellKind kind = getCellKind(lvalType);
     if(CellKind.SCALAR.equals(kind)) {
       int size = getSizeofType(lvalType);
@@ -346,7 +346,7 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
   @Override
   public Expression addressOf(Expression content) {
     xtc.type.Type type = unwrapped((xtc.type.Type) content.getNode()
-        .getProperty(xtc.Constants.TYPE));
+        .getProperty(TYPE));
     if(type.isStruct() || type.isUnion() || type.isArray())
       return content;
     else
@@ -507,7 +507,7 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
   public Expression castExpression(Expression state, Expression src, xtc.type.Type type) {
     Preconditions.checkArgument(
         getCellKind(
-            (xtc.type.Type) src.getNode().getProperty(xtc.Constants.TYPE))
+            (xtc.type.Type) src.getNode().getProperty(TYPE))
             .equals(getCellKind(type)));
     //TODO: ignore pointer cast for now
     if(!CellKind.SCALAR.equals(getCellKind(type)))  return src;
@@ -588,7 +588,7 @@ public class BurstallVer1MemoryModel extends AbstractBurstallMemoryModel {
     ExpressionManager em = getExpressionManager();
     boolean isMemUpdated = false;
     ArrayExpression tgtArray = null;
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     String lvalTypeName = getTypeName(lvalType);
     if(currentMemElems.containsKey(lvalTypeName)) { // declared type name
       CellKind kind = getCellKind(lvalType);

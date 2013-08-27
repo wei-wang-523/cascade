@@ -258,7 +258,7 @@ public class BurstallVer3MemoryModel extends AbstractBurstallMemoryModel {
     if(currentAlloc == null)    currentAlloc = state.getChild(1);
     
     ExpressionManager em = getExpressionManager();
-    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
     String typeName = getTypeName(pType);
     
     if(currentMemElems.containsKey(typeName)) {
@@ -307,7 +307,7 @@ public class BurstallVer3MemoryModel extends AbstractBurstallMemoryModel {
     // FIXME: What if element size and integer size don't agree?
     Expression rval = null;
     xtc.type.Type lvalType = (xtc.type.Type) 
-        lval.getNode().getProperty(xtc.Constants.TYPE);
+        lval.getNode().getProperty(TYPE);
     CellKind kind = getCellKind(lvalType);
     if(CellKind.SCALAR.equals(kind)) {
       rval = getExpressionEncoding().getIntegerEncoding().unknown();
@@ -365,7 +365,7 @@ public class BurstallVer3MemoryModel extends AbstractBurstallMemoryModel {
   @Override
   public Expression addressOf(Expression content) {
     xtc.type.Type type = (xtc.type.Type) content.getNode()
-        .getProperty(xtc.Constants.TYPE);
+        .getProperty(TYPE);
     while(type.isAlias() || type.isAnnotated()) {
       type = type.resolve();
       type = type.deannotate();
@@ -615,7 +615,7 @@ public class BurstallVer3MemoryModel extends AbstractBurstallMemoryModel {
   
   private RecordExpression updateMemState(Expression memState, Expression lval, Expression rval) { 
     currentMemElems.putAll(getMemElems(memState));
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(xtc.Constants.TYPE);
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     ExpressionManager em = getExpressionManager();
     ArrayExpression tgtArray = null;
     boolean isMemUpdated = false;
@@ -663,7 +663,7 @@ public class BurstallVer3MemoryModel extends AbstractBurstallMemoryModel {
       Expression indexExpr) {
     if(!hasView(indexExpr.getNode()))  return viewState;
     xtc.type.Type indexType = (xtc.type.Type) 
-        indexExpr.getNode().getProperty(xtc.Constants.TYPE);
+        indexExpr.getNode().getProperty(TYPE);
     String indexTypeName = getTypeName(indexType);
     
     Expression scalarViewState = viewState.asTuple().index(0);
@@ -682,8 +682,8 @@ public class BurstallVer3MemoryModel extends AbstractBurstallMemoryModel {
   }
 
   private boolean hasView(Node node) {
-    Preconditions.checkArgument(node.hasProperty(xtc.Constants.TYPE));
-    CellKind kind = getCellKind((xtc.type.Type) node.getProperty(xtc.Constants.TYPE));
+    Preconditions.checkArgument(node.hasProperty(TYPE));
+    CellKind kind = getCellKind((xtc.type.Type) node.getProperty(TYPE));
     return CellKind.SCALAR.equals(kind);
   }
   
