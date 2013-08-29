@@ -3,64 +3,30 @@ package edu.nyu.cascade.c;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 
-import xtc.parser.ParseException;
-import xtc.parser.Result;
-import xtc.tree.GNode;
-import xtc.tree.Location;
-import xtc.tree.Node;
+import xtc.parser.*;
+import xtc.tree.*;
+import xtc.type.*;
 import xtc.util.SymbolTable.Scope;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.google.common.collect.ImmutableList.Builder;
+import com.google.common.collect.*;
 
 import edu.nyu.cascade.c.CAnalyzer;
-import edu.nyu.cascade.control.CallPoint;
-import edu.nyu.cascade.control.LoopPoint;
-import edu.nyu.cascade.control.Position;
-import edu.nyu.cascade.control.Run;
+import edu.nyu.cascade.c.CSpecParser;
+import edu.nyu.cascade.control.*;
 import edu.nyu.cascade.control.jaxb.InsertionType;
 import edu.nyu.cascade.control.jaxb.Position.Command;
-import edu.nyu.cascade.ir.IRBasicBlock;
-import edu.nyu.cascade.ir.IRControlFlowGraph;
-import edu.nyu.cascade.ir.IREdge;
-import edu.nyu.cascade.ir.IRExpression;
-import edu.nyu.cascade.ir.IRLocation;
-import edu.nyu.cascade.ir.IRStatement;
-import edu.nyu.cascade.ir.IRVarInfo;
+import edu.nyu.cascade.ir.*;
+import edu.nyu.cascade.ir.expr.*;
+import edu.nyu.cascade.ir.impl.*;
 import edu.nyu.cascade.ir.IRStatement.StatementType;
-import edu.nyu.cascade.ir.expr.ExpressionClosure;
-import edu.nyu.cascade.ir.expr.ExpressionEncoder;
-import edu.nyu.cascade.ir.expr.PathEncoding;
-import edu.nyu.cascade.ir.expr.PathFactoryException;
-//import edu.nyu.cascade.ir.expr.DynamicPathEncoding;
-import edu.nyu.cascade.ir.expr.SimplePathEncoding;
-import edu.nyu.cascade.ir.impl.IRExpressionImpl;
-import edu.nyu.cascade.ir.impl.Statement;
-import edu.nyu.cascade.ir.impl.VarInfo;
 import edu.nyu.cascade.ir.type.IRIntegerType;
-import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.SatResult;
-import edu.nyu.cascade.prover.ValidityResult;
+import edu.nyu.cascade.prover.*;
 import edu.nyu.cascade.prover.type.Type;
-import edu.nyu.cascade.util.IOUtils;
-import edu.nyu.cascade.util.Identifiers;
-import edu.nyu.cascade.util.Pair;
-import edu.nyu.cascade.util.Preferences;
-import edu.nyu.cascade.c.CSpecParser;
+import edu.nyu.cascade.util.*;
 
 /**
  * Encodes a program path as a verification condition and checks the condition
@@ -565,7 +531,7 @@ class RunMergeProcessor implements RunProcessor {
     
     Map<IRBasicBlock, Path> blockPathMap = Maps.newHashMap();
     
-    for(Entry<IRBasicBlock, Set<IREdge<?>>> pair : pathMap.entrySet()) {
+    for(Map.Entry<IRBasicBlock, Set<IREdge<?>>> pair : pathMap.entrySet()) {
       IRBasicBlock block = pair.getKey();
       
       /* build path for block */
@@ -1039,20 +1005,22 @@ class RunMergeProcessor implements RunProcessor {
         /* Create temporary variable node for function call node. */
         String varName = Identifiers.uniquify(TEMP_VAR_PREFIX);
         GNode varNode = GNode.create("PrimaryIdentifier", varName);
-        for(String p : node.properties()) {
-          varNode.setProperty(p, node.getProperty(p));
-        }
-        varNode.setLocation(node.getLocation());
+        xtc.type.Type type = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
+        Reference ref = new DynamicReference(varName, type);
+        type = type.shape(ref);
+        type.mark(varNode);
         symbolTable.toXtcSymbolTable().mark(varNode);
+        varNode.setLocation(node.getLocation());
+        IRVarInfo varInfo = new VarInfo(symbolTable.getCurrentScope(), varName, 
+            IRIntegerType.getInstance(), varNode);
+        symbolTable.define(varName, varInfo);
+        
         if(node.equals(resNode)) {
           funcNodeReplaceMap.put(node, (Node)varNode); // f(a) : TEMP_VAR_x
         } else {
           funcNodeReplaceMap.put(node, resNode); // g(f(a)) : g(TEMP_VAR_x1)
           funcNodeReplaceMap.put(resNode, (Node)varNode); // g(TEMP_VAR_x1) : TEMP_VAR_x2
         }
-        Scope scope = symbolTable.getCurrentScope();
-        IRVarInfo varInfo = new VarInfo(scope, varName, IRIntegerType.getInstance(), varNode);
-        symbolTable.define(varName, varInfo);
       } else {
         if(!node.equals(resNode))  funcNodeReplaceMap.put(node, resNode);
       }
@@ -1095,7 +1063,7 @@ class RunMergeProcessor implements RunProcessor {
     if(!pairs.isEmpty())    
       assignStmts = Lists.newArrayList();
     
-    for(Entry<Node, Node> pair : pairs.entrySet()) {
+    for(Map.Entry<Node, Node> pair : pairs.entrySet()) {
       Node keyNode = pair.getKey();
       Node valNode = pair.getValue();
       /* For f(a) = TEMP_VAR_x, add assign statement TEMP_VAR_x := f(a) */
@@ -1264,7 +1232,7 @@ class RunMergeProcessor implements RunProcessor {
     /* Generate a new graph predecessor map */
     Map<Path, Set<Path>> predecessorMap = Maps.newHashMap();
     
-    for(Entry<Path, Set<Path>> entry : graph.predecessorMap.entrySet()) { 
+    for(Map.Entry<Path, Set<Path>> entry : graph.predecessorMap.entrySet()) { 
       Set<Path> prePaths = Sets.newHashSet(entry.getValue());
       /* Update the value, if contains function call path */
       for(Path prePath : entry.getValue()) {
@@ -1675,7 +1643,7 @@ class RunMergeProcessor implements RunProcessor {
     graph.appendPostPath(endPath);
 //    graph.simplify();
     
-    Builder<Position> builder = new ImmutableList.Builder<Position>();    
+    ImmutableList.Builder<Position> builder = new ImmutableList.Builder<Position>();    
     if(unrollWayPoints != null) {
       for(Position waypoint : unrollWayPoints) {
         if(waypoint.hasFunctions())
