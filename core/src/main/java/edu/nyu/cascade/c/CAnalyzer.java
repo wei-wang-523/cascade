@@ -5121,6 +5121,12 @@ public class CAnalyzer extends Visitor {
           } catch (IllegalStateException x) {
             ref = new StaticReference(ptr1);
           }
+        } else if(base.hasShape() && !index.hasConstant()) {
+          try {
+            ref = base.getShape().indirect(base);
+          } catch (IllegalStateException x) {
+            ref = new StaticReference(ptr1);
+          }
         } else {
           ref = new DynamicReference(ptr1);
         }
@@ -5462,6 +5468,8 @@ public class CAnalyzer extends Visitor {
         result = (Type) n.getProperty(xtc.Constants.TYPE);
       } else if(n.hasProperty(BOUND)) {
         result = IntegerT.INT;
+        Reference ref = new DynamicReference(n.getString(0), result);
+        result = result.annotate().shape(ref);
         bVarTypeMap.put(n, result);
       } else {
         runtime.error("'" + n.getString(0) + "' undeclared", n);
@@ -5482,6 +5490,8 @@ public class CAnalyzer extends Visitor {
         result = (Type) n.getProperty(xtc.Constants.TYPE);
       } else if(n.hasProperty(BOUND)) {
         result = IntegerT.INT;
+        Reference ref = new DynamicReference(n.getString(0), result);
+        result = result.annotate().shape(ref);
         bVarTypeMap.put(n, result);
       } else {
         runtime.error("'" + n.getString(0) + "' undeclared", n);

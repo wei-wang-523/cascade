@@ -77,7 +77,6 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
   private static final String PTR_SELECTOR_NAME = "ptr-sel";
   private static final String SCALAR_SELECTOR_NAME = "scalar-sel";
   private static final String ARRAY_PREFIX = "arr_of_";
-  private static final String ARRAY_NULL = "null";
 
   private final TupleType ptrType; // pointer type = (ref-type, off-type)
   private final Type refType;
@@ -719,17 +718,14 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
   }
   
   private String parseArrName(GNode gnode) {
-    if("AddressExpression".equals(gnode.getName()))
-      gnode = gnode.getGeneric(0);
+    if("AddressExpression".equals(gnode.getName())) gnode = gnode.getGeneric(0);
     Preconditions.checkArgument(gnode.hasProperty(TYPE));
     xtc.type.Type type = (xtc.type.Type) gnode.getProperty(TYPE);
-    if(type.hasShape()) {
-      Reference ref = type.getShape();
-      return ARRAY_PREFIX + getReferenceName(ref);
-    } else {
-      IOUtils.err().println("no array for node " + gnode);
-      return ARRAY_NULL;
-    }
+    Preconditions.checkArgument(type.hasShape());
+    String refName = getReferenceName(type.getShape());
+    if(refName == null)
+      IOUtils.err().println("Node " + gnode + " is in null array.");
+    return ARRAY_PREFIX + refName;
   }
   
   private String getReferenceName(Reference ref) {
