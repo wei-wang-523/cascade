@@ -19,6 +19,8 @@ import edu.nyu.cascade.prover.type.Type;
 
 public final class RecordExpressionImpl extends ExpressionImpl implements
     RecordExpression {
+  static final String SELECT_PREFIX = "sel@";
+  
   static RecordExpressionImpl create(ExpressionManagerImpl exprManager, Type type,
       Expression first, Expression... rest) {
     return new RecordExpressionImpl(exprManager, type, Lists.asList(first, rest));
@@ -71,7 +73,7 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
     result.setType(argType);
     
     FunctionDeclarator func = FunctionDeclarator.create(
-        exprManager, name, Lists.newArrayList(record.getType()), argType);
+        exprManager, SELECT_PREFIX + name, Lists.newArrayList(record.getType()), argType);
     result.setFuncDecl(func);
     return result;
   }

@@ -98,10 +98,6 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
           Iterables.transform(elemNames, new Function<String, String>(){
             @Override
             public String apply(String arg) {
-              if(arg.indexOf('#') >= 0) {
-                StringBuilder sb = new StringBuilder();
-                return sb.append('|').append(arg).append('|').toString();
-              }
               return arg;
             }
           }), String.class);

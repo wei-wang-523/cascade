@@ -89,8 +89,6 @@ public class VariableExpressionImpl extends ExpressionImpl implements
           }
           
           StringBuilder sb = new StringBuilder().append(name);
-          /** For variable name contains '#', wrap it in '||' */
-          if(name.indexOf('#') >= 0)   sb.insert(0, '|').append('|');
           TheoremProverImpl.z3FileCommand("(declare-const " + sb.toString() + " " + sort + ")");
           TheoremProverImpl.debugCommand("(declare-const " + sb.toString() + " : " + sort + ")");
           Expr res = ctx.MkConst(name, sort);
