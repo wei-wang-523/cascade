@@ -595,25 +595,42 @@ public class CfgBuilder extends Visitor {
     }
     String name = resType.getName();
     
-    GNode node1 = null;
+    GNode node1 = null, node2;
     if(resType.isAlias()) {
       node1 = GNode.create("TypedefName", resType.getName());
+      node2 = GNode.create("SpecifierQualifierList", node1);
+      node1.setLocation(loc);
     } else if(resType.isStruct()) {
       node1 = GNode.create("StructureTypeReference", null, name);
+      node2 = GNode.create("SpecifierQualifierList", node1);
+      node1.setLocation(loc);
     } else if(resType.isUnion()) {
       node1 = GNode.create("UnionTypeReference", null, name);
+      node2 = GNode.create("SpecifierQualifierList", node1);
+      node1.setLocation(loc);
     } else {
-      StringBuilder sb = new StringBuilder();
-      String typeName = resType.toString();
-      sb.append(Character.toUpperCase(typeName.charAt(0)));
-      sb.append(typeName.substring(1));
-      node1 = GNode.create(sb.toString());
+      String[] typeNames = resType.toString().split(" ");
+      Pair<Object> operands = null;
+      for(String typeName : typeNames) {
+        StringBuilder sb = new StringBuilder().
+            append(Character.toUpperCase(typeName.charAt(0))).append(typeName.substring(1));
+        node1 = GNode.create(sb.toString());
+        node1.setLocation(loc);
+        xtc.util.Pair<Object> pair = new xtc.util.Pair<Object>(node1);
+        if(operands == null)  operands = pair;
+        else  operands = operands.append(pair);
+      }
+      assert(typeNames.length <= 3);
+      if(typeNames.length == 1)  
+        node2 = GNode.create("SpecifierQualifierList", operands.get(0));
+      else if(typeNames.length == 2)
+        node2 = GNode.create("SpecifierQualifierList", operands.get(0), operands.get(1));
+      else
+        node2 = GNode.create("SpecifierQualifierList", operands.get(0), operands.get(1), operands.get(2));
     }
 
-    GNode node2 = GNode.create("SpecifierQualifierList", node1);
     GNode node3 = GNode.create("TypeName", node2, null);
     GNode node4 = GNode.create("SizeofExpression", node3);
-    node1.setLocation(loc);
     node2.setLocation(loc);
     node3.setLocation(loc);
     node4.setLocation(loc);
@@ -707,7 +724,7 @@ public class CfgBuilder extends Visitor {
     
     boolean pointerAssign = lookupType(lhsNode).isPointer();
     
-    boolean malloc = false;
+    boolean isMalloc = false;
     
     if( debugEnabled() ) {
       debug().loc(node).p(' ').indent();
@@ -731,7 +748,7 @@ public class CfgBuilder extends Visitor {
       
       /* Generate an allocated function for malloc function */
       if("malloc".equals(funNode.getString(0))) {
-        malloc = true;
+        isMalloc = true;
         Node sizeNode = rhsNodePrime.getNode(1).getNode(0);
         CExpression sizeExpr = recurseOnExpression(sizeNode);
         if(compSelect && pointerAssign) { /* s->firstName = malloc(sizeof(char)) */
@@ -771,7 +788,7 @@ public class CfgBuilder extends Visitor {
       Node fieldNameNode = defineStringConstNode(lhsNode, lhsNode.getString(1));
       CExpression fieldName = CExpression.create(fieldNameNode, symbolTable.getCurrentScope());
       
-      if(malloc) { /* s->firstName = malloc(sizeof(char)) */
+      if(isMalloc) { /* s->firstName = malloc(sizeof(char)) */
         Statement assignStmt = Statement.assign(node, lhsExpr, mallocVarExpr);
         Statement fieldAssignStmt = Statement.fieldAssign(node, varExpr, fieldName, mallocVarExpr);
         addStatementGlobalOrLocal(assignStmt);
