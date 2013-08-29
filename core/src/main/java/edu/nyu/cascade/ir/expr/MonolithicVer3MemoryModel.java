@@ -76,7 +76,6 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
   private static final String SCALAR_CONSTR_NAME = "scalar";
   private static final String PTR_SELECTOR_NAME = "ptr-sel";
   private static final String SCALAR_SELECTOR_NAME = "scalar-sel";
-  private static final String DEFAULT_MERGE_ARRAY_NAME = "mergeArray";
   private static final String ARRAY_PREFIX = "arr_of_";
   private static final String ARRAY_NULL = "null";
 
@@ -86,14 +85,12 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
   private final Constructor ptrConstr, scalarConstr; // The constructors for cell type
   private final Selector ptrSel, scalarSel; // The selectors for cell type
   private final InductiveType cellType;
-  private final ArrayType mergeArrType;
   
   private final ArrayType allocType; // ref-type -> off-type
   private RecordType memType; // with multiple array types
   private TupleType stateType;
   
   private final Set<Expression> lvals; // lvals: variables in stack
-  private final Set<String> mergedArrayNames;
   private final List<Expression> stackRegions, heapRegions;
   private final Map<String, Expression> currentMemElems;
   private Expression currentAlloc = null;
@@ -126,11 +123,11 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
     this.refType = ptrType.getElementTypes().get(0);
     this.offType = ptrType.getElementTypes().get(1).asBitVectorType();
     
-    this.mergeArrType = exprManager.arrayType(ptrType, cellType);
+    List<String> elemNames = Lists.newArrayList();
+    List<Type> elemTypes = Lists.newArrayList();
     this.memType = exprManager.recordType(
         Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE), 
-        Lists.newArrayList(DEFAULT_MERGE_ARRAY_NAME), 
-        Lists.newArrayList(mergeArrType));
+        elemNames, elemTypes);
     this.allocType = exprManager.arrayType(refType, offType);
     this.stateType = exprManager.tupleType(
         Identifiers.uniquify(DEFAULT_STATE_TYPE), memType, allocType);
@@ -140,7 +137,6 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
     this.heapRegions = Lists.newArrayList();
     
     this.currentMemElems = Maps.newLinkedHashMap();
-    this.mergedArrayNames = Sets.newHashSet();
   }
   
   @Override
@@ -282,26 +278,22 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
     Expression pValCell = null;
     try {
       String pArrName = cache.get(p.getNode());
-      if(isInMergeArray(pArrName)) {
-        Expression pArray = currentMemElems.get(DEFAULT_MERGE_ARRAY_NAME);
-        pValCell = pArray.asArray().index(p);
-      } else {
-        if(currentMemElems.containsKey(pArrName)) {
-          ArrayExpression pArray = currentMemElems.get(pArrName).asArray();
-          pValCell = pArray.index(p);
-        } else { // Add an element to currentMemElem
-          ExpressionManager em = getExpressionManager();
-          ArrayType arrType = em.arrayType(ptrType, cellType);
-          ArrayExpression pArray = em.variable(pArrName, arrType, false).asArray();
-          currentMemElems.put(pArrName, pArray);
-          pValCell = pArray.index(p);
-          
-          Type currentMemType = getCurrentMemoryType();
-          Expression memPrime = em.record(currentMemType, currentMemElems.values());
-          if(currentAlloc == null)    currentAlloc = state.getChild(1);
-          Expression statePrime = getUpdatedState(state, memPrime, currentAlloc);
-          currentState = suspend(state, statePrime);    
-        }
+
+      if(currentMemElems.containsKey(pArrName)) {
+        ArrayExpression pArray = currentMemElems.get(pArrName).asArray();
+        pValCell = pArray.index(p);
+      } else { // Add an element to currentMemElem
+        ExpressionManager em = getExpressionManager();
+        ArrayType arrType = em.arrayType(ptrType, cellType);
+        ArrayExpression pArray = em.variable(pArrName, arrType, false).asArray();
+        currentMemElems.put(pArrName, pArray);
+        pValCell = pArray.index(p);
+        
+        Type currentMemType = getCurrentMemoryType();
+        Expression memPrime = em.record(currentMemType, currentMemElems.values());
+        if(currentAlloc == null)    currentAlloc = state.getChild(1);
+        Expression statePrime = getUpdatedState(state, memPrime, currentAlloc);
+        currentState = suspend(state, statePrime);    
       }
     } catch (ExecutionException e) {
       throw new ExpressionFactoryException(e);
@@ -661,40 +653,54 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
     ExpressionManager em = getExpressionManager();
     boolean memTypeChanged = false;
     
-    ArrayExpression mergeArray = currentMemElems.get(DEFAULT_MERGE_ARRAY_NAME).asArray();
-    
     try {
       String lvalArrName = cache.get(lval.getNode());
-      CellKind kind = null;
-      if(rval.getNode() != null)  { // region has no source node
+      
+      //TODO: pointer alias
+      /*      
+      CellKind rkind = null;
+      if(rval.getNode() == null)  { // region & unknown have no source node
+        Preconditions.checkArgument(
+            (rval.isVariable() && 
+                rval.asVariable().getName().startsWith("bv_encoding_unknown")) 
+                || (rval.getKind().equals(Kind.TUPLE) && 
+                    rval.getChild(0).isVariable() && 
+                    rval.getChild(0).asVariable().getName().startsWith("region")));
+        
+        if(rval.isTuple())  rkind = CellKind.POINTER;
+        else                rkind = CellKind.SCALAR;
+      } else {
         xtc.type.Type rvalType = (xtc.type.Type) rval.getNode().getProperty(TYPE);
-        kind = getCellKind(rvalType);
-        assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
+        rkind = getCellKind(rvalType);
+        assert (CellKind.SCALAR.equals(rkind) || CellKind.POINTER.equals(rkind));
       }
       
-      if(CellKind.POINTER.equals(kind)) { // okay, alias occurs, merge them
-        String rvalArrName = cache.get(rval.getNode());
-        if(lvalArrName != null)  mergedArrayNames.add(lvalArrName);   
-        if(rvalArrName != null)  mergedArrayNames.add(rvalArrName);
-        
-        Expression rvalInCell = castRvalToLvalType(lval, rval);
-        mergeArray = mergeArray.update(lval, rvalInCell);
-        currentMemElems.put(DEFAULT_MERGE_ARRAY_NAME, mergeArray);  
-      } else { // don't bother merge array
-        if(currentMemElems.containsKey(lvalArrName)) {
-          Expression rvalInCell = castRvalToLvalType(lval, rval);
-          ArrayExpression lvalArr = currentMemElems.get(lvalArrName).asArray()
-              .update(lval, rvalInCell);
-          currentMemElems.put(lvalArrName, lvalArr);
+      if(CellKind.POINTER.equals(rkind)) { // okay, alias occurs, merge them
+        String rvalArrName = null;
+        if(rval.getNode() == null) {
+          assert(rval.isTuple() && heapRegions.contains(rval.getChild(0)));
+          rvalArrName = rval.getChild(0).asVariable().getName();
+          int i = 0;
         } else {
-          Expression rvalInCell = castRvalToLvalType(lval, rval);
-          ArrayType arrType = em.arrayType(ptrType, cellType);
-          ArrayExpression lvalArr = em.variable(lvalArrName, arrType, false).asArray();
-          lvalArr = lvalArr.update(lval, rvalInCell);
-          currentMemElems.put(lvalArrName, lvalArr);
-          memTypeChanged = true;
+          rvalArrName = cache.get(rval.getNode());
         }
+      } else { // don't bother merge array */
+      
+      if(currentMemElems.containsKey(lvalArrName)) {
+        Expression rvalInCell = castRvalToLvalType(lval, rval);
+        ArrayExpression lvalArr = currentMemElems.get(lvalArrName).asArray()
+            .update(lval, rvalInCell);
+        currentMemElems.put(lvalArrName, lvalArr);
+      } else {
+        Expression rvalInCell = castRvalToLvalType(lval, rval);
+        ArrayType arrType = em.arrayType(ptrType, cellType);
+        ArrayExpression lvalArr = em.variable(lvalArrName, arrType, false).asArray();
+        lvalArr = lvalArr.update(lval, rvalInCell);
+        currentMemElems.put(lvalArrName, lvalArr);
+        memTypeChanged = true;
       }
+      
+      /*      }*/
     } catch (ExecutionException e) {
       throw new ExpressionFactoryException(e);
     }
@@ -743,12 +749,6 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
     } else {
       throw new IllegalArgumentException("Unknown reference for " + ref);
     }
-  }
-  
-  private boolean isInMergeArray(String arrName) {
-    if(DEFAULT_MERGE_ARRAY_NAME.equals(arrName))    return true;
-    if(mergedArrayNames.contains(arrName))          return true;
-    return false;
   }
   
   private Expression castRvalToLvalType(Expression lval, Expression rval) {
