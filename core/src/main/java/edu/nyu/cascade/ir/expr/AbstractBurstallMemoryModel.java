@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import xtc.type.AnnotatedT;
+import xtc.type.BooleanT;
 import xtc.type.FieldReference;
 import xtc.type.Reference;
 
@@ -41,7 +42,7 @@ public abstract class AbstractBurstallMemoryModel extends AbstractMemoryModel {
   }
   
   protected enum CellKind {
-    SCALAR, POINTER, TEST_VAR
+    SCALAR, POINTER, BOOL
   }
   
   private final LoadingCache<xtc.type.Type, String> cache = CacheBuilder
@@ -61,18 +62,25 @@ public abstract class AbstractBurstallMemoryModel extends AbstractMemoryModel {
   
   protected CellKind getCellKind(xtc.type.Type type) {
     Preconditions.checkArgument(type != null);
+    if(type.hasConstant() && type.getConstant().isReference()) {
+      Reference ref = type.getConstant().refValue();
+      if(ref.getType().equals(BooleanT.TYPE)) {
+        return CellKind.BOOL;
+      }
+    }
     type = unwrapped(type);
-    if(type.isInteger())
-      return CellKind.SCALAR;
-    if(type.isPointer())
-      return CellKind.POINTER;
-    if(type.isLabel() && TEST_VAR.equals(type.toLabel().getName()))
-      return CellKind.TEST_VAR;
+    if(type.isInteger())    return CellKind.SCALAR;
+    if(type.isPointer())    return CellKind.POINTER;
     throw new IllegalArgumentException("Unknown type " + type);
   }
   
   protected String getTypeName(xtc.type.Type type) {
     Preconditions.checkArgument(type != null);
+    if(type.hasConstant() && type.getConstant().isReference()) {
+      Reference ref = type.getConstant().refValue();
+      if(ref.getType().equals(BooleanT.TYPE))
+        return "$BoolT";
+    }
     try {
       return cache.get(type);
     } catch (ExecutionException e) {

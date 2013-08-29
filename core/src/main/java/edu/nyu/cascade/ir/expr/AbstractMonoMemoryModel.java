@@ -36,7 +36,7 @@ public abstract class AbstractMonoMemoryModel extends AbstractMemoryModel {
     type = unwrapped(type);
     if(type.isInteger())
       return CellKind.SCALAR;
-    if(type.isPointer())
+    if(type.isPointer() || type.isArray())
       return CellKind.POINTER;
     if(type.isLabel() && TEST_VAR.equals(type.toLabel().getName()))
       return CellKind.SCALAR; // TODO: cell type union of scalar, pointer, boolean?

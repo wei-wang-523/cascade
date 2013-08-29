@@ -34,11 +34,11 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
     int intCellSize = 
         Preferences.isSet(Preferences.OPTION_THEORY) ?
             Preferences.get(Preferences.OPTION_THEORY).equals("BurstallFix") ?
-                (int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * cellSize) 
+                (int) (cAnalyzer.getSize(xtc.type.NumberT.U_LONG) * cellSize) 
                 : cellSize
                 : cellSize;
     
-    CellSize = intCellSize;
+    CellSize = cellSize;
     
     IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, intCellSize);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
@@ -141,11 +141,11 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
     if(lhs.isTuple() || rhs.isTuple()) {
       PointerEncoding ptrEncoding = getPointerEncoding();
       if(!lhs.isTuple()) {
-        assert(lhs.equals(ptrEncoding.getNullPtr()));
+        assert(rhs.isConstant());
         lhs = ptrEncoding.getNullPtr();
       }
       if(!rhs.isTuple()) {
-        assert(rhs.equals(ptrEncoding.getNullPtr()));
+        assert(rhs.isConstant());
         rhs = ptrEncoding.getNullPtr();
       }
       return ptrEncoding.neq(lhs.asTuple(), rhs.asTuple());
@@ -158,11 +158,11 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
     if(lhs.isTuple() || rhs.isTuple()) {
       PointerEncoding ptrEncoding = getPointerEncoding();
       if(!lhs.isTuple()) {
-        assert(lhs.isInteger() && lhs.isConstant());
+        assert(rhs.isConstant());
         lhs = ptrEncoding.getNullPtr();
       }
       if(!rhs.isTuple()) {
-        assert((rhs.isInteger() || rhs.isBitVector()) && rhs.isConstant());
+        assert(rhs.isConstant());
         rhs = ptrEncoding.getNullPtr();
       }
       return getPointerEncoding().eq(lhs.asTuple(), rhs.asTuple());

@@ -4,10 +4,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Iterator;
+import java.util.concurrent.ExecutionException;
+
+import xtc.tree.GNode;
+import xtc.type.DynamicReference;
+import xtc.type.FieldReference;
+import xtc.type.IndexReference;
+import xtc.type.IndirectReference;
+import xtc.type.Reference;
+import xtc.type.StaticReference;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -23,7 +35,6 @@ import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.VariableExpression;
-import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Constructor;
@@ -65,6 +76,8 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
   private static final String PTR_SELECTOR_NAME = "ptr-sel";
   private static final String SCALAR_SELECTOR_NAME = "scalar-sel";
   private static final String DEFAULT_MERGE_ARRAY_NAME = "mergeArray";
+  private static final String ARRAY_PREFIX = "arr_of_";
+  private static final String ARRAY_NULL = "null";
 
   private final TupleType ptrType; // pointer type = (ref-type, off-type)
   private final Type refType;
@@ -85,6 +98,13 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
   private Expression currentAlloc = null;
   private Expression prevDerefState = null;
   private ExpressionClosure currentState = null;
+  
+  private final LoadingCache<GNode, String> cache = CacheBuilder
+      .newBuilder().build(new CacheLoader<GNode, String>(){
+        public String load(GNode node) {
+          return parseArrName(node);
+        }
+      });
 
   private MonolithicVer3MemoryModel(ExpressionEncoding encoding) {
     super(encoding);
@@ -259,30 +279,32 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
     }
     
     Expression pValCell = null;
-    String pArrName = getArrName(p);
-    
-    if(isInMergeArray(pArrName)) {
-      Expression pArray = currentMemElems.get(DEFAULT_MERGE_ARRAY_NAME);
-      pValCell = pArray.asArray().index(p);
-    } else {
-      if(currentMemElems.containsKey(pArrName)) {
-        ArrayExpression pArray = currentMemElems.get(pArrName).asArray();
-        pValCell = pArray.index(p);
-      } else { // Add an element to currentMemElem
-        ExpressionManager em = getExpressionManager();
-        ArrayType arrType = em.arrayType(ptrType, cellType);
-        ArrayExpression pArray = em.variable(pArrName, arrType, false).asArray();
-        currentMemElems.put(pArrName, pArray);
-        pValCell = pArray.index(p);
-        
-        Type currentMemType = getCurrentMemoryType();
-        Expression memPrime = em.record(currentMemType, currentMemElems.values());
-        if(currentAlloc == null)    currentAlloc = state.getChild(1);
-        Expression statePrime = getUpdatedState(state, memPrime, currentAlloc);
-        currentState = suspend(state, statePrime);    
+    try {
+      String pArrName = cache.get(p.getNode());
+      if(isInMergeArray(pArrName)) {
+        Expression pArray = currentMemElems.get(DEFAULT_MERGE_ARRAY_NAME);
+        pValCell = pArray.asArray().index(p);
+      } else {
+        if(currentMemElems.containsKey(pArrName)) {
+          ArrayExpression pArray = currentMemElems.get(pArrName).asArray();
+          pValCell = pArray.index(p);
+        } else { // Add an element to currentMemElem
+          ExpressionManager em = getExpressionManager();
+          ArrayType arrType = em.arrayType(ptrType, cellType);
+          ArrayExpression pArray = em.variable(pArrName, arrType, false).asArray();
+          currentMemElems.put(pArrName, pArray);
+          pValCell = pArray.index(p);
+          
+          Type currentMemType = getCurrentMemoryType();
+          Expression memPrime = em.record(currentMemType, currentMemElems.values());
+          if(currentAlloc == null)    currentAlloc = state.getChild(1);
+          Expression statePrime = getUpdatedState(state, memPrime, currentAlloc);
+          currentState = suspend(state, statePrime);    
+        }
       }
+    } catch (ExecutionException e) {
+      throw new ExpressionFactoryException(e);
     }
-    
     xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
     CellKind kind = getCellKind(pType);
     assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
@@ -355,12 +377,16 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
   
   @Override
   public Expression addressOf(Expression content) {
-    Preconditions.checkArgument(content.getArity() == 1);
-    Preconditions.checkArgument(cellType.equals(content.getChild(0).getType()));
-    Preconditions.checkArgument(content.getChild(0).getArity() == 2);
-    Preconditions.checkArgument(ptrType.equals(content.getChild(0).getChild(1).getType()));
-    Expression pointer = content.getChild(0).getChild(1);
-    return pointer;
+    Preconditions.checkArgument(content.getNode().hasProperty(TYPE));
+    xtc.type.Type contentType = unwrapped((xtc.type.Type) 
+        (content.getNode().getProperty(TYPE)));
+    
+    if(contentType.isUnion() || contentType.isStruct()) {
+      return content;
+    } else {
+      Expression pointer = content.getChild(0).getChild(1);
+      return pointer;
+    }
   }
   
   @Override
@@ -379,7 +405,7 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
         }
         
       } else if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
-        throw new UnsupportedOperationException("--order-alloc is not supported in burstall memory model");
+        throw new UnsupportedOperationException("--order-alloc is not supported in this memory model");
       }
     } catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
@@ -636,36 +662,23 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
     
     ArrayExpression mergeArray = currentMemElems.get(DEFAULT_MERGE_ARRAY_NAME).asArray();
     
-    String lvalArrName = getArrName(lval);
-    String rvalArrName = getArrName(rval);
-    
-    // if either is in merged array, both should be merged
-    if(isInMergeArray(lvalArrName) || isInMergeArray(rvalArrName)) {
-      if(!isInMergeArray(lvalArrName)) {
-        if(lvalArrName != null)  mergedArrayNames.add(lvalArrName);
+    try {
+      String lvalArrName = cache.get(lval.getNode());
+      CellKind kind = null;
+      if(rval.getNode() != null)  { // region has no source node
+        xtc.type.Type rvalType = (xtc.type.Type) rval.getNode().getProperty(TYPE);
+        kind = getCellKind(rvalType);
+        assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
       }
       
-      if(!isInMergeArray(rvalArrName)) {
-        if(rvalArrName != null)  mergedArrayNames.add(rvalArrName);
-      }
-      
-      Expression rvalInCell = castRvalToLvalType(lval, rval);
-      mergeArray = mergeArray.update(lval, rvalInCell);
-      currentMemElems.put(DEFAULT_MERGE_ARRAY_NAME, mergeArray);
-      
-    } else { // none of then is in the currentMemElems
-      
-      xtc.type.Type rvalType = (xtc.type.Type) rval.getNode().getProperty(TYPE);
-      CellKind kind = getCellKind(rvalType);
-      assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
-      if(CellKind.POINTER.equals(kind)) { // okay, alias occurs, merge them into merge array   
+      if(CellKind.POINTER.equals(kind)) { // okay, alias occurs, merge them
+        String rvalArrName = cache.get(rval.getNode());
         if(lvalArrName != null)  mergedArrayNames.add(lvalArrName);   
         if(rvalArrName != null)  mergedArrayNames.add(rvalArrName);
         
         Expression rvalInCell = castRvalToLvalType(lval, rval);
         mergeArray = mergeArray.update(lval, rvalInCell);
-        currentMemElems.put(DEFAULT_MERGE_ARRAY_NAME, mergeArray);
-        
+        currentMemElems.put(DEFAULT_MERGE_ARRAY_NAME, mergeArray);  
       } else { // don't bother merge array
         if(currentMemElems.containsKey(lvalArrName)) {
           Expression rvalInCell = castRvalToLvalType(lval, rval);
@@ -681,54 +694,53 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
           memTypeChanged = true;
         }
       }
+    } catch (ExecutionException e) {
+      throw new ExpressionFactoryException(e);
     }
     
     Type currentMemType = memTypeChanged ? getCurrentMemoryType() : memState.getType();
     return em.record(currentMemType, currentMemElems.values());
   }
   
-  // FIXME: slowest part
-  private String getArrName(Expression expr) {
-    if(ptrType.equals(expr.getType())) {
-      Expression refExpr = expr.getChild(0);
-      return getArrName(refExpr);      
-    } else if(scalarType.equals(expr.getType())) {
-      if(Kind.APPLY.equals(expr.getKind())) {
-        Expression srcExpr = expr.getChild(0);
-        return getArrName(srcExpr);
-      } else {
-        return null;
-      }
-    } else if(cellType.equals(expr.getType())) {
-      if(Kind.ARRAY_INDEX.equals(expr.getKind())) {
-        Expression arrayExpr = expr.getChild(0);
-        return getArrName(arrayExpr);
-      } else {
-        throw new IllegalArgumentException("No right array name for " + expr);
-      }
-    } else if(expr.getType().isArrayType()) {
-      if(Kind.VARIABLE.equals(expr.getKind())) {
-        return expr.asVariable().getName();
-      } else if(Kind.ARRAY_UPDATE.equals(expr.getKind())) {
-        Expression arrayExpr = expr.getChild(0);
-        return getArrName(arrayExpr);
-      } else if(Kind.RECORD_SELECT.equals(expr.getKind())) {
-        String funcName = expr.getFuncDecl().getName();
-        return funcName.substring(funcName.indexOf('@')+1);
-      }
-    } else if(refType.equals(expr.getType())) {      
-      if(Kind.TUPLE_INDEX.equals(expr.getKind())) {
-        return getArrName(expr.getChild(0));
-      }
-      if(Kind.VARIABLE.equals(expr.getKind())) {
-        return expr.asVariable().getName().replace("addr", "array");
-      }
-      
-      throw new IllegalArgumentException("No right array name for " + expr);
-    } else {
-      throw new IllegalArgumentException("No right array name for " + expr);
+  @Override
+  public Expression castExpression(Expression state, Expression src, xtc.type.Type type) {
+    if(type.isPointer() && src.isBitVector()) {
+      return ((PointerExpressionEncoding) getExpressionEncoding())
+          .getPointerEncoding().nullPtr();
     }
-    return null;
+    return src;
+  }
+  
+  private String parseArrName(GNode gnode) {
+    if("AddressExpression".equals(gnode.getName()))
+      gnode = gnode.getGeneric(0);
+    Preconditions.checkArgument(gnode.hasProperty(TYPE));
+    xtc.type.Type type = (xtc.type.Type) gnode.getProperty(TYPE);
+    if(type.hasShape()) {
+      Reference ref = type.getShape();
+      return ARRAY_PREFIX + getReferenceName(ref);
+    } else {
+      return ARRAY_NULL;
+    }
+  }
+  
+  private String getReferenceName(Reference ref) {
+    if(ref.isStatic()) {
+      return ((StaticReference) ref).getName();
+    } else if(ref.isDynamic()) {
+      return ((DynamicReference) ref).getName();
+    } else if(ref.isIndirect()) {
+      Reference base = ((IndirectReference) ref).getBase();
+      return getReferenceName(base);
+    } else if(ref instanceof FieldReference) {
+      Reference base = ((FieldReference) ref).getBase();
+      return getReferenceName(base);
+    } else if(ref instanceof IndexReference) {
+      Reference base = ((IndexReference) ref).getBase();
+      return getReferenceName(base);
+    } else {
+      throw new IllegalArgumentException("Unknown reference for " + ref);
+    }
   }
   
   private boolean isInMergeArray(String arrName) {
@@ -738,8 +750,17 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
   }
   
   private Expression castRvalToLvalType(Expression lval, Expression rval) {
+    Preconditions.checkArgument(lval.getNode() != null);
     xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     CellKind lvalKind = getCellKind(lvalType);
+    
+    if(rval.getNode() == null) {
+      if(CellKind.POINTER.equals(lvalKind))
+        return ptrConstr.apply(rval);
+      else
+        return scalarConstr.apply(rval);
+    }
+    
     xtc.type.Type rvalType = (xtc.type.Type) rval.getNode().getProperty(TYPE);
     CellKind rvalKind = getCellKind(rvalType);
     
@@ -748,17 +769,13 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
         return ptrConstr.apply(rval);
       else
         return scalarConstr.apply(rval);
-    } else if(CellKind.POINTER.equals(lvalKind) && CellKind.SCALAR.equals(rvalKind)) {
-      return ptrConstr.apply(getNullExpr(rval));
+    } else if(CellKind.POINTER.equals(lvalKind) 
+        && CellKind.SCALAR.equals(rvalKind)) {
+      assert(rval.isConstant());
+      return ptrConstr.apply(((PointerExpressionEncoding) getExpressionEncoding())
+          .getPointerEncoding().nullPtr());
     } else {
       throw new IllegalArgumentException("Assign pointer " + rval + " to constant " + lval);
     }
-  }
-  
-  private Expression getNullExpr(Expression e) {
-    Preconditions.checkArgument(e.isConstant() && e.isBitVector()
-        && Integer.parseInt(e.getNode().getString(0)) == 0);
-    return ptrConstr.apply(((PointerExpressionEncoding) getExpressionEncoding())
-        .getPointerEncoding().nullPtr());
   }
 }

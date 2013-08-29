@@ -437,8 +437,7 @@ public class MonolithicVer0MemoryModel extends AbstractMonoMemoryModel {
       cellVal = em.construct(scalarConstr, rval);
     } else {
       if(rval.isBitVector()) {
-        assert(rval.isConstant() 
-            && Integer.parseInt(rval.getNode().getString(0)) == 0);
+        assert(rval.isConstant() );
         rval = ((PointerExpressionEncoding) getExpressionEncoding())
             .getPointerEncoding().nullPtr();
       }

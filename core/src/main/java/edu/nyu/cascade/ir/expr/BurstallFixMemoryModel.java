@@ -7,7 +7,6 @@ import java.util.Iterator;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -23,105 +22,74 @@ import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.VariableExpression;
-import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
-import edu.nyu.cascade.prover.type.Constructor;
-import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.RecordType;
-import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 
 /**
- * Monolithic memory mode, with a multiple memory arrays for multiple
- * variables. These arrays map a offset to actual cell, where cell type 
- * is union of pointer type and scalar type. We also have a default
- * Merge Array, whenever an alias relation is detected among two arrays
- * by pointer assignment, just put the (ref, array(off, cell)) into
- * the Merge Array, where ref is picked from the pointer expression,
- * array is picked from currentMemElems. However, it is very slow.
- *  
+ * Burstall memory model, multiple memory arrays for various type.
+ * These arrays types map pointer type to either pointer type or 
+ * scalar type. 
+ * 
+ * The state of memory is a record with multiple arrays for various 
+ * types. 
+ * 
+ * Different type has different cell type size: CharT is 8, IntegerT 
+ * and ShorT is 16, LongT is 32.
+ * 
  * @author Wei
  *
  */
-
-public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
+public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
    */
-  public static MonolithicVer2MemoryModel create(
+  public static BurstallFixMemoryModel create(
       ExpressionEncoding encoding)
       throws ExpressionFactoryException {
     Preconditions.checkArgument(encoding instanceof PointerExpressionEncoding);
-    return new MonolithicVer2MemoryModel(encoding);
+    return new BurstallFixMemoryModel(encoding);
   }
-  
-  private static final String CELL_TYPE_NAME = "cell";
-  private static final String PTR_CONSTR_NAME = "ptr";
-  private static final String SCALAR_CONSTR_NAME = "scalar";
-  private static final String PTR_SELECTOR_NAME = "ptr-sel";
-  private static final String SCALAR_SELECTOR_NAME = "scalar-sel";
-  private static final String DEFAULT_MERGE_ARRAY_NAME = "mergeArray";
 
   private final TupleType ptrType; // pointer type = (ref-type, off-type)
   private final Type refType;
-  private final BitVectorType scalarType, offType; // const type
-  private final Constructor ptrConstr, scalarConstr; // The constructors for cell type
-  private final Selector ptrSel, scalarSel; // The selectors for cell type
-  private final InductiveType cellType;
-  private final ArrayType mergeArrType;
-  
+  private final BitVectorType offType; // offset type
   private final ArrayType allocType; // ref-type -> off-type
   private RecordType memType; // with multiple array types
   private TupleType stateType;
   
   private final Set<Expression> lvals; // lvals: variables in stack
-  private final Set<String> mergedArrayNames;
   private final List<Expression> stackRegions, heapRegions;
   private final Map<String, Expression> currentMemElems;
   private Expression currentAlloc = null;
   private Expression prevDerefState = null;
   private ExpressionClosure currentState = null;
 
-  private MonolithicVer2MemoryModel(ExpressionEncoding encoding) {
+  private BurstallFixMemoryModel(ExpressionEncoding encoding) {
     super(encoding);
   
     this.lvals = Sets.newHashSet();
     this.stackRegions = Lists.newArrayList();
     this.heapRegions = Lists.newArrayList();
-    this.mergedArrayNames = Sets.newHashSet();
     this.currentMemElems = Maps.newLinkedHashMap();
     
     ExpressionManager exprManager = getExpressionManager();
-    
-    int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
-    this.scalarType = exprManager.bitVectorType(size);
     
     this.ptrType = ((PointerExpressionEncoding) encoding).getPointerEncoding().getType();
     this.refType = ptrType.getElementTypes().get(0);
     this.offType = ptrType.getElementTypes().get(1).asBitVectorType();
     this.allocType = exprManager.arrayType(refType, offType);
     
-    this.scalarSel = exprManager.selector(SCALAR_SELECTOR_NAME, scalarType);
-    this.scalarConstr = exprManager.constructor(SCALAR_CONSTR_NAME, scalarSel);
-    
-    this.ptrSel = exprManager.selector(PTR_SELECTOR_NAME, ptrType);
-    this.ptrConstr = exprManager.constructor(PTR_CONSTR_NAME, ptrSel);
-    
-    /* Create datatype for cell */
-    this.cellType = exprManager.dataType(CELL_TYPE_NAME, scalarConstr, ptrConstr);
-    
-    List<String> elemNames = Lists.newArrayList(DEFAULT_MERGE_ARRAY_NAME);
-    // Array ref (Array int cell)
-    this.mergeArrType = exprManager.arrayType(refType, exprManager.arrayType(scalarType, cellType));
-    List<? extends Type> elemTypes = Lists.newArrayList(mergeArrType);
+    List<String> elemNames = Lists.newArrayList();
+    List<Type> elemTypes = Lists.newArrayList();
     this.memType = exprManager.recordType(
         Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE), elemNames, elemTypes);
-    
     this.stateType = exprManager.tupleType(
         Identifiers.uniquify(DEFAULT_STATE_TYPE), memType, allocType);
   }
@@ -129,6 +97,7 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
   @Override
   public TupleExpression alloc(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
+    // FIXME: element size and integer size don't agree: cast integer to cell type?
     Preconditions.checkArgument(size.getType().equals( offType ));
     
     ExpressionManager exprManager = getExpressionManager();
@@ -140,7 +109,7 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
     
     heapRegions.add(refVar); // For dynamic memory allocation, add to the end
     
-    RecordExpression memory = updateMemoryState(state.getChild(0), ptr, locVar);
+    RecordExpression memory = updateMemState(state.getChild(0), ptr, locVar);
     Expression alloc = state.getChild(1).asArray().update(refVar, size);    
     TupleExpression statePrime = getUpdatedState(state, memory, alloc);
     
@@ -153,6 +122,7 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
   @Override 
   public TupleExpression declareArray(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
+    // FIXME: element size and integer size don't agree: cast integer to cell type
     Preconditions.checkArgument(size.getType().equals( offType ));
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
@@ -167,6 +137,7 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
   @Override 
   public TupleExpression declareStruct(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
+    // FIXME: element size and integer size don't agree: cast integer to cell type
     Preconditions.checkArgument(size.getType().equals( offType ));
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
@@ -243,7 +214,20 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
       Expression lval,
       Expression rval) {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
-    RecordExpression memory = updateMemoryState(state.getChild(0), lval, rval);
+    xtc.type.Type lType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
+    xtc.type.Type rType = (xtc.type.Type) rval.getNode().getProperty(TYPE);
+    if(CellKind.SCALAR.equals(getCellKind(lType)) 
+        && CellKind.SCALAR.equals(getCellKind(rType))) {
+      int lval_size = getSizeofType(lType);
+      int rval_size = getSizeofType(rType);
+      if(lval_size > rval_size) {
+        rval = rval.asBitVector().zeroExtend(lval_size);
+      } else if(lval_size < rval_size) {
+        IOUtils.debug().pln("Explicit cast is missing");
+        rval = rval.asBitVector().extract(lval_size-1, 0);
+      }
+    }
+    RecordExpression memory = updateMemState(state.getChild(0), lval, rval);
     TupleExpression statePrime = getUpdatedState(state, memory, state.getChild(1));
     
     memType = memory.getType();
@@ -258,44 +242,41 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
     
     // Initialization
     if(currentMemElems.isEmpty() || state != prevDerefState) {
-      initCurrentMemElems(state.getChild(0));
+      currentMemElems.putAll(getMemElems(state.getChild(0)));
       prevDerefState = state;
     }
+    if(currentAlloc == null)    currentAlloc = state.getChild(1);
     
-    Expression pValCell = null;
-    Expression pRef = p.asTuple().index(0);
-    Expression pOff = p.asTuple().index(1);
-    
-    if(isInMergeArray(p)) {
-      pValCell = currentMemElems.get(DEFAULT_MERGE_ARRAY_NAME).asArray()
-          .index(pRef).asArray().index(pOff);
-    } else {
-      String pArrName = getArrName(p);
-      if(currentMemElems.containsKey(pArrName)) {
-        pValCell = currentMemElems.get(pArrName).asArray().index(pOff);
-      } else { // Add an element to currentMemElem
-        ExpressionManager em = getExpressionManager();
-        ArrayType arrType = em.arrayType(scalarType, cellType);
-        ArrayExpression pArray = em.variable(pArrName, arrType, false).asArray();
-        currentMemElems.put(pArrName, pArray);
-        
-        Type currentMemType = getCurrentMemoryType();
-        Expression memPrime = em.record(currentMemType, currentMemElems.values());
-        if(currentAlloc == null)    currentAlloc = state.getChild(1);
-        Expression statePrime = getUpdatedState(state, memPrime, currentAlloc);
-        currentState = suspend(state, statePrime);    
-        pValCell = pArray.index(pOff);
-      }
-    }
-    
+    ExpressionManager em = getExpressionManager();
+    ArrayExpression tgtArray = null;
     xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
-    CellKind kind = getCellKind(pType);
-    assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
-    if(CellKind.POINTER.equals(kind)) {
-      return pValCell.asInductive().select(ptrSel);
-    } else {
-      return pValCell.asInductive().select(scalarSel);
+    String typeName = getTypeName(pType);
+  
+    if(currentMemElems.containsKey(typeName)) {
+      return currentMemElems.get(typeName).asArray().index(p);
     }
+    
+    // Add an element to currentMemElem
+    CellKind kind = getCellKind(pType);
+    if(CellKind.BOOL.equals(kind)) {
+      ArrayType arrType = em.arrayType(ptrType, em.booleanType());
+      tgtArray = em.variable(typeName, arrType, false).asArray();
+    } else if(CellKind.SCALAR.equals(kind)) {
+      int size = getSizeofType(pType);
+      ArrayType arrType = em.arrayType(ptrType, em.bitVectorType(size));
+      tgtArray = em.variable(typeName, arrType, false).asArray();
+    } else {
+      ArrayType arrType = em.arrayType(ptrType, ptrType);
+      tgtArray = em.variable(typeName, arrType, false).asArray();
+    }
+    currentMemElems.put(typeName, tgtArray);
+    
+    Type currentMemType = getCurrentMemoryType();
+    
+    Expression memPrime = em.record(currentMemType, currentMemElems.values());
+    Expression statePrime = getUpdatedState(state, memPrime, currentAlloc);
+    currentState = suspend(state, statePrime);
+    return tgtArray.index(p);
   }
   
   @Override
@@ -303,18 +284,21 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
       Expression state,
       Expression lval) {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
+    // FIXME: What if element size and integer size don't agree?
     Expression rval = null;
-    
     xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     CellKind kind = getCellKind(lvalType);
-    assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
-    if(CellKind.POINTER.equals(kind)) {
-      rval = getExpressionEncoding().unknown();
+    if(CellKind.SCALAR.equals(kind)) {
+      int size = getSizeofType(lvalType);
+      Type bvType = getExpressionManager().bitVectorType(size);
+      rval = getExpressionEncoding().getIntegerEncoding().unknown(bvType);
+    } else if(CellKind.BOOL.equals(kind)) {
+      rval = getExpressionEncoding().getBooleanEncoding().unknown();
     } else {
-      rval = getExpressionEncoding().getIntegerEncoding().unknown();
+      rval = getExpressionEncoding().unknown();
     }
     
-    RecordExpression memory = updateMemoryState(state.getChild(0), lval, rval); 
+    RecordExpression memory = updateMemState(state.getChild(0), lval, rval); 
     TupleExpression statePrime = getUpdatedState(state, memory, state.getChild(1));
     
     memType = memory.getType();
@@ -336,7 +320,8 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
   @Override
   public BooleanExpression allocated(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    Preconditions.checkArgument(size.getType().equals( offType) );
+    // FIXME: What if element size and integer size don't agree?
+    Preconditions.checkArgument(size.getType().equals( offType ));
     
     ExpressionManager exprManager = getExpressionManager();
     
@@ -347,7 +332,7 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
     
     heapRegions.add(refVar); // For dynamic memory allocation, add to the end
     
-    Expression currentMem = updateMemoryState(state.getChild(0), ptr, locVar);
+    Expression currentMem = updateMemState(state.getChild(0), ptr, locVar);
     
     if(currentAlloc == null)    currentAlloc = state.getChild(1);
     currentAlloc = currentAlloc.asArray().update(refVar, size);
@@ -360,13 +345,12 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
   
   @Override
   public Expression addressOf(Expression content) {
-    Preconditions.checkArgument(content.getArity() == 1);
-    Preconditions.checkArgument(cellType.equals(content.getChild(0).getType()));
-    Preconditions.checkArgument(content.getChild(0).getArity() == 2);
-    Preconditions.checkArgument(scalarType.equals(content.getChild(0).getChild(1).getType()));
-    Expression value = content.getChild(0).getChild(1);
-    Expression pointer = value.getChild(0);
-    return pointer;
+    xtc.type.Type type = unwrapped((xtc.type.Type) content.getNode()
+        .getProperty(TYPE));
+    if(type.isStruct() || type.isUnion() || type.isArray())
+      return content;
+    else
+      return content.getChild(1);
   }
   
   @Override
@@ -382,8 +366,7 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
             .addAll(heapRegions).addAll(lvals).build();
         if(distinctRef.size() > 1) {
           builder.add(exprManager.distinct(distinctRef));
-        }
-        
+        }        
       } else if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
         throw new UnsupportedOperationException("--order-alloc is not supported in burstall memory model");
       }
@@ -413,6 +396,7 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
     return stateType;
   }
   
+  @Override
   public void setStateType(TupleType stateType) {
     this.stateType = stateType;
     this.memType = stateType.asTuple().getElementTypes().get(0).asRecord();
@@ -456,7 +440,8 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
             elemMap.put(name, elem);
           }
           
-          Expression memPrime = exprManager.record(expr_mem_type, elemMap.values());
+          Expression memPrime = memory_mem;
+          if(!elemMap.isEmpty()) memPrime = exprManager.record(expr_mem_type, elemMap.values());
           
           /* Substitute the alloc of expr to allocPrime */
           Expression allocPrime = null;
@@ -512,66 +497,36 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
     currentState = null;
   }
   
-  public Expression combinePreMemoryStates(BooleanExpression guard, 
-      RecordExpression mem_1, RecordExpression mem_0) {    
-    
-    RecordType memType_1 = mem_1.getType();
-    Iterable<String> elemNames_1 = Iterables.transform(memType_1.getElementNames(),
-        new Function<String, String>() {
-      @Override
-      public String apply(String elemName) {
-        return elemName.substring(elemName.indexOf('@')+1);
-      }
-    });
-    
-    RecordType memType_0 = mem_0.getType();
-    final Iterable<String> elemNames_0 = Iterables.transform(memType_0.getElementNames(),
-        new Function<String, String>() {
-      @Override
-      public String apply(String elemName) {
-        return elemName.substring(elemName.indexOf('@')+1);
-      }
-    });
-    
-    Iterable<String> commonElemNames = Iterables.filter(elemNames_1, 
-        new Predicate<String>(){
-      @Override
-      public boolean apply(String elemName) {
-        return Iterables.contains(elemNames_0, elemName);
-      }
-    });
-    
-    List<Expression> elems = Lists.newArrayListWithCapacity(
-        Iterables.size(commonElemNames));
-    List<Type> elemTypes = Lists.newArrayListWithCapacity(
-        Iterables.size(commonElemNames));
-    
-    ExpressionManager em = getExpressionManager();
-    final String arrName_1 = memType_1.getName();
-    final String arrName_0 = memType_0.getName();
-    
-    for(String elemName : commonElemNames) {
-      String elemName_1 = arrName_1 + '@' + elemName;
-      String elemName_0 = arrName_0 + '@' + elemName;
-      Expression elem = em.ifThenElse(guard, mem_1.select(elemName_1), mem_0.select(elemName_0));
-      elems.add(elem);
-      elemTypes.add(elem.getType());
+  @Override
+  public Expression castConstant(int value, xtc.type.Type type) {
+    int size = getSizeofType(type);
+    return getExpressionManager().bitVectorConstant(value, size);
+  }
+  
+  @Override
+  public Expression castExpression(Expression state, Expression src, xtc.type.Type type) {
+    if(!CellKind.SCALAR.equals(getCellKind(type)))  {
+      assert(src.isConstant() && src.isBitVector());
+      return ((PointerExpressionEncoding) getExpressionEncoding())
+          .getPointerEncoding().nullPtr();
     }
-    
-    final String arrName = Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME);
-    Iterable<String> elemNames = Iterables.transform(commonElemNames, 
-        new Function<String, String>(){
-      @Override
-      public String apply(String elemName) {
-        return elemName + '@' + arrName;
-      }
-    });
-    
-    RecordType recordType = em.recordType(Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME), 
-        elemNames, elemTypes);
-    Expression res = em.record(recordType, elems);
-    
-    return res;
+    int srcSize = src.getType().asBitVectorType().getSize();
+    int targetSize = getSizeofType(type);
+    if(srcSize < targetSize)
+      return src.asBitVector().zeroExtend(targetSize);
+    else
+      return src.asBitVector().extract(targetSize-1, 0);
+  }
+  
+  private Map<String, Expression> getMemElems(Expression memState) {
+    Preconditions.checkArgument(memState.isRecord());
+    Map<String, Expression> resMap = Maps.newLinkedHashMap();
+    RecordExpression mem = memState.asRecord();
+    for(String elemName : mem.getType().getElementNames()) {
+      int index = elemName.indexOf('@') + 1;
+      resMap.put(elemName.substring(index), mem.select(elemName));
+    }
+    return resMap;
   }
   
   private RecordType getCurrentMemoryType() {
@@ -588,18 +543,18 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
     if(elemTypes == null)
       throw new ExpressionFactoryException("Update memory type failed.");
     
-    final String arrName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
+    final String typeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
     
     Iterable<String> elemNames = Iterables.transform(currentMemElems.keySet(), 
         new Function<String, String>(){
       @Override
       public String apply(String elemName) {
         int index = elemName.indexOf('@')+1;
-        return arrName + '@' + elemName.substring(index);
+        return typeName + '@' + elemName.substring(index);
       }
     });
     
-    return em.recordType(arrName, elemNames, elemTypes);
+    return em.recordType(typeName, elemNames, elemTypes);
   }
   
   /**
@@ -607,7 +562,12 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
    * type if state type is changed from the type of state
    * @return a new state
    */
-  public TupleExpression getUpdatedState(Expression state, Expression memoryPrime, Expression allocPrime) {
+  @Override
+  public TupleExpression getUpdatedState(Expression state, Expression...elems) {
+    Preconditions.checkArgument(elems.length == 2);
+    Expression memoryPrime = elems[0];
+    Expression allocPrime = elems[1];
+    
     ExpressionManager em = getExpressionManager();
     Type stateTypePrime = null;
     
@@ -622,154 +582,60 @@ public class MonolithicVer2MemoryModel extends AbstractMonoMemoryModel {
     return em.tuple(stateTypePrime, memoryPrime, allocPrime);
   }
   
-  private void initCurrentMemElems(Expression memState) {
-    Preconditions.checkArgument(memState.isRecord());
-    RecordExpression mem = memState.asRecord();
-    for(String elemName : mem.getType().getElementNames()) {
-      int index = elemName.indexOf('@') + 1;
-      currentMemElems.put(elemName.substring(index), mem.select(elemName));
-    }
-  }
-  
-  @Override
-  protected RecordExpression updateMemoryState(Expression memState, Expression lval, Expression rval) {   
-    initCurrentMemElems(memState);
-    
-    String lvalArrName = getArrName(lval);
-    String rvalArrName = getArrName(rval);
-    
-    Expression lvalRef = lval.asTuple().index(0);
-    Expression lvalOff = lval.asTuple().index(1);
-    
+  private RecordExpression updateMemState(Expression memState, Expression lval, Expression rval) {
+    currentMemElems.putAll(getMemElems(memState));
     ExpressionManager em = getExpressionManager();
-    boolean memTypeChanged = false;
-    
-    ArrayExpression mergeArray = currentMemElems.get(DEFAULT_MERGE_ARRAY_NAME).asArray();
-    
-    // if either is in merged array, both should be merged
-    if(isInMergeArray(lval) || isInMergeArray(rval)) {
-      if(!isInMergeArray(lval)) {
-        if(currentMemElems.containsKey(lvalArrName)) {
-          ArrayExpression lvalArr = currentMemElems.remove(lvalArrName).asArray();
-          memTypeChanged = true;
-          mergeArray = mergeArray.update(lvalRef, lvalArr); 
+    boolean isMemUpdated = false;
+    ArrayExpression tgtArray = null;
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
+    String lvalTypeName = getTypeName(lvalType);
+    if(currentMemElems.containsKey(lvalTypeName)) { // declared type name
+      CellKind kind = getCellKind(lvalType);
+      if(CellKind.BOOL.equals(kind)) { // cascade_conditions
+        rval = getExpressionEncoding().castToBoolean(rval);
+        tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
+      } else if(CellKind.POINTER.equals(kind)) {
+        if(!ptrType.equals(rval.getType())) {
+          // for assign null to pointer int* ptr = 0;
+          assert(rval.isConstant());
+          rval = ((PointerExpressionEncoding) getExpressionEncoding())
+              .getPointerEncoding().nullPtr();
         }
-        if(lvalArrName != null)  mergedArrayNames.add(lvalArrName);
+        tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
+      } else {
+        tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
       }
       
-      if(!isInMergeArray(rval)) {
-        if(currentMemElems.containsKey(rvalArrName)) {
-          ArrayExpression rvalArr = currentMemElems.remove(rvalArrName).asArray();
-          memTypeChanged = true;
-          Expression rvalRef = rval.asTuple().index(0);
-          mergeArray = mergeArray.update(rvalRef, rvalArr); 
-        }
-        if(rvalArrName != null)  mergedArrayNames.add(rvalArrName);
-      }
+    } else { // new type name
+      isMemUpdated = true;
+      CellKind kind = getCellKind(lvalType);
+      ArrayType arrType = null;
       
-      Expression rvalInCell = castRvalToLvalType(lval, rval);
-      mergeArray = mergeArray.update(lvalRef, mergeArray.index(lvalRef).asArray()
-          .update(lvalOff, rvalInCell));
-      currentMemElems.put(DEFAULT_MERGE_ARRAY_NAME, mergeArray);
-      
-    } else { // none of then is in the currentMemElems
-      
-      xtc.type.Type rvalType = (xtc.type.Type) rval.getNode().getProperty(TYPE);
-      CellKind kind = getCellKind(rvalType);
-      assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
-      if(CellKind.POINTER.equals(kind)) { // okay, alias occurs, merge them into merge array        
-        if(currentMemElems.containsKey(lvalArrName)) {
-          ArrayExpression lvalArr = currentMemElems.remove(lvalArrName).asArray();
-          memTypeChanged = true;
-          mergeArray = mergeArray.update(lvalRef, lvalArr);
-        }     
-        if(lvalArrName != null)  mergedArrayNames.add(lvalArrName);
-        
-        if(currentMemElems.containsKey(rvalArrName)) {
-          ArrayExpression rvalArr = currentMemElems.remove(rvalArrName).asArray();
-          memTypeChanged = true;
-          Expression rvalRef = rval.asTuple().index(0);
-          mergeArray = mergeArray.update(rvalRef, rvalArr);
-        }     
-        if(rvalArrName != null)  mergedArrayNames.add(rvalArrName);
-        
-        Expression rvalInCell = castRvalToLvalType(lval, rval);
-        mergeArray = mergeArray.update(lvalRef, mergeArray.index(lvalRef).asArray()
-            .update(lvalOff, rvalInCell));
-        currentMemElems.put(DEFAULT_MERGE_ARRAY_NAME, mergeArray);
-        
-      } else { // don't bother merge array
-        if(currentMemElems.containsKey(lvalArrName)) {
-          Expression rvalInCell = castRvalToLvalType(lval, rval);
-          ArrayExpression lvalArr = currentMemElems.get(lvalArrName).asArray()
-              .update(lvalOff, rvalInCell);
-          currentMemElems.put(lvalArrName, lvalArr);
-        } else {
-          Expression rvalInCell = castRvalToLvalType(lval, rval);
-          ArrayType arrType = em.arrayType(scalarType, cellType);
-          ArrayExpression lvalArr = em.variable(lvalArrName, arrType, false).asArray();
-          lvalArr = lvalArr.update(lvalOff, rvalInCell);
-          currentMemElems.put(lvalArrName, lvalArr);
-          memTypeChanged = true;
+      if(CellKind.BOOL.equals(kind)) {
+        rval = getExpressionEncoding().castToBoolean(rval);
+        arrType = em.arrayType(ptrType, em.booleanType());
+      } else if(CellKind.SCALAR.equals(kind)) {
+        int size = getSizeofType(lvalType);
+        arrType = em.arrayType(ptrType, em.bitVectorType(size));
+      } else {
+        arrType = em.arrayType(ptrType, ptrType);
+        if(!ptrType.equals(rval.getType())) {
+          assert(rval.isConstant());
+          rval = ((PointerExpressionEncoding) getExpressionEncoding())
+            .getPointerEncoding().nullPtr();
         }
       }
-    }
+      
+      tgtArray = em.variable(lvalTypeName, arrType, false).asArray().update(lval, rval);
+    }      
+    currentMemElems.put(lvalTypeName, tgtArray);
     
-    Type currentMemType = memTypeChanged ? getCurrentMemoryType() : memState.getType();
+    Type currentMemType = isMemUpdated? getCurrentMemoryType() : memState.getType();
     return em.record(currentMemType, currentMemElems.values());
   }
   
-  private String getArrName(Expression expr) {
-    String resName = null;
-    if(expr.isTuple()) {
-      assert(expr.getType().equals(ptrType));
-      Expression refExpr = expr.getChild(0);
-//      if(refExpr.isVariable()) {
-//        resName = refExpr.asVariable().getName();
-//      } else {
-        if(Kind.TUPLE_INDEX.equals(refExpr.getKind())) {
-          Expression arrExpr = refExpr.getChild(0).getChild(0);
-          if(arrExpr.isVariable()) {
-            resName = arrExpr.asVariable().getName();
-          }
-        } else if(Kind.ARRAY_INDEX.equals(refExpr.getKind())) {
-          Expression arrExpr = refExpr.getChild(0);
-          if(arrExpr.isVariable()) {
-            resName = arrExpr.asVariable().getName();
-          } else {
-            resName = DEFAULT_MERGE_ARRAY_NAME;
-          }
-        }
-      }
-//    }
-    return resName == null ? resName : resName.replace("addr", "array");
-  }
-  
-  private boolean isInMergeArray(Expression e) {
-    String arrName = getArrName(e);
-    if(DEFAULT_MERGE_ARRAY_NAME.equals(arrName))    return true;
-    if(mergedArrayNames.contains(arrName))          return true;
-    return false;
-  }
-  
-  private Expression castRvalToLvalType(Expression lval, Expression rval) {
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
-    CellKind lvalKind = getCellKind(lvalType);
-    xtc.type.Type rvalType = (xtc.type.Type) rval.getNode().getProperty(TYPE);
-    CellKind rvalKind = getCellKind(rvalType);
-    
-    if(lvalKind.equals(rvalKind)) {
-      if(CellKind.POINTER.equals(rvalKind))
-        return ptrConstr.apply(rval);
-      else
-        return scalarConstr.apply(rval);
-    } else if(CellKind.POINTER.equals(lvalKind) && CellKind.SCALAR.equals(rvalKind)) {
-      assert(rval.isConstant() && Integer.parseInt(rval.getNode().getString(0)) == 0);
-      Expression nullExpr = ptrConstr.apply(((PointerExpressionEncoding) getExpressionEncoding())
-          .getPointerEncoding().nullPtr());;
-      return ptrConstr.apply(nullExpr);
-    } else {
-      throw new IllegalArgumentException("Assign pointer " + rval + " to constant " + lval);
-    }
+  private int getSizeofType(xtc.type.Type type) {
+    ExpressionEncoding encoding = getExpressionEncoding();
+    return (int) encoding.getCAnalyzer().getSize(type) * encoding.getCellSize();
   }
 }

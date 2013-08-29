@@ -894,8 +894,9 @@ public class CAnalyzer extends Visitor {
         multipleTypes();
       } else {
         final String tag  = n.getString(1);
-        final String name = SymbolTable.toTagName(tag);
-
+        final String name;
+        if(!tag.startsWith("tag"))  name = SymbolTable.toTagName(tag);
+        else                        name = tag;
         if ((refIsDecl && table.current().isDefinedLocally(name)) ||
             ((! refIsDecl) && table.isDefined(name))) {
           final Type t = (Type)table.lookup(name);
@@ -5457,6 +5458,28 @@ public class CAnalyzer extends Visitor {
     if (null == result) {
       if(bVarTypeMap.containsKey(n)) {
         result = bVarTypeMap.get(n);
+      } else if(n.hasProperty(xtc.Constants.TYPE)) {
+        result = (Type) n.getProperty(xtc.Constants.TYPE);
+      } else if(n.hasProperty(BOUND)) {
+        result = IntegerT.INT;
+        bVarTypeMap.put(n, result);
+      } else {
+        runtime.error("'" + n.getString(0) + "' undeclared", n);
+        result = ErrorT.TYPE;
+      }
+    }
+
+    mark(n, result);
+    return result;
+  }
+  
+  public Type visitSimpleDeclarator(GNode n) {
+    Type result = (Type)table.lookup(n.getString(0));
+    if (null == result) {
+      if(bVarTypeMap.containsKey(n)) {
+        result = bVarTypeMap.get(n);
+      } else if(n.hasProperty(xtc.Constants.TYPE)) {
+        result = (Type) n.getProperty(xtc.Constants.TYPE);
       } else if(n.hasProperty(BOUND)) {
         result = IntegerT.INT;
         bVarTypeMap.put(n, result);
@@ -6692,6 +6715,11 @@ public class CAnalyzer extends Visitor {
    */
   public void mark(Node node, Type type) {
     if (runtime.test("optionMarkAST")) {
+      if(node.hasProperty(xtc.Constants.TYPE)) {
+        Type oldType = (Type) node.removeProperty(xtc.Constants.TYPE);
+        if(!oldType.equals(type))
+          throw new IllegalArgumentException("Inconsistent types for node " + node);
+      }
       type.mark(node);
     }
   }
