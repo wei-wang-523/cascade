@@ -498,7 +498,7 @@ public class Main {
     xtc.util.SymbolTable xtcSymbolTable = cAnalyzer.analyze(ast);
     CSymbolTable symbolTable = CSymbolTable.create(symbolTableFactory,
         xtcSymbolTable);
-    cfgs.putAll(CfgBuilder.getCfgs(symbolTable, ast));
+    cfgs.putAll(CfgBuilder.getCfgs(symbolTable, cAnalyzer, ast));
     symbolTables.put(file, symbolTable);
   }
 

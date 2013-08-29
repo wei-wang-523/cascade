@@ -332,7 +332,7 @@ class CExpressionEncoder implements ExpressionEncoder {
             assert("PrimaryIdentifier".equals(argNode.getName()));
             String argName = argNode.getString(0);
             VariableExpression argVar = exprManager.variable(argName,
-                encoding.getIntegerEncoding().getType(), false);
+                args.get(idx).getType(), false);
             argVars.add(argVar);
           }
           body = body.subst(args, argVars);
@@ -605,12 +605,6 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitSizeofExpression(GNode node)
         throws ExpressionFactoryException {
-//      if("BurstallFix".equals(Preferences.get(Preferences.OPTION_THEORY))) {
-//        Type type = lookupType(node);
-//        assert(type.hasConstant());
-//        int value = (int) type.getConstant().longValue();
-//        return encoding.integerConstant(value);
-//      } else {
         Node typeNode = node.getNode(0);
         Expression res;
         if(typeNode.hasProperty(TYPE)) { // pointer type (STRUCT *)

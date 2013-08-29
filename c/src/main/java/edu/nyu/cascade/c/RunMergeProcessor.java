@@ -57,6 +57,7 @@ import edu.nyu.cascade.prover.SatResult;
 import edu.nyu.cascade.prover.ValidityResult;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.c.CSpecParser;
@@ -67,12 +68,11 @@ import edu.nyu.cascade.c.CSpecParser;
  * (x := 0; assume x > 0; assert false) is invalid but infeasible).
  */
 
-final class PathMergeEncoder {
+final class PathMergeEncoder implements PathEncoder {
   private PathEncoding pathEncoding;
   private boolean runIsValid, runIsFeasible, checkFeasibility;
   private boolean succeed;
-  private final static String COND_ASSUME_LABEL = "COND_ASSUME";
-
+  
   PathMergeEncoder(PathEncoding pathEncoding) {
     this.pathEncoding = pathEncoding;
     checkFeasibility = false;
@@ -83,14 +83,11 @@ final class PathMergeEncoder {
     return new PathMergeEncoder(encoding);
   }
 
-  ExpressionEncoder getExpressionEncoder() {
+  public ExpressionEncoder getExpressionEncoder() {
     return pathEncoding.getExpressionEncoder();
   }
   
-  /**
-   * Prepare this encoder for a new path.
-   */
-  void reset() {
+  public void reset() {
     runIsValid = true;
     runIsFeasible = true;
   }
@@ -240,19 +237,15 @@ final class PathMergeEncoder {
     return encodePath(graph, graph.destPath, pathExprMap);
   }
   
-  boolean runIsFeasible() throws PathFactoryException {
+  public boolean runIsFeasible() throws PathFactoryException {
     return runIsFeasible;
   }
-
-  /**
-   * Returns true if all verification conditions passed to handle() since the
-   * last call to reset() were valid.
-   */
-  boolean runIsValid() {
+  
+  public boolean runIsValid() {
     return runIsValid;
   }
   
-  void setFeasibilityChecking(boolean b) {
+  public void setFeasibilityChecking(boolean b) {
     checkFeasibility = b;
   }
 }
@@ -270,16 +263,13 @@ class RunMergeProcessor implements RunProcessor {
     this.symbolTables = symbolTables;
     this.cfgs = cfgs;
     this.cAnalyzer = cAnalyzer;
-//    this.pathEncoder = PathMergeEncoder.create(DynamicPathEncoding.create(exprEncoder));
     this.pathEncoder = PathMergeEncoder.create(SimplePathEncoding.create(exprEncoder));
-    this.TEMP_VAR_POSTFIX = 0;
   }
   
   private final Map<File, CSymbolTable> symbolTables;
   private final Map<Node, IRControlFlowGraph> cfgs;
   private final CAnalyzer cAnalyzer;
   private final PathMergeEncoder pathEncoder;
-  private int TEMP_VAR_POSTFIX;
 
   /**
    * Process a run: build the path through the CFG that it represents, convert
@@ -959,6 +949,7 @@ class RunMergeProcessor implements RunProcessor {
       Node assignNode = GNode.create("AssignmentExpression", 
           paramNode, "=", arg.getSourceNode());
       assignNode.setLocation(paramNode.getLocation());
+      cAnalyzer.processExpression(arg.getSourceNode());     
       Statement assign = Statement.assign(assignNode, param, arg);
       assignments.add(assign);
     }    
@@ -1046,7 +1037,7 @@ class RunMergeProcessor implements RunProcessor {
         if(symbolTable.lookup(resFuncName) == null)
           throw new RunProcessorException("Undeclared function: " + resFuncName);
         /* Create temporary variable node for function call node. */
-        String varName = TEMP_VAR_PREFIX + (TEMP_VAR_POSTFIX++);
+        String varName = Identifiers.uniquify(TEMP_VAR_PREFIX);
         GNode varNode = GNode.create("PrimaryIdentifier", varName);
         for(String p : node.properties()) {
           varNode.setProperty(p, node.getProperty(p));
@@ -1091,9 +1082,11 @@ class RunMergeProcessor implements RunProcessor {
       if(argPairs.isEmpty())
         argExprsRep.add(argExpr);
       else {
-        while(argPairs.get(argNode) != null)
-          argNode = argPairs.get(argNode);
-        argExprsRep.add(CExpression.create(argNode, scope));
+        /* Find the final representative node in argPairs */
+        Node argRepNode = argNode;
+        while(argPairs.get(argRepNode) != null)
+          argRepNode = argPairs.get(argRepNode);
+        argExprsRep.add(CExpression.create(argRepNode, scope));
       }
     }
 
@@ -1119,7 +1112,22 @@ class RunMergeProcessor implements RunProcessor {
     
     if(!pairs.isEmpty()) {
       IRStatement replaceStmt = null;
-      Node replaceNode = substituteNode(stmt.getSourceNode(), argExprsRep);
+      Node replaceNode = null;
+      
+      if(!stmt.getType().equals(StatementType.CALL)) {
+        List<Node> argRepNodes = Lists.newArrayList();
+        for(IRExpression argExpr : argExprsRep)   argRepNodes.add(argExpr.getSourceNode());
+        replaceNode = substituteNode(stmt.getSourceNode(), Iterables.toArray(argRepNodes, Node.class));
+      } else {
+        Node srcNode = stmt.getSourceNode();
+        List<Object> argRepNodes = Lists.newArrayList();
+        for(IRExpression argExpr : argExprsRep)   argRepNodes.add(argExpr.getSourceNode());
+        Node funcNode = (Node) argRepNodes.remove(0);
+        Node exprListNode = createNodeWithArgList(srcNode.getNode(1), argRepNodes);
+        replaceNode = substituteNode(stmt.getSourceNode(), funcNode, exprListNode);
+      }
+      cAnalyzer.processExpression(replaceNode);
+      
       switch(stmt.getType()) {
       case ASSIGN:
         replaceStmt = Statement.assign(replaceNode, 
@@ -1694,23 +1702,6 @@ class RunMergeProcessor implements RunProcessor {
         argList.add(candidateList.remove(0));
       else  
         argList.add(srcNode.get(i));
-    }
-    Node newNode = createNodeWithArgList(srcNode, argList);
-    return newNode;
-  }
-  
-  /** Substitute the child nodes in srcNode as source nodes of <code>exprs</code> */
-  private Node substituteNode(Node srcNode, List<IRExpression> exprs) {
-    List<Object> argList = Lists.newArrayList();
-    List<Node> candidateList = Lists.newArrayList();
-    for(IRExpression expr : exprs)
-      candidateList.add(expr.getSourceNode());
-    for(int i = 0; i < srcNode.size(); i++) {
-      Object o = srcNode.get(i);
-      if(o instanceof GNode)
-        argList.add(candidateList.remove(0));
-      else  
-        argList.add(o);
     }
     Node newNode = createNodeWithArgList(srcNode, argList);
     return newNode;

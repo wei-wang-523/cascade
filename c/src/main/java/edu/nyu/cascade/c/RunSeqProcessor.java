@@ -21,6 +21,7 @@ import xtc.util.SymbolTable.Scope;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -54,6 +55,7 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.SatResult;
 import edu.nyu.cascade.prover.ValidityResult;
 import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.c.CSpecParser;
@@ -63,7 +65,7 @@ import edu.nyu.cascade.c.CSpecParser;
  * for validity. Also optionally checks the path for feasibility (e.g., the path
  * (x := 0; assume x > 0; assert false) is invalid but infeasible).
  */
-final class PathSeqEncoder {
+final class PathSeqEncoder implements PathEncoder {
   private PathEncoding pathEncoding;  // the encoding to use for the path
   private Expression path;  // the expression representing the encoded path 
   private boolean runIsValid, runIsFeasible, checkFeasibility;
@@ -78,14 +80,11 @@ final class PathSeqEncoder {
     return new PathSeqEncoder(encoding);
   }
 
-  ExpressionEncoder getExpressionEncoder() {
+  public ExpressionEncoder getExpressionEncoder() {
     return pathEncoding.getExpressionEncoder();
   }
   
-  /**
-   * Prepare this encoder for a new path.
-   */
-  void reset() {
+  public void reset() {
     path = pathEncoding.emptyPath();
     runIsValid = true;
     runIsFeasible = true;
@@ -140,19 +139,15 @@ final class PathSeqEncoder {
     return true;
   }
 
-  boolean runIsFeasible() throws PathFactoryException {
+  public boolean runIsFeasible() throws PathFactoryException {
     return runIsFeasible;
   }
 
-  /**
-   * Returns true if all verification conditions passed to handle() since the
-   * last call to reset() were valid.
-   */
-  boolean runIsValid() {
+  public boolean runIsValid() {
     return runIsValid;
   }
   
-  void setFeasibilityChecking(boolean b) {
+  public void setFeasibilityChecking(boolean b) {
     checkFeasibility = b;
   }
 }
@@ -172,14 +167,12 @@ class RunSeqProcessor implements RunProcessor {
     this.cAnalyzer = cAnalyzer;
 //    this.pathEncoder = PathSeqEncoder.create(DynamicPathEncoding.create(exprEncoder));
     this.pathEncoder = PathSeqEncoder.create(SimplePathEncoding.create(exprEncoder));
-    this.TEMP_VAR_POSTFIX = 0;
   }
   
   private final Map<File, CSymbolTable> symbolTables;
   private final Map<Node, IRControlFlowGraph> cfgs;
   private final CAnalyzer cAnalyzer;
   private final PathSeqEncoder pathEncoder;
-  private int TEMP_VAR_POSTFIX;
 
   /**
    * Process a run: build the path through the CFG that it represents, convert
@@ -580,7 +573,7 @@ class RunSeqProcessor implements RunProcessor {
       throw new RunProcessorException("Invalid statement type: " + rmvStmt);
     }
       
-    Node defNode = findFuncDeclareNode(rmvStmt);    
+    Node defNode = findFuncDeclareNode(rmvStmt);
     List<IRStatement> assignments = Lists.newArrayList();
     
     if(defNode == null)     return assignments;
@@ -666,7 +659,11 @@ class RunSeqProcessor implements RunProcessor {
       assert("SimpleDeclarator".equals(paramNode.getName()));
       IRExpressionImpl param = CExpression.create(paramNode, paramScope);
       IRExpressionImpl arg = (IRExpressionImpl) args.get(i);
-      Statement assign = Statement.assign(paramNode, param, arg);
+      GNode assignNode = GNode.create("AssignmentExpression", 
+          param.getSourceNode(), "=", arg.getSourceNode());
+      assignNode.setLocation(paramNode.getLocation());
+      cAnalyzer.processExpression(arg.getSourceNode());
+      Statement assign = Statement.assign(assignNode, param, arg);
       assignments.add(assign);
     }    
     return assignments; 
@@ -733,7 +730,7 @@ class RunSeqProcessor implements RunProcessor {
         if(symbolTable.lookup(resFuncName) == null)
           throw new RunProcessorException("Undeclared function: " + resFuncName);
         // Create temporary variable node for function call node.
-        String varName = TEMP_VAR_PREFIX + (TEMP_VAR_POSTFIX++);
+        String varName = Identifiers.uniquify(TEMP_VAR_PREFIX);
         GNode varNode = GNode.create("PrimaryIdentifier", varName);
         for(String p : node.properties()) {
           varNode.setProperty(p, node.getProperty(p));
@@ -779,9 +776,11 @@ class RunSeqProcessor implements RunProcessor {
       if(argPairs.isEmpty())
         argExprsRep.add(argExpr);
       else {
-        while(argPairs.get(argNode) != null)
-          argNode = argPairs.get(argNode);
-        argExprsRep.add(CExpression.create(argNode, scope));
+        /* Find the final representative node in argPairs */
+        Node argRepNode = argNode;
+        while(argPairs.get(argRepNode) != null)
+          argRepNode = argPairs.get(argRepNode);
+        argExprsRep.add(CExpression.create(argRepNode, scope));
       }
     }
 
@@ -799,9 +798,24 @@ class RunSeqProcessor implements RunProcessor {
       IRStatement assignStmt = Statement.assign(assignNode, valExpr, keyExpr);
       assignStmts.add(assignStmt);
     }
+    /* TEMP_VAR_x := f(a), substitute f(a) to TEMP_VAR_x in the original statement */
     if(!pairs.isEmpty()) {
       IRStatement replaceStmt = null;
-      Node replaceNode = substituteNode(stmt.getSourceNode(), argExprsRep);
+      Node replaceNode = null;
+      
+      if(!stmt.getType().equals(StatementType.CALL)) {
+        List<Node> argRepNodes = Lists.newArrayList();
+        for(IRExpression argExpr : argExprsRep)   argRepNodes.add(argExpr.getSourceNode());
+        replaceNode = substituteNode(stmt.getSourceNode(), Iterables.toArray(argRepNodes, Node.class));
+      } else {
+        Node srcNode = stmt.getSourceNode();
+        List<Object> argRepNodes = Lists.newArrayList();
+        for(IRExpression argExpr : argExprsRep)   argRepNodes.add(argExpr.getSourceNode());
+        Node funcNode = (Node) argRepNodes.remove(0);
+        Node exprListNode = createNodeWithArgList(srcNode.getNode(1), argRepNodes);
+        replaceNode = substituteNode(stmt.getSourceNode(), funcNode, exprListNode);
+      }
+      cAnalyzer.processExpression(replaceNode);
       switch(stmt.getType()) {
       case ASSIGN:
         replaceStmt = Statement.assign(replaceNode, 
@@ -868,9 +882,10 @@ class RunSeqProcessor implements RunProcessor {
     Preconditions.checkArgument(returnStmt.getType().equals(StatementType.RETURN));
     IRExpressionImpl lExpr = (IRExpressionImpl) ((Statement) assignStmt).getOperand(0);
     IRExpressionImpl rExpr = (IRExpressionImpl) ((Statement) returnStmt).getOperand(0);
-    Node assignNode = GNode.create("AssignmentExpression", 
+    GNode assignNode = GNode.create("AssignmentExpression", 
         lExpr.getSourceNode(), "=", rExpr.getSourceNode());
     assignNode.setLocation(assignStmt.getSourceNode().getLocation());
+    cAnalyzer.processExpression(rExpr.getSourceNode());
     IRStatement assignResult = Statement.assign(assignNode, lExpr, rExpr);
     return assignResult;
   }
@@ -1253,25 +1268,6 @@ class RunSeqProcessor implements RunProcessor {
         argList.add(candidateList.remove(0));
       else  
         argList.add(srcNode.get(i));
-    }
-    Node newNode = createNodeWithArgList(srcNode, argList);
-    return newNode;
-  }
-  
-  /**
-   * Substitute the child nodes in srcNode as source nodes of exprs
-   */
-  private Node substituteNode(Node srcNode, List<IRExpression> exprs) {
-    List<Object> argList = Lists.newArrayList();
-    List<Node> candidateList = Lists.newArrayList();
-    for(IRExpression expr : exprs)
-      candidateList.add(expr.getSourceNode());
-    for(int i = 0; i < srcNode.size(); i++) {
-      Object o = srcNode.get(i);
-      if(o instanceof GNode)
-        argList.add(candidateList.remove(0));
-      else  
-        argList.add(o);
     }
     Node newNode = createNodeWithArgList(srcNode, argList);
     return newNode;

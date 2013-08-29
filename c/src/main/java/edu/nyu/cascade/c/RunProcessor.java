@@ -12,8 +12,7 @@ public interface RunProcessor {
           "allocated", "create_acyclic_list", "create_cyclic_list", 
           "create_acyclic_dlist", "create_cyclic_dlist", "is_root",
           "valid_malloc", "malloc", "free", "array_allocated", "__NONDET__");
-  final static String TEMP_VAR_PREFIX = "TEMP_VAR_";
-  final static String TEST_VAR_PREFIX = "TEST_VAR_";
+  final static String TEMP_VAR_PREFIX = "cascade_tmp";
   final static String COND_ASSUME_LABEL = "COND_ASSUME";
 
   abstract void enableFeasibilityChecking();

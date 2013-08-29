@@ -39,6 +39,7 @@ import edu.nyu.cascade.ir.impl.Statement;
 import edu.nyu.cascade.ir.impl.VarInfo;
 import edu.nyu.cascade.ir.type.IRIntegerType;
 import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 
 /**
@@ -66,9 +67,9 @@ public class CfgBuilder extends Visitor {
    * @return A <code>Map</code> from declaration nodes to CFGs.
    */
   @SuppressWarnings("unchecked")
-  public static Map<Node, IRControlFlowGraph> getCfgs(SymbolTable symbolTable,
+  public static Map<Node, IRControlFlowGraph> getCfgs(SymbolTable symbolTable, CAnalyzer cAnalyzer,
       Node ast) {
-    return (Map<Node, IRControlFlowGraph>) new CfgBuilder(symbolTable).dispatch(ast);
+    return (Map<Node, IRControlFlowGraph>) new CfgBuilder(symbolTable, cAnalyzer).dispatch(ast);
   }
   
   /**
@@ -141,6 +142,9 @@ public class CfgBuilder extends Visitor {
   }
 
   private static final String TYPE = xtc.Constants.TYPE;
+  private static final String TEST_VAR_PREFIX = "condition";
+  private static final String STRING_VAR_PREFIX = "string";
+  private static final String MALLOC_VAR_PREFIX = "malloc";
   
   private final SymbolTable symbolTable;
   private BasicBlock currentBlock;
@@ -160,19 +164,13 @@ public class CfgBuilder extends Visitor {
    * visitor returns.
    */
   private int expressionDepth;
-  private int TEST_VAR_POSTFIX;
-  private int STRING_VAR_POSTFIX;
-  private int MALLOC_VAR_POSTFIX;
   private Map<Node, ControlFlowGraph> cfgs;
   private ControlFlowGraph currentCfg;
   private Deque<Scope> scopes;
-  private C cAnalyzer;
+  private CAnalyzer cAnalyzer;
   private Map<String, BasicBlock> labeledBlocks;
   private List<xtc.util.SymbolTable.Scope> nestedScopes;
-  /**
-   * Store the alias name of struct type or union type
-   */
-  private Map<Type, String> typeAliasMap;   
+  
   /**
    * Whether to treat compoundStatement '{...}' as a new scope in the symbolTable;
    * it's thanks to the functionDefinition and forStatement -- these two kinds of
@@ -183,20 +181,16 @@ public class CfgBuilder extends Visitor {
    */
   private boolean compoStmtAsScope;
 
-  private CfgBuilder(SymbolTable symbolTable) {
+  private CfgBuilder(SymbolTable symbolTable, CAnalyzer cAnalyzer) {
     this.symbolTable = symbolTable;
+    this.cAnalyzer = cAnalyzer;
     alignments = Lists.newLinkedList();
     cfgs = Maps.newHashMap();
     scopes = Lists.newLinkedList();
     nestedScopes = Lists.newArrayList();
     compoStmtAsScope = true;
-    cAnalyzer = new C();
     labeledBlocks = Maps.newHashMap();
     globalStmts = Maps.newHashMap();
-    typeAliasMap = Maps.newHashMap();
-    TEST_VAR_POSTFIX = 0;
-    MALLOC_VAR_POSTFIX = 0;
-    STRING_VAR_POSTFIX = 0;
   }
 
   /** Align the debug output with the last seen tab stop. */
@@ -510,24 +504,26 @@ public class CfgBuilder extends Visitor {
   }
 
   private Node defineTestVarNode(Node test) {
-    String varName = "TEST_VAR_" + (TEST_VAR_POSTFIX++);
+    String varName = Identifiers.uniquify(TEST_VAR_PREFIX);
     GNode varNode = GNode.create("PrimaryIdentifier", varName);
     xtc.util.SymbolTable.Scope scope = symbolTable.getCurrentScope();
     varNode.setLocation(test.getLocation());
     symbolTable.toXtcSymbolTable().mark(varNode);
-//    varNode.setProperty(xtc.Constants.SCOPE, scope);
-    new LabelT("TEST_VAR").mark(varNode);
+    Type type = lookupType(test);
+    Reference ref = new DynamicReference(varName, type);
+    Reference varRef = new StringReference(TEST_VAR_PREFIX, BooleanT.TYPE);
+    Type testType = new AnnotatedT(type).shape(ref).constant(varRef);
+    testType.mark(varNode);
     IRVarInfo varInfo = new VarInfo(scope, varName, IRIntegerType.getInstance(), varNode);
     symbolTable.define(varName, varInfo);
     return varNode; 
   }
   
   private Node defineMallocVarNode(Node malloc) {
-    String varName = "MALLOC_VAR_" + (MALLOC_VAR_POSTFIX++);
+    String varName = Identifiers.uniquify(MALLOC_VAR_PREFIX);
     GNode varNode = GNode.create("PrimaryIdentifier", varName);
     xtc.util.SymbolTable.Scope scope = symbolTable.getCurrentScope();
     varNode.setLocation(malloc.getLocation());
-//  varNode.setProperty(xtc.Constants.SCOPE, scope);
     symbolTable.toXtcSymbolTable().mark(varNode);
     lookupType(malloc).mark(varNode);
     IRVarInfo varInfo = new VarInfo(scope, varName, IRIntegerType.getInstance(), varNode);
@@ -536,13 +532,15 @@ public class CfgBuilder extends Visitor {
   }
 
   private Node defineStringVarNode(Node string) {
-    String varName = "STRING_VAR_" + (STRING_VAR_POSTFIX++);
+    String varName = Identifiers.uniquify(STRING_VAR_PREFIX);
     GNode varNode = GNode.create("PrimaryIdentifier", varName);
     xtc.util.SymbolTable.Scope scope = symbolTable.getCurrentScope();
     varNode.setLocation(string.getLocation());
-//  varNode.setProperty(xtc.Constants.SCOPE, scope);
     symbolTable.toXtcSymbolTable().mark(varNode);
-    lookupType(string).mark(varNode);
+    Type type = lookupType(string);
+    Reference ref = new DynamicReference(varName, type);
+    Type stringType = type.shape(ref);
+    stringType.mark(varNode);
     IRVarInfo varInfo = new VarInfo(scope, varName, IRIntegerType.getInstance(), varNode);
     symbolTable.define(varName, varInfo);
     return varNode; 
@@ -551,15 +549,13 @@ public class CfgBuilder extends Visitor {
   private Node defineStringConstNode(Node node, String string) {
     GNode stringNode = GNode.create("StringConstant", string);
     stringNode.setLocation(node.getLocation());
-    (new ArrayT(NumberT.CHAR, string.length())).mark(stringNode);
-//    xtc.util.SymbolTable.Scope scope = symbolTable.getCurrentScope();
-//    stringNode.setProperty(xtc.Constants.SCOPE, scope);
+//    (new ArrayT(NumberT.CHAR, string.length())).mark(stringNode);
     symbolTable.toXtcSymbolTable().mark(stringNode);
     return stringNode; 
   }
   
   private Type unwrapped(Type type) {
-    while(type.isAlias() || type.isAnnotated() || type.isVariable()) {
+    while(type.isAnnotated() || type.isVariable() || type.isAlias()) {
       type = type.resolve();
       type = type.deannotate();
     }
@@ -567,7 +563,12 @@ public class CfgBuilder extends Visitor {
   }
   
   private Type lookupType(Node node) throws ExpressionFactoryException {
-    Type type = (Type) node.getProperty(TYPE);
+    Type type = null;
+    if(!node.hasProperty(TYPE)) {
+      type = symbolTable.lookupType(node.getString(0));
+    } else {
+      type = (Type) node.getProperty(TYPE);
+    }
     if (type == null)
       throw new ExpressionFactoryException("Type not found: " + node);
     return type;
@@ -581,61 +582,48 @@ public class CfgBuilder extends Visitor {
     if(!type.isAlias())     return false;
     
     String aliasName = type.toAlias().getName();
-    typeAliasMap.put(unwrapped(type), aliasName);
     return aliasName.equals(name);
   }
   
-  private GNode getSizeofTypeNode(Type type, Node node) {
-    Type resType = unwrapped(type);
-    
+  private GNode getSizeofTypeNode(Type type, Location loc) {
+    Type resType = type.deannotate();
+
     if(resType.isArray()) { // Pick the base type of array
       while(resType.isArray()) {
         resType = unwrapped(resType.toArray().getType());
       }
     }
+    String name = resType.getName();
     
-    GNode node1 = null; 
-    if(resType.isStruct()) {
-      String typeName = typeAliasMap.containsKey(resType) ? 
-          typeAliasMap.get(resType) : resType.getName();
-      node1 = GNode.create("StructureTypeReference", null, typeName);
-      node1.setLocation(node.getLocation());
-      lookupType(node).mark(node1);
+    GNode node1 = null;
+    if(resType.isAlias()) {
+      node1 = GNode.create("TypedefName", resType.getName());
+    } else if(resType.isStruct()) {
+      node1 = GNode.create("StructureTypeReference", null, name);
     } else if(resType.isUnion()) {
-      String typeName = typeAliasMap.containsKey(resType) ? 
-          typeAliasMap.get(resType) : resType.getName();
-      node1 = GNode.create("UnionTypeReference", null, typeName);
-      node1.setLocation(node.getLocation());
-      lookupType(node).mark(node1);
+      node1 = GNode.create("UnionTypeReference", null, name);
     } else {
       StringBuilder sb = new StringBuilder();
       String typeName = resType.toString();
       sb.append(Character.toUpperCase(typeName.charAt(0)));
       sb.append(typeName.substring(1));
       node1 = GNode.create(sb.toString());
-      node1.setLocation(node.getLocation());
     }
 
     GNode node2 = GNode.create("SpecifierQualifierList", node1);
-    node2.setLocation(node.getLocation());
     GNode node3 = GNode.create("TypeName", node2, null);
-    node3.setLocation(node.getLocation());
-    resType.mark(node3);
     GNode node4 = GNode.create("SizeofExpression", node3);
-    node4.setLocation(node.getLocation());
-    Type t = (new AnnotatedT(NumberT.INT)).constant(cAnalyzer.getSize(resType));
-    t.mark(node4);
+    node1.setLocation(loc);
+    node2.setLocation(loc);
+    node3.setLocation(loc);
+    node4.setLocation(loc);
     return node4;
   }
   
-  private CExpression getSubscriptExpression(CExpression region, CExpression subscript, Node node) {
-    Location loc = node.getLocation();
-    GNode node1 = (GNode) region.getSourceNode();
-    GNode node2 = (GNode) subscript.getSourceNode();
+  private CExpression getSubscriptExpression(CExpression region, CExpression subscript, Location loc) {
+    GNode node1 = GNode.cast(region.getSourceNode());
+    GNode node2 = GNode.cast(subscript.getSourceNode());
     GNode node3 = GNode.create("SubscriptExpression", node1, node2);
-    Type baseType = lookupType(node1);
-    Type cellType = unwrapped(baseType).toArray().getType();
-    cellType.mark(node3);
     node1.setLocation(loc);
     node2.setLocation(loc);
     node3.setLocation(loc);
@@ -658,7 +646,6 @@ public class CfgBuilder extends Visitor {
       for(int i=0; i<exprList.size(); i++) {
         GNode val = (GNode) exprList.get(i).getSourceNode();
         GNode indexNode = GNode.create("IntegerConstant", ((Integer)i).toString());
-        NumberT.INT.mark(indexNode);
         indexNode.setLocation(loc);
         indexList.add(0, expressionOf(indexNode));
         initializeArray(var, val, dimension, indexList);
@@ -669,10 +656,13 @@ public class CfgBuilder extends Visitor {
       CExpression varWithIndex = var;
       for(int i=indexList.size()-1; i>=0; i--) {
         CExpression index = indexList.get(i);
-        varWithIndex = getSubscriptExpression(varWithIndex, index, vals);
+        varWithIndex = getSubscriptExpression(varWithIndex, index, loc);
       }
       CExpression val = recurseOnExpression(vals);
-      Statement stmt = Statement.assign(vals, varWithIndex, val);
+      GNode assignNode = GNode.create("AssignmentExpression", varWithIndex.getSourceNode(), "=", val.getSourceNode());
+      assignNode.setLocation(loc);
+      cAnalyzer.processExpression(assignNode);
+      Statement stmt = Statement.assign(assignNode, varWithIndex, val);
       this.addStatementGlobalOrLocal(stmt);
     }
   }
@@ -949,63 +939,46 @@ public class CfgBuilder extends Visitor {
   }
   
   public CExpression visitArrayDeclarator(GNode node) {
-    CExpression baseExpr = (CExpression) dispatch(node.getNode(0));
-    Node sizeNode = node.getNode(2);
-    if(sizeNode == null)    return baseExpr;
-
+    Location loc = node.getLocation();
+    Node declareNode = node.getNode(0);
+    CExpression baseExpr = (CExpression) dispatch(declareNode);
+    if(node.getNode(2) == null)    return baseExpr;
+    GNode sizeNode = node.getGeneric(2);
+    sizeNode.setLocation(loc);
+    
     CExpression allocExpr = null;
     Node baseNode = baseExpr.getSourceNode();
-      
-    // Simple case: one-dime array int A[n]
     if("SimpleDeclarator".equals(baseNode.getName())) {
       Type cellType = unwrapped(lookupType(baseNode));
-      
-      /* Array declaration in parameter list: char A[5], A is with type
-       * Pointer(Char), no need to add allocate statement for parameter.
-       */
-      if(!cellType.isArray())   return expressionOf(node);
-       
-      cellType = cellType.toArray();
-      Node sizeTypeNode = getSizeofTypeNode(cellType, node);
-      
-      GNode multNode = GNode.create("MultiplicativeExpression", sizeNode, "*", sizeTypeNode);
-      multNode.setLocation(node.getLocation()); // n * sizeof(int)
-      long constant = lookupType(sizeNode).getConstant().longValue()
-          * lookupType(sizeTypeNode).getConstant().longValue();
-      Type t = (new AnnotatedT(NumberT.INT)).constant(constant);
-      t.mark(multNode);
-        
-      GNode funcNode = GNode.create("PrimaryIdentifier", "array_allocated");
-      funcNode.setLocation(node.getLocation()); // array_allocated(A, n * sizeof(int))
-      
-      GNode argList = GNode.create("ExpressionList", baseNode, multNode);
-      argList.setLocation(node.getLocation());
-        
-      GNode allocNode = GNode.create("FunctionCall", funcNode, argList);
-      allocNode.setLocation(node.getLocation());
-      allocExpr = expressionOf(allocNode);
-    } 
-    // Complex case: multi-dim array int A[n][m]
-    else if("FunctionCall".equals(baseNode.getName())) {
+      // Simple case: one-dime array int A[n]
+      if(cellType.isPointer()) {
+        /* Array declaration in parameter list: char A[5], A is with type
+         * Pointer(Char), no need to add allocate statement for parameter.
+         */
+        return expressionOf(node);
+      } else {
+        Node sizeTypeNode = getSizeofTypeNode(cellType, loc);
+        GNode multNode = GNode.create("MultiplicativeExpression", sizeNode, "*", sizeTypeNode);
+        GNode funcNode = GNode.create("PrimaryIdentifier", "array_allocated");
+        GNode argList = GNode.create("ExpressionList", baseNode, multNode);
+        GNode allocNode = GNode.create("FunctionCall", funcNode, argList);
+        multNode.setLocation(loc);
+        funcNode.setLocation(loc); // array_allocated(A, n * sizeof(int))
+        argList.setLocation(loc);
+        allocNode.setLocation(loc);
+        allocExpr = expressionOf(allocNode);
+      }
+    } else {
       Node lhsNode = baseNode.getNode(1).getNode(0);
-      Node rhsNode = baseNode.getNode(1).getNode(1);
-        
+      Node rhsNode = baseNode.getNode(1).getNode(1);        
       GNode multNode = GNode.create("MultiplicativeExpression", sizeNode, "*", rhsNode);
-      multNode.setLocation(node.getLocation());
-      long constant = lookupType(sizeNode).getConstant().longValue()
-          * lookupType(rhsNode).getConstant().longValue();
-      Type t = (new AnnotatedT(NumberT.INT)).constant(constant);
-      t.mark(multNode);
-
-      Node funcNode = GNode.create("PrimaryIdentifier", "array_allocated");
-      funcNode.setLocation(node.getLocation());
-
+      GNode funcNode = GNode.create("PrimaryIdentifier", "array_allocated");
       GNode argList = GNode.create("ExpressionList", lhsNode, multNode);
-      argList.setLocation(node.getLocation());
-        
       GNode allocNode = GNode.create("FunctionCall", funcNode, argList);
-      allocNode.setLocation(node.getLocation());
-      
+      multNode.setLocation(loc);
+      funcNode.setLocation(loc);
+      argList.setLocation(loc);
+      allocNode.setLocation(loc);
       allocExpr = expressionOf(allocNode);
     } 
     return allocExpr;
@@ -1144,7 +1117,7 @@ public class CfgBuilder extends Visitor {
     // to enter scope there, set 'CompoStmtAsScope' as 'false'
     enterScope(node);
     compoStmtAsScope = false;
-
+    cAnalyzer.processExpression(parameters);
     if (parameters != null) {
       for (Object o : parameters) {
         assert (o instanceof Node);
@@ -1301,7 +1274,8 @@ public class CfgBuilder extends Visitor {
   }
 
   public void visitInitializedDeclarator(GNode node) {
-    /* If there is an initializer, add as an assignment statement */    
+    /* If there is an initializer, add as an assignment statement */
+    Location loc = node.getLocation();
     Node varNode = node.getNode(1);
     CExpression varExpr = recurseOnExpression(varNode);
     Statement stmt;
@@ -1309,6 +1283,7 @@ public class CfgBuilder extends Visitor {
     if ("ArrayDeclarator".equals(varNode.getName())) {
       if(!isAliasName(varNode.getNode(0))) {
         Node varNodePrime = varExpr.getSourceNode();
+        cAnalyzer.processExpression(varNodePrime);
         CExpression baseExpr = expressionOf(varNodePrime.getNode(1).getNode(0));
         CExpression sizeExpr = expressionOf(varNodePrime.getNode(1).getNode(1));
         Statement declareStmt = Statement.declareArray(varNodePrime, baseExpr, sizeExpr);
@@ -1324,19 +1299,26 @@ public class CfgBuilder extends Visitor {
     } else {
       if("SimpleDeclarator".equals(varNode.getName())) {
         Node varNodePrime = varExpr.getSourceNode();
-        Type varType = unwrapped(lookupType(varNodePrime));
-        if(varType.isStruct() || varType.isUnion()) {
+        Type varType = lookupType(varNodePrime);
+        if(unwrapped(varType).isStruct() || unwrapped(varType).isUnion()) {
           if(!isAliasName(varNode)) {
-            Node sizeNode = getSizeofTypeNode(varType, varNode);
+            Node sizeNode = getSizeofTypeNode(varType, varNode.getLocation());
             CExpression sizeExpr = expressionOf(sizeNode);
-            Statement declareStmt = Statement.declareStruct(node, varExpr, sizeExpr);
+            GNode funcNode = GNode.create("PrimaryIdentifier", "struct_allocated");
+            GNode argList = GNode.create("ExpressionList", varNodePrime, sizeNode);
+            GNode allocNode = GNode.create("FunctionCall", funcNode, argList);
+            funcNode.setLocation(loc);
+            argList.setLocation(loc);
+            allocNode.setLocation(loc);
+            cAnalyzer.processExpression(allocNode);
+            Statement declareStmt = Statement.declareStruct(allocNode, varExpr, sizeExpr);
             addStatementGlobalOrLocal(declareStmt);
           }
         }
       }
       /* Assignment expression is included here, e.g. "int a = 1;" */
       if (node.get(4) instanceof Node) {
-        Node valNode = node.getNode(4);
+        GNode valNode = node.getGeneric(4);
         CExpression valExpr = recurseOnExpression(valNode);
         Node valNodePrime = valExpr.getSourceNode();
         if("FunctionCall".equals(valNodePrime.getName())) {
@@ -1344,15 +1326,33 @@ public class CfgBuilder extends Visitor {
           /* Generate an allocated function for malloc function */
           if("malloc".equals(funNode.getString(0))) {
             Node sizeNode = valNodePrime.getNode(1).getNode(0);
-            CExpression sizeExpr = expressionOf(sizeNode);            
+            CExpression sizeExpr = expressionOf(sizeNode);
+            GNode funcNode = GNode.create("PrimaryIdentifier", "alloc");
+            GNode argList = GNode.create("ExpressionList", varExpr.getSourceNode(), sizeNode);
+            GNode allocNode = GNode.create("FunctionCall", funcNode, argList);
+            funcNode.setLocation(loc);
+            argList.setLocation(loc);
+            allocNode.setLocation(loc);
+            cAnalyzer.processExpression(allocNode);
             stmt = Statement.alloc(node, varExpr, sizeExpr);
-          } else if("__NONDET__".equals(funNode.getString(0))) {        
-            stmt = Statement.havoc(node, varExpr);
+          } else if("__NONDET__".equals(funNode.getString(0))) {
+            GNode funcNode = GNode.create("PrimaryIdentifier", "havoc");
+            GNode argList = GNode.create("ExpressionList", varExpr.getSourceNode());
+            GNode havocNode = GNode.create("FunctionCall", funcNode, argList);
+            funcNode.setLocation(loc);
+            argList.setLocation(loc);
+            havocNode.setLocation(loc);
+            cAnalyzer.processExpression(havocNode);
+            stmt = Statement.havoc(havocNode, varExpr);
           } else {
             stmt = Statement.assign(node, varExpr, valExpr);
           }
         } else {
-          stmt = Statement.assign(node, varExpr, valExpr);
+          GNode assignNode = GNode.create("AssignmentExpression", 
+              varExpr.getSourceNode(), "=", valExpr.getSourceNode());
+          assignNode.setLocation(loc);
+          cAnalyzer.processExpression(assignNode);
+          stmt = Statement.assign(assignNode, varExpr, valExpr);
         }
         addStatementGlobalOrLocal(stmt);
       }
@@ -1453,6 +1453,7 @@ public class CfgBuilder extends Visitor {
   
   public CExpression visitPostdecrementExpression(GNode node) {
     Node opNode = node.getNode(0);
+    Location loc = node.getLocation();
 
     if (debugEnabled()) {
       debug().loc(node).p(' ').indent();
@@ -1461,16 +1462,14 @@ public class CfgBuilder extends Visitor {
     }
 
     CExpression opExpr = recurseOnExpression(opNode);
-    GNode oneNode = GNode.create("IntegerConstant", "1");
-    oneNode.setLocation(opNode.getLocation());
-    Type t = (new AnnotatedT(NumberT.INT)).constant(1);
-    t.mark(oneNode);
-    
+    GNode oneNode = GNode.create("IntegerConstant", "1");    
     GNode decNode = GNode.create("AdditiveExpression", opNode, "-", oneNode);
-    decNode.setLocation(opNode.getLocation());
-    lookupType(node).mark(decNode);
-    
-    Statement stmt = Statement.assign(node, opExpr, CExpression.create(decNode, opExpr.getScope()));
+    GNode assignNode = GNode.create("AssignmentExpression", opExpr.getSourceNode(), "=", decNode);
+    oneNode.setLocation(loc);
+    decNode.setLocation(loc);
+    assignNode.setLocation(loc);
+    cAnalyzer.processExpression(assignNode);
+    Statement stmt = Statement.assign(assignNode, opExpr, CExpression.create(decNode, opExpr.getScope()));
     if(expressionDepth == 0)       addStatement(stmt);
     else                           appendStatements.add(stmt);
 
@@ -1479,6 +1478,7 @@ public class CfgBuilder extends Visitor {
   
   public CExpression visitPostincrementExpression(GNode node) {
     Node opNode = node.getNode(0);
+    Location loc = node.getLocation();
 
     if (debugEnabled()) {
       debug().loc(node).p(' ').indent();
@@ -1487,16 +1487,14 @@ public class CfgBuilder extends Visitor {
     }
 
     CExpression opExpr = recurseOnExpression(opNode);
-    GNode oneNode = GNode.create("IntegerConstant", "1");
-    oneNode.setLocation(opNode.getLocation());
-    Type t = (new AnnotatedT(NumberT.INT)).constant(1);
-    t.mark(oneNode);
-    
+    GNode oneNode = GNode.create("IntegerConstant", "1");    
     GNode incNode = GNode.create("AdditiveExpression", opNode, "+", oneNode);
-    incNode.setLocation(opNode.getLocation());
-    lookupType(node).mark(incNode);
-    
-    Statement stmt = Statement.assign(node, opExpr, CExpression.
+    GNode assignNode = GNode.create("AssignmentExpression", opExpr.getSourceNode(), "=", incNode);
+    oneNode.setLocation(loc);
+    incNode.setLocation(loc);
+    assignNode.setLocation(loc);
+    cAnalyzer.processExpression(assignNode);
+    Statement stmt = Statement.assign(assignNode, opExpr, CExpression.
         create(incNode, opExpr.getScope()));
     if(expressionDepth == 0)       addStatement(stmt);
     else                           appendStatements.add(stmt);
@@ -1506,6 +1504,7 @@ public class CfgBuilder extends Visitor {
 
   public CExpression visitPredecrementExpression(GNode node) {
     Node opNode = node.getNode(0);
+    Location loc = node.getLocation();
 
     if (debugEnabled()) {
       debug().loc(node).p(' ').indent();
@@ -1514,16 +1513,14 @@ public class CfgBuilder extends Visitor {
     }
 
     CExpression opExpr = recurseOnExpression(opNode);
-    GNode oneNode = GNode.create("IntegerConstant", "1");
-    oneNode.setLocation(opNode.getLocation());
-    Type t = (new AnnotatedT(NumberT.INT)).constant(1);
-    t.mark(oneNode);
-    
+    GNode oneNode = GNode.create("IntegerConstant", "1");    
     GNode decNode = GNode.create("AdditiveExpression", opNode, "-", oneNode);
-    decNode.setLocation(opNode.getLocation());
-    lookupType(node).mark(decNode);
-    
-    addStatement(Statement.assign(node, opExpr, CExpression
+    GNode assignNode = GNode.create("AssignmentExpression", opExpr.getSourceNode(), "=", decNode);
+    oneNode.setLocation(loc);
+    decNode.setLocation(loc);
+    assignNode.setLocation(loc);
+    cAnalyzer.processExpression(assignNode);  
+    addStatement(Statement.assign(assignNode, opExpr, CExpression
         .create(decNode, opExpr.getScope())));
 
     return opExpr; // return the *prior value* of the operand
@@ -1531,6 +1528,7 @@ public class CfgBuilder extends Visitor {
   
   public CExpression visitPreincrementExpression(GNode node) {
     Node opNode = node.getNode(0);
+    Location loc = node.getLocation();
 
     if (debugEnabled()) {
       debug().loc(node).p(' ').indent();
@@ -1540,14 +1538,12 @@ public class CfgBuilder extends Visitor {
 
     CExpression opExpr = recurseOnExpression(opNode);
     GNode oneNode = GNode.create("IntegerConstant", "1");
-    oneNode.setLocation(opNode.getLocation());
-    Type t = (new AnnotatedT(NumberT.INT)).constant(1);
-    t.mark(oneNode);
-    
     GNode incNode = GNode.create("AdditiveExpression", opNode, "+", oneNode);
-    incNode.setLocation(opNode.getLocation());
-    lookupType(node).mark(incNode);
-    
+    GNode assignNode = GNode.create("AssignmentExpression", opExpr.getSourceNode(), "=", incNode);
+    oneNode.setLocation(loc);
+    incNode.setLocation(loc);
+    assignNode.setLocation(loc);
+    cAnalyzer.processExpression(assignNode);
     addStatement(Statement.assign(node, opExpr, CExpression
         .create(incNode, opExpr.getScope())));
 
@@ -1577,10 +1573,6 @@ public class CfgBuilder extends Visitor {
     debug().pln("Binding: " + varInfo);
     symbolTable.undefine(name);
     symbolTable.define(name, varInfo);
-    if(!node.hasProperty(TYPE)) {
-      Type type = symbolTable.lookupType(node.getString(0));
-      type.mark(node);
-    }
     return expressionOf(node);
   }
 
@@ -1624,14 +1616,13 @@ public class CfgBuilder extends Visitor {
 
   public CExpression visitStringConstant(GNode node) {
     // pick the content to create a node for initialization
+    Location loc = node.getLocation();
     Reference shape = lookupType(node).getShape();
     assert(shape.isString());
     String content = ((StringReference) shape).getLiteral();
     if(content == null) {
       GNode charConst = GNode.create("CharacterConstant", "\'\\u0000\'");
-      charConst.setLocation(node.getLocation());
-      Type t = (new AnnotatedT(NumberT.CHAR)).constant(0);
-      t.mark(charConst);
+      charConst.setLocation(loc);
       return expressionOf(charConst);
     }
 
@@ -1641,9 +1632,7 @@ public class CfgBuilder extends Visitor {
       // Here, we translate the single character to the char with ASCII code.
       StringBuilder sb = new StringBuilder().append('\'').append(c).append('\'');
       GNode charConst = GNode.create("CharacterConstant", sb.toString());
-      charConst.setLocation(node.getLocation());
-      Type t = (new AnnotatedT(NumberT.CHAR)).constant((int) c);
-      t.mark(charConst);
+      charConst.setLocation(loc);
       GNode initEntry = GNode.create("InitializerListEntry", null, charConst);
       initEntry.setLocation(node.getLocation());
       if(i == 0)    operands = new Pair<Object>(initEntry);
@@ -1658,21 +1647,21 @@ public class CfgBuilder extends Visitor {
     
     // length * sizeof(char)
     GNode lhsNode = GNode.create("IntegerConstant", Integer.toString(content.length()+1));
-    lhsNode.setLocation(node.getLocation());
-    Type lhsType = (new AnnotatedT(NumberT.INT)).constant(content.length()+1);
-    lhsType.mark(lhsNode);
-    
-    Node rhsNode = getSizeofTypeNode(IntegerT.CHAR, node);
+    Node rhsNode = getSizeofTypeNode(IntegerT.CHAR, loc);
     GNode multNode = GNode.create("MultiplicativeExpression", lhsNode, "*", rhsNode);
-    multNode.setLocation(node.getLocation()); // n * sizeof(int)
-    long constant = lookupType(lhsNode).getConstant().longValue()
-        * lookupType(rhsNode).getConstant().longValue();
-    Type t = (new AnnotatedT(NumberT.INT)).constant(constant);
-    t.mark(multNode);
-    CExpression sizeExpr = expressionOf(multNode);
+    GNode funcNode = GNode.create("PrimaryIdentifier", "array_allocated");
+    GNode argList = GNode.create("ExpressionList", stringVarExpr.getSourceNode(), multNode);
+    GNode allocNode = GNode.create("FunctionCall", funcNode, argList);
+    lhsNode.setLocation(loc); 
+    multNode.setLocation(loc); // n * sizeof(int)
+    funcNode.setLocation(loc); // array_allocated(A, n * sizeof(int))
+    argList.setLocation(loc);
+    allocNode.setLocation(loc);
     
-    // string_allocated(STRING_VAR_*, length * sizeof(char))   
-    Statement declareStmt = Statement.declareArray(node, stringVarExpr, sizeExpr);
+    // string_allocated(STRING_VAR_*, length * sizeof(char))
+    CExpression sizeExpr = expressionOf(multNode);
+    cAnalyzer.processExpression(allocNode);
+    Statement declareStmt = Statement.declareArray(allocNode, stringVarExpr, sizeExpr);
     addStatementGlobalOrLocal(declareStmt);
     
     List<CExpression> indexExprList = Lists.newArrayList();
@@ -1742,14 +1731,14 @@ public class CfgBuilder extends Visitor {
   public CExpression visitSubscriptExpression(GNode node) {
     recurseOnExpression(node.getNode(0));
     recurseOnExpression(node.getNode(1));
-    /* Tag type to the node */
-    if(!node.hasProperty(TYPE)) {
-      Type baseType = lookupType(node.getNode(0));
-      assert(baseType.isAnnotated());
-      Reference shape = baseType.getShape();
-      Type type = new AnnotatedT(shape.getType()).shape(shape);
-      type.mark(node);
-    }
+//    /* Tag type to the node */
+//    if(!node.hasProperty(TYPE)) {
+//      Type baseType = lookupType(node.getNode(0));
+//      assert(baseType.isAnnotated());
+//      Reference shape = baseType.getShape();
+//      Type type = new AnnotatedT(shape.getType()).shape(shape);
+//      type.mark(node);
+//    }
     return expressionOf(node);
   }
   
