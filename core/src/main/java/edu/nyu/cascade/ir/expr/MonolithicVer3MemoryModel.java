@@ -43,6 +43,7 @@ import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 
@@ -720,6 +721,7 @@ public class MonolithicVer3MemoryModel extends AbstractMonoMemoryModel {
       Reference ref = type.getShape();
       return ARRAY_PREFIX + getReferenceName(ref);
     } else {
+      IOUtils.err().println("no array for node " + gnode);
       return ARRAY_NULL;
     }
   }
