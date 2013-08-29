@@ -106,9 +106,10 @@ public abstract class AbstractBurstallMemoryModel extends AbstractMemoryModel {
       if(annoType.hasShape()) {
         Reference ref = annoType.getShape();
         if(ref instanceof FieldReference) {
-          String fieldName = ((FieldReference) ref).toString();
-          fieldName = fieldName.replace('.', '#');
-          sb.append(fieldName);
+          FieldReference fieldRef = (FieldReference) ref;
+          xtc.type.Type baseType = fieldRef.getBase().getType();
+          String baseTypeName = parseTypeName(baseType);
+          sb.append(baseTypeName).append('.').append(fieldRef.getField());
         } else {
           sb.append(parseTypeName(ref.getType()));
         }

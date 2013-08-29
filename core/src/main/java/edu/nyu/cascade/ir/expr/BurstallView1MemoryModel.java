@@ -930,7 +930,7 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
       for(VariableT elem : structUnionType.getMembers()) {
         // TODO: nested structure type
         String elemName = new StringBuilder().append(typeName)
-            .append('#').append(elem.getName()).toString();
+            .append('.').append(elem.getName()).toString();
         xtc.type.Type elemType = elem.getType();
         CellKind kind = getCellKind(elemType);
         if(CellKind.SCALAR.equals(kind))
@@ -963,7 +963,7 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
         // TODO: nested structure type
         int offset = getOffset(type.toStruct(), elem.getName());
         String elemName = new StringBuilder().append(typeName)
-            .append('#').append(elem.getName()).toString();
+            .append('.').append(elem.getName()).toString();
         elemOffsets.put(elemName, 
             em.bitVectorConstant(offset, cellSize));
       }
@@ -985,7 +985,7 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
     int cellSize = encoding.getCellSize();
     for(VariableT elem : type.toUnion().getMembers()) {
       String elemName = new StringBuilder().append(typeName)
-          .append('#').append(elem.getName()).toString();
+          .append('.').append(elem.getName()).toString();
       int size = (int) cAnalyzer.getSize(elem.getType()) * cellSize;
       elemOffsets.put(elemName, size);
     }
