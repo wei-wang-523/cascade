@@ -1,0 +1,23 @@
+<controlFile>
+  <sourceFile name="../ex21.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="10" />
+    <wayPoint fileId="1" line="12" >
+      <loop iterTimes="100" />
+    </wayPoint>
+    <wayPoint fileId="1" line="18" >
+      <loop iterTimes="100" />
+    </wayPoint>
+    <wayPoint fileId="1" line="22" >
+      <command>
+	    <cascadeFunction>cascade_check</cascadeFunction>
+	    <argument><![CDATA[
+	    forall(idx, implies(0<=idx && idx <1, a[idx] == 0)) &&
+	    forall(idx_0, implies(0<=idx_0 && idx_0 < 2, b[idx_0] == 0))
+	    ]]>
+	    </argument>
+      </command>
+    </wayPoint>
+    <endPosition fileId="1" line="25" />
+  </run>
+</controlFile>
