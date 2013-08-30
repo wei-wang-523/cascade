@@ -47,12 +47,12 @@ public class DynamicPathEncoding extends AbstractPathEncoding {
     Expression mem = pre.asTuple().getChild(0);
     Expression pc = pre.asTuple().getChild(1);
     
-    MemoryModel mm = getMemoryModel();
     Expression memPrime = mem;
-    if(mm instanceof PartitionMemoryModel) {
-      memPrime = ((PartitionMemoryModel) mm).updateState(mem);
-    }
-    memPrime = mm.assign(memPrime, var.eval(memPrime), val.eval(memPrime));
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    if(currentState != null) memPrime = currentState.eval(mem);
+    getMemoryModel().clearCurrentState();
+    
+    memPrime = getMemoryModel().assign(memPrime, var.eval(memPrime), val.eval(memPrime));
     stateType = exprManager.tupleType(DEFAULT_PATH_STATE, memPrime.getType(), pc.getType());
     return exprManager.tuple(stateType, memPrime, pc);
   }
@@ -67,11 +67,10 @@ public class DynamicPathEncoding extends AbstractPathEncoding {
     Expression mem = pre.asTuple().getChild(0);
     Expression pc = pre.asTuple().getChild(1);
     
-    MemoryModel mm = getMemoryModel();
     Expression memPrime = mem;
-    if(mm instanceof PartitionMemoryModel) {
-      memPrime = ((PartitionMemoryModel) mm).updateState(mem);
-    }
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    if(currentState != null) memPrime = currentState.eval(mem);
+    getMemoryModel().clearCurrentState();
     
     Expression pcPrime = exprManager.ifThenElse(pc, expr.eval(memPrime).asBooleanExpression(), 
         exprManager.ff());
