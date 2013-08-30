@@ -1,23 +1,30 @@
 package edu.nyu.cascade.cvc4;
 
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 
-import com.google.common.base.Function;
-import com.google.common.collect.MapMaker;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 
+import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.RationalType;
 
 public class RationalTypeImpl extends TypeImpl implements RationalType {
-  private static final ConcurrentMap<ExpressionManagerImpl, RationalTypeImpl> typeCache = 
-    new MapMaker().makeComputingMap(new Function<ExpressionManagerImpl,RationalTypeImpl>() {
-      @Override
-      public RationalTypeImpl apply(ExpressionManagerImpl expressionManager) {
-        return new RationalTypeImpl(expressionManager);
-      } });
+  private static final LoadingCache<ExpressionManagerImpl, RationalTypeImpl> typeCache = CacheBuilder
+      .newBuilder().build(
+          new CacheLoader<ExpressionManagerImpl, RationalTypeImpl>(){
+            public RationalTypeImpl load(ExpressionManagerImpl expressionManager) {
+              return new RationalTypeImpl(expressionManager);
+            }
+          });
   
   public static RationalTypeImpl getInstance(ExpressionManagerImpl expressionManager) {
-    return typeCache.get(expressionManager);
+    try {
+      return typeCache.get(expressionManager);
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
+    }
   }
 
   private RationalTypeImpl(ExpressionManagerImpl expressionManager) {

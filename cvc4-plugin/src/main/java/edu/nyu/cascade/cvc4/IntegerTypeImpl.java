@@ -1,26 +1,33 @@
 package edu.nyu.cascade.cvc4;
 
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 
-import com.google.common.base.Function;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
-import com.google.common.collect.MapMaker;
-
 import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.cascade.prover.BooleanExpression;
+import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.IntegerType;
 
 public class IntegerTypeImpl extends TypeImpl implements IntegerType {
-  private static final ConcurrentMap<ExpressionManagerImpl, IntegerTypeImpl> typeCache = 
-    new MapMaker().makeComputingMap(new Function<ExpressionManagerImpl,IntegerTypeImpl>() {
-      @Override
-      public IntegerTypeImpl apply(ExpressionManagerImpl expressionManager) {
-        return new IntegerTypeImpl(expressionManager);
-      } });
+  
+  private static final LoadingCache<ExpressionManagerImpl, IntegerTypeImpl> typeCache = CacheBuilder
+      .newBuilder().build(
+          new CacheLoader<ExpressionManagerImpl, IntegerTypeImpl>(){
+            public IntegerTypeImpl load(ExpressionManagerImpl expressionManager) {
+              return new IntegerTypeImpl(expressionManager);
+            }
+          });
 
   public static IntegerTypeImpl getInstance(ExpressionManagerImpl expressionManager) {
-    return typeCache.get(expressionManager);
+    try {
+      return typeCache.get(expressionManager);
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
+    }
   }
   
   protected IntegerTypeImpl(ExpressionManagerImpl expressionManager) {

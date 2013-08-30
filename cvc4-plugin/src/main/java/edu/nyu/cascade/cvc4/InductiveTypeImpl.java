@@ -6,9 +6,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 
-import com.google.common.base.Function;
 import com.google.common.base.Predicate;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -23,6 +26,7 @@ import edu.nyu.acsys.CVC4.ExprManager;
 import edu.nyu.acsys.CVC4.vectorDatatype;
 import edu.nyu.acsys.CVC4.vectorDatatypeType;
 import edu.nyu.cascade.prover.BooleanExpression;
+import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.InductiveExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
@@ -34,14 +38,13 @@ import edu.nyu.cascade.util.IOUtils;
 
 public class InductiveTypeImpl extends TypeImpl implements InductiveType {
   
-  private static ConcurrentMap<ExpressionManagerImpl, ConcurrentMap<String, ConstructorImpl>> constructorCache = new MapMaker()
-      .makeComputingMap(new Function<ExpressionManagerImpl, ConcurrentMap<String, ConstructorImpl>>() {
-        @Override
-        public ConcurrentMap<String, ConstructorImpl> apply(
-            ExpressionManagerImpl from) {
-          return new MapMaker().makeMap();
-        }
-      });
+  private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, ConstructorImpl>> constructorCache = CacheBuilder
+      .newBuilder().build(
+          new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, ConstructorImpl>>(){
+            public ConcurrentMap<String, ConstructorImpl> load(ExpressionManagerImpl expressionManager) {
+              return new MapMaker().makeMap();
+            }
+          });
   
   
   static class Builder {
@@ -414,12 +417,20 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
   
   static ConstructorImpl constructor(ExpressionManagerImpl exprManager, String name, Selector... selectors) {
     ConstructorImpl constr = new ConstructorImpl(exprManager, name, selectors);
-    constructorCache.get(exprManager).put(name, constr);
+    try {
+      constructorCache.get(exprManager).put(name, constr);
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
+    }
     return constr;
   }
   
   static ConstructorImpl lookupConstructor(ExpressionManagerImpl exprManager, String name) {
-    return constructorCache.get(exprManager).get(name);
+    try {
+      return constructorCache.get(exprManager).get(name);
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
+    }
   }
   
 /*

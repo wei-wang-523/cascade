@@ -10,44 +10,51 @@ import static edu.nyu.cascade.prover.Expression.Kind.UNARY_MINUS;
 import static edu.nyu.cascade.prover.Expression.Kind.MOD;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.MapMaker;
-
 import edu.nyu.acsys.CVC4.Exception;
 import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.acsys.CVC4.ExprManager;
 import edu.nyu.acsys.CVC4.Rational;
+import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.IntegerExpression;
 import edu.nyu.cascade.prover.RationalExpression;
 
 public final class IntegerExpressionImpl extends ExpressionImpl implements
     IntegerExpression {
-  private static final ConcurrentMap<ExpressionManagerImpl, ConcurrentMap<Integer, IntegerExpressionImpl>> constantCache = new MapMaker()
-      .makeComputingMap(new Function<ExpressionManagerImpl, ConcurrentMap<Integer, IntegerExpressionImpl>>() {
-        @Override
-        public ConcurrentMap<Integer, IntegerExpressionImpl> apply(
-            final ExpressionManagerImpl exprManager) {
-          return new MapMaker()
-              .makeComputingMap(new Function<Integer, IntegerExpressionImpl>() {
-                @Override
-                public IntegerExpressionImpl apply(Integer value) {
+
+  private static final LoadingCache<ExpressionManagerImpl, LoadingCache<Integer, IntegerExpressionImpl>> constantCache = CacheBuilder
+      .newBuilder().build(
+          new CacheLoader<ExpressionManagerImpl, LoadingCache<Integer, IntegerExpressionImpl>>(){
+            public LoadingCache<Integer, IntegerExpressionImpl> load(final ExpressionManagerImpl exprManager) {
+              return CacheBuilder.newBuilder().build(new CacheLoader<Integer, IntegerExpressionImpl>(){
+                public IntegerExpressionImpl load(Integer value) {
                   return new IntegerExpressionImpl(exprManager, value);
                 }
               });
-        }
-      });
+            }
+          });
 
   static IntegerExpressionImpl mkConstant(ExpressionManagerImpl em, long c) {
-    return constantCache.get(em).get(c);
+    try {
+      return constantCache.get(em).get((int)c);
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
+    }
   }
   
   static IntegerExpressionImpl mkConstant(ExpressionManagerImpl em, int c) {
-    return constantCache.get(em).get(c);
+    try {
+      return constantCache.get(em).get(c);
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
+    }
   }
 
   static IntegerExpressionImpl mkMinus(ExpressionManagerImpl exprManager,
