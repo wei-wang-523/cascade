@@ -14,6 +14,7 @@ import edu.nyu.acsys.CVC4.Exception;
 import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.acsys.CVC4.ExprManager;
 import edu.nyu.acsys.CVC4.Rational;
+import edu.nyu.acsys.CVC4.TupleSelect;
 import edu.nyu.acsys.CVC4.vectorExpr;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TupleExpression;
@@ -39,8 +40,8 @@ public final class TupleExpressionImpl extends ExpressionImpl implements
         new UnaryConstructionStrategy() {
           @Override
           public Expr apply(ExprManager em, Expr tuple) {
-            Expr indexExpr = em.mkConst(new Rational(index));
-            return em.mkExpr(edu.nyu.acsys.CVC4.Kind.TUPLE_SELECT, tuple, indexExpr);
+            Expr indexExpr = em.mkConst(new TupleSelect(index));
+            return em.mkExpr(edu.nyu.acsys.CVC4.Kind.TUPLE_SELECT, indexExpr, tuple);
           }
         }, tuple);
     result.setType(tuple.getType().asTuple().getElementTypes().get(index));
