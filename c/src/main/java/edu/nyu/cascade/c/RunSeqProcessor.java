@@ -692,7 +692,7 @@ class RunSeqProcessor implements RunProcessor {
     // node hasn't been replaced before
     if(!funcNodeReplaceMap.containsKey(resNode) && "FunctionCall".equals(resNode.getName())) {
       String resFuncName = resNode.getNode(0).getString(0);
-      if(!ReservedFunctions.contains(resFuncName)) {
+      if(!ReservedFunction.Functions.contains(resFuncName)) {
         if(symbolTable.lookup(resFuncName) == null)
           throw new RunProcessorException("Undeclared function: " + resFuncName);
         // Create temporary variable node for function call node.
@@ -833,7 +833,7 @@ class RunSeqProcessor implements RunProcessor {
     if(srcNode.getName().equals("FunctionCall")) {
       String funcName = srcNode.getNode(0).getString(0);
       /* Do not touch the reserved functions */
-      if(ReservedFunctions.contains(funcName))  return false;
+      if(ReservedFunction.Functions.contains(funcName))  return false;
       Node funcNode = findFuncDeclareNode(symbolTable, funcName);
       return (funcNode != null);
     }

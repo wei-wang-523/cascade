@@ -38,20 +38,9 @@ import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.RecursionStrategies.BinaryInfixRecursionStrategy;
 import edu.nyu.cascade.util.RecursionStrategies.BinaryRecursionStrategy;
+import edu.nyu.cascade.util.ReservedFunction;
 
 class CExpressionEncoder implements ExpressionEncoder {
-  private static final String FUN_VALID = "valid";
-  private static final String FUN_VALID_MALLOC = "valid_malloc";
-  private static final String FUN_IMPLIES = "implies";
-  private static final String FUN_FORALL = "forall";
-  private static final String FUN_EXISTS = "exists";
-  private static final String FUN_REACH = "reach";
-  private static final String FUN_ALLOCATED = "allocated";
-  private static final String FUN_ISROOT = "is_root";
-  private static final String FUN_CREATE_ACYCLIC_LIST = "create_acyclic_list";
-  private static final String FUN_CREATE_CYCLIC_LIST = "create_cyclic_list";
-  private static final String FUN_CREATE_ACYCLIC_DLIST = "create_acyclic_dlist";
-  private static final String FUN_CREATE_CYCLIC_DLIST = "create_cyclic_dlist";
   private static final String TYPE = xtc.Constants.TYPE;
   
   @SuppressWarnings("unused")
@@ -304,24 +293,24 @@ class CExpressionEncoder implements ExpressionEncoder {
         String name = funNode.getString(0);
         Node argList = node.getNode(1);
         
-        if( FUN_VALID.equals(name) ) {
+        if( ReservedFunction.FUN_VALID.equals(name) ) {
           Preconditions.checkArgument(argList.size() == 1);
           List<Expression> argExprs = (List<Expression>) dispatch(argList);
           res = encoding.ofBoolean(getMemoryModel().valid(memory, argExprs.get(0)));
-        } else if( FUN_VALID_MALLOC.equals(name)) {
+        } else if( ReservedFunction.FUN_VALID_MALLOC.equals(name)) {
           Preconditions.checkArgument(argList.size() == 1);
           List<Expression> argExprs = (List<Expression>) dispatch(argList);
           res = encoding.neq(argExprs.get(0), encoding.zero());
-        } else if( FUN_ALLOCATED.equals(name) ) {
+        } else if( ReservedFunction.FUN_ALLOCATED.equals(name) ) {
           Preconditions.checkArgument(argList.size() == 2);
           Expression argExpr0 = (Expression) lvalVisitor.dispatch(argList.getNode(0));
           Expression argExpr1 = (Expression) dispatch(argList.getNode(1));
           res = encoding.ofBoolean(getMemoryModel().allocated(memory, argExpr0, argExpr1));
-        } else if( FUN_IMPLIES.equals(name) ) {
+        } else if( ReservedFunction.FUN_IMPLIES.equals(name) ) {
           Preconditions.checkArgument(argList.size() == 2);
           List<Expression> argExprs = (List<Expression>) dispatch(argList);
           res = getExpressionManager().implies(argExprs.get(0), argExprs.get(1));
-        } else if( FUN_FORALL.equals(name) || FUN_EXISTS.equals(name)) {
+        } else if( ReservedFunction.FUN_FORALL.equals(name) || ReservedFunction.FUN_EXISTS.equals(name)) {
           ExpressionManager exprManager = getExpressionManager();
           List<Expression> args = (List<Expression>) dispatch(argList);
           int lastIdx = argList.size()-1;
@@ -337,11 +326,11 @@ class CExpressionEncoder implements ExpressionEncoder {
           }
           body = body.subst(args, argVars);
 
-          if( FUN_FORALL.equals(name) )  
+          if( ReservedFunction.FUN_FORALL.equals(name) )  
             res = exprManager.forall(argVars, body);
           else  
             res = exprManager.exists(argVars, body);         
-        } else if( FUN_REACH.equals(name) ) {
+        } else if( ReservedFunction.FUN_REACH.equals(name) ) {
           Preconditions.checkArgument(argList.size() == 3);
           String fieldName = argList.getNode(0).getString(0);
           Expression fromExpr = (Expression) dispatch(argList.getNode(1));
@@ -352,10 +341,10 @@ class CExpressionEncoder implements ExpressionEncoder {
           } else {
             res = getExpressionManager().ff();         
           }
-        } else if( FUN_CREATE_ACYCLIC_LIST.equals(name) || 
-            FUN_CREATE_CYCLIC_LIST.equals(name) ||
-            FUN_CREATE_ACYCLIC_DLIST.equals(name) ||
-            FUN_CREATE_CYCLIC_DLIST.equals(name)) {
+        } else if( ReservedFunction.FUN_CREATE_ACYCLIC_LIST.equals(name) || 
+            ReservedFunction.FUN_CREATE_CYCLIC_LIST.equals(name) ||
+            ReservedFunction.FUN_CREATE_ACYCLIC_DLIST.equals(name) ||
+            ReservedFunction.FUN_CREATE_CYCLIC_DLIST.equals(name)) {
           Preconditions.checkArgument(argList.size() == 2);
           Node ptrNode = argList.getNode(0);
           Expression ptrExpr = (Expression) lvalVisitor.dispatch(ptrNode);
@@ -366,13 +355,13 @@ class CExpressionEncoder implements ExpressionEncoder {
           
           MemoryModel mm = getMemoryModel();
           if(mm instanceof ReachMemoryModel) {
-            if(FUN_CREATE_ACYCLIC_LIST.equals(name))
+            if(ReservedFunction.FUN_CREATE_ACYCLIC_LIST.equals(name))
               res = ((ReachMemoryModel) mm).create_list(memory,
                   ptrExpr, length, size, offMap, true, true);
-            else if(FUN_CREATE_CYCLIC_LIST.equals(name))
+            else if(ReservedFunction.FUN_CREATE_CYCLIC_LIST.equals(name))
               res = ((ReachMemoryModel) mm).create_list(memory,
                   ptrExpr, length, size, offMap, false, true);
-            else if(FUN_CREATE_ACYCLIC_DLIST.equals(name))
+            else if(ReservedFunction.FUN_CREATE_ACYCLIC_DLIST.equals(name))
               res = ((ReachMemoryModel) mm).create_list(memory,
                   ptrExpr, length, size, offMap, true, false);
             else
@@ -381,7 +370,7 @@ class CExpressionEncoder implements ExpressionEncoder {
           } else {
             res = getExpressionManager().tt();
           }
-        } else if( FUN_ISROOT.equals(name) ) {
+        } else if( ReservedFunction.FUN_ISROOT.equals(name) ) {
           Preconditions.checkArgument(argList.size() == 2);
           String fieldname = argList.getNode(0).getString(0);
           Expression ptrExpr = (Expression) dispatch(argList.getNode(1));
