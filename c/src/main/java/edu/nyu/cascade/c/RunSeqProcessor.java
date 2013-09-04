@@ -23,100 +23,7 @@ import edu.nyu.cascade.ir.IRStatement.*;
 import edu.nyu.cascade.ir.expr.*;
 import edu.nyu.cascade.ir.impl.*;
 import edu.nyu.cascade.ir.type.IRIntegerType;
-import edu.nyu.cascade.prover.*;
 import edu.nyu.cascade.util.*;
-
-/**
- * Encodes a program path as a verification condition and checks the condition
- * for validity. Also optionally checks the path for feasibility (e.g., the path
- * (x := 0; assume x > 0; assert false) is invalid but infeasible).
- */
-final class PathSeqEncoder implements PathEncoder {
-  private PathEncoding pathEncoding;  // the encoding to use for the path
-  private Expression path;  // the expression representing the encoded path 
-  private boolean runIsValid, runIsFeasible, checkFeasibility;
-
-  PathSeqEncoder(PathEncoding pathEncoding) {
-    this.pathEncoding = pathEncoding;
-    checkFeasibility = false;
-    reset();
-  }
-
-  static PathSeqEncoder create(PathEncoding encoding) {
-    return new PathSeqEncoder(encoding);
-  }
-
-  public ExpressionEncoder getExpressionEncoder() {
-    return pathEncoding.getExpressionEncoder();
-  }
-  
-  public void reset() {
-    path = pathEncoding.emptyPath();
-    runIsValid = true;
-    runIsFeasible = true;
-  }
-
-  /**
-   * Encode the given statement as an extension of the current path.
-   * 
-   * @param stmt
-   *          the statement to encode
-   * @return false if the statement results in an invalid verification condition
-   *         or an infeasible path; true otherwise.
-   */
-  boolean encodeStatement(IRStatement stmt) throws PathFactoryException {
-
-    /* Precondition is OK, encode the postcondition. */
-    path = stmt.getPostCondition(pathEncoding, path);
-    if(IOUtils.debugEnabled())
-      IOUtils.debug().pln("Post-condition: " + path).flush();
-    
-    ExpressionClosure pre = stmt.getPreCondition(pathEncoding.getExpressionEncoder());
-    
-    if (pre != null) {
-      /* If the statement has a precondition, we have to check it before continuing with 
-       * the encoding.
-       */
-      IOUtils.debug().pln("Checking pre-condition: " + pre).flush();
-      ValidityResult<?> result = pathEncoding.checkAssertion(path, pre);
-
-      IOUtils.debug().pln("Result: " + result).flush();
-      runIsValid = result.isValid();
-      
-      if (!runIsValid) {
-        if ( result.isInvalid() ) {
-          if( Preferences.isSet(Preferences.OPTION_COUNTER_EXAMPLE) )
-            if(result.getCounterExample().isEmpty())
-              IOUtils.out().println("\nCounter-example:\n" + result.getUnknown_reason());
-            else
-              IOUtils.out().println("\nCounter-example:\n" + result.getCounterExample());
-        } else { // result.isUnknown()
-          IOUtils.out().println("Unkown: " + result.getUnknown_reason());
-        }
-        return false;
-      } else if (checkFeasibility) {
-        IOUtils.out().println("Checking path feasibility.");
-        SatResult<?> res = pathEncoding.checkPath(path);
-        IOUtils.out().println("Result: " + res);
-        runIsFeasible = !res.isUnsatisfiable();
-      }
-    }
-    
-    return true;
-  }
-
-  public boolean runIsFeasible() throws PathFactoryException {
-    return runIsFeasible;
-  }
-
-  public boolean runIsValid() {
-    return runIsValid;
-  }
-  
-  public void setFeasibilityChecking(boolean b) {
-    checkFeasibility = b;
-  }
-}
 
 /**
  * A processor for control file runs (i.e., non-looping paths annotated
@@ -140,18 +47,7 @@ class RunSeqProcessor implements RunProcessor {
   private final CAnalyzer cAnalyzer;
   private final PathSeqEncoder pathEncoder;
 
-  /**
-   * Process a run: build the path through the CFG that it represents, convert
-   * the path to a verification condition, then check the verification
-   * condition.
-   * 
-   * @param run
-   *          a run from a Cascade control file
-   * @return true if all assertions in the run hold, false otherwise.
-   * @throws RunProcessorException
-   *           if an error occurred while processing the run. E.g., if the path
-   *           was ill-defined, or if an unhandled statement was encountered.
-   */
+  @Override
   public boolean process(Run run) throws RunProcessorException {
     try {
       List<IRStatement> globalPath = CfgBuilder.getGlobalStmts(run);
@@ -167,6 +63,19 @@ class RunSeqProcessor implements RunProcessor {
               .pln(stmt.getLocation() + " " + stmt.toString())
               .flush();
         }
+      }
+      
+      if(Preferences.isSet(Preferences.OPTION_THEORY) 
+          && "Partition".equals(Preferences.getString((Preferences.OPTION_THEORY)))) {
+        Map<String, String> aliasMap = Maps.newLinkedHashMap();
+        
+        for(IRStatement stmt : path) {
+          aliasMap = pathEncoder.preProcessAlias(stmt, aliasMap);
+        }
+      
+        ImmutableMap<String, String> immutableAliasMap = 
+            new ImmutableMap.Builder<String, String>().putAll(aliasMap).build();
+        pathEncoder.setAliasMap(immutableAliasMap);
       }
       
       for (IRStatement stmt : path) {
@@ -186,7 +95,7 @@ class RunSeqProcessor implements RunProcessor {
   }
 
   /** Incorporate the command for the given position into the given path. */
-  List<IRStatement> processPosition(Position position, CSymbolTable symbolTable) 
+  private List<IRStatement> processPosition(Position position, CSymbolTable symbolTable) 
       throws RunProcessorException {
     Preconditions.checkArgument(position != null);
     List<IRStatement> path = Lists.newArrayList();
@@ -1265,6 +1174,7 @@ class RunSeqProcessor implements RunProcessor {
     return newNode;
   }
   
+  @Override
   public void enableFeasibilityChecking() {
     pathEncoder.setFeasibilityChecking(true);
   }
