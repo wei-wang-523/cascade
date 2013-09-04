@@ -32,9 +32,10 @@ public class CType {
     }
     
     type = unwrapped(type);
-    type = unwrapped(type);
-    if(type.isInteger())    return CellKind.SCALAR;
-    if(type.isPointer())    return CellKind.POINTER;
+    if(type.isInteger())    
+      return CellKind.SCALAR;
+    if(type.isPointer() || type.isArray() || type.isStruct())    
+      return CellKind.POINTER;
     throw new IllegalArgumentException("Unknown type " + type);
   }
   
