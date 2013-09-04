@@ -6,7 +6,6 @@ import java.util.Set;
 import java.util.Iterator;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -483,75 +482,20 @@ public class BurstallMemoryModel extends AbstractBurstallMemoryModel {
     currentState = null;
   }
   
-  public Expression combinePreMemoryStates(BooleanExpression guard, 
-      RecordExpression mem_1, RecordExpression mem_0) {    
-    
-    RecordType memType_1 = mem_1.getType();
-    Iterable<String> elemNames_1 = Iterables.transform(memType_1.getElementNames(),
-        new Function<String, String>() {
-      @Override
-      public String apply(String elemName) {
-        return elemName.substring(elemName.indexOf('@')+1);
-      }
-    });
-    
-    RecordType memType_0 = mem_0.getType();
-    final Iterable<String> elemNames_0 = Iterables.transform(memType_0.getElementNames(),
-        new Function<String, String>() {
-      @Override
-      public String apply(String elemName) {
-        return elemName.substring(elemName.indexOf('@')+1);
-      }
-    });
-    
-    Iterable<String> commonElemNames = Iterables.filter(elemNames_1, 
-        new Predicate<String>(){
-      @Override
-      public boolean apply(String elemName) {
-        return Iterables.contains(elemNames_0, elemName);
-      }
-    });
-    
-    List<Expression> elems = Lists.newArrayListWithCapacity(
-        Iterables.size(commonElemNames));
-    List<Type> elemTypes = Lists.newArrayListWithCapacity(
-        Iterables.size(commonElemNames));
-    
-    ExpressionManager em = getExpressionManager();
-    final String typeName_1 = memType_1.getName();
-    final String typeName_0 = memType_0.getName();
-    
-    for(String elemName : commonElemNames) {
-      String elemName_1 = typeName_1 + '@' + elemName;
-      String elemName_0 = typeName_0 + '@' + elemName;
-      Expression elem = em.ifThenElse(guard, mem_1.select(elemName_1), mem_0.select(elemName_0));
-      elems.add(elem);
-      elemTypes.add(elem.getType());
-    }
-    
-    final String typeName = Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME);
-    Iterable<String> elemNames = Iterables.transform(commonElemNames, 
-        new Function<String, String>(){
-      @Override
-      public String apply(String elemName) {
-        return elemName + '@' + typeName;
-      }
-    });
-    
-    RecordType recordType = em.recordType(Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME), 
-        elemNames, elemTypes);
-    Expression res = em.record(recordType, elems);
-    
-    return res;
-  }
-  
   private Map<String, Expression> getMemElems(Expression memState) {
     Preconditions.checkArgument(memState.isRecord());
     Map<String, Expression> resMap = Maps.newLinkedHashMap();
     RecordExpression mem = memState.asRecord();
-    for(String elemName : mem.getType().getElementNames()) {
-      int index = elemName.indexOf('@') + 1;
-      resMap.put(elemName.substring(index), mem.select(elemName));
+    Iterable<String> elemNames = mem.getType().getElementNames();
+    Iterable<String> fieldNames = pickFieldNames(elemNames);
+    assert(Iterables.size(elemNames) == Iterables.size(fieldNames));
+    Iterator<String> elemNameItr = elemNames.iterator();
+    Iterator<String> fieldNameItr = fieldNames.iterator();
+    while(elemNameItr.hasNext() && fieldNameItr.hasNext()) {
+      String elemName = elemNameItr.next();
+      String fieldName = fieldNameItr.next();
+      Expression value = mem.select(elemName);
+      resMap.put(fieldName, value);
     }
     return resMap;
   }
@@ -572,14 +516,7 @@ public class BurstallMemoryModel extends AbstractBurstallMemoryModel {
     
     final String typeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
     
-    Iterable<String> elemNames = Iterables.transform(currentMemElems.keySet(), 
-        new Function<String, String>(){
-      @Override
-      public String apply(String elemName) {
-        int index = elemName.indexOf('@')+1;
-        return typeName + '@' + elemName.substring(index);
-      }
-    });
+    Iterable<String> elemNames = recomposeFieldNames(typeName, currentMemElems.keySet());
     
     return em.recordType(typeName, elemNames, elemTypes);
   }

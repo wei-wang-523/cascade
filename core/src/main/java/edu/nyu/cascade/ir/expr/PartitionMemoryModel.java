@@ -42,7 +42,6 @@ import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
-import edu.nyu.cascade.util.UnionFind;
 
 /**
  * Monolithic memory mode, with a multiple memory arrays for multiple
@@ -526,22 +525,10 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
       RecordExpression mem_1, RecordExpression mem_0) {    
     
     RecordType memType_1 = mem_1.getType();
-    Iterable<String> elemNames_1 = Iterables.transform(memType_1.getElementNames(),
-        new Function<String, String>() {
-      @Override
-      public String apply(String elemName) {
-        return elemName.substring(elemName.indexOf('@')+1);
-      }
-    });
+    Iterable<String> elemNames_1 = pickFieldNames(memType_1.getElementNames());
     
     RecordType memType_0 = mem_0.getType();
-    final Iterable<String> elemNames_0 = Iterables.transform(memType_0.getElementNames(),
-        new Function<String, String>() {
-      @Override
-      public String apply(String elemName) {
-        return elemName.substring(elemName.indexOf('@')+1);
-      }
-    });
+    final Iterable<String> elemNames_0 = pickFieldNames(memType_0.getElementNames());
     
     Iterable<String> commonElemNames = Iterables.filter(elemNames_1, 
         new Predicate<String>(){
@@ -560,22 +547,21 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     final String arrName_1 = memType_1.getName();
     final String arrName_0 = memType_0.getName();
     
-    for(String elemName : commonElemNames) {
-      String elemName_1 = arrName_1 + '@' + elemName;
-      String elemName_0 = arrName_0 + '@' + elemName;
+    Iterable<String> elemNames_1_prime = recomposeFieldNames(arrName_1, commonElemNames);
+    Iterable<String> elemNames_0_prime = recomposeFieldNames(arrName_0, commonElemNames);
+    Iterator<String> elemNames_1_prime_itr = elemNames_1_prime.iterator();
+    Iterator<String> elemNames_0_prime_itr = elemNames_0_prime.iterator();
+    
+    while(elemNames_1_prime_itr.hasNext() && elemNames_0_prime_itr.hasNext()) {
+      String elemName_1 = elemNames_1_prime_itr.next();
+      String elemName_0 = elemNames_0_prime_itr.next();
       Expression elem = em.ifThenElse(guard, mem_1.select(elemName_1), mem_0.select(elemName_0));
       elems.add(elem);
       elemTypes.add(elem.getType());
     }
     
     final String arrName = Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME);
-    Iterable<String> elemNames = Iterables.transform(commonElemNames, 
-        new Function<String, String>(){
-      @Override
-      public String apply(String elemName) {
-        return elemName + '@' + arrName;
-      }
-    });
+    Iterable<String> elemNames = recomposeFieldNames(arrName, commonElemNames);
     
     RecordType recordType = em.recordType(Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME), 
         elemNames, elemTypes);
@@ -600,14 +586,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     
     final String arrName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
     
-    Iterable<String> elemNames = Iterables.transform(currentMemElems.keySet(), 
-        new Function<String, String>(){
-      @Override
-      public String apply(String elemName) {
-        int index = elemName.indexOf('@')+1;
-        return arrName + '@' + elemName.substring(index);
-      }
-    });
+    Iterable<String> elemNames = recomposeFieldNames(arrName, currentMemElems.keySet());
     
     return em.recordType(arrName, elemNames, elemTypes);
   }
@@ -635,11 +614,16 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
   private void initCurrentMemElems(Expression memState) {
     Preconditions.checkArgument(memState.isRecord());
     RecordExpression mem = memState.asRecord();
-    for(String elemName : mem.getType().getElementNames()) {
-      int index = elemName.indexOf('@') + 1;
-      String key = elemName.substring(index);
+    Iterable<String> elemNames = mem.getType().getElementNames();
+    Iterable<String> fieldNames = pickFieldNames(elemNames);
+    assert(Iterables.size(elemNames) == Iterables.size(fieldNames));
+    Iterator<String> elemNameItr = elemNames.iterator();
+    Iterator<String> fieldNameItr = fieldNames.iterator();
+    while(elemNameItr.hasNext() && fieldNameItr.hasNext()) {
+      String elemName = elemNameItr.next();
+      String fieldName = fieldNameItr.next();
       Expression value = mem.select(elemName);
-      currentMemElems.put(key, value);
+      currentMemElems.put(fieldName, value);
     }
   }
   
@@ -723,7 +707,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     String refName = CType.getReferenceName(type);
     
     if(aliasMap != null && aliasMap.containsKey(refName)) {
-      String repName = UnionFind.find(aliasMap, refName);
+      String repName = aliasMap.get(refName);
       refName = repName;
     }
       

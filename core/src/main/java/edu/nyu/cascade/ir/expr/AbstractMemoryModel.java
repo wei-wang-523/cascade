@@ -2,14 +2,18 @@ package edu.nyu.cascade.ir.expr;
 
 //import java.util.List;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.Identifiers;
 
 public abstract class AbstractMemoryModel implements MemoryModel {
   protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
@@ -18,7 +22,6 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   protected static final String DEFAULT_MEMORY_STATE_TYPE = "memType";
   protected static final String DEFAULT_STATE_TYPE = "stateType";
   protected static final String TYPE = xtc.Constants.TYPE;
-  protected static final String TEST_VAR = "TEST_VAR";
   
   private final ExpressionEncoding encoding;
   
@@ -92,4 +95,29 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   
   @Override
   public void setAliasMap(ImmutableMap<String, String> aliasMap) { }
+  
+  protected Iterable<String> recomposeFieldNames(final String arrName, Iterable<String> fieldsName){
+    return Iterables.transform(fieldsName, 
+        new Function<String, String>(){
+      @Override
+      public String apply(String elemName) {
+        int index = elemName.indexOf(Identifiers.RECORD_SELECT_NAME_INFIX);
+        StringBuilder sb = new StringBuilder().append(arrName)
+            .append(Identifiers.RECORD_SELECT_NAME_INFIX)
+            .append(elemName.substring(index+1));
+        return sb.toString();
+      }
+    });
+  }
+  
+  protected Iterable<String> pickFieldNames(Iterable<String> fieldsName){
+    return Iterables.transform(fieldsName, 
+        new Function<String, String>(){
+      @Override
+      public String apply(String elemName) {
+        int index = elemName.indexOf(Identifiers.RECORD_SELECT_NAME_INFIX);
+        return elemName.substring(index+1);
+      }
+    });
+  }
 }

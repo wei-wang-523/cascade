@@ -1,11 +1,11 @@
 package edu.nyu.cascade.ir.expr;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import xtc.type.Reference;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.cache.CacheBuilder;
@@ -64,22 +64,10 @@ public abstract class AbstractBurstallMemoryModel extends AbstractMemoryModel {
       RecordExpression mem_1, RecordExpression mem_0) {    
     
     RecordType memType_1 = mem_1.getType();
-    Iterable<String> elemNames_1 = Iterables.transform(memType_1.getElementNames(),
-        new Function<String, String>() {
-      @Override
-      public String apply(String elemName) {
-        return elemName.substring(elemName.indexOf('@')+1);
-      }
-    });
+    Iterable<String> elemNames_1 = pickFieldNames(memType_1.getElementNames());
     
     RecordType memType_0 = mem_0.getType();
-    final Iterable<String> elemNames_0 = Iterables.transform(memType_0.getElementNames(),
-        new Function<String, String>() {
-      @Override
-      public String apply(String elemName) {
-        return elemName.substring(elemName.indexOf('@')+1);
-      }
-    });
+    final Iterable<String> elemNames_0 = pickFieldNames(memType_0.getElementNames());
     
     Iterable<String> commonElemNames = Iterables.filter(elemNames_1, 
         new Predicate<String>(){
@@ -95,25 +83,24 @@ public abstract class AbstractBurstallMemoryModel extends AbstractMemoryModel {
         Iterables.size(commonElemNames));
     
     ExpressionManager em = getExpressionManager();
-    final String typeName_1 = memType_1.getName();
-    final String typeName_0 = memType_0.getName();
+    final String arrName_1 = memType_1.getName();
+    final String arrName_0 = memType_0.getName();
     
-    for(String elemName : commonElemNames) {
-      String elemName_1 = typeName_1 + '@' + elemName;
-      String elemName_0 = typeName_0 + '@' + elemName;
+    Iterable<String> elemNames_1_prime = recomposeFieldNames(arrName_1, commonElemNames);
+    Iterable<String> elemNames_0_prime = recomposeFieldNames(arrName_0, commonElemNames);
+    Iterator<String> elemNames_1_prime_itr = elemNames_1_prime.iterator();
+    Iterator<String> elemNames_0_prime_itr = elemNames_0_prime.iterator();
+    
+    while(elemNames_1_prime_itr.hasNext() && elemNames_0_prime_itr.hasNext()) {
+      String elemName_1 = elemNames_1_prime_itr.next();
+      String elemName_0 = elemNames_0_prime_itr.next();
       Expression elem = em.ifThenElse(guard, mem_1.select(elemName_1), mem_0.select(elemName_0));
       elems.add(elem);
       elemTypes.add(elem.getType());
     }
     
-    final String typeName = Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME);
-    Iterable<String> elemNames = Iterables.transform(commonElemNames, 
-        new Function<String, String>(){
-      @Override
-      public String apply(String elemName) {
-        return elemName + '@' + typeName;
-      }
-    });
+    final String arrName = Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME);
+    Iterable<String> elemNames = recomposeFieldNames(arrName, commonElemNames);
     
     RecordType recordType = em.recordType(Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME), 
         elemNames, elemTypes);

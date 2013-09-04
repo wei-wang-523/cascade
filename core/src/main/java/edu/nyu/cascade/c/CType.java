@@ -4,6 +4,8 @@ import xtc.type.*;
 
 import com.google.common.base.Preconditions;
 
+import edu.nyu.cascade.util.Identifiers;
+
 /**
  * An auxiliary C type analyzer for C programs.
  *
@@ -40,8 +42,14 @@ public class CType {
   }
   
   public static String getReferenceName(xtc.type.Type type) {
-     if(!type.hasShape())   return null;
-     return getReferenceName(type.getShape());
+    Preconditions.checkArgument(type.hasScope());
+    if(!type.hasShape())   return null;
+    String refName = getReferenceName(type.getShape());
+    StringBuilder sb = new StringBuilder()
+    .append(refName)
+    .append(Identifiers.REFERENCE_NAME_INFIX)
+    .append(type.getScope());
+    return sb.toString();
   }
   
   private static String getReferenceName(Reference ref) {
@@ -71,14 +79,17 @@ public class CType {
     StringBuffer sb =  new StringBuffer();
     if(type.isPointer()) {
       xtc.type.Type pType = type.toPointer().getType();
-      sb.append('$').append("PointerT").append(parseTypeName(pType));
+      sb.append(Identifiers.BURSTALL_ARRAY_NAME_INFIX)
+      .append("PointerT").append(parseTypeName(pType));
     } else if(type.isArray()) {
       xtc.type.Type aType = type.toArray().getType();
-      sb.append('$').append("ArrayT").append(parseTypeName(aType));
+      sb.append(Identifiers.BURSTALL_ARRAY_NAME_INFIX)
+      .append("ArrayT").append(parseTypeName(aType));
     } else if(type.isStruct()) {
-      sb.append('$').append(type.getName());
+      sb.append(Identifiers.BURSTALL_ARRAY_NAME_INFIX)
+      .append(type.getName());
     } else if(type.isUnion()) {
-      sb.append('$').append(type.getName());
+      sb.append(Identifiers.BURSTALL_ARRAY_NAME_INFIX).append(type.getName());
     } else if(type.isAnnotated()){
       AnnotatedT annoType = type.toAnnotated();
       if(annoType.hasShape()) {
@@ -102,9 +113,11 @@ public class CType {
       sb.append(parseTypeName(varType));
     } else if(type.isInteger()){
       String kindName = type.toInteger().getKind().name();
-      sb.append('$').append(kindName);
+      sb.append(Identifiers.BURSTALL_ARRAY_NAME_INFIX)
+      .append(kindName);
     } else if(type.isLabel()){
-      sb.append('$').append(type.toLabel().getName());
+      sb.append(Identifiers.BURSTALL_ARRAY_NAME_INFIX)
+      .append(type.toLabel().getName());
     } else {
       throw new IllegalArgumentException("Cannot parse type " + type.getName());
     }

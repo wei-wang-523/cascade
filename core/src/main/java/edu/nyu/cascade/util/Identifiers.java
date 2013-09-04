@@ -13,6 +13,10 @@ import com.google.common.collect.Sets;
 import edu.nyu.cascade.ir.SymbolTable;
 
 public class Identifiers {
+  public static final char RECORD_SELECT_NAME_INFIX = '@';
+  public static final char BURSTALL_ARRAY_NAME_INFIX = '$';
+  public static final char REFERENCE_NAME_INFIX = '.';
+  
   public static enum IdType {
     DEFAULT,
     C,

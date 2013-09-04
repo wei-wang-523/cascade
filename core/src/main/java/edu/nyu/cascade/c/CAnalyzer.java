@@ -4442,9 +4442,7 @@ public class CAnalyzer extends Visitor {
               result.constant(new CastReference(pt1, c().getConstRef(t2)));
           }
         }
-        /*
-         * FIXME: is it safe to move the shape of right op to left op?
-         */
+        // FIXME: is it safe to move the shape of right op to left op?
         else if (t2.hasShape()) {
           Type pt1 = r1.toPointer().getType();
           Type pt2 = r2.toPointer().getType();
@@ -6748,6 +6746,8 @@ public class CAnalyzer extends Visitor {
         if(!oldType.equals(type))
           throw new IllegalArgumentException("Inconsistent types for node " + node);
       }
+      if(!type.isSealed())
+        type.scope(table.current().getName());
       type.mark(node);
     }
   }

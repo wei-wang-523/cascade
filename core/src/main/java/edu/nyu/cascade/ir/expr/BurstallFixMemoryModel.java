@@ -524,9 +524,16 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
     Preconditions.checkArgument(memState.isRecord());
     Map<String, Expression> resMap = Maps.newLinkedHashMap();
     RecordExpression mem = memState.asRecord();
-    for(String elemName : mem.getType().getElementNames()) {
-      int index = elemName.indexOf('@') + 1;
-      resMap.put(elemName.substring(index), mem.select(elemName));
+    Iterable<String> elemNames = mem.getType().getElementNames();
+    Iterable<String> fieldNames = pickFieldNames(elemNames);
+    assert(Iterables.size(elemNames) == Iterables.size(fieldNames));
+    Iterator<String> elemNameItr = elemNames.iterator();
+    Iterator<String> fieldNameItr = fieldNames.iterator();
+    while(elemNameItr.hasNext() && fieldNameItr.hasNext()) {
+      String elemName = elemNameItr.next();
+      String fieldName = fieldNameItr.next();
+      Expression value = mem.select(elemName);
+      resMap.put(fieldName, value);
     }
     return resMap;
   }
@@ -547,14 +554,7 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
     
     final String typeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
     
-    Iterable<String> elemNames = Iterables.transform(currentMemElems.keySet(), 
-        new Function<String, String>(){
-      @Override
-      public String apply(String elemName) {
-        int index = elemName.indexOf('@')+1;
-        return typeName + '@' + elemName.substring(index);
-      }
-    });
+    Iterable<String> elemNames = recomposeFieldNames(typeName, currentMemElems.keySet());
     
     return em.recordType(typeName, elemNames, elemTypes);
   }

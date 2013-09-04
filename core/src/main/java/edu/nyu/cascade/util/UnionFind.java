@@ -35,4 +35,28 @@ public class UnionFind {
     parentMap.put(xRoot, yRoot);
     return parentMap;
   }
+  
+  private static <T> Pair<Map<T, T>, T> normalize(Map<T, T> parentMap, T x) {
+    Preconditions.checkArgument(parentMap.containsKey(x));
+    T parent = parentMap.get(x);
+    if(!parent.equals(x)) {
+      Pair<Map<T, T>, T> pair = normalize(parentMap, parent);
+      parentMap = pair.fst();
+      parent = pair.snd();
+      parentMap.put(x, parent);
+    }
+    return Pair.of(parentMap, parent);
+  }
+  
+  /**
+   * Normalize @param parentMap, make the value of key is the root in the parentMap
+   * @return normalized parentMap
+   */
+  public static <T> Map<T, T> normalizeMap(Map<T, T> parentMap) {
+    for(T key : parentMap.keySet()) {
+      Pair<Map<T, T>, T> pair = normalize(parentMap, key);
+      parentMap = pair.fst();
+    }
+    return parentMap;
+  }
 }
