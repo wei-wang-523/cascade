@@ -4442,6 +4442,24 @@ public class CAnalyzer extends Visitor {
               result.constant(new CastReference(pt1, c().getConstRef(t2)));
           }
         }
+        /*
+         * FIXME: is it safe to move the shape of right op to left op?
+         */
+        else if (t2.hasShape()) {
+          Type pt1 = r1.toPointer().getType();
+          Type pt2 = r2.toPointer().getType();
+          result   = result.annotate();
+
+          if (pt1.equals(pt2)) {
+            // The types have the same memory shape.
+            result = result.annotate().shape(t2.getShape());
+
+          } else {
+            // The types have different shapes.
+            result =
+              result.annotate().shape(new CastReference(pt1, t2.getShape()));
+          }
+        }
       }
     } break;
 

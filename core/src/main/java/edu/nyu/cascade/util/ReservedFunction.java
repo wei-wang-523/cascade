@@ -4,6 +4,11 @@ import java.util.Set;
 
 import com.google.common.collect.Sets;
 
+/**
+ * Reserved function names in Cascade
+ * @author Wei
+ *
+ */
 public class ReservedFunction {
   public static final String MALLOC = "malloc";
   public static final String FREE = "free";

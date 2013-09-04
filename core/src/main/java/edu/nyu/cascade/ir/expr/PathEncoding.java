@@ -1,7 +1,6 @@
 package edu.nyu.cascade.ir.expr;
 
 import java.io.PrintStream;
-
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -71,5 +70,4 @@ public interface PathEncoding    {
   SatResult<?> checkPath(Expression prefix) throws PathFactoryException;
 
   void printCounterExample(PrintStream out, Iterable<?> counterExample) throws PathFactoryException;
-
 }

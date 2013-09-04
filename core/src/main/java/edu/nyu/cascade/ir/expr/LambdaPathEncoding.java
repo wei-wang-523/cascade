@@ -248,6 +248,6 @@ public class LambdaPathEncoding extends AbstractPathEncoding {
   public Expression noop(Iterable<? extends Expression> prefixes,
       Iterable<? extends Expression> preGuards) {
     // TODO Auto-generated method stub
-    return null;
+    throw new UnsupportedOperationException("noop");
   }
 }

@@ -1,7 +1,6 @@
 package edu.nyu.cascade.ir.expr;
 
 import java.io.PrintStream;
-
 import com.google.common.collect.ImmutableSet;
 
 import edu.nyu.cascade.ir.IRExpression;

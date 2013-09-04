@@ -7,13 +7,6 @@ import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 
 import xtc.tree.GNode;
-import xtc.type.DynamicReference;
-import xtc.type.FieldReference;
-import xtc.type.IndexReference;
-import xtc.type.IndirectReference;
-import xtc.type.Reference;
-import xtc.type.StaticReference;
-
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -21,12 +14,15 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -46,6 +42,7 @@ import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
+import edu.nyu.cascade.util.UnionFind;
 
 /**
  * Monolithic memory mode, with a multiple memory arrays for multiple
@@ -92,6 +89,8 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
   private final Set<Expression> lvals; // lvals: variables in stack
   private final List<Expression> stackRegions, heapRegions;
   private final Map<String, Expression> currentMemElems;
+  
+  private ImmutableMap<String, String> aliasMap = null;
   private Expression currentAlloc = null;
   private Expression prevDerefState = null;
   private ExpressionClosure currentState = null;
@@ -298,8 +297,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
       throw new ExpressionFactoryException(e);
     }
     xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
-    CellKind kind = getCellKind(pType);
-    assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
+    CellKind kind = CType.getCellKind(pType);
     if(CellKind.POINTER.equals(kind)) {
       return pValCell.asInductive().select(ptrSel);
     } else {
@@ -315,7 +313,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     Expression rval = null;
     
     xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
-    CellKind kind = getCellKind(lvalType);
+    CellKind kind = CType.getCellKind(lvalType);
     assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
     if(CellKind.POINTER.equals(kind)) {
       rval = getExpressionEncoding().unknown();
@@ -370,7 +368,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
   @Override
   public Expression addressOf(Expression content) {
     Preconditions.checkArgument(content.getNode().hasProperty(TYPE));
-    xtc.type.Type contentType = unwrapped((xtc.type.Type) 
+    xtc.type.Type contentType = CType.unwrapped((xtc.type.Type) 
         (content.getNode().getProperty(TYPE)));
     
     if(contentType.isUnion() || contentType.isStruct()) {
@@ -720,37 +718,25 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
   private String parseArrName(GNode gnode) {
     if("AddressExpression".equals(gnode.getName())) gnode = gnode.getGeneric(0);
     Preconditions.checkArgument(gnode.hasProperty(TYPE));
+    
     xtc.type.Type type = (xtc.type.Type) gnode.getProperty(TYPE);
-    Preconditions.checkArgument(type.hasShape());
-    String refName = getReferenceName(type.getShape());
+    String refName = CType.getReferenceName(type);
+    
+    if(aliasMap != null && aliasMap.containsKey(refName)) {
+      String repName = UnionFind.find(aliasMap, refName);
+      refName = repName;
+    }
+      
     if(refName == null)
       IOUtils.err().println("Node " + gnode + " is in null array.");
+    
     return ARRAY_PREFIX + refName;
-  }
-  
-  private String getReferenceName(Reference ref) {
-    if(ref.isStatic()) {
-      return ((StaticReference) ref).getName();
-    } else if(ref.isDynamic()) {
-      return ((DynamicReference) ref).getName();
-    } else if(ref.isIndirect()) {
-      Reference base = ((IndirectReference) ref).getBase();
-      return getReferenceName(base);
-    } else if(ref instanceof FieldReference) {
-      Reference base = ((FieldReference) ref).getBase();
-      return getReferenceName(base);
-    } else if(ref instanceof IndexReference) {
-      Reference base = ((IndexReference) ref).getBase();
-      return getReferenceName(base);
-    } else {
-      throw new IllegalArgumentException("Unknown reference for " + ref);
-    }
   }
   
   private Expression castRvalToLvalType(Expression lval, Expression rval) {
     Preconditions.checkArgument(lval.getNode() != null);
     xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
-    CellKind lvalKind = getCellKind(lvalType);
+    CellKind lvalKind = CType.getCellKind(lvalType);
     
     if(rval.getNode() == null) {
       if(CellKind.POINTER.equals(lvalKind))
@@ -760,20 +746,26 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     }
     
     xtc.type.Type rvalType = (xtc.type.Type) rval.getNode().getProperty(TYPE);
-    CellKind rvalKind = getCellKind(rvalType);
+    CellKind rvalKind = CType.getCellKind(rvalType);
     
     if(lvalKind.equals(rvalKind)) {
       if(CellKind.POINTER.equals(rvalKind))
         return ptrConstr.apply(rval);
       else
         return scalarConstr.apply(rval);
-    } else if(CellKind.POINTER.equals(lvalKind) 
-        && CellKind.SCALAR.equals(rvalKind)) {
+    } else if(CellKind.POINTER.equals(lvalKind) && CellKind.SCALAR.equals(rvalKind)) {
       assert(rval.isConstant());
       return ptrConstr.apply(((PointerExpressionEncoding) getExpressionEncoding())
           .getPointerEncoding().nullPtr());
+    } else if(CellKind.BOOL.equals(lvalKind) && CellKind.SCALAR.equals(rvalKind)) { 
+      return scalarConstr.apply(rval);
     } else {
       throw new IllegalArgumentException("Assign pointer " + rval + " to constant " + lval);
     }
+  }
+  
+  @Override
+  public void setAliasMap(ImmutableMap<String, String> aliasMap) {
+    this.aliasMap = aliasMap;
   }
 }

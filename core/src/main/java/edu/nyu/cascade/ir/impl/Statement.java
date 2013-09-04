@@ -23,6 +23,7 @@ import static edu.nyu.cascade.ir.IRStatement.StatementType.SKIP;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import xtc.tree.GNode;
@@ -34,6 +35,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.common.base.Preconditions;
 
+import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRLocation;
 import edu.nyu.cascade.ir.IRLocations;
@@ -44,6 +46,7 @@ import edu.nyu.cascade.ir.expr.PathEncoding;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Preferences;
+import edu.nyu.cascade.util.UnionFind;
 
 public class Statement implements IRStatement {
   
@@ -203,7 +206,6 @@ public class Statement implements IRStatement {
     return location;
   }
 
-
   @Override
   public  ExpressionClosure getOperand(ExpressionEncoder encoder,int i)  {
     Preconditions.checkArgument(i >= 0 && i < getOperands().size());
@@ -221,7 +223,7 @@ public class Statement implements IRStatement {
   }
 
   @Override
-  public  ImmutableList<ExpressionClosure> getOperands(final ExpressionEncoder encoder) {
+  public ImmutableList<ExpressionClosure> getOperands(final ExpressionEncoder encoder) {
     ImmutableList.Builder<ExpressionClosure> listBuilder = ImmutableList.builder();
     for( IRExpression e : operands ) {
       listBuilder.add( e.toExpression(encoder) );
@@ -390,4 +392,34 @@ public class Statement implements IRStatement {
     }
   }
 
+  /**
+   * TODO: to support the equality relation between pointers 
+   * assumption/assertion in the annotation
+   */
+  @Override
+  public Map<String, String> preProcessAlias(PathEncoding factory, Map<String, String> aliasMap) {
+    switch (getType()) {
+    case ASSIGN: {
+      Node lhs = getOperand(0).getSourceNode();
+      Node rhs = getOperand(1).getSourceNode();
+      
+      xtc.type.Type lType = (xtc.type.Type) lhs.getProperty(xtc.Constants.TYPE);
+      xtc.type.Type rType = (xtc.type.Type) rhs.getProperty(xtc.Constants.TYPE);
+
+      if(CType.unwrapped(lType).isPointer() && CType.unwrapped(rType).isPointer()) {
+        if("AddressExpression".equals(rhs.getName())) {
+          rType = (xtc.type.Type) rhs.getGeneric(0).getProperty(xtc.Constants.TYPE);
+        }
+        
+        String lRefName = CType.getReferenceName(lType);
+        String rRefName = CType.getReferenceName(rType);
+        
+        aliasMap = UnionFind.union(aliasMap, lRefName, rRefName);
+      }
+      return aliasMap;
+    }
+    default:
+      return aliasMap;
+    }
+  }
 }

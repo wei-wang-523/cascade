@@ -4,6 +4,7 @@ package edu.nyu.cascade.ir.expr;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -88,4 +89,7 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   public Expression castExpression(Expression state, Expression src, xtc.type.Type type) {
     return src;
   }
+  
+  @Override
+  public void setAliasMap(ImmutableMap<String, String> aliasMap) { }
 }

@@ -8,6 +8,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -231,7 +233,7 @@ public class MonolithicVer0MemoryModel extends AbstractMonoMemoryModel {
     Expression cell = state.getChild(0).asArray().index(p);
     
     xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
-    CellKind kind = getCellKind(pType);
+    CellKind kind = CType.getCellKind(pType);
     assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
     if(CellKind.SCALAR.equals(kind)) {
       return cell.asInductive().select(scalarSel);
@@ -250,7 +252,7 @@ public class MonolithicVer0MemoryModel extends AbstractMonoMemoryModel {
     Expression rval = null;
     
     xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
-    CellKind kind = getCellKind(lvalType);
+    CellKind kind = CType.getCellKind(lvalType);
     assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
     if(CellKind.SCALAR.equals(kind)) {
       rval = getExpressionEncoding().getIntegerEncoding().unknown();
@@ -410,7 +412,7 @@ public class MonolithicVer0MemoryModel extends AbstractMonoMemoryModel {
   @Override
   public Expression addressOf(Expression content) {
     Preconditions.checkArgument(content.getNode().hasProperty(TYPE));
-    xtc.type.Type contentType = unwrapped((xtc.type.Type) 
+    xtc.type.Type contentType = CType.unwrapped((xtc.type.Type) 
         (content.getNode().getProperty(TYPE)));
     
     if(contentType.isUnion() || contentType.isStruct()) {
@@ -431,7 +433,7 @@ public class MonolithicVer0MemoryModel extends AbstractMonoMemoryModel {
     Expression cellVal = null;
     
     xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
-    CellKind kind = getCellKind(lvalType);
+    CellKind kind = CType.getCellKind(lvalType);
     assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
     if(CellKind.SCALAR.equals(kind)) {
       cellVal = em.construct(scalarConstr, rval);

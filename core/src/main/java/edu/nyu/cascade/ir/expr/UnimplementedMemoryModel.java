@@ -1,5 +1,6 @@
 package edu.nyu.cascade.ir.expr;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -147,5 +148,11 @@ public class UnimplementedMemoryModel implements MemoryModel {
   public Expression castExpression(Expression state, Expression src, xtc.type.Type targetType) {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("castExpression"); 
+  }
+
+  @Override
+  public void setAliasMap(ImmutableMap<String, String> aliasMap) {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("setAliasMap"); 
   }
 }

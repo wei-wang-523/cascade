@@ -14,6 +14,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -216,8 +218,8 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
     xtc.type.Type lType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     xtc.type.Type rType = (xtc.type.Type) rval.getNode().getProperty(TYPE);
-    if(CellKind.SCALAR.equals(getCellKind(lType)) 
-        && CellKind.SCALAR.equals(getCellKind(rType))) {
+    if(CellKind.SCALAR.equals(CType.getCellKind(lType)) 
+        && CellKind.SCALAR.equals(CType.getCellKind(rType))) {
       int lval_size = getSizeofType(lType);
       int rval_size = getSizeofType(rType);
       if(lval_size > rval_size) {
@@ -257,7 +259,7 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
     }
     
     // Add an element to currentMemElem
-    CellKind kind = getCellKind(pType);
+    CellKind kind = CType.getCellKind(pType);
     if(CellKind.BOOL.equals(kind)) {
       ArrayType arrType = em.arrayType(ptrType, em.booleanType());
       tgtArray = em.variable(typeName, arrType, false).asArray();
@@ -287,7 +289,7 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
     // FIXME: What if element size and integer size don't agree?
     Expression rval = null;
     xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
-    CellKind kind = getCellKind(lvalType);
+    CellKind kind = CType.getCellKind(lvalType);
     if(CellKind.SCALAR.equals(kind)) {
       int size = getSizeofType(lvalType);
       Type bvType = getExpressionManager().bitVectorType(size);
@@ -345,7 +347,7 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
   
   @Override
   public Expression addressOf(Expression content) {
-    xtc.type.Type type = unwrapped((xtc.type.Type) content.getNode()
+    xtc.type.Type type = CType.unwrapped((xtc.type.Type) content.getNode()
         .getProperty(TYPE));
     if(type.isStruct() || type.isUnion() || type.isArray())
       return content;
@@ -505,7 +507,7 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
   
   @Override
   public Expression castExpression(Expression state, Expression src, xtc.type.Type type) {
-    if(!CellKind.SCALAR.equals(getCellKind(type)))  {
+    if(!CellKind.SCALAR.equals(CType.getCellKind(type)))  {
       assert(src.isConstant() && src.isBitVector());
       return ((PointerExpressionEncoding) getExpressionEncoding())
           .getPointerEncoding().nullPtr();
@@ -590,7 +592,7 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
     xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     String lvalTypeName = getTypeName(lvalType);
     if(currentMemElems.containsKey(lvalTypeName)) { // declared type name
-      CellKind kind = getCellKind(lvalType);
+      CellKind kind = CType.getCellKind(lvalType);
       if(CellKind.BOOL.equals(kind)) { // cascade_conditions
         rval = getExpressionEncoding().castToBoolean(rval);
         tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
@@ -608,7 +610,7 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
       
     } else { // new type name
       isMemUpdated = true;
-      CellKind kind = getCellKind(lvalType);
+      CellKind kind = CType.getCellKind(lvalType);
       ArrayType arrType = null;
       
       if(CellKind.BOOL.equals(kind)) {

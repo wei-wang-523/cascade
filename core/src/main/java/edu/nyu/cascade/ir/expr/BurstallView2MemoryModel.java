@@ -15,6 +15,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -278,7 +280,7 @@ public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
         }
       }
     } else {
-      CellKind kind = getCellKind(pType);
+      CellKind kind = CType.getCellKind(pType);
       ArrayExpression tgtArray = null;
       if(CellKind.SCALAR.equals(kind)) {
         ArrayType arrType = em.arrayType(ptrType, scalarType);
@@ -308,7 +310,7 @@ public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
     Expression rval = null;
     xtc.type.Type lvalType = (xtc.type.Type) 
         lval.getNode().getProperty(TYPE);
-    CellKind kind = getCellKind(lvalType);
+    CellKind kind = CType.getCellKind(lvalType);
     if(CellKind.SCALAR.equals(kind)) {
       rval = getExpressionEncoding().getIntegerEncoding().unknown();
     } else if(CellKind.POINTER.equals(kind)){
@@ -621,7 +623,7 @@ public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
     boolean isMemUpdated = false;
     String lvalTypeName = getTypeName(lvalType);
     if(currentMemElems.containsKey(lvalTypeName)) { // previously declared variable
-      CellKind kind = getCellKind(lvalType);
+      CellKind kind = CType.getCellKind(lvalType);
       if(CellKind.POINTER.equals(kind)) {
         if(!ptrType.equals(rval.getType())) {
           // for assign null to pointer int* ptr = 0;
@@ -635,7 +637,7 @@ public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
       tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
     } else { // newly type name
       isMemUpdated = true;
-      CellKind kind = getCellKind(lvalType);
+      CellKind kind = CType.getCellKind(lvalType);
       ArrayType arrType = null;
       if(CellKind.BOOL.equals(kind)) {
         arrType = em.arrayType(ptrType, em.booleanType());
@@ -667,7 +669,7 @@ public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
     Expression scalarViewState = viewState.asTuple().index(0);
     Expression ptrViewState = viewState.asTuple().index(1);
     ExpressionManager em = getExpressionManager();
-    CellKind kind = getCellKind(indexType);
+    CellKind kind = CType.getCellKind(indexType);
     
     if(CellKind.SCALAR.equals(kind)) {
       Expression newView = getViewVar(indexTypeName, scalarType);
@@ -681,7 +683,7 @@ public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
 
   private boolean hasView(Node node) {
     Preconditions.checkArgument(node.hasProperty(TYPE));
-    CellKind kind = getCellKind((xtc.type.Type) node.getProperty(TYPE));
+    CellKind kind = CType.getCellKind((xtc.type.Type) node.getProperty(TYPE));
     return CellKind.SCALAR.equals(kind);
   }
   
