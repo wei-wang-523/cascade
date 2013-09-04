@@ -40,7 +40,7 @@ public class CType {
   }
   
   public static String getReferenceName(xtc.type.Type type) {
-     Preconditions.checkArgument(type.hasShape());
+     if(!type.hasShape())   return null;
      return getReferenceName(type.getShape());
   }
   

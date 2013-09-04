@@ -406,15 +406,21 @@ public class Statement implements IRStatement {
       xtc.type.Type lType = (xtc.type.Type) lhs.getProperty(xtc.Constants.TYPE);
       xtc.type.Type rType = (xtc.type.Type) rhs.getProperty(xtc.Constants.TYPE);
 
-      if(CType.unwrapped(lType).isPointer() && CType.unwrapped(rType).isPointer()) {
+      if((CType.unwrapped(lType).isPointer()
+          || CType.unwrapped(lType).isArray()
+          || CType.unwrapped(lType).isStruct())
+          && 
+          (CType.unwrapped(rType).isPointer()
+              || CType.unwrapped(rType).isArray()
+              || CType.unwrapped(rType).isStruct())) {
         if("AddressExpression".equals(rhs.getName())) {
           rType = (xtc.type.Type) rhs.getGeneric(0).getProperty(xtc.Constants.TYPE);
         }
         
         String lRefName = CType.getReferenceName(lType);
         String rRefName = CType.getReferenceName(rType);
-        
-        aliasMap = UnionFind.union(aliasMap, lRefName, rRefName);
+        if(lRefName != null && rRefName != null)
+          aliasMap = UnionFind.union(aliasMap, lRefName, rRefName);
       }
       return aliasMap;
     }
