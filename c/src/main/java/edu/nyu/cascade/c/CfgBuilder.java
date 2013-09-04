@@ -513,7 +513,7 @@ public class CfgBuilder extends Visitor {
     Type type = lookupType(test);
     Reference ref = new DynamicReference(varName, type);
     Reference varRef = new StringReference(TEST_VAR_PREFIX, BooleanT.TYPE);
-    Type testType = new AnnotatedT(type).shape(ref).constant(varRef);
+    Type testType = new AnnotatedT(type).shape(ref).constant(varRef).scope(scope.getName());
     testType.mark(varNode);
     IRVarInfo varInfo = new VarInfo(scope, varName, IRIntegerType.getInstance(), varNode);
     symbolTable.define(varName, varInfo);
@@ -526,7 +526,8 @@ public class CfgBuilder extends Visitor {
     xtc.util.SymbolTable.Scope scope = symbolTable.getCurrentScope();
     varNode.setLocation(malloc.getLocation());
     symbolTable.toXtcSymbolTable().mark(varNode);
-    lookupType(malloc).mark(varNode);
+    Type mallocType = lookupType(malloc).scope(scope.getName());
+    mallocType.mark(varNode);
     IRVarInfo varInfo = new VarInfo(scope, varName, IRIntegerType.getInstance(), varNode);
     symbolTable.define(varName, varInfo);
     return varNode; 
@@ -540,7 +541,7 @@ public class CfgBuilder extends Visitor {
     symbolTable.toXtcSymbolTable().mark(varNode);
     Type type = lookupType(string);
     Reference ref = new DynamicReference(varName, type);
-    Type stringType = type.shape(ref);
+    Type stringType = type.shape(ref).scope(scope.getName());
     stringType.mark(varNode);
     IRVarInfo varInfo = new VarInfo(scope, varName, IRIntegerType.getInstance(), varNode);
     symbolTable.define(varName, varInfo);
