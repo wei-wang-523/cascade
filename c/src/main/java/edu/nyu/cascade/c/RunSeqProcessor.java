@@ -73,6 +73,7 @@ class RunSeqProcessor implements RunProcessor {
           aliasMap = pathEncoder.preProcessAlias(stmt, aliasMap);
         }
       
+        aliasMap = UnionFind.normalizeMap(aliasMap);
         ImmutableMap<String, String> immutableAliasMap = 
             new ImmutableMap.Builder<String, String>().putAll(aliasMap).build();
         pathEncoder.setAliasMap(immutableAliasMap);
