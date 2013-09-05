@@ -15,6 +15,7 @@ import xtc.type.*;
 import xtc.util.Pair;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -1184,8 +1185,7 @@ public class CfgBuilder extends Visitor {
 
   public void visitGotoStatement(GNode node) throws ExpressionFactoryException {
     Node labelNode = node.getNode(1);
-    if(labelNode.getName().equals("PrimaryIdentifier")) 
-      throw new ExpressionFactoryException("Invalid label." + labelNode.getName());
+    Preconditions.checkArgument(labelNode.getName().equals("PrimaryIdentifier"));
     recurseOnExpression(labelNode);
     String label = labelNode.getString(0);
     BasicBlock labelBlock = labeledBlocks.get(label);
