@@ -508,44 +508,32 @@ public class CfgBuilder extends Visitor {
   private Node defineTestVarNode(Node test) {
     String varName = Identifiers.uniquify(TEST_VAR_PREFIX);
     GNode varNode = GNode.create("PrimaryIdentifier", varName);
-    xtc.util.SymbolTable.Scope scope = symbolTable.getCurrentScope();
     varNode.setLocation(test.getLocation());
-    symbolTable.toXtcSymbolTable().mark(varNode);
     Type type = lookupType(test);
-    Reference ref = new DynamicReference(varName, type);
-    Reference varRef = new StringReference(TEST_VAR_PREFIX, BooleanT.TYPE);
-    Type testType = new AnnotatedT(type).shape(ref).constant(varRef).scope(scope.getName());
-    testType.mark(varNode);
-    IRVarInfo varInfo = new VarInfo(scope, varName, IRIntegerType.getInstance(), varNode);
-    symbolTable.define(varName, varInfo);
+    type = type.annotate().shape(new DynamicReference(varName,type));
+    type.mark(varNode);
+    cAnalyzer.processExpression(varNode);
     return varNode; 
   }
   
   private Node defineMallocVarNode(Node malloc) {
     String varName = Identifiers.uniquify(MALLOC_VAR_PREFIX);
     GNode varNode = GNode.create("PrimaryIdentifier", varName);
-    xtc.util.SymbolTable.Scope scope = symbolTable.getCurrentScope();
     varNode.setLocation(malloc.getLocation());
-    symbolTable.toXtcSymbolTable().mark(varNode);
-    Type mallocType = lookupType(malloc).scope(scope.getName());
+    Type mallocType = lookupType(malloc);
     mallocType.mark(varNode);
-    IRVarInfo varInfo = new VarInfo(scope, varName, IRIntegerType.getInstance(), varNode);
-    symbolTable.define(varName, varInfo);
+    cAnalyzer.processExpression(varNode);
     return varNode; 
   }
 
   private Node defineStringVarNode(Node string) {
     String varName = Identifiers.uniquify(STRING_VAR_PREFIX);
     GNode varNode = GNode.create("PrimaryIdentifier", varName);
-    xtc.util.SymbolTable.Scope scope = symbolTable.getCurrentScope();
     varNode.setLocation(string.getLocation());
-    symbolTable.toXtcSymbolTable().mark(varNode);
     Type type = lookupType(string);
-    Reference ref = new DynamicReference(varName, type);
-    Type stringType = type.shape(ref).scope(scope.getName());
-    stringType.mark(varNode);
-    IRVarInfo varInfo = new VarInfo(scope, varName, IRIntegerType.getInstance(), varNode);
-    symbolTable.define(varName, varInfo);
+    type = type.shape(new DynamicReference(varName, type));
+    type.mark(varNode);
+    cAnalyzer.processExpression(varNode);
     return varNode; 
   }
   
