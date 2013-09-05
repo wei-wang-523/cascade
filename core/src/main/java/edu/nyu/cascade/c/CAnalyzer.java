@@ -3144,11 +3144,17 @@ public class CAnalyzer extends Visitor {
       }
 
       public void visit(GNode n) {
-        table.enter(n);
-        for (Object o : n) {
-          if (o instanceof Node) dispatch((Node)o);
+        if(table.current().equals(n.getProperty(Constants.SCOPE))) {
+          for (Object o : n) {
+            if (o instanceof Node) dispatch((Node)o);
+          }
+        } else {
+          table.enter(n);
+          for (Object o : n) {
+            if (o instanceof Node) dispatch((Node)o);
+          }
+          table.exit(n);
         }
-        table.exit(n);
       }
     };
 
@@ -3202,11 +3208,17 @@ public class CAnalyzer extends Visitor {
       }
 
       public void visit(GNode n) {
-        table.enter(n);
-        for (Object o : n) {
-          if (o instanceof Node) dispatch((Node)o);
+        if(table.current().equals(n.getProperty(Constants.SCOPE))) {
+          for (Object o : n) {
+            if (o instanceof Node) dispatch((Node)o);
+          }
+        } else {
+          table.enter(n);
+          for (Object o : n) {
+            if (o instanceof Node) dispatch((Node)o);
+          }
+          table.exit(n);
         }
-        table.exit(n);
       }
     };
     v.dispatch(function);
@@ -5480,19 +5492,20 @@ public class CAnalyzer extends Visitor {
     if (null == result) {
       if(bVarTypeMap.containsKey(n)) {
         result = bVarTypeMap.get(n);
-      } else if(n.hasProperty(xtc.Constants.TYPE)) {
-        result = (Type) n.getProperty(xtc.Constants.TYPE);
-      } else if(n.hasProperty(BOUND)) {
+      } else if(n.hasProperty(Constants.TYPE)) {
+        result = (Type) n.getProperty(Constants.TYPE);
+        table.current().define(n.getString(0), result);
+      } else if(n.hasProperty(BOUND)) { // bound variable in control file
         result = IntegerT.INT;
         Reference ref = new DynamicReference(n.getString(0), result);
         result = result.annotate().shape(ref);
         bVarTypeMap.put(n, result);
+        table.current().define(n.getString(0), result);
       } else {
         runtime.error("'" + n.getString(0) + "' undeclared", n);
         result = ErrorT.TYPE;
       }
     }
-
     mark(n, result);
     return result;
   }
@@ -5502,8 +5515,8 @@ public class CAnalyzer extends Visitor {
     if (null == result) {
       if(bVarTypeMap.containsKey(n)) {
         result = bVarTypeMap.get(n);
-      } else if(n.hasProperty(xtc.Constants.TYPE)) {
-        result = (Type) n.getProperty(xtc.Constants.TYPE);
+      } else if(n.hasProperty(Constants.TYPE)) {
+        result = (Type) n.getProperty(Constants.TYPE);
       } else if(n.hasProperty(BOUND)) {
         result = IntegerT.INT;
         Reference ref = new DynamicReference(n.getString(0), result);
@@ -6741,14 +6754,13 @@ public class CAnalyzer extends Visitor {
    */
   public void mark(Node node, Type type) {
     if (runtime.test("optionMarkAST")) {
-      if(node.hasProperty(xtc.Constants.TYPE)) {
-        Type oldType = (Type) node.removeProperty(xtc.Constants.TYPE);
+      if(node.hasProperty(Constants.TYPE)) {
+        Type oldType = (Type) node.removeProperty(Constants.TYPE);
         if(!oldType.equals(type))
           throw new IllegalArgumentException("Inconsistent types for node " + node);
       }
-      if(!type.isSealed())
-        type.scope(table.current().getName());
       type.mark(node);
+      node.setProperty(Constants.SCOPE, table.current());
     }
   }
 

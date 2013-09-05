@@ -1,6 +1,7 @@
 package edu.nyu.cascade.c;
 
 import xtc.type.*;
+import xtc.util.SymbolTable;
 
 import com.google.common.base.Preconditions;
 
@@ -41,15 +42,11 @@ public class CType {
     throw new IllegalArgumentException("Unknown type " + type);
   }
   
-  public static String getReferenceName(xtc.type.Type type) {
-    Preconditions.checkArgument(type.hasScope());
+  public static String getReferenceName(Type type, SymbolTable.Scope scope) {
     if(!type.hasShape())   return null;
     String refName = getReferenceName(type.getShape());
-    StringBuilder sb = new StringBuilder()
-    .append(refName)
-    .append(Identifiers.REFERENCE_NAME_INFIX)
-    .append(type.getScope());
-    return sb.toString();
+    String scopeName = Identifiers.toValidId(scope.lookupScope(refName).getQualifiedName());
+    return new StringBuilder().append(refName).append(scopeName).toString();
   }
   
   private static String getReferenceName(Reference ref) {

@@ -26,8 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import xtc.Constants;
 import xtc.tree.GNode;
 import xtc.tree.Node;
+import xtc.util.SymbolTable.Scope;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -403,8 +405,8 @@ public class Statement implements IRStatement {
       Node lhs = getOperand(0).getSourceNode();
       Node rhs = getOperand(1).getSourceNode();
       
-      xtc.type.Type lType = (xtc.type.Type) lhs.getProperty(xtc.Constants.TYPE);
-      xtc.type.Type rType = (xtc.type.Type) rhs.getProperty(xtc.Constants.TYPE);
+      xtc.type.Type lType = (xtc.type.Type) lhs.getProperty(Constants.TYPE);
+      xtc.type.Type rType = (xtc.type.Type) rhs.getProperty(Constants.TYPE);
 
       if((CType.unwrapped(lType).isPointer()
           || CType.unwrapped(lType).isArray()
@@ -414,11 +416,11 @@ public class Statement implements IRStatement {
               || CType.unwrapped(rType).isArray()
               || CType.unwrapped(rType).isStruct())) {
         if("AddressExpression".equals(rhs.getName())) {
-          rType = (xtc.type.Type) rhs.getGeneric(0).getProperty(xtc.Constants.TYPE);
+          rType = (xtc.type.Type) rhs.getGeneric(0).getProperty(Constants.TYPE);
         }
         
-        String lRefName = CType.getReferenceName(lType);
-        String rRefName = CType.getReferenceName(rType);
+        String lRefName = CType.getReferenceName(lType, (Scope) lhs.getProperty(Constants.SCOPE));
+        String rRefName = CType.getReferenceName(rType, (Scope) rhs.getProperty(Constants.SCOPE));
         if(lRefName != null && rRefName != null)
           aliasMap = UnionFind.union(aliasMap, lRefName, rRefName);
       }

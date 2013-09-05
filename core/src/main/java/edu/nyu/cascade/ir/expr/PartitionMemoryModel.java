@@ -6,7 +6,10 @@ import java.util.Set;
 import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 
+import xtc.Constants;
 import xtc.tree.GNode;
+import xtc.util.SymbolTable.Scope;
+
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -704,8 +707,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     Preconditions.checkArgument(gnode.hasProperty(TYPE));
     
     xtc.type.Type type = (xtc.type.Type) gnode.getProperty(TYPE);
-    String refName = CType.getReferenceName(type);
-    
+    String refName = CType.getReferenceName(type, (Scope) gnode.getProperty(Constants.SCOPE));
     if(aliasMap != null && aliasMap.containsKey(refName)) {
       String repName = aliasMap.get(refName);
       refName = repName;
