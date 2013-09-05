@@ -313,7 +313,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     
     xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     CellKind kind = CType.getCellKind(lvalType);
-    assert (CellKind.SCALAR.equals(kind) || CellKind.POINTER.equals(kind));
+    
     if(CellKind.POINTER.equals(kind)) {
       rval = getExpressionEncoding().unknown();
     } else {
