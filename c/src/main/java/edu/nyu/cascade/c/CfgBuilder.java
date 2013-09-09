@@ -383,7 +383,7 @@ public class CfgBuilder extends Visitor {
     /* Remove the scope in nested scopes is only valid for forLoop, not for FunctionDefinition
      * Because, Function's scope is root scope, not recorded in nestedScopes
      */
-    if(!(nestedScopes.isEmpty() || node.getName().equals("FunctionDefinition")))
+    if(!(nestedScopes.isEmpty() || node.hasName("FunctionDefinition")))
       nestedScopes.remove(0);
   }
   
@@ -640,7 +640,7 @@ public class CfgBuilder extends Visitor {
   
   private int getDimofArray(Node node) {
     int dim = 0;
-    while(node.getName().equals("ArrayDeclarator")) {
+    while(node.hasName("ArrayDeclarator")) {
       dim++;
       node = node.getNode(0);
     }
@@ -649,7 +649,7 @@ public class CfgBuilder extends Visitor {
   
   private void initializeArray(CExpression var, GNode vals, int dimension, List<CExpression> indexList) {
     Location loc = vals.getLocation();
-    if(vals.getName().equals("InitializerList")) {
+    if(vals.hasName("InitializerList")) {
       List<CExpression> exprList = visitInitializerList(vals);
       for(int i=0; i<exprList.size(); i++) {
         GNode val = (GNode) exprList.get(i).getSourceNode();
@@ -710,8 +710,8 @@ public class CfgBuilder extends Visitor {
     Node rhsNode = node.getNode(2);
     
     boolean compSelect = 
-        lhsNode.getName().equals("DirectComponentSelection") ||
-        lhsNode.getName().equals("IndirectComponentSelection");
+        lhsNode.hasName("DirectComponentSelection") ||
+        lhsNode.hasName("IndirectComponentSelection");
     
     boolean pointerAssign = lookupType(lhsNode).isPointer();
     
@@ -734,7 +734,7 @@ public class CfgBuilder extends Visitor {
     Statement resultStmt;
 
     /* Function call as x = f(x) should be operated differently */
-    if(rhsNodePrime.getName().equals("FunctionCall")) {
+    if(rhsNodePrime.hasName("FunctionCall")) {
       Node funNode = rhsNodePrime.getNode(0);
       
       /* Generate an allocated function for malloc function */
@@ -1173,7 +1173,7 @@ public class CfgBuilder extends Visitor {
 
   public void visitGotoStatement(GNode node) throws ExpressionFactoryException {
     Node labelNode = node.getNode(1);
-    Preconditions.checkArgument(labelNode.getName().equals("PrimaryIdentifier"));
+    Preconditions.checkArgument(labelNode.hasName("PrimaryIdentifier"));
     recurseOnExpression(labelNode);
     String label = labelNode.getString(0);
     BasicBlock labelBlock = labeledBlocks.get(label);
@@ -1796,7 +1796,7 @@ public class CfgBuilder extends Visitor {
     Node invariant = body.getNode(0).getNode(0);
     if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION) 
         && invariant != null
-        && invariant.getName().equals("FunctionCall") 
+        && invariant.hasName("FunctionCall") 
         && invariant.getNode(0).getString(0).equals("INVARIANT")) {
       BasicBlock invariantBlock = currentCfg.newBlock(symbolTable.getScope(body));
       
@@ -1909,7 +1909,7 @@ public class CfgBuilder extends Visitor {
     if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION)
         && body.getNode(0) != null
         && body.getNode(0).getNode(0) != null
-        && body.getNode(0).getNode(0).getName().equals("FunctionCall") 
+        && body.getNode(0).getNode(0).hasName("FunctionCall") 
         && body.getNode(0).getNode(0).getNode(0).getString(0).equals("INVARIANT")) {
       BasicBlock invariantBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
       Node invariant = body.getNode(0).getNode(0);

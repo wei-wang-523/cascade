@@ -1,13 +1,9 @@
 package edu.nyu.cascade.c;
 
-import java.util.Map;
-
-import com.google.common.collect.ImmutableMap;
-
+import edu.nyu.cascade.c.alias.AliasAnalysis;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
-import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.PathEncoding;
 import edu.nyu.cascade.ir.expr.PathFactoryException;
 import edu.nyu.cascade.prover.Expression;
@@ -113,12 +109,7 @@ final class PathSeqEncoder implements PathEncoder {
     return true;
   }
   
-  public Map<String, String> preProcessAlias(IRStatement stmt, Map<String, String> aliasMap) {
-    return stmt.preProcessAlias(pathEncoding, aliasMap);
-  }
-  
-  public void setAliasMap(ImmutableMap<String, String> aliasMap) {
-    MemoryModel mm = pathEncoding.getMemoryModel();
-    mm.setAliasMap(aliasMap);
+  public void prePointerAnalysis(IRStatement stmt, AliasAnalysis analyzer) {
+    stmt.prePointerAnalysis(pathEncoding, analyzer);
   }
 }

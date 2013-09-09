@@ -15,6 +15,7 @@ import com.google.common.collect.*;
 
 import edu.nyu.cascade.c.CAnalyzer;
 import edu.nyu.cascade.c.CSpecParser;
+import edu.nyu.cascade.c.steensgaard.Steensgaard;
 import edu.nyu.cascade.control.*;
 import edu.nyu.cascade.control.jaxb.InsertionType;
 import edu.nyu.cascade.control.jaxb.Position.Command;
@@ -67,16 +68,14 @@ class RunSeqProcessor implements RunProcessor {
       
       if(Preferences.isSet(Preferences.OPTION_THEORY) 
           && "Partition".equals(Preferences.getString((Preferences.OPTION_THEORY)))) {
-        Map<String, String> aliasMap = Maps.newLinkedHashMap();
+        
+        Steensgaard analyzer = Steensgaard.create();
         
         for(IRStatement stmt : path) {
-          aliasMap = pathEncoder.preProcessAlias(stmt, aliasMap);
+          pathEncoder.prePointerAnalysis(stmt, analyzer);
         }
-      
-        aliasMap = UnionFind.normalizeMap(aliasMap);
-        ImmutableMap<String, String> immutableAliasMap = 
-            new ImmutableMap.Builder<String, String>().putAll(aliasMap).build();
-        pathEncoder.setAliasMap(immutableAliasMap);
+        
+        pathEncoder.getExpressionEncoder().getMemoryModel().setAliasAnalyzer(analyzer);
       }
       
       for (IRStatement stmt : path) {
@@ -488,7 +487,7 @@ class RunSeqProcessor implements RunProcessor {
         for(int i=0; i<args.size(); i++) {
           Node arg_call = args.get(i).getSourceNode();
           Node arg_assign = argNode.getNode(i);
-          if(arg_assign.getName().equals("CastExpression"))  arg_assign = arg_assign.getNode(1);
+          if(arg_assign.hasName("CastExpression"))  arg_assign = arg_assign.getNode(1);
           if(!arg_call.equals(arg_assign)) {
             if(!arg_assign.getString(0).startsWith(TEMP_VAR_PREFIX)) {
               throw new RunProcessorException("Invalid argument: " + arg_assign);
@@ -740,7 +739,7 @@ class RunSeqProcessor implements RunProcessor {
   
   private boolean hasFunctionCall(CSymbolTable symbolTable, Node srcNode) 
       throws RunProcessorException {
-    if(srcNode.getName().equals("FunctionCall")) {
+    if(srcNode.hasName("FunctionCall")) {
       String funcName = srcNode.getNode(0).getString(0);
       /* Do not touch the reserved functions */
       if(ReservedFunction.Functions.contains(funcName))  return false;
@@ -810,8 +809,8 @@ class RunSeqProcessor implements RunProcessor {
       CallPoint func = null;
       if(funcs_copy != null) {
         Node funcNode = stmtRmv.getSourceNode();
-        assert(funcNode.getName().equals("FunctionCall") 
-            && funcNode.getNode(0).getName().equals("PrimaryIdentifier"));
+        assert(funcNode.hasName("FunctionCall") 
+            && funcNode.getNode(0).hasName("PrimaryIdentifier"));
         String funcName = funcNode.getNode(0).getString(0);
         Iterator<CallPoint> itr = funcs_copy.iterator();
         while(itr.hasNext()) {

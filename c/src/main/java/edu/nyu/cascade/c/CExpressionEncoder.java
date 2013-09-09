@@ -599,7 +599,7 @@ class CExpressionEncoder implements ExpressionEncoder {
         if(typeNode.hasProperty(TYPE)) { // pointer type (STRUCT *)
           int size = sizeofType(lookupType(typeNode));
           return encoding.integerConstant(size).setNode(node);
-        } else if(typeNode.getName().equals("PrimaryIdentifier")){
+        } else if(typeNode.hasName("PrimaryIdentifier")){
           GNode typedef = GNode.create("TypedefName", typeNode.get(0));
           typedef.setLocation(node.getLocation());
           GNode specifier = GNode.create("SpecifierQualifierList", typedef);
