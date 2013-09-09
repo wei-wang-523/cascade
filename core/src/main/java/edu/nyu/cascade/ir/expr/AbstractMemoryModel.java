@@ -5,10 +5,10 @@ package edu.nyu.cascade.ir.expr;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
+import edu.nyu.cascade.c.alias.AliasAnalysis;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -22,6 +22,7 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   protected static final String DEFAULT_MEMORY_STATE_TYPE = "memType";
   protected static final String DEFAULT_STATE_TYPE = "stateType";
   protected static final String TYPE = xtc.Constants.TYPE;
+  protected static final String SCOPE = xtc.Constants.SCOPE;
   
   private final ExpressionEncoding encoding;
   
@@ -94,7 +95,7 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   }
   
   @Override
-  public void setAliasMap(ImmutableMap<String, String> aliasMap) { }
+  public void setAliasAnalyzer(AliasAnalysis analyzer) {};
   
   protected Iterable<String> recomposeFieldNames(final String arrName, Iterable<String> fieldsName){
     return Iterables.transform(fieldsName, 

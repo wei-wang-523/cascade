@@ -1,8 +1,8 @@
 package edu.nyu.cascade.ir.expr;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import edu.nyu.cascade.c.alias.AliasAnalysis;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -141,5 +141,5 @@ public interface MemoryModel {
   /**
    * set pointer alias map for partition memory model
    */
-  void setAliasMap(ImmutableMap<String, String> aliasMap);
+  void setAliasAnalyzer(AliasAnalysis analyzer);
 }

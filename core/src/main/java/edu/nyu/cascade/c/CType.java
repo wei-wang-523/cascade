@@ -1,8 +1,6 @@
 package edu.nyu.cascade.c;
 
 import xtc.type.*;
-import xtc.util.SymbolTable;
-
 import com.google.common.base.Preconditions;
 
 import edu.nyu.cascade.util.Identifiers;
@@ -35,36 +33,48 @@ public class CType {
     }
     
     type = unwrapped(type);
-    if(type.isInteger())    
-      return CellKind.SCALAR;
-    if(type.isPointer() || type.isArray() || type.isStruct())    
-      return CellKind.POINTER;
-    throw new IllegalArgumentException("Unknown type " + type);
+    if(type.isInteger())        return CellKind.SCALAR;
+    else if(type.isPointer())   return CellKind.POINTER;
+    else if(type.isArray())     return CellKind.SCALAR;
+    else if(type.isStruct())    return CellKind.SCALAR;
+    else if(type.isUnion())     return CellKind.SCALAR;
+    else
+      throw new IllegalArgumentException("Unknown type " + type);
   }
   
-  public static String getReferenceName(Type type, SymbolTable.Scope scope) {
-    if(!type.hasShape())   return null;
-    String refName = getReferenceName(type.getShape());
-    String scopeName = Identifiers.toValidId(scope.lookupScope(refName).getQualifiedName());
-    return new StringBuilder().append(refName).append(scopeName).toString();
+  public static String getReferenceName(Type type) {
+    if(!(type.hasShape() 
+        || (type.hasConstant() && type.getConstant().isReference())))   
+      return Identifiers.uniquify("Unknown");
+    
+    if(type.hasConstant() && type.getConstant().isReference()) {
+      Reference constRef = type.getConstant().refValue();
+      return getReferenceName(constRef);
+    } else {
+      return getReferenceName(type.getShape());
+    }
   }
   
   private static String getReferenceName(Reference ref) {
+    Preconditions.checkArgument(ref != null);
     if(ref.isStatic()) {
       return ((StaticReference) ref).getName();
     } else if(ref.isDynamic()) {
       return ((DynamicReference) ref).getName();
     } else if(ref.isIndirect()) {
-      Reference base = ((IndirectReference) ref).getBase();
+      Reference base = ref.getBase();
       return getReferenceName(base);
     } else if(ref instanceof FieldReference) {
-      Reference base = ((FieldReference) ref).getBase();
+      Reference base = ref.getBase();
       return getReferenceName(base);
     } else if(ref instanceof IndexReference) {
-      Reference base = ((IndexReference) ref).getBase();
+      Reference base = ref.getBase();
       return getReferenceName(base);
     } else if(ref instanceof CastReference) { 
-      Reference base = ((CastReference) ref).getBase();
+      Reference base = ref.getBase();
+      return getReferenceName(base);
+    } else if(ref instanceof AddressOfReference) { 
+      Reference base = ref.getBase();
       return getReferenceName(base);
     } else {
       throw new IllegalArgumentException("Unknown reference for " + ref);
@@ -119,5 +129,19 @@ public class CType {
       throw new IllegalArgumentException("Cannot parse type " + type.getName());
     }
     return sb.toString();
+  }
+  
+  public static int numberOfIndirectRef(xtc.type.Type type) {
+    if(!type.hasShape())    return 0;
+    return numberOfIndirectRef(type.getShape());
+  }
+  
+  private static int numberOfIndirectRef(Reference ref) {
+    int currentNum = ref.isIndirect() ? 1 : 0;   
+    if(ref.hasBase()) {
+      return currentNum + numberOfIndirectRef(ref.getBase());
+    } else {
+      return currentNum;
+    }    
   }
 }

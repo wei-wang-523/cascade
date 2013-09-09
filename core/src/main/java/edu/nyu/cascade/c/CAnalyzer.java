@@ -4237,6 +4237,25 @@ public class CAnalyzer extends Visitor {
             } catch (IllegalStateException x) {
               result = result.constant(new StaticReference(result));
             }
+          } else {
+            Reference ref;
+            Type ptr1 = r1.toPointer().getType().resolve();
+            if (t1.hasShape() && t2.hasConstant()) {
+              try {
+                ref = addressOf(t1.getShape().add(t2.getConstant().bigIntValue()));
+              } catch (IllegalStateException x) {
+                ref = new StaticReference(ptr1);
+              }
+            } else if(t1.hasShape() && !t2.hasConstant()) {
+              try {
+                ref = addressOf(t1.getShape());
+              } catch (IllegalStateException x) {
+                ref = new StaticReference(ptr1);
+              }
+            } else {
+              ref = new DynamicReference(ptr1);
+            }
+            result = result.annotate().shape(ref);
           }
         } else {
           result = ErrorT.TYPE;
@@ -4255,6 +4274,25 @@ public class CAnalyzer extends Visitor {
             } catch (IllegalStateException x) {
               result = result.constant(new StaticReference(result));
             }
+          } else {
+            Reference ref;
+            Type ptr2 = r2.toPointer().getType().resolve();
+            if (t2.hasShape() && t1.hasConstant()) {
+              try {
+                ref = addressOf(t2.getShape().add(t1.getConstant().bigIntValue()));
+              } catch (IllegalStateException x) {
+                ref = new StaticReference(ptr2);
+              }
+            } else if(t2.hasShape() && !t1.hasConstant()) {
+              try {
+                ref = addressOf(t2.getShape());
+              } catch (IllegalStateException x) {
+                ref = new StaticReference(ptr2);
+              }
+            } else {
+              ref = new DynamicReference(ptr2);
+            }
+            result = result.annotate().shape(ref);
           }
         } else {
           result = ErrorT.TYPE;
@@ -4840,6 +4878,7 @@ public class CAnalyzer extends Visitor {
       // Process the indirection and address to ensure that the types
       // are valid.
       Type type = processIndirection(n1, base, false);
+      mark(n1, type);
       type      = processAddress(n, type);
 
       // Return the base, but not as an lvalue.
@@ -4859,6 +4898,8 @@ public class CAnalyzer extends Visitor {
           }
         } else if (base.hasConstant()) {
           result = result.annotate().constant(base.getConstant().getValue());
+        } else {
+          result = result.annotate().shape(base.getShape());
         }
       }
 
@@ -4904,6 +4945,8 @@ public class CAnalyzer extends Visitor {
           } catch (IllegalStateException x) {
             result = result.constant(new StaticReference(result));
           }
+        } else {
+          result = result.annotate().shape(addressOf(type.getShape()));
         }
       }
 
@@ -4916,10 +4959,13 @@ public class CAnalyzer extends Visitor {
     Type       result = processAddress(n, t1);
 
     // Track compile-time constant pointers.
-    if (t1.hasShape() && t1.getShape().isConstant()) {
-      result = result.annotate().constant(t1.getShape());
+    if (t1.hasShape()) {
+      if(t1.getShape().isConstant()) {
+        result = result.annotate().constant(t1.getShape());
+      } else {
+        result = result.annotate().shape(addressOf(t1.getShape()));
+      }
     }
-
     // Done.
     mark(n, result);
     return result;
@@ -7031,4 +7077,21 @@ public class CAnalyzer extends Visitor {
     }
   }
 
+  /**
+   * Indirect this reference.  This method determines the appropriate
+   * reference when using a pointer-decayed type.  For arrays and
+   * functions, it simly returns this reference.  For all other types,
+   * it returns an indirect reference, with this reference as the
+   * base.
+   *
+   * @param type The reference's declared type (before pointer decay).
+   */
+  private Reference addressOf(Reference ref) {
+    Type resolved = ref.getType().resolve();
+    if (resolved.isArray() || resolved.isFunction()) {
+      return ref;
+    } else {
+      return new AddressOfReference(ref);
+    }
+  }
 }

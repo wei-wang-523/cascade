@@ -1,13 +1,12 @@
 package edu.nyu.cascade.ir;
 
 import java.util.List;
-import java.util.Map;
-
 import xtc.tree.Node;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
+import edu.nyu.cascade.c.alias.AliasAnalysis;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
@@ -110,5 +109,5 @@ public interface IRStatement {
   ImmutableSet<String> getPreLabels();
   ImmutableSet<String> getPostLabels();
   
-  Map<String, String> preProcessAlias(PathEncoding factory, Map<String, String> aliasMap);
+  void prePointerAnalysis(PathEncoding factory, AliasAnalysis analyzer);
 }

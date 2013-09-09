@@ -23,7 +23,6 @@ import static edu.nyu.cascade.ir.IRStatement.StatementType.SKIP;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import xtc.Constants;
@@ -38,6 +37,8 @@ import com.google.common.collect.Sets;
 import com.google.common.base.Preconditions;
 
 import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.alias.AliasAnalysis;
+import edu.nyu.cascade.c.alias.AliasVar;
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRLocation;
 import edu.nyu.cascade.ir.IRLocations;
@@ -48,7 +49,6 @@ import edu.nyu.cascade.ir.expr.PathEncoding;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Preferences;
-import edu.nyu.cascade.util.UnionFind;
 
 public class Statement implements IRStatement {
   
@@ -399,7 +399,7 @@ public class Statement implements IRStatement {
    * assumption/assertion in the annotation
    */
   @Override
-  public Map<String, String> preProcessAlias(PathEncoding factory, Map<String, String> aliasMap) {
+  public void prePointerAnalysis(PathEncoding factory, AliasAnalysis analyzer) {
     switch (getType()) {
     case ASSIGN: {
       Node lhs = getOperand(0).getSourceNode();
@@ -407,27 +407,30 @@ public class Statement implements IRStatement {
       
       xtc.type.Type lType = (xtc.type.Type) lhs.getProperty(Constants.TYPE);
       xtc.type.Type rType = (xtc.type.Type) rhs.getProperty(Constants.TYPE);
-
-      if((CType.unwrapped(lType).isPointer()
-          || CType.unwrapped(lType).isArray()
-          || CType.unwrapped(lType).isStruct())
-          && 
-          (CType.unwrapped(rType).isPointer()
-              || CType.unwrapped(rType).isArray()
-              || CType.unwrapped(rType).isStruct())) {
-        if("AddressExpression".equals(rhs.getName())) {
-          rType = (xtc.type.Type) rhs.getGeneric(0).getProperty(Constants.TYPE);
-        }
-        
-        String lRefName = CType.getReferenceName(lType, (Scope) lhs.getProperty(Constants.SCOPE));
-        String rRefName = CType.getReferenceName(rType, (Scope) rhs.getProperty(Constants.SCOPE));
-        if(lRefName != null && rRefName != null)
-          aliasMap = UnionFind.union(aliasMap, lRefName, rRefName);
-      }
-      return aliasMap;
+      Scope lScope = (Scope) lhs.getProperty(Constants.SCOPE);
+      Scope rScope = (Scope) rhs.getProperty(Constants.SCOPE);
+      String lRefName = CType.getReferenceName(lType);
+      String rRefName = CType.getReferenceName(rType);
+      AliasVar lTypeVar = analyzer.addVariable(lRefName, lScope);
+      AliasVar rTypeVar = analyzer.addVariable(rRefName, rScope);
+      
+      if(rhs.hasName("AddressExpression"))              analyzer.addrAssign(lTypeVar, rTypeVar);
+      else if(rhs.hasName("IndirectionExpression"))     analyzer.ptrAssign(lTypeVar, rTypeVar);
+      else if(lhs.hasName("IndirectionExpression"))     analyzer.assignPtr(lTypeVar, rTypeVar);
+      else                                              analyzer.simpleAssign(lTypeVar, rTypeVar);
+      
+      break;
+    }
+    case ALLOC: {
+      Node lhs = getOperand(0).getSourceNode();
+      xtc.type.Type lType = (xtc.type.Type) lhs.getProperty(Constants.TYPE);
+      Scope lScope = (Scope) lhs.getProperty(Constants.SCOPE);
+      String lRefName = CType.getReferenceName(lType);
+      AliasVar lTypeVar = analyzer.addVariable(lRefName, lType, lScope);
+      analyzer.heapAssign(lTypeVar);
+      break;
     }
     default:
-      return aliasMap;
     }
   }
 }
