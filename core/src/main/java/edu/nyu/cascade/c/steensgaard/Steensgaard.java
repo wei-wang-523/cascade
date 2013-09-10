@@ -14,7 +14,7 @@ import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.alias.AliasAnalysis;
 import edu.nyu.cascade.c.alias.AliasVar;
 import edu.nyu.cascade.c.steensgaard.ValueType.ValueTypeKind;
-import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Pair;
 
@@ -189,8 +189,10 @@ public class Steensgaard implements AliasAnalysis {
         res = (TypeVar) getPointsToLoc(res); 
         num--;
       }
-    }
+    }  
     
+    if(res == null)
+      throw new ExpressionFactoryException(type.getShape() + " is uninitialized.");
     return res;
   }
   
@@ -217,8 +219,6 @@ public class Steensgaard implements AliasAnalysis {
       res = uf.getInitVar((ECR) type.getOperand(0));
     }
     
-    if(res == null)
-      IOUtils.err().println("Cannot find points to alias variable for " + ((TypeVar) var).toStringShort());
     return res;
   }
   
