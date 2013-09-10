@@ -14,6 +14,7 @@ import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.alias.AliasAnalysis;
 import edu.nyu.cascade.c.alias.AliasVar;
 import edu.nyu.cascade.c.steensgaard.ValueType.ValueTypeKind;
+import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Pair;
 
@@ -217,7 +218,7 @@ public class Steensgaard implements AliasAnalysis {
     }
     
     if(res == null)
-      throw new IllegalArgumentException("Cannot find points to alias variable for " + var);
+      IOUtils.err().println("Cannot find points to alias variable for " + ((TypeVar) var).toStringShort());
     return res;
   }
   

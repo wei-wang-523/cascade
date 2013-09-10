@@ -122,7 +122,12 @@ public final class ECR extends UnionFind.Partition {
     ValueType rootType = root.getType();
     StringBuilder sb = new StringBuilder();
     if(ValueTypeKind.LOCATION.equals(rootType.getKind())) {
-      sb.append(" -> ").append(root.getInitTypeVar().getName());
+      sb.append(" -> ");
+      if(root.hasInitTypeVar()) {
+        sb.append(root.getInitTypeVar().getName());
+      } else {
+        sb.append("null");
+      }
       sb.append(rootType.getOperand(0).getPointsToChain());
     }
     return sb.toString();
