@@ -119,7 +119,7 @@ public class UnionFind<E> implements Serializable {
   }
 
   private final Map<E, Partition> map;
-  private int nPartitions;
+  private int nPartitions = 0;
 
   private UnionFind(Map<E, Partition> map, int parts) {
     this.map = map;
@@ -127,6 +127,7 @@ public class UnionFind<E> implements Serializable {
   
   public void add(E element, Partition p) {
     map.put(element, p);
+    nPartitions++;
   }
 
   public Partition get(E element) {
@@ -150,11 +151,14 @@ public class UnionFind<E> implements Serializable {
   }
 
   public ImmutableCollection<Set<E>> snapshot() {
+//    SetMultimap<Partition, E> parts = Multimaps.invertFrom(
+//        Multimaps.forMap(map),
+//        HashMultimap.<Partition, E> create(
+//            nPartitions,
+//            map.size() / nPartitions + 1));
     SetMultimap<Partition, E> parts = Multimaps.invertFrom(
         Multimaps.forMap(map),
-        HashMultimap.<Partition, E> create(
-            nPartitions,
-            map.size() / nPartitions + 1));
+        HashMultimap.<Partition, E> create());
     ImmutableList.Builder<Set<E>> builder = ImmutableList.builder();
     for (Collection<E> partition : parts.asMap().values()) {
       builder.add(ImmutableSet.copyOf(partition));

@@ -95,4 +95,8 @@ public interface AliasAnalysis {
    */
   AliasVar getPointsToLoc(AliasVar var);
   
+  /**
+   * Get the snapshot of the alias partition sets
+   */
+  String displaySnapShort();
 }

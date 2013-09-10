@@ -55,4 +55,9 @@ public class TypeVar implements AliasVar {
       .append(") (type ").append(type.getName()).append(") )");
     return sb.toString();
   }
+  
+  public String toStringShort() {
+    StringBuilder sb = new StringBuilder();
+    return sb.append("(TypeVar (name ").append(name).append(')').toString();
+  }
 }

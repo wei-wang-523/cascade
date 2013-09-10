@@ -1,5 +1,6 @@
 package edu.nyu.cascade.c.steensgaard;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -24,7 +25,7 @@ import edu.nyu.cascade.util.Pair;
  */
 public class Steensgaard implements AliasAnalysis {
   
-  protected static final String REGION_VARIABLE_NAME = "region_rep";
+  protected static final String REGION_VARIABLE_NAME = "region_";
   private UnionFindECR uf;
   private Map<Pair, TypeVar> varsMap; 
   
@@ -58,7 +59,7 @@ public class Steensgaard implements AliasAnalysis {
   @Override
   public void addrAssign(AliasVar lhs, AliasVar addr) {
     Preconditions.checkArgument(lhs instanceof TypeVar && addr instanceof TypeVar);
-    ValueType lhs_type = ((TypeVar) lhs).getECR().getType();
+    ValueType lhs_type = uf.getType(((TypeVar) lhs).getECR());
     assert(ValueTypeKind.LOCATION.equals(lhs_type.getKind()));
     ECR lhs0_ecr = lhs_type.getOperand(0);
     ECR addr_ecr = ((TypeVar) addr).getECR();
@@ -70,22 +71,23 @@ public class Steensgaard implements AliasAnalysis {
   @Override
   public void assignPtr(AliasVar ptr, AliasVar rhs) {
     Preconditions.checkArgument(ptr instanceof TypeVar && rhs instanceof TypeVar);
-    ValueType ptr_type = ((TypeVar) ptr).getECR().getType();
-    ValueType rhs_type = ((TypeVar) rhs).getECR().getType();
+    ValueType ptr_type = uf.getType(((TypeVar) ptr).getECR());
+    ValueType rhs_type = uf.getType(((TypeVar) rhs).getECR());
     assert(ValueTypeKind.LOCATION.equals(rhs_type.getKind()) 
         && ValueTypeKind.LOCATION.equals(ptr_type.getKind()));
     ECR ptr0_ecr = ptr_type.getOperand(0);
-    if(ValueTypeKind.BOTTOM.equals(ptr0_ecr.getType().getKind())) {
-      ptr0_ecr.setType(rhs_type);
+    if(ValueTypeKind.BOTTOM.equals(uf.getType(ptr0_ecr).getKind())) {
+      uf.setType(ptr0_ecr, rhs_type);
     } else {
-      assert(ValueTypeKind.LOCATION.equals(ptr0_ecr.getType().getKind()));
+      assert(ValueTypeKind.LOCATION.equals(uf.getType(ptr0_ecr).getKind()));
       ECR rhs0_ecr = rhs_type.getOperand(0);
-      ECR ptr00_ecr = ptr0_ecr.getType().getOperand(0);
+      ValueType ptr0_type = uf.getType(ptr0_ecr);
+      ECR ptr00_ecr = ptr0_type.getOperand(0);
       if(!rhs0_ecr.equals(ptr00_ecr)) 
         uf.cjoin(rhs0_ecr, ptr00_ecr);
       
       ECR rhs1_ecr = rhs_type.getOperand(1);
-      ECR ptr01_ecr = ptr0_ecr.getType().getOperand(1);
+      ECR ptr01_ecr = uf.getType(ptr0_ecr).getOperand(1);
       if(rhs1_ecr.equals(ptr01_ecr)) 
         uf.cjoin(rhs1_ecr, ptr01_ecr);
     }
@@ -94,11 +96,11 @@ public class Steensgaard implements AliasAnalysis {
   @Override
   public void heapAssign(AliasVar lhs) {
     Preconditions.checkArgument(lhs instanceof TypeVar);
-    ValueType lhs_type = ((TypeVar) lhs).getECR().getType();
+    ValueType lhs_type = uf.getType(((TypeVar) lhs).getECR());
     assert(ValueTypeKind.LOCATION.equals(lhs_type.getKind()));
     ECR lhs0_ecr = lhs_type.getOperand(0);
-    if(ValueTypeKind.BOTTOM.equals(lhs0_ecr.getType().getKind())) {
-      String freshRegionName = Identifiers.uniquify(REGION_VARIABLE_NAME);
+    if(ValueTypeKind.BOTTOM.equals(uf.getType(lhs0_ecr).getKind())) {
+      String freshRegionName = Identifiers.uniquify(REGION_VARIABLE_NAME + lhs.getName());
       Type regionType = CType.unwrapped(lhs.getType()).toPointer().getType();
       TypeVar region = (TypeVar) addVariable(freshRegionName, lhs.getScope(), regionType);
       uf.join(lhs0_ecr, region.getECR());
@@ -114,22 +116,22 @@ public class Steensgaard implements AliasAnalysis {
   @Override
   public void ptrAssign(AliasVar lhs, AliasVar ptr) {
     Preconditions.checkArgument(lhs instanceof TypeVar && ptr instanceof TypeVar);
-    ValueType lhs_type = ((TypeVar) lhs).getECR().getType();
-    ValueType ptr_type = ((TypeVar) ptr).getECR().getType();
+    ValueType lhs_type = uf.getType(((TypeVar) lhs).getECR());
+    ValueType ptr_type = uf.getType(((TypeVar) ptr).getECR());
     assert(ValueTypeKind.LOCATION.equals(lhs_type.getKind()) 
         && ValueTypeKind.LOCATION.equals(ptr_type.getKind()));
     ECR ptr0_ecr = ptr_type.getOperand(0);
-    if(ValueTypeKind.BOTTOM.equals(ptr0_ecr.getType().getKind())) {
-      ptr0_ecr.setType(lhs_type);
+    if(ValueTypeKind.BOTTOM.equals(uf.getType(ptr0_ecr).getKind())) {
+      uf.setType(ptr0_ecr, lhs_type);
     } else {
-      assert(ValueTypeKind.LOCATION.equals(ptr0_ecr.getType().getKind()));
+      assert(ValueTypeKind.LOCATION.equals(uf.getType(ptr0_ecr).getKind()));
       ECR lhs0_ecr = lhs_type.getOperand(0);
-      ECR ptr00_ecr = ptr0_ecr.getType().getOperand(0);
+      ECR ptr00_ecr = uf.getType(ptr0_ecr).getOperand(0);
       if(!lhs0_ecr.equals(ptr00_ecr)) 
         uf.cjoin(lhs0_ecr, ptr00_ecr);
       
       ECR lhs1_ecr = lhs_type.getOperand(1);
-      ECR ptr01_ecr = ptr0_ecr.getType().getOperand(1);
+      ECR ptr01_ecr = uf.getType(ptr0_ecr).getOperand(1);
       if(lhs1_ecr.equals(ptr01_ecr)) 
         uf.cjoin(lhs1_ecr, ptr01_ecr);
     }
@@ -138,8 +140,8 @@ public class Steensgaard implements AliasAnalysis {
   @Override
   public void simpleAssign(AliasVar lhs, AliasVar rhs) {
     Preconditions.checkArgument(lhs instanceof TypeVar && rhs instanceof TypeVar);
-    ValueType lhs_type = ((TypeVar) lhs).getECR().getType();
-    ValueType rhs_type = ((TypeVar) rhs).getECR().getType();
+    ValueType lhs_type = uf.getType(((TypeVar) lhs).getECR());
+    ValueType rhs_type = uf.getType(((TypeVar) rhs).getECR());
     assert(ValueTypeKind.LOCATION.equals(lhs_type.getKind()) 
         && ValueTypeKind.LOCATION.equals(rhs_type.getKind()));
     ECR lhs0_ecr = lhs_type.getOperand(0);
@@ -179,7 +181,7 @@ public class Steensgaard implements AliasAnalysis {
       var = (TypeVar) addVariable(name, scope_, type_);
     }
     
-    TypeVar res = ((ECR) var.getECR().findRoot()).getInitTypeVar();
+    TypeVar res = uf.getInitVar(var.getECR());
     if(type.hasShape()) {
       int num = CType.numOfIndRef(type.getShape());
       while(num > 0) {
@@ -200,7 +202,7 @@ public class Steensgaard implements AliasAnalysis {
   public AliasVar getPointsToLoc(AliasVar var) {
     Preconditions.checkArgument(var instanceof TypeVar);
     ECR ecr = ((TypeVar) var).getECR();
-    ValueType type = ecr.getType();
+    ValueType type = uf.getType(ecr);
     assert(ValueTypeKind.LOCATION.equals(type.getKind()));
     /* For array, structure or union, just return the root ECR's 
      * initial type variable
@@ -209,14 +211,41 @@ public class Steensgaard implements AliasAnalysis {
     if(var.getType().resolve().isArray() 
         || var.getType().resolve().isStruct() 
         || var.getType().resolve().isUnion()) {
-      res = ((ECR) ecr.findRoot()).getInitTypeVar();
+      res = uf.getInitVar(ecr);
     } else {
-      ECR root = (ECR) type.getOperand(0).findRoot();
-      res = root.getInitTypeVar();
+      res = uf.getInitVar((ECR) type.getOperand(0));
     }
     
     if(res == null)
       throw new IllegalArgumentException("Cannot find points to alias variable for " + var);
     return res;
+  }
+  
+  @Override
+  public String displaySnapShort() {
+    ImmutableCollection<Set<AliasVar>> sets = uf.snapshot();
+    StringBuilder sb = new StringBuilder();
+    if(sets != null) {
+      sb.append("Snapshot:\n");
+      for(Set<AliasVar> set : sets) {
+        if(set == null) continue;
+        sb.append("  Partition { ");
+        for(AliasVar var : set)
+          sb.append(((TypeVar) var).getName()).append(' ');
+        sb.append("}\n");
+      }
+    }
+    
+    sb.append("The points to chain:\n");
+    if(sets != null) {
+      for(Set<AliasVar> set : sets) {
+        if(set == null) continue;
+        Iterator<AliasVar> itr = set.iterator();
+        ECR ecr = ((TypeVar) itr.next()).getECR();
+        sb.append(uf.getPointsToChain(ecr).substring(3));
+        sb.append("\n");
+      }
+    }
+    return sb.toString();
   }
 }

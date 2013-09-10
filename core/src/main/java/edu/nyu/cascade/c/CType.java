@@ -11,6 +11,8 @@ import edu.nyu.cascade.util.Identifiers;
  */
 public class CType {
 
+  private final static String CONSTANT = Identifiers.toValidId("Constant");
+  
   public enum CellKind {
     SCALAR, POINTER, BOOL
   }
@@ -45,7 +47,7 @@ public class CType {
   public static String getReferenceName(Type type) {
     if(!(type.hasShape() 
         || (type.hasConstant() && type.getConstant().isReference())))   
-      return Identifiers.uniquify("Unknown");
+      return CONSTANT;
     
     if(type.hasConstant() && type.getConstant().isReference()) {
       Reference constRef = type.getConstant().refValue();

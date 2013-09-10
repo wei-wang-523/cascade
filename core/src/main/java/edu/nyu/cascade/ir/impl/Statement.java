@@ -28,6 +28,8 @@ import java.util.Set;
 import xtc.Constants;
 import xtc.tree.GNode;
 import xtc.tree.Node;
+import xtc.type.Reference;
+import xtc.type.Type;
 import xtc.util.SymbolTable.Scope;
 
 import com.google.common.collect.ImmutableList;
@@ -406,30 +408,42 @@ public class Statement implements IRStatement {
       Node lhs = getOperand(0).getSourceNode();
       Node rhs = getOperand(1).getSourceNode();
       
-      xtc.type.Type lType = (xtc.type.Type) lhs.getProperty(Constants.TYPE);
-      xtc.type.Type rType = (xtc.type.Type) rhs.getProperty(Constants.TYPE);
+      Type lType = (Type) lhs.getProperty(Constants.TYPE);
+      Type rType = (Type) rhs.getProperty(Constants.TYPE);
       Scope lScope = (Scope) lhs.getProperty(Constants.SCOPE);
       Scope rScope = (Scope) rhs.getProperty(Constants.SCOPE);
       String lRefName = CType.getReferenceName(lType);
       String rRefName = CType.getReferenceName(rType);
-      AliasVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
-      AliasVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType);
       
       if(rType.hasShape()) {
         if(rType.getShape() instanceof AddressOfReference) {
+          Reference base = rType.getShape().getBase();
+          Type rType_ = base.getType().annotate().shape(base);
+          AliasVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
+          AliasVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType_);
           analyzer.addrAssign(lTypeVar_, rTypeVar_); break;
         }
         if(rType.getShape().isIndirect()) {
+          Reference base = rType.getShape().getBase();
+          Type rType_ = base.getType().annotate().shape(base);
+          AliasVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
+          AliasVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType_);
           analyzer.ptrAssign(lTypeVar_, rTypeVar_); break;
         }
       } 
       
       if(lType.hasShape()) {
         if(lType.getShape().isIndirect()) {
+          Reference base = lType.getShape().getBase();
+          Type lType_ = base.getType().annotate().shape(base);
+          AliasVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType_);
+          AliasVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType);
           analyzer.assignPtr(lTypeVar_, rTypeVar_); break;
         }
-      }                                               
+      }
       
+      AliasVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
+      AliasVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType);
       analyzer.simpleAssign(lTypeVar_, rTypeVar_); break;
     }
     case ALLOC: {

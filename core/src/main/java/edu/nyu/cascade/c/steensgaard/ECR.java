@@ -5,6 +5,7 @@ import java.util.Set;
 
 import com.google.common.collect.Sets;
 
+import edu.nyu.cascade.c.steensgaard.ValueType.ValueTypeKind;
 import edu.nyu.cascade.util.UnionFind;
 
 /**
@@ -81,10 +82,8 @@ public final class ECR extends UnionFind.Partition {
     return pending;
   }
   
-  protected boolean setPending(Iterable<ECR> newPending) {
-    if(newPending == null)  return false;
-    pending = Sets.newHashSet(newPending);
-    return true;
+  protected void cleanPending() {
+    pending = null;
   }
   
   protected boolean hasPending() {
@@ -115,12 +114,30 @@ public final class ECR extends UnionFind.Partition {
     return true;
   }
   
+  /**
+   * Get the points to chain of this ECR
+   */
+  protected String getPointsToChain() {
+    ECR root = (ECR) findRoot();
+    ValueType rootType = root.getType();
+    StringBuilder sb = new StringBuilder();
+    if(ValueTypeKind.LOCATION.equals(rootType.getKind())) {
+      sb.append(" -> ").append(root.getInitTypeVar().getName());
+      sb.append(rootType.getOperand(0).getPointsToChain());
+    }
+    return sb.toString();
+  }
+  
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder().append("(ECR ").append(type.toString());
 
+    if(initVar != null) {
+      sb.append(" (initVar ").append(initVar.toStringShort());
+    }
+    
     if ((pending != null) && (pending.size() > 0)) {
-      sb.append(" (pending");
+      sb.append(" (pending ");
       for(ECR e : pending) {
         sb.append(e.toStringShort());
       }

@@ -39,6 +39,7 @@ import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 
@@ -728,5 +729,6 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
   @Override
   public void setAliasAnalyzer(AliasAnalysis analyzer) {
     this.analyzer = analyzer;
+    IOUtils.err().println(analyzer.displaySnapShort());
   }
 }

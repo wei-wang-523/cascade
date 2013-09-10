@@ -2,6 +2,7 @@ package edu.nyu.cascade.c.steensgaard;
 
 import static edu.nyu.cascade.c.steensgaard.ValueType.ValueTypeKind.BOTTOM;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -33,8 +34,8 @@ public class UnionFindECR {
   * @param e2
   */
   protected void cjoin(ECR e1, ECR e2) {
-    if(BOTTOM.equals(e1.getType().getKind())) {
-      e1.addPending(e2);
+    if(BOTTOM.equals(getType(e1).getKind())) {
+      addPending(e1, e2);
     } else {
       join(e1, e2);
     }
@@ -44,29 +45,29 @@ public class UnionFindECR {
    * Join the types represented by @param e1 and the specified ECR @param e2
    */
   protected void join(ECR e1, ECR e2) {
-    ValueType t1 = e1.getType();
-    ValueType t2 = e2.getType();
+    ValueType t1 = getType(e1);
+    ValueType t2 = getType(e2);
     uf.union(e1, e2);
     ECR root = (ECR) e1.findRoot();
     if(BOTTOM.equals(t1.getKind())) {
-      root.setType(t2);
+      setType(e1, t2);
       if(BOTTOM.equals(t2.getKind())) {
-        Set<ECR> pending_1 = Sets.newHashSet(e1.getPending());
-        Set<ECR> pending_2 = Sets.newHashSet(e2.getPending());
-        pending_1.addAll(pending_2);
-        root.setPending(pending_1);
+        if(hasPending(e2)) {
+          Set<ECR> pending_2 = Sets.newHashSet(getPending(e2));
+          addPending(e1, pending_2);
+        }
       } else {
-        if(e1.hasPending()) {
-          for(ECR x : e1.getPending()) {
+        if(hasPending(e1)) {
+          for(ECR x : getPending(e1)) {
             uf.union(root, x);
           }
         }
       }
     } else {
-      root.setType(t1);
+      setType(root, t1);
       if(BOTTOM.equals(t2.getKind())) {
-        if(e2.hasPending()) {
-          for(ECR x : e2.getPending()) {
+        if(hasPending(e2)) {
+          for(ECR x : getPending(e2)) {
             uf.union(root, x);
           }
         }
@@ -82,12 +83,66 @@ public class UnionFindECR {
   protected void setType(ECR e, ValueType type) { 
     ECR root = (ECR) e.findRoot();
     root.setType(type);
-    if(e.hasPending()) {
-      for(ECR x : e.getPending()) {
-        join(e, x);
+    if(root.hasPending()) {
+      for(ECR x : root.getPending()) {
+        join(root, x);
       }
-      e.setPending(null);
+      root.cleanPending();
     }
+  }
+  
+  protected void setInitVar(ECR e, TypeVar initVar) {
+    ECR root = (ECR) e.findRoot();
+    root.setInitVar(initVar);
+  }
+  
+  /**
+   * Add @param newPending to @param ecr
+   */
+  protected void addPending(ECR ecr, Collection<ECR> newPending) {
+    ECR root = (ECR) ecr.findRoot();
+    root.addPending(newPending);
+  }
+  
+  protected void addPending(ECR ecr, ECR newPending) {
+    ECR root = (ECR) ecr.findRoot();
+    root.addPending(newPending);
+  }
+  
+  /**
+   * Get pending of @param ecr
+   */
+  protected Iterable<ECR> getPending(ECR ecr) {
+    ECR root = (ECR) ecr.findRoot();
+    return root.getPending();
+  }
+  
+  /**
+   * Decide if @param ecr has pending
+   */
+  protected boolean hasPending(ECR ecr) {
+    return ((ECR) ecr.findRoot()).hasPending();
+  }
+  
+  /**
+   * Get the type of the ECR @param e
+   */
+  protected ValueType getType(ECR e) {
+    ECR root = (ECR) e.findRoot();
+    return root.getType();
+  }
+  
+  
+  /**
+   * Get the initial type variable
+   */
+  protected TypeVar getInitVar(ECR e) {
+    ECR root = (ECR) e.findRoot();
+    return root.getInitTypeVar();
+  }
+  
+  protected String getPointsToChain(ECR e) {
+    return e.getPointsToChain();
   }
   
   /**
@@ -110,6 +165,7 @@ public class UnionFindECR {
       if(!function_1.equals(function_2)) {
         join(function_1, function_2);
       }
+      break;
     }
     
     case LOCATION: {
@@ -122,12 +178,17 @@ public class UnionFindECR {
           join(arg_1, arg_2);
         }
       }
+      break;
     }
     default: 
       throw new IllegalArgumentException("Unknown type kind " + t1.getKind());
     }
   }
   
+  /**
+   * Get the snapshot of union find
+   * @return
+   */
   protected ImmutableCollection<Set<AliasVar>> snapshot() {
     return uf.snapshot();
   }
