@@ -131,17 +131,12 @@ public class CType {
     return sb.toString();
   }
   
-  public static int numberOfIndirectRef(xtc.type.Type type) {
-    if(!type.hasShape())    return 0;
-    return numberOfIndirectRef(type.getShape());
-  }
-  
-  private static int numberOfIndirectRef(Reference ref) {
-    int currentNum = ref.isIndirect() ? 1 : 0;   
-    if(ref.hasBase()) {
-      return currentNum + numberOfIndirectRef(ref.getBase());
-    } else {
-      return currentNum;
-    }    
+  public static int numOfIndRef(Reference ref) {
+    int currentNum = ref.hasBase() ? numOfIndRef(ref.getBase()) : 0;
+    if(ref.isIndirect()) 
+      currentNum++;
+    if(ref instanceof AddressOfReference)
+      currentNum--;
+    return currentNum;
   }
 }

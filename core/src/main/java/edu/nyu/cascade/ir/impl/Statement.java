@@ -36,6 +36,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.common.base.Preconditions;
 
+import edu.nyu.cascade.c.AddressOfReference;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.alias.AliasAnalysis;
 import edu.nyu.cascade.c.alias.AliasVar;
@@ -411,22 +412,32 @@ public class Statement implements IRStatement {
       Scope rScope = (Scope) rhs.getProperty(Constants.SCOPE);
       String lRefName = CType.getReferenceName(lType);
       String rRefName = CType.getReferenceName(rType);
-      AliasVar lTypeVar = analyzer.addVariable(lRefName, lScope);
-      AliasVar rTypeVar = analyzer.addVariable(rRefName, rScope);
+      AliasVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
+      AliasVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType);
       
-      if(rhs.hasName("AddressExpression"))              analyzer.addrAssign(lTypeVar, rTypeVar);
-      else if(rhs.hasName("IndirectionExpression"))     analyzer.ptrAssign(lTypeVar, rTypeVar);
-      else if(lhs.hasName("IndirectionExpression"))     analyzer.assignPtr(lTypeVar, rTypeVar);
-      else                                              analyzer.simpleAssign(lTypeVar, rTypeVar);
+      if(rType.hasShape()) {
+        if(rType.getShape() instanceof AddressOfReference) {
+          analyzer.addrAssign(lTypeVar_, rTypeVar_); break;
+        }
+        if(rType.getShape().isIndirect()) {
+          analyzer.ptrAssign(lTypeVar_, rTypeVar_); break;
+        }
+      } 
       
-      break;
+      if(lType.hasShape()) {
+        if(lType.getShape().isIndirect()) {
+          analyzer.assignPtr(lTypeVar_, rTypeVar_); break;
+        }
+      }                                               
+      
+      analyzer.simpleAssign(lTypeVar_, rTypeVar_); break;
     }
     case ALLOC: {
       Node lhs = getOperand(0).getSourceNode();
       xtc.type.Type lType = (xtc.type.Type) lhs.getProperty(Constants.TYPE);
       Scope lScope = (Scope) lhs.getProperty(Constants.SCOPE);
       String lRefName = CType.getReferenceName(lType);
-      AliasVar lTypeVar = analyzer.addVariable(lRefName, lType, lScope);
+      AliasVar lTypeVar = analyzer.getRepVar(lRefName, lScope, lType);
       analyzer.heapAssign(lTypeVar);
       break;
     }

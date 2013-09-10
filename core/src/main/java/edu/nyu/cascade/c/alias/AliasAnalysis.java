@@ -19,9 +19,8 @@ public interface AliasAnalysis {
    * into the the analyzer.
    * @return an alias variable
    */
-  AliasVar addVariable(String name, Type type, Scope scope) ;
   
-  AliasVar addVariable(String name, Scope scope) ;
+  AliasVar addVariable(String name, Scope scope, Type type) ;
   
   /**
    * Compute aliases for the assignment of an address (x = &y).
@@ -81,9 +80,10 @@ public interface AliasAnalysis {
   void functionDef(AliasVar func, Iterable<AliasVar> params, AliasVar retval) ;
   
   /**
-   * Get the representative type variable of the @param var
+   * Get the representative type variable
    */
-  AliasVar getRepVar(AliasVar var) ;
+  
+  AliasVar getRepVar(String name, Scope scope, Type type) ;
   
   /**
    * Get the snapshot of analysis

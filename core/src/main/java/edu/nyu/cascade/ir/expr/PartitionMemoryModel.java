@@ -39,7 +39,6 @@ import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
-import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 
@@ -153,8 +152,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
       }
       
       { /* Update the pointer array in current memory elements */
-        AliasVar ptrRepVar = analyzer.getRepVar(ptr_var);
-        String ptrRepVarName = ptrRepVar.getName();        
+        String ptrRepVarName = ptr_var.getName();        
         String ptrRepArrName = ARRAY_PREFIX + ptrRepVarName;
         if(currentMemElems.containsKey(ptrRepArrName)) {
           ArrayExpression ptrRepArr = currentMemElems.get(ptrRepArrName).asArray();
@@ -162,7 +160,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
           ptrRepArr = ptrRepArr.update(ptr, locVar);
           currentMemElems.put(ptrRepArrName, ptrRepArr);
         } else {
-          xtc.type.Type ptrRepVarType = ptrRepVar.getType();
+          xtc.type.Type ptrRepVarType = ptr_var.getType();
           CellKind ptrRepVarKind = CType.getCellKind(ptrRepVarType);
           
           Type cellType = CellKind.POINTER.equals(ptrRepVarKind) ? ptrType : scalarType;
@@ -721,19 +719,9 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     
     xtc.type.Type type = (xtc.type.Type) gnode.getProperty(TYPE);
     Scope scope = (Scope) gnode.getProperty(SCOPE);
-    
     String refName = CType.getReferenceName(type);
-    Scope refScope = scope.lookupScope(refName);
     
-    AliasVar var = analyzer.addVariable(refName, refScope);
-    AliasVar repVar = analyzer.getRepVar(var);
-    int numberOfIndirectRef = CType.numberOfIndirectRef(type);
-    while(numberOfIndirectRef > 0) {
-      repVar = analyzer.getPointsToLoc(repVar);
-      numberOfIndirectRef--;
-    }
-    if(repVar == null)
-      IOUtils.err().println("Node " + gnode + " is in null array.");
+    AliasVar repVar = analyzer.getRepVar(refName, scope, type);
     return repVar;
   }
   

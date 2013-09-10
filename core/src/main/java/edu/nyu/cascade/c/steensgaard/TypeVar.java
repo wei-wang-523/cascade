@@ -51,7 +51,7 @@ public class TypeVar implements AliasVar {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("(TypeVar (name ").append(name).append(") (scope ").append(scope.getName())
+    sb.append("(TypeVar (name ").append(name).append(") (scope ").append(scope.getQualifiedName())
       .append(") (type ").append(type.getName()).append(") )");
     return sb.toString();
   }

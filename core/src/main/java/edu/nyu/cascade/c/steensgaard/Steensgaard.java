@@ -38,8 +38,8 @@ public class Steensgaard implements AliasAnalysis {
   }
 
   @Override
-  public AliasVar addVariable(String name, Type type, Scope scope) {
-    Pair key = Pair.of(name, Pair.of(type, scope));
+  public AliasVar addVariable(String name, Scope scope, Type type) {
+    Pair key = Pair.of(name, scope);
     TypeVar res = null;
     if(!varsMap.containsKey(key))  {
       res = TypeVar.create(name, type, scope);
@@ -48,13 +48,11 @@ public class Steensgaard implements AliasAnalysis {
     } else {
       res = varsMap.get(key);
     }
+    
+    if(res == null) 
+      throw new IllegalArgumentException("Cannot find alias variable for "
+          + name + " in " + scope.getQualifiedName());
     return res;
-  }
-  
-  @Override
-  public AliasVar addVariable(String name, Scope scope) {
-    Type type = (Type) scope.lookup(name);
-    return addVariable(name, type, scope);
   }
 
   @Override
@@ -102,7 +100,7 @@ public class Steensgaard implements AliasAnalysis {
     if(ValueTypeKind.BOTTOM.equals(lhs0_ecr.getType().getKind())) {
       String freshRegionName = Identifiers.uniquify(REGION_VARIABLE_NAME);
       Type regionType = CType.unwrapped(lhs.getType()).toPointer().getType();
-      TypeVar region = (TypeVar) addVariable(freshRegionName, regionType, lhs.getScope());
+      TypeVar region = (TypeVar) addVariable(freshRegionName, lhs.getScope(), regionType);
       uf.join(lhs0_ecr, region.getECR());
     }
   }
@@ -168,11 +166,29 @@ public class Steensgaard implements AliasAnalysis {
     // TODO Auto-generated method stub
     
   }
-
+  
   @Override
-  public AliasVar getRepVar(AliasVar var) {
-    Preconditions.checkArgument(var instanceof TypeVar);
-    return ((TypeVar) var).getECR().getInitTypeVar();
+  public AliasVar getRepVar(String name, Scope scope, Type type) {
+    Scope scope_ = scope.isDefined(name) ? scope.lookupScope(name) : scope;
+    Pair<String, Scope> key = Pair.of(name, scope_);
+    TypeVar var;
+    if(varsMap.containsKey(key)) {
+      var = varsMap.get(key);
+    } else {
+      Type type_ = scope.isDefined(name) ? (Type) scope.lookup(name) : type;
+      var = (TypeVar) addVariable(name, scope_, type_);
+    }
+    
+    TypeVar res = ((ECR) var.getECR().findRoot()).getInitTypeVar();
+    if(type.hasShape()) {
+      int num = CType.numOfIndRef(type.getShape());
+      while(num > 0) {
+        res = (TypeVar) getPointsToLoc(res); 
+        num--;
+      }
+    }
+    
+    return res;
   }
   
   @Override
@@ -189,12 +205,18 @@ public class Steensgaard implements AliasAnalysis {
     /* For array, structure or union, just return the root ECR's 
      * initial type variable
      */
+    TypeVar res = null;
     if(var.getType().resolve().isArray() 
         || var.getType().resolve().isStruct() 
         || var.getType().resolve().isUnion()) {
-      return ((ECR) ecr.findRoot()).getInitTypeVar();
+      res = ((ECR) ecr.findRoot()).getInitTypeVar();
     } else {
-      return ((ECR) type.getOperand(0).findRoot()).getInitTypeVar();
+      ECR root = (ECR) type.getOperand(0).findRoot();
+      res = root.getInitTypeVar();
     }
+    
+    if(res == null)
+      throw new IllegalArgumentException("Cannot find points to alias variable for " + var);
+    return res;
   }
 }
