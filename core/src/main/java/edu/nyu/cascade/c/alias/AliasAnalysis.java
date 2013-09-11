@@ -40,7 +40,7 @@ public interface AliasAnalysis {
    * Compute aliases for assigning dynamically allocated memory.
    * @param lhs
    */
-  void heapAssign(AliasVar lhs);
+  void heapAssign(AliasVar lhs, Type lhsType);
   
   /**
    * Compute alias for an operation (x = op(y1,É,yN)).

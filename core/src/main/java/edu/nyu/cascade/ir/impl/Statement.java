@@ -434,7 +434,7 @@ public class Statement implements IRStatement {
       } 
       
       CellKind rKind = CType.getCellKind(rType);
-      if(CellKind.STRUCT.equals(rKind) || CellKind.UNION.equals(rKind) || CellKind.ARRAY.equals(rKind)) {
+      if(CellKind.STRUCTORUNION.equals(rKind) || CellKind.ARRAY.equals(rKind)) {
         AliasVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
         AliasVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType);
         analyzer.addrAssign(lTypeVar_, rTypeVar_); break;
@@ -460,7 +460,7 @@ public class Statement implements IRStatement {
       Scope lScope = (Scope) lhs.getProperty(Constants.SCOPE);
       String lRefName = CType.getReferenceName(lType);
       AliasVar lTypeVar = analyzer.getRepVar(lRefName, lScope, lType);
-      analyzer.heapAssign(lTypeVar);
+      analyzer.heapAssign(lTypeVar, lType);
       break;
     }
     default:

@@ -96,27 +96,15 @@ public class Steensgaard implements AliasAnalysis {
   }
 
   @Override
-  public void heapAssign(AliasVar lhs) {
+  public void heapAssign(AliasVar lhs, Type lhsType) {
     Preconditions.checkArgument(lhs instanceof TypeVar);
     ValueType lhs_type = uf.getType(((TypeVar) lhs).getECR());
     assert(ValueTypeKind.LOCATION.equals(lhs_type.getKind()));
     ECR lhs0_ecr = lhs_type.getOperand(0);
     if(ValueTypeKind.BOTTOM.equals(uf.getType(lhs0_ecr).getKind())) {
       String freshRegionName = Identifiers.uniquify(REGION_VARIABLE_NAME + lhs.getName());
-      Type lhsType = CType.unwrapped(lhs.getType());
-      CellKind lhsKind = CType.getCellKind(lhsType);
-      Type regionType = null;
-      switch(lhsKind) {
-      case POINTER: 
-        regionType = CType.unwrapped(lhs.getType()).toPointer().getType(); break;
-      case ARRAY: 
-        regionType = CType.unwrapped(lhs.getType()).toArray().getType(); break;
-      case UNION:
-      case STRUCT: 
-        throw new UnsupportedOperationException("Unsupported heap assign of structure or union for " + lhs.getName()); 
-      default : 
-        throw new IllegalArgumentException("Invalid type of heap assign operand " + lhs.getName());
-      }
+      assert(lhsType.resolve().isPointer());
+      Type regionType = CType.unwrapped(lhsType).toPointer().getType();
       TypeVar region = (TypeVar) addVariable(freshRegionName, lhs.getScope(), regionType);
       uf.join(lhs0_ecr, region.getECR());
     }
@@ -226,10 +214,9 @@ public class Steensgaard implements AliasAnalysis {
      */
     CellKind kind = CType.getCellKind(var.getType());
     switch(kind) {
-    case POINTER:   return uf.getInitVar((ECR) type.getOperand(0));
+    case POINTER:       return uf.getInitVar((ECR) type.getOperand(0));
     case ARRAY:
-    case UNION:
-    case STRUCT:    return uf.getInitVar(ecr);
+    case STRUCTORUNION: return uf.getInitVar(ecr);
     default:
       throw new IllegalArgumentException("No points to variable for " + var.getType().getShape());
     }

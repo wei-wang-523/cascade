@@ -14,7 +14,7 @@ public class CType {
   private final static String CONSTANT = Identifiers.toValidId("Constant");
   
   public enum CellKind {
-    SCALAR, POINTER, STRUCT, UNION, ARRAY, BOOL
+    SCALAR, POINTER, STRUCTORUNION, ARRAY, BOOL
   }
   
   public static xtc.type.Type unwrapped(xtc.type.Type type) {
@@ -38,8 +38,8 @@ public class CType {
     if(type.isInteger())        return CellKind.SCALAR;
     else if(type.isPointer())   return CellKind.POINTER;
     else if(type.isArray())     return CellKind.ARRAY;
-    else if(type.isStruct())    return CellKind.STRUCT;
-    else if(type.isUnion())     return CellKind.UNION;
+    else if(type.isStruct())    return CellKind.STRUCTORUNION;
+    else if(type.isUnion())     return CellKind.STRUCTORUNION;
     else
       throw new IllegalArgumentException("Unknown type " + type);
   }

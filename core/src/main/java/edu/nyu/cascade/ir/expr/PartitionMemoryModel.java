@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 
 import xtc.tree.GNode;
+import xtc.type.StructOrUnionT;
+import xtc.type.VariableT;
 import xtc.util.SymbolTable.Scope;
 
 import com.google.common.base.Function;
@@ -36,7 +38,10 @@ import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
+import edu.nyu.cascade.prover.type.Constructor;
+import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.RecordType;
+import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.IOUtils;
@@ -77,6 +82,16 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
   private RecordType memType; // with multiple array types
   private TupleType stateType;
   
+  private static final String MIX_TYPE_NAME = "mix";
+  private static final String PTR_CONSTR_NAME = "ptr";
+  private static final String SCALAR_CONSTR_NAME = "scalar";
+  private static final String PTR_SELECTOR_NAME = "ptr-sel";
+  private static final String SCALAR_SELECTOR_NAME = "scalar-sel";
+  
+  private final InductiveType mixType; // The list inductive data type
+  private final Constructor ptrConstr, scalarConstr; // The constructors for cell type
+  private final Selector ptrSel, scalarSel; // The selectors for cell type
+  
   private final Set<Expression> lvals; // lvals: variables in stack
   private final List<Expression> stackRegions, heapRegions;
   private final Map<String, Expression> currentMemElems;
@@ -101,6 +116,15 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
     this.scalarType = exprManager.bitVectorType(size);
     this.ptrType = ((PointerExpressionEncoding) encoding).getPointerEncoding().getType();
+    
+    scalarSel = exprManager.selector(SCALAR_SELECTOR_NAME, scalarType);
+    scalarConstr = exprManager.constructor(SCALAR_CONSTR_NAME, scalarSel);
+    
+    ptrSel = exprManager.selector(PTR_SELECTOR_NAME, ptrType);
+    ptrConstr = exprManager.constructor(PTR_CONSTR_NAME, ptrSel);
+
+    /* Create datatype */
+    this.mixType = exprManager.dataType(MIX_TYPE_NAME, scalarConstr, ptrConstr);
     
     this.refType = ptrType.getElementTypes().get(0);
     this.offType = ptrType.getElementTypes().get(1).asBitVectorType();
@@ -144,8 +168,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
       { /* Add newly allocated region array to current memory elements */
         String regionArrName = ARRAY_PREFIX + region_var.getName();
         if(!currentMemElems.containsKey(regionArrName)) {
-          CellKind regionKind = CType.getCellKind(region_var.getType());
-          Type cellType = CellKind.POINTER.equals(regionKind) ? ptrType : scalarType;
+          Type cellType = getArrayElemType(region_var.getType());
           ArrayType arrType = em.arrayType(ptrType, cellType);
           ArrayExpression regionArr = em.variable(regionArrName, arrType, false).asArray();
           currentMemElems.put(regionArrName, regionArr);
@@ -157,7 +180,8 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
         String ptrRepArrName = ARRAY_PREFIX + ptrRepVarName;
         if(currentMemElems.containsKey(ptrRepArrName)) {
           ArrayExpression ptrRepArr = currentMemElems.get(ptrRepArrName).asArray();
-          assert(ptrRepArr.getType().getElementType().equals(locVar.getType()));
+          Type cellType = ptrRepArr.getType().getElementType();
+          locVar = castExprToCell(locVar, cellType);
           ptrRepArr = ptrRepArr.update(ptr, locVar);
           currentMemElems.put(ptrRepArrName, ptrRepArr);
         } else {
@@ -301,17 +325,17 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
         prevDerefState = state;
       }
       
+      ExpressionManager em = getExpressionManager();
+      
       Expression pValCell = null;
       AliasVar pRepVar = cache.get(p.getNode());
       String pArrName = ARRAY_PREFIX + pRepVar.getName();
-
+      
       if(currentMemElems.containsKey(pArrName)) {
         ArrayExpression pArray = currentMemElems.get(pArrName).asArray();
         pValCell = pArray.index(p);
       } else { // Add an element to currentMemElem
-        ExpressionManager em = getExpressionManager();
-        CellKind kind = CType.getCellKind(pRepVar.getType());
-        Type cellType = CellKind.POINTER.equals(kind) ? ptrType : scalarType;
+        Type cellType = getArrayElemType(pRepVar.getType());
           
         ArrayType arrType = em.arrayType(ptrType, cellType);
         ArrayExpression pArray = em.variable(pArrName, arrType, false).asArray();
@@ -323,6 +347,16 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
         if(currentAlloc == null)    currentAlloc = state.getChild(1);
         Expression statePrime = getUpdatedState(state, memPrime, currentAlloc);
         currentState = suspend(state, statePrime);    
+      }
+      
+      if(mixType.equals(pValCell.getType())) {
+        CellKind kind = CType.getCellKind(CType.unwrapped((xtc.type.Type) p.getNode().getProperty(TYPE)));
+        assert(CellKind.POINTER.equals(kind) || CellKind.SCALAR.equals(kind));
+        if(CellKind.POINTER.equals(kind)) {
+          pValCell = em.select(ptrSel, pValCell);
+        } else {
+          pValCell = em.select(scalarSel, pValCell);
+        }
       }
       return pValCell;
     } catch (ExecutionException e) {
@@ -665,30 +699,19 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
       AliasVar lvalRepVar = cache.get(lval.getNode()); 
       String lvalRepVarName = lvalRepVar.getName();
       xtc.type.Type lvalRepType = lvalRepVar.getType();
-      CellKind lvalRepKind = CType.getCellKind(lvalRepType);
-      
-      if(rval.getNode() != null) {     
-        xtc.type.Type rvalType = (xtc.type.Type) rval.getNode().getProperty(TYPE);
-        CellKind rvalKind = CType.getCellKind(rvalType);
-      
-        if(CellKind.POINTER.equals(lvalRepKind) && CellKind.SCALAR.equals(rvalKind)) {
-          assert(rval.isConstant());
-          rval = ((PointerExpressionEncoding) getExpressionEncoding())
-              .getPointerEncoding().nullPtr();
-        }
-      }
       
       String lvalRepArrName = ARRAY_PREFIX + lvalRepVarName;
       if(currentMemElems.containsKey(lvalRepArrName)) {
         ArrayExpression lvalRepArr = currentMemElems.get(lvalRepArrName).asArray();
-        assert(rval.getType().equals(lvalRepArr.getType().getElementType()));
+        Type cellType = lvalRepArr.getType().getElementType();
+        rval = castExprToCell(rval, cellType);
         lvalRepArr = lvalRepArr.update(lval, rval);
         currentMemElems.put(lvalRepArrName, lvalRepArr);
       } else {
-        Type cellType = CellKind.POINTER.equals(lvalRepKind) ? ptrType : scalarType;
+        Type cellType = getArrayElemType(lvalRepType);
         ArrayType arrType = em.arrayType(ptrType, cellType);
         ArrayExpression lvalArr = em.variable(lvalRepArrName, arrType, false).asArray();
-        assert(rval.getType().equals(cellType));
+        rval = castExprToCell(rval, cellType);
         lvalArr = lvalArr.update(lval, rval);
         currentMemElems.put(lvalRepArrName, lvalArr);
         memTypeChanged = true;
@@ -726,9 +749,80 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     return repVar;
   }
   
+  private enum ElemType {
+    SCALAR,
+    POINTER,
+    MIX
+  }
+  
+  private ElemType getElemType(xtc.type.Type type) {
+    Preconditions.checkArgument(CellKind.STRUCTORUNION.equals(CType.getCellKind(type)));
+    StructOrUnionT su = CType.unwrapped(type).toStructOrUnion();
+    boolean scalar = true, pointer = true;
+    for(VariableT v : su.getMembers()) {
+      switch(CType.getCellKind(v)) {
+      case SCALAR :         pointer = false; break;
+      case POINTER:
+      case ARRAY:
+      case STRUCTORUNION:   scalar = false; break;
+      default:              throw new IllegalArgumentException("Unsupported type " + v);
+      }
+    }
+    assert(!(pointer && scalar));
+    if(pointer)         return  ElemType.POINTER;
+    else if(scalar)     return  ElemType.SCALAR;
+    else                return  ElemType.MIX;
+  }
+  
+  private Expression castExprToCell(Expression rval, Type cellType) {
+    if(rval.getType().equals(cellType)) return rval;
+    else {
+      ExpressionManager em = getExpressionManager();
+      assert(scalarType.equals(rval.getType()) || ptrType.equals(rval.getType()));
+      if(rval.isBitVector()) {
+        if(ptrType.equals(cellType)) {
+          assert(rval.isConstant());
+          rval = ((PointerExpressionEncoding) getExpressionEncoding())
+              .getPointerEncoding().nullPtr();
+        } else { // mixType
+          rval = em.construct(scalarConstr, rval);
+        }
+      } else {
+        assert(mixType.equals(cellType));
+        rval = em.construct(ptrConstr, rval);
+      }
+      return rval;
+    }
+  }
+  
+  private Type getArrayElemType(xtc.type.Type type) {
+    Type cellType = null;
+    switch(CType.getCellKind(type)) {
+    case SCALAR :
+    case BOOL :     cellType = scalarType; break;
+    case ARRAY : {
+      xtc.type.Type contentType = CType.unwrapped(type).toArray().getType();
+      cellType = getArrayElemType(contentType);
+      break;
+    }
+    case POINTER :  cellType = ptrType; break;
+    case STRUCTORUNION : {
+      ElemType elemType = getElemType(type);
+      switch(elemType) {
+      case SCALAR:  cellType = scalarType; break;
+      case POINTER: cellType = ptrType; break;
+      default:      cellType = mixType; 
+      }
+      break;
+    }
+    default:    throw new IllegalArgumentException("Unsupported type " + type);
+    }
+    return cellType;
+  }
+  
   @Override
   public void setAliasAnalyzer(AliasAnalysis analyzer) {
     this.analyzer = analyzer;
-    IOUtils.err().println(analyzer.displaySnapShort());
+    IOUtils.debug().pln(analyzer.displaySnapShort());
   }
 }
