@@ -8,6 +8,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.Maps;
 import xtc.type.Type;
+import xtc.util.SymbolTable;
 import xtc.util.SymbolTable.Scope;
 
 import edu.nyu.cascade.c.CType;
@@ -15,7 +16,7 @@ import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.c.alias.AliasAnalysis;
 import edu.nyu.cascade.c.alias.AliasVar;
 import edu.nyu.cascade.c.steensgaard.ValueType.ValueTypeKind;
-import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
+import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Pair;
 
@@ -30,18 +31,25 @@ public class Steensgaard implements AliasAnalysis {
   protected static final String REGION_VARIABLE_NAME = "region_";
   private UnionFindECR uf;
   private Map<Pair, TypeVar> varsMap; 
+  private SymbolTable symbolTable;
   
-  private Steensgaard () {
+  private Steensgaard (SymbolTable _symbolTable) {
     uf = UnionFindECR.create();
     varsMap = Maps.newLinkedHashMap();
+    symbolTable = _symbolTable;
   }
   
-  public static Steensgaard create() {
-    return new Steensgaard();
+  public static Steensgaard create(SymbolTable symbolTable) {
+    return new Steensgaard(symbolTable);
+  }
+  
+  @Override
+  public AliasVar getNullLoc() {
+    return TypeVar.createNullLoc();
   }
 
   @Override
-  public AliasVar addVariable(String name, Scope scope, Type type) {
+  public AliasVar addVariable(String name, String scope, Type type) {
     Pair key = Pair.of(name, scope);
     TypeVar res = null;
     if(!varsMap.containsKey(key))  {
@@ -54,7 +62,7 @@ public class Steensgaard implements AliasAnalysis {
     
     if(res == null) 
       throw new IllegalArgumentException("Cannot find alias variable for "
-          + name + " in " + scope.getQualifiedName());
+          + name + " in " + scope);
     return res;
   }
 
@@ -100,14 +108,16 @@ public class Steensgaard implements AliasAnalysis {
     Preconditions.checkArgument(lhs instanceof TypeVar);
     ValueType lhs_type = uf.getType(((TypeVar) lhs).getECR());
     assert(ValueTypeKind.LOCATION.equals(lhs_type.getKind()));
-    ECR lhs0_ecr = lhs_type.getOperand(0);
-    if(ValueTypeKind.BOTTOM.equals(uf.getType(lhs0_ecr).getKind())) {
-      String freshRegionName = Identifiers.uniquify(REGION_VARIABLE_NAME + lhs.getName());
-      assert(lhsType.resolve().isPointer());
-      Type regionType = CType.unwrapped(lhsType).toPointer().getType();
-      TypeVar region = (TypeVar) addVariable(freshRegionName, lhs.getScope(), regionType);
-      uf.join(lhs0_ecr, region.getECR());
-    }
+    ECR lhs0_ecr = (ECR) lhs_type.getOperand(0);
+    String freshRegionName = Identifiers.uniquify(REGION_VARIABLE_NAME + lhs.getName());
+    assert(lhsType.resolve().isPointer());
+    Type regionType = CType.unwrapped(lhsType).toPointer().getType();
+    TypeVar region = (TypeVar) addVariable(freshRegionName, lhs.getScope(), regionType);
+    ECR region_ecr = region.getECR();
+//    if(ValueTypeKind.BOTTOM.equals(uf.getType(lhs0_ecr).getKind())) {
+//      lhs0_ecr.setType(uf.getType(region_ecr));
+//    }
+    uf.join(lhs0_ecr, region_ecr);
   }
 
   @Override
@@ -173,29 +183,39 @@ public class Steensgaard implements AliasAnalysis {
   }
   
   @Override
-  public AliasVar getRepVar(String name, Scope scope, Type type) {
-    Scope scope_ = scope.isDefined(name) ? scope.lookupScope(name) : scope;
-    Pair<String, Scope> key = Pair.of(name, scope_);
-    TypeVar var;
-    if(varsMap.containsKey(key)) {
-      var = varsMap.get(key);
+  public AliasVar getRepVar(String name, String scope, Type type) {
+    if(Identifiers.NULL_LOC_NAME.equals(name)) {
+      TypeVar nullLoc = TypeVar.createNullLoc();
+      Pair<String, String> key = Pair.of(nullLoc.getName(), nullLoc.getScope());
+      varsMap.put(key, nullLoc);
+      return nullLoc;
     } else {
-      Type type_ = scope.isDefined(name) ? (Type) scope.lookup(name) : type;
-      var = (TypeVar) addVariable(name, scope_, type_);
-    }
-    
-    TypeVar res = uf.getInitVar(var.getECR());
-    if(type.hasShape()) {
-      int num = CType.numOfIndRef(type.getShape());
-      while(num > 0) {
-        res = (TypeVar) getPointsToLoc(res); 
-        num--;
+      Scope currentScope = symbolTable.getScope(scope);
+      Scope scope_ = currentScope.isDefined(name) ? currentScope.lookupScope(name) : currentScope;
+      Pair<String, Scope> key = Pair.of(name, scope_);
+      TypeVar var;
+      if(varsMap.containsKey(key)) {
+        var = varsMap.get(key);
+      } else {
+        Type type_ = currentScope.isDefined(name) ? (Type) currentScope.lookup(name) : type;
+        var = (TypeVar) addVariable(name, scope_.getQualifiedName(), type_);
       }
-    }  
-    
-    if(res == null)
-      throw new ExpressionFactoryException(type.getShape() + " is uninitialized.");
-    return res;
+      
+      TypeVar res = uf.getInitVar(var.getECR());
+      if(type.hasShape()) {
+        int num = CType.numOfIndRef(type.getShape());
+        while(num > 0) {
+          res = (TypeVar) getPointsToLoc(res); 
+          num--;
+        }
+      }  
+      
+      if(res == null) {
+        IOUtils.err().println(type.getShape() + " is uninitialized.");
+        res = TypeVar.createNullLoc();
+      }
+      return res;
+    }
   }
   
   @Override
@@ -232,7 +252,7 @@ public class Steensgaard implements AliasAnalysis {
         if(set == null) continue;
         sb.append("  Partition { ");
         for(AliasVar var : set)
-          sb.append(var.getName()).append('@').append(var.getScope().getName()).append(' ');
+          sb.append(var.getName()).append('@').append(var.getScope()).append(' ');
         sb.append("}\n");
       }
     }

@@ -30,7 +30,6 @@ import xtc.tree.GNode;
 import xtc.tree.Node;
 import xtc.type.Reference;
 import xtc.type.Type;
-import xtc.util.SymbolTable.Scope;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -411,8 +410,8 @@ public class Statement implements IRStatement {
       
       Type lType = (Type) lhs.getProperty(Constants.TYPE);
       Type rType = (Type) rhs.getProperty(Constants.TYPE);
-      Scope lScope = (Scope) lhs.getProperty(Constants.SCOPE);
-      Scope rScope = (Scope) rhs.getProperty(Constants.SCOPE);
+      String lScope = lhs.getStringProperty(Constants.SCOPE);
+      String rScope = rhs.getStringProperty(Constants.SCOPE);
       String lRefName = CType.getReferenceName(lType);
       String rRefName = CType.getReferenceName(rType);
       
@@ -457,7 +456,7 @@ public class Statement implements IRStatement {
     case ALLOC: {
       Node lhs = getOperand(0).getSourceNode();
       xtc.type.Type lType = (xtc.type.Type) lhs.getProperty(Constants.TYPE);
-      Scope lScope = (Scope) lhs.getProperty(Constants.SCOPE);
+      String lScope = lhs.getStringProperty(Constants.SCOPE);
       String lRefName = CType.getReferenceName(lType);
       AliasVar lTypeVar = analyzer.getRepVar(lRefName, lScope, lType);
       analyzer.heapAssign(lTypeVar, lType);

@@ -15,6 +15,7 @@ import edu.nyu.cascade.ir.SymbolTable;
 public class Identifiers {
   public static final char RECORD_SELECT_NAME_INFIX = '@';
   public static final char BURSTALL_ARRAY_NAME_INFIX = '$';
+  public static final String NULL_LOC_NAME = "<null>";
   
   public static enum IdType {
     DEFAULT,

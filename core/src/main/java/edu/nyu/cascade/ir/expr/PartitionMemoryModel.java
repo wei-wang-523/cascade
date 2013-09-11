@@ -9,7 +9,6 @@ import java.util.concurrent.ExecutionException;
 import xtc.tree.GNode;
 import xtc.type.StructOrUnionT;
 import xtc.type.VariableT;
-import xtc.util.SymbolTable.Scope;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -31,6 +30,7 @@ import edu.nyu.cascade.c.alias.AliasVar;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
@@ -46,6 +46,7 @@ import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
+import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.Preferences;
 
 /**
@@ -101,10 +102,10 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
   private Expression prevDerefState = null;
   private ExpressionClosure currentState = null;
   
-  private final LoadingCache<GNode, AliasVar> cache = CacheBuilder
-      .newBuilder().build(new CacheLoader<GNode, AliasVar>(){
-        public AliasVar load(GNode node) {
-          return getRepVar(node);
+  private final LoadingCache<Pair<GNode, String>, AliasVar> cache = CacheBuilder
+      .newBuilder().build(new CacheLoader<Pair<GNode, String>, AliasVar>(){
+        public AliasVar load(Pair<GNode, String> key) {
+          return getRepVar(key.fst());
         }
       });
 
@@ -149,67 +150,62 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
   public TupleExpression alloc(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
     Preconditions.checkArgument(size.getType().equals( offType ));
+
+    ExpressionManager em = getExpressionManager();
     
-    try {
-      ExpressionManager em = getExpressionManager();
-      
-      Expression refVar = em.variable(Identifiers.uniquify(REGION_VARIABLE_NAME), refType, false);
-      Expression offZero = em.bitVectorZero(offType.getSize());
-      // locVar: (region_x, 0)
-      Expression locVar = em.tuple(ptrType, refVar, offZero);
-      
-      heapRegions.add(refVar); // For dynamic memory allocation, add to the end
-      
-      /* Update memory state */
-      initCurrentMemElems(state.getChild(0));
-      
-      AliasVar ptr_var = cache.get(ptr.getNode());
-      AliasVar region_var = analyzer.getPointsToLoc(ptr_var);
-      { /* Add newly allocated region array to current memory elements */
-        String regionArrName = ARRAY_PREFIX + region_var.getName();
-        if(!currentMemElems.containsKey(regionArrName)) {
-          Type cellType = getArrayElemType(region_var.getType());
-          ArrayType arrType = em.arrayType(ptrType, cellType);
-          ArrayExpression regionArr = em.variable(regionArrName, arrType, false).asArray();
-          currentMemElems.put(regionArrName, regionArr);
-        }
+    Expression refVar = em.variable(Identifiers.uniquify(REGION_VARIABLE_NAME), refType, false);
+    Expression offZero = em.bitVectorZero(offType.getSize());
+    // locVar: (region_x, 0)
+    Expression locVar = em.tuple(ptrType, refVar, offZero);
+    
+    heapRegions.add(refVar); // For dynamic memory allocation, add to the end
+    
+    /* Update memory state */
+    initCurrentMemElems(state.getChild(0));
+    
+    AliasVar ptr_var = loadRepVar(ptr.getNode());
+    AliasVar region_var = analyzer.getPointsToLoc(ptr_var);
+    { /* Add newly allocated region array to current memory elements */
+      String regionArrName = getArrayElemName(region_var);
+      if(!currentMemElems.containsKey(regionArrName)) {
+        Type cellType = getArrayElemType(region_var.getType());
+        ArrayType arrType = em.arrayType(ptrType, cellType);
+        ArrayExpression regionArr = em.variable(regionArrName, arrType, false).asArray();
+        currentMemElems.put(regionArrName, regionArr);
       }
-      
-      { /* Update the pointer array in current memory elements */
-        String ptrRepVarName = ptr_var.getName();        
-        String ptrRepArrName = ARRAY_PREFIX + ptrRepVarName;
-        if(currentMemElems.containsKey(ptrRepArrName)) {
-          ArrayExpression ptrRepArr = currentMemElems.get(ptrRepArrName).asArray();
-          Type cellType = ptrRepArr.getType().getElementType();
-          locVar = castExprToCell(locVar, cellType);
-          ptrRepArr = ptrRepArr.update(ptr, locVar);
-          currentMemElems.put(ptrRepArrName, ptrRepArr);
-        } else {
-          xtc.type.Type ptrRepVarType = ptr_var.getType();
-          CellKind ptrRepVarKind = CType.getCellKind(ptrRepVarType);
-          
-          Type cellType = CellKind.POINTER.equals(ptrRepVarKind) ? ptrType : scalarType;
-          ArrayType arrType = em.arrayType(ptrType, cellType);
-          ArrayExpression ptrRepArr = em.variable(ptrRepArrName, arrType, false).asArray();
-          assert(cellType.equals(locVar.getType()));
-          ptrRepArr = ptrRepArr.update(ptr, locVar);
-          currentMemElems.put(ptrRepArrName, ptrRepArr);
-        }
-      } 
-      
-      Type currentMemType = getCurrentMemoryType();
-      
-      RecordExpression memory = em.record(currentMemType, currentMemElems.values());
-      Expression alloc = state.getChild(1).asArray().update(refVar, size);    
-      TupleExpression statePrime = getUpdatedState(state, memory, alloc);
-      
-      memType = memory.getType();
-      stateType = statePrime.getType();
-      
-      return statePrime;
-    } catch (ExecutionException e) {
-      throw new ExpressionFactoryException(e);
     }
+    
+    { /* Update the pointer array in current memory elements */  
+      String ptrRepArrName = getArrayElemName(ptr_var);
+      if(currentMemElems.containsKey(ptrRepArrName)) {
+        ArrayExpression ptrRepArr = currentMemElems.get(ptrRepArrName).asArray();
+        Type cellType = ptrRepArr.getType().getElementType();
+        locVar = castExprToCell(locVar, cellType);
+        ptrRepArr = ptrRepArr.update(ptr, locVar);
+        currentMemElems.put(ptrRepArrName, ptrRepArr);
+      } else {
+        xtc.type.Type ptrRepVarType = ptr_var.getType();
+        CellKind ptrRepVarKind = CType.getCellKind(ptrRepVarType);
+        
+        Type cellType = CellKind.POINTER.equals(ptrRepVarKind) ? ptrType : scalarType;
+        ArrayType arrType = em.arrayType(ptrType, cellType);
+        ArrayExpression ptrRepArr = em.variable(ptrRepArrName, arrType, false).asArray();
+        assert(cellType.equals(locVar.getType()));
+        ptrRepArr = ptrRepArr.update(ptr, locVar);
+        currentMemElems.put(ptrRepArrName, ptrRepArr);
+      }
+    } 
+    
+    Type currentMemType = getCurrentMemoryType();
+    
+    RecordExpression memory = em.record(currentMemType, currentMemElems.values());
+    Expression alloc = state.getChild(1).asArray().update(refVar, size);    
+    TupleExpression statePrime = getUpdatedState(state, memory, alloc);
+    
+    memType = memory.getType();
+    stateType = statePrime.getType();
+    
+    return statePrime;
   }
   
   @Override 
@@ -318,50 +314,50 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
   public Expression deref(Expression state, Expression p) {
     Preconditions.checkArgument(ptrType.equals(p.getType()));
     
-    try {
-      // Initialization
-      if(currentMemElems.isEmpty() || state != prevDerefState) {
-        initCurrentMemElems(state.getChild(0));
-        prevDerefState = state;
-      }
-      
-      ExpressionManager em = getExpressionManager();
-      
-      Expression pValCell = null;
-      AliasVar pRepVar = cache.get(p.getNode());
-      String pArrName = ARRAY_PREFIX + pRepVar.getName();
-      
-      if(currentMemElems.containsKey(pArrName)) {
-        ArrayExpression pArray = currentMemElems.get(pArrName).asArray();
-        pValCell = pArray.index(p);
-      } else { // Add an element to currentMemElem
-        Type cellType = getArrayElemType(pRepVar.getType());
-          
-        ArrayType arrType = em.arrayType(ptrType, cellType);
-        ArrayExpression pArray = em.variable(pArrName, arrType, false).asArray();
-        currentMemElems.put(pArrName, pArray);
-        pValCell = pArray.index(p);
-        
-        Type currentMemType = getCurrentMemoryType();
-        Expression memPrime = em.record(currentMemType, currentMemElems.values());
-        if(currentAlloc == null)    currentAlloc = state.getChild(1);
-        Expression statePrime = getUpdatedState(state, memPrime, currentAlloc);
-        currentState = suspend(state, statePrime);    
-      }
-      
-      if(mixType.equals(pValCell.getType())) {
-        CellKind kind = CType.getCellKind(CType.unwrapped((xtc.type.Type) p.getNode().getProperty(TYPE)));
-        assert(CellKind.POINTER.equals(kind) || CellKind.SCALAR.equals(kind));
-        if(CellKind.POINTER.equals(kind)) {
-          pValCell = em.select(ptrSel, pValCell);
-        } else {
-          pValCell = em.select(scalarSel, pValCell);
-        }
-      }
-      return pValCell;
-    } catch (ExecutionException e) {
-      throw new ExpressionFactoryException(e);
+    // Initialization
+    if(currentMemElems.isEmpty() || state != prevDerefState) {
+      initCurrentMemElems(state.getChild(0));
+      prevDerefState = state;
     }
+    
+    ExpressionManager em = getExpressionManager();
+    
+    Expression pValCell = null;
+    AliasVar pRepVar = loadRepVar(p.getNode());
+    if(analyzer.getNullLoc().equals(pRepVar)) {
+      xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
+      throw new NullPointerException("null pointer reference of " + pType.getShape());
+    }
+    
+    String pArrName = getArrayElemName(pRepVar);
+    if(currentMemElems.containsKey(pArrName)) {
+      ArrayExpression pArray = currentMemElems.get(pArrName).asArray();
+      pValCell = pArray.index(p);
+    } else { // Add an element to currentMemElem
+      Type cellType = getArrayElemType(pRepVar.getType());
+        
+      ArrayType arrType = em.arrayType(ptrType, cellType);
+      ArrayExpression pArray = em.variable(pArrName, arrType, false).asArray();
+      currentMemElems.put(pArrName, pArray);
+      pValCell = pArray.index(p);
+      
+      Type currentMemType = getCurrentMemoryType();
+      Expression memPrime = em.record(currentMemType, currentMemElems.values());
+      if(currentAlloc == null)    currentAlloc = state.getChild(1);
+      Expression statePrime = getUpdatedState(state, memPrime, currentAlloc);
+      currentState = suspend(state, statePrime);    
+    }
+    
+    if(mixType.equals(pValCell.getType())) {
+      CellKind kind = CType.getCellKind(CType.unwrapped((xtc.type.Type) p.getNode().getProperty(TYPE)));
+      assert(CellKind.POINTER.equals(kind) || CellKind.SCALAR.equals(kind));
+      if(CellKind.POINTER.equals(kind)) {
+        pValCell = em.select(ptrSel, pValCell);
+      } else {
+        pValCell = em.select(scalarSel, pValCell);
+      }
+    }
+    return pValCell;
   }
   
   @Override
@@ -405,6 +401,10 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     Preconditions.checkArgument(size.getType().equals( offType ));
     
     ExpressionManager exprManager = getExpressionManager();
+
+    AliasVar repVar = loadRepVar(ptr.getNode());
+    analyzer.heapAssign(repVar, (xtc.type.Type) ptr.getNode().getProperty(TYPE));
+    IOUtils.debug().pln(analyzer.displaySnapShort());
     
     Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, refType, true);
     Expression offZero = exprManager.bitVectorZero(offType.getSize());
@@ -427,14 +427,17 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
   @Override
   public Expression addressOf(Expression content) {
     Preconditions.checkArgument(content.getNode().hasProperty(TYPE));
-    xtc.type.Type contentType = CType.unwrapped((xtc.type.Type) 
-        (content.getNode().getProperty(TYPE)));
     
-    if(contentType.isUnion() || contentType.isStruct()) {
-      return content;
+    if(Kind.APPLY.equals(content.getKind())) {
+      return content.getChild(0).getChild(1);
     } else {
-      Expression pointer = content.getChild(1);
-      return pointer;
+      xtc.type.Type contentType = (xtc.type.Type) (content.getNode().getProperty(TYPE));
+      CellKind kind = CType.getCellKind(contentType);
+      switch(kind) {
+      case STRUCTORUNION: 
+      case ARRAY:   return content;
+      default: return content.getChild(1);
+      }
     }
   }
   
@@ -689,39 +692,33 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
   
   @Override
   protected RecordExpression updateMemoryState(Expression memState, Expression lval, Expression rval) {
+    initCurrentMemElems(memState);
     
-    try {
-      initCurrentMemElems(memState);
-      
-      ExpressionManager em = getExpressionManager();
-      boolean memTypeChanged = false;
+    ExpressionManager em = getExpressionManager();
+    boolean memTypeChanged = false;
 
-      AliasVar lvalRepVar = cache.get(lval.getNode()); 
-      String lvalRepVarName = lvalRepVar.getName();
-      xtc.type.Type lvalRepType = lvalRepVar.getType();
-      
-      String lvalRepArrName = ARRAY_PREFIX + lvalRepVarName;
-      if(currentMemElems.containsKey(lvalRepArrName)) {
-        ArrayExpression lvalRepArr = currentMemElems.get(lvalRepArrName).asArray();
-        Type cellType = lvalRepArr.getType().getElementType();
-        rval = castExprToCell(rval, cellType);
-        lvalRepArr = lvalRepArr.update(lval, rval);
-        currentMemElems.put(lvalRepArrName, lvalRepArr);
-      } else {
-        Type cellType = getArrayElemType(lvalRepType);
-        ArrayType arrType = em.arrayType(ptrType, cellType);
-        ArrayExpression lvalArr = em.variable(lvalRepArrName, arrType, false).asArray();
-        rval = castExprToCell(rval, cellType);
-        lvalArr = lvalArr.update(lval, rval);
-        currentMemElems.put(lvalRepArrName, lvalArr);
-        memTypeChanged = true;
-      }
-      
-      Type currentMemType = memTypeChanged ? getCurrentMemoryType() : memState.getType();
-      return em.record(currentMemType, currentMemElems.values());
-    } catch (ExecutionException e) {
-      throw new ExpressionFactoryException(e);
+    AliasVar lvalRepVar = loadRepVar(lval.getNode());
+    xtc.type.Type lvalRepType = lvalRepVar.getType();
+    
+    String lvalRepArrName = getArrayElemName(lvalRepVar);
+    if(currentMemElems.containsKey(lvalRepArrName)) {
+      ArrayExpression lvalRepArr = currentMemElems.get(lvalRepArrName).asArray();
+      Type cellType = lvalRepArr.getType().getElementType();
+      rval = castExprToCell(rval, cellType);
+      lvalRepArr = lvalRepArr.update(lval, rval);
+      currentMemElems.put(lvalRepArrName, lvalRepArr);
+    } else {
+      Type cellType = getArrayElemType(lvalRepType);
+      ArrayType arrType = em.arrayType(ptrType, cellType);
+      ArrayExpression lvalArr = em.variable(lvalRepArrName, arrType, false).asArray();
+      rval = castExprToCell(rval, cellType);
+      lvalArr = lvalArr.update(lval, rval);
+      currentMemElems.put(lvalRepArrName, lvalArr);
+      memTypeChanged = true;
     }
+    
+    Type currentMemType = memTypeChanged ? getCurrentMemoryType() : memState.getType();
+    return em.record(currentMemType, currentMemElems.values());
   }
   
   @Override
@@ -742,11 +739,25 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     Preconditions.checkArgument(gnode.hasProperty(TYPE) && gnode.hasProperty(SCOPE));
     
     xtc.type.Type type = (xtc.type.Type) gnode.getProperty(TYPE);
-    Scope scope = (Scope) gnode.getProperty(SCOPE);
+    String scope = gnode.getStringProperty(SCOPE);
     String refName = CType.getReferenceName(type);
     
     AliasVar repVar = analyzer.getRepVar(refName, scope, type);
     return repVar;
+  }
+  
+  /**
+   * Load representative alias variable from cache
+   * @param gnode
+   */
+  private AliasVar loadRepVar(GNode gnode) {
+    try {
+      String scope = gnode.getStringProperty(SCOPE);
+      Pair<GNode, String> key = Pair.of(gnode, scope);
+      return cache.get(key);
+    } catch (ExecutionException e) {
+      throw new ExpressionFactoryException(e);
+    }
   }
   
   private enum ElemType {
@@ -793,6 +804,12 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
       }
       return rval;
     }
+  }
+  
+  private String getArrayElemName(AliasVar var) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(ARRAY_PREFIX).append(var.getName()).append('_').append(var.getScope());
+    return Identifiers.toValidId(sb.toString());
   }
   
   private Type getArrayElemType(xtc.type.Type type) {

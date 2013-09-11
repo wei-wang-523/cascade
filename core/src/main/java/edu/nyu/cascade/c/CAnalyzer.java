@@ -3144,7 +3144,7 @@ public class CAnalyzer extends Visitor {
       }
 
       public void visit(GNode n) {
-        if(table.current().equals(n.getProperty(Constants.SCOPE))) {
+        if(table.current().getQualifiedName().equals(n.getStringProperty(Constants.SCOPE))) {
           for (Object o : n) {
             if (o instanceof Node) dispatch((Node)o);
           }
@@ -3208,7 +3208,7 @@ public class CAnalyzer extends Visitor {
       }
 
       public void visit(GNode n) {
-        if(table.current().equals(n.getProperty(Constants.SCOPE))) {
+        if(table.current().getQualifiedName().equals(n.getStringProperty(Constants.SCOPE))) {
           for (Object o : n) {
             if (o instanceof Node) dispatch((Node)o);
           }
@@ -4242,13 +4242,17 @@ public class CAnalyzer extends Visitor {
             Type ptr1 = r1.toPointer().getType().resolve();
             if (t1.hasShape() && t2.hasConstant()) {
               try {
-                ref = addressOf(t1.getShape().add(t2.getConstant().bigIntValue()));
+                if(t1.resolve().isArray()) {
+                  ref = addressOf(t1.getShape().add(t2.getConstant().bigIntValue()));
+                } else {
+                  ref = t1.getShape();     
+                }
               } catch (IllegalStateException x) {
                 ref = new StaticReference(ptr1);
               }
             } else if(t1.hasShape() && !t2.hasConstant()) {
               try {
-                ref = addressOf(t1.getShape());
+                ref = t1.getShape();
               } catch (IllegalStateException x) {
                 ref = new StaticReference(ptr1);
               }
@@ -4279,13 +4283,17 @@ public class CAnalyzer extends Visitor {
             Type ptr2 = r2.toPointer().getType().resolve();
             if (t2.hasShape() && t1.hasConstant()) {
               try {
-                ref = addressOf(t2.getShape().add(t1.getConstant().bigIntValue()));
+                if(t2.resolve().isArray()) {
+                  ref = addressOf(t1.getShape().add(t2.getConstant().bigIntValue()));
+                } else {
+                  ref = t2.getShape();     
+                }
               } catch (IllegalStateException x) {
                 ref = new StaticReference(ptr2);
               }
             } else if(t2.hasShape() && !t1.hasConstant()) {
               try {
-                ref = addressOf(t2.getShape());
+                ref = t2.getShape();
               } catch (IllegalStateException x) {
                 ref = new StaticReference(ptr2);
               }
@@ -4962,9 +4970,8 @@ public class CAnalyzer extends Visitor {
     if (t1.hasShape()) {
       if(t1.getShape().isConstant()) {
         result = result.annotate().constant(t1.getShape());
-      } else {
-        result = result.annotate().shape(addressOf(t1.getShape()));
-      }
+      } 
+      result = result.annotate().shape(addressOf(t1.getShape()));
     }
     // Done.
     mark(n, result);
@@ -6806,7 +6813,9 @@ public class CAnalyzer extends Visitor {
           throw new IllegalArgumentException("Inconsistent types for node " + node);
       }
       type.mark(node);
-      node.setProperty(Constants.SCOPE, table.current());
+      if(!node.hasProperty(Constants.SCOPE)) {
+        table.mark(node);
+      }
     }
   }
 

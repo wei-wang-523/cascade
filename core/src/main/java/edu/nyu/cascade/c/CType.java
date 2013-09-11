@@ -72,14 +72,16 @@ public class CType {
     } else if(ref instanceof IndexReference) {
       Reference base = ref.getBase();
       return getReferenceName(base);
-    } else if(ref instanceof CastReference) { 
+    } else if(ref.isCast()) { 
       Reference base = ref.getBase();
       return getReferenceName(base);
     } else if(ref instanceof AddressOfReference) { 
       Reference base = ref.getBase();
       return getReferenceName(base);
-    } else if(ref instanceof StringReference) {
+    } else if(ref.isString()) {
       return ((StringReference) ref).getLiteral();
+    } else if(ref.isNull()) {
+      return ((NullReference) ref).toString();
     } else {
       throw new IllegalArgumentException("Unknown reference for " + ref);
     }

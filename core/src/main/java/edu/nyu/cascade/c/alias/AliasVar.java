@@ -1,7 +1,6 @@
 package edu.nyu.cascade.c.alias;
 
 import xtc.type.Type;
-import xtc.util.SymbolTable.Scope;
 
 /**
  * A class which maintains information about an expression (variable 
@@ -14,5 +13,5 @@ import xtc.util.SymbolTable.Scope;
 public interface AliasVar {
   String getName() ;
   Type getType() ;
-  Scope getScope() ;
+  String getScope() ;
 }

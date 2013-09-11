@@ -5,7 +5,6 @@ import java.util.Set;
 import com.google.common.collect.ImmutableCollection;
 
 import xtc.type.Type;
-import xtc.util.SymbolTable.Scope;
 
 /**
  * A class for computing aliases among variables.
@@ -20,7 +19,7 @@ public interface AliasAnalysis {
    * @return an alias variable
    */
   
-  AliasVar addVariable(String name, Scope scope, Type type) ;
+  AliasVar addVariable(String name, String scope, Type type) ;
   
   /**
    * Compute aliases for the assignment of an address (x = &y).
@@ -83,7 +82,7 @@ public interface AliasAnalysis {
    * Get the representative type variable
    */
   
-  AliasVar getRepVar(String name, Scope scope, Type type) ;
+  AliasVar getRepVar(String name, String scope, Type type) ;
   
   /**
    * Get the snapshot of analysis
@@ -99,4 +98,9 @@ public interface AliasAnalysis {
    * Get the snapshot of the alias partition sets
    */
   String displaySnapShort();
+  
+  /**
+   * Get the null location
+   */
+  AliasVar getNullLoc();
 }

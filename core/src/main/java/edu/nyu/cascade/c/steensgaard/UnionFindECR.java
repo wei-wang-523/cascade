@@ -34,8 +34,8 @@ public class UnionFindECR {
   * @param e2
   */
   protected void cjoin(ECR e1, ECR e2) {
-    if(BOTTOM.equals(getType(e1).getKind())) {
-      addPending(e1, e2);
+    if(BOTTOM.equals(getType(e2).getKind())) {
+      addPending(e2, e1);
     } else {
       join(e1, e2);
     }
@@ -50,24 +50,28 @@ public class UnionFindECR {
     uf.union(e1, e2);
     ECR root = (ECR) e1.findRoot();
     if(BOTTOM.equals(t1.getKind())) {
-      setType(e1, t2);
+      root.setType(t2);
       if(BOTTOM.equals(t2.getKind())) {
-        if(hasPending(e2)) {
-          Set<ECR> pending_2 = Sets.newHashSet(getPending(e2));
-          addPending(e1, pending_2);
+        if(e1.hasPending()) {
+          Set<ECR> pending_1 = Sets.newHashSet(e1.getPending());
+          addPending(root, pending_1);
+        }
+        if(e2.hasPending()) {
+          Set<ECR> pending_2 = Sets.newHashSet(e2.getPending());
+          addPending(root, pending_2);
         }
       } else {
-        if(hasPending(e1)) {
-          for(ECR x : getPending(e1)) {
+        if(e1.hasPending()) {
+          for(ECR x : e1.getPending()) {
             uf.union(root, x);
           }
         }
       }
     } else {
-      setType(root, t1);
+      root.setType(t1);
       if(BOTTOM.equals(t2.getKind())) {
-        if(hasPending(e2)) {
-          for(ECR x : getPending(e2)) {
+        if(e2.hasPending()) {
+          for(ECR x : e2.getPending()) {
             uf.union(root, x);
           }
         }
@@ -75,7 +79,7 @@ public class UnionFindECR {
         unify(t1, t2);
       }
     }
-  }  
+  }
   
   /**
    * Set the type of the ECR @param e to @param type
@@ -107,21 +111,6 @@ public class UnionFindECR {
   protected void addPending(ECR ecr, ECR newPending) {
     ECR root = (ECR) ecr.findRoot();
     root.addPending(newPending);
-  }
-  
-  /**
-   * Get pending of @param ecr
-   */
-  protected Iterable<ECR> getPending(ECR ecr) {
-    ECR root = (ECR) ecr.findRoot();
-    return root.getPending();
-  }
-  
-  /**
-   * Decide if @param ecr has pending
-   */
-  protected boolean hasPending(ECR ecr) {
-    return ((ECR) ecr.findRoot()).hasPending();
   }
   
   /**
