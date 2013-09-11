@@ -289,7 +289,7 @@ class CExpressionEncoder implements ExpressionEncoder {
     public Expression visitFunctionCall(GNode node) throws ExpressionFactoryException {
       Node funNode = node.getNode(0);
       Expression res;
-      if ("PrimaryIdentifier".equals(funNode.getName())) {
+      if (funNode.hasName("PrimaryIdentifier")) {
         String name = funNode.getString(0);
         Node argList = node.getNode(1);
         
@@ -318,7 +318,7 @@ class CExpressionEncoder implements ExpressionEncoder {
           List<VariableExpression> argVars = Lists.newArrayList();
           for(int idx = 0; idx < lastIdx; idx++) {
             GNode argNode = argList.getGeneric(idx);
-            assert("PrimaryIdentifier".equals(argNode.getName()));
+            assert(argNode.hasName("PrimaryIdentifier"));
             String argName = argNode.getString(0);
             VariableExpression argVar = exprManager.variable(argName,
                 args.get(idx).getType(), false);
@@ -550,7 +550,7 @@ class CExpressionEncoder implements ExpressionEncoder {
       Type type = unwrapped(lookupType(node));
       assert(type.isArray() || type.isPointer());
 
-      if(!("SubscriptExpression".equals(node.getName()))) {
+      if(!(node.hasName("SubscriptExpression"))) {
         if(type.isPointer()) {
           Expression base = (Expression) dispatch(node);
           Type ptoType = type.toPointer().getType();
@@ -794,7 +794,7 @@ class CExpressionEncoder implements ExpressionEncoder {
       Type type = unwrapped(lookupType(node));
       assert(type.isArray() || type.isPointer());
 
-      if(!("SubscriptExpression".equals(node.getName()))) {
+      if(!(node.hasName("SubscriptExpression"))) {
         if(type.isPointer()) {
           Expression base = (Expression) exprVisitor.dispatch(node);
           Type ptoType = type.toPointer().getType();

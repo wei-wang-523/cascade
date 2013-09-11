@@ -69,7 +69,9 @@ class RunSeqProcessor implements RunProcessor {
       if(Preferences.isSet(Preferences.OPTION_THEORY) 
           && "Partition".equals(Preferences.getString((Preferences.OPTION_THEORY)))) {
         
-        Steensgaard analyzer = Steensgaard.create();
+        File file = run.getStartPosition().getFile();
+        CSymbolTable symbolTable = symbolTables.get(file);
+        Steensgaard analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());
         
         for(IRStatement stmt : path) {
           pathEncoder.prePointerAnalysis(stmt, analyzer);
@@ -763,7 +765,7 @@ class RunSeqProcessor implements RunProcessor {
     GNode assignNode = GNode.create("AssignmentExpression", 
         lExpr.getSourceNode(), "=", rExpr.getSourceNode());
     assignNode.setLocation(assignStmt.getSourceNode().getLocation());
-    cAnalyzer.processExpression(rExpr.getSourceNode());
+    cAnalyzer.processExpression(assignNode);
     IRStatement assignResult = Statement.assign(assignNode, lExpr, rExpr);
     return assignResult;
   }
