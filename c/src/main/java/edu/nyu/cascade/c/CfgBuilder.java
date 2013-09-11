@@ -531,7 +531,7 @@ public class CfgBuilder extends Visitor {
     GNode varNode = GNode.create("PrimaryIdentifier", varName);
     varNode.setLocation(string.getLocation());
     Type type = lookupType(string);
-    type = type.shape(new DynamicReference(varName, type));
+    type = type.annotate().shape(new DynamicReference(varName, type));
     type.mark(varNode);
     cAnalyzer.processExpression(varNode);
     return varNode; 
@@ -540,7 +540,6 @@ public class CfgBuilder extends Visitor {
   private Node defineStringConstNode(Node node, String string) {
     GNode stringNode = GNode.create("StringConstant", string);
     stringNode.setLocation(node.getLocation());
-//    (new ArrayT(NumberT.CHAR, string.length())).mark(stringNode);
     symbolTable.toXtcSymbolTable().mark(stringNode);
     return stringNode; 
   }
