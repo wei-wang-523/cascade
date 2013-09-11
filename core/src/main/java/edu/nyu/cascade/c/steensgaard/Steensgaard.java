@@ -11,6 +11,7 @@ import xtc.type.Type;
 import xtc.util.SymbolTable.Scope;
 
 import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.c.alias.AliasAnalysis;
 import edu.nyu.cascade.c.alias.AliasVar;
 import edu.nyu.cascade.c.steensgaard.ValueType.ValueTypeKind;
@@ -102,7 +103,20 @@ public class Steensgaard implements AliasAnalysis {
     ECR lhs0_ecr = lhs_type.getOperand(0);
     if(ValueTypeKind.BOTTOM.equals(uf.getType(lhs0_ecr).getKind())) {
       String freshRegionName = Identifiers.uniquify(REGION_VARIABLE_NAME + lhs.getName());
-      Type regionType = CType.unwrapped(lhs.getType()).toPointer().getType();
+      Type lhsType = CType.unwrapped(lhs.getType());
+      CellKind lhsKind = CType.getCellKind(lhsType);
+      Type regionType = null;
+      switch(lhsKind) {
+      case POINTER: 
+        regionType = CType.unwrapped(lhs.getType()).toPointer().getType(); break;
+      case ARRAY: 
+        regionType = CType.unwrapped(lhs.getType()).toArray().getType(); break;
+      case UNION:
+      case STRUCT: 
+        throw new UnsupportedOperationException("Unsupported heap assign of structure or union for " + lhs.getName()); 
+      default : 
+        throw new IllegalArgumentException("Invalid type of heap assign operand " + lhs.getName());
+      }
       TypeVar region = (TypeVar) addVariable(freshRegionName, lhs.getScope(), regionType);
       uf.join(lhs0_ecr, region.getECR());
     }
@@ -210,16 +224,15 @@ public class Steensgaard implements AliasAnalysis {
     /* For array, structure or union, just return the root ECR's 
      * initial type variable
      */
-    TypeVar res = null;
-    if(var.getType().resolve().isArray() 
-        || var.getType().resolve().isStruct() 
-        || var.getType().resolve().isUnion()) {
-      res = uf.getInitVar(ecr);
-    } else {
-      res = uf.getInitVar((ECR) type.getOperand(0));
+    CellKind kind = CType.getCellKind(var.getType());
+    switch(kind) {
+    case POINTER:   return uf.getInitVar((ECR) type.getOperand(0));
+    case ARRAY:
+    case UNION:
+    case STRUCT:    return uf.getInitVar(ecr);
+    default:
+      throw new IllegalArgumentException("No points to variable for " + var.getType().getShape());
     }
-    
-    return res;
   }
   
   @Override
@@ -232,7 +245,7 @@ public class Steensgaard implements AliasAnalysis {
         if(set == null) continue;
         sb.append("  Partition { ");
         for(AliasVar var : set)
-          sb.append(((TypeVar) var).getName()).append(' ');
+          sb.append(var.getName()).append('@').append(var.getScope().getName()).append(' ');
         sb.append("}\n");
       }
     }

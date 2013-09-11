@@ -40,6 +40,7 @@ import com.google.common.base.Preconditions;
 
 import edu.nyu.cascade.c.AddressOfReference;
 import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.c.alias.AliasAnalysis;
 import edu.nyu.cascade.c.alias.AliasVar;
 import edu.nyu.cascade.ir.IRExpression;
@@ -431,6 +432,13 @@ public class Statement implements IRStatement {
           analyzer.ptrAssign(lTypeVar_, rTypeVar_); break;
         }
       } 
+      
+      CellKind rKind = CType.getCellKind(rType);
+      if(CellKind.STRUCT.equals(rKind) || CellKind.UNION.equals(rKind) || CellKind.ARRAY.equals(rKind)) {
+        AliasVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
+        AliasVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType);
+        analyzer.addrAssign(lTypeVar_, rTypeVar_); break;
+      }
       
       if(lType.hasShape()) {
         if(lType.getShape().isIndirect()) {

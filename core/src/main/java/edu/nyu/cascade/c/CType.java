@@ -14,7 +14,7 @@ public class CType {
   private final static String CONSTANT = Identifiers.toValidId("Constant");
   
   public enum CellKind {
-    SCALAR, POINTER, BOOL
+    SCALAR, POINTER, STRUCT, UNION, ARRAY, BOOL
   }
   
   public static xtc.type.Type unwrapped(xtc.type.Type type) {
@@ -37,9 +37,9 @@ public class CType {
     type = unwrapped(type);
     if(type.isInteger())        return CellKind.SCALAR;
     else if(type.isPointer())   return CellKind.POINTER;
-    else if(type.isArray())     return CellKind.SCALAR;
-    else if(type.isStruct())    return CellKind.SCALAR;
-    else if(type.isUnion())     return CellKind.SCALAR;
+    else if(type.isArray())     return CellKind.ARRAY;
+    else if(type.isStruct())    return CellKind.STRUCT;
+    else if(type.isUnion())     return CellKind.UNION;
     else
       throw new IllegalArgumentException("Unknown type " + type);
   }
@@ -51,10 +51,10 @@ public class CType {
     
     if(type.hasConstant() && type.getConstant().isReference()) {
       Reference constRef = type.getConstant().refValue();
-      return getReferenceName(constRef);
-    } else {
-      return getReferenceName(type.getShape());
-    }
+      if(!constRef.isString()) return getReferenceName(constRef);
+    } 
+      
+    return getReferenceName(type.getShape());
   }
   
   private static String getReferenceName(Reference ref) {
@@ -78,6 +78,8 @@ public class CType {
     } else if(ref instanceof AddressOfReference) { 
       Reference base = ref.getBase();
       return getReferenceName(base);
+    } else if(ref instanceof StringReference) {
+      return ((StringReference) ref).getLiteral();
     } else {
       throw new IllegalArgumentException("Unknown reference for " + ref);
     }
