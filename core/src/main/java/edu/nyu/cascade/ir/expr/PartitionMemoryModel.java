@@ -773,9 +773,9 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     for(VariableT v : su.getMembers()) {
       switch(CType.getCellKind(v)) {
       case SCALAR :         pointer = false; break;
-      case POINTER:
+      case POINTER:         scalar = false; break;
       case ARRAY:
-      case STRUCTORUNION:   scalar = false; break;
+      case STRUCTORUNION:   scalar = false; pointer = false; break;
       default:              throw new IllegalArgumentException("Unsupported type " + v);
       }
     }
@@ -790,11 +790,16 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     else {
       ExpressionManager em = getExpressionManager();
       assert(scalarType.equals(rval.getType()) || ptrType.equals(rval.getType()));
-      if(rval.isBitVector()) {
+      if(scalarType.equals(rval.getType())) {
         if(ptrType.equals(cellType)) {
-          assert(rval.isConstant());
-          rval = ((PointerExpressionEncoding) getExpressionEncoding())
-              .getPointerEncoding().nullPtr();
+          xtc.type.Type type = (xtc.type.Type) rval.getNode().getProperty(TYPE);
+          assert(type.hasConstant());
+          if(type.getConstant().bigIntValue().intValue() == 0) {
+            rval = ((PointerExpressionEncoding) getExpressionEncoding())
+                .getPointerEncoding().nullPtr();
+          } else {
+            rval = getExpressionEncoding().unknown();
+          }
         } else { // mixType
           rval = em.construct(scalarConstr, rval);
         }
@@ -812,6 +817,10 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     return Identifiers.toValidId(sb.toString());
   }
   
+  /**
+   * Get the cell tyoe of the array in memory record for node with certain type
+   * @param type
+   */
   private Type getArrayElemType(xtc.type.Type type) {
     Type cellType = null;
     switch(CType.getCellKind(type)) {
@@ -840,6 +849,6 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
   @Override
   public void setAliasAnalyzer(AliasAnalysis analyzer) {
     this.analyzer = analyzer;
-    IOUtils.debug().pln(analyzer.displaySnapShort());
+    IOUtils.err().println(analyzer.displaySnapShort());
   }
 }

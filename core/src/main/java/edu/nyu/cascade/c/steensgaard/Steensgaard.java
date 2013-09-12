@@ -236,7 +236,13 @@ public class Steensgaard implements AliasAnalysis {
     switch(kind) {
     case POINTER:       return uf.getInitVar((ECR) type.getOperand(0));
     case ARRAY:
-    case STRUCTORUNION: return uf.getInitVar(ecr);
+    case STRUCTORUNION: {
+      if(uf.hasPointsToChain(ecr)) {
+        return uf.getInitVar((ECR) type.getOperand(0));
+      } else {
+        return uf.getInitVar(ecr);
+      }
+    }
     default:
       throw new IllegalArgumentException("No points to variable for " + var.getType().getShape());
     }
