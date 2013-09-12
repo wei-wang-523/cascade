@@ -29,8 +29,7 @@
     <wayPoint fileId="1" line="20" >
       <loop>
         <invariant><![CDATA[
-        j >=0 && j<=i &&
-        implies(j>=0 && j<i, valid(&a[j]) && valid(&a[i])) && 
+        j >=0 && j<=i && valid(&a[j]) && valid(&a[i]) && 
 		forall(idx, implies(0 <= idx && idx < j, a[idx] == a[i]))
         ]]>
         </invariant>

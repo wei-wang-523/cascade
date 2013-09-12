@@ -1,0 +1,19 @@
+<controlFile>
+  <sourceFile name="../ex1.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="11" />  
+    <wayPoint fileId="1" line="16" >
+      <loop iterTimes="512" />
+    </wayPoint>
+    <endPosition fileId="1" line="19" >
+      <command>
+	<cascadeFunction> cascade_check
+	</cascadeFunction>
+	<argument><![CDATA[
+	valid(&(q[-1]))
+	]]>
+	</argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>
