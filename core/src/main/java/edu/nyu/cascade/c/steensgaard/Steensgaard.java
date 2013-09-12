@@ -211,7 +211,7 @@ public class Steensgaard implements AliasAnalysis {
       }  
       
       if(res == null) {
-        IOUtils.err().println(type.getShape() + " is uninitialized.");
+        IOUtils.debug().pln(type.getShape() + " is uninitialized.");
         res = TypeVar.createNullLoc();
       }
       return res;
@@ -247,9 +247,9 @@ public class Steensgaard implements AliasAnalysis {
     ImmutableCollection<Set<AliasVar>> sets = uf.snapshot();
     StringBuilder sb = new StringBuilder();
     if(sets != null) {
-      sb.append("Snapshot:\n");
+      sb.append("Snapshot of partition (size >= 1) :\n ");
       for(Set<AliasVar> set : sets) {
-        if(set == null) continue;
+        if(set == null || set.size() <= 1) continue;
         sb.append("  Partition { ");
         for(AliasVar var : set)
           sb.append(var.getName()).append('@').append(var.getScope()).append(' ');
@@ -257,13 +257,14 @@ public class Steensgaard implements AliasAnalysis {
       }
     }
     
-    sb.append("The points to chain:\n");
+    sb.append("\nThe points to chain:\n");
     if(sets != null) {
       for(Set<AliasVar> set : sets) {
         if(set == null) continue;
         Iterator<AliasVar> itr = set.iterator();
         ECR ecr = ((TypeVar) itr.next()).getECR();
-        sb.append(uf.getPointsToChain(ecr).substring(3));
+        if(!uf.hasPointsToChain(ecr)) continue;
+        sb.append("  ").append(uf.getPointsToChain(ecr).substring(3));
         sb.append("\n");
       }
     }

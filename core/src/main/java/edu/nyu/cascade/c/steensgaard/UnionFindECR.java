@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.alias.AliasVar;
+import edu.nyu.cascade.c.steensgaard.ValueType.ValueTypeKind;
 import edu.nyu.cascade.util.UnionFind;
 
 public class UnionFindECR {
@@ -132,6 +133,17 @@ public class UnionFindECR {
   
   protected String getPointsToChain(ECR e) {
     return e.getPointsToChain();
+  }
+  
+  protected boolean hasPointsToChain(ECR e) {
+    ECR root = (ECR) e.findRoot();
+    ValueType rootType = root.getType();
+    if(ValueTypeKind.LOCATION.equals(rootType.getKind())) {
+      ECR operand_0 = rootType.getOperand(0);
+      if(((ECR) operand_0.findRoot()).hasInitTypeVar())
+        return true;
+    }
+    return false;
   }
   
   /**
