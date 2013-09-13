@@ -1,6 +1,7 @@
 package edu.nyu.cascade.c;
 
-import edu.nyu.cascade.c.alias.AliasAnalysis;
+import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
+import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
@@ -111,5 +112,9 @@ final class PathSeqEncoder implements PathEncoder {
   
   public void prePointerAnalysis(IRStatement stmt, AliasAnalysis analyzer) {
     stmt.prePointerAnalysis(pathEncoding, analyzer);
+  }
+  
+  public void preTypeCastAnalysis(IRStatement stmt, TypeCastAnalysis analyzer) {
+    stmt.preTypeCastAnalysis(pathEncoding, analyzer);
   }
 }

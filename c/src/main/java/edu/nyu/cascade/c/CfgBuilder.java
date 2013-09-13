@@ -565,7 +565,7 @@ public class CfgBuilder extends Visitor {
   }
   
   private boolean isAliasName(Node node) throws ExpressionFactoryException {
-    if(!"SimpleDeclarator".equals(node.getName()))  return false;
+    if(!node.hasName("SimpleDeclarator"))  return false;
     
     String name = node.getString(0);
     Type type = symbolTable.lookupType(name);
@@ -837,10 +837,16 @@ public class CfgBuilder extends Visitor {
   }
 
   public CExpression visitCastExpression(GNode node) {
-    if("FunctionCall".equals(node.getNode(1).getName())) // (int *) malloc(sizeof(int) * 100);
+    if(node.getNode(1).hasName("FunctionCall") && // (int *) malloc(sizeof(int) * 100);
+        node.getNode(1).getNode(0).hasName("PrimaryIdentifier") &&
+          node.getNode(1).getNode(0).getString(0).equals("malloc")) 
       return recurseOnExpression(node.getNode(1));
-    else // FIXME: case like (int *) f(1, 2);
+    else { // case like (int *) f(1, 2);
+      Node typeNode = node.getNode(0);
+      Node opNode = node.getNode(1);
+      addStatement(Statement.cast(node, expressionOf(typeNode), expressionOf(opNode)));
       return expressionOf(node); // (int *)p;
+    }
   }
 
   public CExpression visitCharacterConstant(GNode node) {
@@ -955,7 +961,7 @@ public class CfgBuilder extends Visitor {
     
     CExpression allocExpr = null;
     Node baseNode = baseExpr.getSourceNode();
-    if("SimpleDeclarator".equals(baseNode.getName())) {
+    if(baseNode.hasName("SimpleDeclarator")) {
       Type cellType = unwrapped(lookupType(baseNode));
       // Simple case: one-dime array int A[n]
       if(cellType.isPointer()) {
@@ -1014,7 +1020,7 @@ public class CfgBuilder extends Visitor {
     CExpression funExpr;
     // [chris 1/8/2010] FIXME: avoid a lookup on the function name, since it
     // will probably return null
-    if( "PrimaryIdentifier".equals(funNode.getName()) ) {
+    if( funNode.hasName("PrimaryIdentifier") ) {
       funExpr = CExpression.create(funNode,symbolTable.getCurrentScope());
     } else {
       funExpr = recurseOnExpression(funNode);
@@ -1129,7 +1135,7 @@ public class CfgBuilder extends Visitor {
     if (parameters != null) {
       for (Object o : parameters) {
         assert (o instanceof Node);
-        assert ("ParameterDeclaration".equals(((Node) o).getName()));
+        assert (((Node) o).hasName("ParameterDeclaration"));
         // Drill down to the actual declaration
         dispatch(((Node) o).getNode(1));
       }
@@ -1287,7 +1293,7 @@ public class CfgBuilder extends Visitor {
     CExpression varExpr = recurseOnExpression(varNode);
     Statement stmt;
     
-    if ("ArrayDeclarator".equals(varNode.getName())) {
+    if (varNode.hasName("ArrayDeclarator")) {
       if(!isAliasName(varNode.getNode(0))) {
         Node varNodePrime = varExpr.getSourceNode();
         cAnalyzer.processExpression(varNodePrime);
@@ -1297,14 +1303,14 @@ public class CfgBuilder extends Visitor {
         addStatementGlobalOrLocal(declareStmt);
         if(null != node.get(4)) {
           GNode valNodeList = node.getGeneric(4);
-          assert("InitializerList".equals(valNodeList.getName()));
+          assert((valNodeList.hasName("InitializerList")));
           int dimension = getDimofArray(varNode);
           List<CExpression> indexExprList = Lists.newArrayList();
           initializeArray(baseExpr, valNodeList, dimension, indexExprList);
         }
       }
     } else {
-      if("SimpleDeclarator".equals(varNode.getName())) {
+      if(varNode.hasName("SimpleDeclarator")) {
         Node varNodePrime = varExpr.getSourceNode();
         Type varType = lookupType(varNodePrime);
         if(unwrapped(varType).isStruct() || unwrapped(varType).isUnion()) {
@@ -1328,7 +1334,7 @@ public class CfgBuilder extends Visitor {
         GNode valNode = node.getGeneric(4);
         CExpression valExpr = recurseOnExpression(valNode);
         Node valNodePrime = valExpr.getSourceNode();
-        if("FunctionCall".equals(valNodePrime.getName())) {
+        if(valNodePrime.hasName("FunctionCall")) {
           Node funNode = valNodePrime.getNode(0);  
           /* Generate an allocated function for malloc function */
           if(ReservedFunction.MALLOC.equals(funNode.getString(0))) {
@@ -1394,17 +1400,17 @@ public class CfgBuilder extends Visitor {
     
     BasicBlock labelStmt = currentCfg.newBlock(symbolTable.getCurrentScope());
 
-    if("NamedLabel".equals(label.getName())) {
+    if(label.hasName("NamedLabel")) {
       String labelName = label.getString(0);
       this.labeledBlocks.put(labelName, labelStmt);
       currentCfg.addEdge(currentBlock, labelStmt);
-    } else if("CaseLabel".equals(label.getName())) {
+    } else if(label.hasName("CaseLabel")) {
       CExpression testExpr = getCaseExpression();
       CExpression caseLabel = recurseOnExpression(label.getNode(0));
       CaseGuard caseBranch = new CaseGuard(testExpr, caseLabel);
       setCaseGuard(caseBranch);
       currentCfg.addEdge(currentBlock, caseBranch, labelStmt);
-    } else if("DefaultLabel".equals(label.getName())) {
+    } else if(label.hasName("DefaultLabel")) {
       setHasDefault();
       IRBooleanExpression guard = new DefaultCaseGuard(node, getCaseGuards());
       currentCfg.addEdge(currentBlock, guard, labelStmt);
@@ -1708,12 +1714,12 @@ public class CfgBuilder extends Visitor {
 
     for(Object o : body) {
       if(o != null) {
-        if("LabeledStatement".equals(((Node) o).getName())) {
+        if(((Node) o).hasName("LabeledStatement")) {
           currentBlock = bodyBlock;
           dispatch((Node) o);
           if(hasDefault())  // FIXME: how about add break in default case
             closeCurrentBlock(exitBlock);          
-        } else if("BreakStatement".equals(((Node) o).getName())) {
+        } else if(((Node) o).hasName("BreakStatement")) {
           dispatch((Node) o);
           closeCurrentBlock(exitBlock);
         } else {

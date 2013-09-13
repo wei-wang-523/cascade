@@ -15,6 +15,7 @@ import com.google.common.collect.*;
 
 import edu.nyu.cascade.c.CAnalyzer;
 import edu.nyu.cascade.c.CSpecParser;
+import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
 import edu.nyu.cascade.c.steensgaard.Steensgaard;
 import edu.nyu.cascade.control.*;
 import edu.nyu.cascade.control.jaxb.InsertionType;
@@ -66,20 +67,27 @@ class RunSeqProcessor implements RunProcessor {
         }
       }
       
-      if(Preferences.isSet(Preferences.OPTION_THEORY) 
-          && "Partition".equals(Preferences.getString((Preferences.OPTION_THEORY)))) {
-        
-        File file = run.getStartPosition().getFile();
-        CSymbolTable symbolTable = symbolTables.get(file);
-        Steensgaard analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());
-        
-        for(IRStatement stmt : path) {
-          pathEncoder.prePointerAnalysis(stmt, analyzer);
+      if(Preferences.isSet(Preferences.OPTION_THEORY)) {
+        if("Partition".equals(Preferences.getString((Preferences.OPTION_THEORY)))) {
+          File file = run.getStartPosition().getFile();
+          CSymbolTable symbolTable = symbolTables.get(file);
+          Steensgaard analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());
+          
+          for(IRStatement stmt : path) {
+            pathEncoder.prePointerAnalysis(stmt, analyzer);
+          }
+          
+          pathEncoder.getExpressionEncoder().getMemoryModel().setAliasAnalyzer(analyzer);
+        } else if("Burstall".equals(Preferences.getString((Preferences.OPTION_THEORY)))) {
+          TypeCastAnalysis analyzer = TypeCastAnalysis.create();
+          
+          for(IRStatement stmt : path) {
+            pathEncoder.preTypeCastAnalysis(stmt, analyzer);
+          }
+          
+          pathEncoder.getExpressionEncoder().getMemoryModel().setTypeCastAnalyzer(analyzer);
         }
-        
-        pathEncoder.getExpressionEncoder().getMemoryModel().setAliasAnalyzer(analyzer);
       }
-      
       for (IRStatement stmt : path) {
         IOUtils.out().println(stmt.getLocation() + " " + stmt); 
         if (!pathEncoder.encodeStatement(stmt))
