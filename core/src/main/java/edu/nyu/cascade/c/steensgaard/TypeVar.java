@@ -1,7 +1,7 @@
 package edu.nyu.cascade.c.steensgaard;
 
 import xtc.type.Type;
-import edu.nyu.cascade.c.alias.AliasVar;
+import edu.nyu.cascade.c.preprocessor.AliasVar;
 import edu.nyu.cascade.util.Identifiers;
 
 public class TypeVar implements AliasVar {
@@ -43,6 +43,10 @@ public class TypeVar implements AliasVar {
   
   public String getScope() {
     return scope;
+  }
+  
+  public boolean isNullLoc() {
+    return Identifiers.NULL_LOC_NAME.equals(name) && type == null && scope == null;
   }
   
   @Override

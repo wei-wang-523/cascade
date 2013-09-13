@@ -10,7 +10,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.Sets;
 
-import edu.nyu.cascade.c.alias.AliasVar;
+import edu.nyu.cascade.c.preprocessor.AliasVar;
 import edu.nyu.cascade.c.steensgaard.ValueType.ValueTypeKind;
 import edu.nyu.cascade.util.UnionFind;
 

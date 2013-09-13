@@ -17,6 +17,7 @@ import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CType.CellKind;
+import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -78,6 +79,8 @@ public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
   private final List<Expression> stackRegions, heapRegions;
   private final Map<String, Expression> currentMemElems;
   private final Map<String, ArrayExpression> viewVars;
+  
+  private TypeCastAnalysis analyzer = null;
   private Expression currentAlloc = null;
   private Expression prevDerefState = null;
   private ExpressionClosure currentState = null;
@@ -682,9 +685,8 @@ public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
   }
 
   private boolean hasView(Node node) {
-    Preconditions.checkArgument(node.hasProperty(TYPE));
-    CellKind kind = CType.getCellKind((xtc.type.Type) node.getProperty(TYPE));
-    return CellKind.SCALAR.equals(kind);
+    boolean hasView = analyzer.hasView(node);
+    return hasView;
   }
   
   private ArrayExpression getViewVar(String typeName, Type elemType) {
@@ -694,5 +696,11 @@ public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
         .arrayVar(typeName, ptrType, elemType, false);
     viewVars.put(typeName, elemArr);
     return elemArr;
+  }
+  
+  @Override
+  public void setTypeCastAnalyzer(TypeCastAnalysis analyzer) {
+    this.analyzer = analyzer;
+//    IOUtils.err().println(analyzer.displaySnapShort());
   }
 }

@@ -13,8 +13,8 @@ import xtc.util.SymbolTable.Scope;
 
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CType.CellKind;
-import edu.nyu.cascade.c.alias.AliasAnalysis;
-import edu.nyu.cascade.c.alias.AliasVar;
+import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
+import edu.nyu.cascade.c.preprocessor.AliasVar;
 import edu.nyu.cascade.c.steensgaard.ValueType.ValueTypeKind;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;

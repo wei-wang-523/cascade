@@ -8,7 +8,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
-import edu.nyu.cascade.c.alias.AliasAnalysis;
+import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
+import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -96,6 +97,9 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   
   @Override
   public void setAliasAnalyzer(AliasAnalysis analyzer) {};
+  
+  @Override
+  public void setTypeCastAnalyzer(TypeCastAnalysis analyzer) {};
   
   protected Iterable<String> recomposeFieldNames(final String arrName, Iterable<String> fieldsName){
     return Iterables.transform(fieldsName, 

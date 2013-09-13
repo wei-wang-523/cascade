@@ -25,8 +25,8 @@ import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CType.CellKind;
-import edu.nyu.cascade.c.alias.AliasAnalysis;
-import edu.nyu.cascade.c.alias.AliasVar;
+import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
+import edu.nyu.cascade.c.preprocessor.AliasVar;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -324,10 +324,6 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     
     Expression pValCell = null;
     AliasVar pRepVar = loadRepVar(p.getNode());
-    if(analyzer.getNullLoc().equals(pRepVar)) {
-      xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
-      throw new NullPointerException("null pointer reference of " + pType.getShape());
-    }
     
     String pArrName = getArrayElemName(pRepVar);
     if(currentMemElems.containsKey(pArrName)) {
@@ -743,6 +739,9 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     String refName = CType.getReferenceName(type);
     
     AliasVar repVar = analyzer.getRepVar(refName, scope, type);
+    if(repVar.isNullLoc()) {
+      throw new NullPointerException("null pointer reference of " + type.getShape());
+    }
     return repVar;
   }
   
@@ -774,6 +773,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
       switch(CType.getCellKind(v)) {
       case SCALAR :         pointer = false; break;
       case POINTER:         scalar = false; break;
+      // FIXME: struct { int a[100] }, get the mix types?
       case ARRAY:
       case STRUCTORUNION:   scalar = false; pointer = false; break;
       default:              throw new IllegalArgumentException("Unsupported type " + v);

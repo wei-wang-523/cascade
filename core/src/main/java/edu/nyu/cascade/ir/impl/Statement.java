@@ -8,6 +8,7 @@ import static edu.nyu.cascade.ir.IRStatement.StatementType.AWAIT;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.DECLARE_ARRAY;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.DECLARE_STRUCT;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.CALL;
+import static edu.nyu.cascade.ir.IRStatement.StatementType.CAST;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.CRITICAL_SECTION;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.FIELD_ASSIGN;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.FREE;
@@ -40,8 +41,9 @@ import com.google.common.base.Preconditions;
 import edu.nyu.cascade.c.AddressOfReference;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CType.CellKind;
-import edu.nyu.cascade.c.alias.AliasAnalysis;
-import edu.nyu.cascade.c.alias.AliasVar;
+import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
+import edu.nyu.cascade.c.preprocessor.AliasVar;
+import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRLocation;
 import edu.nyu.cascade.ir.IRLocations;
@@ -90,6 +92,10 @@ public class Statement implements IRStatement {
 
   public static Statement critical(Node sourceNode) {
     return new Statement(sourceNode, CRITICAL_SECTION);
+  }
+  
+  public static Statement cast(Node sourceNode, IRExpression typeExpr, IRExpression argExpr) {
+    return new Statement(sourceNode, CAST, typeExpr, argExpr);
   }
   
   public static Statement functionCall(Node sourceNode, IRExpression funExpr,
@@ -275,6 +281,7 @@ public class Statement implements IRStatement {
       return factory.havoc(prefix, getOperand(0));
     case CRITICAL_SECTION:
     case NON_CRITICAL_SECTION:
+    case CAST:
     case SKIP:
       return factory.noop(prefix);
       
@@ -389,6 +396,9 @@ public class Statement implements IRStatement {
     case RETURN:
       return "return " + getOperand(0);
 
+    case CAST:
+      return "cast (" + getOperand(0) + ")" + getOperand(1);
+      
     case SKIP:
       return "skip";
 
@@ -416,14 +426,18 @@ public class Statement implements IRStatement {
       String rRefName = CType.getReferenceName(rType);
       
       if(rType.hasShape()) {
-        if(rType.getShape() instanceof AddressOfReference) {
+        Reference ref = rType.getShape();
+        if(ref.isCast())    
+          ref = ref.getBase();
+        
+        if(ref instanceof AddressOfReference) {
           Reference base = rType.getShape().getBase();
           Type rType_ = base.getType().annotate().shape(base);
           AliasVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
           AliasVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType_);
           analyzer.addrAssign(lTypeVar_, rTypeVar_); break;
         }
-        if(rType.getShape().isIndirect()) {
+        if(ref.isIndirect()) {
           Reference base = rType.getShape().getBase();
           Type rType_ = base.getType().annotate().shape(base);
           AliasVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
@@ -460,6 +474,23 @@ public class Statement implements IRStatement {
       String lRefName = CType.getReferenceName(lType);
       AliasVar lTypeVar = analyzer.getRepVar(lRefName, lScope, lType);
       analyzer.heapAssign(lTypeVar, lType);
+      break;
+    }
+    default:
+    }
+  }
+  
+  /**
+   * TODO: to support the equality relation between pointers 
+   * assumption/assertion in the annotation
+   */
+  @Override
+  public void preTypeCastAnalysis(PathEncoding factory, TypeCastAnalysis analyzer) {
+    switch (getType()) {
+    case ASSIGN: {
+      Node lhs = getOperand(0).getSourceNode();
+      Node rhs = getOperand(1).getSourceNode();
+      analyzer.assign(lhs, rhs);
       break;
     }
     default:

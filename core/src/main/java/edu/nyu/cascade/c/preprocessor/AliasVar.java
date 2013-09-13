@@ -1,4 +1,4 @@
-package edu.nyu.cascade.c.alias;
+package edu.nyu.cascade.c.preprocessor;
 
 import xtc.type.Type;
 
@@ -14,4 +14,5 @@ public interface AliasVar {
   String getName() ;
   Type getType() ;
   String getScope() ;
+  boolean isNullLoc() ;
 }

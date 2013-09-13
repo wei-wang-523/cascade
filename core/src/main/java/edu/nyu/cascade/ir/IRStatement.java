@@ -6,7 +6,8 @@ import xtc.tree.Node;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import edu.nyu.cascade.c.alias.AliasAnalysis;
+import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
+import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
@@ -25,6 +26,8 @@ public interface IRStatement {
       ASSIGN,
       /** Allocate a region */
       ALLOC,
+      /** Change the type of a by casting */
+      CAST,
       /** Allocate an array */
       DECLARE_ARRAY,
       /** Allocate a structure */
@@ -110,4 +113,5 @@ public interface IRStatement {
   ImmutableSet<String> getPostLabels();
   
   void prePointerAnalysis(PathEncoding factory, AliasAnalysis analyzer);
+  void preTypeCastAnalysis(PathEncoding factory, TypeCastAnalysis analyzer);
 }

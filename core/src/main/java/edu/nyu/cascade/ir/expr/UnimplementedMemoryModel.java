@@ -2,7 +2,8 @@ package edu.nyu.cascade.ir.expr;
 
 import com.google.common.collect.ImmutableSet;
 
-import edu.nyu.cascade.c.alias.AliasAnalysis;
+import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
+import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -153,6 +154,12 @@ public class UnimplementedMemoryModel implements MemoryModel {
   @Override
   public void setAliasAnalyzer(AliasAnalysis analyzer) {
     // TODO Auto-generated method stub
-    
+    throw new UnsupportedOperationException("setAliasAnalyzer"); 
+  }
+  
+  @Override
+  public void setTypeCastAnalyzer(TypeCastAnalysis analyzer) {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("setTypeCastAnalyzer"); 
   }
 }
