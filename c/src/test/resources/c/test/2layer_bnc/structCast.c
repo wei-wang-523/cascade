@@ -6,7 +6,7 @@ typedef struct account {
 } acc;
 
 typedef struct account_1 {
-  int account_number;
+  int account;
   char *first_name;
 //  char last_name[1];
   int balance;
@@ -23,6 +23,6 @@ int main() {
   s->first_name[0] = 'c';
 //  s->last_name[0] = 'd';
   acc1* r1 = (acc1 *)s;
-  ASSERT(r1->account_number == 2);
+  ASSERT(r1->account == 2);
   return 0;
 }
