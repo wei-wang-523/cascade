@@ -487,10 +487,26 @@ public class Statement implements IRStatement {
   @Override
   public void preTypeCastAnalysis(PathEncoding factory, TypeCastAnalysis analyzer) {
     switch (getType()) {
+    case CAST: {
+      Node type = getOperand(0).getSourceNode();
+      Node op = getOperand(1).getSourceNode();
+      analyzer.cast(type, op);
+      break;
+    }
     case ASSIGN: {
       Node lhs = getOperand(0).getSourceNode();
       Node rhs = getOperand(1).getSourceNode();
       analyzer.assign(lhs, rhs);
+      break;
+    }
+    case ALLOC: {
+      Node lhs = getOperand(0).getSourceNode();
+      analyzer.heapAssign(lhs);
+      break;
+    }
+    case DECLARE_STRUCT: {
+      Node op = getOperand(0).getSourceNode();
+      analyzer.declareStruct(op);
       break;
     }
     default:

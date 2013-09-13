@@ -31,6 +31,7 @@ import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 
@@ -701,6 +702,6 @@ public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
   @Override
   public void setTypeCastAnalyzer(TypeCastAnalysis analyzer) {
     this.analyzer = analyzer;
-//    IOUtils.err().println(analyzer.displaySnapShort());
+    IOUtils.err().println(analyzer.displaySnapShot());
   }
 }
