@@ -1,6 +1,6 @@
 int main(){
-	int a, q, *p;
-	p = &a;
+	int *p;
+	int q;
 	q = *p;
 	return q;
 }
