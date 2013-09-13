@@ -1,7 +1,7 @@
 package edu.nyu.cascade.c.theory;
 
 import edu.nyu.cascade.c.Theory;
-import edu.nyu.cascade.ir.expr.BurstallMemoryModel;
+import edu.nyu.cascade.ir.expr.BurstallView2MemoryModel;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.PointerExpressionEncoding;
@@ -13,7 +13,7 @@ public class BurstallTheory implements Theory {
   
   public BurstallTheory(ExpressionManager exprManager) {
     encoding = PointerExpressionEncoding.create(exprManager);
-    memoryModel = BurstallMemoryModel.create(encoding);
+    memoryModel = BurstallView2MemoryModel.create(encoding);
   }
 
   @Override
