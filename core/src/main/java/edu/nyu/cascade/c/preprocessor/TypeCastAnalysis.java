@@ -61,7 +61,7 @@ public class TypeCastAnalysis {
    */
   public void declareStruct(Node opNode) {
     Type type = (Type) opNode.getProperty(Constants.TYPE);
-    if(type.hasShape()) {
+    if(type.resolve().isUnion() && type.hasShape()) {
       Reference ref = type.getShape();
       Reference add_ref = new AddressOfReference(ref);
       hasViewSet.add(add_ref);
@@ -76,7 +76,7 @@ public class TypeCastAnalysis {
   public void heapAssign(Node opNode) {
     Type ptrType = (Type) opNode.getProperty(Constants.TYPE);
     Type type = ptrType.resolve().toPointer().getType();
-    if(type.resolve().isUnion() || type.resolve().isStruct()) {
+    if(type.resolve().isUnion()/* || type.resolve().isStruct()*/) {
       if(ptrType.hasShape()) {
         Reference ref = ptrType.getShape();
         hasViewSet.add(ref);
