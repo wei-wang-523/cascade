@@ -13,6 +13,6 @@ int main( )
 
 //   printf( "data.i : %d\n", data.i);
 //   printf( "data.c : %c\n", data.c);
-
+   ASSERT(data->i == 10 && data->c == 'c');
    return 0;
 }

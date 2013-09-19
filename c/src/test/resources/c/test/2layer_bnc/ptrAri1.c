@@ -7,6 +7,12 @@ void foo()
 {
   struct S u;
   u.b = 3;
-  *(u.a+3) = 2;
+  int i, k = 0;
+  if(k==0) {
+    i = 3;
+  } else {
+    i = 2;
+  }
+  *(u.a+k) = 2;
   ASSERT(u.b == 2);
 }
