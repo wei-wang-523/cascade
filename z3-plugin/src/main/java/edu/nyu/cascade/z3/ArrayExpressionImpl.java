@@ -101,7 +101,7 @@ public final class ArrayExpressionImpl
   private ArrayExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
       ArrayStoreAllConstructionStrategy strategy,
       Type arrayType, Expression expr) {
-    super(exprManager, kind, strategy, arrayType, expr);
+    super(exprManager, kind, strategy, arrayType.asArrayType().getIndexType(), expr);
     indexType = arrayType.asArrayType().getIndexType();
     elementType = arrayType.asArrayType().getElementType();
     type = exprManager.arrayType(indexType,elementType);
