@@ -702,6 +702,6 @@ public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
   @Override
   public void setTypeCastAnalyzer(TypeCastAnalysis analyzer) {
     this.analyzer = analyzer;
-    IOUtils.err().println(analyzer.displaySnapShot());
+    IOUtils.debug().pln(analyzer.displaySnapShot());
   }
 }
