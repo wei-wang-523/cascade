@@ -298,7 +298,7 @@ class CExpressionEncoder implements ExpressionEncoder {
           List<Expression> argExprs = (List<Expression>) dispatch(argList);
           res = encoding.ofBoolean(getMemoryModel().valid(memory, argExprs.get(0)));
         } else if( ReservedFunction.FUN_VALID_MALLOC.equals(name)) {
-          Preconditions.checkArgument(argList.size() == 1);
+          Preconditions.checkArgument(argList.size() == 2);
           List<Expression> argExprs = (List<Expression>) dispatch(argList);
           res = encoding.neq(argExprs.get(0), encoding.zero());
         } else if( ReservedFunction.FUN_ALLOCATED.equals(name) ) {
