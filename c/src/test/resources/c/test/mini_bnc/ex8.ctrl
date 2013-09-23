@@ -1,0 +1,29 @@
+<controlFile>
+  <sourceFile name="ex8.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="2" />
+    <wayPoint fileId="1" line="9" >
+      <command>
+	<cascadeFunction> cascade_check </cascadeFunction>
+	<argument><![CDATA[
+	valid_malloc(a, k*sizeof(int))
+	]]>
+	</argument>
+      </command>
+    </wayPoint>
+    <wayPoint fileId="1" line="11" >
+      <loop iterTimes="3" >
+        <wayPoint fileId="1" line="12" >
+      	  <command>
+	    <cascadeFunction> cascade_check </cascadeFunction>
+	    <argument><![CDATA[
+	    valid(&a[i])
+	    ]]>
+	    </argument>
+      	  </command>
+        </wayPoint>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="15" />
+  </run>
+</controlFile>
