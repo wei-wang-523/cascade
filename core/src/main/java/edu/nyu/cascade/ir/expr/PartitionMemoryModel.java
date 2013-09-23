@@ -849,6 +849,6 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
   @Override
   public void setAliasAnalyzer(AliasAnalysis analyzer) {
     this.analyzer = analyzer;
-    IOUtils.err().println(analyzer.displaySnapShort());
+    IOUtils.debug().pln(analyzer.displaySnapShort());
   }
 }
