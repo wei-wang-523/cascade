@@ -25,6 +25,7 @@ public class ReservedFunction {
   
   public static final String FUN_VALID = "valid";
   public static final String FUN_VALID_MALLOC = "valid_malloc";
+  public static final String FUN_VALID_FREE = "valid_free";
   public static final String FUN_IMPLIES = "implies";
   public static final String FUN_FORALL = "forall";
   public static final String FUN_EXISTS = "exists";
@@ -48,6 +49,8 @@ public class ReservedFunction {
           
           FUN_VALID,
           FUN_VALID_MALLOC,
+          FUN_VALID_FREE,
+          
           FUN_IMPLIES,
           FUN_FORALL,
           FUN_EXISTS, 
