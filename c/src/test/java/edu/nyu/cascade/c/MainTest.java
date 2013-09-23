@@ -313,6 +313,7 @@ public class MainTest {
   }
   
   @Test
+  @Ignore
   public void test2LayerBenchmark() {
     TestUtils.checkDirectory(twoLayer_programs_location, ctrlFileFilter,
         parserTest("--feasibility", "--inline-anno", "--sound-alloc", "--signed", "--prover", "z3", "--theory", "Burstall"), false);
