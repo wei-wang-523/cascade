@@ -11,6 +11,7 @@ import java.math.BigInteger;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 import xtc.type.*;
 import xtc.tree.*;
 import xtc.util.SymbolTable.Scope;
@@ -294,18 +295,25 @@ class CExpressionEncoder implements ExpressionEncoder {
         Node argList = node.getNode(1);
         
         if( ReservedFunction.FUN_VALID.equals(name) ) {
-          Preconditions.checkArgument(argList.size() == 1);
+          Preconditions.checkArgument(argList.size() == 2 && argList.size() == 1);
           List<Expression> argExprs = (List<Expression>) dispatch(argList);
-          res = encoding.ofBoolean(getMemoryModel().valid(memory, argExprs.get(0)));
+          if(argExprs.size() == 1)
+            res = getMemoryModel().valid(memory, argExprs.get(0));
+          else
+            res = getMemoryModel().valid(memory, argExprs.get(0), argExprs.get(1));
         } else if( ReservedFunction.FUN_VALID_MALLOC.equals(name)) {
           Preconditions.checkArgument(argList.size() == 2);
           List<Expression> argExprs = (List<Expression>) dispatch(argList);
-          res = encoding.neq(argExprs.get(0), encoding.zero());
+          res = getMemoryModel().valid_malloc(memory, argExprs.get(0), argExprs.get(1));
+        } else if( ReservedFunction.FUN_VALID_FREE.equals(name)) {
+          Preconditions.checkArgument(argList.size() == 1);
+          List<Expression> argExprs = (List<Expression>) dispatch(argList);
+          res = getMemoryModel().valid_free(memory, argExprs.get(0));
         } else if( ReservedFunction.FUN_ALLOCATED.equals(name) ) {
           Preconditions.checkArgument(argList.size() == 2);
           Expression argExpr0 = (Expression) lvalVisitor.dispatch(argList.getNode(0));
           Expression argExpr1 = (Expression) dispatch(argList.getNode(1));
-          res = encoding.ofBoolean(getMemoryModel().allocated(memory, argExpr0, argExpr1));
+          res = getMemoryModel().allocated(memory, argExpr0, argExpr1);
         } else if( ReservedFunction.FUN_IMPLIES.equals(name) ) {
           Preconditions.checkArgument(argList.size() == 2);
           List<Expression> argExprs = (List<Expression>) dispatch(argList);

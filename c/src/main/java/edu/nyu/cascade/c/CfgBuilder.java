@@ -730,7 +730,7 @@ public class CfgBuilder extends Visitor {
     
     Node rhsNodePrime = rhsExpr.getSourceNode();
     
-    Statement resultStmt;
+    Statement resultStmt, validMallocStmt = null;
 
     /* Function call as x = f(x) should be operated differently */
     if(rhsNodePrime.hasName("FunctionCall")) {
@@ -748,6 +748,14 @@ public class CfgBuilder extends Visitor {
         } else {
           resultStmt = Statement.alloc(node, lhsExpr, sizeExpr);
         }
+        GNode funcNode = GNode.create("PrimaryIdentifier", ReservedFunction.FUN_VALID_MALLOC);
+        GNode argList = GNode.create("ExpressionList", lhsNode, sizeNode);
+        GNode validMallocNode = GNode.create("FunctionCall", funcNode, argList);
+        Location loc = node.getLocation();
+        funcNode.setLocation(loc);
+        validMallocNode.setLocation(loc);
+        cAnalyzer.processExpression(validMallocNode);
+        validMallocStmt = Statement.assumeStmt(validMallocNode, expressionOf(validMallocNode));
       } else if(ReservedFunction.ANNO_NONDET.equals(funNode.getString(0))) {
         resultStmt = Statement.havoc(node, lhsExpr);
       } else { /* For other function call, treat it as non-function call */
@@ -771,6 +779,8 @@ public class CfgBuilder extends Visitor {
       resultStmt = Statement.assign(node, lhsExpr, rhsExpr);
     }
     addStatementGlobalOrLocal(resultStmt);
+    if(validMallocStmt != null) 
+      addStatementGlobalOrLocal(validMallocStmt);
     
     /* field assignment statement */
     if(compSelect && pointerAssign) {
@@ -1045,8 +1055,17 @@ public class CfgBuilder extends Visitor {
         || ReservedFunction.FUN_FORALL.equals(funcName)
         || ReservedFunction.FUN_EXISTS.equals(funcName)
         || ReservedFunction.FUN_IMPLIES.equals(funcName)
-        || ReservedFunction.FUN_VALID.equals(funcName)) {
+        || ReservedFunction.FUN_VALID.equals(funcName)
+        || ReservedFunction.FUN_VALID_MALLOC.equals(funcName)
+        || ReservedFunction.FUN_VALID_FREE.equals(funcName)) {
     } else if(ReservedFunction.FREE.equals(funcName)) {
+      GNode funcNode = GNode.create("PrimaryIdentifier", ReservedFunction.FUN_VALID_FREE);
+      GNode validFreeNode = GNode.create("FunctionCall", funcNode, argList);
+      Location loc = node.getLocation();
+      funcNode.setLocation(loc);
+      validFreeNode.setLocation(loc);
+      cAnalyzer.processExpression(validFreeNode);
+      addStatement(Statement.assertStmt(validFreeNode, expressionOf(validFreeNode)));
       addStatement(Statement.free(node, expressionOf(node.getNode(1).getNode(0))));
     } else {
       if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION)) {
@@ -1291,7 +1310,7 @@ public class CfgBuilder extends Visitor {
     Location loc = node.getLocation();
     Node varNode = node.getNode(1);
     CExpression varExpr = recurseOnExpression(varNode);
-    Statement stmt;
+    Statement stmt, validMallocStmt = null;
     
     if (varNode.hasName("ArrayDeclarator")) {
       if(!isAliasName(varNode.getNode(0))) {
@@ -1348,6 +1367,14 @@ public class CfgBuilder extends Visitor {
             allocNode.setLocation(loc);
             cAnalyzer.processExpression(allocNode);
             stmt = Statement.alloc(node, varExpr, sizeExpr);
+
+            GNode funcVMNode = GNode.create("PrimaryIdentifier", ReservedFunction.FUN_VALID_MALLOC);
+            GNode validMallocNode = GNode.create("FunctionCall", funcVMNode, argList);
+            funcVMNode.setLocation(loc);
+            validMallocNode.setLocation(loc);
+            cAnalyzer.processExpression(validMallocNode);
+            validMallocStmt = Statement.assumeStmt(validMallocNode, expressionOf(validMallocNode));
+            
           } else if(ReservedFunction.ANNO_NONDET.equals(funNode.getString(0))) {
             GNode funcNode = GNode.create("PrimaryIdentifier", ReservedFunction.AUX_HAVOC);
             GNode argList = GNode.create("ExpressionList", varExpr.getSourceNode());
@@ -1368,6 +1395,8 @@ public class CfgBuilder extends Visitor {
           stmt = Statement.assign(assignNode, varExpr, valExpr);
         }
         addStatementGlobalOrLocal(stmt);
+        if(validMallocStmt != null)
+          addStatementGlobalOrLocal(validMallocStmt);
       }
     }
   }

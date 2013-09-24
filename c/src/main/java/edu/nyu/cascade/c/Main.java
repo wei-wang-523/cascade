@@ -184,6 +184,10 @@ public class Main {
               .withDescription("Merge multiple paths in analysis.") //
               .create()) //
       .addOption(
+          OptionBuilder.withLongOpt(Preferences.OPTION_MEMORY_CHECK) //
+              .withDescription("Enable checking of memory manipulations") //
+              .create()) //
+      .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_INLINE_ANNOTATION) //
               .withDescription("Merge multiple paths in analysis.") //
               .create()) //
