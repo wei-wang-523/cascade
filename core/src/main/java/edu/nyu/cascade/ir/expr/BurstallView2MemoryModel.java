@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.Iterator;
 
 import xtc.tree.Node;
+
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -209,6 +210,44 @@ public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
               exprManager.lessThan(off_ptr, sizeVar)));
     }
       
+    return getExpressionManager().or(disjs);
+  }
+  
+  @Override
+  public BooleanExpression valid(Expression state, Expression ptr, Expression size) {
+    Preconditions.checkArgument(ptr.getType().equals( ptrType ));
+    Preconditions.checkArgument(size.getType().equals( offType ));
+
+    /* Collect all the regions. */
+    List<Expression> regions = Lists.newArrayList();
+    regions.addAll(stackRegions);
+    regions.addAll(heapRegions);
+    
+    List<BooleanExpression> disjs = Lists.newArrayListWithCapacity(regions.size());
+    
+    try {
+      ExpressionManager exprManager = getExpressionManager();
+      Expression alloc = state.getChild(1);
+      
+      for( Expression refVar : regions ) {
+        Expression ref_ptr = ptr.asTuple().index(0);
+        Expression off_ptr = ptr.asTuple().index(1);
+        Expression off_bound = exprManager.plus(offType.getSize(), off_ptr, size);
+        
+        Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
+        Expression sizeVar = alloc.asArray().index(refVar);
+        /* ptr:(ref_ptr, off), startPos:(ref, 0), endPos:(ref, size);
+         * ensure ref_ptr == ref && 0 <= off && off < size
+         */
+        disjs.add(
+            exprManager.and(
+                ref_ptr.eq(refVar), 
+                exprManager.lessThanOrEqual(sizeZro, off_ptr),
+                exprManager.lessThan(off_bound, sizeVar)));
+      }
+    } catch (TheoremProverException e) {
+      throw new ExpressionFactoryException(e);
+    }
     return getExpressionManager().or(disjs);
   }
   

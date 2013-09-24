@@ -17,6 +17,7 @@ public interface MemoryModel {
    * allocated block of storage.
    */
   BooleanExpression valid(Expression state, Expression ptr);
+  BooleanExpression valid(Expression state, Expression ptr, Expression size);
   
   /**
    * Returns a new program state, representing the assignment of the value
@@ -148,4 +149,8 @@ public interface MemoryModel {
    * set pointer alias map for partition memory model
    */
   void setTypeCastAnalyzer(TypeCastAnalysis analyzer);
+
+  BooleanExpression valid_free(Expression state, Expression ptr);
+
+  BooleanExpression valid_malloc(Expression state, Expression ptr, Expression size);
 }

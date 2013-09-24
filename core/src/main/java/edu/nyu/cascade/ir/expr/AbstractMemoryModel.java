@@ -101,6 +101,18 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   @Override
   public void setTypeCastAnalyzer(TypeCastAnalysis analyzer) {};
   
+  @Override
+  //TODO: implement valid malloc for each memory model
+  public BooleanExpression valid_malloc(Expression state, Expression ptr, Expression size) {
+    return getExpressionManager().tt();
+  }
+ 
+  @Override
+  //TODO: implement valid free for each memory model
+  public BooleanExpression valid_free(Expression state, Expression ptr) {
+    return getExpressionManager().tt();
+  }
+  
   protected Iterable<String> recomposeFieldNames(final String arrName, Iterable<String> fieldsName){
     return Iterables.transform(fieldsName, 
         new Function<String, String>(){

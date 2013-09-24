@@ -57,6 +57,12 @@ public class TemporalMemoryModel extends AbstractMemoryModel {
   }
   
   @Override
+  public BooleanExpression valid(Expression state, Expression ptr, Expression size) {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("valid");
+  }
+  
+  @Override
   public BooleanExpression alloc(Expression state, Expression ptr, Expression size) {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("alloc");

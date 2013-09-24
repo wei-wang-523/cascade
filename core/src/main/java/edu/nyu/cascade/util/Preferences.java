@@ -63,6 +63,8 @@ public class Preferences {
   
   public static final String OPTION_INLINE_ANNOTATION = "inline-anno";
   
+  public static final String OPTION_MEMORY_CHECK = "memory-check";
+  
   public static void clearAll() {
     getProperties().clear();
   }

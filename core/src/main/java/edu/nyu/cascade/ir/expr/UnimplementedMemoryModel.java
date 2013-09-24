@@ -80,6 +80,12 @@ public class UnimplementedMemoryModel implements MemoryModel {
   }
   
   @Override
+  public BooleanExpression valid(Expression state, Expression ptr, Expression size) {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("valid");
+  }
+  
+  @Override
   public VariableExpression createLval(String name) {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("createLval");
@@ -161,5 +167,18 @@ public class UnimplementedMemoryModel implements MemoryModel {
   public void setTypeCastAnalyzer(TypeCastAnalysis analyzer) {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("setTypeCastAnalyzer"); 
+  }
+
+  @Override
+  public BooleanExpression valid_free(Expression state, Expression ptr) {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("valid_free"); 
+  }
+
+  @Override
+  public BooleanExpression valid_malloc(Expression state, Expression ptr,
+      Expression size) {
+    // TODO Auto-generated method stub
+    throw new UnsupportedOperationException("valid_malloc"); 
   }
 }

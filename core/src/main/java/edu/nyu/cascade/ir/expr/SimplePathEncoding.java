@@ -98,7 +98,13 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     /* The same currentState as check(). */
     if(currentState != null) getMemoryModel().clearCurrentState();
     
-    return em.implies(pc, memorySafe.implies(bool.eval(mem)));
+    Expression res = em.implies(em.and(pc, memorySafe), bool.eval(mem));
+    
+    if(getMemoryModel() instanceof BitVectorMemoryModel) {
+      res = ((BitVectorMemoryModel) getMemoryModel()).substAlloc(res);
+    }
+    
+    return res.asBooleanExpression();
   }
 
   @Override
