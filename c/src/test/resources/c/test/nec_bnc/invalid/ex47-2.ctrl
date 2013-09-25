@@ -17,7 +17,7 @@
       	  <command>
     	    <cascadeFunction> cascade_check </cascadeFunction>
     	    <argument><![CDATA[
-	    valid(&lut[0]) && valid(&lut[y]) && valid_malloc(lut[0]) && valid_malloc(lut[y])
+	    valid(&lut[0]) && valid(&lut[y])
 	    ]]>
 	    </argument>
       	  </command>

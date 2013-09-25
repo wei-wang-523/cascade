@@ -15,7 +15,7 @@
       <command>
 	<cascadeFunction>cascade_check</cascadeFunction>
 	<argument><![CDATA[
-	valid(&b[2*n-1]) && valid_malloc(b)
+	valid(&b[2*n-1]) && valid(b)
 	]]>
 	</argument>
       </command>

@@ -17,7 +17,7 @@
 	  <command>
 	    <cascadeFunction>cascade_check</cascadeFunction>
 	    <argument><![CDATA[
-	    valid_malloc(y)
+	    valid(y)
 	    ]]>
 	    </argument>
 	  </command>
@@ -43,7 +43,7 @@
 	  <command>
 	    <cascadeFunction>cascade_check</cascadeFunction>
 	    <argument><![CDATA[
-	    valid_malloc(w)
+	    valid(w)
 	    ]]>
 	    </argument>
 	  </command>

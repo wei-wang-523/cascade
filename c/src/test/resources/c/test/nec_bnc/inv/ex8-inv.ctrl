@@ -6,7 +6,7 @@
       <command>
 	<cascadeFunction> cascade_check </cascadeFunction>
 	<argument><![CDATA[
-	valid_malloc(a)
+	valid_malloc(a, k*sizeof(int))
 	]]>
 	</argument>
       </command>

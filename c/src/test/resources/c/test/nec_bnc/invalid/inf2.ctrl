@@ -17,7 +17,7 @@
 	  <command>
 	    <cascadeFunction>cascade_check</cascadeFunction>
 	    <argument><![CDATA[
-	    valid_malloc(t) && valid(&t->x) && valid(&t->y) && valid(&t->z)
+	    valid(&t->x) && valid(&t->y) && valid(&t->z)
 	    ]]>
 	    </argument>
 	  </command>
@@ -30,7 +30,7 @@
 	  <command>
 	    <cascadeFunction>cascade_check</cascadeFunction>
 	    <argument><![CDATA[
-	    valid_malloc(t) && valid(&t->x) && valid(&t->y) && valid(&t->z)
+	    valid(&t->x) && valid(&t->y) && valid(&t->z)
 	    ]]>
 	    </argument>
 	  </command>
@@ -43,7 +43,7 @@
 	  <command>
 	    <cascadeFunction>cascade_check</cascadeFunction>
 	    <argument><![CDATA[
-	    valid_malloc(st1) && valid_malloc(st2) &&
+	    valid(st1) && valid(st2) &&
 	    valid(&st1->x) && valid(&st1->y) && valid(&st1->z) &&
 	    valid(&st2->x) && valid(&st2->y) && valid(&st2->z)
 	    ]]>
