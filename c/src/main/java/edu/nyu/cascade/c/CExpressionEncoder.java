@@ -295,7 +295,7 @@ class CExpressionEncoder implements ExpressionEncoder {
         Node argList = node.getNode(1);
         
         if( ReservedFunction.FUN_VALID.equals(name) ) {
-          Preconditions.checkArgument(argList.size() == 2 && argList.size() == 1);
+          Preconditions.checkArgument(argList.size() == 2 || argList.size() == 1);
           List<Expression> argExprs = (List<Expression>) dispatch(argList);
           if(argExprs.size() == 1)
             res = getMemoryModel().valid(memory, argExprs.get(0));
