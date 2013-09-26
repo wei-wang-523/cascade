@@ -874,8 +874,6 @@ class CExpressionEncoder implements ExpressionEncoder {
       String fieldName = ref.getField();
       int offset = getOffset(baseType.toStructOrUnion(), fieldName);
       Expression offsetExpr = encoding.integerConstant(offset);
-//      Expression basePtr = (Expression) dispatch(node.getNode(0));
-//      Expression baseLoc = derefMemory(memory, basePtr);
       Expression baseLoc = (Expression) exprVisitor.dispatch(node.getNode(0));
       return encoding.plus(baseLoc, offsetExpr).setNode(node);
     }

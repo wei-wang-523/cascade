@@ -748,6 +748,7 @@ public class CfgBuilder extends Visitor {
         } else {
           resultStmt = Statement.alloc(node, lhsExpr, sizeExpr);
         }
+//        if(Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
         GNode funcNode = GNode.create("PrimaryIdentifier", ReservedFunction.FUN_VALID_MALLOC);
         GNode argList = GNode.create("ExpressionList", lhsNode, sizeNode);
         GNode validMallocNode = GNode.create("FunctionCall", funcNode, argList);
@@ -756,6 +757,7 @@ public class CfgBuilder extends Visitor {
         validMallocNode.setLocation(loc);
         cAnalyzer.processExpression(validMallocNode);
         validMallocStmt = Statement.assumeStmt(validMallocNode, expressionOf(validMallocNode));
+//        }
       } else if(ReservedFunction.ANNO_NONDET.equals(funNode.getString(0))) {
         resultStmt = Statement.havoc(node, lhsExpr);
       } else { /* For other function call, treat it as non-function call */
@@ -1045,8 +1047,8 @@ public class CfgBuilder extends Visitor {
      *  statement as y = malloc(x). Then we could add alloc(y, x)) by calling the 
      *  internal function alloc(...).
      *  2) free: could add statement directly as free(x)
-     *  3) for others, add functionCall statement, we'll do the real calling as pick
-     *  the cfg of the function in the RunProcessor.java
+     *  3) for others non-reserved functions, add functionCall statement, we'll 
+     *  do the real calling as pick the cfg of the function in the RunProcessor
      */
     
     String funcName = funNode.getString(0);
@@ -1059,6 +1061,7 @@ public class CfgBuilder extends Visitor {
         || ReservedFunction.FUN_VALID_MALLOC.equals(funcName)
         || ReservedFunction.FUN_VALID_FREE.equals(funcName)) {
     } else if(ReservedFunction.FREE.equals(funcName)) {
+//      if(Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
       GNode funcNode = GNode.create("PrimaryIdentifier", ReservedFunction.FUN_VALID_FREE);
       GNode validFreeNode = GNode.create("FunctionCall", funcNode, argList);
       Location loc = node.getLocation();
@@ -1066,16 +1069,17 @@ public class CfgBuilder extends Visitor {
       validFreeNode.setLocation(loc);
       cAnalyzer.processExpression(validFreeNode);
       addStatement(Statement.assertStmt(validFreeNode, expressionOf(validFreeNode)));
-      addStatement(Statement.free(node, expressionOf(node.getNode(1).getNode(0))));
+//      }
+      addStatement(Statement.free(node, expressionOf(argList.getNode(0))));
     } else {
       if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION)) {
         if(ReservedFunction.ANNO_ASSERT.equals(funcName)) {
-          addStatement(Statement.assertStmt(node, expressionOf(node.getNode(1).getNode(0))));
+          addStatement(Statement.assertStmt(node, expressionOf(argList.getNode(0))));
         } else if(ReservedFunction.ANNO_ASSUME.equals(funcName)) {
-          addStatement(Statement.assumeStmt(node, expressionOf(node.getNode(1).getNode(0))));
+          addStatement(Statement.assumeStmt(node, expressionOf(argList.getNode(0))));
         } else if(ReservedFunction.ANNO_INVARIANT.equals(funcName)) {
-          addStatement(Statement.assumeStmt(node, expressionOf(node.getNode(1).getNode(0))));
-          addStatement(Statement.assertStmt(node, expressionOf(node.getNode(1).getNode(0))));
+          addStatement(Statement.assumeStmt(node, expressionOf(argList.getNode(0))));
+          addStatement(Statement.assertStmt(node, expressionOf(argList.getNode(0))));
         } else {
           addStatement(Statement.functionCall(node, funExpr, argExprs));
         } 
@@ -1301,8 +1305,19 @@ public class CfgBuilder extends Visitor {
 
   public CExpression visitIndirectionExpression(GNode node) {
     recurseOnExpression(node.getNode(0));
+    if(Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
+      GNode funcNode = GNode.create("PrimaryIdentifier", ReservedFunction.FUN_VALID);
+      GNode argList = GNode.create("ExpressionList", node.getNode(0));
+      GNode validNode = GNode.create("FunctionCall", funcNode, argList);
+      Location loc = node.getLocation();
+      funcNode.setLocation(loc);
+      validNode.setLocation(loc);
+      cAnalyzer.processExpression(validNode);
+      Statement res = Statement.assertStmt(validNode, expressionOf(validNode));
+      res.addPostLabel(ReservedFunction.FUN_VALID);
+      addStatement(res);    
+    }
     return expressionOf(node);
-    // exprBuilder.visitIndirectionExpression(node);
   }
 
   public void visitInitializedDeclarator(GNode node) {
@@ -1368,12 +1383,14 @@ public class CfgBuilder extends Visitor {
             cAnalyzer.processExpression(allocNode);
             stmt = Statement.alloc(node, varExpr, sizeExpr);
 
+//            if(Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
             GNode funcVMNode = GNode.create("PrimaryIdentifier", ReservedFunction.FUN_VALID_MALLOC);
             GNode validMallocNode = GNode.create("FunctionCall", funcVMNode, argList);
             funcVMNode.setLocation(loc);
             validMallocNode.setLocation(loc);
             cAnalyzer.processExpression(validMallocNode);
             validMallocStmt = Statement.assumeStmt(validMallocNode, expressionOf(validMallocNode));
+//            }
             
           } else if(ReservedFunction.ANNO_NONDET.equals(funNode.getString(0))) {
             GNode funcNode = GNode.create("PrimaryIdentifier", ReservedFunction.AUX_HAVOC);
@@ -1485,11 +1502,37 @@ public class CfgBuilder extends Visitor {
 
   public CExpression visitDirectComponentSelection(GNode node) {
     recurseOnExpression(node.getNode(0));
+    if(Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
+      GNode funcNode = GNode.create("PrimaryIdentifier", ReservedFunction.FUN_VALID);
+      GNode addrNode = GNode.create("AddressExpression", node);
+      GNode argList = GNode.create("ExpressionList", addrNode);
+      GNode validNode = GNode.create("FunctionCall", funcNode, argList);
+      Location loc = node.getLocation();
+      funcNode.setLocation(loc);
+      validNode.setLocation(loc);
+      cAnalyzer.processExpression(validNode);
+      Statement res = Statement.assertStmt(validNode, expressionOf(validNode));
+      res.addPostLabel(ReservedFunction.FUN_VALID);
+      addStatement(res);    
+    }
     return expressionOf(node);
   }
 
   public CExpression visitIndirectComponentSelection(GNode node) {
     recurseOnExpression(node.getNode(0));
+    if(Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
+      GNode funcNode = GNode.create("PrimaryIdentifier", ReservedFunction.FUN_VALID);
+      GNode addrNode = GNode.create("AddressExpression", node);
+      GNode argList = GNode.create("ExpressionList", addrNode);
+      GNode validNode = GNode.create("FunctionCall", funcNode, argList);
+      Location loc = node.getLocation();
+      funcNode.setLocation(loc);
+      validNode.setLocation(loc);
+      cAnalyzer.processExpression(validNode);
+      Statement res = Statement.assertStmt(validNode, expressionOf(validNode));
+      res.addPostLabel(ReservedFunction.FUN_VALID);
+      addStatement(res);   
+    }
     return expressionOf(node);
   }
   
@@ -1773,14 +1816,19 @@ public class CfgBuilder extends Visitor {
   public CExpression visitSubscriptExpression(GNode node) {
     recurseOnExpression(node.getNode(0));
     recurseOnExpression(node.getNode(1));
-//    /* Tag type to the node */
-//    if(!node.hasProperty(TYPE)) {
-//      Type baseType = lookupType(node.getNode(0));
-//      assert(baseType.isAnnotated());
-//      Reference shape = baseType.getShape();
-//      Type type = new AnnotatedT(shape.getType()).shape(shape);
-//      type.mark(node);
-//    }
+    if(Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
+      GNode funcNode = GNode.create("PrimaryIdentifier", ReservedFunction.FUN_VALID);
+      GNode addrNode = GNode.create("AddressExpression", node);
+      GNode argList = GNode.create("ExpressionList", addrNode);
+      GNode validNode = GNode.create("FunctionCall", funcNode, argList);
+      Location loc = node.getLocation();
+      funcNode.setLocation(loc);
+      validNode.setLocation(loc);
+      cAnalyzer.processExpression(validNode);
+      Statement res = Statement.assertStmt(validNode, expressionOf(validNode));
+      res.addPostLabel(ReservedFunction.FUN_VALID);
+      addStatement(res);   
+    }
     return expressionOf(node);
   }
   

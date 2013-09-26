@@ -934,16 +934,17 @@ class RunMergeProcessor implements RunProcessor {
   
   private Graph getGraphForAllAssignCallStmt(List<IRStatement> pathRep, List<IRStatement> pathRmv, 
       Iterable<CallPoint> funcs) throws RunProcessorException {
-    Preconditions.checkArgument(pathRep.size() == pathRmv.size());
+    Preconditions.checkArgument(pathRep.size() <= pathRmv.size());
     
     List<CallPoint> funcs_copy = null;
     if(funcs != null)   funcs_copy = Lists.newArrayList(funcs);
     
     Graph graph = null;
     int lastIndex = pathRep.size()-1;
-    for(int i=0; i<lastIndex; i++) {
-      IRStatement stmtRep = pathRep.get(i);
-      IRStatement stmtRmv = pathRmv.get(i);
+    int i_rmv = 0;
+    for(int i_rep=0; i_rep<lastIndex; i_rep++, i_rmv++) {
+      IRStatement stmtRep = pathRep.get(i_rep);
+      IRStatement stmtRmv = pathRmv.get(i_rmv);
       CallPoint func = null;
       if(funcs_copy != null) {
         Node funcNode = stmtRmv.getSourceNode();
@@ -963,6 +964,18 @@ class RunMergeProcessor implements RunProcessor {
       Graph tmpGraph = getGraphForAssignCallStmt(stmtRep, stmtRmv, func);
       if(graph == null)     graph = tmpGraph;
       else                  graph.appendPostGraph(tmpGraph);
+      
+      int startIdxRmv = i_rmv + 1, endIdxRmv = startIdxRmv;
+      for(; startIdxRmv < pathRmv.size() ; endIdxRmv++) {
+        IRStatement nextRmvStmt = pathRmv.get(endIdxRmv);
+        if(!nextRmvStmt.getPostLabels().contains(ReservedFunction.FUN_VALID)) break;
+      }
+      
+      if(endIdxRmv > startIdxRmv) {
+        Path validAccessPath = Path.createSingleton(pathRmv.subList(startIdxRmv, endIdxRmv + 1));
+        graph.appendPostPath(validAccessPath);
+        i_rmv = i_rmv + endIdxRmv - startIdxRmv;
+      }
     }
     
     if(graph == null)   throw new RunProcessorException("Invalid graph.");
@@ -1199,7 +1212,15 @@ class RunMergeProcessor implements RunProcessor {
       /* assign statement with function call as rhs y = f(x) */
       else if(hasFunctionCall(last_stmt)) {
         List<IRStatement> stmtRep = pickFuncCallFromStmt(last_stmt, symbolTable);
-        int splitIndex = lastIndex - stmtRep.size() + 1;
+        int splitIndex = lastIndex;
+        int stmtRepSize = stmtRep.size();
+        while(stmtRepSize > 0) {
+          IRStatement currStmt = tmpPath.getStmt(splitIndex);
+          splitIndex--; 
+          if(currStmt.getPostLabels().contains(ReservedFunction.FUN_VALID)) continue;
+          stmtRepSize--;
+        }
+        splitIndex++;
         List<Path> paths = tmpPath.split(splitIndex);
         tmpPath = paths.get(0);       
         Path funcPath = paths.get(1);

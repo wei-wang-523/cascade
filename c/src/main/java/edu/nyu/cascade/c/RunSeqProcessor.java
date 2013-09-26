@@ -806,16 +806,17 @@ class RunSeqProcessor implements RunProcessor {
   
   private List<IRStatement> getStmtForAllAssignCallStmt(List<IRStatement> pathRep, List<IRStatement> pathRmv, 
       Iterable<CallPoint> funcs) throws RunProcessorException {
-    Preconditions.checkArgument(pathRep.size() == pathRmv.size());
+    Preconditions.checkArgument(pathRep.size() <= pathRmv.size());
     
     List<CallPoint> funcs_copy = null;
     if(funcs != null)   funcs_copy = Lists.newArrayList(funcs);
     
     List<IRStatement> path = null;
     int lastIndex = pathRep.size()-1;
-    for(int i=0; i<lastIndex; i++) {
-      IRStatement stmtRep = pathRep.get(i);
-      IRStatement stmtRmv = pathRmv.get(i);
+    int i_rmv = 0;
+    for(int i_rep=0; i_rep<lastIndex; i_rep++, i_rmv++) {
+      IRStatement stmtRep = pathRep.get(i_rep);
+      IRStatement stmtRmv = pathRmv.get(i_rmv);
       CallPoint func = null;
       if(funcs_copy != null) {
         Node funcNode = stmtRmv.getSourceNode();
@@ -835,6 +836,17 @@ class RunSeqProcessor implements RunProcessor {
       List<IRStatement> tmpPath = getStmtForAssignCallStmt(stmtRep, stmtRmv, func);
       if(path == null)     path = tmpPath;
       else                 path.addAll(tmpPath);
+      
+      int startIdxRmv = i_rmv + 1, endIdxRmv = startIdxRmv;
+      for(; startIdxRmv < pathRmv.size() ; endIdxRmv++) {
+        IRStatement nextRmvStmt = pathRmv.get(endIdxRmv);
+        if(!nextRmvStmt.getPostLabels().contains(ReservedFunction.FUN_VALID)) break;
+      }
+      
+      if(endIdxRmv > startIdxRmv) {
+        path.addAll(pathRmv.subList(startIdxRmv, endIdxRmv + 1));
+        i_rmv = i_rmv + endIdxRmv - startIdxRmv;
+      }
     }
     
     if(path == null)   throw new RunProcessorException("Invalid path.");
@@ -901,7 +913,15 @@ class RunSeqProcessor implements RunProcessor {
       /* assign statement with function call as rhs y = f(x) */
       else if(hasFunctionCall(last_stmt)) {
         List<IRStatement> stmtRep = pickFuncCallFromStmt(last_stmt, symbolTable);
-        int splitIndex = lastIndex - stmtRep.size() + 1;     
+        int splitIndex = lastIndex;
+        int stmtRepSize = stmtRep.size();
+        while(stmtRepSize > 0) {
+          IRStatement currStmt = path.get(splitIndex);
+          splitIndex--; 
+          if(currStmt.getPostLabels().contains(ReservedFunction.FUN_VALID)) continue;
+          stmtRepSize--;
+        }
+        splitIndex++;
         List<IRStatement> funcPath = path.subList(splitIndex, path.size());
         path = path.subList(0, splitIndex);  
         List<IRStatement> callPath = null;
