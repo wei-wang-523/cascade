@@ -481,10 +481,10 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
     if(Preferences.isSet(Preferences.OPTION_SOUND_ALLOC)) {
       ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
       
-      Expression assump = exprManager.neq(ptr, nullPtr);
+      Expression assump = exprManager.neq(locVar, nullPtr);
       
-      builder.add(exprManager.neq(ptr, nullPtr));
-      builder.add(exprManager.lessThan(ptr, exprManager.plus(addressType.getSize(), ptr, size)));
+      builder.add(exprManager.neq(locVar, nullPtr));
+      builder.add(exprManager.lessThan(locVar, exprManager.plus(addressType.getSize(), locVar, size)));
       
       List<Expression> regions = Lists.newArrayList();
       /* Collect all the regions. */
@@ -496,12 +496,12 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
             exprManager.greaterThan(alloc.asArray().index(region), 
                 exprManager.bitVectorZero(cellType.getSize())),
             exprManager.neq(region, nullPtr),
-            exprManager.neq(region, ptr));
+            exprManager.neq(region, locVar));
         Expression assert_local = exprManager.or(
             exprManager.lessThanOrEqual(
-                exprManager.plus(addressType.getSize(), ptr, size), region),
+                exprManager.plus(addressType.getSize(), locVar, size), region),
             exprManager.lessThanOrEqual(
-                exprManager.plus(addressType.getSize(), region, alloc.asArray().index(region)), ptr));
+                exprManager.plus(addressType.getSize(), region, alloc.asArray().index(region)), locVar));
         builder.add(exprManager.implies(assump_local, assert_local));
       }
       
@@ -513,10 +513,10 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
       return res;
     } else {
       BooleanExpression res = exprManager.implies(
-          exprManager.neq(ptr, nullPtr),
+          exprManager.neq(locVar, nullPtr),
           exprManager.and(
-              exprManager.neq(ptr, nullPtr),
-              exprManager.lessThan(ptr, exprManager.plus(addressType.getSize(), ptr, size)),
+              exprManager.neq(locVar, nullPtr),
+              exprManager.lessThan(locVar, exprManager.plus(addressType.getSize(), locVar, size)),
               exprManager.or(
                   exprManager.eq(lastRegion, nullPtr),
                   exprManager.lessThanOrEqual(
@@ -524,7 +524,7 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
                       ptr)
                   )));
       
-      lastRegion = exprManager.ifThenElse(ptr.neq(nullPtr), ptr, lastRegion);
+      lastRegion = exprManager.ifThenElse(locVar.neq(nullPtr), locVar, lastRegion);
       Expression statePrime = exprManager.tuple(getStateType(), memory, alloc, lastRegion);
       setCurrentState(state, statePrime);
       
