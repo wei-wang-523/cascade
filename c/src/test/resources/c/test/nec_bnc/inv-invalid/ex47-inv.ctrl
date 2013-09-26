@@ -11,13 +11,30 @@
 	</argument>
       </command>
     </wayPoint>
+    <wayPoint fileId="1" line="17" >
+      <command>
+    	<cascadeFunction> cascade_check </cascadeFunction>
+    	<argument><![CDATA[
+    	valid(&lut[0])
+    	]]> 
+    	</argument>
+      </command>
+    </wayPoint>
     <wayPoint fileId="1" line="18" >
       <loop>
         <invariant><![CDATA[
-	y >= 0 && y <= h && 
-	implies(y > 0 && y <= h, lut[y-1] == lut[0] + w*(y-1))
+	y >= 0 && y <= h
 	]]>
     	</invariant>
+	<wayPoint fileId="1" line="19" >
+      	  <command>
+	    <cascadeFunction> cascade_check </cascadeFunction>
+    	    <argument><![CDATA[
+	    valid(&lut[0]) && valid(&lut[y])
+    	    ]]>
+    	    </argument>
+      	  </command>
+	</wayPoint>
       </loop>
     </wayPoint>
     <wayPoint fileId="1" line="22" >

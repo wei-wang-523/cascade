@@ -45,6 +45,15 @@
             i>=0 && i <= n
             ]]>
             </invariant>
+            <wayPoint fileId="1" line="23" >
+              <command>
+                <cascadeFunction>cascade_check</cascadeFunction>
+                <argument><![CDATA[
+                valid(a+i) && valid(b+i)
+                ]]>
+                </argument>
+              </command>
+            </wayPoint>
           </loop>
         </wayPoint>
         <wayPoint fileId="1" line="26" >
@@ -76,6 +85,15 @@
             i>=0 && i <= n
             ]]>
             </invariant>
+            <wayPoint fileId="1" line="23" >
+              <command>
+                <cascadeFunction>cascade_check</cascadeFunction>
+                <argument><![CDATA[
+                valid(a+i) && valid(b+i)
+                ]]>
+                </argument>
+              </command>
+            </wayPoint>
           </loop>
         </wayPoint>
         <wayPoint fileId="1" line="26" >

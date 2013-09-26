@@ -1,8 +1,7 @@
 <controlFile>
   <sourceFile name="../ex46.c" id="1" />
   <run>
-    <startPosition fileId="1" line="12" />
-    
+    <startPosition fileId="1" line="12" />    
     <wayPoint fileId="1" line="18" >
       <command>
     	<cascadeFunction> cascade_assume </cascadeFunction>
@@ -12,13 +11,30 @@
     	</argument>
       </command>
     </wayPoint>
+    <wayPoint fileId="1" line="21" >
+      <command>
+    	<cascadeFunction> cascade_check </cascadeFunction>
+    	<argument><![CDATA[
+    	valid(&lut[0])
+    	]]> 
+    	</argument>
+      </command>
+    </wayPoint>
     <wayPoint fileId="1" line="22" >
       <loop>
         <invariant><![CDATA[
-        y >=0 && y <= h && valid(&lut[0]) && 
-        implies(y >= 0 && y < h, valid(&lut[y]))
+        y >=0 && y <= h
         ]]>
         </invariant>
+	<wayPoint fileId="1" line="23" >
+      	  <command>
+	    <cascadeFunction> cascade_check </cascadeFunction>
+    	    <argument><![CDATA[
+	    valid(&lut[0]) && valid(&lut[y])
+    	    ]]>
+    	    </argument>
+      	  </command>
+	</wayPoint>
       </loop>
     </wayPoint>
     <wayPoint fileId="1" line="25" >
@@ -29,8 +45,7 @@
     	]]>
     	</argument>
       </command>
-    </wayPoint>
-    
+    </wayPoint>    
     <endPosition fileId="1" line="30" />
   </run>
 </controlFile>
