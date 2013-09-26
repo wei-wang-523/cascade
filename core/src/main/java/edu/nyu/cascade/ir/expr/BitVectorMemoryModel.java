@@ -474,11 +474,62 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
     
     Expression memory = state.getChild(0).asArray().update(ptr, locVar);
     Expression alloc = state.getChild(1).asArray().update(locVar, size);
-    Expression statePrime = exprManager.tuple(getStateType(), memory, alloc, state.getChild(2));
+    Expression lastRegion = state.getChild(2);
     
-    setCurrentState(state, statePrime);
+    Expression nullPtr = exprManager.bitVectorZero(addressType.getSize());
     
-    return exprManager.and(valid_malloc(statePrime, locVar, size));
+    if(Preferences.isSet(Preferences.OPTION_SOUND_ALLOC)) {
+      ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
+      
+      Expression assump = exprManager.neq(ptr, nullPtr);
+      
+      builder.add(exprManager.neq(ptr, nullPtr));
+      builder.add(exprManager.lessThan(ptr, exprManager.plus(addressType.getSize(), ptr, size)));
+      
+      List<Expression> regions = Lists.newArrayList();
+      /* Collect all the regions. */
+      regions.addAll(stackRegions);
+      regions.addAll(heapRegions);
+      
+      for(Expression region : regions) {
+        Expression assump_local = exprManager.and(
+            exprManager.greaterThan(alloc.asArray().index(region), 
+                exprManager.bitVectorZero(cellType.getSize())),
+            exprManager.neq(region, nullPtr),
+            exprManager.neq(region, ptr));
+        Expression assert_local = exprManager.or(
+            exprManager.lessThanOrEqual(
+                exprManager.plus(addressType.getSize(), ptr, size), region),
+            exprManager.lessThanOrEqual(
+                exprManager.plus(addressType.getSize(), region, alloc.asArray().index(region)), ptr));
+        builder.add(exprManager.implies(assump_local, assert_local));
+      }
+      
+      BooleanExpression res = exprManager.implies(assump, exprManager.and(builder.build()));
+      
+      Expression statePrime = exprManager.tuple(getStateType(), memory, alloc, lastRegion);
+      setCurrentState(state, statePrime);
+      
+      return res;
+    } else {
+      BooleanExpression res = exprManager.implies(
+          exprManager.neq(ptr, nullPtr),
+          exprManager.and(
+              exprManager.neq(ptr, nullPtr),
+              exprManager.lessThan(ptr, exprManager.plus(addressType.getSize(), ptr, size)),
+              exprManager.or(
+                  exprManager.eq(lastRegion, nullPtr),
+                  exprManager.lessThanOrEqual(
+                      exprManager.plus(addressType.getSize(), lastRegion, alloc.asArray().index(lastRegion)), 
+                      ptr)
+                  )));
+      
+      lastRegion = exprManager.ifThenElse(ptr.neq(nullPtr), ptr, lastRegion);
+      Expression statePrime = exprManager.tuple(getStateType(), memory, alloc, lastRegion);
+      setCurrentState(state, statePrime);
+      
+      return res; 
+    }
   }
   
   @Override
