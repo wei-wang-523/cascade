@@ -150,7 +150,13 @@ public interface MemoryModel {
    */
   void setTypeCastAnalyzer(TypeCastAnalysis analyzer);
 
+  /**
+   * valid free operation
+   */
   BooleanExpression valid_free(Expression state, Expression ptr);
 
+  /**
+   * valid malloc operation
+   */
   BooleanExpression valid_malloc(Expression state, Expression ptr, Expression size);
 }

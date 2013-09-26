@@ -54,7 +54,6 @@ import edu.nyu.cascade.ir.expr.PathEncoding;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Preferences;
-import edu.nyu.cascade.util.ReservedFunction;
 
 public class Statement implements IRStatement {
   
@@ -186,32 +185,6 @@ public class Statement implements IRStatement {
     this.preLabels = Sets.newHashSet();
     this.postLabels = Sets.newHashSet();
   }
-
-  /**
-   * Ignore the memory check related statement if memory check option is disabled
-   * @return
-   */
-  private boolean isIgnored() {
-    switch (getType()) {
-    case ASSERT: {
-      if(!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
-        String funcName = getOperand(0).getSourceNode().getNode(0).getString(0);
-        if(ReservedFunction.FUN_VALID_FREE.equals(funcName)) {
-          return true;
-        }
-      }
-    }
-    case ASSUME: {
-      if(!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
-        String funcName = getOperand(0).getSourceNode().getNode(0).getString(0);
-        if(ReservedFunction.FUN_VALID_MALLOC.equals(funcName)) {
-          return true;
-        }
-      }
-    }
-    default: return false;
-    }
-  }
   
   @Override
   public void addPostLabel(String label) { 
@@ -291,13 +264,9 @@ public class Statement implements IRStatement {
       else
         return factory.noop(prefix);
     }
-    case ASSERT: {
-      if(isIgnored()) return factory.noop(prefix);
-      else           return factory.check(prefix, getOperand(0));
-    }
-    case ASSUME: {
-      if(isIgnored()) return factory.noop(prefix);
-    }
+    case ASSERT:
+      return factory.check(prefix, getOperand(0));
+    case ASSUME:
     case AWAIT:
       return factory.assume(prefix, getOperand(0));
     case ALLOC:
@@ -336,8 +305,7 @@ public class Statement implements IRStatement {
   public ExpressionClosure getPreCondition(ExpressionEncoder  encoder) {
     switch (getType()) {
     case ASSERT: {
-      if(!isIgnored())
-        return getOperand(0).toBoolean(encoder);
+      return getOperand(0).toBoolean(encoder);
     }
     default:
       return null;
@@ -371,17 +339,13 @@ public class Statement implements IRStatement {
       return getOperand(0) + " := array[" + getOperand(1) + "]";
     case DECLARE_STRUCT:
       return getOperand(0) + " := struct[" + getOperand(1) + "]";
-    case ASSERT: {
-      if(isIgnored())    return "skip";
-      else              return "assert " + getOperand(0);
-    }
+    case ASSERT:
+      return "assert " + getOperand(0);
     case ASSIGN:
       return getOperand(0) + " := " + getOperand(1);
 
-    case ASSUME: {
-      if(isIgnored())    return "skip";
-      else              return "assume " + getOperand(0);
-    }
+    case ASSUME:
+      return "assume " + getOperand(0);
     case AWAIT:
       return "await " + getOperand(0);
 

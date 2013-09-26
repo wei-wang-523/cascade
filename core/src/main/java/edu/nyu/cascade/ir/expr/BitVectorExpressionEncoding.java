@@ -25,7 +25,9 @@ public class BitVectorExpressionEncoding
                 : Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ?
                     Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE) 
                     : DefaultSize
-                    : DefaultSize;
+                    : Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ?
+                        Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE) 
+                        : DefaultSize;
 
     int intCellSize = 
         Preferences.isSet(Preferences.OPTION_THEORY) ?
