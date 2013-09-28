@@ -1,6 +1,7 @@
 package edu.nyu.cascade.c;
 
 import xtc.type.*;
+
 import com.google.common.base.Preconditions;
 
 import edu.nyu.cascade.util.Identifiers;
@@ -27,15 +28,9 @@ public class CType {
   
   public static CellKind getCellKind(xtc.type.Type type) {
     Preconditions.checkArgument(type != null);
-    if(type.hasConstant() && type.getConstant().isReference()) {
-      Reference ref = type.getConstant().refValue();
-      if(ref.getType().equals(BooleanT.TYPE)) {
-        return CellKind.BOOL;
-      }
-    }
-    
     type = unwrapped(type);
-    if(type.isInteger())        return CellKind.SCALAR;
+    if(type.isBoolean())        return CellKind.BOOL;
+    else if(type.isInteger())   return CellKind.SCALAR;
     else if(type.isPointer())   return CellKind.POINTER;
     else if(type.isArray())     return CellKind.ARRAY;
     else if(type.isStruct())    return CellKind.STRUCTORUNION;
@@ -90,7 +85,11 @@ public class CType {
   public static String parseTypeName(xtc.type.Type type) {
     Preconditions.checkArgument(type != null);     
     StringBuffer sb =  new StringBuffer();
-    if(type.isPointer()) {
+    if(type.isBoolean()) {
+      String kindName = type.toBoolean().getName();
+      sb.append(Identifiers.BURSTALL_ARRAY_NAME_INFIX)
+      .append(kindName);
+    } else if(type.isPointer()) {
       xtc.type.Type pType = type.toPointer().getType();
       sb.append(Identifiers.BURSTALL_ARRAY_NAME_INFIX)
       .append("PointerT").append(parseTypeName(pType));
