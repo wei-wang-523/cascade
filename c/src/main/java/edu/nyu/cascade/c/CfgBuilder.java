@@ -509,7 +509,7 @@ public class CfgBuilder extends Visitor {
     String varName = Identifiers.uniquify(TEST_VAR_PREFIX);
     GNode varNode = GNode.create("PrimaryIdentifier", varName);
     varNode.setLocation(test.getLocation());
-    Type type = lookupType(test);
+    Type type = BooleanT.TYPE;
     type = type.annotate().shape(new DynamicReference(varName,type));
     type.mark(varNode);
     cAnalyzer.processExpression(varNode);
@@ -1057,6 +1057,7 @@ public class CfgBuilder extends Visitor {
         || ReservedFunction.FUN_FORALL.equals(funcName)
         || ReservedFunction.FUN_EXISTS.equals(funcName)
         || ReservedFunction.FUN_IMPLIES.equals(funcName)
+        || ReservedFunction.FUN_ALLOCATED.equals(funcName)
         || ReservedFunction.FUN_VALID.equals(funcName)
         || ReservedFunction.FUN_VALID_MALLOC.equals(funcName)
         || ReservedFunction.FUN_VALID_FREE.equals(funcName)) {

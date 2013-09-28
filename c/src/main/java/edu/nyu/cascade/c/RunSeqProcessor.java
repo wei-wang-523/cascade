@@ -78,7 +78,7 @@ class RunSeqProcessor implements RunProcessor {
           }
           
           pathEncoder.getExpressionEncoder().getMemoryModel().setAliasAnalyzer(analyzer);
-        } else if("Burstall".equals(Preferences.getString((Preferences.OPTION_THEORY)))) {
+        } else if(Preferences.getString((Preferences.OPTION_THEORY)).startsWith("Burstall") ) {
           TypeCastAnalysis analyzer = TypeCastAnalysis.create();
           
           for(IRStatement stmt : path) {
