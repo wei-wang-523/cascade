@@ -31,10 +31,17 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
                     : DefaultSize
                     : DefaultSize;
 
-    int intCellSize = 
+    int offCellSize = 
         Preferences.isSet(Preferences.OPTION_THEORY) ?
             Preferences.get(Preferences.OPTION_THEORY).equals("BurstallFix") ?
                 (int) (cAnalyzer.getSize(xtc.type.NumberT.U_LONG) * cellSize) 
+                : cellSize
+                : cellSize;
+    
+    int intCellSize = 
+        Preferences.isSet(Preferences.OPTION_THEORY) ?
+            Preferences.get(Preferences.OPTION_THEORY).equals("BurstallFix") ?
+                (int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * cellSize) 
                 : cellSize
                 : cellSize;
     
@@ -43,7 +50,7 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
     IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, intCellSize);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new UnimplementedArrayEncoding<ArrayExpression>();
-    PointerEncoding pointerEncoding = PointerEncoding.create(exprManager, intCellSize);
+    PointerEncoding pointerEncoding = PointerEncoding.create(exprManager, offCellSize);
     return new PointerExpressionEncoding(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
   }
   

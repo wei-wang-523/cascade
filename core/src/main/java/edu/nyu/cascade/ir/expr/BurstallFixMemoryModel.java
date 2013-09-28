@@ -99,10 +99,11 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
   @Override
   public TupleExpression alloc(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    // FIXME: element size and integer size don't agree: cast integer to cell type?
-    Preconditions.checkArgument(size.getType().equals( offType ));
+    Preconditions.checkArgument(size.getType().asBitVectorType().getSize() <= offType.getSize());
     
     ExpressionManager exprManager = getExpressionManager();
+    
+    size = exprManager.zeroExtend(size, offType.getSize());
     
     Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, refType, true);
     Expression offZero = exprManager.bitVectorZero(offType.getSize());
@@ -124,8 +125,9 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
   @Override 
   public TupleExpression declareArray(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    // FIXME: element size and integer size don't agree: cast integer to cell type
-    Preconditions.checkArgument(size.getType().equals( offType ));
+    Preconditions.checkArgument(size.getType().asBitVectorType().getSize() <= offType.getSize());
+    
+    size = getExpressionManager().zeroExtend(size, offType.getSize());
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
     Expression stackRegion = ptr.asTuple().index(0); 
@@ -139,8 +141,9 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
   @Override 
   public TupleExpression declareStruct(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    // FIXME: element size and integer size don't agree: cast integer to cell type
-    Preconditions.checkArgument(size.getType().equals( offType ));
+    Preconditions.checkArgument(size.getType().asBitVectorType().getSize() <= offType.getSize());
+    
+    size = getExpressionManager().zeroExtend(size, offType.getSize());
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
     Expression stackRegion = ptr.asTuple().index(0);
@@ -152,36 +155,46 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
     return getUpdatedState(state, state.getChild(0), alloc);
   }
 
-  /* TODO: This will fail for automatically allocated addresses (e.g., the
-   * address of a local variable).
-   */
   @Override
   public BooleanExpression valid(Expression state, Expression ptr) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-
-    /* Collect all the regions. */
-    List<Expression> regions = Lists.newArrayList();
-    regions.addAll(stackRegions);
-    regions.addAll(heapRegions);
     
-    List<BooleanExpression> disjs = Lists.newArrayListWithCapacity(regions.size());
+    List<BooleanExpression> disjs = Lists.newArrayList();
     
     try {
       ExpressionManager exprManager = getExpressionManager();
       Expression alloc = state.getChild(1);
+      Expression ref_ptr = ptr.asTuple().index(0);
+      Expression off_ptr = ptr.asTuple().index(1);
+      Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
+      Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
+          .getPointerEncoding().nullPtr().asTuple().getChild(0);
       
-      for( Expression refVar : regions ) {
-        Expression ref_ptr = ptr.asTuple().index(0);
-        Expression off_ptr = ptr.asTuple().index(1);
-        
-        Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
-        Expression sizeVar = alloc.asArray().index(refVar);
+      // Valid stack access
+      for( Expression lval : lvals) {
+        Expression sizeVar = alloc.asArray().index(lval);
+        disjs.add(
+            exprManager.and(
+                ref_ptr.eq(lval), 
+                /* aggregate variable: size > 0; scalar variable: size = 0 */
+                exprManager.ifThenElse(
+                    exprManager.greaterThan(sizeVar, sizeZro),
+                    exprManager.and(
+                        exprManager.greaterThanOrEqual(off_ptr, sizeZro),
+                        exprManager.lessThan(off_ptr, sizeVar)),
+                    off_ptr.eq(sizeVar))));
+      }
+      
+      // Valid heap access
+      for( Expression refVar : heapRegions ) {
         /* ptr:(ref_ptr, off), startPos:(ref, 0), endPos:(ref, size);
          * ensure ref_ptr == ref && 0 <= off && off < size
          */
+        Expression sizeVar = alloc.asArray().index(refVar);
         disjs.add(
             exprManager.and(
-                ref_ptr.eq(refVar), 
+                refVar.neq(nullRef),
+                ref_ptr.eq(refVar),
                 exprManager.lessThanOrEqual(sizeZro, off_ptr),
                 exprManager.lessThan(off_ptr, sizeVar)));
       }
@@ -194,31 +207,46 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
   @Override
   public BooleanExpression valid(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    Preconditions.checkArgument(size.getType().equals( offType ));
-
-    /* Collect all the regions. */
-    List<Expression> regions = Lists.newArrayList();
-    regions.addAll(stackRegions);
-    regions.addAll(heapRegions);
+    Preconditions.checkArgument(size.getType().asBitVectorType().getSize() <= offType.getSize());
     
-    List<BooleanExpression> disjs = Lists.newArrayListWithCapacity(regions.size());
+    ExpressionManager exprManager = getExpressionManager();
+    size = exprManager.zeroExtend(size, offType.getSize());
+    
+    List<BooleanExpression> disjs = Lists.newArrayList();
     
     try {
-      ExpressionManager exprManager = getExpressionManager();
       Expression alloc = state.getChild(1);
+      Expression ref_ptr = ptr.asTuple().index(0);
+      Expression off_ptr = ptr.asTuple().index(1);
+      Expression off_bound = exprManager.plus(offType.getSize(), off_ptr, size);
+      Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
+      Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
+          .getPointerEncoding().nullPtr().asTuple().getChild(0);
       
-      for( Expression refVar : regions ) {
-        Expression ref_ptr = ptr.asTuple().index(0);
-        Expression off_ptr = ptr.asTuple().index(1);
-        Expression off_bound = exprManager.plus(offType.getSize(), off_ptr, size);
-        
-        Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
+      // Valid stack access
+      for( Expression lval : lvals) {
+        Expression sizeVar = alloc.asArray().index(lval);
+        disjs.add(
+            exprManager.and(
+                ref_ptr.eq(lval), 
+                /* aggregate variable: size > 0; scalar variable: size = 0 */
+                exprManager.ifThenElse( 
+                    exprManager.greaterThan(sizeVar, sizeZro),
+                    exprManager.and(        
+                        exprManager.greaterThanOrEqual(off_ptr, sizeZro),
+                        exprManager.lessThan(off_bound, sizeVar)),
+                    off_ptr.eq(sizeVar)))); 
+      }
+      
+      // Valid heap access
+      for( Expression refVar : heapRegions ) {
         Expression sizeVar = alloc.asArray().index(refVar);
         /* ptr:(ref_ptr, off), startPos:(ref, 0), endPos:(ref, size);
          * ensure ref_ptr == ref && 0 <= off && off < size
          */
         disjs.add(
             exprManager.and(
+                refVar.neq(nullRef),
                 ref_ptr.eq(refVar), 
                 exprManager.lessThanOrEqual(sizeZro, off_ptr),
                 exprManager.lessThan(off_bound, sizeVar)));
@@ -360,10 +388,11 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
   @Override
   public BooleanExpression allocated(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    // FIXME: What if element size and integer size don't agree?
-    Preconditions.checkArgument(size.getType().equals( offType ));
+    Preconditions.checkArgument(size.getType().asBitVectorType().getSize() <= offType.getSize());
     
     ExpressionManager exprManager = getExpressionManager();
+    
+    size = exprManager.zeroExtend(size, offType.getSize());
     
     Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, refType, true);
     Expression offZero = exprManager.bitVectorZero(offType.getSize());
@@ -380,7 +409,7 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
     Expression statePrime = getUpdatedState(state, currentMem, currentAlloc);
     currentState = suspend(state, statePrime);
     
-    return exprManager.tt();
+    return valid_malloc(state, locVar, size);
   }
   
   @Override
@@ -395,21 +424,32 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
   
   @Override
   public ImmutableSet<BooleanExpression> getAssumptions(Expression state) {
+    if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
+      /* No comparable predicate defined in uninterpreted type */
+      throw new UnsupportedOperationException(
+          "--order-alloc is not supported in burstall memory model");
+    }
     ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
     try {      
       if (Preferences.isSet(Preferences.OPTION_SOUND_ALLOC)) {
         ExpressionManager exprManager = getExpressionManager();
-        /* The sound allocation encoding doesn't assume anything about the ordering
-         * of lvals and regions. This may lead a blow-up due to case splits.
-         */
-        ImmutableList<Expression> distinctRef = new ImmutableList.Builder<Expression>()
-            .addAll(heapRegions).addAll(lvals).build();
-        if(distinctRef.size() > 1) {
-          builder.add(exprManager.distinct(distinctRef));
-        }        
-      } else if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
-        throw new UnsupportedOperationException("--order-alloc is not supported in burstall memory model");
-      }
+        
+        { /* The disjointness of stack variables, and != nullRef*/
+          Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
+              .getPointerEncoding().nullPtr().getChild(0);
+          ImmutableList<Expression> distinctRef = new ImmutableList.Builder<Expression>()
+              .addAll(lvals).add(nullRef).build();
+          if(distinctRef.size() > 1)  builder.add(exprManager.distinct(distinctRef));
+        }
+        
+        { /* The disjointness between heap region and stack variable. */          
+          for(Expression heapRegion : heapRegions) {
+            for(Expression lval : lvals) {
+              builder.add(lval.neq(heapRegion));
+            }
+          }
+        }
+      } 
     } catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
     }
@@ -444,17 +484,45 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
 
   @Override
   public ExpressionClosure suspend(final Expression memoryVar, final Expression expr) {
-//    Preconditions.checkArgument(stateType.equals(memoryVar.getType()));
-    return new ExpressionClosure() {
-      @Override
-      public Expression eval(final Expression memory) {
-        Preconditions.checkArgument(memory.getType().equals(memoryVar.getType()));
-        if(!isState(expr)) {
-          // For non-tuple expression evaluation
-          Expression exprPrime = expr
-              .subst(memoryVar.getChildren(), memory.getChildren());
-          return exprPrime.setNode(expr.getNode());
-        } else {
+//  Preconditions.checkArgument(stateType.equals(memoryVar.getType()));
+  return new ExpressionClosure() {
+    @Override
+    public Expression eval(final Expression memory) {
+//      Preconditions.checkArgument(memory.getType().equals(memoryVar.getType()));
+      if(!isState(expr)) {
+        // For non-tuple expression evaluation
+        Expression exprPrime = expr;
+        
+        /* Substitute the memory of expr */
+        Expression memVar_mem = memoryVar.getChild(0);
+        Expression memory_mem = memory.getChild(0);
+        
+        Map<String, Expression> memVarMemMap = getMemElems(memVar_mem);
+        Map<String, Expression> memoryMemMap = getMemElems(memory_mem);
+        
+        List<Expression> oldArgs_mem = Lists.newLinkedList();
+        List<Expression> newArgs_mem = Lists.newLinkedList();
+        
+        for(String name : memVarMemMap.keySet()) {
+          if(memoryMemMap.containsKey(name)) {
+            oldArgs_mem.add(memVarMemMap.get(name));
+            newArgs_mem.add(memoryMemMap.get(name));
+          }
+        }
+        
+        if(!oldArgs_mem.isEmpty()) {
+          exprPrime = exprPrime.subst(oldArgs_mem, newArgs_mem);
+          oldArgs_mem.clear(); newArgs_mem.clear();
+        }
+        
+        /* Substitute the alloc of expr */
+        Expression memVar_alloc = memoryVar.getChild(1);
+        Expression memory_alloc = memory.getChild(1);
+        
+        exprPrime = exprPrime.subst(memVar_alloc, memory_alloc);
+        
+        return exprPrime.setNode(expr.getNode());
+      } else {
           /* For tuple expression evaluation over memoryVar, since substitution doesn't return
            * right children for as tuple expression for state.
            */
@@ -620,6 +688,73 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
     }
     
     return em.tuple(stateTypePrime, memoryPrime, allocPrime);
+  }
+  
+  @Override
+  public BooleanExpression valid_malloc(Expression state, Expression ptr, Expression size) {
+    Preconditions.checkArgument(ptr.getType().equals( ptrType ));
+    Preconditions.checkArgument(size.getType().asBitVectorType().getSize() <= offType.getSize());
+    
+    ExpressionManager exprManager = getExpressionManager();
+    
+    size = exprManager.zeroExtend(size, offType.getSize());
+    
+    Expression alloc = state.getChild(1);
+    
+    Expression nullPtr = ((PointerExpressionEncoding) getExpressionEncoding())
+        .getPointerEncoding().nullPtr();
+    
+    if(Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
+      throw new UnsupportedOperationException(
+          "--order-alloc is not supported in burstall memory model");
+    }
+    
+    if (Preferences.isSet(Preferences.OPTION_SOUND_ALLOC)) {
+      ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
+      
+      Expression assump = exprManager.neq(ptr, nullPtr);
+      
+      builder.add(exprManager.neq(ptr, nullPtr)); // ptr != null
+      
+      List<Expression> regions = Lists.newArrayList(heapRegions);
+      /* Collect all the heap regions except the last heap region, the one just allocated. */
+      regions.remove(regions.size()-1);
+      
+      for(Expression region : regions) {
+        Expression assump_local = exprManager.and(
+            exprManager.greaterThan(alloc.asArray().index(region), 
+                exprManager.bitVectorZero(offType.getSize())),
+            exprManager.neq(region, nullPtr.asTuple().getChild(0)));
+        Expression assert_local = exprManager.neq(region, ptr.asTuple().index(0));
+        builder.add(exprManager.implies(assump_local, assert_local));
+      }
+      
+      BooleanExpression res = exprManager.implies(assump, exprManager.and(builder.build()));
+      return res;
+    } else {
+      return exprManager.tt();
+    }
+  }
+  
+  @Override
+  public BooleanExpression valid_free(Expression state, Expression ptr) {
+    ExpressionManager exprManager = getExpressionManager();
+    Expression alloc = state.getChild(1); 
+    Expression ref = ptr.asTuple().index(0);
+    Expression size = alloc.asArray().index(ref);
+    Expression nullPtr = ((PointerExpressionEncoding) getExpressionEncoding())
+        .getPointerEncoding().nullPtr();
+    return exprManager.or(exprManager.eq(ptr, nullPtr), exprManager.greaterThan(size, 
+        exprManager.bitVectorZero(offType.getSize())));
+  }
+  
+  @Override
+  public Expression substAlloc(Expression expr) {
+    ExpressionManager exprManager = getExpressionManager();
+    Expression initialAlloc = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, allocType, false);
+    Expression constAlloc = exprManager.storeAll(exprManager.bitVectorZero(offType.getSize()), allocType);
+    Expression res = expr.subst(initialAlloc, constAlloc);
+    return res;
   }
   
   private RecordExpression updateMemState(Expression memState, Expression lval, Expression rval) {

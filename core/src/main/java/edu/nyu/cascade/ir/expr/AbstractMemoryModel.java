@@ -113,6 +113,12 @@ public abstract class AbstractMemoryModel implements MemoryModel {
     return getExpressionManager().tt();
   }
   
+  @Override
+  //TODO: implement valid free for each memory model
+  public Expression substAlloc(Expression expr) {
+    return expr;
+  }
+  
   protected Iterable<String> recomposeFieldNames(final String arrName, Iterable<String> fieldsName){
     return Iterables.transform(fieldsName, 
         new Function<String, String>(){

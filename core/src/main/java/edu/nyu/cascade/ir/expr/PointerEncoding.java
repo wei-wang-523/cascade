@@ -21,12 +21,13 @@ import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.util.EqualsUtil;
 import edu.nyu.cascade.util.HashCodeUtil;
+import edu.nyu.cascade.util.Identifiers;
 
 public class PointerEncoding implements TupleEncoding<TupleExpression> {
   private static final String UNKNOWN_VARIABLE_NAME = "bv_encoding_unknown";
-  private static final String REF_TYPE_NAME = "refType";
-  private static final String NULL_PTR_NAME = "nullPtr";
-  private static final String PTR_TYPE_NAME = "ptrType";
+  private static final String REF_TYPE_NAME = Identifiers.toValidId("refType");
+  private static final String NULL_PTR_NAME = Identifiers.toValidId("nullRef");
+  private static final String PTR_TYPE_NAME = Identifiers.toValidId("ptrType");
   private final TupleType type;
   private final UninterpretedType refType;
   private final BitVectorType offType;

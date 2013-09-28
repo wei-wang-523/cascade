@@ -181,4 +181,9 @@ public class UnimplementedMemoryModel implements MemoryModel {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("valid_malloc"); 
   }
+  
+  @Override
+  public Expression substAlloc(Expression expr) {
+    return expr;
+  }
 }

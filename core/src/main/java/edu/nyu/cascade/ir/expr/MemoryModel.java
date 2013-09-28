@@ -159,4 +159,9 @@ public interface MemoryModel {
    * valid malloc operation
    */
   BooleanExpression valid_malloc(Expression state, Expression ptr, Expression size);
+  
+  /**
+   * Substitute the alloc element in state type.
+   */
+  Expression substAlloc(Expression expr);
 }
