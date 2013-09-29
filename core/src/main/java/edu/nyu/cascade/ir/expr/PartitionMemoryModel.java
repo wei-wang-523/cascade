@@ -94,7 +94,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
   private final Selector ptrSel, scalarSel; // The selectors for cell type
   
   private final Set<Expression> lvals; // lvals: variables in stack
-  private final List<Expression> stackRegions, heapRegions;
+  private final List<Expression> heapRegions;
   private final Map<String, Expression> currentMemElems;
   
   private AliasAnalysis analyzer = null;
@@ -108,6 +108,12 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
           return getRepVar(key.fst());
         }
       });
+  
+  private enum ElemType {
+    SCALAR,
+    POINTER,
+    MIX
+  }
 
   private PartitionMemoryModel(ExpressionEncoding encoding) {
     super(encoding);
@@ -140,7 +146,6 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
         Identifiers.uniquify(DEFAULT_STATE_TYPE), memType, allocType);
     
     this.lvals = Sets.newHashSet();
-    this.stackRegions = Lists.newArrayList();
     this.heapRegions = Lists.newArrayList();
     
     this.currentMemElems = Maps.newLinkedHashMap();
@@ -214,10 +219,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     Preconditions.checkArgument(size.getType().equals( offType ));
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
-    Expression stackRegion = ptr.asTuple().index(0); 
-    /* For stack allocated region, add ptr directly to stackRegions */
-    stackRegions.add(stackRegion);
-    
+    Expression stackRegion = ptr.asTuple().index(0);
     Expression alloc = state.getChild(1).asArray().update(stackRegion, size);
     return getUpdatedState(state, state.getChild(0), alloc);
   }
@@ -229,89 +231,9 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
     Expression stackRegion = ptr.asTuple().index(0);
-    /* For stack allocated region, add ptr directly to stackRegions */
-    stackRegions.add(stackRegion); 
-    
     Expression alloc = state.getChild(1).asArray().update(stackRegion, size);
     
     return getUpdatedState(state, state.getChild(0), alloc);
-  }
-
-  /* TODO: This will fail for automatically allocated addresses (e.g., the
-   * address of a local variable).
-   */
-  @Override
-  public BooleanExpression valid(Expression state, Expression ptr) {
-    Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-
-    /* Collect all the regions. */
-    List<Expression> regions = Lists.newArrayList();
-    regions.addAll(stackRegions);
-    regions.addAll(heapRegions);
-    
-    List<BooleanExpression> disjs = Lists.newArrayListWithCapacity(regions.size());
-    
-    try {
-      ExpressionManager exprManager = getExpressionManager();
-      Expression alloc = state.getChild(1);
-      
-      for( Expression refVar : regions ) {
-        Expression ref_ptr = ptr.asTuple().index(0);
-        Expression off_ptr = ptr.asTuple().index(1);
-        
-        Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
-        Expression sizeVar = alloc.asArray().index(refVar);
-        /* ptr:(ref_ptr, off), startPos:(ref, 0), endPos:(ref, size);
-         * ensure ref_ptr == ref && 0 <= off && off < size
-         */
-        disjs.add(
-            exprManager.and(
-                ref_ptr.eq(refVar), 
-                exprManager.lessThanOrEqual(sizeZro, off_ptr),
-                exprManager.lessThan(off_ptr, sizeVar)));
-      }
-    } catch (TheoremProverException e) {
-      throw new ExpressionFactoryException(e);
-    }
-    return getExpressionManager().or(disjs);
-  }
-  
-  @Override
-  public BooleanExpression valid(Expression state, Expression ptr, Expression size) {
-    Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    Preconditions.checkArgument(size.getType().equals( offType ));
-
-    /* Collect all the regions. */
-    List<Expression> regions = Lists.newArrayList();
-    regions.addAll(stackRegions);
-    regions.addAll(heapRegions);
-    
-    List<BooleanExpression> disjs = Lists.newArrayListWithCapacity(regions.size());
-    
-    try {
-      ExpressionManager exprManager = getExpressionManager();
-      Expression alloc = state.getChild(1);
-      
-      for( Expression refVar : regions ) {
-        Expression ref_ptr = ptr.asTuple().index(0);
-        Expression off_ptr = ptr.asTuple().index(1);
-        Expression off_bound = exprManager.plus(offType.getSize(), off_ptr, size);
-        
-        Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
-        Expression sizeVar = alloc.asArray().index(refVar);
-        /* ptr:(ref_ptr, off), startPos:(ref, 0), endPos:(ref, size);
-         * ensure ref_ptr == ref && 0 <= off && off < size
-         */
-        disjs.add(
-            exprManager.and(
-                ref_ptr.eq(refVar), 
-                exprManager.lessThanOrEqual(sizeZro, off_ptr),
-                exprManager.lessThan(off_bound, sizeVar)));
-      }
-    } catch (TheoremProverException e) {
-      throw new ExpressionFactoryException(e);
-    }
-    return getExpressionManager().or(disjs);
   }
   
   @Override
@@ -442,8 +364,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     
     Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, refType, true);
     Expression offZero = exprManager.bitVectorZero(offType.getSize());
-    // locVar: (region_x, 0)
-    Expression locVar = exprManager.tuple(ptrType, refVar, offZero);
+    Expression locVar = exprManager.tuple(ptrType, refVar, offZero); // locVar: (region_x, 0)
     
     heapRegions.add(refVar); // For dynamic memory allocation, add to the end
     
@@ -455,7 +376,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     Expression statePrime = getUpdatedState(state, currentMem, currentAlloc);
     currentState = suspend(state, statePrime);
     
-    return exprManager.tt();
+    return valid_malloc(state, locVar, size);
   }
   
   @Override
@@ -477,21 +398,31 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
   
   @Override
   public ImmutableSet<BooleanExpression> getAssumptions(Expression state) {
+    if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
+      /* No comparable predicate defined in uninterpreted type */
+      throw new UnsupportedOperationException(
+          "--order-alloc is not supported in burstall memory model");
+    }
     ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
     try {      
       if (Preferences.isSet(Preferences.OPTION_SOUND_ALLOC)) {
         ExpressionManager exprManager = getExpressionManager();
-        /* The sound allocation encoding doesn't assume anything about the ordering
-         * of lvals and regions. This may lead a blow-up due to case splits.
-         */
-        ImmutableList<Expression> distinctRef = new ImmutableList.Builder<Expression>()
-            .addAll(heapRegions).addAll(lvals).build();
-        if(distinctRef.size() > 1) {
-          builder.add(exprManager.distinct(distinctRef));
+        
+        { /* The disjointness of stack variables, and != nullRef*/
+          Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
+              .getPointerEncoding().nullPtr().getChild(0);
+          ImmutableList<Expression> distinctRef = new ImmutableList.Builder<Expression>()
+              .addAll(lvals).add(nullRef).build();
+          if(distinctRef.size() > 1)  builder.add(exprManager.distinct(distinctRef));
         }
         
-      } else if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
-        throw new UnsupportedOperationException("--order-alloc is not supported in this memory model");
+        { /* The disjointness between heap region and stack variable. */
+          for(Expression heapRegion : heapRegions) {
+            for(Expression lval : lvals) {
+              builder.add(lval.neq(heapRegion));
+            }
+          }
+        }
       }
     } catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
@@ -530,11 +461,38 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     return new ExpressionClosure() {
       @Override
       public Expression eval(final Expression memory) {
-        Preconditions.checkArgument(memory.getType().equals(memoryVar.getType()));
+//        Preconditions.checkArgument(memory.getType().equals(memoryVar.getType()));
         if(!isState(expr)) {
           // For non-tuple expression evaluation
-          Expression exprPrime = expr
-              .subst(memoryVar.getChildren(), memory.getChildren());
+          Expression exprPrime = expr;
+          
+          /* Substitute the memory of expr */
+          Expression memVar_mem = memoryVar.getChild(0);
+          Expression memory_mem = memory.getChild(0);
+          
+          Map<String, Expression> memVarMemMap = getMemElems(memVar_mem);
+          Map<String, Expression> memoryMemMap = getMemElems(memory_mem);
+          
+          List<Expression> oldArgs_mem = Lists.newLinkedList();
+          List<Expression> newArgs_mem = Lists.newLinkedList();
+          
+          for(String name : memVarMemMap.keySet()) {
+            if(memoryMemMap.containsKey(name)) {
+              oldArgs_mem.add(memVarMemMap.get(name));
+              newArgs_mem.add(memoryMemMap.get(name));
+            }
+          }
+          
+          if(!oldArgs_mem.isEmpty()) {
+            exprPrime = exprPrime.subst(oldArgs_mem, newArgs_mem);
+            oldArgs_mem.clear(); newArgs_mem.clear();
+          }
+          
+          /* Substitute the alloc of expr */
+          Expression memVar_alloc = memoryVar.getChild(1);
+          Expression memory_alloc = memory.getChild(1);
+          
+          exprPrime = exprPrime.subst(memVar_alloc, memory_alloc);          
           return exprPrime.setNode(expr.getNode());
         } else {
           /* For tuple expression evaluation over memoryVar, since substitution doesn't return
@@ -667,63 +625,6 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     return res;
   }
   
-  private RecordType getCurrentMemoryType() {
-    ExpressionManager em = getExpressionManager();
-    
-    Iterable<Type> elemTypes = Iterables.transform(currentMemElems.values(), 
-        new Function<Expression, Type>(){
-      @Override
-      public Type apply(Expression expr) {
-        return expr.getType();
-      }
-    });
-    
-    if(elemTypes == null)
-      throw new ExpressionFactoryException("Update memory type failed.");
-    
-    final String arrName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
-    
-    Iterable<String> elemNames = recomposeFieldNames(arrName, currentMemElems.keySet());
-    
-    return em.recordType(arrName, elemNames, elemTypes);
-  }
-  
-  /**
-   * Recreate state from @param memoryPrime and @param allocPrime and create a new state
-   * type if state type is changed from the type of state
-   * @return a new state
-   */
-  public TupleExpression getUpdatedState(Expression state, Expression memoryPrime, Expression allocPrime) {
-    ExpressionManager em = getExpressionManager();
-    Type stateTypePrime = null;
-    
-    if(state != null 
-        && state.getType().asTuple().getElementTypes().get(0).equals(memoryPrime.getType())) {
-      stateTypePrime = state.getType();
-    } else {
-      stateTypePrime = em.tupleType(Identifiers.uniquify(DEFAULT_STATE_TYPE), 
-          memoryPrime.getType(), allocPrime.getType());
-    }
-    
-    return em.tuple(stateTypePrime, memoryPrime, allocPrime);
-  }
-  
-  private void initCurrentMemElems(Expression memState) {
-    Preconditions.checkArgument(memState.isRecord());
-    RecordExpression mem = memState.asRecord();
-    Iterable<String> elemNames = mem.getType().getElementNames();
-    Iterable<String> fieldNames = pickFieldNames(elemNames);
-    assert(Iterables.size(elemNames) == Iterables.size(fieldNames));
-    Iterator<String> elemNameItr = elemNames.iterator();
-    Iterator<String> fieldNameItr = fieldNames.iterator();
-    while(elemNameItr.hasNext() && fieldNameItr.hasNext()) {
-      String elemName = elemNameItr.next();
-      String fieldName = fieldNameItr.next();
-      Expression value = mem.select(elemName);
-      currentMemElems.put(fieldName, value);
-    }
-  }
-  
   @Override
   protected RecordExpression updateMemoryState(Expression memState, Expression lval, Expression rval) {
     initCurrentMemElems(memState);
@@ -764,10 +665,204 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     return src;
   }
   
+  @Override
+  public void setAliasAnalyzer(AliasAnalysis analyzer) {
+    this.analyzer = analyzer;
+    IOUtils.debug().pln(analyzer.displaySnapShort());
+  }
+  
+  /**
+   * Recreate state from @param memoryPrime and @param allocPrime and create a new state
+   * type if state type is changed from the type of state
+   * @return a new state
+   */
+  public TupleExpression getUpdatedState(Expression state, Expression memoryPrime, Expression allocPrime) {
+    ExpressionManager em = getExpressionManager();
+    Type stateTypePrime = null;
+    
+    if(state != null 
+        && state.getType().asTuple().getElementTypes().get(0).equals(memoryPrime.getType())) {
+      stateTypePrime = state.getType();
+    } else {
+      stateTypePrime = em.tupleType(Identifiers.uniquify(DEFAULT_STATE_TYPE), 
+          memoryPrime.getType(), allocPrime.getType());
+    }
+    
+    return em.tuple(stateTypePrime, memoryPrime, allocPrime);
+  }
+  
+  @Override
+  public BooleanExpression valid(Expression state, Expression ptr) {
+    Preconditions.checkArgument(ptr.getType().equals( ptrType ));
+    
+    List<BooleanExpression> disjs = Lists.newArrayList();
+    
+    try {
+      ExpressionManager exprManager = getExpressionManager();
+      Expression alloc = state.getChild(1);
+      Expression ref_ptr = ptr.asTuple().index(0);
+      Expression off_ptr = ptr.asTuple().index(1);
+      Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
+      Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
+          .getPointerEncoding().nullPtr().asTuple().getChild(0);
+      
+      // Valid stack access
+      for( Expression lval : lvals) {
+        Expression sizeVar = alloc.asArray().index(lval);
+        disjs.add(
+            exprManager.and(
+                ref_ptr.eq(lval), 
+                /* aggregate variable: size > 0; scalar variable: size = 0 */
+                exprManager.ifThenElse( 
+                    exprManager.greaterThan(sizeVar, sizeZro),
+                    exprManager.and(
+                        exprManager.greaterThanOrEqual(off_ptr, sizeZro),
+                        exprManager.lessThan(off_ptr, sizeVar)),
+                    off_ptr.eq(sizeVar))));
+      }
+      
+      // Valid heap access
+      for( Expression refVar : heapRegions ) {
+        /* ptr:(ref_ptr, off), startPos:(ref, 0), endPos:(ref, size);
+         * ensure ref_ptr == ref && 0 <= off && off < size
+         */
+        Expression sizeVar = alloc.asArray().index(refVar);
+        disjs.add(
+            exprManager.and(
+                refVar.neq(nullRef),
+                ref_ptr.eq(refVar),
+                exprManager.lessThanOrEqual(sizeZro, off_ptr),
+                exprManager.lessThan(off_ptr, sizeVar)));
+      }
+    } catch (TheoremProverException e) {
+      throw new ExpressionFactoryException(e);
+    }
+    return getExpressionManager().or(disjs);
+  }
+  
+  @Override
+  public BooleanExpression valid(Expression state, Expression ptr, Expression size) {
+    Preconditions.checkArgument(ptr.getType().equals( ptrType ));
+    Preconditions.checkArgument(size.getType().equals( offType ));
+    
+    List<BooleanExpression> disjs = Lists.newArrayList();
+    
+    try {
+      ExpressionManager exprManager = getExpressionManager();
+      Expression alloc = state.getChild(1);
+      Expression ref_ptr = ptr.asTuple().index(0);
+      Expression off_ptr = ptr.asTuple().index(1);
+      Expression off_bound = exprManager.plus(offType.getSize(), off_ptr, size);
+      Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
+      Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
+          .getPointerEncoding().nullPtr().asTuple().getChild(0);
+      
+      // Valid stack access
+      for( Expression lval : lvals) {
+        Expression sizeVar = alloc.asArray().index(lval);
+        disjs.add(
+            exprManager.and(
+                ref_ptr.eq(lval), 
+                /* aggregate variable: size > 0; scalar variable: size = 0 */
+                exprManager.ifThenElse( 
+                    exprManager.greaterThan(sizeVar, sizeZro),
+                    exprManager.and(        
+                        exprManager.greaterThanOrEqual(off_ptr, sizeZro),
+                        exprManager.lessThan(off_bound, sizeVar)),
+                    off_ptr.eq(sizeVar)))); 
+      }
+      
+      // Valid heap access
+      for( Expression refVar : heapRegions ) {
+        Expression sizeVar = alloc.asArray().index(refVar);
+        /* ptr:(ref_ptr, off), startPos:(ref, 0), endPos:(ref, size);
+         * ensure ref_ptr == ref && 0 <= off && off < size
+         */
+        disjs.add(
+            exprManager.and(
+                refVar.neq(nullRef),
+                ref_ptr.eq(refVar), 
+                exprManager.lessThanOrEqual(sizeZro, off_ptr),
+                exprManager.lessThan(off_bound, sizeVar)));
+      }
+    } catch (TheoremProverException e) {
+      throw new ExpressionFactoryException(e);
+    }
+    return getExpressionManager().or(disjs);
+  }
+  
+  @Override
+  public BooleanExpression valid_malloc(Expression state, Expression ptr, Expression size) {
+    ExpressionManager exprManager = getExpressionManager();
+    
+    if(Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
+      throw new UnsupportedOperationException(
+          "--order-alloc is not supported in burstall memory model");
+    } 
+    
+    if (Preferences.isSet(Preferences.OPTION_SOUND_ALLOC)) {
+      Expression alloc = state.getChild(1);
+      
+      ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
+      
+      Expression nullPtr = ((PointerExpressionEncoding) getExpressionEncoding())
+          .getPointerEncoding().nullPtr();
+      Expression nullRef = nullPtr.asTuple().getChild(0);
+      Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
+      
+      Expression assump = exprManager.neq(ptr, nullPtr);
+      
+      builder.add(exprManager.neq(ptr, nullPtr)); // ptr != null
+      
+      /* Only analyze heap part */
+      
+      List<Expression> regions = Lists.newArrayList(heapRegions);
+      
+      /* Collect all heap regions except the last one, the one just allocated. */
+      regions.remove(regions.size()-1);
+      
+      for(Expression region : regions) {
+        Expression region_size = alloc.asArray().index(region);
+        
+        Expression assump_local = exprManager.and(
+            exprManager.greaterThan(region_size, sizeZro),
+            exprManager.neq(region, nullRef)); // nullRef may also have non-zero size
+        
+        Expression assert_local = exprManager.neq(region, ptr.asTuple().index(0));
+        
+        builder.add(exprManager.implies(assump_local, assert_local));
+      }
+      
+      return exprManager.implies(assump, exprManager.and(builder.build()));
+    }
+    
+    return exprManager.tt();
+  }
+  
+  @Override
+  public BooleanExpression valid_free(Expression state, Expression ptr) {
+    ExpressionManager exprManager = getExpressionManager();
+    Expression alloc = state.getChild(1); 
+    Expression ref = ptr.asTuple().index(0);
+    Expression size = alloc.asArray().index(ref);
+    Expression nullPtr = ((PointerExpressionEncoding) getExpressionEncoding())
+        .getPointerEncoding().nullPtr();
+    return exprManager.or(exprManager.eq(ptr, nullPtr), exprManager.greaterThan(size, 
+        exprManager.bitVectorZero(offType.getSize())));
+  }
+  
+  @Override
+  public Expression substAlloc(Expression expr) {
+    ExpressionManager exprManager = getExpressionManager();
+    Expression initialAlloc = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, allocType, false);
+    Expression constAlloc = exprManager.storeAll(exprManager.bitVectorZero(offType.getSize()), allocType);
+    Expression res = expr.subst(initialAlloc, constAlloc);
+    return res;
+  }
+    
   /**
    * Get representative alias variable in the pointer analyzer
    * @param gnode
-   * @return
    */
   private AliasVar getRepVar(GNode gnode) {
     Preconditions.checkArgument(gnode.hasProperty(TYPE) && gnode.hasProperty(SCOPE));
@@ -795,12 +890,6 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     } catch (ExecutionException e) {
       throw new ExpressionFactoryException(e);
     }
-  }
-  
-  private enum ElemType {
-    SCALAR,
-    POINTER,
-    MIX
   }
   
   private ElemType getElemType(xtc.type.Type type) {
@@ -884,9 +973,46 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     return cellType;
   }
   
-  @Override
-  public void setAliasAnalyzer(AliasAnalysis analyzer) {
-    this.analyzer = analyzer;
-    IOUtils.debug().pln(analyzer.displaySnapShort());
+  private RecordType getCurrentMemoryType() {
+    ExpressionManager em = getExpressionManager();
+    
+    Iterable<Type> elemTypes = Iterables.transform(currentMemElems.values(), 
+        new Function<Expression, Type>(){
+      @Override
+      public Type apply(Expression expr) {
+        return expr.getType();
+      }
+    });
+    
+    if(elemTypes == null)
+      throw new ExpressionFactoryException("Update memory type failed.");
+    
+    final String arrName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
+    
+    Iterable<String> elemNames = recomposeFieldNames(arrName, currentMemElems.keySet());
+    
+    return em.recordType(arrName, elemNames, elemTypes);
+  }
+  
+  private void initCurrentMemElems(Expression memState) {
+    currentMemElems.putAll(getMemElems(memState));
+  }
+  
+  private Map<String, Expression> getMemElems(Expression memState) {
+    Preconditions.checkArgument(memState.isRecord());
+    Map<String, Expression> resMap = Maps.newLinkedHashMap();
+    RecordExpression mem = memState.asRecord();
+    Iterable<String> elemNames = mem.getType().getElementNames();
+    Iterable<String> fieldNames = pickFieldNames(elemNames);
+    assert(Iterables.size(elemNames) == Iterables.size(fieldNames));
+    Iterator<String> elemNameItr = elemNames.iterator();
+    Iterator<String> fieldNameItr = fieldNames.iterator();
+    while(elemNameItr.hasNext() && fieldNameItr.hasNext()) {
+      String elemName = elemNameItr.next();
+      String fieldName = fieldNameItr.next();
+      Expression value = mem.select(elemName);
+      resMap.put(fieldName, value);
+    }
+    return resMap;
   }
 }

@@ -151,106 +151,6 @@ public class BurstallMemoryModel extends AbstractBurstallMemoryModel {
     
     return getUpdatedState(state, state.getChild(0), alloc);
   }
-
-  @Override
-  public BooleanExpression valid(Expression state, Expression ptr) {
-    Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    
-    List<BooleanExpression> disjs = Lists.newArrayList();
-    
-    try {
-      ExpressionManager exprManager = getExpressionManager();
-      Expression alloc = state.getChild(1);
-      Expression ref_ptr = ptr.asTuple().index(0);
-      Expression off_ptr = ptr.asTuple().index(1);
-      Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
-      Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
-          .getPointerEncoding().nullPtr().asTuple().getChild(0);
-      
-      // Valid stack access
-      for( Expression lval : lvals) {
-        Expression sizeVar = alloc.asArray().index(lval);
-        disjs.add(
-            exprManager.and(
-                ref_ptr.eq(lval), 
-                /* aggregate variable: size > 0; scalar variable: size = 0 */
-                exprManager.ifThenElse( 
-                    exprManager.greaterThan(sizeVar, sizeZro),
-                    exprManager.and(
-                        exprManager.greaterThanOrEqual(off_ptr, sizeZro),
-                        exprManager.lessThan(off_ptr, sizeVar)),
-                    off_ptr.eq(sizeVar))));
-      }
-      
-      // Valid heap access
-      for( Expression refVar : heapRegions ) {
-        /* ptr:(ref_ptr, off), startPos:(ref, 0), endPos:(ref, size);
-         * ensure ref_ptr == ref && 0 <= off && off < size
-         */
-        Expression sizeVar = alloc.asArray().index(refVar);
-        disjs.add(
-            exprManager.and(
-                refVar.neq(nullRef),
-                ref_ptr.eq(refVar),
-                exprManager.lessThanOrEqual(sizeZro, off_ptr),
-                exprManager.lessThan(off_ptr, sizeVar)));
-      }
-    } catch (TheoremProverException e) {
-      throw new ExpressionFactoryException(e);
-    }
-    return getExpressionManager().or(disjs);
-  }
-  
-  @Override
-  public BooleanExpression valid(Expression state, Expression ptr, Expression size) {
-    Preconditions.checkArgument(ptr.getType().equals( ptrType ));
-    Preconditions.checkArgument(size.getType().equals( offType ));
-    
-    List<BooleanExpression> disjs = Lists.newArrayList();
-    
-    try {
-      ExpressionManager exprManager = getExpressionManager();
-      Expression alloc = state.getChild(1);
-      Expression ref_ptr = ptr.asTuple().index(0);
-      Expression off_ptr = ptr.asTuple().index(1);
-      Expression off_bound = exprManager.plus(offType.getSize(), off_ptr, size);
-      Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
-      Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
-          .getPointerEncoding().nullPtr().asTuple().getChild(0);
-      
-      // Valid stack access
-      for( Expression lval : lvals) {
-        Expression sizeVar = alloc.asArray().index(lval);
-        disjs.add(
-            exprManager.and(
-                ref_ptr.eq(lval), 
-                /* aggregate variable: size > 0; scalar variable: size = 0 */
-                exprManager.ifThenElse( 
-                    exprManager.greaterThan(sizeVar, sizeZro),
-                    exprManager.and(        
-                        exprManager.greaterThanOrEqual(off_ptr, sizeZro),
-                        exprManager.lessThan(off_bound, sizeVar)),
-                    off_ptr.eq(sizeVar)))); 
-      }
-      
-      // Valid heap access
-      for( Expression refVar : heapRegions ) {
-        Expression sizeVar = alloc.asArray().index(refVar);
-        /* ptr:(ref_ptr, off), startPos:(ref, 0), endPos:(ref, size);
-         * ensure ref_ptr == ref && 0 <= off && off < size
-         */
-        disjs.add(
-            exprManager.and(
-                refVar.neq(nullRef),
-                ref_ptr.eq(refVar), 
-                exprManager.lessThanOrEqual(sizeZro, off_ptr),
-                exprManager.lessThan(off_bound, sizeVar)));
-      }
-    } catch (TheoremProverException e) {
-      throw new ExpressionFactoryException(e);
-    }
-    return getExpressionManager().or(disjs);
-  }
   
   @Override
   public TupleExpression free(Expression state, Expression ptr) {
@@ -293,7 +193,7 @@ public class BurstallMemoryModel extends AbstractBurstallMemoryModel {
     
     // Initialization
     if(currentMemElems.isEmpty() || state != prevDerefState) {
-      currentMemElems.putAll(getMemElems(state.getChild(0)));
+      initCurrentMemElems(state.getChild(0));
       prevDerefState = state;
     }
     if(currentAlloc == null)    currentAlloc = state.getChild(1);
@@ -495,8 +395,7 @@ public class BurstallMemoryModel extends AbstractBurstallMemoryModel {
           Expression memVar_alloc = memoryVar.getChild(1);
           Expression memory_alloc = memory.getChild(1);
           
-          exprPrime = exprPrime.subst(memVar_alloc, memory_alloc);
-          
+          exprPrime = exprPrime.subst(memVar_alloc, memory_alloc);          
           return exprPrime.setNode(expr.getNode());
         } else {
           /* For tuple expression evaluation over memoryVar, since substitution doesn't return
@@ -569,57 +468,6 @@ public class BurstallMemoryModel extends AbstractBurstallMemoryModel {
     };
   }
   
-  @Override
-  public ExpressionClosure getCurrentState() {
-    return currentState;
-  }
-  
-  @Override
-  public void clearCurrentState() {
-    currentMemElems.clear();
-    currentAlloc = null;
-    currentState = null;
-  }
-  
-  private Map<String, Expression> getMemElems(Expression memState) {
-    Preconditions.checkArgument(memState.isRecord());
-    Map<String, Expression> resMap = Maps.newLinkedHashMap();
-    RecordExpression mem = memState.asRecord();
-    Iterable<String> elemNames = mem.getType().getElementNames();
-    Iterable<String> fieldNames = pickFieldNames(elemNames);
-    assert(Iterables.size(elemNames) == Iterables.size(fieldNames));
-    Iterator<String> elemNameItr = elemNames.iterator();
-    Iterator<String> fieldNameItr = fieldNames.iterator();
-    while(elemNameItr.hasNext() && fieldNameItr.hasNext()) {
-      String elemName = elemNameItr.next();
-      String fieldName = fieldNameItr.next();
-      Expression value = mem.select(elemName);
-      resMap.put(fieldName, value);
-    }
-    return resMap;
-  }
-  
-  private RecordType getCurrentMemoryType() {
-    ExpressionManager em = getExpressionManager();
-    
-    Iterable<Type> elemTypes = Iterables.transform(currentMemElems.values(), 
-        new Function<Expression, Type>(){
-      @Override
-      public Type apply(Expression expr) {
-        return expr.getType();
-      }
-    });
-    
-    if(elemTypes == null)
-      throw new ExpressionFactoryException("Update memory type failed.");
-    
-    final String typeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
-    
-    Iterable<String> elemNames = recomposeFieldNames(typeName, currentMemElems.keySet());
-    
-    return em.recordType(typeName, elemNames, elemTypes);
-  }
-  
   /**
    * Recreate state from @param memoryPrime and @param allocPrime and create a new state
    * type if state type is changed from the type of state
@@ -645,49 +493,116 @@ public class BurstallMemoryModel extends AbstractBurstallMemoryModel {
     return em.tuple(stateTypePrime, memoryPrime, allocPrime);
   }
   
-  private RecordExpression updateMemState(Expression memState, Expression lval, Expression rval) { 
-    currentMemElems.putAll(getMemElems(memState));
-    ExpressionManager em = getExpressionManager();
-    boolean isMemUpdated = false;
-    ArrayExpression tgtArray = null;
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
-    String lvalTypeName = getTypeName(lvalType);
-    if(currentMemElems.containsKey(lvalTypeName)) { // declared type name
-      CellKind kind = CType.getCellKind(lvalType);
-      if(CellKind.POINTER.equals(kind)) {
-        if(!ptrType.equals(rval.getType())) {
-          // for assign null to pointer int* ptr = 0;
-          assert(rval.isConstant());
-          rval = ((PointerExpressionEncoding) getExpressionEncoding())
-              .getPointerEncoding().nullPtr();
-        }
-      } else if(CellKind.BOOL.equals(kind)) {
-        rval= getExpressionEncoding().castToBoolean(rval);        
-      }
-      tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval); 
-    } else { // new type name
-      isMemUpdated = true;
-      CellKind kind = CType.getCellKind(lvalType);
-      ArrayType arrType = null;
-      if(CellKind.BOOL.equals(kind)) {
-        arrType = em.arrayType(ptrType, em.booleanType());
-        rval = getExpressionEncoding().castToBoolean(rval);
-      } else if(CellKind.SCALAR.equals(kind)) {
-        arrType = em.arrayType(ptrType, scalarType);
-      } else {
-        arrType = em.arrayType(ptrType, ptrType);
-        if(!ptrType.equals(rval.getType())) {
-          assert(rval.isConstant());
-          rval = ((PointerExpressionEncoding) getExpressionEncoding())
-              .getPointerEncoding().nullPtr();
-        }
-      }
-      tgtArray = em.variable(lvalTypeName, arrType, false).asArray().update(lval, rval);
-    }    
-    currentMemElems.put(lvalTypeName, tgtArray);
+  @Override
+  public ExpressionClosure getCurrentState() {
+    return currentState;
+  }
+  
+  @Override
+  public void clearCurrentState() {
+    currentMemElems.clear();
+    currentAlloc = null;
+    currentState = null;
+  }
+  
+  @Override
+  public BooleanExpression valid(Expression state, Expression ptr) {
+    Preconditions.checkArgument(ptr.getType().equals( ptrType ));
     
-    Type currentMemType = isMemUpdated? getCurrentMemoryType() : memState.getType();
-    return em.record(currentMemType, currentMemElems.values());
+    List<BooleanExpression> disjs = Lists.newArrayList();
+    
+    try {
+      ExpressionManager exprManager = getExpressionManager();
+      Expression alloc = state.getChild(1);
+      Expression ref_ptr = ptr.asTuple().index(0);
+      Expression off_ptr = ptr.asTuple().index(1);
+      Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
+      Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
+          .getPointerEncoding().nullPtr().asTuple().getChild(0);
+      
+      // Valid stack access
+      for( Expression lval : lvals) {
+        Expression sizeVar = alloc.asArray().index(lval);
+        disjs.add(
+            exprManager.and(
+                ref_ptr.eq(lval), 
+                /* aggregate variable: size > 0; scalar variable: size = 0 */
+                exprManager.ifThenElse( 
+                    exprManager.greaterThan(sizeVar, sizeZro),
+                    exprManager.and(
+                        exprManager.greaterThanOrEqual(off_ptr, sizeZro),
+                        exprManager.lessThan(off_ptr, sizeVar)),
+                    off_ptr.eq(sizeVar))));
+      }
+      
+      // Valid heap access
+      for( Expression refVar : heapRegions ) {
+        /* ptr:(ref_ptr, off), startPos:(ref, 0), endPos:(ref, size);
+         * ensure ref_ptr == ref && 0 <= off && off < size
+         */
+        Expression sizeVar = alloc.asArray().index(refVar);
+        disjs.add(
+            exprManager.and(
+                refVar.neq(nullRef),
+                ref_ptr.eq(refVar),
+                exprManager.lessThanOrEqual(sizeZro, off_ptr),
+                exprManager.lessThan(off_ptr, sizeVar)));
+      }
+    } catch (TheoremProverException e) {
+      throw new ExpressionFactoryException(e);
+    }
+    return getExpressionManager().or(disjs);
+  }
+  
+  @Override
+  public BooleanExpression valid(Expression state, Expression ptr, Expression size) {
+    Preconditions.checkArgument(ptr.getType().equals( ptrType ));
+    Preconditions.checkArgument(size.getType().equals( offType ));
+    
+    List<BooleanExpression> disjs = Lists.newArrayList();
+    
+    try {
+      ExpressionManager exprManager = getExpressionManager();
+      Expression alloc = state.getChild(1);
+      Expression ref_ptr = ptr.asTuple().index(0);
+      Expression off_ptr = ptr.asTuple().index(1);
+      Expression off_bound = exprManager.plus(offType.getSize(), off_ptr, size);
+      Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
+      Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
+          .getPointerEncoding().nullPtr().asTuple().getChild(0);
+      
+      // Valid stack access
+      for( Expression lval : lvals) {
+        Expression sizeVar = alloc.asArray().index(lval);
+        disjs.add(
+            exprManager.and(
+                ref_ptr.eq(lval), 
+                /* aggregate variable: size > 0; scalar variable: size = 0 */
+                exprManager.ifThenElse( 
+                    exprManager.greaterThan(sizeVar, sizeZro),
+                    exprManager.and(        
+                        exprManager.greaterThanOrEqual(off_ptr, sizeZro),
+                        exprManager.lessThan(off_bound, sizeVar)),
+                    off_ptr.eq(sizeVar)))); 
+      }
+      
+      // Valid heap access
+      for( Expression refVar : heapRegions ) {
+        Expression sizeVar = alloc.asArray().index(refVar);
+        /* ptr:(ref_ptr, off), startPos:(ref, 0), endPos:(ref, size);
+         * ensure ref_ptr == ref && 0 <= off && off < size
+         */
+        disjs.add(
+            exprManager.and(
+                refVar.neq(nullRef),
+                ref_ptr.eq(refVar), 
+                exprManager.lessThanOrEqual(sizeZro, off_ptr),
+                exprManager.lessThan(off_bound, sizeVar)));
+      }
+    } catch (TheoremProverException e) {
+      throw new ExpressionFactoryException(e);
+    }
+    return getExpressionManager().or(disjs);
   }
   
   @Override
@@ -757,5 +672,94 @@ public class BurstallMemoryModel extends AbstractBurstallMemoryModel {
     Expression constAlloc = exprManager.storeAll(exprManager.bitVectorZero(offType.getSize()), allocType);
     Expression res = expr.subst(initialAlloc, constAlloc);
     return res;
+  }
+  
+  private Map<String, Expression> getMemElems(Expression memState) {
+    Preconditions.checkArgument(memState.isRecord());
+    Map<String, Expression> resMap = Maps.newLinkedHashMap();
+    RecordExpression mem = memState.asRecord();
+    Iterable<String> elemNames = mem.getType().getElementNames();
+    Iterable<String> fieldNames = pickFieldNames(elemNames);
+    assert(Iterables.size(elemNames) == Iterables.size(fieldNames));
+    Iterator<String> elemNameItr = elemNames.iterator();
+    Iterator<String> fieldNameItr = fieldNames.iterator();
+    while(elemNameItr.hasNext() && fieldNameItr.hasNext()) {
+      String elemName = elemNameItr.next();
+      String fieldName = fieldNameItr.next();
+      Expression value = mem.select(elemName);
+      resMap.put(fieldName, value);
+    }
+    return resMap;
+  }
+  
+  private void initCurrentMemElems(Expression memState) {
+    currentMemElems.putAll(getMemElems(memState));
+  }
+  
+  private RecordType getCurrentMemoryType() {
+    ExpressionManager em = getExpressionManager();
+    
+    Iterable<Type> elemTypes = Iterables.transform(currentMemElems.values(), 
+        new Function<Expression, Type>(){
+      @Override
+      public Type apply(Expression expr) {
+        return expr.getType();
+      }
+    });
+    
+    if(elemTypes == null)
+      throw new ExpressionFactoryException("Update memory type failed.");
+    
+    final String typeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
+    
+    Iterable<String> elemNames = recomposeFieldNames(typeName, currentMemElems.keySet());
+    
+    return em.recordType(typeName, elemNames, elemTypes);
+  }
+  
+  private RecordExpression updateMemState(Expression memState, Expression lval, Expression rval) { 
+    initCurrentMemElems(memState);
+    
+    ExpressionManager em = getExpressionManager();
+    boolean isMemUpdated = false;
+    ArrayExpression tgtArray = null;
+    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
+    String lvalTypeName = getTypeName(lvalType);
+    if(currentMemElems.containsKey(lvalTypeName)) { // declared type name
+      CellKind kind = CType.getCellKind(lvalType);
+      if(CellKind.POINTER.equals(kind)) {
+        if(!ptrType.equals(rval.getType())) {
+          // for assign null to pointer int* ptr = 0;
+          assert(rval.isConstant());
+          rval = ((PointerExpressionEncoding) getExpressionEncoding())
+              .getPointerEncoding().nullPtr();
+        }
+      } else if(CellKind.BOOL.equals(kind)) {
+        rval= getExpressionEncoding().castToBoolean(rval);        
+      }
+      tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval); 
+    } else { // new type name
+      isMemUpdated = true;
+      CellKind kind = CType.getCellKind(lvalType);
+      ArrayType arrType = null;
+      if(CellKind.BOOL.equals(kind)) {
+        arrType = em.arrayType(ptrType, em.booleanType());
+        rval = getExpressionEncoding().castToBoolean(rval);
+      } else if(CellKind.SCALAR.equals(kind)) {
+        arrType = em.arrayType(ptrType, scalarType);
+      } else {
+        arrType = em.arrayType(ptrType, ptrType);
+        if(!ptrType.equals(rval.getType())) {
+          assert(rval.isConstant());
+          rval = ((PointerExpressionEncoding) getExpressionEncoding())
+              .getPointerEncoding().nullPtr();
+        }
+      }
+      tgtArray = em.variable(lvalTypeName, arrType, false).asArray().update(lval, rval);
+    }    
+    currentMemElems.put(lvalTypeName, tgtArray);
+    
+    Type currentMemType = isMemUpdated? getCurrentMemoryType() : memState.getType();
+    return em.record(currentMemType, currentMemElems.values());
   }
 }
