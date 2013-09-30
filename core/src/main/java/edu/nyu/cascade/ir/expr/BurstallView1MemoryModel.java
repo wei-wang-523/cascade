@@ -273,9 +273,11 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
       } else if(CellKind.POINTER.equals(kind)){
         ArrayType arrType = em.arrayType(ptrType, ptrType);
         tgtArray = em.variable(typeName, arrType, false).asArray();
-      } else {
+      } else if(CellKind.BOOL.equals(kind)){
         ArrayType arrType = em.arrayType(ptrType, em.booleanType());
         tgtArray = em.variable(typeName, arrType, false).asArray();
+      } else {
+        throw new IllegalArgumentException("Invalid kind " + kind);
       }
       currentMemElems.put(typeName, tgtArray);
       Type currentMemType = getCurrentMemoryType();  
@@ -297,8 +299,10 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
       rval = getExpressionEncoding().getIntegerEncoding().unknown();
     } else if(CellKind.POINTER.equals(kind)){
       rval = getExpressionEncoding().unknown();
-    } else {
+    } else if(CellKind.BOOL.equals(kind)){
       rval = getExpressionEncoding().getBooleanEncoding().unknown();
+    } else {
+      throw new IllegalArgumentException("Invalid kind " + kind);
     }
     
     RecordExpression memory = updateMemState(state.getChild(0), lval, rval); 
@@ -795,10 +799,6 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
   
   @Override
   public Expression castExpression(Expression state, Expression src, xtc.type.Type targetType) {
-    Preconditions.checkArgument(
-        CType.getCellKind(
-            (xtc.type.Type) src.getNode().getProperty(TYPE))
-            .equals(CType.getCellKind(targetType)));
     //FIXME: scalar type has same cell size in this model, ignore cast cast
     if(CellKind.POINTER.equals(CType.getCellKind(targetType))) {
       // Initialization
@@ -810,11 +810,15 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
       if(currentView == null)    currentView = state.getChild(2);
       
       Type currentMemType = getCurrentMemoryType();
-      Expression memPrime = getExpressionManager().record(currentMemType, currentMemElems.values());
+      Expression memPrime = currentMemElems.isEmpty() ? state.getChild(0) : 
+        getExpressionManager().record(currentMemType, currentMemElems.values());
       Expression viewPrime = updateViewState(currentView, CType.unwrapped(targetType), src);     
       TupleExpression statePrime = getUpdatedState(state,
           memPrime, currentAlloc, viewPrime);
       currentState = suspend(state, statePrime);
+    } else {
+      IOUtils.err().println("Ignored cast of " + 
+          (xtc.type.Type) src.getNode().getProperty(TYPE) + " to " +  targetType);
     }
     return src;
   }
@@ -897,18 +901,25 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
       isMemUpdated = true;
       CellKind kind = CType.getCellKind(lvalType);
       ArrayType arrType = null;
-      if(CellKind.BOOL.equals(kind)) {
+      switch(kind) {
+      case BOOL: {
         arrType = em.arrayType(ptrType, em.booleanType());
         rval = getExpressionEncoding().castToBoolean(rval);
-      } else if(CellKind.SCALAR.equals(kind)) {
-        arrType = em.arrayType(ptrType, scalarType);
-      } else {
+        break;
+      }
+      case SCALAR:
+        arrType = em.arrayType(ptrType, scalarType); break;
+      case POINTER: {
         arrType = em.arrayType(ptrType, ptrType);
         if(!ptrType.equals(rval.getType())) {
           assert(rval.isConstant());
           rval = ((PointerExpressionEncoding) getExpressionEncoding())
               .getPointerEncoding().nullPtr();
         }
+        break;
+      }
+      default :
+        throw new IllegalArgumentException("Invalid kind " + kind);
       }
       tgtArray = em.variable(lvalTypeName, arrType, false).asArray().update(lval, rval);
     }    
@@ -1015,16 +1026,23 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
       String elemArrName = getTypeName(regionType);
       Expression indexExpr = startAddr;
       CellKind kind = CType.getCellKind(regionType);
-      if(CellKind.SCALAR.equals(kind)) {
+      switch(kind) {
+      case SCALAR: {
         ArrayExpression elemArr = getTypeArrVar(elemArrName, scalarType);
         Expression scalarView = scalarViewState.asArray().index(indexExpr);
         scalarView = scalarView.asArray().update(elemArr, elemArr);
         scalarViewState = scalarViewState.asArray().update(indexExpr, scalarView);
-      } else if(CellKind.POINTER.equals(kind)) {
+        break;
+      }
+      case POINTER: {
         ArrayExpression elemArr = getTypeArrVar(elemArrName, ptrType);
         Expression ptrView = ptrViewState.asArray().index(indexExpr);
         ptrView = ptrView.asArray().update(elemArr, elemArr);
         ptrViewState = ptrViewState.asArray().update(indexExpr, ptrView);
+        break;
+      } 
+      default:
+        throw new IllegalArgumentException("Invalid kind " + kind);
       }
     }
     return em.tuple(viewType, scalarViewState, ptrViewState);
@@ -1092,20 +1110,27 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
 
     String indexTypeName = getTypeName(indexType);
     CellKind kind = CType.getCellKind(indexType);
-    if(CellKind.SCALAR.equals(kind)) {
+    switch(kind) {
+    case SCALAR: {
       Expression scalarView = scalarViewState.asArray().index(indexExpr);
       Expression tgtArray = getTypeArrVar(indexTypeName, scalarType);
       Expression previousView = scalarView.asArray().index(tgtArray);
       scalarView = scalarView.asArray().update(previousView, tgtArray);
       scalarView = scalarView.asArray().update(tgtArray, tgtArray);
       scalarViewState = scalarViewState.asArray().update(indexExpr, scalarView);
-    } else if(CellKind.POINTER.equals(kind)) {
+      break;
+    }
+    case POINTER: {
       Expression ptrView = ptrViewState.asArray().index(indexExpr);
       Expression tgtArray = getTypeArrVar(indexTypeName, ptrType);
       Expression previousView = ptrView.asArray().index(tgtArray);
       ptrView = ptrView.asArray().update(previousView, tgtArray);
       ptrView = ptrView.asArray().update(tgtArray, tgtArray);
       ptrViewState = ptrViewState.asArray().update(indexExpr, ptrView);
+      break;
+    }
+    default:
+      throw new IllegalArgumentException("Invalid kind " + kind);
     }
     
     return em.tuple(viewType, scalarViewState, ptrViewState);
@@ -1126,10 +1151,16 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
     String typeName = getTypeName(type);
     if(!(type.isStruct() || type.isUnion())) {
       CellKind kind = CType.getCellKind(type);
-      if(CellKind.SCALAR.equals(kind))
-        elemTypes.put(typeName, scalarType);
-      else if(CellKind.POINTER.equals(kind))
-        elemTypes.put(typeName, ptrType);
+      switch(kind){
+      case SCALAR: 
+        elemTypes.put(typeName, scalarType); break;
+      case POINTER:
+        elemTypes.put(typeName, ptrType); break;
+      case BOOL:
+        elemTypes.put(typeName, getExpressionManager().booleanType()); break;
+      default: 
+        throw new IllegalArgumentException("Invalid kind " + kind);
+      }
     } else {
       StructOrUnionT structUnionType = type.toStructOrUnion();
       for(VariableT elem : structUnionType.getMembers()) {
@@ -1138,12 +1169,18 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
             .append('.').append(elem.getName()).toString();
         xtc.type.Type elemType = elem.getType();
         CellKind kind = CType.getCellKind(elemType);
-        if(CellKind.SCALAR.equals(kind))
-          elemTypes.put(elemName, scalarType);
-        else if(CellKind.POINTER.equals(kind))
-          elemTypes.put(elemName, ptrType);
-        else
-          elemTypes.put(elemName, getExpressionManager().booleanType());
+        switch(kind){
+          case SCALAR: 
+            elemTypes.put(elemName, scalarType); break;
+          case BOOL: 
+            elemTypes.put(elemName, getExpressionManager().booleanType()); break;
+          case ARRAY: 
+          case STRUCTORUNION:
+          case POINTER: 
+            elemTypes.put(elemName, ptrType); break;
+          default: 
+            throw new IllegalArgumentException("Invalid kind " + kind);
+        }          
       }
     }
     return elemTypes;

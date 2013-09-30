@@ -333,9 +333,11 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
       int size = getSizeofType(pType);
       ArrayType arrType = em.arrayType(ptrType, em.bitVectorType(size));
       tgtArray = em.variable(typeName, arrType, false).asArray();
-    } else {
+    } else if(CellKind.POINTER.equals(kind)){
       ArrayType arrType = em.arrayType(ptrType, ptrType);
       tgtArray = em.variable(typeName, arrType, false).asArray();
+    } else {
+      throw new IllegalArgumentException("Invalid kind " + kind);
     }
     currentMemElems.put(typeName, tgtArray);
     
@@ -362,8 +364,10 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
       rval = getExpressionEncoding().getIntegerEncoding().unknown(bvType);
     } else if(CellKind.BOOL.equals(kind)) {
       rval = getExpressionEncoding().getBooleanEncoding().unknown();
-    } else {
+    } else if(CellKind.POINTER.equals(kind)) {
       rval = getExpressionEncoding().unknown();
+    } else {
+      throw new IllegalArgumentException("Invalid kind " + kind);
     }
     
     RecordExpression memory = updateMemState(state.getChild(0), lval, rval); 
@@ -792,13 +796,15 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
       } else if(CellKind.SCALAR.equals(kind)) {
         int size = getSizeofType(lvalType);
         arrType = em.arrayType(ptrType, em.bitVectorType(size));
-      } else {
+      } else if(CellKind.POINTER.equals(kind)){
         arrType = em.arrayType(ptrType, ptrType);
         if(!ptrType.equals(rval.getType())) {
           assert(rval.isConstant());
           rval = ((PointerExpressionEncoding) getExpressionEncoding())
             .getPointerEncoding().nullPtr();
         }
+      } else {
+        throw new IllegalArgumentException("Invalid kind " + kind);
       }
       
       tgtArray = em.variable(lvalTypeName, arrType, false).asArray().update(lval, rval);

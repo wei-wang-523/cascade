@@ -306,11 +306,13 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     
     if(mixType.equals(pValCell.getType())) {
       CellKind kind = CType.getCellKind(CType.unwrapped((xtc.type.Type) p.getNode().getProperty(TYPE)));
-      assert(CellKind.POINTER.equals(kind) || CellKind.SCALAR.equals(kind));
-      if(CellKind.POINTER.equals(kind)) {
+
+      if(CellKind.SCALAR.equals(kind) || CellKind.BOOL.equals(kind)) {
+        pValCell = em.select(scalarSel, pValCell);
+      } else if(CellKind.POINTER.equals(kind)){
         pValCell = em.select(ptrSel, pValCell);
       } else {
-        pValCell = em.select(scalarSel, pValCell);
+        throw new IllegalArgumentException("Invalid kind " + kind);
       }
     }
     return pValCell;
@@ -328,8 +330,12 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     
     if(CellKind.POINTER.equals(kind)) {
       rval = getExpressionEncoding().unknown();
-    } else {
+    } else if(CellKind.SCALAR.equals(kind)) {
       rval = getExpressionEncoding().getIntegerEncoding().unknown();
+    } else if(CellKind.BOOL.equals(kind)) {
+      rval = getExpressionEncoding().getIntegerEncoding().unknown();
+    } else {
+      throw new IllegalArgumentException("Invalid kind " + kind);
     }
     
     RecordExpression memory = updateMemoryState(state.getChild(0), lval, rval); 
@@ -401,7 +407,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
       /* No comparable predicate defined in uninterpreted type */
       throw new UnsupportedOperationException(
-          "--order-alloc is not supported in burstall memory model");
+          "--order-alloc is not supported in partition memory model");
     }
     ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
     try {      
@@ -797,7 +803,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     
     if(Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
       throw new UnsupportedOperationException(
-          "--order-alloc is not supported in burstall memory model");
+          "--order-alloc is not supported in partition memory model");
     } 
     
     if (Preferences.isSet(Preferences.OPTION_SOUND_ALLOC)) {
@@ -914,28 +920,34 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
   
   private Expression castExprToCell(Expression rval, Type cellType) {
     if(rval.getType().equals(cellType)) return rval;
-    else {
-      ExpressionManager em = getExpressionManager();
-      assert(scalarType.equals(rval.getType()) || ptrType.equals(rval.getType()));
-      if(scalarType.equals(rval.getType())) {
-        if(ptrType.equals(cellType)) {
-          xtc.type.Type type = (xtc.type.Type) rval.getNode().getProperty(TYPE);
-          assert(type.hasConstant());
-          if(type.getConstant().bigIntValue().intValue() == 0) {
-            rval = ((PointerExpressionEncoding) getExpressionEncoding())
-                .getPointerEncoding().nullPtr();
-          } else {
-            rval = getExpressionEncoding().unknown();
-          }
-        } else { // mixType
-          rval = em.construct(scalarConstr, rval);
+    
+    ExpressionManager exprManager = getExpressionManager();
+    
+    if(scalarType.equals(rval.getType())) {
+      if(ptrType.equals(cellType)) {
+        xtc.type.Type type = (xtc.type.Type) rval.getNode().getProperty(TYPE);
+        assert type.hasConstant() ;
+        if(type.getConstant().bigIntValue().intValue() == 0) {
+          rval = ((PointerExpressionEncoding) getExpressionEncoding())
+              .getPointerEncoding().nullPtr();
+        } else {
+          rval = getExpressionEncoding().unknown();
         }
+      } else if(mixType.equals(cellType)) {
+        rval = exprManager.construct(scalarConstr, rval);
       } else {
-        assert(mixType.equals(cellType));
-        rval = em.construct(ptrConstr, rval);
+        throw new IllegalArgumentException("Invalid type " + rval.getType() + " to " + cellType);
       }
-      return rval;
+    } else if(ptrType.equals(rval.getType())) {
+      if(mixType.equals(cellType)) {
+        rval = exprManager.construct(ptrConstr, rval);
+      } else {
+        throw new IllegalArgumentException("Invalid type " + rval.getType() + " to " + cellType);
+      }
+    } else {
+      throw new IllegalArgumentException("Invalid type " + rval.getType() + " to " + cellType);
     }
+    return rval;
   }
   
   private String getArrayElemName(AliasVar var) {
