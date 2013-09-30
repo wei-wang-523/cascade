@@ -1,5 +1,5 @@
 <controlFile>
-  <sourceFile name="havocCondition.c" id="1" />
+  <sourceFile name="havocCond.c" id="1" />
   <run>
     <startPosition fileId="1" line="2" />
     <wayPoint fileId="1" line="9" >
