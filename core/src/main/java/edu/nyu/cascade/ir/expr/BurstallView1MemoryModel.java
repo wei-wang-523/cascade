@@ -267,16 +267,23 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
     } else {
       CellKind kind = CType.getCellKind(pType);
       ArrayExpression tgtArray = null;
-      if(CellKind.SCALAR.equals(kind)) {
+      switch(kind) {
+      case SCALAR: {
         ArrayType arrType = em.arrayType(ptrType, scalarType);
         tgtArray = em.variable(typeName, arrType, false).asArray();
-      } else if(CellKind.POINTER.equals(kind)){
+        break;
+      }
+      case POINTER:{
         ArrayType arrType = em.arrayType(ptrType, ptrType);
         tgtArray = em.variable(typeName, arrType, false).asArray();
-      } else if(CellKind.BOOL.equals(kind)){
+        break;
+      } 
+      case BOOL:{
         ArrayType arrType = em.arrayType(ptrType, em.booleanType());
         tgtArray = em.variable(typeName, arrType, false).asArray();
-      } else {
+        break;
+      }
+      default:
         throw new IllegalArgumentException("Invalid kind " + kind);
       }
       currentMemElems.put(typeName, tgtArray);
@@ -295,13 +302,14 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
     Expression rval = null;
     xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     CellKind kind = CType.getCellKind(lvalType);
-    if(CellKind.SCALAR.equals(kind)) {
-      rval = getExpressionEncoding().getIntegerEncoding().unknown();
-    } else if(CellKind.POINTER.equals(kind)){
-      rval = getExpressionEncoding().unknown();
-    } else if(CellKind.BOOL.equals(kind)){
-      rval = getExpressionEncoding().getBooleanEncoding().unknown();
-    } else {
+    switch(kind) {
+    case SCALAR:
+      rval = getExpressionEncoding().getIntegerEncoding().unknown(); break;
+    case POINTER:
+      rval = getExpressionEncoding().unknown(); break;
+    case BOOL:
+      rval = getExpressionEncoding().getBooleanEncoding().unknown(); break;
+    default:
       throw new IllegalArgumentException("Invalid kind " + kind);
     }
     
@@ -886,15 +894,19 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
     String lvalTypeName = getTypeName(lvalType);
     if(currentMemElems.containsKey(lvalTypeName)) { // previously declared variable
       CellKind kind = CType.getCellKind(lvalType);
-      if(CellKind.POINTER.equals(kind)) {
+      switch(kind) {
+      case POINTER: {
         if(!ptrType.equals(rval.getType())) {
           // for assign null to pointer int* ptr = 0;
           assert(rval.isConstant());
           rval = ((PointerExpressionEncoding) getExpressionEncoding())
               .getPointerEncoding().nullPtr();
         }
-      } else if(CellKind.BOOL.equals(kind)) {
-        rval= getExpressionEncoding().castToBoolean(rval);        
+        break;
+      }
+      case BOOL:
+        rval= getExpressionEncoding().castToBoolean(rval); break;
+      default: break;
       }
       tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
     } else { // newly type name

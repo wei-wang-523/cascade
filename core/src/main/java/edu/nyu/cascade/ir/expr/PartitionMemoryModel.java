@@ -306,12 +306,13 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     
     if(mixType.equals(pValCell.getType())) {
       CellKind kind = CType.getCellKind(CType.unwrapped((xtc.type.Type) p.getNode().getProperty(TYPE)));
-
-      if(CellKind.SCALAR.equals(kind) || CellKind.BOOL.equals(kind)) {
-        pValCell = em.select(scalarSel, pValCell);
-      } else if(CellKind.POINTER.equals(kind)){
-        pValCell = em.select(ptrSel, pValCell);
-      } else {
+      switch(kind) {
+      case SCALAR:
+      case BOOL:
+        pValCell = em.select(scalarSel, pValCell); break;
+      case POINTER:
+        pValCell = em.select(ptrSel, pValCell); break;
+      default:
         throw new IllegalArgumentException("Invalid kind " + kind);
       }
     }
@@ -327,17 +328,12 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     
     xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     CellKind kind = CType.getCellKind(lvalType);
-    
-    if(CellKind.POINTER.equals(kind)) {
-      rval = getExpressionEncoding().unknown();
-    } else if(CellKind.SCALAR.equals(kind)) {
-      rval = getExpressionEncoding().getIntegerEncoding().unknown();
-    } else if(CellKind.BOOL.equals(kind)) {
-      rval = getExpressionEncoding().getIntegerEncoding().unknown();
-    } else {
-      throw new IllegalArgumentException("Invalid kind " + kind);
+    switch(kind) {
+    case POINTER: rval = getExpressionEncoding().unknown(); break;
+    case SCALAR:  rval = getExpressionEncoding().getIntegerEncoding().unknown(); break;
+    case BOOL:    rval = getExpressionEncoding().getIntegerEncoding().unknown(); break;
+    default: throw new IllegalArgumentException("Invalid kind " + kind);
     }
-    
     RecordExpression memory = updateMemoryState(state.getChild(0), lval, rval); 
     TupleExpression statePrime = getUpdatedState(state, memory, state.getChild(1));
     
@@ -397,7 +393,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
       switch(kind) {
       case STRUCTORUNION: 
       case ARRAY:   return content;
-      default: return content.getChild(1);
+      default:      return content.getChild(1);
       }
     }
   }

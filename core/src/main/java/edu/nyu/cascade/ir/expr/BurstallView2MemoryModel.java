@@ -852,11 +852,9 @@ public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
         }
         break;
       }
-      case BOOL: {
-        rval= getExpressionEncoding().castToBoolean(rval); break;    
-      }
-      default: 
-        throw new IllegalArgumentException("Invalid kind " + kind);
+      case BOOL:
+        rval= getExpressionEncoding().castToBoolean(rval); break;
+      default: break;
       }
       tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
     } else { // newly type name

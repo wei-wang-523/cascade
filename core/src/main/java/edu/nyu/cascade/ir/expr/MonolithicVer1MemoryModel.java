@@ -199,11 +199,13 @@ public class MonolithicVer1MemoryModel extends AbstractMonoMemoryModel {
     
     xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
     CellKind kind = CType.getCellKind(pType);
-    if(CellKind.SCALAR.equals(kind) || CellKind.BOOL.equals(kind)) {
+    switch(kind) {
+    case BOOL:
+    case SCALAR:
       return cell.asInductive().select(scalarSel);
-    } else if(CellKind.POINTER.equals(kind)){
+    case POINTER:
       return cell.asInductive().select(ptrSel);
-    } else {
+    default:
       throw new IllegalArgumentException("Invalid kind " + kind);
     }
   }
@@ -219,13 +221,11 @@ public class MonolithicVer1MemoryModel extends AbstractMonoMemoryModel {
     
     xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     CellKind kind = CType.getCellKind(lvalType);
-    if(CellKind.SCALAR.equals(kind)) {
-      rval = getExpressionEncoding().getIntegerEncoding().unknown();
-    } else if(CellKind.POINTER.equals(kind)) {
-      rval = getExpressionEncoding().unknown();
-    } else if(CellKind.BOOL.equals(kind)) {
-      rval = getExpressionEncoding().getIntegerEncoding().unknown();
-    } else {
+    switch(kind) {
+    case SCALAR:  rval = getExpressionEncoding().getIntegerEncoding().unknown(); break;
+    case POINTER: rval = getExpressionEncoding().unknown(); break;
+    case BOOL:    rval = getExpressionEncoding().getIntegerEncoding().unknown(); break;
+    default:
       throw new IllegalArgumentException("Invalid kind " + kind);
     }
     
@@ -584,16 +584,19 @@ public class MonolithicVer1MemoryModel extends AbstractMonoMemoryModel {
     
     xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     CellKind kind = CType.getCellKind(lvalType);
-    if(CellKind.SCALAR.equals(kind) || CellKind.BOOL.equals(kind)) {
-      cellVal = em.construct(scalarConstr, rval);
-    } else if(CellKind.POINTER.equals(kind)) {
+    switch(kind) {
+    case BOOL:
+    case SCALAR:
+      cellVal = em.construct(scalarConstr, rval); break;
+    case POINTER: {
       if(rval.isBitVector()) {
         assert(rval.isConstant());
         rval = ((PointerExpressionEncoding) getExpressionEncoding())
             .getPointerEncoding().nullPtr();
       }
-      cellVal = em.construct(ptrConstr, rval);
-    } else {
+      cellVal = em.construct(ptrConstr, rval); break;
+    }
+    default:
       throw new IllegalArgumentException("Invalid kind " + kind);
     }
     
