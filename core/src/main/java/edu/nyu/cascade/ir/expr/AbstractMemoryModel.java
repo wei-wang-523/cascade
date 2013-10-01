@@ -21,6 +21,7 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   protected static final String REGION_VARIABLE_NAME = "region";
   protected static final String DEFAULT_ALLOC_VARIABLE_NAME = "alloc";
   protected static final String DEFAULT_MEMORY_STATE_TYPE = "memType";
+  protected static final String DEFAULT_ALLOC_STATE_TYPE = "allocType";
   protected static final String DEFAULT_STATE_TYPE = "stateType";
   protected static final String TYPE = xtc.Constants.TYPE;
   protected static final String SCOPE = xtc.Constants.SCOPE;
