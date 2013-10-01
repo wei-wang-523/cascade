@@ -6,11 +6,12 @@ import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+
 import xtc.type.Type;
 import xtc.util.SymbolTable;
 import xtc.util.SymbolTable.Scope;
-
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
@@ -246,6 +247,14 @@ public class Steensgaard implements AliasAnalysis {
     default:
       throw new IllegalArgumentException("No points to variable for " + var.getType().getShape());
     }
+  }
+  
+  /**
+   * Get the alias variable equivalent class of union find
+   */
+  @Override
+  public ImmutableSet<AliasVar> getEquivClass(AliasVar var) {
+    return uf.getEquivClass(((TypeVar) var).getECR());
   }
   
   @Override

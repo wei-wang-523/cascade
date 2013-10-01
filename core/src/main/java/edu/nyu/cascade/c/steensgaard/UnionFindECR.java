@@ -8,6 +8,7 @@ import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.preprocessor.AliasVar;
@@ -188,9 +189,15 @@ public class UnionFindECR {
   
   /**
    * Get the snapshot of union find
-   * @return
    */
   protected ImmutableCollection<Set<AliasVar>> snapshot() {
     return uf.snapshot();
+  }
+  
+  /**
+   * Get the alias variable equivalent class of union find
+   */
+  protected ImmutableSet<AliasVar> getEquivClass(ECR e) {
+    return ImmutableSet.copyOf(uf.getEquivClass(e));
   }
 }

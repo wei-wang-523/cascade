@@ -3,7 +3,7 @@ package edu.nyu.cascade.c.preprocessor;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableCollection;
-
+import com.google.common.collect.ImmutableSet;
 
 import xtc.type.Type;
 
@@ -43,7 +43,7 @@ public interface AliasAnalysis {
   void heapAssign(AliasVar lhs, Type lhsType);
   
   /**
-   * Compute alias for an operation (x = op(y1,É,yN)).
+   * Compute alias for an operation (x = op(y1,ï¿½,yN)).
    * @param lhs
    * @param opnds
    */
@@ -104,4 +104,6 @@ public interface AliasAnalysis {
    * Get the null location
    */
   AliasVar getNullLoc();
+
+  ImmutableSet<AliasVar> getEquivClass(AliasVar var);
 }

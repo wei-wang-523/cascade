@@ -165,4 +165,11 @@ public class UnionFind<E> implements Serializable {
     }
     return builder.build();
   }
+  
+  public Set<E> getEquivClass(Partition key) {
+    SetMultimap<Partition, E> parts = Multimaps.invertFrom(
+        Multimaps.forMap(map),
+        HashMultimap.<Partition, E> create());
+    return ImmutableSet.copyOf(parts.asMap().get(key));
+  }
 }
