@@ -242,7 +242,7 @@ class CExpressionEncoder implements ExpressionEncoder {
     public Expression visitCastExpression(GNode node) {
       Type targetType = unwrapped(lookupType(node));
       Expression src = (Expression) dispatch(node.getNode(1));
-      Expression res = getMemoryModel().castExpression(memory, src, targetType);
+      Expression res = encoding.castExpression(src, targetType);
       return res.setNode(node);
     }
     
@@ -250,7 +250,7 @@ class CExpressionEncoder implements ExpressionEncoder {
         throws ExpressionFactoryException {
       Type type = lookupType(node);
       int constVal = (int) type.getConstant().longValue();
-      Expression res = getMemoryModel().castConstant(constVal, type);
+      Expression res = encoding.castConstant(constVal, type);
       return res.setNode(node);
     }
 
@@ -432,7 +432,7 @@ class CExpressionEncoder implements ExpressionEncoder {
         else 
           constVal = Integer.parseInt(numStr);
       }
-      Expression res = getMemoryModel().castConstant(constVal, type);
+      Expression res = encoding.castConstant(constVal, type);
       return res.setNode(node);
     }
 
@@ -667,7 +667,8 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitTypedefName(GNode node) 
         throws ExpressionFactoryException {
-      if("BurstallFix".equals(Preferences.get(Preferences.OPTION_THEORY))) {
+      if(Preferences.OPTION_THEORY_BURSTALLFIX.equals(
+          Preferences.get(Preferences.OPTION_THEORY))) {
         return ((Expression) dispatch(node.getNode(0))).setNode(node);
       } else {
         Type type = lookupType(node);
@@ -680,7 +681,7 @@ class CExpressionEncoder implements ExpressionEncoder {
         throws ExpressionFactoryException {
       Expression rhs = (Expression)dispatch(node.getNode(0));
       Type type = lookupType(node);
-      Expression zero = getMemoryModel().castConstant(0, type);
+      Expression zero = encoding.castConstant(0, type);
       return encoding.minus(zero, rhs).setNode(node); 
     }
     
@@ -1002,7 +1003,7 @@ class CExpressionEncoder implements ExpressionEncoder {
       // TODO: map expressions per-factory
       iExpr = (Expression) varInfo.getProperty(VAR_EXPR_MAP);     
     } else {
-      iExpr = getMemoryModel().createLval(VAR_PREFIX + node.getString(0));
+      iExpr = getMemoryModel().createLval(VAR_PREFIX, node);
       varInfo.setProperty(CExpressionEncoder.VAR_EXPR_MAP, iExpr);     
     }
     return iExpr.setNode(node);
@@ -1052,7 +1053,8 @@ class CExpressionEncoder implements ExpressionEncoder {
   }
   
   private int sizeofType(Type t) {
-    if("BurstallFix".equals(Preferences.get(Preferences.OPTION_THEORY))) {
+    if(Preferences.OPTION_THEORY_BURSTALLFIX.equals(
+        Preferences.get(Preferences.OPTION_THEORY))) {
       return (int) cAnalyzer.getSize(t);
     }
     
@@ -1099,7 +1101,8 @@ class CExpressionEncoder implements ExpressionEncoder {
   }
   
   private int getOffset(StructOrUnionT t, String name) {
-    if("BurstallFix".equals(Preferences.get(Preferences.OPTION_THEORY))) {
+    if(Preferences.OPTION_THEORY_BURSTALLFIX.equals(
+        Preferences.get(Preferences.OPTION_THEORY))) {
       return (int) cAnalyzer.getOffset(t.toStructOrUnion(), name);
     }
     
