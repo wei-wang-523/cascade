@@ -862,6 +862,8 @@ public abstract class AbstractExpressionEncoding
   
   @Override
   public Expression castExpression(Expression src, Type targetType) {
+    if(!Preferences.isSet(Preferences.OPTION_THEORY)) return src;
+    
     String theory = Preferences.getString(Preferences.OPTION_THEORY);
     if(theory.equals(Preferences.OPTION_THEORY_BURSTALL) ||
         theory.equals(Preferences.OPTION_THEORY_BURSTALLFIX) ||
