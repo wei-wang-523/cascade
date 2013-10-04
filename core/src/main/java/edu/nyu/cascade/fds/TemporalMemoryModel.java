@@ -1,5 +1,7 @@
 package edu.nyu.cascade.fds;
 
+import xtc.tree.Node;
+
 import com.google.common.base.Preconditions;
 
 import edu.nyu.cascade.ir.expr.AbstractMemoryModel;
@@ -87,7 +89,7 @@ public class TemporalMemoryModel extends AbstractMemoryModel {
   }
 
   @Override
-  public VariableExpression createLval(String name) {
+  public VariableExpression createLval(String prefix, Node node) {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("createLval");
   }
@@ -99,6 +101,11 @@ public class TemporalMemoryModel extends AbstractMemoryModel {
   
   @Override
   public Type getMemoryType() {
+    return getExpressionManager().booleanType();
+  }
+  
+  @Override
+  public Type getAllocType() {
     return getExpressionManager().booleanType();
   }
   
@@ -123,5 +130,24 @@ public class TemporalMemoryModel extends AbstractMemoryModel {
   @Override
   public Expression addressOf(Expression content) {
     return content.getChild(1);
+  }
+
+  @Override
+  public BooleanExpression valid_free(Expression state, Expression ptr) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public BooleanExpression valid_malloc(Expression state, Expression ptr,
+      Expression size) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public Expression substAlloc(Expression expr) {
+    // TODO Auto-generated method stub
+    return null;
   }
 }

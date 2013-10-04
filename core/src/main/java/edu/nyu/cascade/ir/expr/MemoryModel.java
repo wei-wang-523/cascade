@@ -1,5 +1,7 @@
 package edu.nyu.cascade.ir.expr;
 
+import xtc.tree.Node;
+
 import com.google.common.collect.ImmutableSet;
 
 import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
@@ -99,19 +101,24 @@ public interface MemoryModel {
   ExpressionManager getExpressionManager();
 
   /**
-   * Get initial state - memory state and auxiliary structure state
+   * Get initial state - memory state and auxiliary structures state
    */
   Expression initialState();
 
   /**
-   * Get state type - memory state and auxiliary structure state
+   * Get state type - memory state and auxiliary structures state
    */
   Type getStateType();
   
   /**
-   * Get memory model type
+   * Get memory array type
    */
   Type getMemoryType();
+  
+  /**
+   * Get alloc array type
+   */
+  Type getAllocType();
   
   /**
    * Get a fresh state - memory state and auxiliary structure state
@@ -123,22 +130,11 @@ public interface MemoryModel {
    * to the auxiliary structure to ensure that right variables and 
    * left variables won't overlap
    * @param name
+   * @param string 
    */
-  Expression createLval(String name);
+  Expression createLval(String prefix, Node node);
 
   Expression addressOf(Expression content);
-  
-  /**
-   * create a expression with constant <code>value</code>, used for
-   * tuple type expression especially.
-   */
-  Expression castConstant(int value, xtc.type.Type type);
-  
-  /**
-   * type conversion with <code>src</code> expression to target
-   * <code>type</code>
-   */
-  Expression castExpression(Expression state, Expression src, xtc.type.Type targetType);
   
   /**
    * set pointer alias map for partition memory model

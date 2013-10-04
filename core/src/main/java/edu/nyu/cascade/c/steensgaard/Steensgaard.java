@@ -2,13 +2,16 @@ package edu.nyu.cascade.c.steensgaard;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
+import xtc.type.DynamicReference;
 import xtc.type.Type;
 import xtc.util.SymbolTable;
 import xtc.util.SymbolTable.Scope;
@@ -113,11 +116,13 @@ public class Steensgaard implements AliasAnalysis {
     String freshRegionName = Identifiers.uniquify(REGION_VARIABLE_NAME + lhs.getName());
     assert(lhsType.resolve().isPointer());
     Type regionType = CType.unwrapped(lhsType).toPointer().getType();
+    regionType = regionType.annotate().shape(new DynamicReference(freshRegionName, regionType));
     TypeVar region = (TypeVar) addVariable(freshRegionName, lhs.getScope(), regionType);
     ECR region_ecr = region.getECR();
-//    if(ValueTypeKind.BOTTOM.equals(uf.getType(lhs0_ecr).getKind())) {
-//      lhs0_ecr.setType(uf.getType(region_ecr));
-//    }
+    // Attach the fresh region directly the first operand of target var of malloc
+    if(ValueTypeKind.BOTTOM.equals(uf.getType(lhs0_ecr).getKind())) {
+      lhs0_ecr.setInitVar(region_ecr.getInitTypeVar());
+    }
     uf.join(lhs0_ecr, region_ecr);
   }
 
@@ -202,11 +207,11 @@ public class Steensgaard implements AliasAnalysis {
         var = (TypeVar) addVariable(name, scope_.getQualifiedName(), type_);
       }
       
-      TypeVar res = uf.getInitVar(var.getECR());
+      TypeVar res = uf.getRootInitVar(var.getECR());
       if(type.hasShape()) {
         int num = CType.numOfIndRef(type.getShape());
         while(num > 0) {
-          res = (TypeVar) getPointsToLoc(res); 
+          res = (TypeVar) getPointsToRepVar(res); 
           num--;
         }
       }  
@@ -220,12 +225,18 @@ public class Steensgaard implements AliasAnalysis {
   }
   
   @Override
-  public ImmutableCollection<Set<AliasVar>> snapshot() {
-    return uf.snapshot();
+  public ImmutableMap<AliasVar, Set<AliasVar>> snapshot() {
+    ImmutableMap.Builder<AliasVar, Set<AliasVar>> builder = 
+        new ImmutableMap.Builder<AliasVar, Set<AliasVar>>();
+    for(Entry<ECR, Set<AliasVar>> pair : uf.snapshot().entrySet()) {
+      builder.put(uf.getRootInitVar(pair.getKey()),
+          pair.getValue());
+    }
+    return builder.build();
   }
 
   @Override
-  public AliasVar getPointsToLoc(AliasVar var) {
+  public AliasVar getAllocRegion(AliasVar var) {
     Preconditions.checkArgument(var instanceof TypeVar);
     ECR ecr = ((TypeVar) var).getECR();
     ValueType type = uf.getType(ecr);
@@ -235,13 +246,13 @@ public class Steensgaard implements AliasAnalysis {
      */
     CellKind kind = CType.getCellKind(var.getType());
     switch(kind) {
-    case POINTER:       return uf.getInitVar((ECR) type.getOperand(0));
+    case POINTER:       return type.getOperand(0).getInitTypeVar();
     case ARRAY:
     case STRUCTORUNION: {
       if(uf.hasPointsToChain(ecr)) {
-        return uf.getInitVar((ECR) type.getOperand(0));
+        return type.getOperand(0).getInitTypeVar();
       } else {
-        return uf.getInitVar(ecr);
+        return uf.getRootInitVar(ecr);
       }
     }
     default:
@@ -259,7 +270,7 @@ public class Steensgaard implements AliasAnalysis {
   
   @Override
   public String displaySnapShort() {
-    ImmutableCollection<Set<AliasVar>> sets = uf.snapshot();
+    ImmutableCollection<Set<AliasVar>> sets = uf.snapshot().values();
     StringBuilder sb = new StringBuilder();
     if(sets != null) {
       sb.append("Snapshot of partition (size >= 1) :\n ");
@@ -284,5 +295,31 @@ public class Steensgaard implements AliasAnalysis {
       }
     }
     return sb.toString();
+  }
+  
+  @Override
+  public AliasVar getPointsToRepVar(AliasVar var) {
+    Preconditions.checkArgument(var instanceof TypeVar);
+    ECR ecr = ((TypeVar) var).getECR();
+    ValueType type = uf.getType(ecr);
+    assert(ValueTypeKind.LOCATION.equals(type.getKind()));
+    /* For array, structure or union, just return the root ECR's 
+     * initial type variable
+     */
+    CellKind kind = CType.getCellKind(var.getType());
+    switch(kind) {
+    case POINTER:       
+      return uf.getRootInitVar(type.getOperand(0));
+    case ARRAY:
+    case STRUCTORUNION: {
+      if(uf.hasPointsToChain(ecr)) {
+        return uf.getRootInitVar(type.getOperand(0));
+      } else {
+        return uf.getRootInitVar(ecr);
+      }
+    }
+    default:
+      throw new IllegalArgumentException("No points to variable for " + var.getType().getShape());
+    }
   }
 }

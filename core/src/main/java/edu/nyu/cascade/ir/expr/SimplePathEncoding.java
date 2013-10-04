@@ -258,7 +258,8 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   
   private TupleExpression getUpdatedPathState(Expression memoryPrime, Expression allocPrime) {
     ExpressionManager em = getExpressionManager();
-    if(!memoryPrime.getType().equals(pathType.getElementTypes().get(0)))
+    if(!memoryPrime.getType().equals(pathType.getElementTypes().get(0)) 
+        || !allocPrime.getType().equals(pathType.getElementTypes().get(1)))
       pathType = em.tupleType(Identifiers.uniquify(DEFAULT_PATH_STATE_NAME), 
           memoryPrime.getType(), allocPrime.getType());
     return em.tuple(pathType, memoryPrime, allocPrime);

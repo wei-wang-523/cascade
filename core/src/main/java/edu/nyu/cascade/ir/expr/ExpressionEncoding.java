@@ -1,5 +1,7 @@
 package edu.nyu.cascade.ir.expr;
 
+import xtc.type.Type;
+
 import com.google.common.collect.ImmutableSet;
 
 import edu.nyu.cascade.ir.type.IRType;
@@ -639,4 +641,15 @@ public interface ExpressionEncoding {
    * Get the cell size
    */
   int getCellSize() ;
+
+  /**
+   * Cast @param src expression to @param targetType
+   */
+  Expression castExpression(Expression src, Type targetType) ;
+  
+  /**
+   * create a expression with constant <code>value</code>, used for
+   * tuple type expression especially.
+   */
+  Expression castConstant(int value, xtc.type.Type type);
 }

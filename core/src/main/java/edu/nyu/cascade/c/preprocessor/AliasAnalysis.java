@@ -2,7 +2,7 @@ package edu.nyu.cascade.c.preprocessor;
 
 import java.util.Set;
 
-import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import xtc.type.Type;
@@ -86,14 +86,19 @@ public interface AliasAnalysis {
   AliasVar getRepVar(String name, String scope, Type type) ;
   
   /**
-   * Get the snapshot of analysis
+   * Get the snapshot map of analysis
    */
-  ImmutableCollection<Set<AliasVar>> snapshot() ;
+  ImmutableMap<AliasVar, Set<AliasVar>> snapshot() ;
   
   /**
-   * Get the points to location of @param var
+   * Get the region var allocated for @param var
    */
-  AliasVar getPointsToLoc(AliasVar var);
+  AliasVar getAllocRegion(AliasVar var);
+  
+  /**
+   * Get the representative of points to var of @param var
+   */
+  AliasVar getPointsToRepVar(AliasVar var);
   
   /**
    * Get the snapshot of the alias partition sets
@@ -105,5 +110,9 @@ public interface AliasAnalysis {
    */
   AliasVar getNullLoc();
 
+  /**
+   * Get all alias vars in the same partition of @param var
+   */
   ImmutableSet<AliasVar> getEquivClass(AliasVar var);
+
 }

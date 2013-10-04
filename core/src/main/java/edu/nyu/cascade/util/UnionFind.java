@@ -3,15 +3,12 @@ package edu.nyu.cascade.util;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -150,20 +147,11 @@ public class UnionFind<E> implements Serializable {
     return false;
   }
 
-  public ImmutableCollection<Set<E>> snapshot() {
-//    SetMultimap<Partition, E> parts = Multimaps.invertFrom(
-//        Multimaps.forMap(map),
-//        HashMultimap.<Partition, E> create(
-//            nPartitions,
-//            map.size() / nPartitions + 1));
+  public SetMultimap<Partition, E> snapshot() {
     SetMultimap<Partition, E> parts = Multimaps.invertFrom(
         Multimaps.forMap(map),
         HashMultimap.<Partition, E> create());
-    ImmutableList.Builder<Set<E>> builder = ImmutableList.builder();
-    for (Collection<E> partition : parts.asMap().values()) {
-      builder.add(ImmutableSet.copyOf(partition));
-    }
-    return builder.build();
+    return parts;
   }
   
   public Set<E> getEquivClass(Partition key) {

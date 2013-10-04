@@ -65,6 +65,17 @@ public class Preferences {
   
   public static final String OPTION_MEMORY_CHECK = "memory-check";
   
+  public static final String OPTION_THEORY_BURSTALL = "Burstall";
+  
+  public static final String OPTION_THEORY_BURSTALLFIX = "BurstallFix";
+  
+  public static final String OPTION_THEORY_BURSTALLView = "BurstallView";
+  
+  public static final String OPTION_THEORY_FLAT = "BitVector";
+  
+  public static final String OPTION_THEORY_PARTITION = "Partition";
+  
+  
   public static void clearAll() {
     getProperties().clear();
   }

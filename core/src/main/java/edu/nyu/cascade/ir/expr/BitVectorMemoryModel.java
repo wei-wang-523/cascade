@@ -4,6 +4,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import xtc.tree.Node;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -312,8 +314,11 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
   }
   
   @Override
-  public VariableExpression createLval(String name) {
-    VariableExpression res = getExpressionManager().variable(name, addressType, true);
+  public VariableExpression createLval(String prefix, Node node) {
+    Preconditions.checkArgument(node.hasName("PrimaryIdentifier") 
+        || node.hasName("SimpleDeclarator"));
+    String name = node.getString(0);
+    VariableExpression res = getExpressionManager().variable(prefix+name, addressType, true);
     lvals.add(res);
     return res;
   }
@@ -548,6 +553,11 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
   
   @Override
   public ArrayType getMemoryType() {
+    return memType;
+  }
+  
+  @Override
+  public ArrayType getAllocType() {
     return memType;
   }
   

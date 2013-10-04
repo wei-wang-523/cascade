@@ -12,7 +12,7 @@ import edu.nyu.cascade.util.Identifiers;
  */
 public class CType {
 
-  private final static String CONSTANT = Identifiers.toValidId("Constant");
+  public final static String CONSTANT = Identifiers.toValidId("Constant");
   
   public enum CellKind {
     SCALAR, POINTER, STRUCTORUNION, ARRAY, BOOL

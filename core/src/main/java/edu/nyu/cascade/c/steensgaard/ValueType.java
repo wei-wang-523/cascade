@@ -9,7 +9,7 @@ import edu.nyu.cascade.util.EqualsUtil;
 
 public final class ValueType {
   
-  protected enum ValueTypeKind {
+  enum ValueTypeKind {
     LOCATION,
     FUNCTION,
     BOTTOM

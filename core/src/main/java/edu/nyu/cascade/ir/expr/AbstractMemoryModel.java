@@ -19,9 +19,9 @@ import edu.nyu.cascade.util.Identifiers;
 public abstract class AbstractMemoryModel implements MemoryModel {
   protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
   protected static final String REGION_VARIABLE_NAME = "region";
-  protected static final String DEFAULT_ALLOC_VARIABLE_NAME = "alloc";
+  protected static final String DEFAULT_ALLOC_VARIABLE_NAME = "size";
   protected static final String DEFAULT_MEMORY_STATE_TYPE = "memType";
-  protected static final String DEFAULT_ALLOC_STATE_TYPE = "allocType";
+  protected static final String DEFAULT_ALLOC_STATE_TYPE = "sizeType";
   protected static final String DEFAULT_STATE_TYPE = "stateType";
   protected static final String TYPE = xtc.Constants.TYPE;
   protected static final String SCOPE = xtc.Constants.SCOPE;
@@ -87,38 +87,10 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   }
   
   @Override
-  public Expression castConstant(int value, xtc.type.Type type) {
-    return encoding.integerConstant(value);
-  }
-  
-  @Override
-  public Expression castExpression(Expression state, Expression src, xtc.type.Type type) {
-    return src;
-  }
-  
-  @Override
   public void setAliasAnalyzer(AliasAnalysis analyzer) {};
   
   @Override
   public void setTypeCastAnalyzer(TypeCastAnalysis analyzer) {};
-  
-  @Override
-  //TODO: implement valid malloc for each memory model
-  public BooleanExpression valid_malloc(Expression state, Expression ptr, Expression size) {
-    return getExpressionManager().tt();
-  }
- 
-  @Override
-  //TODO: implement valid free for each memory model
-  public BooleanExpression valid_free(Expression state, Expression ptr) {
-    return getExpressionManager().tt();
-  }
-  
-  @Override
-  //TODO: implement valid free for each memory model
-  public Expression substAlloc(Expression expr) {
-    return expr;
-  }
   
   protected Iterable<String> recomposeFieldNames(final String arrName, Iterable<String> fieldsName){
     return Iterables.transform(fieldsName, 

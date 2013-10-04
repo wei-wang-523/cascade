@@ -7,13 +7,15 @@ import java.util.Iterator;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.preprocessor.AliasVar;
 import edu.nyu.cascade.c.steensgaard.ValueType.ValueTypeKind;
 import edu.nyu.cascade.util.UnionFind;
+import edu.nyu.cascade.util.UnionFind.Partition;
 
 public class UnionFindECR {
   UnionFind<AliasVar> uf;
@@ -49,7 +51,7 @@ public class UnionFindECR {
   protected void join(ECR e1, ECR e2) {
     ValueType t1 = getType(e1);
     ValueType t2 = getType(e2);
-    uf.union(e1, e2);
+    union(e1, e2);
     ECR root = (ECR) e1.findRoot();
     if(BOTTOM.equals(t1.getKind())) {
       root.setType(t2);
@@ -65,7 +67,7 @@ public class UnionFindECR {
       } else {
         if(e1.hasPending()) {
           for(ECR x : e1.getPending()) {
-            uf.union(root, x);
+            union(root, x);
           }
         }
       }
@@ -74,7 +76,7 @@ public class UnionFindECR {
       if(BOTTOM.equals(t2.getKind())) {
         if(e2.hasPending()) {
           for(ECR x : e2.getPending()) {
-            uf.union(root, x);
+            union(root, x);
           }
         }
       } else {
@@ -125,9 +127,9 @@ public class UnionFindECR {
   
   
   /**
-   * Get the initial type variable
+   * Get the initial type variable of root ecr
    */
-  protected TypeVar getInitVar(ECR e) {
+  protected TypeVar getRootInitVar(ECR e) {
     ECR root = (ECR) e.findRoot();
     return root.getInitTypeVar();
   }
@@ -145,6 +147,27 @@ public class UnionFindECR {
         return true;
     }
     return false;
+  }
+  
+  /**
+   * Union two ecrs, and always put any init type var to the root ecr
+   * We need it to pick the name of representative var, and also get 
+   * final snapshot(map) of the points-to relation of the analysis of
+   * all program variables, of course, null will be not acceptable to 
+   * be the key of the map.
+   */
+  protected void union(ECR e1, ECR e2) {
+    ECR root1 = (ECR) e1.findRoot();
+    ECR root2 = (ECR) e2.findRoot();
+    uf.union(e1, e2);
+    ECR root = (ECR) e1.findRoot();
+    if(!root.hasInitTypeVar()) {
+      if(root1.hasInitTypeVar()) {
+        root.setInitVar(root1.getInitTypeVar());
+      } else if(root2.hasInitTypeVar()) {
+        root.setInitVar(root2.getInitTypeVar());
+      }
+    }
   }
   
   /**
@@ -190,8 +213,13 @@ public class UnionFindECR {
   /**
    * Get the snapshot of union find
    */
-  protected ImmutableCollection<Set<AliasVar>> snapshot() {
-    return uf.snapshot();
+  protected ImmutableMap<ECR, Set<AliasVar>> snapshot() {
+    SetMultimap<Partition, AliasVar> map = uf.snapshot();
+    ImmutableMap.Builder<ECR, Set<AliasVar>> builder = ImmutableMap.builder();
+    for (Partition ecr : map.asMap().keySet()) {
+      builder.put((ECR) ecr, ImmutableSet.copyOf(map.asMap().get(ecr)));
+    }
+    return builder.build();
   }
   
   /**

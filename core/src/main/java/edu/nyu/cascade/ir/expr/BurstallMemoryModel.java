@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Iterator;
 
+import xtc.tree.Node;
+
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -263,9 +265,12 @@ public class BurstallMemoryModel extends AbstractBurstallMemoryModel {
   }
   
   @Override
-  public Expression createLval(String name) {
+  public Expression createLval(String prefix, Node node) {
+    Preconditions.checkArgument(node.hasName("PrimaryIdentifier") 
+        || node.hasName("SimpleDeclarator"));
+    String name = node.getString(0);
     ExpressionManager exprManager = getExpressionManager();
-    VariableExpression ref = exprManager.variable(name, refType, true);
+    VariableExpression ref = exprManager.variable(prefix+name, refType, true);
     Expression off = exprManager.bitVectorZero(offType.getSize());
     Expression res = exprManager.tuple(ptrType, ref, off);
     lvals.add(ref);
@@ -355,6 +360,11 @@ public class BurstallMemoryModel extends AbstractBurstallMemoryModel {
   @Override
   public RecordType getMemoryType() {
     return memType;
+  }
+  
+  @Override
+  public ArrayType getAllocType() {
+    return allocType;
   }
   
   @Override

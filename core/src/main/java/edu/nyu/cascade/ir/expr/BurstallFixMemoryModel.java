@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Iterator;
 
+import xtc.tree.Node;
+
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -389,9 +391,12 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
   }
   
   @Override
-  public Expression createLval(String name) {
+  public Expression createLval(String prefix, Node node) {
+    Preconditions.checkArgument(node.hasName("PrimaryIdentifier") 
+        || node.hasName("SimpleDeclarator"));
+    String name = node.getString(0);
     ExpressionManager exprManager = getExpressionManager();
-    VariableExpression ref = exprManager.variable(name, refType, true);
+    VariableExpression ref = exprManager.variable(prefix+name, refType, true);
     Expression off = exprManager.bitVectorZero(offType.getSize());
     Expression res = exprManager.tuple(ptrType, ref, off);
     lvals.add(ref);
@@ -482,6 +487,11 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
   @Override
   public RecordType getMemoryType() {
     return memType;
+  }
+  
+  @Override
+  public ArrayType getAllocType() {
+    return allocType;
   }
   
   @Override
@@ -618,13 +628,13 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
     currentState = null;
   }
   
-  @Override
+/*  @Override
   public Expression castConstant(int value, xtc.type.Type type) {
     int size = getSizeofType(type);
     return getExpressionManager().bitVectorConstant(value, size);
-  }
+  }*/
   
-  @Override
+/*  @Override
   public Expression castExpression(Expression state, Expression src, xtc.type.Type type) {
     if(!CellKind.SCALAR.equals(CType.getCellKind(type)))  {
       assert src.isConstant() && src.isBitVector();
@@ -637,7 +647,7 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
       return src.asBitVector().zeroExtend(targetSize);
     else
       return src.asBitVector().extract(targetSize-1, 0);
-  }
+  }*/
   
   private Map<String, Expression> getMemElems(Expression memState) {
     Preconditions.checkArgument(memState.isRecord());

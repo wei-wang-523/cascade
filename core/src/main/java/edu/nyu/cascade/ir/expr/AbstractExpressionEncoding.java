@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import xtc.type.Type;
+
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableList;
@@ -12,12 +14,15 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.base.Preconditions;
 
+import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.ir.type.IRType;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
+import edu.nyu.cascade.util.Preferences;
 
 /** An abstract implementation of the <code>ExpressionEncoding</code> interface,
  * with convenience implementations of several methods. 
@@ -853,6 +858,44 @@ public abstract class AbstractExpressionEncoding
   private <T extends Expression> Expression updateArray_(ArrayEncoding<T> ae, 
       Expression array, Expression index, Expression newValue) {
     return ae.update(ae.ofExpression(array), index, newValue);
+  }
+  
+  @Override
+  public Expression castExpression(Expression src, Type targetType) {
+    String theory = Preferences.getString(Preferences.OPTION_THEORY);
+    if(theory.equals(Preferences.OPTION_THEORY_BURSTALL) ||
+        theory.equals(Preferences.OPTION_THEORY_BURSTALLFIX) ||
+        theory.equals(Preferences.OPTION_THEORY_BURSTALLView)) {
+      CellKind srcKind = CType.getCellKind((Type) 
+        src.getNode().getProperty(xtc.Constants.TYPE));
+      CellKind targetKind = CType.getCellKind(targetType);
+      if(CellKind.POINTER.equals(targetKind) && CellKind.SCALAR.equals(srcKind)) {
+        assert src.isConstant();
+        return ((PointerEncoding) tupleEncoding).getNullPtr();
+      }
+      
+      if(theory.equals(Preferences.OPTION_THEORY_BURSTALLFIX)
+          && CellKind.SCALAR.equals(targetKind) 
+          && targetKind.equals(srcKind)) {
+        int srcSize = src.getType().asBitVectorType().getSize();
+        int targetSize = (int) (getCAnalyzer().getSize(targetType) * getCellSize());
+        if(srcSize < targetSize)
+          return src.asBitVector().zeroExtend(targetSize);
+        else
+          return src.asBitVector().extract(targetSize-1, 0);
+      }
+    }
+    return src;
+  }
+  
+  @Override
+  public Expression castConstant(int value, xtc.type.Type targetType) {
+    if(!(Preferences.isSet(Preferences.OPTION_THEORY) &&
+        Preferences.get(Preferences.OPTION_THEORY).equals(Preferences.OPTION_THEORY_BURSTALLFIX)))
+    return integerConstant(value);
+    
+    int size = (int) (getCAnalyzer().getSize(targetType) * getCellSize());
+    return getExpressionManager().bitVectorConstant(value, size);
   }
   
   @Override

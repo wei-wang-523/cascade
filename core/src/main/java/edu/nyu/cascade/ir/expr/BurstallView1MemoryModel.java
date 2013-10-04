@@ -323,9 +323,12 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
   }
   
   @Override
-  public Expression createLval(String name) {
+  public Expression createLval(String prefix, Node node) {
+    Preconditions.checkArgument(node.hasName("PrimaryIdentifier") 
+        || node.hasName("SimpleDeclarator"));
+    String name = node.getString(0);
     ExpressionManager exprManager = getExpressionManager();
-    VariableExpression ref = exprManager.variable(name, refType, true);
+    VariableExpression ref = exprManager.variable(prefix+name, refType, true);
     Expression off = exprManager.bitVectorZero(offType.getSize());
     Expression res = exprManager.tuple(ptrType, ref, off);
     lvals.add(ref);
@@ -581,6 +584,11 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
   }
   
   @Override
+  public ArrayType getAllocType() {
+    return allocType;
+  }
+  
+  @Override
   public TupleType getStateType() {
     return stateType;
   }
@@ -805,7 +813,7 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
     return em.tuple(stateTypePrime, memoryPrime, allocPrime, viewPrime);
   }
   
-  @Override
+/*  @Override
   public Expression castExpression(Expression state, Expression src, xtc.type.Type targetType) {
     //FIXME: scalar type has same cell size in this model, ignore cast cast
     if(CellKind.POINTER.equals(CType.getCellKind(targetType))) {
@@ -829,7 +837,7 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
           (xtc.type.Type) src.getNode().getProperty(TYPE) + " to " +  targetType);
     }
     return src;
-  }
+  }*/
   
   @Override
   public Expression substAlloc(Expression expr) {

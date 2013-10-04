@@ -1,5 +1,7 @@
 package edu.nyu.cascade.ir.expr;
 
+import xtc.tree.Node;
+
 import com.google.common.collect.ImmutableSet;
 
 import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
@@ -86,7 +88,7 @@ public class UnimplementedMemoryModel implements MemoryModel {
   }
   
   @Override
-  public VariableExpression createLval(String name) {
+  public VariableExpression createLval(String prefix, Node node) {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("createLval");
   }
@@ -146,18 +148,6 @@ public class UnimplementedMemoryModel implements MemoryModel {
   }
 
   @Override
-  public Expression castConstant(int value, xtc.type.Type type) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("castConstant"); 
-  }
-
-  @Override
-  public Expression castExpression(Expression state, Expression src, xtc.type.Type targetType) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("castExpression"); 
-  }
-
-  @Override
   public void setAliasAnalyzer(AliasAnalysis analyzer) {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("setAliasAnalyzer"); 
@@ -185,5 +175,11 @@ public class UnimplementedMemoryModel implements MemoryModel {
   @Override
   public Expression substAlloc(Expression expr) {
     return expr;
+  }
+
+  @Override
+  public Type getAllocType() {
+    // TODO Auto-generated method stub
+    return null;
   }
 }
