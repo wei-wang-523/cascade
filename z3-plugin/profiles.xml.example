@@ -1,0 +1,11 @@
+  <profiles>
+    <profile>
+      <id>tools-builds-z3</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <z3.basedir>/home/chris/tools/builds/z3</z3.basedir> 
+      </properties> 
+    </profile> 
+  </profiles> 
