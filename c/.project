@@ -35,52 +35,16 @@
 			<arguments>
 			</arguments>
 		</buildCommand>
+		<buildCommand>
+			<name>org.eclipse.m2e.core.maven2Builder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
 	</buildSpec>
 	<natures>
+		<nature>org.eclipse.m2e.core.maven2Nature</nature>
 		<nature>org.maven.ide.eclipse.maven2Nature</nature>
 		<nature>org.eclipse.pde.PluginNature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
-	<linkedResources>
-		<link>
-			<name>lib/z3</name>
-			<type>2</type>
-			<location>/home/chris/Source/Eclipse/z3/lib</location>
-		</link>
-		<link>
-			<name>lib/z3jni</name>
-			<type>2</type>
-			<location>/home/chris/Source/Eclipse/z3/java/lib</location>
-		</link>
-		<link>
-			<name>lib/doc/commons-cli-doc.jar</name>
-			<type>1</type>
-			<location>/home/chris/tools/commons-cli-1.1/commons-cli-doc.jar</location>
-		</link>
-		<link>
-			<name>lib/doc/google-collect-doc.jar</name>
-			<type>1</type>
-			<location>/home/chris/tools/google-collect-snapshot-20080820/google-collect-doc.jar</location>
-		</link>
-		<link>
-			<name>lib/doc/jaxb-impl-doc.jar</name>
-			<type>1</type>
-			<location>/media/sda6/downloads/jaxb-2_1_8.zip</location>
-		</link>
-		<link>
-			<name>lib/doc/xtc-doc.jar</name>
-			<type>1</type>
-			<location>/home/chris/tools/xtc-1.14.2/xtc-doc.jar</location>
-		</link>
-		<link>
-			<name>lib/src/google-collect</name>
-			<type>2</type>
-			<location>/home/chris/tools/google-collect-snapshot-20080820/src</location>
-		</link>
-		<link>
-			<name>lib/src/xtc</name>
-			<type>2</type>
-			<location>/home/chris/tools/xtc-1.14.2/src</location>
-		</link>
-	</linkedResources>
 </projectDescription>
