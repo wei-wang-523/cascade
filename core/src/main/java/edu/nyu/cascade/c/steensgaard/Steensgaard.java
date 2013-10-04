@@ -120,7 +120,7 @@ public class Steensgaard implements AliasAnalysis {
     TypeVar region = (TypeVar) addVariable(freshRegionName, lhs.getScope(), regionType);
     ECR region_ecr = region.getECR();
     // Attach the fresh region directly the first operand of target var of malloc
-    if(ValueTypeKind.BOTTOM.equals(uf.getType(lhs0_ecr).getKind())) {
+    if(!lhs0_ecr.hasInitTypeVar()) {
       lhs0_ecr.setInitVar(region_ecr.getInitTypeVar());
     }
     uf.join(lhs0_ecr, region_ecr);
