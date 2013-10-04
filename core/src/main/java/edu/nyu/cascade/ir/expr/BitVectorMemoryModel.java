@@ -29,7 +29,7 @@ import edu.nyu.cascade.util.Preferences;
 public class BitVectorMemoryModel extends AbstractMemoryModel {  
   protected static final String REGION_VARIABLE_NAME = "region";
   protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
-  protected static final String DEFAULT_ALLOC_VARIABLE_NAME = "alloc";
+  protected static final String DEFAULT_ALLOC_VARIABLE_NAME = "size";
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.

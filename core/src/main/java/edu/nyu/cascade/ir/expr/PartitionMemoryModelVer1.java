@@ -139,43 +139,22 @@ public class PartitionMemoryModelVer1 extends AbstractMonoMemoryModel {
     regionNode.setProperty(SCOPE, regionScope);
     region.setNode(regionNode);
     
- // For dynamic memory allocation, add to the end
+    // For dynamic memory allocation, add to the end
     heapRegions.put(Pair.of(regionName, regionScope), region);
     
-    /* Update memory and alloc state */
-    initCurrentMemElems(state.getChild(0));
-    
     { /* Add newly allocated region array to current memory elements */
+      Iterable<String> elemNames = state.getChild(0).asRecord().getType().getElementNames();
+      Iterable<String> fieldNames = pickFieldNames(elemNames);
       String regionArrName = getMemArrElemName(region_var);
-      if(!currentMemElems.containsKey(regionArrName)) {
+      if(!Iterables.contains(fieldNames, regionArrName)) {
         Type cellType = getArrayElemType(region_var.getType());
         ArrayType arrType = em.arrayType(addrType, cellType);
         ArrayExpression regionArr = em.variable(regionArrName, arrType, false).asArray();
         currentMemElems.put(regionArrName, regionArr);
       }
     }
-    
-    { /* Update the pointer array in current memory elements */  
-      String ptrRepArrName = getMemArrElemName(ptr_var);
-      if(currentMemElems.containsKey(ptrRepArrName)) {
-        ArrayExpression ptrRepArr = currentMemElems.get(ptrRepArrName).asArray();
-//        Type cellType = ptrRepArr.getType().getElementType();
-//        locVar = castExprToCell(locVar, cellType);
-        ptrRepArr = ptrRepArr.update(ptr, region);
-        currentMemElems.put(ptrRepArrName, ptrRepArr);
-      } else {
-        xtc.type.Type ptrRepVarType = ptr_var.getType();
-        Type cellType = getArrayElemType(ptrRepVarType);
-        ArrayType arrType = em.arrayType(addrType, cellType);
-        ArrayExpression ptrRepArr = em.variable(ptrRepArrName, arrType, false).asArray();
-        assert(cellType.equals(region.getType()));
-        ptrRepArr = ptrRepArr.update(ptr, region);
-        currentMemElems.put(ptrRepArrName, ptrRepArr);
-      }
-    }
-    
-    Type currentMemType = getCurrentMemoryType();    
-    RecordExpression memory = em.record(currentMemType, currentMemElems.values());
+      
+    RecordExpression memory = updateMemoryState(state.getChild(0), ptr, region);
     RecordExpression alloc = updateAllocState(state.getChild(1), region, size);
     TupleExpression statePrime = getUpdatedState(state, memory, alloc);
     setStateType(statePrime.getType());
@@ -317,7 +296,7 @@ public class PartitionMemoryModelVer1 extends AbstractMonoMemoryModel {
     Expression statePrime = getUpdatedState(state, currentMem, currentAlloc);
     currentState = suspend(state, statePrime);
     
-    return valid_malloc(state, region, size);
+    return valid_malloc(state, region, size, true);
   }
   
   @Override
@@ -679,62 +658,7 @@ public class PartitionMemoryModelVer1 extends AbstractMonoMemoryModel {
     return res;
   }
   
-  @Override
-  protected RecordExpression updateMemoryState(Expression memState, Expression lval, Expression rval) {
-    return updateRecord(memState.asRecord(), lval, rval, true);
-  }
-  
-  protected RecordExpression updateAllocState(Expression allocState, Expression lval, Expression rval) {
-    return updateRecord(allocState.asRecord(), lval, rval, false);
-  }
-  
-  protected RecordExpression updateMemState(Expression memState) {
-    return updateRecord(memState.asRecord(), true);
-  }
-  
-  protected RecordExpression updateAllocState(Expression allocState) {
-    return updateRecord(allocState.asRecord(), false);
-  }
-  
-  private RecordExpression updateRecord(RecordExpression state, boolean mem) {
-    Map<String, Expression> map = mem ? currentMemElems : currentAllocElems;
-    if(map.isEmpty())   return state;
-    
-    map.putAll(getRecordElems(state));
-    return getExpressionManager().record(getCurrentRecordType(mem), map.values());
-  }
-  
-  private RecordExpression updateRecord(RecordExpression state, Expression lval, Expression rval, boolean mem) {
-    Map<String, Expression> map = mem ? currentMemElems : currentAllocElems;
-    map.putAll(getRecordElems(state));
-    
-    ExpressionManager em = getExpressionManager();
-    boolean stateTypeChanged = false;
 
-    AliasVar lvalRepVar = loadRepVar(lval.getNode());    
-    String lvalRepArrName = mem ? getMemArrElemName(lvalRepVar) : getAllocArrElemName(lvalRepVar);
-    
-    if(map.containsKey(lvalRepArrName)) {
-      ArrayExpression lvalRepArr = map.get(lvalRepArrName).asArray();
-//      Type cellType = lvalRepArr.getType().getElementType();
-//      rval = castExprToCell(rval, cellType);
-      lvalRepArr = lvalRepArr.update(lval, rval);
-      map.put(lvalRepArrName, lvalRepArr);
-    } else {
-      xtc.type.Type lvalRepType = lvalRepVar.getType();
-      Type cellType = getArrayElemType(lvalRepType);
-      ArrayType arrType = em.arrayType(addrType, cellType);
-      ArrayExpression lvalArr = em.variable(lvalRepArrName, arrType, false).asArray();
-//      rval = castExprToCell(rval, cellType);
-      lvalArr = lvalArr.update(lval, rval);
-      map.put(lvalRepArrName, lvalArr);
-      stateTypeChanged = true;
-    }
-    
-    Type currentStateType = stateTypeChanged ? getCurrentRecordType(mem) : state.getType();
-    return em.record(currentStateType, map.values());
-  }
-  
   @Override
   public void setAliasAnalyzer(AliasAnalysis analyzer) {
     this.analyzer = analyzer;
@@ -894,73 +818,7 @@ public class PartitionMemoryModelVer1 extends AbstractMonoMemoryModel {
   
   @Override
   public BooleanExpression valid_malloc(Expression state, Expression ptr, Expression size) {
-    ExpressionManager exprManager = getExpressionManager();
-    
-    if(Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
-      throw new UnsupportedOperationException(
-          "--order-alloc is not supported in partition memory model");
-    } 
-    
-    if (Preferences.isSet(Preferences.OPTION_SOUND_ALLOC)) {      
-      
-      /* Find related heap regions and alloc array */
-      AliasVar pRepVar = loadRepVar(ptr.getNode());
-      AliasVar ptr2RepVar = analyzer.getPointsToRepVar(pRepVar);
-      Iterable<AliasVar> equivAliasVars = analyzer.getEquivClass(ptr2RepVar);
-      List<Expression> regions = Lists.newArrayListWithCapacity(Iterables.size(equivAliasVars));  
-      
-      for(AliasVar var : equivAliasVars) {
-        Pair<String, String> varKey = Pair.of(var.getName(), var.getScope());
-        if(heapRegions.containsKey(varKey)) {
-          regions.add(heapRegions.get(varKey));
-        }
-      }
-      
-      initCurrentAllocElems(state.getChild(1));
-      String allocArrName = getAllocArrElemName(ptr2RepVar);
-      assert currentAllocElems.containsKey(allocArrName);
-      ArrayExpression allocArr = currentAllocElems.get(allocArrName).asArray();
-      
-      /* Build valid malloc assumption */
-      
-      ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
-      
-      Expression nullPtr = exprManager.bitVectorZero(addrType.getSize());
-      Expression sizeZro = exprManager.bitVectorZero(cellType.getSize());
-      Expression ptrBound = exprManager.plus(addrType.getSize(), ptr, size);
-      
-      Expression assump = exprManager.neq(ptr, nullPtr);
-      
-      /* size not overflow */
-      builder.add(exprManager.lessThan(ptr, ptrBound));
-      
-      /* Don't overlap any previously allocated and not freed HEAP region */   
-      /* Collect all heap regions except the last one, the one just allocated. */
-      regions.remove(regions.size()-1);
-      
-      for(Expression region : regions) {
-        Expression regionSize = allocArr.index(region);
-        Expression regionBound = exprManager.plus(addrType.getSize(), region, regionSize);
-        
-        /* region is not null and not freed before */
-        Expression assump_local = exprManager.and( 
-            exprManager.greaterThan(regionSize, sizeZro),
-            region.neq(nullPtr));
-        
-        /* Disjoint */
-        Expression assert_local = exprManager.or(
-            exprManager.lessThanOrEqual(ptrBound, region),
-            exprManager.lessThanOrEqual(regionBound, ptr));
-        
-        builder.add(exprManager.implies(assump_local, assert_local));
-      }
-      
-      BooleanExpression res = exprManager.implies(assump, exprManager.and(builder.build()));
-      
-      return res;
-    }
-    
-    return exprManager.tt();
+    return valid_malloc(state, ptr, size, false);
   }
   
   @Override
@@ -985,7 +843,63 @@ public class PartitionMemoryModelVer1 extends AbstractMonoMemoryModel {
   public Expression substAlloc(Expression expr) {
     return expr;
   }
+  
+  @Override
+  protected RecordExpression updateMemoryState(Expression memState, Expression lval, Expression rval) {
+    return updateRecord(memState.asRecord(), lval, rval, true);
+  }
+  
+  protected RecordExpression updateAllocState(Expression allocState, Expression lval, Expression rval) {
+    return updateRecord(allocState.asRecord(), lval, rval, false);
+  }
+  
+  protected RecordExpression updateMemoryState(Expression memState) {
+    return updateRecord(memState.asRecord(), true);
+  }
+  
+  protected RecordExpression updateAllocState(Expression allocState) {
+    return updateRecord(allocState.asRecord(), false);
+  }
+  
+  private RecordExpression updateRecord(RecordExpression state, boolean mem) {
+    Map<String, Expression> map = mem ? currentMemElems : currentAllocElems;
+    if(map.isEmpty())   return state;
     
+    map.putAll(getRecordElems(state));
+    return getExpressionManager().record(getCurrentRecordType(mem), map.values());
+  }
+  
+  private RecordExpression updateRecord(RecordExpression state, Expression lval, Expression rval, boolean mem) {
+    Map<String, Expression> map = mem ? currentMemElems : currentAllocElems;
+    boolean stateTypeChanged = !map.isEmpty();
+    map.putAll(getRecordElems(state));
+    
+    ExpressionManager em = getExpressionManager();
+
+    AliasVar lvalRepVar = loadRepVar(lval.getNode());    
+    String lvalRepArrName = mem ? getMemArrElemName(lvalRepVar) : getAllocArrElemName(lvalRepVar);
+    
+    if(map.containsKey(lvalRepArrName)) {
+      ArrayExpression lvalRepArr = map.get(lvalRepArrName).asArray();
+//      Type cellType = lvalRepArr.getType().getElementType();
+//      rval = castExprToCell(rval, cellType);
+      lvalRepArr = lvalRepArr.update(lval, rval);
+      map.put(lvalRepArrName, lvalRepArr);
+    } else {
+      xtc.type.Type lvalRepType = lvalRepVar.getType();
+      Type cellType = getArrayElemType(lvalRepType);
+      ArrayType arrType = em.arrayType(addrType, cellType);
+      ArrayExpression lvalArr = em.variable(lvalRepArrName, arrType, false).asArray();
+//      rval = castExprToCell(rval, cellType);
+      lvalArr = lvalArr.update(lval, rval);
+      map.put(lvalRepArrName, lvalArr);
+      stateTypeChanged = true;
+    }
+    
+    Type currentStateType = stateTypeChanged ? getCurrentRecordType(mem) : state.getType();
+    return em.record(currentStateType, map.values());
+  }
+  
   /**
    * Get representative alias variable in the pointer analyzer
    * @param gnode
@@ -1130,5 +1044,82 @@ public class PartitionMemoryModelVer1 extends AbstractMonoMemoryModel {
     builder.add(stRegsBuilder.build());
     builder.add(hpRegsBuilder.build());
     return builder.build();
+  }
+  
+  /**
+   * Get the valid allocated assumption
+   * @param allocated: indicate whether this method is called inside allocated. If true, the ptr node is
+   * actually the region node, otherwise, the ptr node is like m[ptr], whose source node is ptr node
+   * we need analyzer to get the points to node.
+   */
+  private BooleanExpression valid_malloc(Expression state, Expression ptr, Expression size, boolean allocated) {
+    ExpressionManager exprManager = getExpressionManager();
+    
+    if(Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
+      throw new UnsupportedOperationException(
+          "--order-alloc is not supported in partition memory model");
+    } 
+    
+    if (Preferences.isSet(Preferences.OPTION_SOUND_ALLOC)) {      
+      
+      /* Find related heap regions and alloc array */
+      AliasVar pRepVar = loadRepVar(ptr.getNode());
+      if(!allocated) pRepVar = analyzer.getPointsToRepVar(pRepVar);
+      
+      Iterable<AliasVar> equivAliasVars = analyzer.getEquivClass(pRepVar);
+      List<Expression> regions = Lists.newArrayListWithCapacity(Iterables.size(equivAliasVars));  
+      
+      for(AliasVar var : equivAliasVars) {
+        Pair<String, String> varKey = Pair.of(var.getName(), var.getScope());
+        if(heapRegions.containsKey(varKey)) {
+          regions.add(heapRegions.get(varKey));
+        }
+      }
+      
+      initCurrentAllocElems(state.getChild(1));
+      String allocArrName = getAllocArrElemName(pRepVar);
+      assert currentAllocElems.containsKey(allocArrName);
+      ArrayExpression allocArr = currentAllocElems.get(allocArrName).asArray();
+      
+      /* Build valid malloc assumption */
+      
+      ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
+      
+      Expression nullPtr = exprManager.bitVectorZero(addrType.getSize());
+      Expression sizeZro = exprManager.bitVectorZero(cellType.getSize());
+      Expression ptrBound = exprManager.plus(addrType.getSize(), ptr, size);
+      
+      Expression assump = exprManager.neq(ptr, nullPtr);
+      
+      /* size not overflow */
+      builder.add(exprManager.lessThan(ptr, ptrBound));
+      
+      /* Don't overlap any previously allocated and not freed HEAP region */   
+      /* Collect all heap regions except the last one, the one just allocated. */
+      regions.remove(regions.size()-1);
+      
+      for(Expression region : regions) {
+        Expression regionSize = allocArr.index(region);
+        Expression regionBound = exprManager.plus(addrType.getSize(), region, regionSize);
+        
+        /* region is not null and not freed before */
+        Expression assump_local = exprManager.and( 
+            exprManager.greaterThan(regionSize, sizeZro),
+            region.neq(nullPtr));
+        
+        /* Disjoint */
+        Expression assert_local = exprManager.or(
+            exprManager.lessThanOrEqual(ptrBound, region),
+            exprManager.lessThanOrEqual(regionBound, ptr));
+        
+        builder.add(exprManager.implies(assump_local, assert_local));
+      }
+      
+      BooleanExpression res = exprManager.implies(assump, exprManager.and(builder.build()));
+      
+      return res;
+    }
+    
+    return exprManager.tt();
   }
 }
