@@ -150,7 +150,7 @@ public class UnionFindECR {
   }
   
   /**
-   * Union two ecrs, and always put any init type var to the root ecr
+   * Union two ecrs, and always attach an initial var to the root ecr
    * We need it to pick the name of representative var, and also get 
    * final snapshot(map) of the points-to relation of the analysis of
    * all program variables, of course, null will be not acceptable to 
