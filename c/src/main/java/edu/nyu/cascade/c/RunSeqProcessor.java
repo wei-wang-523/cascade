@@ -68,7 +68,8 @@ class RunSeqProcessor implements RunProcessor {
       }
       
       if(Preferences.isSet(Preferences.OPTION_THEORY)) {
-        if("Partition".equals(Preferences.getString((Preferences.OPTION_THEORY)))) {
+        String theory = Preferences.getString((Preferences.OPTION_THEORY));
+        if(Preferences.OPTION_THEORY_PARTITION.equals(theory)) {
           File file = run.getStartPosition().getFile();
           CSymbolTable symbolTable = symbolTables.get(file);
           Steensgaard analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());
@@ -78,7 +79,9 @@ class RunSeqProcessor implements RunProcessor {
           }
           
           pathEncoder.getExpressionEncoder().getMemoryModel().setAliasAnalyzer(analyzer);
-        } else if(Preferences.getString((Preferences.OPTION_THEORY)).startsWith("Burstall") ) {
+        } else if(Preferences.OPTION_THEORY_BURSTALL.equals(theory) || 
+            Preferences.OPTION_THEORY_BURSTALLFIX.equals(theory) || 
+            Preferences.OPTION_THEORY_BURSTALLView.equals(theory)) {
           TypeCastAnalysis analyzer = TypeCastAnalysis.create();
           
           for(IRStatement stmt : path) {
