@@ -7,7 +7,6 @@ import java.util.Set;
 import xtc.tree.Node;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -24,9 +23,8 @@ import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
-import edu.nyu.cascade.util.Preferences;
 
-public class BitVectorMemoryModel extends AbstractMemoryModel {  
+public class BitVectorMemoryModelOrder extends AbstractMemoryModel {  
   protected static final String REGION_VARIABLE_NAME = "region";
   protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
   protected static final String DEFAULT_ALLOC_VARIABLE_NAME = "size";
@@ -36,7 +34,7 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
    * @param exprManager
    * @throws IllegalArgumentException if <code>addressSize</code> is not a multiple of <code>cellSize</code>
    */
-  public static BitVectorMemoryModel create(
+  public static BitVectorMemoryModelOrder create(
       ExpressionEncoding encoding)
       throws ExpressionFactoryException {
     ExpressionManager exprManager = encoding.getExpressionManager();
@@ -47,7 +45,7 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
 
     ArrayType memArrayType = exprManager.arrayType(addressType, cellType);
 
-    return new BitVectorMemoryModel(encoding, memArrayType);
+    return new BitVectorMemoryModelOrder(encoding, memArrayType);
   }
   
   /** Create an expression factory with the given array type to model memory. The size of the 
@@ -64,7 +62,7 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
    *           if <code>addressSize</code> is not a multiple of
    *           <code>cellSize</code>
    */
-  public static BitVectorMemoryModel create(
+  public static BitVectorMemoryModelOrder create(
       ExpressionEncoding encoding, 
       ArrayType memArrayType)
       throws ExpressionFactoryException {
@@ -72,11 +70,11 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(memArrayType.getElementType().isBitVectorType());
     Preconditions.checkArgument(memArrayType.getIndexType().asBitVectorType().getSize()
         % memArrayType.getElementType().asBitVectorType().getSize() == 0);
-      return new BitVectorMemoryModel(encoding,
+      return new BitVectorMemoryModelOrder(encoding,
           memArrayType);
   }
 
-  public static BitVectorMemoryModel create(
+  public static BitVectorMemoryModelOrder create(
       ExpressionEncoding encoding,
       ArrayVariableExpression memArray) throws ExpressionFactoryException
   {
@@ -94,7 +92,7 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
    */
   private ExpressionClosure currentState;
 
-  protected BitVectorMemoryModel(ExpressionEncoding encoding, ArrayType memType) {
+  protected BitVectorMemoryModelOrder(ExpressionEncoding encoding, ArrayType memType) {
     super(encoding);
     
     IntegerEncoding<?> integerEncoding = encoding.getIntegerEncoding();
@@ -330,130 +328,45 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
       ExpressionManager exprManager = getExpressionManager();
       Expression alloc = state.getChild(1);
       Expression nullPtr = exprManager.bitVectorZero(addressType.getSize());
-      Expression sizeZro = exprManager.bitVectorZero(cellType.getSize());
-      
-      if (Preferences.isSet(Preferences.OPTION_SOUND_ALLOC)) {        
-        /* The sound allocation encoding doesn't assume anything about the ordering
-         * of lvals and regions. This may lead a blow-up due to case splits.
-         */
-        List<Expression> lvals_copy = Lists.newCopyOnWriteArrayList(lvals);
-        lvals_copy.removeAll(stackRegions);
-                
-        { /* The soundness of stack */
-          
-          /* The distinctness of nullPtr and all lvals (excluding stack regions) */
-          if (!lvals_copy.isEmpty())  {
-            ImmutableList<Expression> distinctPtr = new ImmutableList.Builder<Expression>()
-                .addAll(lvals_copy).add(nullPtr).build();
-            builder.add(exprManager.distinct(distinctPtr));
-          }
-          
-          for (Expression region : stackRegions) {
-            Expression regionSize = alloc.asArray().index(region);
-            BitVectorExpression regionBound = exprManager.plus(addressType
-                .getSize(), region, regionSize);
-            
-            /* The upper bound of the stack region won't overflow */
-            builder.add(exprManager.greaterThan(regionBound, region));
-            
-            /* Every stack variable doesn't falls into any stack region*/
-            for(Expression lval : lvals_copy) {
-              builder.add(
-                  exprManager.or(
-                      exprManager.lessThan(lval, region),
-                      exprManager.lessThanOrEqual(regionBound, lval)));
-            }
-            
-            /* Every other stack region is non-overlapping. 
-             * TODO: Could optimize using commutativity
-             */
-            for (Expression region2 : stackRegions) {
-              if (!region.equals(region2)) {
-                BitVectorExpression regionBound2 = exprManager.plus(addressType
-                    .getSize(), region2, alloc.asArray().index(region2));
-                
-                builder.add(
-                    exprManager.or(
-                        exprManager.lessThanOrEqual(regionBound2, region),
-                        exprManager.lessThanOrEqual(regionBound, region2)));
-              }
-            }
-          }
-        }
-        
-        { /* Disjoint of the heap region or stack region/variable */
-          for (Expression region : heapRegions) {
-            Expression regionSize = alloc.asArray().index(region);
-            BitVectorExpression regionBound = exprManager.plus(addressType.getSize(), region, regionSize);
-            
-            /* Disjoint of the heap region or stack variable */
-            for (Expression lval : lvals_copy) {
-              builder.add(exprManager.implies(
-                  // heap region is non-null and not freed before
-                  exprManager.and(region.neq(nullPtr), regionSize.neq(sizeZro)),
-                  exprManager.or(
-                      exprManager.lessThan(lval, region),
-                      exprManager.lessThanOrEqual(regionBound, lval))));
-            }
-            
-            /* Disjoint of the heap region or stack region */
-            for (Expression region2 : stackRegions) {
-              BitVectorExpression regionBound2 = exprManager.plus(addressType
-                  .getSize(), region2, alloc.asArray().index(region2));
-              
-              builder.add(exprManager.implies(
-                  // heap region is non-null and not freed before
-                  exprManager.and(region.neq(nullPtr), regionSize.neq(sizeZro)),
-                  exprManager.or(
-                      exprManager.lessThan(regionBound2, region),
-                      exprManager.lessThanOrEqual(regionBound, region2))));
-            }
-          }
-        }
-      } else if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {       
-        /* Unsound allocation encoding: just pick an order and assert that
-         * the lvals and regions are allocated in that order. 
-         */
-        
-        /* All the stack regions are not overflow */
-        for(Expression region : stackRegions) {
-          Expression regionBound = exprManager.plus(addressType.getSize(), 
-              region, alloc.asArray().index(region));
-          builder.add(exprManager.lessThan(region, regionBound));
-        }
-        
-        /* Assert the ordering on the stack */
-        Iterator<Expression> lvalIter = lvals.iterator();
-        Expression lval = null;
-        if( lvalIter.hasNext() ) {
-          lval = lvalIter.next();
-        }
 
-        while (lvalIter.hasNext()) {
-          Expression lval2 = lvalIter.next();
-          if(stackRegions.contains(lval2)) { // stack region variable
-            Expression lval2Bound = exprManager.plus(addressType.getSize(), 
-                lval2, alloc.asArray().index(lval2));
-            builder.add(exprManager.greaterThan(lval, lval2Bound));
-          } else {
-            builder.add(exprManager.greaterThan(lval, lval2));
-          }         
-          lval = lval2;
-        }
+      /* All the stack regions are not overflow */
+      for(Expression region : stackRegions) {
+        Expression regionBound = exprManager.plus(addressType.getSize(), 
+            region, alloc.asArray().index(region));
+        builder.add(exprManager.lessThan(region, regionBound));
+      }
+      
+      /* Assert the ordering on the stack */
+      Iterator<Expression> lvalIter = lvals.iterator();
+      Expression lval = null;
+      if( lvalIter.hasNext() ) {
+        lval = lvalIter.next();
+      }
+
+      while (lvalIter.hasNext()) {
+        Expression lval2 = lvalIter.next();
+        if(stackRegions.contains(lval2)) { // stack region variable
+          Expression lval2Bound = exprManager.plus(addressType.getSize(), 
+              lval2, alloc.asArray().index(lval2));
+          builder.add(exprManager.greaterThan(lval, lval2Bound));
+        } else {
+          builder.add(exprManager.greaterThan(lval, lval2));
+        }         
+        lval = lval2;
+      }
+      
+      if(lval != null) {
+        Expression stackBound = lval;              
+        Expression lastRegion = state.getChild(2);
         
-        if(lval != null) {
-          Expression stackBound = lval;              
-          Expression lastRegion = state.getChild(2);
-          
-          // lastRegionBound = lastRegion != 0 ? lastRegion + Alloc[lastRegion] : 0;
-          Expression heapBound = exprManager.ifThenElse(
-              lastRegion.neq(nullPtr),
-              exprManager.plus(addressType.getSize(), lastRegion, alloc.asArray().index(lastRegion)),
-              nullPtr);
-          
-          builder.add(exprManager.greaterThan(stackBound, heapBound));
-        }
-      } // else nothing to assume memory is safe without aliasing or region overlapping
+        // lastRegionBound = lastRegion != 0 ? lastRegion + Size[lastRegion] : 0;
+        Expression heapBound = exprManager.ifThenElse(
+            lastRegion.neq(nullPtr),
+            exprManager.plus(addressType.getSize(), lastRegion, alloc.asArray().index(lastRegion)),
+            nullPtr);
+        
+        builder.add(exprManager.greaterThan(stackBound, heapBound));
+      }
     } catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
     }
@@ -479,67 +392,25 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
     Expression lastRegion = state.getChild(2);
     
     Expression nullPtr = exprManager.bitVectorZero(addressType.getSize());
-    Expression sizeZro = exprManager.bitVectorZero(cellType.getSize());
     Expression locVarBound = exprManager.plus(addressType.getSize(), locVar, size);
+ 
+    Expression lastRegionBound = exprManager.plus(addressType.getSize(), 
+        lastRegion, alloc.asArray().index(lastRegion));
     
-    if(Preferences.isSet(Preferences.OPTION_SOUND_ALLOC)) {
-      ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();     
-      Expression assump = locVar.neq(nullPtr);
-      
-      /* size not overflow */
-      builder.add(exprManager.lessThan(locVar, locVarBound));     
-      
-      /* Don't overlap any previously allocated and not freed HEAP region */
-      List<Expression> regions = Lists.newArrayList(heapRegions);     
-      /* Collect all heap regions except the last one, the one just allocated. */
-      regions.remove(regions.size()-1);
-      
-      for(Expression region : regions) {
-        Expression regionSize = alloc.asArray().index(region);
-        Expression regionBound = exprManager.plus(addressType.getSize(), region, regionSize);
-        
-        /* region is not null and not freed before */
-        Expression assump_local = exprManager.and(
-            exprManager.greaterThan(regionSize, sizeZro),
-            region.neq(nullPtr));
-        
-        /* Disjoint */
-        Expression assert_local = exprManager.or(
-            exprManager.lessThanOrEqual(locVarBound, region),
-            exprManager.lessThanOrEqual(regionBound, locVar));
-        
-        builder.add(exprManager.implies(assump_local, assert_local));
-      }
-      
-      BooleanExpression res = exprManager.implies(assump, exprManager.and(builder.build()));
-      
-      Expression statePrime = exprManager.tuple(getStateType(), memory, alloc, lastRegion);
-      setCurrentState(state, statePrime);
-      
-      return res;
-    } else if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
-      Expression lastRegionBound = exprManager.plus(addressType.getSize(), 
-          lastRegion, alloc.asArray().index(lastRegion));
-      
-      BooleanExpression res = exprManager.implies(
-          locVar.neq(nullPtr),
-          exprManager.and(
-              exprManager.lessThan(locVar, locVarBound), // not overflow
-              exprManager.or(
-                  lastRegion.eq(nullPtr), // last region is null (not allocated)
-                  exprManager.lessThanOrEqual(lastRegionBound, ptr) // larger than the last allocated region
-                  )));
-      
-      lastRegion = exprManager.ifThenElse(locVar.neq(nullPtr), locVar, lastRegion); // update last region
-      Expression statePrime = exprManager.tuple(getStateType(), memory, alloc, lastRegion);
-      setCurrentState(state, statePrime);
-      
-      return res; 
-    } else {
-      Expression statePrime = exprManager.tuple(getStateType(), memory, alloc, lastRegion);
-      setCurrentState(state, statePrime);
-      return exprManager.tt();
-    }
+    BooleanExpression res = exprManager.implies(
+        locVar.neq(nullPtr),
+        exprManager.and(
+            exprManager.lessThan(locVar, locVarBound), // not overflow
+            exprManager.or(
+                lastRegion.eq(nullPtr), // last region is null (not allocated)
+                exprManager.lessThanOrEqual(lastRegionBound, ptr) // larger than the last allocated region
+                )));
+    
+    lastRegion = exprManager.ifThenElse(locVar.neq(nullPtr), locVar, lastRegion); // update last region
+    Expression statePrime = exprManager.tuple(getStateType(), memory, alloc, lastRegion);
+    setCurrentState(state, statePrime);
+    
+    return res;
   }
   
   @Override
@@ -563,7 +434,7 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
   
   @Override
   public TupleType getStateType() {
-    return getExpressionManager().tupleType(DEFAULT_STATE_TYPE, memType, memType, memType.getIndexType());
+    return getExpressionManager().tupleType(DEFAULT_STATE_TYPE, memType, memType, addressType);
   }
 
   @Override
@@ -679,63 +550,26 @@ public class BitVectorMemoryModel extends AbstractMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
     
     Expression nullPtr = exprManager.bitVectorZero(addressType.getSize());
-    Expression sizeZro = exprManager.bitVectorZero(cellType.getSize());
     Expression ptrBound = exprManager.plus(addressType.getSize(), ptr, size);
+
+    Expression lastRegion = state.getChild(2);
+    Expression lastRegionBound = exprManager.plus(addressType.getSize(), 
+        lastRegion, alloc.asArray().index(lastRegion));
     
-    if(Preferences.isSet(Preferences.OPTION_SOUND_ALLOC)) {
-      ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();     
-      Expression assump = ptr.neq(nullPtr); // ptr is not null
-      
-      /* size not overflow */
-      builder.add(exprManager.lessThan(ptr, ptrBound));
-      
-      /* Don't overlap any previously allocated and not freed HEAP region */
-      List<Expression> regions = Lists.newArrayList(heapRegions);     
-      /* Collect all heap regions except the last one, the one just allocated. */
-      regions.remove(regions.size()-1);
-      
-      for(Expression region : regions) {
-        Expression regionSize = alloc.asArray().index(region);
-        Expression regionBound = exprManager.plus(addressType.getSize(), region, regionSize);
-        
-        /* region is not null and not freed before */
-        Expression assump_local = exprManager.and( 
-            exprManager.greaterThan(regionSize, sizeZro),
-            region.neq(nullPtr));
-        
-        /* Disjoint */
-        Expression assert_local = exprManager.or(
-            exprManager.lessThanOrEqual(ptrBound, region),
-            exprManager.lessThanOrEqual(regionBound, ptr));
-        
-        builder.add(exprManager.implies(assump_local, assert_local));
-      }
-      
-      BooleanExpression res = exprManager.implies(assump, exprManager.and(builder.build()));
-      
-      return res;
-    } else if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
-      Expression lastRegion = state.getChild(2);
-      Expression lastRegionBound = exprManager.plus(addressType.getSize(), 
-          lastRegion, alloc.asArray().index(lastRegion));
-      
-      BooleanExpression res = exprManager.implies(
-          ptr.neq(nullPtr),
-          exprManager.and(
-              exprManager.lessThan(ptr, ptrBound), // not overflow
-              exprManager.or(
-                  lastRegion.eq(nullPtr), // last region is null (not allocated)
-                  exprManager.lessThanOrEqual(lastRegionBound, ptr)  // larger than the last allocated region
-                  )));
-      
-      lastRegion = exprManager.ifThenElse(ptr.neq(nullPtr), ptr, lastRegion); // update last region
-      Expression statePrime = exprManager.tuple(getStateType(), state.getChild(0), state.getChild(1), lastRegion);
-      setCurrentState(state, statePrime);
-      
-      return res; 
-    } else {
-      return exprManager.tt();
-    }
+    BooleanExpression res = exprManager.implies(
+        ptr.neq(nullPtr),
+        exprManager.and(
+            exprManager.lessThan(ptr, ptrBound), // not overflow
+            exprManager.or(
+                lastRegion.eq(nullPtr), // last region is null (not allocated)
+                exprManager.lessThanOrEqual(lastRegionBound, ptr)  // larger than the last allocated region
+                )));
+    
+    lastRegion = exprManager.ifThenElse(ptr.neq(nullPtr), ptr, lastRegion); // update last region
+    Expression statePrime = exprManager.tuple(getStateType(), state.getChild(0), state.getChild(1), lastRegion);
+    setCurrentState(state, statePrime);
+    
+    return res;
   }
   
   @Override

@@ -17,7 +17,7 @@ import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.util.Preferences;
 
-public class ReachMemoryModel extends BitVectorMemoryModel {
+public class ReachMemoryModel extends BitVectorMemoryModelSound {
   
   protected final Expression nullPtr;
 

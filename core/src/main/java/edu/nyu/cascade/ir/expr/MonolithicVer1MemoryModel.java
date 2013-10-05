@@ -70,7 +70,7 @@ public class MonolithicVer1MemoryModel extends AbstractMonoMemoryModel {
 
   public static MemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
-    return BitVectorMemoryModel.create(encoding);
+    return MonolithicVer1MemoryModel.create(encoding);
   }
   
   /** when allocate a region_x in stack of array or structure, we just 

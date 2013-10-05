@@ -65,16 +65,16 @@ import edu.nyu.cascade.util.Preferences;
  *
  */
 
-public class PartitionMemoryModel extends AbstractMonoMemoryModel {
+public class PartitionMemoryModelObject extends AbstractMonoMemoryModel {
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
    */
-  public static PartitionMemoryModel create(
+  public static PartitionMemoryModelObject create(
       ExpressionEncoding encoding)
       throws ExpressionFactoryException {
     Preconditions.checkArgument(encoding instanceof PointerExpressionEncoding);
-    return new PartitionMemoryModel(encoding);
+    return new PartitionMemoryModelObject(encoding);
   }
 
   private static final String ARRAY_PREFIX = "arr_of_";
@@ -119,7 +119,7 @@ public class PartitionMemoryModel extends AbstractMonoMemoryModel {
     MIX
   }
 
-  private PartitionMemoryModel(ExpressionEncoding encoding) {
+  private PartitionMemoryModelObject(ExpressionEncoding encoding) {
     super(encoding);
     
     ExpressionManager exprManager = getExpressionManager();

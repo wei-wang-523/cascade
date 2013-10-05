@@ -70,7 +70,7 @@ public class MonolithicVer0MemoryModel extends AbstractMonoMemoryModel {
 
   public static MemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
-    return BitVectorMemoryModel.create(encoding);
+    return MonolithicVer0MemoryModel.create(encoding);
   }
   
   private final Set<Expression> lvals; // lvals: variables in stack
