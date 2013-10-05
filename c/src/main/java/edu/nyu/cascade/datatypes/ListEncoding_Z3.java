@@ -21,7 +21,7 @@ import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.ir.expr.ArrayEncoding;
 import edu.nyu.cascade.ir.expr.BitVectorIntegerEncoding;
-import edu.nyu.cascade.ir.expr.BitVectorMemoryModel;
+import edu.nyu.cascade.ir.expr.BitVectorMemoryModelSound;
 import edu.nyu.cascade.ir.expr.BooleanEncoding;
 import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
 import edu.nyu.cascade.ir.expr.DefaultBooleanEncoding;
@@ -51,7 +51,7 @@ public class ListEncoding_Z3 extends ListEncoding {
 
   public static MemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
-    return BitVectorMemoryModel.create(encoding);
+    return BitVectorMemoryModelSound.create(encoding);
   }
 
   /* The list inductive data type */

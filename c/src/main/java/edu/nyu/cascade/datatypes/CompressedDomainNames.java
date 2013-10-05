@@ -1,7 +1,7 @@
 package edu.nyu.cascade.datatypes;
 
 import edu.nyu.cascade.c.Theory;
-import edu.nyu.cascade.ir.expr.BitVectorMemoryModel;
+import edu.nyu.cascade.ir.expr.BitVectorMemoryModelSound;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -18,7 +18,7 @@ public class CompressedDomainNames implements Theory {
       encoding = CompressedDomainNamesEncoding_CVC4.create(exprManager);
     else
       throw new IllegalArgumentException("Unknown theorem prover " + tpProviderName);
-    memoryModel = BitVectorMemoryModel.create(encoding);
+    memoryModel = BitVectorMemoryModelSound.create(encoding);
   }
 
   @Override

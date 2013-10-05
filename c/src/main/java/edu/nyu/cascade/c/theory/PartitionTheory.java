@@ -1,11 +1,13 @@
 package edu.nyu.cascade.c.theory;
 
 import edu.nyu.cascade.c.Theory;
-import edu.nyu.cascade.ir.expr.PartitionMemoryModel;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
+import edu.nyu.cascade.ir.expr.PartitionMemoryModelOrder;
+import edu.nyu.cascade.ir.expr.PartitionMemoryModelSound;
 import edu.nyu.cascade.ir.expr.PointerExpressionEncoding;
 import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.util.Preferences;
 
 public class PartitionTheory implements Theory {
   private final ExpressionEncoding encoding;
@@ -13,7 +15,10 @@ public class PartitionTheory implements Theory {
   
   public PartitionTheory(ExpressionManager exprManager) {
     encoding = PointerExpressionEncoding.create(exprManager);
-    memoryModel = PartitionMemoryModel.create(encoding);
+    if(Preferences.isSet(Preferences.OPTION_ORDER_ALLOC))
+    	memoryModel = PartitionMemoryModelOrder.create(encoding);
+    else
+    	memoryModel = PartitionMemoryModelSound.create(encoding);	
   }
 
   @Override

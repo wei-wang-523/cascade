@@ -55,7 +55,7 @@ import java.util.Set;
 import com.google.common.base.Preconditions;
 import edu.nyu.cascade.ir.expr.AbstractExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ArrayEncoding;
-import edu.nyu.cascade.ir.expr.BitVectorMemoryModel;
+import edu.nyu.cascade.ir.expr.BitVectorMemoryModelSound;
 import edu.nyu.cascade.ir.expr.BooleanEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.IntegerEncoding;
@@ -130,7 +130,7 @@ public abstract class CompressedDomainNamesEncoding extends AbstractExpressionEn
 
   public static MemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
-    return BitVectorMemoryModel.create(encoding);
+    return BitVectorMemoryModelSound.create(encoding);
   }
   
   protected CompressedDomainNamesEncoding(

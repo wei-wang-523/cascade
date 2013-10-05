@@ -2,10 +2,12 @@ package edu.nyu.cascade.c.theory;
 
 import edu.nyu.cascade.c.Theory;
 import edu.nyu.cascade.ir.expr.BitVectorExpressionEncoding;
-import edu.nyu.cascade.ir.expr.BitVectorMemoryModel;
+import edu.nyu.cascade.ir.expr.BitVectorMemoryModelOrder;
+import edu.nyu.cascade.ir.expr.BitVectorMemoryModelSound;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.util.Preferences;
 
 public class BitVectorTheory implements Theory {
   private final ExpressionEncoding encoding;
@@ -13,18 +15,11 @@ public class BitVectorTheory implements Theory {
   
   public BitVectorTheory(ExpressionManager exprManager) {
     encoding = BitVectorExpressionEncoding.create(exprManager);
-    memoryModel = BitVectorMemoryModel.create(encoding);
+    if(Preferences.isSet(Preferences.OPTION_ORDER_ALLOC))
+    	memoryModel = BitVectorMemoryModelOrder.create(encoding);
+    else
+    	memoryModel = BitVectorMemoryModelSound.create(encoding);
   }
-  
-/*  public BitVectorTheory(ExpressionManager exprManager, int size) {
-    encoding = BitVectorExpressionEncoding.create(exprManager, size);
-    memoryModel = BitVectorMemoryModel.create(encoding, 8, size);
-  }
-  
-  public BitVectorTheory(ExpressionManager exprManager, int size, int length) {
-    encoding = BitVectorExpressionEncoding.create(exprManager, size);
-    memoryModel = BitVectorMemoryModel.create(encoding, length, size);
-  }*/
 
   @Override
   public ExpressionEncoding getEncoding() {

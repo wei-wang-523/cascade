@@ -40,7 +40,7 @@ import edu.nyu.cascade.datatypes.CompressedDomainNamesEncoding;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.SymbolTableFactory;
 import edu.nyu.cascade.ir.expr.BitVectorExpressionEncoding;
-import edu.nyu.cascade.ir.expr.BitVectorMemoryModel;
+import edu.nyu.cascade.ir.expr.BitVectorMemoryModelSound;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.ir.expr.MemoryModel;
@@ -607,7 +607,7 @@ public class Main {
               // TODO: Fix bit-vector sizes to agree with encoding              
               encoding = BitVectorExpressionEncoding.create(theoremProver
                   .getExpressionManager()); 
-              memoryModel = BitVectorMemoryModel.create(encoding);
+              memoryModel = BitVectorMemoryModelSound.create(encoding);
             }
             
             CExpressionEncoder encoder = CExpressionEncoder.create(encoding,
