@@ -24,6 +24,7 @@ import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.Identifiers;
+import edu.nyu.cascade.util.Pair;
 
 /**
  * Burstall memory model, multiple memory arrays for various type.
@@ -39,10 +40,13 @@ public abstract class AbstractBurstallMemoryModel extends AbstractMemoryModel {
     super(encoding);
   }
   
-  private final LoadingCache<xtc.type.Type, String> cache = CacheBuilder
-      .newBuilder().build(new CacheLoader<xtc.type.Type, String>(){
-        public String load(xtc.type.Type type) {
-          return CType.parseTypeName(type);
+  /** In xtc.type.WrappedT, the equals just forwards the method invocation to the wrapped type
+   * Here, shape should be involved to determine equivalence, and thus we use pair.
+   */
+  private final LoadingCache<Pair<xtc.type.Type, xtc.type.Reference>, String> cache = CacheBuilder
+      .newBuilder().build(new CacheLoader<Pair<xtc.type.Type, xtc.type.Reference>, String>(){
+        public String load(Pair<xtc.type.Type, xtc.type.Reference> pair) {
+          return CType.parseTypeName(pair.fst());
         }
       });
   
@@ -54,7 +58,7 @@ public abstract class AbstractBurstallMemoryModel extends AbstractMemoryModel {
         return "$BoolT";
     }
     try {
-      return cache.get(type);
+      return cache.get(Pair.of(type, type.getShape()));
     } catch (ExecutionException e) {
       throw new ExpressionFactoryException(e);
     }
