@@ -67,8 +67,8 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
     return new PartitionMemoryModelOrder(encoding);
   }
 
-  private static final String ARRAY_MEM_PREFIX = "arr_of_mem_";
-  private static final String ARRAY_ALLOC_PREFIX = "arr_of_size_";
+  private static final String ARRAY_MEM_PREFIX = "mem_";
+  private static final String ARRAY_ALLOC_PREFIX = "size_";
   
   private BitVectorType addrType, cellType;
   private RecordType memType, allocType; // with multiple array types
