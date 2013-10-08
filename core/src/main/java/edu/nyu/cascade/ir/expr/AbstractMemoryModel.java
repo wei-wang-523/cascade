@@ -161,6 +161,29 @@ public abstract class AbstractMemoryModel implements MemoryModel {
    * @return a new state
    */
   @Override
+  public final TupleExpression getUpdatedState(Iterable<Expression> elems) {
+  	Preconditions.checkArgument(elems != null && !Iterables.isEmpty(elems));
+    
+    Function<Expression, Type> func = new Function<Expression, Type>(){
+    	@Override
+    	public Type apply(Expression elem) {
+    		return elem.getType();
+    	}
+    };
+    
+    Iterable<Type> elemTypes = Iterables.transform(elems, func);
+    ExpressionManager exprManager = getExpressionManager();
+    Type stateTypePrime = exprManager.tupleType(Identifiers.uniquify(DEFAULT_STATE_TYPE), elemTypes);
+    return exprManager.tuple(stateTypePrime, elems);
+  }
+  
+  
+  /**
+   * Recreate state from @param memoryPrime and @param allocPrime and create a new state
+   * type if state type is changed from the type of state
+   * @return a new state
+   */
+  @Override
   public final TupleExpression getUpdatedState(Expression state, Expression... elems) {
   	return getUpdatedState(state, Arrays.asList(elems));
   }

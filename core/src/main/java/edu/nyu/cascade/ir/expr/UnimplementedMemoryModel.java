@@ -204,4 +204,10 @@ public class UnimplementedMemoryModel implements MemoryModel {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+  public TupleExpression getUpdatedState(Iterable<Expression> elems) {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
 }

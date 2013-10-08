@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
@@ -38,6 +39,21 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   }
 
   @Override
+  public Expression alloc(Expression pre, ExpressionClosure lval,
+      ExpressionClosure rval) {
+    Expression mem = pre.getChild(0);
+    Expression pc = pre.getChild(1);
+    
+    Expression memPrime = mem;
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    if(currentState != null) memPrime = currentState.eval(mem);
+    getMemoryModel().clearCurrentState();
+    
+    memPrime = getMemoryModel().alloc(memPrime, lval.eval(mem), rval.eval(mem));
+    return getUpdatedPathState(memPrime, pc);
+  }
+
+@Override
   public Expression assign(Expression pre,
       ExpressionClosure var, ExpressionClosure val) {
     Expression mem = pre.getChild(0);
@@ -85,6 +101,151 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   }
 
   @Override
+  public Expression declareArray(Expression pre, ExpressionClosure ptr,
+      ExpressionClosure size) {
+    Expression mem = pre.getChild(0);
+    Expression pc = pre.getChild(1);
+    
+    Expression memPrime = mem;
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    if(currentState != null) memPrime = currentState.eval(mem);
+    getMemoryModel().clearCurrentState();
+    
+    memPrime = getMemoryModel().declareArray(memPrime, ptr.eval(mem), size.eval(mem));
+    return getUpdatedPathState(memPrime, pc);
+  }
+
+@Override
+  public Expression declareStruct(Expression pre, ExpressionClosure ptr,
+      ExpressionClosure size) {
+    Expression mem = pre.getChild(0);
+    Expression pc = pre.getChild(1);
+    
+    Expression memPrime = mem;
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    if(currentState != null) memPrime = currentState.eval(mem);
+    getMemoryModel().clearCurrentState();
+    
+    memPrime = getMemoryModel().declareStruct(memPrime, ptr.eval(mem), size.eval(mem));
+    return getUpdatedPathState(memPrime, pc);
+  }
+
+@Override
+  public Expression emptyPath() {
+    Expression memState = getMemoryModel().initialState();
+    Expression pcState = getExpressionManager().tt();
+    return getUpdatedPathState(memState, pcState);
+  }
+
+  @Override
+  public Expression fieldAssign(Expression pre, ExpressionClosure lval,
+      String field, ExpressionClosure rval) {
+    ExpressionManager exprManager =  getExpressionManager();
+    Expression mem = pre.getChild(0);
+    Expression pc = pre.getChild(1);
+    
+    Expression pcPrime = pc;
+    if(getMemoryModel() instanceof ReachMemoryModel) {
+      ReachMemoryModel mm = (ReachMemoryModel) getMemoryModel();
+      Expression memAssume = mm.fieldAssign(mem, lval.eval(mem), field, rval.eval(mem));
+      pcPrime = exprManager.ifThenElse(pc, memAssume, exprManager.ff());
+    }
+    
+    return getUpdatedPathState(mem, pcPrime);
+  }
+
+@Override
+  public Expression free(Expression pre, ExpressionClosure ptr) {
+    Expression mem = pre.getChild(0);
+    Expression pc = pre.getChild(1);
+    
+    Expression memPrime = mem;
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    if(currentState != null) memPrime = currentState.eval(mem);
+    getMemoryModel().clearCurrentState();
+    
+    memPrime = getMemoryModel().free(memPrime, ptr.eval(mem));
+    return getUpdatedPathState(memPrime, pc);
+  }
+
+  @Override
+  public TupleType getPathType() {
+    return pathType;
+  }
+
+@Override
+  public Expression havoc(Expression pre, ExpressionClosure lval) {
+    Expression mem = pre.getChild(0);
+    Expression pc = pre.getChild(1);
+    
+    Expression memPrime = mem;
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    if(currentState != null) memPrime = currentState.eval(mem);
+    getMemoryModel().clearCurrentState();
+    
+    memPrime = getMemoryModel().havoc(memPrime, lval.eval(mem));
+    return getUpdatedPathState(memPrime, pc);
+  }
+  
+  @Override
+  public Expression noop(Iterable<? extends Expression> prefixes,
+      Iterable<? extends Expression> preGuards) {
+    Preconditions.checkArgument(Iterables.size(prefixes) == Iterables.size(preGuards));
+    
+    // Split path state into two-lists: memory state & pc
+    ImmutableList.Builder<Expression> memStateBuilder, pcBuilder;
+    memStateBuilder = new ImmutableList.Builder<Expression>();
+    pcBuilder = new ImmutableList.Builder<Expression>();
+    for(Expression prefix : prefixes) {
+    	memStateBuilder.add(prefix.getChild(0));
+    	pcBuilder.add(prefix.getChild(1));
+    }
+    
+    Expression resPC = getITEExpression(pcBuilder.build(), preGuards); 
+    
+    Expression resMemState = null;
+    // Split memory state into multi-lists
+    Type stateType = getMemoryModel().getStateType();
+    if(stateType.isTuple()) {
+    	int size = stateType.asTuple().size();
+    	List<ImmutableList.Builder<Expression>> builders = Lists.newArrayListWithCapacity(size);
+    	for(int i = 0; i < size; i++) {
+    		builders.add(new ImmutableList.Builder<Expression>());
+    	}
+    	
+    	for(Expression memState : memStateBuilder.build()) {
+    		for(int i = 0; i < size; i++) {
+    			builders.get(i).add(memState.getChild(i));
+    		}
+    	}
+    	
+    	ImmutableList.Builder<Expression> memStateElemsBuilder = new ImmutableList.Builder<Expression>();
+    	for(ImmutableList.Builder<Expression> builder : builders) {
+    		memStateElemsBuilder.add(getITEExpression(builder.build(), preGuards));
+    	}
+    	
+    	resMemState = getMemoryModel().getUpdatedState(memStateElemsBuilder.build());
+    } else {
+    	resMemState = getITEExpression(memStateBuilder.build(), preGuards);
+    }
+    
+    return getUpdatedPathState(resMemState, resPC);
+  }
+
+@Override
+  public boolean setPathType(Type pathType) {
+    Preconditions.checkArgument(pathType.isTuple());
+    Preconditions.checkArgument(Preferences.isSet(Preferences.OPTION_MERGE_PATH));
+    if(getMemoryModel() instanceof AbstractBurstallMemoryModel) {
+      this.pathType = pathType.asTuple();
+      ((AbstractBurstallMemoryModel) getMemoryModel()).setStateType(
+          pathType.asTuple().getElementTypes().get(0).asTuple());
+      return true;
+    } else
+      return false;
+  }
+
+@Override
   protected BooleanExpression assertionToBoolean(Expression pre,
       ExpressionClosure bool) {
     Preconditions.checkArgument( bool.getInputType().equals( 
@@ -108,32 +269,7 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     return res.asBooleanExpression();
   }
 
-  @Override
-  public Expression emptyPath() {
-    Expression memState = getMemoryModel().initialState();
-    Expression pcState = getExpressionManager().tt();
-    return getUpdatedPathState(memState, pcState);
-  }
-
-  @Override
-  public TupleType getPathType() {
-    return pathType;
-  }
-  
-  @Override
-  public boolean setPathType(Type pathType) {
-    Preconditions.checkArgument(pathType.isTuple());
-    Preconditions.checkArgument(Preferences.isSet(Preferences.OPTION_MERGE_PATH));
-    if(getMemoryModel() instanceof AbstractBurstallMemoryModel) {
-      this.pathType = pathType.asTuple();
-      ((AbstractBurstallMemoryModel) getMemoryModel()).setStateType(
-          pathType.asTuple().getElementTypes().get(0).asTuple());
-      return true;
-    } else
-      return false;
-  }
-
-  @Override
+@Override
   protected BooleanExpression pathToBoolean(Expression pre) {
     Expression pc = pre.getChild(1);
     Expression mem = pre.getChild(0);
@@ -141,98 +277,8 @@ public class SimplePathEncoding extends AbstractPathEncoding {
         .and(getMemoryModel().getAssumptions(mem));
     return memorySafe.and(pc);
   }
-  
-  @Override
-  public Expression alloc(Expression pre, ExpressionClosure lval,
-      ExpressionClosure rval) {
-    Expression mem = pre.getChild(0);
-    Expression pc = pre.getChild(1);
-    
-    Expression memPrime = mem;
-    ExpressionClosure currentState = getMemoryModel().getCurrentState();
-    if(currentState != null) memPrime = currentState.eval(mem);
-    getMemoryModel().clearCurrentState();
-    
-    memPrime = getMemoryModel().alloc(memPrime, lval.eval(mem), rval.eval(mem));
-    return getUpdatedPathState(memPrime, pc);
-  }
-  
-  @Override
-  public Expression declareStruct(Expression pre, ExpressionClosure ptr,
-      ExpressionClosure size) {
-    Expression mem = pre.getChild(0);
-    Expression pc = pre.getChild(1);
-    
-    Expression memPrime = mem;
-    ExpressionClosure currentState = getMemoryModel().getCurrentState();
-    if(currentState != null) memPrime = currentState.eval(mem);
-    getMemoryModel().clearCurrentState();
-    
-    memPrime = getMemoryModel().declareStruct(memPrime, ptr.eval(mem), size.eval(mem));
-    return getUpdatedPathState(memPrime, pc);
-  }
-  
-  @Override
-  public Expression declareArray(Expression pre, ExpressionClosure ptr,
-      ExpressionClosure size) {
-    Expression mem = pre.getChild(0);
-    Expression pc = pre.getChild(1);
-    
-    Expression memPrime = mem;
-    ExpressionClosure currentState = getMemoryModel().getCurrentState();
-    if(currentState != null) memPrime = currentState.eval(mem);
-    getMemoryModel().clearCurrentState();
-    
-    memPrime = getMemoryModel().declareArray(memPrime, ptr.eval(mem), size.eval(mem));
-    return getUpdatedPathState(memPrime, pc);
-  }
-  
-  @Override
-  public Expression free(Expression pre, ExpressionClosure ptr) {
-    Expression mem = pre.getChild(0);
-    Expression pc = pre.getChild(1);
-    
-    Expression memPrime = mem;
-    ExpressionClosure currentState = getMemoryModel().getCurrentState();
-    if(currentState != null) memPrime = currentState.eval(mem);
-    getMemoryModel().clearCurrentState();
-    
-    memPrime = getMemoryModel().free(memPrime, ptr.eval(mem));
-    return getUpdatedPathState(memPrime, pc);
-  }
 
-  @Override
-  public Expression fieldAssign(Expression pre, ExpressionClosure lval,
-      String field, ExpressionClosure rval) {
-    ExpressionManager exprManager =  getExpressionManager();
-    Expression mem = pre.getChild(0);
-    Expression pc = pre.getChild(1);
-    
-    Expression pcPrime = pc;
-    if(getMemoryModel() instanceof ReachMemoryModel) {
-      ReachMemoryModel mm = (ReachMemoryModel) getMemoryModel();
-      Expression memAssume = mm.fieldAssign(mem, lval.eval(mem), field, rval.eval(mem));
-      pcPrime = exprManager.ifThenElse(pc, memAssume, exprManager.ff());
-    }
-    
-    return getUpdatedPathState(mem, pcPrime);
-  }
-  
-  @Override
-  public Expression havoc(Expression pre, ExpressionClosure lval) {
-    Expression mem = pre.getChild(0);
-    Expression pc = pre.getChild(1);
-    
-    Expression memPrime = mem;
-    ExpressionClosure currentState = getMemoryModel().getCurrentState();
-    if(currentState != null) memPrime = currentState.eval(mem);
-    getMemoryModel().clearCurrentState();
-    
-    memPrime = getMemoryModel().havoc(memPrime, lval.eval(mem));
-    return getUpdatedPathState(memPrime, pc);
-  }
-  
-  private Expression getITEExpression(Iterable<? extends Expression> exprs, 
+private Expression getITEExpression(Iterable<? extends Expression> exprs, 
       Iterable<? extends Expression> guards) {
     Preconditions.checkArgument(Iterables.size(exprs) == Iterables.size(guards));
     ExpressionManager exprManager = getExpressionManager();
@@ -267,50 +313,5 @@ public class SimplePathEncoding extends AbstractPathEncoding {
       pathType = em.tupleType(Identifiers.uniquify(DEFAULT_PATH_STATE_NAME), 
           memoryPrime.getType(), allocPrime.getType());
     return em.tuple(pathType, memoryPrime, allocPrime);
-  }
-
-  @Override
-  public Expression noop(Iterable<? extends Expression> prefixes,
-      Iterable<? extends Expression> preGuards) {
-    Preconditions.checkArgument(Iterables.size(prefixes) == Iterables.size(preGuards));
-    ExpressionManager exprManager = getExpressionManager();
-    
-    Expression resMemState = null;
-    if(getMemoryModel().getStateType().isTuple()) {
-      TupleType tupleType = getMemoryModel().getStateType().asTuple();
-      int size = tupleType.getElementTypes().size();
-      List<Expression> stateElem = Lists.newArrayListWithCapacity(size);
-      for(int i = 0; i < size; i++) {
-        List<Expression> mem = Lists.newArrayList();
-        for(Expression prefix : prefixes) {
-          mem.add(prefix.getChild(0).getChild(i));   
-        }
-        Expression elem = getITEExpression(mem, preGuards);
-        stateElem.add(elem);
-      }
-      
-      MemoryModel mm = getMemoryModel();
-      if(mm instanceof AbstractBurstallMemoryModel) {
-        assert(stateElem.size() == 2);
-        resMemState = ((AbstractBurstallMemoryModel) mm).getUpdatedState(null, 
-            stateElem.get(0), stateElem.get(1));
-      } else {
-        resMemState = exprManager.tuple(mm.getStateType(), stateElem);
-      }
-    } else {
-      List<Expression> mem = Lists.newArrayList();
-      for(Expression prefix : prefixes) {
-        mem.add(prefix.getChild(0));
-      }
-      resMemState = getITEExpression(mem, preGuards);
-    }
-    
-    List<Expression> pc = Lists.newArrayList();
-    for(Expression prefix : prefixes) {
-      pc.add(prefix.getChild(1));
-    }
-    Expression resPC = getITEExpression(pc, preGuards); 
-    
-    return getUpdatedPathState(resMemState, resPC);
   }
 }
