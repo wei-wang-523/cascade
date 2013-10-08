@@ -235,4 +235,9 @@ public class BitVectorIntegerEncoding extends
       BitVectorExpression rhs) {
     return lhs.signedRems(rhs);
   }
+
+	@Override
+	public BitVectorExpression uminus(BitVectorExpression expr) {
+		return expr.uminus();
+	}
 }

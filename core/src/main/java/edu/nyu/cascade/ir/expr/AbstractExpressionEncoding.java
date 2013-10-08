@@ -273,7 +273,7 @@ public abstract class AbstractExpressionEncoding
     return rshift_(getIntegerEncoding(), a, b);
   }
 
-  private Expression rshift_(IntegerEncoding ie, Expression a, Expression b) {
+  private <T extends Expression> Expression rshift_(IntegerEncoding<T> ie, Expression a, Expression b) {
     Preconditions.checkArgument(isInteger(a));
     Preconditions.checkArgument(isInteger(b));
     if(ie instanceof BitVectorIntegerEncoding) {
@@ -851,6 +851,16 @@ public abstract class AbstractExpressionEncoding
     return getIntegerEncoding().unknown();
   }
 
+  @Override
+  public Expression uminus(Expression expr) {
+  	return uminus_(getIntegerEncoding(), expr);
+  }
+  
+  private <T extends Expression> Expression uminus_(
+      IntegerEncoding<T> ie, Expression lhs) {
+  	return ie.uminus(ie.ofExpression(lhs));
+  }
+  
   @Override
   public Expression updateArray(Expression array, Expression index, Expression newValue) {
     return updateArray_(getArrayEncoding(),array,index,newValue);

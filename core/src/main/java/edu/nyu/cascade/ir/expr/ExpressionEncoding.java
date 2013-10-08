@@ -599,6 +599,11 @@ public interface ExpressionEncoding {
    * An expression with unknown value in the encoding.
    */
   Expression unknown() ;
+  
+  /**
+   * An expression with unary minus
+   */
+  Expression uminus(Expression expr);
 
   /**
    * An array write.

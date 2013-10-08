@@ -234,4 +234,10 @@ public class TemporalIntegerEncoding<T extends Expression> extends
   public StateExpression unknown(Type type) {
     return stateExprFactory.valueOf((Expression) baseEncoding.unknown(type));
   }
+
+	@Override
+	public StateExpression uminus(StateExpression expr) {
+		return stateExprFactory.valueOf((Expression) baseEncoding.uminus(
+        baseEncoding.ofExpression(expr.toExpression())));
+	}
 }

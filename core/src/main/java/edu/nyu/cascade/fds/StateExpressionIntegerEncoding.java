@@ -218,4 +218,9 @@ public class StateExpressionIntegerEncoding extends
     throw new UnsupportedOperationException();
   }
 
+	@Override
+	public StateExpression uminus(StateExpression expr) {
+    return wrap(expr.asIntegerExpression().negate());
+	}
+
 }

@@ -182,4 +182,9 @@ public class DefaultIntegerEncoding extends
     return type.variable(UNKNOWN_VARIABLE_NAME, true).asIntegerExpression();
   }
 
+	@Override
+	public IntegerExpression uminus(IntegerExpression expr) {
+		return expr.negate();
+	}
+
 }

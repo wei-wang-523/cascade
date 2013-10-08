@@ -131,4 +131,9 @@ public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
    * Returns an integer expression representing zero.
    */
   T zero() ;
+  
+  /**
+   * Return an expresion representing the negate of <code>expr</code>
+   */
+  T uminus(T expr);
 }

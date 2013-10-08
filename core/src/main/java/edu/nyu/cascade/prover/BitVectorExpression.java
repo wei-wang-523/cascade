@@ -66,4 +66,5 @@ public interface BitVectorExpression extends Expression {
   BitVectorExpression rshift(Expression a);
   BitVectorExpression zeroExtend(int size);
   BitVectorExpression signExtend(int size);
+  BitVectorExpression uminus();
 }

@@ -83,7 +83,7 @@ public interface IntegerExpression extends Expression {
      * @param e the expression to divide with
      * @return the remainder expression
      */
-    IntegerExpression mods(Expression e) ;
+	IntegerExpression mods(Expression e) ;
 	
 	/**
 	 * Returns a new Integer expression that is the exponentiation of this expression
