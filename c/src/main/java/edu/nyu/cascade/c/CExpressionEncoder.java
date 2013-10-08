@@ -680,9 +680,7 @@ class CExpressionEncoder implements ExpressionEncoder {
     public Expression visitUnaryMinusExpression(GNode node) 
         throws ExpressionFactoryException {
       Expression rhs = (Expression)dispatch(node.getNode(0));
-      Type type = lookupType(node);
-      Expression zero = encoding.castConstant(0, type);
-      return encoding.minus(zero, rhs).setNode(node); 
+      return encoding.uminus(rhs).setNode(node); 
     }
     
     public Expression visitMultiplicativeExpression(GNode node) 
