@@ -882,12 +882,15 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
   @Override
   public BitVectorExpressionImpl zeroExtend(int size) {
     return mkZeroExtend(getExpressionManager(), size, this);
-
   }
   
   @Override
   public BitVectorExpressionImpl signExtend(int size) {
     return mkSignExtend(getExpressionManager(), size, this);
-
+  }
+  
+  @Override
+  public BitVectorExpressionImpl uminus() {
+  	return mkUminus(getExpressionManager(), this);
   }
 }
