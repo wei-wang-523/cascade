@@ -181,5 +181,4 @@ public interface MemoryModel {
 	 */
 	TupleExpression getUpdatedState(Expression state, Expression... elems);
 	TupleExpression getUpdatedState(Expression state, Iterable<Expression> elems);
-	TupleExpression getUpdatedState(Iterable<Expression> elems);
 }

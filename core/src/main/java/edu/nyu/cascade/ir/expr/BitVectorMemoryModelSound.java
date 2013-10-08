@@ -23,6 +23,7 @@ import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.Identifiers;
 
 public class BitVectorMemoryModelSound extends AbstractMemoryModel {  
   protected static final String REGION_VARIABLE_NAME = "region";
@@ -84,6 +85,7 @@ public class BitVectorMemoryModelSound extends AbstractMemoryModel {
   protected final BitVectorType addressType;
   protected final BitVectorType cellType;
   protected final ArrayType memType;
+  protected final TupleType stateType;
   protected final Set<Expression> lvals; // variables in stack
   protected final List<Expression> heapRegions, stackRegions;
   
@@ -98,18 +100,21 @@ public class BitVectorMemoryModelSound extends AbstractMemoryModel {
     IntegerEncoding<?> integerEncoding = encoding.getIntegerEncoding();
     Preconditions.checkArgument(integerEncoding.getType().equals( memType.getIndexType() ));
   
-    this.lvals = Sets.newHashSet();
-    this.heapRegions = Lists.newArrayList();
-    this.stackRegions = Lists.newArrayList();
-
-    this.memType = memType;
+    lvals = Sets.newHashSet();
+    heapRegions = Lists.newArrayList();
+    stackRegions = Lists.newArrayList();
+    
     addressType = memType.getIndexType().asBitVectorType();
     cellType = memType.getElementType().asBitVectorType();
+
+    this.memType = memType;
+    stateType = getExpressionManager().tupleType(
+    		Identifiers.uniquify(DEFAULT_STATE_TYPE), memType, memType);
   }  
   
   @Override
   public TupleExpression alloc(Expression state, Expression ptr, Expression size) {
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
+    Preconditions.checkArgument(state.getType().equals( stateType ));
     Preconditions.checkArgument(ptr.getType().equals( addressType ));
     // FIXME: What if element size and integer size don't agree?
     Preconditions.checkArgument(size.getType().equals( addressType ));
@@ -123,12 +128,12 @@ public class BitVectorMemoryModelSound extends AbstractMemoryModel {
     
     Expression memory = state.getChild(0).asArray().update(ptr, locVar);
     Expression alloc = state.getChild(1).asArray().update(locVar, size);
-    return exprManager.tuple(getStateType(), memory, alloc);
+    return exprManager.tuple(stateType, memory, alloc);
   }
   
   @Override
   public TupleExpression declareArray(Expression state, Expression ptr, Expression size) {
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
+    Preconditions.checkArgument(state.getType().equals( stateType ));
     Preconditions.checkArgument(ptr.getType().equals( addressType ));
     // FIXME: What if element size and integer size don't agree?
     Preconditions.checkArgument(size.getType().equals( addressType ));
@@ -137,12 +142,12 @@ public class BitVectorMemoryModelSound extends AbstractMemoryModel {
     // FIXME: assume size != 0
     Expression alloc = state.getChild(1).asArray().update(ptr, size);  
     return getExpressionManager().tuple(
-        getStateType(), state.getChild(0), alloc);
+        stateType, state.getChild(0), alloc);
   }
   
   @Override
   public TupleExpression declareStruct(Expression state, Expression ptr, Expression size) {
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
+    Preconditions.checkArgument(state.getType().equals( stateType ));
     Preconditions.checkArgument(ptr.getType().equals( addressType ));
     // FIXME: What if element size and integer size don't agree?
     Preconditions.checkArgument(size.getType().equals( addressType ));
@@ -151,12 +156,12 @@ public class BitVectorMemoryModelSound extends AbstractMemoryModel {
     // FIXME: assume size != 0
     Expression alloc = state.getChild(1).asArray().update(ptr, size);  
     return getExpressionManager().tuple(
-        getStateType(), state.getChild(0), alloc);
+        stateType, state.getChild(0), alloc);
   }
   
   @Override
   public BooleanExpression valid(Expression state, Expression ptr) {     
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
+    Preconditions.checkArgument(state.getType().equals( stateType ));
     Preconditions.checkArgument(ptr.getType().equals( addressType ));
     
     ExpressionManager exprManager = getExpressionManager();
@@ -208,7 +213,7 @@ public class BitVectorMemoryModelSound extends AbstractMemoryModel {
   
   @Override
   public BooleanExpression valid(Expression state, Expression ptr, Expression size) {     
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
+    Preconditions.checkArgument(state.getType().equals( stateType ));
     Preconditions.checkArgument(ptr.getType().equals( addressType ));
     
     ExpressionManager exprManager = getExpressionManager();
@@ -264,7 +269,7 @@ public class BitVectorMemoryModelSound extends AbstractMemoryModel {
   
   @Override
   public TupleExpression free(Expression state, Expression ptr) {   
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
+    Preconditions.checkArgument(state.getType().equals( stateType ));
     Preconditions.checkArgument(ptr.getType().equals( addressType )); 
     
     ExpressionManager exprManager = getExpressionManager();
@@ -276,17 +281,17 @@ public class BitVectorMemoryModelSound extends AbstractMemoryModel {
     } catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
     }   
-    return exprManager.tuple(getStateType(), state.getChild(0), alloc);
+    return exprManager.tuple(stateType, state.getChild(0), alloc);
   }
 
   @Override
   public TupleExpression havoc(Expression state, Expression lval) {
-    Preconditions.checkArgument(state.getType().equals(getStateType()));
+    Preconditions.checkArgument(state.getType().equals(stateType));
     Preconditions.checkArgument(lval.getType().equals(cellType));
     
     Expression rval = getExpressionEncoding().unknown();
     Expression memory = state.getChild(0).asArray().update(lval, rval);
-    return getExpressionManager().tuple(getStateType(), memory, state.getChild(1));
+    return getExpressionManager().tuple(stateType, memory, state.getChild(1));
   }
   
   @Override
@@ -294,18 +299,18 @@ public class BitVectorMemoryModelSound extends AbstractMemoryModel {
       Expression state,
       Expression lval,
       Expression rval) {
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
+    Preconditions.checkArgument(state.getType().equals( stateType ));
     Preconditions.checkArgument(lval.getType().equals( addressType ));
     // FIXME: What if element size and integer size don't agree?
     Preconditions.checkArgument(rval.getType().equals( cellType ));
     
     Expression memory = state.getChild(0).asArray().update(lval, rval);  
-    return getExpressionManager().tuple(getStateType(), memory, state.getChild(1));
+    return getExpressionManager().tuple(stateType, memory, state.getChild(1));
   }
 
   @Override
   public Expression deref(Expression state, Expression p) {
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
+    Preconditions.checkArgument(state.getType().equals( stateType ));
     Preconditions.checkArgument(addressType.equals(p.getType()));
     Expression memory = state.getChild(0);
     return memory.asArray().index(p);
@@ -415,7 +420,7 @@ public class BitVectorMemoryModelSound extends AbstractMemoryModel {
 
   @Override
   public BooleanExpression allocated(Expression state, Expression ptr, Expression size) {
-    Preconditions.checkArgument(state.getType().equals( getStateType() ));
+    Preconditions.checkArgument(state.getType().equals( stateType ));
     Preconditions.checkArgument(ptr.getType().equals( addressType ));
     // FIXME: What if element size and integer size don't agree?
     Preconditions.checkArgument(size.getType().equals( addressType ));
@@ -464,7 +469,7 @@ public class BitVectorMemoryModelSound extends AbstractMemoryModel {
     
     BooleanExpression res = exprManager.implies(assump, exprManager.and(builder.build()));
     
-    Expression statePrime = exprManager.tuple(getStateType(), memory, alloc);
+    Expression statePrime = exprManager.tuple(stateType, memory, alloc);
     setCurrentState(state, statePrime);
     
     return res;
@@ -475,7 +480,7 @@ public class BitVectorMemoryModelSound extends AbstractMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
     Expression memVar = exprManager.variable(DEFAULT_MEMORY_VARIABLE_NAME, memType, true);
     Expression allocVar = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, memType, true);
-    return exprManager.tuple(getStateType(), memVar, allocVar);
+    return exprManager.tuple(stateType, memVar, allocVar);
   }
   
   @Override
@@ -490,17 +495,17 @@ public class BitVectorMemoryModelSound extends AbstractMemoryModel {
   
   @Override
   public TupleType getStateType() {
-    return getExpressionManager().tupleType(DEFAULT_STATE_TYPE, memType, memType);
+    return stateType;
   }
 
   @Override
   public ExpressionClosure suspend(final Expression memoryVar, final Expression expr) {
-    Preconditions.checkArgument(getStateType().equals(memoryVar.getType()) );
+    Preconditions.checkArgument(stateType.equals(memoryVar.getType()) );
 
     return new ExpressionClosure() {
       @Override
       public Expression eval(final Expression memory) {
-        Preconditions.checkArgument(getStateType().equals(memory.getType()) );
+        Preconditions.checkArgument(stateType.equals(memory.getType()) );
         if(!isState(expr)) { 
           // For non-tuple expression evaluation
           Expression exprPrime = expr
@@ -539,7 +544,7 @@ public class BitVectorMemoryModelSound extends AbstractMemoryModel {
             allocPrime = alloc.subst(memoryVar.getChild(1), memory_alloc);
           }
           
-          return exprManager.tuple(getStateType(), memPrime, allocPrime);
+          return exprManager.tuple(stateType, memPrime, allocPrime);
         }
       }
 
