@@ -180,8 +180,8 @@ public class Main {
               .withType(String.class)
               .create()) //
       .addOption(
-          OptionBuilder.withLongOpt(Preferences.OPTION_MERGE_PATH) //
-              .withDescription("Merge multiple paths in analysis.") //
+          OptionBuilder.withLongOpt(Preferences.OPTION_SEQ_PATH) //
+              .withDescription("Run sequantial analysis without merge ite branches") //
               .create()) //
       .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_MEMORY_CHECK) //
@@ -615,11 +615,11 @@ public class Main {
 
             RunProcessor runProcessor = null;
             
-            if( Preferences.isSet(Preferences.OPTION_MERGE_PATH) ) {
-              runProcessor = new RunMergeProcessor(symbolTables, cfgs,
+            if( Preferences.isSet(Preferences.OPTION_SEQ_PATH) ) {
+              runProcessor = new RunSeqProcessor(symbolTables, cfgs,
                     cAnalyzer, encoder);
             } else {
-              runProcessor = new RunSeqProcessor(symbolTables, cfgs,
+              runProcessor = new RunMergeProcessor(symbolTables, cfgs,
                 cAnalyzer, encoder);
             }
             
