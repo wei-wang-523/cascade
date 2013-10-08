@@ -9,6 +9,8 @@ import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.prover.RecordExpression;
+import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.Type;
 
 public interface MemoryModel {
@@ -160,4 +162,24 @@ public interface MemoryModel {
    * Substitute the alloc element in state type.
    */
   Expression substAlloc(Expression expr);
+	
+  /**
+   * Combine the previous record states with <code>guard</code>
+   * @param guard
+   * @param rec_1
+   * @param rec_0
+   * @return new record expression with only elements with same name
+   */
+	Expression combineRecordStates(BooleanExpression guard,
+			RecordExpression rec_1, RecordExpression rec_0);
+	
+	/**
+	 * Compose a new state with new <code>elems</code>, 
+	 * @param state
+	 * @param elems
+	 * @return a updated state
+	 */
+	TupleExpression getUpdatedState(Expression state, Expression... elems);
+	
+	TupleExpression getUpdatedState(Expression state, Iterable<Expression> elems);
 }

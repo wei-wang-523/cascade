@@ -5,7 +5,9 @@ package edu.nyu.cascade.ir.expr;
  * the path is a program state.
  */
 
+import java.util.Iterator;
 import java.util.List;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -234,23 +236,25 @@ public class SimplePathEncoding extends AbstractPathEncoding {
       Iterable<? extends Expression> guards) {
     Preconditions.checkArgument(Iterables.size(exprs) == Iterables.size(guards));
     ExpressionManager exprManager = getExpressionManager();
+    
+    Iterator<? extends Expression> itr = exprs.iterator();
+    Iterator<? extends Expression> guardItr = guards.iterator();
+    
     Expression resExpr = null;
-    // the first case is the default case
-    for(int i = 1; i < Iterables.size(guards); i++) {
-      BooleanExpression guard = Iterables.get(guards, i).asBooleanExpression();
-      if(i == 1) {
-        Expression case_0 = Iterables.get(exprs, 0);
-        Expression case_1 = Iterables.get(exprs, 1);
-        if(!case_0.getType().equals(case_1.getType())) {
-          Preconditions.checkArgument(getMemoryModel() instanceof AbstractBurstallMemoryModel);
-          Preconditions.checkArgument(case_0.isRecord() && case_1.isRecord());
-          resExpr = ((AbstractBurstallMemoryModel) getMemoryModel())
-              .combinePreMemoryStates(guard, case_1.asRecord(), case_0.asRecord());
-        } else
-          resExpr = exprManager.ifThenElse(guard, case_1, case_0);
+    
+    while(itr.hasNext()) {
+    	resExpr = itr.next();
+    	guardItr.next();  // the first case is the default case
+    }
+    
+    while(itr.hasNext() && guardItr.hasNext()) {
+      BooleanExpression guard = guardItr.next().asBooleanExpression();
+      Expression currCase = itr.next();
+      if(resExpr.getType().equals(currCase.getType())) {
+      	resExpr = exprManager.ifThenElse(guard, currCase, resExpr);
       } else {
-        Expression case_1 = Iterables.get(exprs, i);
-        resExpr = exprManager.ifThenElse(guard, case_1, resExpr);
+      	assert resExpr.isRecord() && currCase.isRecord();
+      	resExpr = getMemoryModel().combineRecordStates(guard, currCase.asRecord(), resExpr.asRecord());
       }
     }
     return resExpr;

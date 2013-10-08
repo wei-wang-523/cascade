@@ -364,8 +364,9 @@ public abstract class AbstractExpressionEncoding
           .add(encodingForType(typeArgsPtr.get(0)),
               encodingForType(typeArgsPtr.get(1))).build();
       return getTupleEncoding().getInstance(encodings);
+		default:
+			throw new UnsupportedOperationException("type=" + type);
     }
-    throw new UnsupportedOperationException("type=" + type);
   }
   
   private int getMaxSize(Expression lhs, Expression rhs) {

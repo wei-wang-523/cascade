@@ -9,7 +9,6 @@ import java.util.concurrent.ExecutionException;
 import xtc.tree.GNode;
 import xtc.tree.Node;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.cache.CacheBuilder;
@@ -56,7 +55,7 @@ import edu.nyu.cascade.util.Pair;
  *
  */
 
-public class PartitionMemoryModelSound extends AbstractMonoMemoryModel {
+public class PartitionMemoryModelSound extends AbstractMemoryModel {
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
@@ -129,12 +128,12 @@ public class PartitionMemoryModelSound extends AbstractMonoMemoryModel {
     AliasVar ptr_var = loadRepVar(ptr.getNode());
     AliasVar region_var = analyzer.getAllocRegion(ptr_var);
     
-    String regionName = region_var.getName();
+    final String regionName = region_var.getName();
     Expression region = em.variable(regionName, addrType, false);
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
     xtc.type.Type regionType = region_var.getType();
     regionType.mark(regionNode);
-    String regionScope = region_var.getScope();
+    final String regionScope = region_var.getScope();
     regionNode.setProperty(SCOPE, regionScope);
     region.setNode(regionNode);
     
@@ -143,12 +142,18 @@ public class PartitionMemoryModelSound extends AbstractMonoMemoryModel {
     
     { /* Add newly allocated region array to current memory elements */
       Iterable<String> elemNames = state.getChild(0).asRecord().getType().getElementNames();
-      Iterable<String> fieldNames = pickFieldNames(elemNames);
-      String regionArrName = getMemArrElemName(region_var);
-      if(!Iterables.contains(fieldNames, regionArrName)) {
+      boolean definedRegionVar = Iterables.any(elemNames, new Predicate<String>() {
+      	@Override
+      	public boolean apply(String elemName) {
+      		return elemName.contains(regionName) && elemName.contains(regionScope);
+      	}
+      });
+      
+      if(!definedRegionVar) {
         Type cellType = getArrayElemType(region_var.getType());
         ArrayType arrType = em.arrayType(addrType, cellType);
-        ArrayExpression regionArr = em.variable(regionArrName, arrType, false).asArray();
+        String regionArrName = getMemArrElemName(region_var);
+        Expression regionArr = em.variable(regionArrName, arrType, false);
         currentMemElems.put(regionArrName, regionArr);
       }
     }
@@ -234,8 +239,9 @@ public class PartitionMemoryModelSound extends AbstractMonoMemoryModel {
       currentMemElems.put(pArrName, pArray);
       pValCell = pArray.index(p);
       
-      Type currentMemType = getCurrentMemoryType();
-      Expression memPrime = em.record(currentMemType, currentMemElems.values());
+      Type memTypePrime = getRecordTypeFromMap(
+      		Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE), currentMemElems);
+      Expression memPrime = em.record(memTypePrime, currentMemElems.values());
       Expression allocPrime = updateAllocState(state.getChild(1));
       Expression statePrime = getUpdatedState(state, memPrime, allocPrime);
       setCurrentState(state, statePrime);    
@@ -598,56 +604,6 @@ public class PartitionMemoryModelSound extends AbstractMonoMemoryModel {
     currentAllocElems.clear();
     currentState = null;
   }
-  
-  public Expression combinePreMemoryStates(BooleanExpression guard, 
-      RecordExpression mem_1, RecordExpression mem_0) {    
-    
-    RecordType memType_1 = mem_1.getType();
-    Iterable<String> elemNames_1 = pickFieldNames(memType_1.getElementNames());
-    
-    RecordType memType_0 = mem_0.getType();
-    final Iterable<String> elemNames_0 = pickFieldNames(memType_0.getElementNames());
-    
-    Iterable<String> commonElemNames = Iterables.filter(elemNames_1, 
-        new Predicate<String>(){
-      @Override
-      public boolean apply(String elemName) {
-        return Iterables.contains(elemNames_0, elemName);
-      }
-    });
-    
-    List<Expression> elems = Lists.newArrayListWithCapacity(
-        Iterables.size(commonElemNames));
-    List<Type> elemTypes = Lists.newArrayListWithCapacity(
-        Iterables.size(commonElemNames));
-    
-    ExpressionManager em = getExpressionManager();
-    final String arrName_1 = memType_1.getName();
-    final String arrName_0 = memType_0.getName();
-    
-    Iterable<String> elemNames_1_prime = recomposeFieldNames(arrName_1, commonElemNames);
-    Iterable<String> elemNames_0_prime = recomposeFieldNames(arrName_0, commonElemNames);
-    Iterator<String> elemNames_1_prime_itr = elemNames_1_prime.iterator();
-    Iterator<String> elemNames_0_prime_itr = elemNames_0_prime.iterator();
-    
-    while(elemNames_1_prime_itr.hasNext() && elemNames_0_prime_itr.hasNext()) {
-      String elemName_1 = elemNames_1_prime_itr.next();
-      String elemName_0 = elemNames_0_prime_itr.next();
-      Expression elem = em.ifThenElse(guard, mem_1.select(elemName_1), mem_0.select(elemName_0));
-      elems.add(elem);
-      elemTypes.add(elem.getType());
-    }
-    
-    final String arrName = Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME);
-    Iterable<String> elemNames = recomposeFieldNames(arrName, commonElemNames);
-    
-    RecordType recordType = em.recordType(Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME), 
-        elemNames, elemTypes);
-    Expression res = em.record(recordType, elems);
-    
-    return res;
-  }
-  
 
   @Override
   public void setAliasAnalyzer(AliasAnalysis analyzer) {
@@ -834,35 +790,36 @@ public class PartitionMemoryModelSound extends AbstractMonoMemoryModel {
     return expr;
   }
   
-  @Override
-  protected RecordExpression updateMemoryState(Expression memState, Expression lval, Expression rval) {
+  private RecordExpression updateMemoryState(Expression memState, Expression lval, Expression rval) {
     return updateRecord(memState.asRecord(), lval, rval, true);
   }
   
-  protected RecordExpression updateAllocState(Expression allocState, Expression lval, Expression rval) {
+  private RecordExpression updateAllocState(Expression allocState, Expression lval, Expression rval) {
     return updateRecord(allocState.asRecord(), lval, rval, false);
   }
   
-  protected RecordExpression updateMemoryState(Expression memState) {
-    return updateRecord(memState.asRecord(), true);
-  }
-  
-  protected RecordExpression updateAllocState(Expression allocState) {
-    return updateRecord(allocState.asRecord(), false);
-  }
-  
-  private RecordExpression updateRecord(RecordExpression state, boolean mem) {
-    Map<String, Expression> map = mem ? currentMemElems : currentAllocElems;
-    if(map.isEmpty())   return state;
+  private RecordExpression updateAllocState(Expression allocState) {
+  	Preconditions.checkArgument(allocState.isRecord());
+    Map<String, Expression> map = getRecordElems(allocState);
+    int preSize = map.size();
+    map.putAll(currentAllocElems);
     
-    map.putAll(getRecordElems(state));
-    return getExpressionManager().record(getCurrentRecordType(mem), map.values());
+    if(map.size() > preSize) { // type changed
+    	String recordTypeName = Identifiers.uniquify(DEFAULT_ALLOC_STATE_TYPE);
+    	RecordType recordPrimeType = getRecordTypeFromMap(recordTypeName, map);
+    	return getExpressionManager().record(recordPrimeType, map.values());
+    } else {
+    	if(!map.isEmpty()) // content changed
+    		return getExpressionManager().record(allocState.getType(), map.values());
+    	else
+    		return allocState.asRecord();
+    }    
   }
   
-  private RecordExpression updateRecord(RecordExpression state, Expression lval, Expression rval, boolean mem) {
+  private RecordExpression updateRecord(RecordExpression record, Expression lval, Expression rval, boolean mem) {
     Map<String, Expression> map = mem ? currentMemElems : currentAllocElems;
     boolean stateTypeChanged = !map.isEmpty();
-    map.putAll(getRecordElems(state));
+    map.putAll(getRecordElems(record));
     
     ExpressionManager em = getExpressionManager();
 
@@ -886,8 +843,14 @@ public class PartitionMemoryModelSound extends AbstractMonoMemoryModel {
       stateTypeChanged = true;
     }
     
-    Type currentStateType = stateTypeChanged ? getCurrentRecordType(mem) : state.getType();
-    return em.record(currentStateType, map.values());
+    Type recordTypePrime = record.getType();
+    
+    if(stateTypeChanged) {
+      String recordTypeName = mem ? Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE) :
+      	Identifiers.uniquify(DEFAULT_ALLOC_STATE_TYPE);
+      recordTypePrime = getRecordTypeFromMap(recordTypeName, map);
+    }
+    return em.record(recordTypePrime, map.values());
   }
   
   /**
@@ -950,32 +913,6 @@ public class PartitionMemoryModelSound extends AbstractMonoMemoryModel {
     return resType;
   }
   
-  private RecordType getCurrentMemoryType() {
-    return getCurrentRecordType(true);
-  }
-  
-  private RecordType getCurrentRecordType(boolean mem) {
-    ExpressionManager em = getExpressionManager();
-    Map<String, Expression> currentElems = mem ? currentMemElems : currentAllocElems;
-    final String arrName = mem ?  Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE) :
-        Identifiers.uniquify(DEFAULT_ALLOC_STATE_TYPE);
-    
-    Iterable<Type> elemTypes = Iterables.transform(currentElems.values(), 
-        new Function<Expression, Type>(){
-      @Override
-      public Type apply(Expression expr) {
-        return expr.getType();
-      }
-    });
-    
-    if(elemTypes == null)
-      throw new ExpressionFactoryException("Update failed.");
-    
-    Iterable<String> elemNames = recomposeFieldNames(arrName, currentElems.keySet());
-    
-    return em.recordType(arrName, elemNames, elemTypes);
-  }
-  
   private void initCurrentMemElems(Expression memState) {
     Preconditions.checkArgument(memState.isRecord());
     currentMemElems.putAll(getRecordElems(memState.asRecord()));
@@ -984,22 +921,6 @@ public class PartitionMemoryModelSound extends AbstractMonoMemoryModel {
   private void initCurrentAllocElems(Expression allocState) {
     Preconditions.checkArgument(allocState.isRecord());
     currentAllocElems.putAll(getRecordElems(allocState.asRecord()));
-  }
-  
-  private Map<String, Expression> getRecordElems(RecordExpression record) {
-    Map<String, Expression> resMap = Maps.newLinkedHashMap();
-    Iterable<String> elemNames = record.getType().getElementNames();
-    Iterable<String> fieldNames = pickFieldNames(elemNames);
-    assert(Iterables.size(elemNames) == Iterables.size(fieldNames));
-    Iterator<String> elemNameItr = elemNames.iterator();
-    Iterator<String> fieldNameItr = fieldNames.iterator();
-    while(elemNameItr.hasNext() && fieldNameItr.hasNext()) {
-      String elemName = elemNameItr.next();
-      String fieldName = fieldNameItr.next();
-      Expression value = record.select(elemName);
-      resMap.put(fieldName, value);
-    }
-    return resMap;
   }
   
   private ImmutableList<ImmutableList<Expression>> getCategorizedVars(

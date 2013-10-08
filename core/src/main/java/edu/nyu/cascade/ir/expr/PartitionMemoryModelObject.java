@@ -14,15 +14,12 @@ import xtc.type.Reference;
 import xtc.type.StructOrUnionT;
 import xtc.type.VariableT;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -65,7 +62,7 @@ import edu.nyu.cascade.util.Preferences;
  *
  */
 
-public class PartitionMemoryModelObject extends AbstractMonoMemoryModel {
+public class PartitionMemoryModelObject extends AbstractMemoryModel {
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
@@ -206,11 +203,11 @@ public class PartitionMemoryModelObject extends AbstractMonoMemoryModel {
       }
     } 
     
-    Type currentMemType = getCurrentMemoryType();
-    
-    RecordExpression memory = em.record(currentMemType, currentMemElems.values());
+    Type memPrimeType = getRecordTypeFromMap(
+    		Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE), currentMemElems);
+    Expression memPrime = em.record(memPrimeType, currentMemElems.values());
     Expression alloc = state.getChild(1).asArray().update(refVar, size);    
-    TupleExpression statePrime = getUpdatedState(state, memory, alloc);
+    TupleExpression statePrime = getUpdatedState(state, memPrime, alloc);
     setStateType(statePrime.getType());
     
     return statePrime;
@@ -298,8 +295,9 @@ public class PartitionMemoryModelObject extends AbstractMonoMemoryModel {
       currentMemElems.put(pArrName, pArray);
       pValCell = pArray.index(p);
       
-      Type currentMemType = getCurrentMemoryType();
-      Expression memPrime = em.record(currentMemType, currentMemElems.values());
+      Type memPrimeType = getRecordTypeFromMap(
+      		Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE), currentMemElems);
+      Expression memPrime = em.record(memPrimeType, currentMemElems.values());
       if(currentAlloc == null)    currentAlloc = state.getChild(1);
       Expression statePrime = getUpdatedState(state, memPrime, currentAlloc);
       currentState = suspend(state, statePrime);    
@@ -480,8 +478,8 @@ public class PartitionMemoryModelObject extends AbstractMonoMemoryModel {
           Expression memVar_mem = memoryVar.getChild(0);
           Expression memory_mem = memory.getChild(0);
           
-          Map<String, Expression> memVarMemMap = getMemElems(memVar_mem);
-          Map<String, Expression> memoryMemMap = getMemElems(memory_mem);
+          Map<String, Expression> memVarMemMap = getRecordElems(memVar_mem);
+          Map<String, Expression> memoryMemMap = getRecordElems(memory_mem);
           
           List<Expression> oldArgs_mem = Lists.newLinkedList();
           List<Expression> newArgs_mem = Lists.newLinkedList();
@@ -585,61 +583,11 @@ public class PartitionMemoryModelObject extends AbstractMonoMemoryModel {
     currentState = null;
   }
   
-  public Expression combinePreMemoryStates(BooleanExpression guard, 
-      RecordExpression mem_1, RecordExpression mem_0) {    
-    
-    RecordType memType_1 = mem_1.getType();
-    Iterable<String> elemNames_1 = pickFieldNames(memType_1.getElementNames());
-    
-    RecordType memType_0 = mem_0.getType();
-    final Iterable<String> elemNames_0 = pickFieldNames(memType_0.getElementNames());
-    
-    Iterable<String> commonElemNames = Iterables.filter(elemNames_1, 
-        new Predicate<String>(){
-      @Override
-      public boolean apply(String elemName) {
-        return Iterables.contains(elemNames_0, elemName);
-      }
-    });
-    
-    List<Expression> elems = Lists.newArrayListWithCapacity(
-        Iterables.size(commonElemNames));
-    List<Type> elemTypes = Lists.newArrayListWithCapacity(
-        Iterables.size(commonElemNames));
-    
-    ExpressionManager em = getExpressionManager();
-    final String arrName_1 = memType_1.getName();
-    final String arrName_0 = memType_0.getName();
-    
-    Iterable<String> elemNames_1_prime = recomposeFieldNames(arrName_1, commonElemNames);
-    Iterable<String> elemNames_0_prime = recomposeFieldNames(arrName_0, commonElemNames);
-    Iterator<String> elemNames_1_prime_itr = elemNames_1_prime.iterator();
-    Iterator<String> elemNames_0_prime_itr = elemNames_0_prime.iterator();
-    
-    while(elemNames_1_prime_itr.hasNext() && elemNames_0_prime_itr.hasNext()) {
-      String elemName_1 = elemNames_1_prime_itr.next();
-      String elemName_0 = elemNames_0_prime_itr.next();
-      Expression elem = em.ifThenElse(guard, mem_1.select(elemName_1), mem_0.select(elemName_0));
-      elems.add(elem);
-      elemTypes.add(elem.getType());
-    }
-    
-    final String arrName = Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME);
-    Iterable<String> elemNames = recomposeFieldNames(arrName, commonElemNames);
-    
-    RecordType recordType = em.recordType(Identifiers.uniquify(DEFAULT_MEMORY_VARIABLE_NAME), 
-        elemNames, elemTypes);
-    Expression res = em.record(recordType, elems);
-    
-    return res;
-  }
-  
-  @Override
-  protected RecordExpression updateMemoryState(Expression memState, Expression lval, Expression rval) {
+  private RecordExpression updateMemoryState(Expression memState, Expression lval, Expression rval) {
     initCurrentMemElems(memState);
     
     ExpressionManager em = getExpressionManager();
-    boolean memTypeChanged = false;
+    boolean isMemUpdated = false;
 
     AliasVar lvalRepVar = loadRepVar(lval.getNode());
     xtc.type.Type lvalRepType = lvalRepVar.getType();
@@ -658,10 +606,12 @@ public class PartitionMemoryModelObject extends AbstractMonoMemoryModel {
       rval = castExprToCell(rval, cellType);
       lvalArr = lvalArr.update(lval, rval);
       currentMemElems.put(lvalRepArrName, lvalArr);
-      memTypeChanged = true;
+      isMemUpdated = true;
     }
     
-    Type currentMemType = memTypeChanged ? getCurrentMemoryType() : memState.getType();
+    Type currentMemType = isMemUpdated? getRecordTypeFromMap(
+    		Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE), currentMemElems) 
+    		: memState.getType();
     return em.record(currentMemType, currentMemElems.values());
   }
   
@@ -987,46 +937,7 @@ public class PartitionMemoryModelObject extends AbstractMonoMemoryModel {
     return cellType;
   }
   
-  private RecordType getCurrentMemoryType() {
-    ExpressionManager em = getExpressionManager();
-    
-    Iterable<Type> elemTypes = Iterables.transform(currentMemElems.values(), 
-        new Function<Expression, Type>(){
-      @Override
-      public Type apply(Expression expr) {
-        return expr.getType();
-      }
-    });
-    
-    if(elemTypes == null)
-      throw new ExpressionFactoryException("Update memory type failed.");
-    
-    final String arrName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
-    
-    Iterable<String> elemNames = recomposeFieldNames(arrName, currentMemElems.keySet());
-    
-    return em.recordType(arrName, elemNames, elemTypes);
-  }
-  
   private void initCurrentMemElems(Expression memState) {
-    currentMemElems.putAll(getMemElems(memState));
-  }
-  
-  private Map<String, Expression> getMemElems(Expression memState) {
-    Preconditions.checkArgument(memState.isRecord());
-    Map<String, Expression> resMap = Maps.newLinkedHashMap();
-    RecordExpression mem = memState.asRecord();
-    Iterable<String> elemNames = mem.getType().getElementNames();
-    Iterable<String> fieldNames = pickFieldNames(elemNames);
-    assert(Iterables.size(elemNames) == Iterables.size(fieldNames));
-    Iterator<String> elemNameItr = elemNames.iterator();
-    Iterator<String> fieldNameItr = fieldNames.iterator();
-    while(elemNameItr.hasNext() && fieldNameItr.hasNext()) {
-      String elemName = elemNameItr.next();
-      String fieldName = fieldNameItr.next();
-      Expression value = mem.select(elemName);
-      resMap.put(fieldName, value);
-    }
-    return resMap;
+    currentMemElems.putAll(getRecordElems(memState));
   }
 }

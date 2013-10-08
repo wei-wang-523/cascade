@@ -39,7 +39,7 @@ import edu.nyu.cascade.util.RecursionStrategies.UnaryRecursionStrategy;
  * @author Wei
  *
  */
-public class MonolithicVer0MemoryModel extends AbstractMonoMemoryModel {
+public class MonolithicVer0MemoryModel extends AbstractMemoryModel {
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
@@ -567,8 +567,7 @@ public class MonolithicVer0MemoryModel extends AbstractMonoMemoryModel {
     return res;
   }
   
-  @Override
-  protected ArrayExpression updateMemoryState(Expression memory, Expression lval, Expression rval) {
+  private ArrayExpression updateMemoryState(Expression memory, Expression lval, Expression rval) {
     Preconditions.checkArgument(memory.getType().equals(memType));
     Preconditions.checkArgument(lval.getType().equals(ptrType));
     Preconditions.checkArgument(rval.getType().equals(ptrType) || rval.getType().equals(scalarType));

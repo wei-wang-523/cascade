@@ -34,7 +34,7 @@ public class Steensgaard implements AliasAnalysis {
   
   protected static final String REGION_VARIABLE_NAME = "region_";
   private UnionFindECR uf;
-  private Map<Pair, TypeVar> varsMap; 
+  private Map<Pair<String, String>, TypeVar> varsMap; 
   private SymbolTable symbolTable;
   
   private Steensgaard (SymbolTable _symbolTable) {
@@ -54,7 +54,7 @@ public class Steensgaard implements AliasAnalysis {
 
   @Override
   public AliasVar addVariable(String name, String scope, Type type) {
-    Pair key = Pair.of(name, scope);
+    Pair<String, String> key = Pair.of(name, scope);
     TypeVar res = null;
     if(!varsMap.containsKey(key))  {
       res = TypeVar.create(name, type, scope);

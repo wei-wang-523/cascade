@@ -9,6 +9,8 @@ import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.prover.RecordExpression;
+import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
 
@@ -182,4 +184,24 @@ public class UnimplementedMemoryModel implements MemoryModel {
     // TODO Auto-generated method stub
     return null;
   }
+
+	@Override
+	public Expression combineRecordStates(BooleanExpression guard,
+			RecordExpression rec_1, RecordExpression rec_0) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public TupleExpression getUpdatedState(Expression state, Expression... elems) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public TupleExpression getUpdatedState(Expression state,
+			Iterable<Expression> elems) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

@@ -7,11 +7,9 @@ import java.util.Iterator;
 
 import xtc.tree.Node;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -231,7 +229,8 @@ public class BurstallMemoryModel extends AbstractBurstallMemoryModel {
     }
     currentMemElems.put(typeName, tgtArray);
     
-    Type currentMemType = getCurrentMemoryType();
+    Type currentMemType = getRecordTypeFromMap(
+    		Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE), currentMemElems);
     Expression memPrime = em.record(currentMemType, currentMemElems.values());
     Expression statePrime = getUpdatedState(state, memPrime, currentAlloc);
     currentState = suspend(state, statePrime);
@@ -392,8 +391,8 @@ public class BurstallMemoryModel extends AbstractBurstallMemoryModel {
           Expression memVar_mem = memoryVar.getChild(0);
           Expression memory_mem = memory.getChild(0);
           
-          Map<String, Expression> memVarMemMap = getMemElems(memVar_mem);
-          Map<String, Expression> memoryMemMap = getMemElems(memory_mem);
+          Map<String, Expression> memVarMemMap = getRecordElems(memVar_mem);
+          Map<String, Expression> memoryMemMap = getRecordElems(memory_mem);
           
           List<Expression> oldArgs_mem = Lists.newLinkedList();
           List<Expression> newArgs_mem = Lists.newLinkedList();
@@ -485,31 +484,6 @@ public class BurstallMemoryModel extends AbstractBurstallMemoryModel {
             && expr.getType().asTuple().getName().startsWith(DEFAULT_STATE_TYPE);
       }
     };
-  }
-  
-  /**
-   * Recreate state from @param memoryPrime and @param allocPrime and create a new state
-   * type if state type is changed from the type of state
-   * @return a new state
-   */
-  @Override
-  public TupleExpression getUpdatedState(Expression state, Expression... elems) {
-    Preconditions.checkArgument(elems.length == 2);
-    Expression memoryPrime = elems[0];
-    Expression allocPrime = elems[1];
-    
-    ExpressionManager em = getExpressionManager();
-    Type stateTypePrime = null;
-    
-    if(state != null 
-        && state.getType().asTuple().getElementTypes().get(0).equals(memoryPrime.getType())) {
-      stateTypePrime = state.getType();
-    } else {
-      stateTypePrime = em.tupleType(Identifiers.uniquify(DEFAULT_STATE_TYPE), 
-          memoryPrime.getType(), allocPrime.getType());
-    }
-    
-    return em.tuple(stateTypePrime, memoryPrime, allocPrime);
   }
   
   @Override
@@ -693,47 +667,8 @@ public class BurstallMemoryModel extends AbstractBurstallMemoryModel {
     return res;
   }
   
-  private Map<String, Expression> getMemElems(Expression memState) {
-    Preconditions.checkArgument(memState.isRecord());
-    Map<String, Expression> resMap = Maps.newLinkedHashMap();
-    RecordExpression mem = memState.asRecord();
-    Iterable<String> elemNames = mem.getType().getElementNames();
-    Iterable<String> fieldNames = pickFieldNames(elemNames);
-    assert(Iterables.size(elemNames) == Iterables.size(fieldNames));
-    Iterator<String> elemNameItr = elemNames.iterator();
-    Iterator<String> fieldNameItr = fieldNames.iterator();
-    while(elemNameItr.hasNext() && fieldNameItr.hasNext()) {
-      String elemName = elemNameItr.next();
-      String fieldName = fieldNameItr.next();
-      Expression value = mem.select(elemName);
-      resMap.put(fieldName, value);
-    }
-    return resMap;
-  }
-  
   private void initCurrentMemElems(Expression memState) {
-    currentMemElems.putAll(getMemElems(memState));
-  }
-  
-  private RecordType getCurrentMemoryType() {
-    ExpressionManager em = getExpressionManager();
-    
-    Iterable<Type> elemTypes = Iterables.transform(currentMemElems.values(), 
-        new Function<Expression, Type>(){
-      @Override
-      public Type apply(Expression expr) {
-        return expr.getType();
-      }
-    });
-    
-    if(elemTypes == null)
-      throw new ExpressionFactoryException("Update memory type failed.");
-    
-    final String typeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
-    
-    Iterable<String> elemNames = recomposeFieldNames(typeName, currentMemElems.keySet());
-    
-    return em.recordType(typeName, elemNames, elemTypes);
+    currentMemElems.putAll(getRecordElems(memState));
   }
   
   private RecordExpression updateMemState(Expression memState, Expression lval, Expression rval) { 
@@ -788,7 +723,9 @@ public class BurstallMemoryModel extends AbstractBurstallMemoryModel {
     }    
     currentMemElems.put(lvalTypeName, tgtArray);
     
-    Type currentMemType = isMemUpdated? getCurrentMemoryType() : memState.getType();
+    Type currentMemType = isMemUpdated? 
+    		getRecordTypeFromMap(Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE), currentMemElems) : 
+    			memState.getType();
     return em.record(currentMemType, currentMemElems.values());
   }
 }
