@@ -63,7 +63,35 @@ final class PathSeqEncoder implements PathEncoder {
     checkFeasibility = b;
   }
 
-  /**
+  protected void preprocessPath(CSymbolTable symbolTable, List<IRStatement> path) {
+  	MemoryModel mm = pathEncoding.getExpressionEncoder().getMemoryModel();
+    if(Preferences.isSet(Preferences.OPTION_THEORY)) {
+      String theory = Preferences.getString((Preferences.OPTION_THEORY));
+      if(Preferences.OPTION_THEORY_PARTITION.equals(theory)) {
+        Steensgaard analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());       
+        for(IRStatement stmt : path) {
+          stmt.prePointerAnalysis(pathEncoding, analyzer);
+        }
+        mm.setAliasAnalyzer(analyzer);
+      } else if(Preferences.OPTION_THEORY_BURSTALLView.equals(theory)) {
+      	TypeCastAnalysis analyzer = TypeCastAnalysis.create();       
+        for(IRStatement stmt : path) {
+        	stmt.preTypeCastAnalysis(pathEncoding, analyzer);
+        }
+        mm.setTypeCastAnalyzer(analyzer);
+      }
+    }
+  }
+  
+  protected void encodePath(List<IRStatement> path) throws PathFactoryException {
+  	for (IRStatement stmt : path) {
+  		IOUtils.out().println(stmt.getLocation() + " " + stmt); 
+  		if (!encodeStatement(stmt))
+  			break;
+  	}
+  }
+
+/**
    * Encode the given statement as an extension of the current path.
    * 
    * @param stmt
@@ -111,33 +139,5 @@ final class PathSeqEncoder implements PathEncoder {
     }
     
     return true;
-  }
-  
-  protected void preprocessPath(CSymbolTable symbolTable, List<IRStatement> path) {
-  	MemoryModel mm = pathEncoding.getExpressionEncoder().getMemoryModel();
-    if(Preferences.isSet(Preferences.OPTION_THEORY)) {
-      String theory = Preferences.getString((Preferences.OPTION_THEORY));
-      if(Preferences.OPTION_THEORY_PARTITION.equals(theory)) {
-        Steensgaard analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());       
-        for(IRStatement stmt : path) {
-          stmt.prePointerAnalysis(pathEncoding, analyzer);
-        }
-        mm.setAliasAnalyzer(analyzer);
-      } else if(Preferences.OPTION_THEORY_BURSTALLView.equals(theory)) {
-      	TypeCastAnalysis analyzer = TypeCastAnalysis.create();       
-        for(IRStatement stmt : path) {
-        	stmt.preTypeCastAnalysis(pathEncoding, analyzer);
-        }
-        mm.setTypeCastAnalyzer(analyzer);
-      }
-    }
-  }
-  
-  protected void encodePath(List<IRStatement> path) throws PathFactoryException {
-  	for (IRStatement stmt : path) {
-  		IOUtils.out().println(stmt.getLocation() + " " + stmt); 
-  		if (!encodeStatement(stmt))
-  			break;
-  	}
   }
 }
