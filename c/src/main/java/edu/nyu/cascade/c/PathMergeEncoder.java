@@ -20,7 +20,6 @@ import edu.nyu.cascade.ir.expr.PathFactoryException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.SatResult;
 import edu.nyu.cascade.prover.ValidityResult;
-import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Preferences;
 
@@ -167,10 +166,10 @@ final class PathMergeEncoder implements PathEncoder {
       preCond = pathEncoding.noop(preConds, preGuards);      
     }
     
-    if(Preferences.isSet(Preferences.OPTION_MERGE_PATH)) {
-      Type prePathType = preCond.getType();
-      pathEncoding.setPathType(prePathType);
-    }
+//    if(Preferences.isSet(Preferences.OPTION_MERGE_PATH)) {
+//      Type prePathType = preCond.getType();
+//      pathEncoding.setPathType(prePathType);
+//    }
     
     for(IRStatement stmt : currPath.stmts) {
       preCond = encodeStatement(stmt, preCond);
