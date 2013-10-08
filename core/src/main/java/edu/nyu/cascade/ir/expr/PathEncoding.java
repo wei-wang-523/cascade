@@ -13,7 +13,6 @@ public interface PathEncoding    {
   ExpressionEncoder getExpressionEncoder();
   MemoryModel getMemoryModel();
   Type getPathType();
-  boolean setPathType(Type pathType);
   
   /**
    * Returns the <code>IExpressionManager</code> object used in the underlying

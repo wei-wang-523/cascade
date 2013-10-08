@@ -20,7 +20,6 @@ import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.Identifiers;
-import edu.nyu.cascade.util.Preferences;
 
 public class SimplePathEncoding extends AbstractPathEncoding {
   public static <Mem extends Expression> SimplePathEncoding create(
@@ -230,19 +229,6 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     }
     
     return getUpdatedPathState(resMemState, resPC);
-  }
-
-@Override
-  public boolean setPathType(Type pathType) {
-    Preconditions.checkArgument(pathType.isTuple());
-    Preconditions.checkArgument(Preferences.isSet(Preferences.OPTION_MERGE_PATH));
-    if(getMemoryModel() instanceof AbstractBurstallMemoryModel) {
-      this.pathType = pathType.asTuple();
-      ((AbstractBurstallMemoryModel) getMemoryModel()).setStateType(
-          pathType.asTuple().getElementTypes().get(0).asTuple());
-      return true;
-    } else
-      return false;
   }
 
 @Override
