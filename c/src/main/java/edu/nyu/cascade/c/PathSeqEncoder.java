@@ -1,10 +1,13 @@
 package edu.nyu.cascade.c;
 
-import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
+import java.util.List;
+
 import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
+import edu.nyu.cascade.c.steensgaard.Steensgaard;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
+import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.PathEncoding;
 import edu.nyu.cascade.ir.expr.PathFactoryException;
 import edu.nyu.cascade.prover.Expression;
@@ -68,7 +71,7 @@ final class PathSeqEncoder implements PathEncoder {
    * @return false if the statement results in an invalid verification condition
    *         or an infeasible path; true otherwise.
    */
-  boolean encodeStatement(IRStatement stmt) throws PathFactoryException {
+  private boolean encodeStatement(IRStatement stmt) throws PathFactoryException {
     
     /* Precondition is OK, encode the postcondition. */
     path = stmt.getPostCondition(pathEncoding, path);
@@ -110,11 +113,31 @@ final class PathSeqEncoder implements PathEncoder {
     return true;
   }
   
-  public void prePointerAnalysis(IRStatement stmt, AliasAnalysis analyzer) {
-    stmt.prePointerAnalysis(pathEncoding, analyzer);
+  protected void preprocessPath(CSymbolTable symbolTable, List<IRStatement> path) {
+  	MemoryModel mm = pathEncoding.getExpressionEncoder().getMemoryModel();
+    if(Preferences.isSet(Preferences.OPTION_THEORY)) {
+      String theory = Preferences.getString((Preferences.OPTION_THEORY));
+      if(Preferences.OPTION_THEORY_PARTITION.equals(theory)) {
+        Steensgaard analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());       
+        for(IRStatement stmt : path) {
+          stmt.prePointerAnalysis(pathEncoding, analyzer);
+        }
+        mm.setAliasAnalyzer(analyzer);
+      } else if(Preferences.OPTION_THEORY_BURSTALLView.equals(theory)) {
+      	TypeCastAnalysis analyzer = TypeCastAnalysis.create();       
+        for(IRStatement stmt : path) {
+        	stmt.preTypeCastAnalysis(pathEncoding, analyzer);
+        }
+        mm.setTypeCastAnalyzer(analyzer);
+      }
+    }
   }
   
-  public void preTypeCastAnalysis(IRStatement stmt, TypeCastAnalysis analyzer) {
-    stmt.preTypeCastAnalysis(pathEncoding, analyzer);
+  protected void encodePath(List<IRStatement> path) throws PathFactoryException {
+  	for (IRStatement stmt : path) {
+  		IOUtils.out().println(stmt.getLocation() + " " + stmt); 
+  		if (!encodeStatement(stmt))
+  			break;
+  	}
   }
 }

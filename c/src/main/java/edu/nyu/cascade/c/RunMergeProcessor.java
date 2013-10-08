@@ -57,6 +57,11 @@ class RunMergeProcessor implements RunProcessor {
       Path globalPath = Path.createSingleton(CfgBuilder.getGlobalStmts(run));
       if(globalPath != null)    graph.appendPrePath(globalPath);
       graph.simplify();
+      
+      File file = run.getStartPosition().getFile();
+      CSymbolTable symbolTable = symbolTables.get(file);
+      preprocessGraph(symbolTable, graph);      
+      
       pathEncoder.encodeGraph(graph);
       return pathEncoder.runIsValid();
     } catch (PathFactoryException e) {
@@ -1516,6 +1521,10 @@ class RunMergeProcessor implements RunProcessor {
     }
     newNode.setLocation(srcNode.getLocation());
     return newNode;
+  }
+  
+  private void preprocessGraph(final CSymbolTable symbolTable, final Graph graph) {
+  	pathEncoder.preprocessGraph(symbolTable, graph);
   }
   
   @Override

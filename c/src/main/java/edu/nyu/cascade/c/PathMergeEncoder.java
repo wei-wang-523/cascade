@@ -9,6 +9,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
+import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
+import edu.nyu.cascade.c.steensgaard.Steensgaard;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
@@ -67,6 +70,27 @@ final class PathMergeEncoder implements PathEncoder {
   public void setFeasibilityChecking(boolean b) {
     checkFeasibility = b;
   }
+  
+  protected Expression encodeGraph(final Graph graph) throws PathFactoryException {
+    Map<Path, Expression> pathExprMap = Maps.newHashMap();
+    return encodePath(graph, graph.destPath, pathExprMap);
+  }
+  
+  protected void preprocessGraph(final CSymbolTable symbolTable, final Graph graph) {
+  	Preconditions.checkArgument(symbolTable != null && graph != null);
+    if(Preferences.isSet(Preferences.OPTION_THEORY)) {
+      String theory = Preferences.getString((Preferences.OPTION_THEORY));
+      if(Preferences.OPTION_THEORY_PARTITION.equals(theory)) {
+      	AliasAnalysis analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());        
+      	pathEncoding.getExpressionEncoder().getMemoryModel().setAliasAnalyzer(analyzer);
+        preAliasAnalysis(analyzer, graph.predecessorMap, graph.destPath);
+      } else if(Preferences.OPTION_THEORY_BURSTALLView.equals(theory)) {
+        TypeCastAnalysis analyzer = TypeCastAnalysis.create();        
+        pathEncoding.getExpressionEncoder().getMemoryModel().setTypeCastAnalyzer(analyzer);
+        preTypeCastAnalysis(analyzer, graph.predecessorMap, graph.destPath);
+      }
+    }
+  }
 
   /**
    * Check the current statement's pre-condition 
@@ -76,7 +100,7 @@ final class PathMergeEncoder implements PathEncoder {
    * @return false if the statement results in an invalid verification condition
    *         or an infeasible path; true otherwise.
    */
-  boolean checkPreCondition(Expression preCond, IRStatement stmt) 
+  private boolean checkPreCondition(Expression preCond, IRStatement stmt) 
       throws PathFactoryException {    
 
     ExpressionClosure pre = stmt.getPreCondition(pathEncoding.getExpressionEncoder());
@@ -113,7 +137,7 @@ final class PathMergeEncoder implements PathEncoder {
   }
  
   /** Encode statement stmt, with single pre-condition */
-  Expression encodeStatement(IRStatement stmt, final Expression preCond) 
+  private Expression encodeStatement(IRStatement stmt, final Expression preCond) 
       throws PathFactoryException {
     /* Precondition is OK, encode the postcondition. */
     IOUtils.out().println(stmt.getLocation() + " " + stmt); 
@@ -127,7 +151,7 @@ final class PathMergeEncoder implements PathEncoder {
    * Encode current path with a collection of pre-conditions;
    * return null, if encoding of one pre-path failed
    */
-  Expression encodePathWithPreConds(Path currPath, final Iterable<Expression> preConds,
+  private Expression encodePathWithPreConds(Path currPath, final Iterable<Expression> preConds,
       final Iterable<Expression> preGuards) throws PathFactoryException {
     Preconditions.checkArgument(preConds != null && !Iterables.isEmpty(preConds));
     Preconditions.checkArgument(preGuards == null ||
@@ -170,7 +194,7 @@ final class PathMergeEncoder implements PathEncoder {
    * Encode currPath within graph, return preCondition; 
    * return null, if encoding of one pre-path failed
    */
-  Expression encodePath(final Graph graph, Path currPath, Map<Path, Expression> pathExprMap) 
+  private Expression encodePath(final Graph graph, Path currPath, Map<Path, Expression> pathExprMap) 
       throws PathFactoryException {
     if(pathExprMap.containsKey(currPath))   
       return pathExprMap.get(currPath);
@@ -208,8 +232,39 @@ final class PathMergeEncoder implements PathEncoder {
     return pathExpr;
   }
   
-  Expression encodeGraph(final Graph graph) throws PathFactoryException {
-    Map<Path, Expression> pathExprMap = Maps.newHashMap();
-    return encodePath(graph, graph.destPath, pathExprMap);
+  private void preAliasAnalysis(AliasAnalysis analyzer, final Map<Path, Set<Path>> map, final Path path) {
+  	Preconditions.checkArgument(map != null);
+  	if(!map.isEmpty()) {
+  		Set<Path> prePaths = map.get(path); 	
+  		if(prePaths != null) {
+  			for(Path prePath : prePaths) {
+  				preAliasAnalysis(analyzer, map, prePath);
+  			}
+  		}
+  	}
+  	
+  	if(path.stmts != null) {
+    	for(IRStatement stmt : path.stmts) {
+    		stmt.prePointerAnalysis(pathEncoding, analyzer);
+    	}
+  	}
+  }
+  
+  private void preTypeCastAnalysis(TypeCastAnalysis analyzer, final Map<Path, Set<Path>> map, final Path path) {
+  	Preconditions.checkArgument(map != null);
+  	if(!map.isEmpty()) {
+  		Set<Path> prePaths = map.get(path); 	
+  		if(prePaths != null) {
+  			for(Path prePath : prePaths) {
+  				preTypeCastAnalysis(analyzer, map, prePath);
+  			}
+  		}
+  	}
+  	
+  	if(path.stmts != null) {
+    	for(IRStatement stmt : path.stmts) {
+    		stmt.preTypeCastAnalysis(pathEncoding, analyzer);
+    	}
+  	}
   }
 }

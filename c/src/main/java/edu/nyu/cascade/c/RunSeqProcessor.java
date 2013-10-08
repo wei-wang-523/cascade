@@ -15,8 +15,6 @@ import com.google.common.collect.*;
 
 import edu.nyu.cascade.c.CAnalyzer;
 import edu.nyu.cascade.c.CSpecParser;
-import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
-import edu.nyu.cascade.c.steensgaard.Steensgaard;
 import edu.nyu.cascade.control.*;
 import edu.nyu.cascade.control.jaxb.InsertionType;
 import edu.nyu.cascade.control.jaxb.Position.Command;
@@ -67,35 +65,10 @@ class RunSeqProcessor implements RunProcessor {
         }
       }
       
-      if(Preferences.isSet(Preferences.OPTION_THEORY)) {
-        String theory = Preferences.getString((Preferences.OPTION_THEORY));
-        if(Preferences.OPTION_THEORY_PARTITION.equals(theory)) {
-          File file = run.getStartPosition().getFile();
-          CSymbolTable symbolTable = symbolTables.get(file);
-          Steensgaard analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());
-          
-          for(IRStatement stmt : path) {
-            pathEncoder.prePointerAnalysis(stmt, analyzer);
-          }
-          
-          pathEncoder.getExpressionEncoder().getMemoryModel().setAliasAnalyzer(analyzer);
-        } else if(Preferences.OPTION_THEORY_BURSTALL.equals(theory) || 
-            Preferences.OPTION_THEORY_BURSTALLFIX.equals(theory) || 
-            Preferences.OPTION_THEORY_BURSTALLView.equals(theory)) {
-          TypeCastAnalysis analyzer = TypeCastAnalysis.create();
-          
-          for(IRStatement stmt : path) {
-            pathEncoder.preTypeCastAnalysis(stmt, analyzer);
-          }
-          
-          pathEncoder.getExpressionEncoder().getMemoryModel().setTypeCastAnalyzer(analyzer);
-        }
-      }
-      for (IRStatement stmt : path) {
-        IOUtils.out().println(stmt.getLocation() + " " + stmt); 
-        if (!pathEncoder.encodeStatement(stmt))
-          break;
-      }
+      File file = run.getStartPosition().getFile();
+      CSymbolTable symbolTable = symbolTables.get(file);
+      pathEncoder.preprocessPath(symbolTable, path);
+      pathEncoder.encodePath(path);
 
       if (pathEncoder.runIsValid() && !pathEncoder.runIsFeasible()) {
         IOUtils.err().println("WARNING: path assumptions are unsatisfiable");
