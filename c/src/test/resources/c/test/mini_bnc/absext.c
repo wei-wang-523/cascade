@@ -1,11 +1,11 @@
 int abs(int x) {
-  int result;
+
   if(x>=0)
-    result = x;
+    return x;
   else
-    result = -x;
-  return result;
+    return -x;
 }
+
   
 int main() {
   int a, abs_a;
