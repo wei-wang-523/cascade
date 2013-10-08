@@ -608,7 +608,7 @@ public class PartitionMemoryModelSound extends AbstractMemoryModel {
   @Override
   public void setAliasAnalyzer(AliasAnalysis analyzer) {
     this.analyzer = analyzer;
-    IOUtils.debug().pln(analyzer.displaySnapShort());
+    IOUtils.err().println(analyzer.displaySnapShort());
   }
   
   /**

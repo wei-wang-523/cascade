@@ -59,7 +59,7 @@ public class Preferences {
   
   public static final String OPTION_THEORY = "theory";
   
-  public static final String OPTION_MERGE_PATH = "merge-path";
+  public static final String OPTION_SEQ_PATH = "seq-path";
   
   public static final String OPTION_INLINE_ANNOTATION = "inline-anno";
   

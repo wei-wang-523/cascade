@@ -129,7 +129,8 @@ public final class ECR extends UnionFind.Partition {
       } else {
         sb.append("null");
       }
-      sb.append(rootType.getOperand(0).getPointsToChain());
+      if(!rootType.getOperand(0).equals(root))
+      	sb.append(rootType.getOperand(0).getPointsToChain());
     }
     return sb.toString();
   }
