@@ -168,4 +168,9 @@ public class BitVectorBoundVariableImpl extends BoundVariableExpressionImpl
   public BitVectorExpression signExtend(int size) {
     return BitVectorExpressionImpl.mkSignExtend(getExpressionManager(), size, this);
   }
+  
+  @Override
+  public BitVectorExpressionImpl uminus() {
+    return BitVectorExpressionImpl.mkUminus(getExpressionManager(), this);
+  }
 }

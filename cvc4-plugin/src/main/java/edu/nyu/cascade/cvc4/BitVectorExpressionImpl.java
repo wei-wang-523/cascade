@@ -816,4 +816,9 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
   public BitVectorExpression signExtend(int size) {
     return mkSignExtend(getExpressionManager(), size, this);
   }
+  
+  @Override
+  public BitVectorExpression uminus() {
+    return mkUminus(getExpressionManager(), this);
+  }
 }
