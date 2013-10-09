@@ -200,8 +200,6 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     	pcBuilder.add(prefix.getChild(1));
     }
     
-    Expression resPC = getITEExpression(pcBuilder.build(), preGuards); 
-    
     Expression resMemState = null;
     // Split memory state into multi-lists
     Type stateType = getMemoryModel().getStateType();
@@ -227,11 +225,12 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     } else {
     	resMemState = getITEExpression(memStateBuilder.build(), preGuards);
     }
+    Expression resPC = getExpressionManager().or(pcBuilder.build());
     
     return getUpdatedPathState(resMemState, resPC);
   }
 
-@Override
+  @Override
   protected BooleanExpression assertionToBoolean(Expression pre,
       ExpressionClosure bool) {
     Preconditions.checkArgument( bool.getInputType().equals( 
