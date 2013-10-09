@@ -10,7 +10,7 @@ int main(){
 
       if (len==4)
          len =0;
-
+			ASSERT(valid(&a[len]));
       a[len]=0;
 
       len++;

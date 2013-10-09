@@ -2,14 +2,6 @@
   <sourceFile name="nestAsgn.c" id="1" />
   <run>
     <startPosition fileId="1" line="1" />
-    <endPosition fileId="1" line="5" >
-      <command>
-	<cascadeFunction> cascade_check </cascadeFunction>
-	<argument><![CDATA[
-	a == 0 && b == 2
-	]]>
-	</argument>
-      </command>
-    </endPosition>
+    <endPosition fileId="1" line="7" />
   </run>
 </controlFile>

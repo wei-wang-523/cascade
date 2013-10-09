@@ -49,5 +49,6 @@ int main(int a, int b, int c){
 			int y9 = 4;
 		}
 	}
+	ASSERT(1==0);
 	return 1;
 }

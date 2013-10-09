@@ -3,5 +3,6 @@ int main() {
   int b;
   b = (++a) + (a--);
   b--;
+  ASSERT(a == 0 && b == 2);
   return a;
 }

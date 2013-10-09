@@ -4,5 +4,6 @@ int main() {
 	for (int i = 0; i<=10; i++) {
 		sum = sum + i;
 	}
+	ASSERT(sum == 55);
 	return sum;
 }

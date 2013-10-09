@@ -2,14 +2,6 @@
   <sourceFile name="absext2.c" id="1" />
   <run>
     <startPosition fileId="1" line="8" />
-    <endPosition fileId="1" line="12" >
-      <command>
-        <cascadeFunction>cascade_check</cascadeFunction>
-        <argument><![CDATA[
-        result != 0
-        ]]>
-        </argument>
-      </command>
-    </endPosition>
+    <endPosition fileId="1" line="13" />
   </run>
 </controlFile>

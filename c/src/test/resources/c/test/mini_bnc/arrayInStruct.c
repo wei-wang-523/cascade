@@ -6,10 +6,10 @@ typedef struct _addr Addr;
 
 int main(Addr *addr)
 {
-   ASSUME(addr);
-   
-   if (addr->len < 0 || addr->len >= 16) {
-      return 0;
-   }
-   return 1;
+	ASSUME(allocated(addr, sizeof(Addr)) && addr->len == 3);
+	ASSUME(addr);   
+	if (addr->len < 0 || addr->len >= 16) {
+		return 0;
+	}
+	return 1;
 }

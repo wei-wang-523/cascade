@@ -8,14 +8,6 @@
     <wayPoint fileId="1" line="8" >
       <loop iterTimes="2" />
     </wayPoint>
-    <endPosition fileId="1" line="12" >
-      <command>
-	<cascadeFunction> cascade_check </cascadeFunction>
-	<argument><![CDATA[
-	sum == 6
-	]]>
-	</argument>
-      </command>
-    </endPosition>
+    <endPosition fileId="1" line="12" />
   </run>
 </controlFile>

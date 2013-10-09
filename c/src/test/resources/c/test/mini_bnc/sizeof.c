@@ -1,5 +1,5 @@
 int main() {
-  int i;
-  i = sizeof(int);
+  int i = sizeof(int);
+  ASSERT(i==1);
   return i;
 }

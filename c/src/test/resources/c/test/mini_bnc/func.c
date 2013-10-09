@@ -11,5 +11,6 @@ int main() {
   int x = 1;
   int y; 
   y = addOne(x, returnOne());
+  ASSERT(y == x+1);
   return y;
 }

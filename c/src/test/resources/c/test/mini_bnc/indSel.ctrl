@@ -2,14 +2,6 @@
   <sourceFile name="indSel.c" id="1" />
   <run>
     <startPosition fileId="1" line="7" />
-    <endPosition fileId="1" line="9" >
-      <command>
-	<cascadeFunction> cascade_check </cascadeFunction>
-	<argument><![CDATA[
-	buf->data == 1
-	]]>
-	</argument>
-      </command>
-    </endPosition>
+    <endPosition fileId="1" line="10" />
   </run>
 </controlFile>

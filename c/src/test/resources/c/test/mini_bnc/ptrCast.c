@@ -1,7 +1,8 @@
 int main() {
 	int *a, *b;
-	char c, d;
+	char d;
 	a = (int *) 0;
 	b = (int *) &d;
+	ASSERT(*b == d);
 	return *b;
 }

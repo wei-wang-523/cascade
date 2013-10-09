@@ -6,5 +6,6 @@ int main()
   int A[6]; 
 
   B[0] = A[0] + A[1];
+  ASSERT(B[0] == A[0] + A[1]);
   return B[0];
 }

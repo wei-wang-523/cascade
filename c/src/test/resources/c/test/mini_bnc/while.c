@@ -9,5 +9,6 @@ int main() {
 		sum = sum + i;
 		i++;
 	}
+	ASSERT(sum == 6);
 	return sum;
 }

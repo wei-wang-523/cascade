@@ -7,7 +7,8 @@ int abs(int x) {
    
 int main() {
   int a, result;
-  a = -4;
+
   result = abs(a) - abs(-a);
+  ASSERT(result != 0);
   return result;
 }

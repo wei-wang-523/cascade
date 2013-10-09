@@ -10,14 +10,6 @@
         </invariant>
       </loop>
     </wayPoint>
-    <endPosition fileId="1" line="7" >
-      <command>
-	<cascadeFunction> cascade_check </cascadeFunction>
-	<argument><![CDATA[
-	sum == 55
-	]]>
-	</argument>
-      </command>
-    </endPosition>
+    <endPosition fileId="1" line="7" />
   </run>
 </controlFile>

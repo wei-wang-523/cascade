@@ -2,14 +2,6 @@
   <sourceFile name="string.c" id="1" />
   <run>
     <startPosition fileId="1" line="1" />
-    <endPosition fileId="1" line="4" >
-      <command>
-	<cascadeFunction> cascade_check </cascadeFunction>
-	<argument><![CDATA[
-	s[3] == '\u0000'
-	]]>
-	</argument>
-      </command>
-    </endPosition>
+    <endPosition fileId="1" line="5" />
   </run>
 </controlFile>
