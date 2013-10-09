@@ -46,9 +46,10 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     Expression memPrime = mem;
     ExpressionClosure currentState = getMemoryModel().getCurrentState();
     if(currentState != null) memPrime = currentState.eval(mem);
-    getMemoryModel().clearCurrentState();
+    //    getMemoryModel().clearCurrentState();
     
     memPrime = getMemoryModel().alloc(memPrime, lval.eval(mem), rval.eval(mem));
+    getMemoryModel().clearCurrentState();
     return getUpdatedPathState(memPrime, pc);
   }
 
@@ -60,9 +61,10 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     Expression memPrime = mem;
     ExpressionClosure currentState = getMemoryModel().getCurrentState();
     if(currentState != null) memPrime = currentState.eval(mem);
-    getMemoryModel().clearCurrentState();
+    //    getMemoryModel().clearCurrentState();
     
     memPrime = getMemoryModel().assign(memPrime, var.eval(mem), val.eval(mem));
+    getMemoryModel().clearCurrentState();
     return getUpdatedPathState(memPrime, pre.getChild(1));
   }
 
@@ -96,6 +98,7 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     Expression memPrime = mem;
     ExpressionClosure currentState = getMemoryModel().getCurrentState();
     if(currentState != null) memPrime = currentState.eval(mem);
+    getMemoryModel().clearCurrentState();
     return getUpdatedPathState(memPrime, pc);
   }
 
@@ -108,9 +111,10 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     Expression memPrime = mem;
     ExpressionClosure currentState = getMemoryModel().getCurrentState();
     if(currentState != null) memPrime = currentState.eval(mem);
-    getMemoryModel().clearCurrentState();
+    //    getMemoryModel().clearCurrentState();
     
     memPrime = getMemoryModel().declareArray(memPrime, ptr.eval(mem), size.eval(mem));
+    getMemoryModel().clearCurrentState();
     return getUpdatedPathState(memPrime, pc);
   }
 
@@ -123,9 +127,10 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     Expression memPrime = mem;
     ExpressionClosure currentState = getMemoryModel().getCurrentState();
     if(currentState != null) memPrime = currentState.eval(mem);
-    getMemoryModel().clearCurrentState();
+    //    getMemoryModel().clearCurrentState();
     
     memPrime = getMemoryModel().declareStruct(memPrime, ptr.eval(mem), size.eval(mem));
+    getMemoryModel().clearCurrentState();
     return getUpdatedPathState(memPrime, pc);
   }
 
@@ -149,7 +154,7 @@ public class SimplePathEncoding extends AbstractPathEncoding {
       Expression memAssume = mm.fieldAssign(mem, lval.eval(mem), field, rval.eval(mem));
       pcPrime = exprManager.ifThenElse(pc, memAssume, exprManager.ff());
     }
-    
+    getMemoryModel().clearCurrentState();
     return getUpdatedPathState(mem, pcPrime);
   }
 
@@ -161,15 +166,24 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     Expression memPrime = mem;
     ExpressionClosure currentState = getMemoryModel().getCurrentState();
     if(currentState != null) memPrime = currentState.eval(mem);
-    getMemoryModel().clearCurrentState();
+//    getMemoryModel().clearCurrentState();
     
     memPrime = getMemoryModel().free(memPrime, ptr.eval(mem));
+    getMemoryModel().clearCurrentState();
     return getUpdatedPathState(memPrime, pc);
   }
 
   @Override
   public TupleType getPathType() {
     return pathType;
+  }
+  
+  @Override
+  public boolean setPathType(Type pathType) {
+  	if(this.pathType.equals(pathType))	return false;
+  	this.pathType = pathType.asTuple();
+  	getMemoryModel().setStateType(pathType.asTuple().getElementTypes().get(0));
+  	return true;
   }
 
 @Override
@@ -180,9 +194,10 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     Expression memPrime = mem;
     ExpressionClosure currentState = getMemoryModel().getCurrentState();
     if(currentState != null) memPrime = currentState.eval(mem);
-    getMemoryModel().clearCurrentState();
+    //    getMemoryModel().clearCurrentState();
     
     memPrime = getMemoryModel().havoc(memPrime, lval.eval(mem));
+    getMemoryModel().clearCurrentState();
     return getUpdatedPathState(memPrime, pc);
   }
   

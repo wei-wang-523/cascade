@@ -11,6 +11,7 @@ import edu.nyu.cascade.prover.SatResult;
 import edu.nyu.cascade.prover.TheoremProver;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.ValidityResult;
+import edu.nyu.cascade.prover.type.Type;
 
 public abstract class AbstractPathEncoding implements
     PathEncoding {
@@ -155,8 +156,6 @@ public abstract class AbstractPathEncoding implements
     return pre;
   }
 
-  protected abstract BooleanExpression pathToBoolean(Expression path);
-
   @Override
   public void printCounterExample(PrintStream out, Iterable<?> counterExample) {
     out.println("Assertions that invalidate the query:");
@@ -164,4 +163,11 @@ public abstract class AbstractPathEncoding implements
       out.println("ASSERT " + o + ";");
     }
   }
+
+  @Override
+  public boolean setPathType(Type pathType) {
+  	return false;
+  }
+  
+	protected abstract BooleanExpression pathToBoolean(Expression path);
 }

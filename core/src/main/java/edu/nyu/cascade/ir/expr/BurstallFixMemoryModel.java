@@ -498,9 +498,12 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
   }
   
   @Override
-  public void setStateType(TupleType stateType) {
-    this.stateType = stateType;
+  public boolean setStateType(Type stateType) {
+  	Preconditions.checkArgument(stateType.isTuple());
+  	if(this.stateType.equals(stateType))	return false;
+    this.stateType = stateType.asTuple();
     this.memType = stateType.asTuple().getElementTypes().get(0).asRecord();
+    return true;
   }
 
   @Override

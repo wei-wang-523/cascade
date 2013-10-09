@@ -150,4 +150,10 @@ public class TemporalMemoryModel extends AbstractMemoryModel {
     // TODO Auto-generated method stub
     return null;
   }
+
+	@Override
+  public boolean setStateType(Type stateType) {
+	  // TODO Auto-generated method stub
+	  return false;
+  }
 }

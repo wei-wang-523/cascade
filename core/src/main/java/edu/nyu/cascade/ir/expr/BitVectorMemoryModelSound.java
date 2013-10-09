@@ -497,6 +497,12 @@ public class BitVectorMemoryModelSound extends AbstractMemoryModel {
   public TupleType getStateType() {
     return stateType;
   }
+  
+  @Override
+  public boolean setStateType(Type stateType) {
+  	Preconditions.checkArgument(stateType.isTuple());
+    return false;
+  }
 
   @Override
   public ExpressionClosure suspend(final Expression memoryVar, final Expression expr) {

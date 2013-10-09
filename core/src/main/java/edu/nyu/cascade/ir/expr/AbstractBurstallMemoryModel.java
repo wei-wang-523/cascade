@@ -9,7 +9,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import edu.nyu.cascade.c.CType;
-import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.util.Pair;
 
 /**
@@ -48,11 +47,5 @@ public abstract class AbstractBurstallMemoryModel extends AbstractMemoryModel {
     } catch (ExecutionException e) {
       throw new ExpressionFactoryException(e);
     }
-  }
-  
-  public abstract void setStateType(TupleType stateType) ;
-  
-  @Override
-  public abstract TupleType getStateType();
-  
+  }  
 }

@@ -201,7 +201,7 @@ public abstract class AbstractMemoryModel implements MemoryModel {
     }
     return exprManager.tuple(stateTypePrime, elems);
   }
-
+  
 	protected final RecordType getRecordTypeFromMap(String typeName, 
 			final Map<String, Expression> map) {
 		Preconditions.checkArgument(map != null);

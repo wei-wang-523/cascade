@@ -567,9 +567,13 @@ public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
     return stateType;
   }
   
-  public void setStateType(TupleType stateType) {
-    this.stateType = stateType;
+  @Override
+  public boolean setStateType(Type stateType) {
+  	Preconditions.checkArgument(stateType.isTuple());
+  	if(this.stateType.equals(stateType))	return false;
+    this.stateType = stateType.asTuple();
     this.memType = stateType.asTuple().getElementTypes().get(0).asRecord();
+    return true;
   }
 
   @Override

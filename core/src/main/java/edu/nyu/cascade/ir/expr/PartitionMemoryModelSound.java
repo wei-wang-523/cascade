@@ -450,10 +450,14 @@ public class PartitionMemoryModelSound extends AbstractMemoryModel {
     return stateType;
   }
   
-  private void setStateType(TupleType stateType) {
-    this.stateType = stateType;
+  @Override
+  public boolean setStateType(Type stateType) {
+  	Preconditions.checkArgument(stateType.isTuple());
+  	if(this.stateType.equals(stateType))	return false;
+    this.stateType = stateType.asTuple();
     this.memType = stateType.asTuple().getElementTypes().get(0).asRecord();
     this.allocType = stateType.asTuple().getElementTypes().get(1).asRecord();
+    return true;
   }
 
   @Override
@@ -541,7 +545,6 @@ public class PartitionMemoryModelSound extends AbstractMemoryModel {
               elemMap.put(name, elem);
             }
             memPrime = exprManager.record(expr_mem_type, elemMap.values());
-            memType = memPrime.getType().asRecord();
           }
 
           if(!memory_alloc.getType().equals(expr_alloc.getType())){

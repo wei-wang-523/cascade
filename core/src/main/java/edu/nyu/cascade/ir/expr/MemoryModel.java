@@ -123,6 +123,10 @@ public interface MemoryModel {
   Type getAllocType();
   
   /**
+   * Set state type, return if changed
+   */
+  boolean setStateType(Type stateType);
+  /**
    * Get a fresh state - memory state and auxiliary structure state
    */
   Expression freshState();
