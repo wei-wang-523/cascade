@@ -165,12 +165,7 @@ final class PathMergeEncoder implements PathEncoder {
       /* more than one preConds and preGuards, merge it before encode statement */
       preCond = pathEncoding.noop(preConds, preGuards);      
     }
-    
-//    if(Preferences.isSet(Preferences.OPTION_MERGE_PATH)) {
-//      Type prePathType = preCond.getType();
-//      pathEncoding.setPathType(prePathType);
-//    }
-    
+
     for(IRStatement stmt : currPath.stmts) {
       preCond = encodeStatement(stmt, preCond);
       
