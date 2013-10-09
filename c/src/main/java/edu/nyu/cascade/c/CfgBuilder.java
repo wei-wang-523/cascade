@@ -1787,16 +1787,24 @@ public class CfgBuilder extends Visitor {
 
     for(Object o : body) {
       if(o != null) {
-        if(((Node) o).hasName("LabeledStatement")) {
+      	if(!(o instanceof GNode)) {
+      		if(o instanceof LineMarker) {
+      			o = ((LineMarker) o).getNode();
+      		} else {
+      			throw new ExpressionFactoryException("What hell is " + o + "?");
+      		}
+      	}
+      	Node node_o = (Node) o;
+        if(node_o.hasName("LabeledStatement")) {
           currentBlock = bodyBlock;
-          dispatch((Node) o);
+          dispatch(node_o);
           if(hasDefault())  // FIXME: how about add break in default case
             closeCurrentBlock(exitBlock);          
-        } else if(((Node) o).hasName("BreakStatement")) {
-          dispatch((Node) o);
+        } else if(node_o.hasName("BreakStatement")) {
+          dispatch(node_o);
           closeCurrentBlock(exitBlock);
         } else {
-          dispatch((Node) o);
+          dispatch(node_o);
         }
       }
     }
