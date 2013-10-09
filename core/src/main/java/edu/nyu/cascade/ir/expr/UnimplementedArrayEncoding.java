@@ -54,17 +54,7 @@ public class UnimplementedArrayEncoding<T extends Expression> implements ArrayEn
     public ArrayExpression toArrayExpression(T array) {
       throw new UnsupportedOperationException();
     }
-  
-/*    @Override
-    public EncodingValue toEncodingValue(T x) {
-      throw new UnsupportedOperationException();
-    }
-*/  
-/*    @Override
-    public Expression<?> toExpression(T x) {
-      throw new UnsupportedOperationException();
-    }
-*/  
+    
     @Override
     public T update(T array, Expression index, Expression val) {
       throw new UnsupportedOperationException();
@@ -84,11 +74,6 @@ public class UnimplementedArrayEncoding<T extends Expression> implements ArrayEn
     public ExpressionManager getExpressionManager() {
       throw new UnsupportedOperationException();
     }
-
-/*    @Override
-    public T valueOf(Object obj) {
-      throw new UnsupportedOperationException();
-    }*/
   }
 
   public static <T extends Expression> UnimplementedArrayEncoding<T> create() {

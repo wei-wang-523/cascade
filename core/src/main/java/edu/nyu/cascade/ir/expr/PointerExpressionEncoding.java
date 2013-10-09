@@ -53,7 +53,7 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
     IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, intCellSize);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new UnimplementedArrayEncoding<ArrayExpression>();
-    PointerEncoding pointerEncoding = PointerEncoding.create(exprManager, offCellSize);
+    PointerFoldEncoding pointerEncoding = PointerFoldEncoding.create(exprManager, offCellSize);
     return new PointerExpressionEncoding(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
   }
   
@@ -61,13 +61,13 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
       IntegerEncoding<BitVectorExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
-      PointerEncoding pointerEncoding)
+      PointerFoldEncoding pointerEncoding)
   {
     super(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
   }
   
-  protected PointerEncoding getPointerEncoding() {
-    return (PointerEncoding) tupleEncoding;
+  public PointerFoldEncoding getPointerEncoding() {
+    return (PointerFoldEncoding) pointerEncoding;
   }
   
   @Override
@@ -149,7 +149,7 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
   @Override
   public Expression neq(Expression lhs, Expression rhs) {
     if(lhs.isTuple() || rhs.isTuple()) {
-      PointerEncoding ptrEncoding = getPointerEncoding();
+      PointerFoldEncoding ptrEncoding = getPointerEncoding();
       if(!lhs.isTuple()) {
         assert(rhs.isConstant());
         lhs = ptrEncoding.getNullPtr();
@@ -166,7 +166,7 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
   @Override
   public Expression eq(Expression lhs, Expression rhs) {
     if(lhs.isTuple() || rhs.isTuple()) {
-      PointerEncoding ptrEncoding = getPointerEncoding();
+      PointerFoldEncoding ptrEncoding = getPointerEncoding();
       if(!lhs.isTuple()) {
         assert(rhs.isConstant());
         lhs = ptrEncoding.getNullPtr();
@@ -205,7 +205,6 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
       return super.plus(lhs, rhs);
   }
   
-  @Override
   public Expression unknown() {
     return getPointerEncoding().unknown();
   }

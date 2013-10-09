@@ -289,7 +289,7 @@ public class BitVectorMemoryModelSound extends AbstractMemoryModel {
     Preconditions.checkArgument(state.getType().equals(stateType));
     Preconditions.checkArgument(lval.getType().equals(cellType));
     
-    Expression rval = getExpressionEncoding().unknown();
+    Expression rval = getExpressionEncoding().getIntegerEncoding().unknown();
     Expression memory = state.getChild(0).asArray().update(lval, rval);
     return getExpressionManager().tuple(stateType, memory, state.getChild(1));
   }

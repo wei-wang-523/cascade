@@ -84,7 +84,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
     
     ExpressionManager exprManager = getExpressionManager();
     
-    this.ptrType = ((PointerExpressionEncoding) encoding).getPointerEncoding().getType();
+    this.ptrType = encoding.getPointerEncoding().getType();
     this.refType = ptrType.getElementTypes().get(0);
     this.offType = ptrType.getElementTypes().get(1).asBitVectorType();
     this.allocType = exprManager.arrayType(refType, offType);
@@ -168,8 +168,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
       Expression ref_ptr = ptr.asTuple().index(0);
       Expression off_ptr = ptr.asTuple().index(1);
       Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
-      Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
-          .getPointerEncoding().nullPtr().asTuple().getChild(0);
+      Expression nullRef = getExpressionEncoding().getPointerEncoding().getNullPtr().getChild(0);
       
       // Valid stack access
       for( Expression lval : lvals) {
@@ -221,8 +220,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
       Expression off_ptr = ptr.asTuple().index(1);
       Expression off_bound = exprManager.plus(offType.getSize(), off_ptr, size);
       Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
-      Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
-          .getPointerEncoding().nullPtr().asTuple().getChild(0);
+      Expression nullRef = getExpressionEncoding().getPointerEncoding().getNullPtr().getChild(0);
       
       // Valid stack access
       for( Expression lval : lvals) {
@@ -376,7 +374,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
     case BOOL:
       rval = getExpressionEncoding().getBooleanEncoding().unknown(); break;
     case POINTER:
-      rval = getExpressionEncoding().unknown(); break;
+      rval = getExpressionEncoding().getPointerEncoding().unknown(); break;
     default:
       throw new IllegalArgumentException("Invalid kind " + kind);
     }
@@ -452,8 +450,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
         ExpressionManager exprManager = getExpressionManager();
         
         { /* The disjointness of stack variables, and != nullRef*/
-          Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
-              .getPointerEncoding().nullPtr().getChild(0);
+          Expression nullRef = getExpressionEncoding().getPointerEncoding().getNullPtr().getChild(0);
           ImmutableList<Expression> distinctRef = new ImmutableList.Builder<Expression>()
               .addAll(lvals).add(nullRef).build();
           if(distinctRef.size() > 1)  builder.add(exprManager.distinct(distinctRef));
@@ -661,8 +658,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
     
     Expression alloc = state.getChild(1);
     
-    Expression nullPtr = ((PointerExpressionEncoding) getExpressionEncoding())
-        .getPointerEncoding().nullPtr();
+    Expression nullPtr = getExpressionEncoding().getPointerEncoding().getNullPtr();
     
     if(Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
       throw new UnsupportedOperationException(
@@ -684,7 +680,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
         Expression assump_local = exprManager.and(
             exprManager.greaterThan(alloc.asArray().index(region), 
                 exprManager.bitVectorZero(offType.getSize())),
-            exprManager.neq(region, nullPtr.asTuple().getChild(0)));
+            exprManager.neq(region, nullPtr.getChild(0)));
         Expression assert_local = exprManager.neq(region, ptr.asTuple().index(0));
         builder.add(exprManager.implies(assump_local, assert_local));
       }
@@ -702,8 +698,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
     Expression alloc = state.getChild(1); 
     Expression ref = ptr.asTuple().index(0);
     Expression size = alloc.asArray().index(ref);
-    Expression nullPtr = ((PointerExpressionEncoding) getExpressionEncoding())
-        .getPointerEncoding().nullPtr();
+    Expression nullPtr = getExpressionEncoding().getPointerEncoding().getNullPtr();
     return exprManager.or(exprManager.eq(ptr, nullPtr), exprManager.greaterThan(size, 
         exprManager.bitVectorZero(offType.getSize())));
   }
@@ -736,8 +731,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
         if(!ptrType.equals(rval.getType())) {
           // for assign null to pointer int* ptr = 0;
           assert rval.isConstant();
-          rval = ((PointerExpressionEncoding) getExpressionEncoding())
-              .getPointerEncoding().nullPtr();
+          rval = getExpressionEncoding().getPointerEncoding().getNullPtr();
         }
         tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
         break;
@@ -766,8 +760,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
         arrType = em.arrayType(ptrType, ptrType);
         if(!ptrType.equals(rval.getType())) {
           assert(rval.isConstant());
-          rval = ((PointerExpressionEncoding) getExpressionEncoding())
-            .getPointerEncoding().nullPtr();
+          rval = getExpressionEncoding().getPointerEncoding().getNullPtr();
         }
         break;
       }

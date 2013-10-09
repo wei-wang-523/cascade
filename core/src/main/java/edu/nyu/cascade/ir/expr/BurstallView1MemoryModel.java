@@ -105,7 +105,7 @@ public class BurstallView1MemoryModel extends AbstractMemoryModel {
     int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
     scalarType = exprManager.bitVectorType(size);
     
-    ptrType = ((PointerExpressionEncoding) encoding).getPointerEncoding().getType();
+    ptrType = encoding.getPointerEncoding().getType();
     refType = ptrType.getElementTypes().get(0);
     offType = ptrType.getElementTypes().get(1).asBitVectorType();
     
@@ -306,7 +306,7 @@ public class BurstallView1MemoryModel extends AbstractMemoryModel {
     case SCALAR:
       rval = getExpressionEncoding().getIntegerEncoding().unknown(); break;
     case POINTER:
-      rval = getExpressionEncoding().unknown(); break;
+      rval = getExpressionEncoding().getPointerEncoding().unknown(); break;
     case BOOL:
       rval = getExpressionEncoding().getBooleanEncoding().unknown(); break;
     default:
@@ -374,8 +374,7 @@ public class BurstallView1MemoryModel extends AbstractMemoryModel {
       Expression ref_ptr = ptr.asTuple().index(0);
       Expression off_ptr = ptr.asTuple().index(1);
       Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
-      Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
-          .getPointerEncoding().nullPtr().asTuple().getChild(0);
+      Expression nullRef = getExpressionEncoding().getPointerEncoding().getNullPtr().getChild(0);
       
       // Valid stack access
       for( Expression lval : lvals) {
@@ -425,8 +424,7 @@ public class BurstallView1MemoryModel extends AbstractMemoryModel {
       Expression off_ptr = ptr.asTuple().index(1);
       Expression off_bound = exprManager.plus(offType.getSize(), off_ptr, size);
       Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
-      Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
-          .getPointerEncoding().nullPtr().asTuple().getChild(0);
+      Expression nullRef = getExpressionEncoding().getPointerEncoding().getNullPtr().getChild(0);
       
       // Valid stack access
       for( Expression lval : lvals) {
@@ -476,9 +474,8 @@ public class BurstallView1MemoryModel extends AbstractMemoryModel {
       
       ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
       
-      Expression nullPtr = ((PointerExpressionEncoding) getExpressionEncoding())
-          .getPointerEncoding().nullPtr();
-      Expression nullRef = nullPtr.asTuple().getChild(0);
+      Expression nullPtr = getExpressionEncoding().getPointerEncoding().getNullPtr();
+      Expression nullRef = nullPtr.getChild(0);
       Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
       
       Expression assump = exprManager.neq(ptr, nullPtr);
@@ -516,8 +513,7 @@ public class BurstallView1MemoryModel extends AbstractMemoryModel {
     Expression alloc = state.getChild(1); 
     Expression ref = ptr.asTuple().index(0);
     Expression size = alloc.asArray().index(ref);
-    Expression nullPtr = ((PointerExpressionEncoding) getExpressionEncoding())
-        .getPointerEncoding().nullPtr();
+    Expression nullPtr = getExpressionEncoding().getPointerEncoding().getNullPtr();
     return exprManager.or(exprManager.eq(ptr, nullPtr), exprManager.greaterThan(size, 
         exprManager.bitVectorZero(offType.getSize())));
   }
@@ -545,8 +541,7 @@ public class BurstallView1MemoryModel extends AbstractMemoryModel {
         ExpressionManager exprManager = getExpressionManager();
         
         { /* The disjointness of stack variables, and != nullRef*/
-          Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
-              .getPointerEncoding().nullPtr().getChild(0);
+          Expression nullRef = getExpressionEncoding().getPointerEncoding().getNullPtr().getChild(0);
           ImmutableList<Expression> distinctRef = new ImmutableList.Builder<Expression>()
               .addAll(lvals).add(nullRef).build();
           if(distinctRef.size() > 1)  builder.add(exprManager.distinct(distinctRef));
@@ -806,8 +801,7 @@ public class BurstallView1MemoryModel extends AbstractMemoryModel {
         if(!ptrType.equals(rval.getType())) {
           // for assign null to pointer int* ptr = 0;
           assert(rval.isConstant());
-          rval = ((PointerExpressionEncoding) getExpressionEncoding())
-              .getPointerEncoding().nullPtr();
+          rval = getExpressionEncoding().getPointerEncoding().getNullPtr();
         }
         break;
       }
@@ -832,8 +826,7 @@ public class BurstallView1MemoryModel extends AbstractMemoryModel {
         arrType = em.arrayType(ptrType, ptrType);
         if(!ptrType.equals(rval.getType())) {
           assert(rval.isConstant());
-          rval = ((PointerExpressionEncoding) getExpressionEncoding())
-              .getPointerEncoding().nullPtr();
+          rval = getExpressionEncoding().getPointerEncoding().getNullPtr();
         }
         break;
       }

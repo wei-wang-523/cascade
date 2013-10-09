@@ -123,7 +123,7 @@ public class PartitionMemoryModelObject extends AbstractMemoryModel {
     
     int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
     this.scalarType = exprManager.bitVectorType(size);
-    this.ptrType = ((PointerExpressionEncoding) encoding).getPointerEncoding().getType();
+    this.ptrType = encoding.getPointerEncoding().getType();
     
     scalarSel = exprManager.selector(SCALAR_SELECTOR_NAME, scalarType);
     scalarConstr = exprManager.constructor(SCALAR_CONSTR_NAME, scalarSel);
@@ -328,7 +328,7 @@ public class PartitionMemoryModelObject extends AbstractMemoryModel {
     xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
     CellKind kind = CType.getCellKind(lvalType);
     switch(kind) {
-    case POINTER: rval = getExpressionEncoding().unknown(); break;
+    case POINTER: rval = getExpressionEncoding().getPointerEncoding().unknown(); break;
     case SCALAR:  rval = getExpressionEncoding().getIntegerEncoding().unknown(); break;
     case BOOL:    rval = getExpressionEncoding().getIntegerEncoding().unknown(); break;
     default: throw new IllegalArgumentException("Invalid kind " + kind);
@@ -412,8 +412,7 @@ public class PartitionMemoryModelObject extends AbstractMemoryModel {
         ExpressionManager exprManager = getExpressionManager();
         
         { /* The disjointness of stack variables, and != nullRef*/
-          Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
-              .getPointerEncoding().nullPtr().getChild(0);
+          Expression nullRef = getExpressionEncoding().getPointerEncoding().getNullPtr().getChild(0);
           ImmutableList<Expression> distinctRef = new ImmutableList.Builder<Expression>()
               .addAll(lvals).add(nullRef).build();
           if(distinctRef.size() > 1)  builder.add(exprManager.distinct(distinctRef));
@@ -657,8 +656,7 @@ public class PartitionMemoryModelObject extends AbstractMemoryModel {
       Expression ref_ptr = ptr.asTuple().index(0);
       Expression off_ptr = ptr.asTuple().index(1);
       Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
-      Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
-          .getPointerEncoding().nullPtr().asTuple().getChild(0);
+      Expression nullRef = getExpressionEncoding().getPointerEncoding().getNullPtr().asTuple().getChild(0);
       
       // Valid stack access
       for( Expression lval : lvals) {
@@ -708,8 +706,7 @@ public class PartitionMemoryModelObject extends AbstractMemoryModel {
       Expression off_ptr = ptr.asTuple().index(1);
       Expression off_bound = exprManager.plus(offType.getSize(), off_ptr, size);
       Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
-      Expression nullRef = ((PointerExpressionEncoding) getExpressionEncoding())
-          .getPointerEncoding().nullPtr().asTuple().getChild(0);
+      Expression nullRef = getExpressionEncoding().getPointerEncoding().getNullPtr().asTuple().getChild(0);
       
       // Valid stack access
       for( Expression lval : lvals) {
@@ -759,8 +756,7 @@ public class PartitionMemoryModelObject extends AbstractMemoryModel {
       
       ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
       
-      Expression nullPtr = ((PointerExpressionEncoding) getExpressionEncoding())
-          .getPointerEncoding().nullPtr();
+      Expression nullPtr = getExpressionEncoding().getPointerEncoding().getNullPtr();
       Expression nullRef = nullPtr.asTuple().getChild(0);
       Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
       
@@ -799,8 +795,7 @@ public class PartitionMemoryModelObject extends AbstractMemoryModel {
     Expression alloc = state.getChild(1); 
     Expression ref = ptr.asTuple().index(0);
     Expression size = alloc.asArray().index(ref);
-    Expression nullPtr = ((PointerExpressionEncoding) getExpressionEncoding())
-        .getPointerEncoding().nullPtr();
+    Expression nullPtr = getExpressionEncoding().getPointerEncoding().getNullPtr();
     return exprManager.or(exprManager.eq(ptr, nullPtr), exprManager.greaterThan(size, 
         exprManager.bitVectorZero(offType.getSize())));
   }
@@ -878,20 +873,18 @@ public class PartitionMemoryModelObject extends AbstractMemoryModel {
         Constant constant =  type.getConstant();
         
         if(constant.isNumber() && constant.bigIntValue().intValue() == 0) {
-          return ((PointerExpressionEncoding) getExpressionEncoding())
-              .getPointerEncoding().nullPtr();
+          return getExpressionEncoding().getPointerEncoding().getNullPtr();
         }
         
         if(constant.isReference()) {
           assert ((Reference) constant.getValue()).isCast();
           CastReference ref = (CastReference) constant.getValue();
           if(ref.getBase().isNull()) {
-            return ((PointerExpressionEncoding) getExpressionEncoding())
-                .getPointerEncoding().nullPtr();
+            return getExpressionEncoding().getPointerEncoding().getNullPtr();
           }
         }
         
-        return getExpressionEncoding().unknown();
+        return getExpressionEncoding().getPointerEncoding().unknown();
       } 
       
       if(mixType.equals(cellType)) {

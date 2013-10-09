@@ -41,7 +41,7 @@ public class TemporalMemoryModel extends AbstractMemoryModel {
     
     Expression newVar = getExpressionManager().variable(
         lval.asVariable().getName(), lval.getType(), true);
-    Expression rval = getExpressionEncoding().unknown();
+    Expression rval = getExpressionEncoding().getIntegerEncoding().unknown();
     return StatePropertyImpl.valueOf(state.subst(lval, newVar)
         .asBooleanExpression().and(lval.eq(rval.subst(lval, newVar))));
   }

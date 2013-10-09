@@ -1,6 +1,7 @@
 package edu.nyu.cascade.ir.expr;
 
 import java.util.Iterator;
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.base.Function;
@@ -16,11 +17,11 @@ import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.EqualsUtil;
 import edu.nyu.cascade.util.HashCodeUtil;
 
-public class DefaultTupleEncoding implements TupleEncoding<TupleExpression> {
+public class DefaultPointerEncoding implements PointerEncoding<TupleExpression> {
   
   private final ExpressionManager exprManager;
   
-  public DefaultTupleEncoding(ExpressionManager exprManager) {
+  public DefaultPointerEncoding(ExpressionManager exprManager) {
     this.exprManager = exprManager;
   }
   
@@ -150,9 +151,27 @@ public class DefaultTupleEncoding implements TupleEncoding<TupleExpression> {
     // TODO Auto-generated method stub
     return null;
   }
+
+	@Override
+	public TupleExpression getNullPtr() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public TupleType getType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public TupleExpression unknown() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
 
-class DefaultTupleInstance implements TupleEncoding.Instance<TupleExpression> {
+class DefaultTupleInstance implements PointerEncoding.Instance<TupleExpression> {
   private static final String PTR_TYPE_NAME = "ptrType";
   
   private final ExpressionManager exprManager;
@@ -266,5 +285,10 @@ class DefaultTupleInstance implements TupleEncoding.Instance<TupleExpression> {
   public Expression index(TupleExpression tuple, int index) {
     return tuple.index(index);
   }
+
+	@Override
+	public TypeEncoding<?> getElementEncoding(int i) {
+		return Iterables.get(elementsEncoding, i);
+	}
 }
 

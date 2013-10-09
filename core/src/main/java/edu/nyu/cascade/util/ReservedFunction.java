@@ -12,6 +12,7 @@ import com.google.common.collect.Sets;
 public class ReservedFunction {
   public static final String MALLOC = "malloc";
   public static final String FREE = "free";
+  public static final String EXIT = "exit";
   
   public static final String AUX_HAVOC = "havoc";
   public static final String AUX_ALLOC = "alloc";
@@ -40,7 +41,8 @@ public class ReservedFunction {
   public final static Set<String> Functions = 
       Sets.newHashSet(
           MALLOC, 
-          FREE, 
+          FREE,
+          EXIT,
           
           ANNO_NONDET, 
           ANNO_ASSERT, 

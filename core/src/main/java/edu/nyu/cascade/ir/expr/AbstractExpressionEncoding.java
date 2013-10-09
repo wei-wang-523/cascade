@@ -52,14 +52,14 @@ public abstract class AbstractExpressionEncoding
 
   protected final ArrayEncoding<? extends Expression> arrayEncoding;
   
-  protected final TupleEncoding<? extends Expression> tupleEncoding;
+  protected final PointerEncoding<? extends Expression> pointerEncoding;
   
   protected AbstractExpressionEncoding(ExpressionManager exprManager,
       IntegerEncoding<? extends Expression> integerEncoding,
       BooleanEncoding<? extends Expression> booleanEncoding) {
     this(integerEncoding,booleanEncoding,
-        UnimplementedArrayEncoding.<Expression>create(),
-        UnimplementedTupleEncoding.<Expression>create());
+    		UnimplementedArrayEncoding.<Expression>create(),
+    		UnimplementedPointerEncoding.<Expression>create());
   }
   
   protected AbstractExpressionEncoding(ExpressionManager exprManager,
@@ -67,14 +67,14 @@ public abstract class AbstractExpressionEncoding
       BooleanEncoding<? extends Expression> booleanEncoding,
       ArrayEncoding<? extends Expression> arrayEncoding) {
     this(integerEncoding,booleanEncoding,arrayEncoding,
-        UnimplementedTupleEncoding.<Expression>create());
+    		UnimplementedPointerEncoding.<Expression>create());
   }
   
   protected AbstractExpressionEncoding(
       IntegerEncoding<? extends Expression> integerEncoding,
       BooleanEncoding<? extends Expression> booleanEncoding,
       ArrayEncoding<? extends Expression> arrayEncoding,
-      TupleEncoding<? extends Expression> tupleEncoding) {
+      PointerEncoding<? extends Expression> pointerEncoding) {
     Preconditions.checkArgument( integerEncoding.getExpressionManager().
         equals( booleanEncoding.getExpressionManager()) );
     Preconditions.checkArgument( 
@@ -90,7 +90,7 @@ public abstract class AbstractExpressionEncoding
     this.integerEncoding = integerEncoding;
     this.booleanEncoding = booleanEncoding;
     this.arrayEncoding = arrayEncoding;
-    this.tupleEncoding = tupleEncoding;
+    this.pointerEncoding = pointerEncoding;
   }
 
   @Override
@@ -137,7 +137,7 @@ public abstract class AbstractExpressionEncoding
     IOUtils.err().println(
         "APPROX: ExpressionEncoding treating unexpected function call as unknown: "
             + name);
-    return unknown();
+    return getIntegerEncoding().unknown();
   }
   
   /** {@inheritDoc}
@@ -363,7 +363,7 @@ public abstract class AbstractExpressionEncoding
       ImmutableList<TypeEncoding<?>> encodings = new ImmutableList.Builder<TypeEncoding<?>>()
           .add(encodingForType(typeArgsPtr.get(0)),
               encodingForType(typeArgsPtr.get(1))).build();
-      return getTupleEncoding().getInstance(encodings);
+      return getPointerEncoding().getInstance(encodings);
 		default:
 			throw new UnsupportedOperationException("type=" + type);
     }
@@ -418,8 +418,8 @@ public abstract class AbstractExpressionEncoding
   }
   
   @Override
-  public TupleEncoding<? extends Expression> getTupleEncoding() {
-    return tupleEncoding;
+  public PointerEncoding<? extends Expression> getPointerEncoding() {
+    return pointerEncoding;
   }
 
   @Override
@@ -847,11 +847,6 @@ public abstract class AbstractExpressionEncoding
   }
 
   @Override
-  public Expression unknown() {
-    return getIntegerEncoding().unknown();
-  }
-
-  @Override
   public Expression uminus(Expression expr) {
   	return uminus_(getIntegerEncoding(), expr);
   }
@@ -884,7 +879,7 @@ public abstract class AbstractExpressionEncoding
       CellKind targetKind = CType.getCellKind(targetType);
       if(CellKind.POINTER.equals(targetKind) && CellKind.SCALAR.equals(srcKind)) {
         assert src.isConstant();
-        return ((PointerEncoding) tupleEncoding).getNullPtr();
+        return pointerEncoding.getNullPtr();
       }
       
       if(theory.equals(Preferences.OPTION_THEORY_BURSTALLFIX)

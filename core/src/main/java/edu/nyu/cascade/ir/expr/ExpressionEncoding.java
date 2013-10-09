@@ -173,7 +173,7 @@ public interface ExpressionEncoding {
   /**
    * The underlying tuple encoding.
    */
-  TupleEncoding<?> getTupleEncoding();
+  PointerEncoding<?> getPointerEncoding();
 
   /**
    * Get logical assumptions used in the underlying encoding. E.g., if variables
@@ -594,11 +594,6 @@ public interface ExpressionEncoding {
    * @return the source type of the variable
    */
   IRType typeForSourceVar(String qName);
-  
-  /**
-   * An expression with unknown value in the encoding.
-   */
-  Expression unknown() ;
   
   /**
    * An expression with unary minus
