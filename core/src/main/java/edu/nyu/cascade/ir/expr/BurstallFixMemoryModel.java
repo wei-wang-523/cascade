@@ -15,6 +15,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.CTypeNameAnalyzer;
 import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -47,7 +48,7 @@ import edu.nyu.cascade.util.Preferences;
  * @author Wei
  *
  */
-public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
+public class BurstallFixMemoryModel extends AbstractMemoryModel {
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
@@ -318,7 +319,7 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
     ExpressionManager em = getExpressionManager();
     ArrayExpression tgtArray = null;
     xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
-    String typeName = getTypeName(pType);
+    String typeName = CTypeNameAnalyzer.getTypeName(pType);
   
     if(currentMemElems.containsKey(typeName)) {
       return currentMemElems.get(typeName).asArray().index(p);
@@ -723,7 +724,7 @@ public class BurstallFixMemoryModel extends AbstractBurstallMemoryModel {
     boolean isMemUpdated = false;
     ArrayExpression tgtArray = null;
     xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
-    String lvalTypeName = getTypeName(lvalType);
+    String lvalTypeName = CTypeNameAnalyzer.getTypeName(lvalType);
     if(currentMemElems.containsKey(lvalTypeName)) { // declared type name
       CellKind kind = CType.getCellKind(lvalType);
       switch(kind) {

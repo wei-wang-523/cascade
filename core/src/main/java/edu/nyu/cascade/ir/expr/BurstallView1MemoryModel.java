@@ -19,6 +19,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.CTypeNameAnalyzer;
 import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
 import edu.nyu.cascade.prover.ArrayExpression;
@@ -57,9 +58,8 @@ import edu.nyu.cascade.util.Preferences;
  *
  */
 
-public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
+public class BurstallView1MemoryModel extends AbstractMemoryModel {
   protected static final String DEFAULT_VIEW_VARIABLE_NAME = "view";
-  protected static final String DEFAULT_MEMORY_STATE_TYPE = "memType";
   protected static final String DEFAULT_VIEW_STATE_TYPE = "viewType";
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
@@ -244,7 +244,7 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
     
     ExpressionManager em = getExpressionManager();
     xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
-    String typeName = getTypeName(pType);
+    String typeName = CTypeNameAnalyzer.getTypeName(pType);
     if(currentMemElems.containsKey(typeName)) {
       ArrayExpression tgtArray = currentMemElems.get(typeName).asArray();
       if(!hasView(p.getNode())) {
@@ -820,7 +820,7 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
     ExpressionManager em = getExpressionManager();
     ArrayExpression tgtArray = null;
     boolean isMemUpdated = false;
-    String lvalTypeName = getTypeName(lvalType);
+    String lvalTypeName = CTypeNameAnalyzer.getTypeName(lvalType);
     if(currentMemElems.containsKey(lvalTypeName)) { // previously declared variable
       CellKind kind = CType.getCellKind(lvalType);
       switch(kind) {
@@ -966,7 +966,7 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
         throw new ExpressionFactoryException("Don't support cast pointer to scalar type in Cascade.");
       }      
     } else { // lval point to a non-structure type
-      String elemArrName = getTypeName(regionType);
+      String elemArrName = CTypeNameAnalyzer.getTypeName(regionType);
       Expression indexExpr = startAddr;
       CellKind kind = CType.getCellKind(regionType);
       switch(kind) {
@@ -1051,7 +1051,7 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
     Expression scalarViewState = viewState.asTuple().index(0);
     Expression ptrViewState = viewState.asTuple().index(1);
 
-    String indexTypeName = getTypeName(indexType);
+    String indexTypeName = CTypeNameAnalyzer.getTypeName(indexType);
     CellKind kind = CType.getCellKind(indexType);
     switch(kind) {
     case SCALAR: {
@@ -1091,7 +1091,7 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
    */
   private Map<String, Type> getElemTypeOfStructUnionField(xtc.type.Type type) {
     Map<String, Type> elemTypes = Maps.newLinkedHashMap();
-    String typeName = getTypeName(type);
+    String typeName = CTypeNameAnalyzer.getTypeName(type);
     if(!(type.isStruct() || type.isUnion())) {
       CellKind kind = CType.getCellKind(type);
       switch(kind){
@@ -1138,7 +1138,7 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
     Map<String, Expression> elemOffsets = Maps.newLinkedHashMap();
     ExpressionManager em = getExpressionManager();
     ExpressionEncoding encoding = getExpressionEncoding();
-    String typeName = getTypeName(type);
+    String typeName = CTypeNameAnalyzer.getTypeName(type);
     int cellSize = encoding.getCellSize();
     if(!type.isStruct()) {
       Expression offsetExpr = em.bitVectorConstant(0, cellSize);
@@ -1166,7 +1166,7 @@ public class BurstallView1MemoryModel extends AbstractBurstallMemoryModel {
     Map<String, Integer> elemOffsets = Maps.newLinkedHashMap();
     ExpressionEncoding encoding = getExpressionEncoding();
     xtc.type.C cAnalyzer = encoding.getCAnalyzer();
-    String typeName = getTypeName(type);
+    String typeName = CTypeNameAnalyzer.getTypeName(type);
     int cellSize = encoding.getCellSize();
     for(VariableT elem : type.toUnion().getMembers()) {
       String elemName = new StringBuilder().append(typeName)

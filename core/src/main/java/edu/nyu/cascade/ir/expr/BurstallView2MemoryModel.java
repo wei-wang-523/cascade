@@ -15,6 +15,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.CTypeNameAnalyzer;
 import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
 import edu.nyu.cascade.prover.ArrayExpression;
@@ -51,7 +52,7 @@ import edu.nyu.cascade.util.Preferences;
  *
  */
 
-public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
+public class BurstallView2MemoryModel extends AbstractMemoryModel {
   protected static final String DEFAULT_VIEW_VARIABLE_NAME = "view";
   protected static final String DEFAULT_VIEW_STATE_TYPE = "viewType";
 
@@ -379,7 +380,7 @@ public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
     
     ExpressionManager em = getExpressionManager();
     xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
-    String typeName = getTypeName(pType);
+    String typeName = CTypeNameAnalyzer.getTypeName(pType);
     
     if(currentMemElems.containsKey(typeName)) {
       ArrayExpression tgtArray = currentMemElems.get(typeName).asArray();
@@ -786,7 +787,7 @@ public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
     ExpressionManager em = getExpressionManager();
     ArrayExpression tgtArray = null;
     boolean isMemUpdated = false;
-    String lvalTypeName = getTypeName(lvalType);
+    String lvalTypeName = CTypeNameAnalyzer.getTypeName(lvalType);
     if(currentMemElems.containsKey(lvalTypeName)) { // previously declared variable
       CellKind kind = CType.getCellKind(lvalType);
       switch(kind) {
@@ -842,7 +843,7 @@ public class BurstallView2MemoryModel extends AbstractBurstallMemoryModel {
       Expression indexExpr) {
     if(!hasView(indexExpr.getNode()))  return viewState;
     xtc.type.Type indexType = (xtc.type.Type) indexExpr.getNode().getProperty(TYPE);
-    String indexTypeName = getTypeName(indexType);
+    String indexTypeName = CTypeNameAnalyzer.getTypeName(indexType);
     
     Expression scalarViewState = viewState.asTuple().index(0);
     Expression ptrViewState = viewState.asTuple().index(1);

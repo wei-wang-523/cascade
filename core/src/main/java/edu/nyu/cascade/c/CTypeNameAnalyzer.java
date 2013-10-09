@@ -1,4 +1,4 @@
-package edu.nyu.cascade.ir.expr;
+package edu.nyu.cascade.c;
 
 import java.util.concurrent.ExecutionException;
 
@@ -8,34 +8,30 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import edu.nyu.cascade.c.CType;
+
+import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.util.Pair;
 
 /**
- * Burstall memory model, multiple memory arrays for various type.
- * These arrays types map pointer type to cell type. The state of 
- * memory is a record with multiple arrays for various types.
+ * Type name analyzer for Burstall style memory model
  * 
  * @author Wei
  *
  */
 
-public abstract class AbstractBurstallMemoryModel extends AbstractMemoryModel {
-  protected AbstractBurstallMemoryModel(ExpressionEncoding encoding) {
-    super(encoding);
-  }
-  
+public class CTypeNameAnalyzer {
+	
   /** In xtc.type.WrappedT, the equals just forwards the method invocation to the wrapped type
    * Here, shape should be involved to determine equivalence, and thus we use pair.
    */
-  private final LoadingCache<Pair<xtc.type.Type, xtc.type.Reference>, String> cache = CacheBuilder
+  static private final LoadingCache<Pair<xtc.type.Type, xtc.type.Reference>, String> cache = CacheBuilder
       .newBuilder().build(new CacheLoader<Pair<xtc.type.Type, xtc.type.Reference>, String>(){
         public String load(Pair<xtc.type.Type, xtc.type.Reference> pair) {
           return CType.parseTypeName(pair.fst());
         }
       });
   
-  protected String getTypeName(xtc.type.Type type) {
+  static protected String getTypeName(xtc.type.Type type) {
     Preconditions.checkArgument(type != null);
     if(type.hasConstant() && type.getConstant().isReference()) {
       Reference ref = type.getConstant().refValue();
