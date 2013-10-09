@@ -68,12 +68,12 @@ import edu.nyu.cascade.ir.expr.BitVectorMemoryModelSound;
 import edu.nyu.cascade.ir.expr.BooleanEncoding;
 import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
 import edu.nyu.cascade.ir.expr.DefaultBooleanEncoding;
+import edu.nyu.cascade.ir.expr.DefaultPointerEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.ir.expr.IntegerEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
-import edu.nyu.cascade.ir.expr.TupleEncoding;
-import edu.nyu.cascade.ir.expr.UnimplementedTupleEncoding;
+import edu.nyu.cascade.ir.expr.PointerEncoding;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.ArrayVariableExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
@@ -201,7 +201,7 @@ public class CompressedDomainNamesEncoding_Z3 extends CompressedDomainNamesEncod
     IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(expressionManager, intCellSize);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(expressionManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(expressionManager);
-    TupleEncoding<TupleExpression> tupleEncoding = new UnimplementedTupleEncoding<TupleExpression>();
+    PointerEncoding<TupleExpression> tupleEncoding = new DefaultPointerEncoding(expressionManager);
     
     return new CompressedDomainNamesEncoding_Z3(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
     
@@ -211,7 +211,7 @@ public class CompressedDomainNamesEncoding_Z3 extends CompressedDomainNamesEncod
       IntegerEncoding<BitVectorExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
-      TupleEncoding<TupleExpression> tupleEncoding) {
+      PointerEncoding<TupleExpression> tupleEncoding) {
     super(integerEncoding, booleanEncoding, arrayEncoding, tupleEncoding);
 
     try {

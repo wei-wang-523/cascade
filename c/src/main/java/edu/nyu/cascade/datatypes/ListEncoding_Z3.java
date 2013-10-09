@@ -13,6 +13,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.Arrays;
 import java.util.List;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -25,12 +26,12 @@ import edu.nyu.cascade.ir.expr.BitVectorMemoryModelSound;
 import edu.nyu.cascade.ir.expr.BooleanEncoding;
 import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
 import edu.nyu.cascade.ir.expr.DefaultBooleanEncoding;
+import edu.nyu.cascade.ir.expr.DefaultPointerEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.ir.expr.IntegerEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
-import edu.nyu.cascade.ir.expr.TupleEncoding;
-import edu.nyu.cascade.ir.expr.UnimplementedTupleEncoding;
+import edu.nyu.cascade.ir.expr.PointerEncoding;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -95,7 +96,7 @@ public class ListEncoding_Z3 extends ListEncoding {
     IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, intCellSize);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(exprManager);
-    TupleEncoding<TupleExpression> tupleEncoding = new UnimplementedTupleEncoding<TupleExpression>();
+    PointerEncoding<TupleExpression> tupleEncoding = new DefaultPointerEncoding(exprManager);
     
     return new ListEncoding_Z3(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
   }
@@ -104,7 +105,7 @@ public class ListEncoding_Z3 extends ListEncoding {
       IntegerEncoding<BitVectorExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
-      TupleEncoding<TupleExpression> tupleEncoding) {
+      PointerEncoding<TupleExpression> tupleEncoding) {
     super(integerEncoding, booleanEncoding, arrayEncoding, tupleEncoding);
 
     try {

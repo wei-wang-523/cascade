@@ -17,7 +17,7 @@ import edu.nyu.cascade.ir.expr.BooleanEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.IntegerEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
-import edu.nyu.cascade.ir.expr.TupleEncoding;
+import edu.nyu.cascade.ir.expr.PointerEncoding;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -44,7 +44,7 @@ public abstract class ListEncoding extends AbstractExpressionEncoding {
       IntegerEncoding<BitVectorExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
-      TupleEncoding<TupleExpression> tupleEncoding) {
+      PointerEncoding<TupleExpression> tupleEncoding) {
     super(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
   }
 
