@@ -100,7 +100,7 @@ class CExpressionEncoder implements ExpressionEncoder {
                   + node.getName());
 
       try {
-        return encoding.unknown();
+        return encoding.getIntegerEncoding().unknown();
       } catch (ExpressionFactoryException e) {
         throw new VisitingException("Expression Factory failure", e);
       }
@@ -396,7 +396,7 @@ class CExpressionEncoder implements ExpressionEncoder {
         IOUtils.debug().pln(
             "APPROX: Treating unexpected function call as unknown: "
                 + node.getName());
-        res = encoding.unknown();
+        res = encoding.getIntegerEncoding().unknown();
       }
       return res.setNode(node);
     }

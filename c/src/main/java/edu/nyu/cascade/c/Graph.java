@@ -364,7 +364,7 @@ final class Graph {
   }
   
   /** find all havoc statement */
-  List<IRStatement> collectHavocStmts() {
+  Iterable<IRStatement> collectHavocStmts() {
     Queue<Path> queue = Lists.newLinkedList();
     List<Path> visited = Lists.newArrayList();
     List<IRStatement> resStmts = Lists.newArrayList();
@@ -372,12 +372,25 @@ final class Graph {
     while(!queue.isEmpty()) {
       Path currPath = queue.poll();
       if(visited.contains(currPath))    continue;
-      for(IRStatement stmt : currPath.stmts) {
-        if(stmt.getType() == StatementType.ASSIGN) {
-          IRExpressionImpl lval = (IRExpressionImpl) ((Statement) stmt).getOperand(0);
-          resStmts.add(0, Statement.havoc(lval.getSourceNode(), lval));
-        }           
-      }
+      Iterable<IRStatement> assignStmts = Iterables.filter(currPath.stmts, 
+      		new Predicate<IRStatement>(){
+      	@Override
+				public boolean apply(IRStatement stmt) {
+      		return stmt.getType().equals(StatementType.ASSIGN);
+      	}
+      });
+      
+      Iterable<IRStatement> havocStmts = Iterables.transform(assignStmts, 
+      		new Function<IRStatement, IRStatement>(){
+      	@Override
+      	public IRStatement apply(IRStatement stmt) {
+      		IRExpressionImpl lval = (IRExpressionImpl) ((Statement) stmt).getOperand(0);
+          return Statement.havoc(lval.getSourceNode(), lval);
+      	}
+      });
+      
+      resStmts.addAll(0, Lists.newArrayList(havocStmts));
+      
       if(predecessorMap.containsKey(currPath))
         queue.addAll(predecessorMap.get(currPath));
       visited.add(currPath);

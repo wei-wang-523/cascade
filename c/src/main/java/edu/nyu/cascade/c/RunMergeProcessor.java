@@ -1315,24 +1315,26 @@ class RunMergeProcessor implements RunProcessor {
       /* Pick all statements from the loop body */
       Graph loopGraph = processRun(position, position, 
           position.getLoops().iterator().next().getWayPoint());
-      List<IRStatement> preStmts = Lists.newArrayList();
+      ImmutableList.Builder<IRStatement> preBuilder = 
+      		new ImmutableList.Builder<IRStatement>();
       
       /** FIXME: CVC4 has incremental support problem, multiple queries are not supported
        * well. If this assertion statement is added, will have invalid memory access inside
        * CVC4*/
-      preStmts.add(Statement.assertStmt(spec, argExpr));      
+      preBuilder.add(Statement.assertStmt(spec, argExpr));      
       /* Process havoc statements */
-      List<IRStatement> havocStmts = loopGraph.collectHavocStmts();
-      preStmts.addAll(havocStmts.subList(0, havocStmts.size()-1));
-      preStmts.add(Statement.assumeStmt(spec, argExpr));
+      preBuilder.addAll(loopGraph.collectHavocStmts());
+//      preStmts.addAll(havocStmts.subList(0, havocStmts.size()-1));
+      preBuilder.add(Statement.assumeStmt(spec, argExpr));
 
-      List<IRStatement> postStmts = Lists.newArrayList();
-      postStmts.addAll(loopGraph.destPath.stmts);
-      postStmts.add(Statement.assertStmt(spec, argExpr));
+      ImmutableList.Builder<IRStatement> postBuilder = 
+      		new ImmutableList.Builder<IRStatement>();
+      postBuilder.addAll(loopGraph.destPath.stmts);
+      postBuilder.add(Statement.assertStmt(spec, argExpr));
       
       invariantGraph = loopGraph;
-      loopGraph.addInvariantPath(Path.createSingleton(preStmts), 
-          Path.createSingleton(postStmts));
+      loopGraph.addInvariantPath(Path.createSingleton(preBuilder.build()), 
+          Path.createSingleton(postBuilder.build()));
       
     } catch (IOException e) {
       throw new RunProcessorException("Specification parse failure", e);
@@ -1342,10 +1344,11 @@ class RunMergeProcessor implements RunProcessor {
     return invariantGraph;    
   }
   
-  private List<Position> loopPointsUnroll(IRControlFlowGraph cfg, List<Position> wayPoints) 
+  private ImmutableList<Position> loopPointsUnroll(IRControlFlowGraph cfg, List<Position> wayPoints) 
       throws RunProcessorException {
     Preconditions.checkArgument(wayPoints != null);
-    List<Position> resWaypoints = Lists.newArrayList();
+    ImmutableList.Builder<Position> wpBuilder = 
+    		new ImmutableList.Builder<Position>();
     for(Position pos : wayPoints) {
       if(pos.hasLoop()) {
         /* Clear default iteration times if users specify it in ctrl file */
@@ -1355,13 +1358,13 @@ class RunMergeProcessor implements RunProcessor {
           /* Ignore loop iteration times when have loop invariant */
           if(loopPos.getInvariant() != null) {
             pos.setInvariant(loopPos.getInvariant());
-            resWaypoints.add(pos);
+            wpBuilder.add(pos);
             continue;
           }
           int iterTimes = loopPos.getIterTimes();
           while(iterTimes>0) {
-            resWaypoints.add(pos);
-            resWaypoints.addAll(loopPointsUnroll(cfg, loopPos.getWayPoint()));
+          	wpBuilder.add(pos);
+          	wpBuilder.addAll(loopPointsUnroll(cfg, loopPos.getWayPoint()));
             iterTimes--;
           }
           
@@ -1370,13 +1373,13 @@ class RunMergeProcessor implements RunProcessor {
            * to hit the entry block of the loop and exit
            */
           if(lastLoopPos.getWayPoint().isEmpty()) 
-            resWaypoints.add(pos);
+          	wpBuilder.add(pos);
         }
       } else {
-        resWaypoints.add(pos);
+      	wpBuilder.add(pos);
       }
     }
-    return resWaypoints;
+    return wpBuilder.build();
   }
   
   private Graph processRun(IRLocation start, IRLocation end, List<Position> waypoints) 
