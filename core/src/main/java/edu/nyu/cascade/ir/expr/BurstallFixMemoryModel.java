@@ -588,9 +588,8 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
             allocPrime = alloc.subst(memoryVar.getChild(1), memory_alloc);
           }
           
-          /* Update memType, allocType and stateType -- static member of memory model */
-          memType = memPrime.getType().asRecord();
-          stateType = expr.getType().asTuple();
+          /* Update memType, allocType and stateType */
+          setStateType(expr.getType());
           
           return exprManager.tuple(expr.getType(), memPrime, allocPrime);
         }

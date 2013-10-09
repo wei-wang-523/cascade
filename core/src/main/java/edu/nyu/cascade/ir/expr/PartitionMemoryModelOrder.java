@@ -550,7 +550,6 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
               elemMap.put(name, elem);
             }
             memPrime = exprManager.record(expr_mem_type, elemMap.values());
-            memType = memPrime.getType().asRecord();
           }
 
           if(!memory_alloc.getType().equals(expr_alloc.getType())){

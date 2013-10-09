@@ -612,27 +612,6 @@ public class BurstallView1MemoryModel extends AbstractMemoryModel {
         if(!isState(expr)) {
           // For non-tuple expression evaluation
           
-//          Expression exprPrime = expr;
-//          
-//          /* Substitute the memory of expr */
-//          Expression memVar_mem = memoryVar.getChild(0);
-//          Expression memory_mem = memory.getChild(0);
-//          
-//          Iterator<String> nameItr = memVar_mem.asRecord().getType().getElementNames().iterator();
-//          
-//          while(nameItr.hasNext()) {
-//            String name = nameItr.next();
-//            Expression elem_1 = memVar_mem.asRecord().select(name);
-//            Expression elem_2 = memory_mem.asRecord().select(name);
-//            exprPrime = exprPrime.subst(elem_1, elem_2);
-//          }
-//          
-//          /* Substitute the alloc of expr */
-//          Expression memVar_alloc = memoryVar.getChild(1);
-//          Expression memory_alloc = memory.getChild(1);
-//          
-//          exprPrime = exprPrime.subst(memVar_alloc, memory_alloc);
-          
           Expression exprPrime = expr;
           
           /* Substitute the memory of expr */
@@ -731,8 +710,7 @@ public class BurstallView1MemoryModel extends AbstractMemoryModel {
           viewPrime = viewPrime.subst(memoryVar.getChild(2), memory_view);
           
           /* Update memType, allocType and stateType -- static member of memory model */
-          memType = memPrime.getType().asRecord();
-          stateType = expr.getType().asTuple();
+          setStateType(expr.getType());
           
           return exprManager.tuple(expr.getType(), memPrime, allocPrime, viewPrime);
         }
