@@ -210,6 +210,14 @@ public class PointerFoldEncoding implements PointerEncoding<TupleExpression> {
   public boolean isEncodingFor(Expression x) {
     return x.isTuple() && x.asTuple().size() == 2;
   }
+
+	@Override
+	public TupleExpression freshPtr(String name) {
+    Expression refVar = exprManager.variable(name, refType, false);
+    Expression offZero = exprManager.bitVectorZero(offType.getSize());
+    TupleExpression ptr = exprManager.tuple(type, refVar, offZero);
+    return ptr;
+	}
 }
 
 class PointerInstance implements PointerEncoding.Instance<TupleExpression> {

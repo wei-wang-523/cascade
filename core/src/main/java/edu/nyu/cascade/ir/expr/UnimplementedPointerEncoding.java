@@ -226,4 +226,10 @@ public class UnimplementedPointerEncoding<T extends Expression> implements Point
 		return null;
 	}
 
+	@Override
+	public T freshPtr(String name) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

@@ -169,6 +169,12 @@ public class DefaultPointerEncoding implements PointerEncoding<TupleExpression> 
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+	public TupleExpression freshPtr(String name) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
 
 class DefaultTupleInstance implements PointerEncoding.Instance<TupleExpression> {
