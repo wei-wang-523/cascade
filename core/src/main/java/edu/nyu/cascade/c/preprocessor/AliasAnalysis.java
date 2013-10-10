@@ -91,7 +91,8 @@ public interface AliasAnalysis {
   ImmutableMap<AliasVar, Set<AliasVar>> snapshot() ;
   
   /**
-   * Get the region var allocated for @param var
+   * Get the region var allocated for <code>var</code>
+   * @param var
    */
   AliasVar getAllocRegion(AliasVar var);
   

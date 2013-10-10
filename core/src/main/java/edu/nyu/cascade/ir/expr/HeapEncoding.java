@@ -13,20 +13,68 @@ public interface HeapEncoding {
 	ArrayType getSizeArrType();
 	Type getAddressType();
 	Type getValueType();
-	Expression freshAddress(String regionName);	
+	
+	Expression freshAddress(String varName, xtc.type.Type varType);	
+	
+	Expression freshRegion(String regionName);
+	
 	boolean addToHeapRegions(Collection<Expression> heapRegions, Expression region);
 	boolean addToStackVars(Collection<Expression> stackVars, Expression address);
+	
 	Expression updateSizeArr(Expression sizeArr, Expression lval, Expression rval);
-	BooleanExpression distinctStackVars(final Collection<Expression> stackVars);
-	ImmutableSet<BooleanExpression> distinctStackHeapVars(
-			final Collection<Expression> heapVars,
-			final Collection<Expression> stackVars);
-	ImmutableSet<BooleanExpression> validStackAccess(final Collection<Expression> stackVars, 
+	
+	BooleanExpression disjointStack();
+	
+	ImmutableSet<BooleanExpression> disjointStackSound(
+	Iterable<Expression> stackVars, Iterable<Expression> stackRegions,
+	Expression sizeArr);
+	ImmutableSet<BooleanExpression> disjointStackHeap();
+	
+	ImmutableSet<BooleanExpression> disjointStackHeapSound(
+      Iterable<Expression> heapVars, Iterable<Expression> stackVars,
+      Iterable<Expression> stackRegions, Expression sizeArr);
+	
+	ImmutableSet<BooleanExpression> disjointStackHeapOrder(
+      Iterable<Expression> stackVars,
+      Iterable<Expression> stackRegions, 
+      Expression lastRegion, Expression sizeArr);
+	
+	ImmutableSet<BooleanExpression> validStackAccess(Expression sizeArr, Expression ptr);
+	
+	ImmutableSet<BooleanExpression> validStackAccess(
+			final Iterable<Expression> stackVars, 
+			final Iterable<Expression> stackRegions, 
 			Expression sizeArr, Expression ptr);
-	ImmutableSet<BooleanExpression> validStackAccess(final Collection<Expression> stackVars, 
+	
+	ImmutableSet<BooleanExpression> validStackAccess(Expression sizeArr, Expression ptr, Expression size);
+	
+	ImmutableSet<BooleanExpression> validStackAccess(
+			final Iterable<Expression> stackVars, 
+			final Iterable<Expression> stackRegions, 
 			Expression sizeArr, Expression ptr, Expression size);
-	ImmutableSet<BooleanExpression> validHeapAccess(final Collection<Expression> heapVars, 
+	
+	ImmutableSet<BooleanExpression> validHeapAccess(Expression sizeArr, Expression ptr);
+	
+	ImmutableSet<BooleanExpression> validHeapAccess(final Iterable<Expression> heapVars, 
 			Expression sizeArr, Expression ptr);
-	ImmutableSet<BooleanExpression> validHeapAccess(final Collection<Expression> heapVars, 
+	
+	ImmutableSet<BooleanExpression> validHeapAccess(Expression sizeArr, Expression ptr, Expression size);
+	
+	ImmutableSet<BooleanExpression> validHeapAccess(final Iterable<Expression> heapVars, 
 			Expression sizeArr, Expression ptr, Expression size);
+	
+	BooleanExpression validMallocSound(final Iterable<Expression> heapVars, 
+			Expression sizeArr, Expression ptr, Expression size);
+	
+	BooleanExpression validMallocSound(Expression child, Expression ptr,
+			Expression size);
+	
+	BooleanExpression validMallocOrder(Expression lastRegion, Expression sizeArr, 
+			Expression ptr, Expression size);
+	
+	BooleanExpression validFree(Expression sizeArr, Expression ptr);
+	
+	Expression getConstSizeArr(ArrayType sizeArrType);
+	
+	Expression getValueZero();
 }
