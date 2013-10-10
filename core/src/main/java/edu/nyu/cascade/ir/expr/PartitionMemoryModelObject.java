@@ -115,7 +115,7 @@ public class PartitionMemoryModelObject extends AbstractMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
     heapEncoding = SynchronousHeapEncoding.create(encoding);
     
-    valueType = heapEncoding.getValueType().asBitVectorType();
+    valueType = heapEncoding.getValueType();
     addrType = heapEncoding.getAddressType();
     
     scalarSel = exprManager.selector(SCALAR_SELECTOR_NAME, valueType);
@@ -125,18 +125,18 @@ public class PartitionMemoryModelObject extends AbstractMemoryModel {
     ptrConstr = exprManager.constructor(PTR_CONSTR_NAME, ptrSel);
 
     /* Create datatype */
-    this.mixType = exprManager.dataType(MIX_TYPE_NAME, scalarConstr, ptrConstr);
+    mixType = exprManager.dataType(MIX_TYPE_NAME, scalarConstr, ptrConstr);
     
     ImmutableList.Builder<String> elemNameBuilder = new ImmutableList.Builder<String>();
     ImmutableList.Builder<Type> elemTypeBuilder = new ImmutableList.Builder<Type>();
-    this.memType = exprManager.recordType(
-        Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE), 
+    memType = exprManager.recordType(
+    		Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE), 
         elemNameBuilder.build(), elemTypeBuilder.build());
-    this.sizeArrType = heapEncoding.getSizeArrType();
-    this.stateType = exprManager.tupleType(
+    sizeArrType = heapEncoding.getSizeArrType();
+    stateType = exprManager.tupleType(
         Identifiers.uniquify(DEFAULT_STATE_TYPE), memType, sizeArrType);
     
-    this.currentMemElems = Maps.newLinkedHashMap();
+    currentMemElems = Maps.newLinkedHashMap();
   }
   
   @Override
@@ -273,7 +273,8 @@ public class PartitionMemoryModelObject extends AbstractMemoryModel {
     }
     
     if(mixType.equals(pValCell.getType())) {
-      CellKind kind = CType.getCellKind(CType.unwrapped((xtc.type.Type) p.getNode().getProperty(TYPE)));
+      CellKind kind = CType.getCellKind(
+      		CType.unwrapped((xtc.type.Type) p.getNode().getProperty(TYPE)));
       switch(kind) {
       case SCALAR:
       case BOOL:
