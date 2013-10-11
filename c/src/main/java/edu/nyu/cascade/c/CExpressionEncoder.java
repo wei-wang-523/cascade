@@ -541,55 +541,6 @@ class CExpressionEncoder implements ExpressionEncoder {
           .getInstance(), false).setNode(node);
     }
     
-    private Expression derefMemory(Expression memory, Expression lvalExpr) {
-      /* lvalExpr's node with no type info, get it for BurstallMemoryModel analysis. */
-      Expression resExpr = null;
-      
-      GNode srcNode = lvalExpr.getNode();
-      Type t = unwrapped(lookupType(srcNode));
-      if(t.isArray() || t.isStruct() || t.isUnion())
-        resExpr = lvalExpr;
-      else
-        resExpr = getMemoryModel().deref(memory, lvalExpr);   
-      return resExpr.setNode(srcNode);
-    }
-    
-    private Expression getSubscriptExpression(Node node, Expression idx) {
-      Type type = unwrapped(lookupType(node));
-      assert(type.isArray() || type.isPointer());
-
-      if(!(node.hasName("SubscriptExpression"))) {
-        if(type.isPointer()) {
-          Expression base = (Expression) dispatch(node);
-          Type ptoType = type.toPointer().getType();
-          Expression factor = encoding.integerConstant(sizeofType(ptoType));
-          idx = encoding.times(idx, factor);
-          return encoding.plus(base, idx);
-        } else {
-          Expression base = (Expression) lvalVisitor.dispatch(node);
-          Type cellType = type.toArray().getType();
-          Expression factor = encoding.integerConstant(sizeofType(cellType));
-          idx = encoding.times(idx, factor);
-          return encoding.plus(base, idx);
-        }
-      }
-      
-      if(type.isArray()) {
-        Node nestedBaseNode = node.getNode(0);
-        Node nestedIdxNode = node.getNode(1);
-        Expression nestIdx = (Expression) dispatch(nestedIdxNode);
-        Expression factor = encoding.integerConstant((int)((ArrayT) type).getLength());
-        Expression newIdx = encoding.plus(encoding.times(nestIdx, factor), idx);
-        return getSubscriptExpression(nestedBaseNode, newIdx);    
-      } else {
-        Expression base = (Expression) dispatch(node);
-        Type ptoType = type.toPointer().getType();
-        Expression factor = encoding.integerConstant(sizeofType(ptoType));
-        Expression newIdx = encoding.times(idx, factor);
-        return encoding.plus(base, newIdx);
-      }   
-    }
-
     public Expression visitSubscriptExpression(GNode node)
         throws ExpressionFactoryException {
       IOUtils.debug().pln(
@@ -751,6 +702,55 @@ class CExpressionEncoder implements ExpressionEncoder {
       Expression res = derefMemory(memory, resLoc.setNode(node));
       return res.setNode(node);
     }
+
+		private Expression derefMemory(Expression memory, Expression lvalExpr) {
+		  /* lvalExpr's node with no type info, get it for BurstallMemoryModel analysis. */
+		  Expression resExpr = null;
+		  
+		  GNode srcNode = lvalExpr.getNode();
+		  Type t = unwrapped(lookupType(srcNode));
+		  if(t.isArray() || t.isStruct() || t.isUnion())
+		    resExpr = lvalExpr;
+		  else
+		    resExpr = getMemoryModel().deref(memory, lvalExpr);   
+		  return resExpr.setNode(srcNode);
+		}
+
+		private Expression getSubscriptExpression(Node node, Expression idx) {
+		  Type type = unwrapped(lookupType(node));
+		  assert(type.isArray() || type.isPointer());
+		
+		  if(!(node.hasName("SubscriptExpression"))) {
+		    if(type.isPointer()) {
+		      Expression base = (Expression) dispatch(node);
+		      Type ptoType = type.toPointer().getType();
+		      Expression factor = encoding.integerConstant(sizeofType(ptoType));
+		      idx = encoding.times(idx, factor);
+		      return encoding.plus(base, idx);
+		    } else {
+		      Expression base = (Expression) lvalVisitor.dispatch(node);
+		      Type cellType = type.toArray().getType();
+		      Expression factor = encoding.integerConstant(sizeofType(cellType));
+		      idx = encoding.times(idx, factor);
+		      return encoding.plus(base, idx);
+		    }
+		  }
+		  
+		  if(type.isArray()) {
+		    Node nestedBaseNode = node.getNode(0);
+		    Node nestedIdxNode = node.getNode(1);
+		    Expression nestIdx = (Expression) dispatch(nestedIdxNode);
+		    Expression factor = encoding.integerConstant((int)((ArrayT) type).getLength());
+		    Expression newIdx = encoding.plus(encoding.times(nestIdx, factor), idx);
+		    return getSubscriptExpression(nestedBaseNode, newIdx);    
+		  } else {
+		    Expression base = (Expression) dispatch(node);
+		    Type ptoType = type.toPointer().getType();
+		    Expression factor = encoding.integerConstant(sizeofType(ptoType));
+		    Expression newIdx = encoding.times(idx, factor);
+		    return encoding.plus(base, newIdx);
+		  }   
+		}
   }
   
   @SuppressWarnings("unused")
@@ -795,42 +795,6 @@ class CExpressionEncoder implements ExpressionEncoder {
     public Expression visitAdditiveExpression(GNode node) 
         throws ExpressionFactoryException {
       return (Expression) exprVisitor.dispatch(node);
-    }
-    
-    private Expression getSubscriptExpression(Node node, Expression idx) {
-      Type type = unwrapped(lookupType(node));
-      assert(type.isArray() || type.isPointer());
-
-      if(!(node.hasName("SubscriptExpression"))) {
-        if(type.isPointer()) {
-          Expression base = (Expression) exprVisitor.dispatch(node);
-          Type ptoType = type.toPointer().getType();
-          Expression factor = encoding.integerConstant(sizeofType(ptoType));
-          idx = encoding.times(idx, factor);
-          return encoding.plus(base, idx);
-        } else {
-          Expression base = (Expression) dispatch(node);
-          Type cellType = type.toArray().getType();
-          Expression factor = encoding.integerConstant(sizeofType(cellType));
-          idx = encoding.times(idx, factor);
-          return encoding.plus(base, idx);
-        }
-      }
-      
-      if(type.isArray()) {
-        Node nestedBaseNode = node.getNode(0);
-        Node nestedIdxNode = node.getNode(1);
-        Expression nestIdx = (Expression) exprVisitor.dispatch(nestedIdxNode);
-        Expression factor = encoding.integerConstant((int)((ArrayT) type).getLength());
-        Expression newIdx = encoding.plus(encoding.times(nestIdx, factor), idx);
-        return getSubscriptExpression(nestedBaseNode, newIdx);    
-      } else {
-        Expression base = (Expression) exprVisitor.dispatch(node);
-        Type ptoType = type.toPointer().getType();
-        Expression factor = encoding.integerConstant(sizeofType(ptoType));
-        Expression newIdx = encoding.times(idx, factor);
-        return encoding.plus(base, newIdx);
-      }  
     }
     
     public Expression visitSubscriptExpression(GNode node) 
@@ -887,7 +851,43 @@ class CExpressionEncoder implements ExpressionEncoder {
         throws ExpressionFactoryException {
       Expression res = (Expression) dispatch(node.getNode(1));
       return res.setNode(node);
-    } 
+    }
+
+		private Expression getSubscriptExpression(Node node, Expression idx) {
+		  Type type = unwrapped(lookupType(node));
+		  assert(type.isArray() || type.isPointer());
+		
+		  if(!(node.hasName("SubscriptExpression"))) {
+		    if(type.isPointer()) {
+		      Expression base = (Expression) exprVisitor.dispatch(node);
+		      Type ptoType = type.toPointer().getType();
+		      Expression factor = encoding.integerConstant(sizeofType(ptoType));
+		      idx = encoding.times(idx, factor);
+		      return encoding.plus(base, idx);
+		    } else {
+		      Expression base = (Expression) dispatch(node);
+		      Type cellType = type.toArray().getType();
+		      Expression factor = encoding.integerConstant(sizeofType(cellType));
+		      idx = encoding.times(idx, factor);
+		      return encoding.plus(base, idx);
+		    }
+		  }
+		  
+		  if(type.isArray()) {
+		    Node nestedBaseNode = node.getNode(0);
+		    Node nestedIdxNode = node.getNode(1);
+		    Expression nestIdx = (Expression) exprVisitor.dispatch(nestedIdxNode);
+		    Expression factor = encoding.integerConstant((int)((ArrayT) type).getLength());
+		    Expression newIdx = encoding.plus(encoding.times(nestIdx, factor), idx);
+		    return getSubscriptExpression(nestedBaseNode, newIdx);    
+		  } else {
+		    Expression base = (Expression) exprVisitor.dispatch(node);
+		    Type ptoType = type.toPointer().getType();
+		    Expression factor = encoding.integerConstant(sizeofType(ptoType));
+		    Expression newIdx = encoding.times(idx, factor);
+		    return encoding.plus(base, newIdx);
+		  }  
+		} 
   }
   
   
@@ -988,31 +988,36 @@ class CExpressionEncoder implements ExpressionEncoder {
     return getEncoding().getExpressionManager();
   }
 
-  /**
-   * Returns an expression representing the lvalue of the given name. I.e.,
-   * <code>lookupVar(x)</code> will return an expression representing
-   * <code>&x</code>. The rvalue of <code>x</code> is
-   * <code>exprFactory.deref(lookupVar(x))</code>.
-   * */
-  private Expression getLvalBinding(GNode node) throws ExpressionFactoryException {
-    IRVarInfo varInfo = lookupVar(node);
-    Expression iExpr = null;
-    if (varInfo.hasProperty(VAR_EXPR_MAP)) {
-      // TODO: map expressions per-factory
-      iExpr = (Expression) varInfo.getProperty(VAR_EXPR_MAP);     
-    } else {
-      iExpr = getMemoryModel().createLval(VAR_PREFIX, node);
-      varInfo.setProperty(CExpressionEncoder.VAR_EXPR_MAP, iExpr);     
-    }
-    return iExpr.setNode(node);
-  }
-
   @Override
   public MemoryModel getMemoryModel() {
     return memoryModel;
   }
 
-  /**
+  @Override
+	public Scope getCurrentScope() {
+		return scope;
+	}
+
+	/**
+	 * Returns an expression representing the lvalue of the given name. I.e.,
+	 * <code>lookupVar(x)</code> will return an expression representing
+	 * <code>&x</code>. The rvalue of <code>x</code> is
+	 * <code>exprFactory.deref(lookupVar(x))</code>.
+	 * */
+	private Expression getLvalBinding(GNode node) throws ExpressionFactoryException {
+	  IRVarInfo varInfo = lookupVar(node);
+	  Expression iExpr = null;
+	  if (varInfo.hasProperty(VAR_EXPR_MAP)) {
+	    // TODO: map expressions per-factory
+	    iExpr = (Expression) varInfo.getProperty(VAR_EXPR_MAP);     
+	  } else {
+	    iExpr = getMemoryModel().createLval(VAR_PREFIX, node);
+	    varInfo.setProperty(CExpressionEncoder.VAR_EXPR_MAP, iExpr);     
+	  }
+	  return iExpr.setNode(node);
+	}
+
+	/**
    * Return the symbol table binding for a variable.
    */
   private IRVarInfo lookupVar(GNode node) throws ExpressionFactoryException {
@@ -1131,7 +1136,7 @@ class CExpressionEncoder implements ExpressionEncoder {
   
   private Type lookupType(Node node) {
     if(node.hasProperty(TYPE)) {
-      Type type = (Type) node.getProperty(TYPE);
+      Type type = CType.getType(node);
       if(!type.equals(ErrorT.TYPE)) {
         return type;
       }

@@ -593,7 +593,7 @@ class RunSeqProcessor implements RunProcessor {
         // Create temporary variable node for function call node.
         String varName = Identifiers.uniquify(TEMP_VAR_PREFIX);
         GNode varNode = GNode.create("PrimaryIdentifier", varName);
-        xtc.type.Type nodeType = (xtc.type.Type) node.getProperty(xtc.Constants.TYPE);
+        xtc.type.Type nodeType = CType.getType(node);
         Reference ref = new DynamicReference(varName, nodeType);
         xtc.type.Type type = new AnnotatedT(nodeType);
         type.shape(ref);

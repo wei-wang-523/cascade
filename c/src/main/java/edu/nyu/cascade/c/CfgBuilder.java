@@ -143,7 +143,7 @@ public class CfgBuilder extends Visitor {
     }
   }
 
-  private static final String TYPE = xtc.Constants.TYPE;
+  private static final String TYPE = CType.TYPE;
   private static final String TEST_VAR_PREFIX = "condition";
   private static final String STRING_VAR_PREFIX = "string";
   private static final String MALLOC_VAR_PREFIX = "malloc";
@@ -557,7 +557,7 @@ public class CfgBuilder extends Visitor {
     if(!node.hasProperty(TYPE)) {
       type = symbolTable.lookupType(node.getString(0));
     } else {
-      type = (Type) node.getProperty(TYPE);
+      type = CType.getType(node);
     }
     if (type == null)
       throw new ExpressionFactoryException("Type not found: " + node);
