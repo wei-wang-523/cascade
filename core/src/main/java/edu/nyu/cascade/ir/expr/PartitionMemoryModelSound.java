@@ -342,7 +342,7 @@ public class PartitionMemoryModelSound extends AbstractMemoryModel {
           builder.add(exprManager.distinct(distinctPtr));
         }
         
-        String allocArrName = getAllocArrElemName(repVar);
+        String allocArrName = getSizeArrElemName(repVar);
         
         if(currentAllocElems.containsKey(allocArrName)) {            
           ArrayExpression allocArr = currentAllocElems.get(allocArrName);
@@ -646,7 +646,7 @@ public class PartitionMemoryModelSound extends AbstractMemoryModel {
       
       /* Get the related alloc array */
       initCurrentAllocElems(state.getChild(1));
-      String allocArrName = getAllocArrElemName(ptr2RepVar);
+      String allocArrName = getSizeArrElemName(ptr2RepVar);
       assert currentAllocElems.containsKey(allocArrName);
       ArrayExpression allocArr = currentAllocElems.get(allocArrName);
       
@@ -711,7 +711,7 @@ public class PartitionMemoryModelSound extends AbstractMemoryModel {
       
       /* Get the related alloc array */
       initCurrentAllocElems(state.getChild(1));
-      String allocArrName = getAllocArrElemName(ptr2RepVar);
+      String allocArrName = getSizeArrElemName(ptr2RepVar);
       assert currentAllocElems.containsKey(allocArrName);
       ArrayExpression allocArr = currentAllocElems.get(allocArrName);
       
@@ -770,7 +770,7 @@ public class PartitionMemoryModelSound extends AbstractMemoryModel {
     AliasVar ptr2RepVar = analyzer.getPointsToRepVar(pRepVar);
     
     initCurrentAllocElems(state.getChild(1));
-    String allocArrName = getAllocArrElemName(ptr2RepVar);
+    String allocArrName = getSizeArrElemName(ptr2RepVar);
     assert currentAllocElems.containsKey(allocArrName);
     ArrayExpression allocArr = currentAllocElems.get(allocArrName);
     
@@ -820,7 +820,7 @@ public class PartitionMemoryModelSound extends AbstractMemoryModel {
     ExpressionManager em = getExpressionManager();
 
     AliasVar lvalRepVar = loadRepVar(lval.getNode());    
-    String lvalRepArrName = mem ? getMemArrElemName(lvalRepVar) : getAllocArrElemName(lvalRepVar);
+    String lvalRepArrName = mem ? getMemArrElemName(lvalRepVar) : getSizeArrElemName(lvalRepVar);
     
     if(map.containsKey(lvalRepArrName)) {
       ArrayExpression lvalRepArr = map.get(lvalRepArrName);
@@ -967,7 +967,7 @@ public class PartitionMemoryModelSound extends AbstractMemoryModel {
     }
     
     initCurrentAllocElems(state.getChild(1));
-    String allocArrName = getAllocArrElemName(pRepVar);
+    String allocArrName = getSizeArrElemName(pRepVar);
     assert currentAllocElems.containsKey(allocArrName);
     ArrayExpression allocArr = currentAllocElems.get(allocArrName);
     

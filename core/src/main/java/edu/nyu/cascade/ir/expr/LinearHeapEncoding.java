@@ -1,6 +1,6 @@
 package edu.nyu.cascade.ir.expr;
 
-import java.util.Map;
+import java.util.LinkedHashMap;
 
 import xtc.tree.GNode;
 import xtc.tree.Node;
@@ -27,11 +27,11 @@ import edu.nyu.cascade.util.IOUtils;
 
 public abstract class LinearHeapEncoding implements HeapEncoding {
 	
+	private final ExpressionManager exprManager;
+	private final ExpressionEncoding encoding;
 	protected final BitVectorType addrType;
 	protected final BitVectorType valueType;
-	protected final ExpressionManager exprManager;
-	protected final ExpressionEncoding encoding;
-	protected final Map<String, Expression> heapRegions, stackVars, stackRegions;
+	private final LinkedHashMap<String, Expression> heapRegions, stackVars, stackRegions;
 	
 	protected LinearHeapEncoding(ExpressionEncoding encoding) {
 		this.encoding = encoding;
@@ -41,9 +41,9 @@ public abstract class LinearHeapEncoding implements HeapEncoding {
 		addrType = exprManager.bitVectorType(cellSize);
 		valueType = exprManager.bitVectorType(cellSize);
 		
-		heapRegions = Maps.newHashMap();
-		stackVars = Maps.newHashMap();
-		stackRegions = Maps.newHashMap();
+		heapRegions = Maps.newLinkedHashMap();
+		stackVars = Maps.newLinkedHashMap();
+		stackRegions = Maps.newLinkedHashMap();
 	}
 
 	@Override
@@ -72,6 +72,22 @@ public abstract class LinearHeapEncoding implements HeapEncoding {
 	}
 	
 	@Override
+	public Iterable<Iterable<Expression>> getMemoryVarSets() {
+		return new ImmutableList.Builder<Iterable<Expression>>()
+				.add(stackVars.values())
+				.add(stackRegions.values())
+				.add(heapRegions.values()).build();
+	}
+	
+	protected ExpressionManager getExpressionManager() {
+		return exprManager;
+	}
+
+	protected Expression getLastRegion() {
+		return Iterables.getLast(heapRegions.values(), null);
+	}
+
+	@Override
 	public ArrayExpression updateSizeArr(ArrayExpression sizeArr, Expression lval,
 	    Expression rval) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
@@ -83,7 +99,7 @@ public abstract class LinearHeapEncoding implements HeapEncoding {
 
 	@Override
 	public ImmutableSet<BooleanExpression> validMemAccess(
-			Iterable<ImmutableList<Expression>> varSets,
+			Iterable<Iterable<Expression>> varSets,
 			ArrayExpression sizeArr, Expression ptr) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
 		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
@@ -136,7 +152,7 @@ public abstract class LinearHeapEncoding implements HeapEncoding {
 
 	@Override
 	public ImmutableSet<BooleanExpression> validMemAccess(
-			Iterable<ImmutableList<Expression>> varSets,
+			Iterable<Iterable<Expression>> varSets,
 	    ArrayExpression sizeArr, Expression ptr, Expression size) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
 		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
@@ -229,7 +245,7 @@ public abstract class LinearHeapEncoding implements HeapEncoding {
 	}
 
 	@Override
-	public Iterable<ImmutableList<Expression>> getCategorizedVars(
+	public Iterable<Iterable<Expression>> getCategorizedVars(
 	    Iterable<AliasVar> equivVars) {
 	  ImmutableList.Builder<Expression> stVarsBuilder, stRegsBuilder, hpRegsBuilder;
 	  stVarsBuilder = new ImmutableList.Builder<Expression>();
@@ -252,44 +268,33 @@ public abstract class LinearHeapEncoding implements HeapEncoding {
 	    }
 	  }
 	  
-	  ImmutableList.Builder<ImmutableList<Expression>> builder = 
-	      new ImmutableList.Builder<ImmutableList<Expression>>();
+	  ImmutableList.Builder<Iterable<Expression>> builder = 
+	      new ImmutableList.Builder<Iterable<Expression>>();
 	  builder.add(stVarsBuilder.build());
 	  builder.add(stRegsBuilder.build());
 	  builder.add(hpRegsBuilder.build());
 	  return builder.build();
 	}
+	
+	@Override
+	public Expression getUnknownValue() {
+		return encoding.getIntegerEncoding().unknown(valueType);
+	}
 
 	@Override
-	public ImmutableSet<BooleanExpression> disjointMemLayoutSound() {
+	public Expression getUnknownAddress() {
+		return encoding.getIntegerEncoding().unknown(addrType);
+	}
+	
+	@Override
+	public ImmutableSet<BooleanExpression> disjointMemLayout() {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public ImmutableSet<BooleanExpression> disjointMemLayoutSound(
-			Iterable<ImmutableList<Expression>> varSets, ArrayExpression sizeArr) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public BooleanExpression validMallocSound(Iterable<Expression> heapVars,
-			ArrayExpression sizeArr, Expression ptr, Expression size) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public BooleanExpression validMallocSound(ArrayExpression sizeArr, Expression ptr,
-			Expression size) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public BooleanExpression validMallocOrder(Expression lastRegion,
-			ArrayExpression sizeArr, Expression ptr, Expression size) {
+	public ImmutableSet<BooleanExpression> disjointMemLayout(
+			Iterable<Iterable<Expression>> varSets, ArrayExpression sizeArr) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -304,14 +309,6 @@ public abstract class LinearHeapEncoding implements HeapEncoding {
 	@Override
 	public ImmutableSet<BooleanExpression> validMemAccess(ArrayExpression sizeArr,
 			Expression ptr, Expression size) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public ImmutableSet<BooleanExpression> disjointMemLayoutOrder(
-			Iterable<ImmutableList<Expression>> varSets, Expression lastRegion,
-			ArrayExpression sizeArr) {
 		// TODO Auto-generated method stub
 		return null;
 	}

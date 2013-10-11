@@ -295,7 +295,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
     Expression currentAlloc = updateAllocState(state.getChild(1), region, size);
     Expression lastRegion = state.getChild(2);
     
-    String allocArrName = getAllocArrElemName(region_var);
+    String allocArrName = getSizeArrElemName(region_var);
     assert currentAllocElems.containsKey(allocArrName);
     ArrayExpression allocArr = currentAllocElems.get(allocArrName);
     
@@ -373,7 +373,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
           stackBound = stVal2;
         }
         
-        String allocArrName = getAllocArrElemName(repVar);
+        String allocArrName = getSizeArrElemName(repVar);
         
         if(currentAllocElems.containsKey(allocArrName)) {            
           ArrayExpression allocArr = currentAllocElems.get(allocArrName);
@@ -636,7 +636,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
       
       /* Get the related alloc array */
       initCurrentAllocElems(state.getChild(1));
-      String allocArrName = getAllocArrElemName(ptr2RepVar);
+      String allocArrName = getSizeArrElemName(ptr2RepVar);
       assert currentAllocElems.containsKey(allocArrName);
       ArrayExpression allocArr = currentAllocElems.get(allocArrName);
       
@@ -701,7 +701,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
       
       /* Get the related alloc array */
       initCurrentAllocElems(state.getChild(1));
-      String allocArrName = getAllocArrElemName(ptr2RepVar);
+      String allocArrName = getSizeArrElemName(ptr2RepVar);
       assert currentAllocElems.containsKey(allocArrName);
       ArrayExpression allocArr = currentAllocElems.get(allocArrName);
       
@@ -760,7 +760,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
     AliasVar ptr2RepVar = analyzer.getPointsToRepVar(pRepVar);
     
     initCurrentAllocElems(state.getChild(1));
-    String allocArrName = getAllocArrElemName(ptr2RepVar);
+    String allocArrName = getSizeArrElemName(ptr2RepVar);
     assert currentAllocElems.containsKey(allocArrName);
     ArrayExpression allocArr = currentAllocElems.get(allocArrName);
     
@@ -810,7 +810,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
     ExpressionManager em = getExpressionManager();
 
     AliasVar lvalRepVar = loadRepVar(lval.getNode());    
-    String lvalRepArrName = mem ? getMemArrElemName(lvalRepVar) : getAllocArrElemName(lvalRepVar);
+    String lvalRepArrName = mem ? getMemArrElemName(lvalRepVar) : getSizeArrElemName(lvalRepVar);
     
     if(map.containsKey(lvalRepArrName)) {
       ArrayExpression lvalRepArr = map.get(lvalRepArrName);
@@ -930,7 +930,9 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
   }
   
   private void setCurrentState(Expression state, Expression statePrime) {
-    currentState = suspend(state, statePrime);
+    Expression stateTmp = statePrime;
+    if(currentState != null)    stateTmp = currentState.eval(statePrime);
+    currentState = suspend(state, stateTmp);
   }
   
   /**
@@ -957,7 +959,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
     }
     
     initCurrentAllocElems(state.getChild(1));
-    String allocArrName = getAllocArrElemName(pRepVar);
+    String allocArrName = getSizeArrElemName(pRepVar);
     assert currentAllocElems.containsKey(allocArrName);
     ArrayExpression allocArr = currentAllocElems.get(allocArrName);
     

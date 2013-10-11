@@ -104,7 +104,7 @@ public class SynchronousHeapEncoding implements HeapEncoding {
 	}
 	
 	@Override
-	public ImmutableSet<BooleanExpression> disjointMemLayoutSound() {
+	public ImmutableSet<BooleanExpression> disjointMemLayout() {
 		ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
 
 		try {
@@ -221,7 +221,7 @@ public class SynchronousHeapEncoding implements HeapEncoding {
 	}
 	
 	@Override
-  public BooleanExpression validMallocSound(ArrayExpression sizeArr, Expression ptr, Expression size) {
+  public BooleanExpression validMalloc(ArrayExpression sizeArr, Expression ptr, Expression size) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(refType));
 		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
 		Preconditions.checkArgument(ptr.getType().equals(ptrType));
@@ -282,15 +282,15 @@ public class SynchronousHeapEncoding implements HeapEncoding {
 	}
 
 	@Override
-	public ImmutableSet<BooleanExpression> disjointMemLayoutSound(
-			Iterable<ImmutableList<Expression>> varSets, ArrayExpression sizeArr) {
+	public ImmutableSet<BooleanExpression> disjointMemLayout(
+			Iterable<Iterable<Expression>> varSets, ArrayExpression sizeArr) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public ImmutableSet<BooleanExpression> validMemAccess(
-			Iterable<ImmutableList<Expression>> varSets, ArrayExpression sizeArr,
+			Iterable<Iterable<Expression>> varSets, ArrayExpression sizeArr,
 			Expression ptr) {
 		// TODO Auto-generated method stub
 		return null;
@@ -298,38 +298,39 @@ public class SynchronousHeapEncoding implements HeapEncoding {
 
 	@Override
 	public ImmutableSet<BooleanExpression> validMemAccess(
-			Iterable<ImmutableList<Expression>> varSets, ArrayExpression sizeArr,
+			Iterable<Iterable<Expression>> varSets, ArrayExpression sizeArr,
 			Expression ptr, Expression size) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 	
 	@Override
-	public BooleanExpression validMallocSound(Iterable<Expression> heapVars,
+	public BooleanExpression validMalloc(Iterable<Expression> heapVars,
 			ArrayExpression sizeArr, Expression ptr, Expression size) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public BooleanExpression validMallocOrder(Expression lastRegion,
-			ArrayExpression sizeArr, Expression ptr, Expression size) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Iterable<ImmutableList<Expression>> getCategorizedVars(
+	public Iterable<Iterable<Expression>> getCategorizedVars(
 			Iterable<AliasVar> equivVars) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public ImmutableSet<BooleanExpression> disjointMemLayoutOrder(
-			Iterable<ImmutableList<Expression>> varSets, Expression lastRegion,
-			ArrayExpression sizeArr) {
-		// TODO Auto-generated method stub
-		return null;
+	public Iterable<Iterable<Expression>> getMemoryVarSets() {
+		return new ImmutableList.Builder<Iterable<Expression>>()
+				.add(stackVars).add(stackRegions).add(heapRegions).build();
+	}
+
+	@Override
+	public Expression getUnknownValue() {
+		return encoding.getIntegerEncoding().unknown(valueType);
+	}
+	
+	@Override
+	public Expression getUnknownAddress() {
+		return encoding.getPointerEncoding().unknown();
 	}
 }

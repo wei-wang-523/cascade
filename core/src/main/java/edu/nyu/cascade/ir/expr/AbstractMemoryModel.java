@@ -39,7 +39,6 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   protected static final String DEFAULT_STATE_TYPE = "stateType";
   protected static final String ARRAY_MEM_PREFIX = "mem";
   protected static final String ARRAY_ALLOC_PREFIX = "size";
-  protected static final Map<String, String> elemArrScopeMap = Maps.newHashMap();
   
   private final ExpressionEncoding encoding;
   
@@ -254,11 +253,10 @@ public abstract class AbstractMemoryModel implements MemoryModel {
     	.append(Identifiers.ARRAY_NAME_INFIX)
     	.append(var.getScope());
   	String res = Identifiers.toValidId(sb.toString());
-  	elemArrScopeMap.put(res, var.getScope());
   	return res;
   }
   
-  protected String getAllocArrElemName(AliasVar var) {
+  protected String getSizeArrElemName(AliasVar var) {
     StringBuilder sb = new StringBuilder();
     sb.append(ARRAY_ALLOC_PREFIX)
     	.append(Identifiers.ARRAY_NAME_INFIX)
@@ -266,7 +264,6 @@ public abstract class AbstractMemoryModel implements MemoryModel {
     	.append(Identifiers.ARRAY_NAME_INFIX)
     	.append(var.getScope());
   	String res = Identifiers.toValidId(sb.toString());
-  	elemArrScopeMap.put(res, var.getScope());
   	return res;
   }
 

@@ -3,7 +3,6 @@ package edu.nyu.cascade.ir.expr;
 import java.util.Iterator;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
@@ -11,12 +10,16 @@ import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TheoremProverException;
 
 public class LinearHeapOrderEncoding extends LinearHeapEncoding {
 	
+	private Expression lastRegion;
+	
 	private LinearHeapOrderEncoding(ExpressionEncoding encoding) {
 		super(encoding);
+		lastRegion = getNullAddress();
 	}
 	
 	protected static LinearHeapOrderEncoding create(ExpressionEncoding encoding) {
@@ -24,17 +27,16 @@ public class LinearHeapOrderEncoding extends LinearHeapEncoding {
 	}
 
 	@Override
-	public ImmutableSet<BooleanExpression> disjointMemLayoutOrder(
-			Iterable<ImmutableList<Expression>> varSets,
-	    Expression lastRegion, ArrayExpression sizeArr) {
-		Preconditions.checkArgument(Iterables.size(varSets) == 2);
-		Preconditions.checkArgument(lastRegion.getType().equals(addrType));
+	public ImmutableSet<BooleanExpression> disjointMemLayout(
+			Iterable<Iterable<Expression>> varSets, ArrayExpression sizeArr) {
+		Preconditions.checkArgument(Iterables.size(varSets) == 3);
 		
 		ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
+		ExpressionManager exprManager = getExpressionManager();
 		
 		try {
       /* All the stack vars are ordered */
-			ImmutableList<Expression> stackVars = Iterables.get(varSets, 0);
+			Iterable<Expression> stackVars = Iterables.get(varSets, 0);
       Iterator<Expression> stVarsItr = stackVars.iterator();
       Expression stackBound = null;
       
@@ -49,8 +51,11 @@ public class LinearHeapOrderEncoding extends LinearHeapEncoding {
       }
       
       if(sizeArr != null) {
+    		assert sizeArr.getType().getIndexType().equals(addrType);
+    		assert sizeArr.getType().getElementType().equals(valueType);
+    		
         /* The upper bound of the stack region won't overflow */
-        ImmutableList<Expression> stackRegions = Iterables.get(varSets, 1);
+      	Iterable<Expression> stackRegions = Iterables.get(varSets, 1);
         for (Expression region : stackRegions) {
           Expression regionSize = sizeArr.index(region);
           BitVectorExpression regionBound = exprManager.plus(addrType
@@ -94,32 +99,45 @@ public class LinearHeapOrderEncoding extends LinearHeapEncoding {
 	}
 
 	@Override
-  public BooleanExpression validMallocOrder(Expression lastRegion,
-  		ArrayExpression sizeArr, Expression ptr, Expression size) {
-		Preconditions.checkArgument(lastRegion.getType().equals(addrType));
+  public BooleanExpression validMalloc(ArrayExpression sizeArr, Expression ptr, Expression size) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
 		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
 		Preconditions.checkArgument(ptr.getType().equals(addrType));
 		Preconditions.checkArgument(size.getType().equals(valueType));
 		
+		ExpressionManager exprManager = getExpressionManager();
+		
 		try {
 			Expression lastRegionBound = exprManager.plus(addrType.getSize(), 
 	        lastRegion, sizeArr.index(lastRegion));
 	    
+			Expression lastHeapRegion = getLastRegion(); // lastHeapRegion == ptr
+	    assert lastHeapRegion != null;
+	    
 	    Expression ptrBound = exprManager.plus(addrType.getSize(), ptr, size);
 	    Expression nullPtr = exprManager.bitVectorZero(addrType.getSize());
 	    
-	    BooleanExpression res = exprManager.implies(
-	        ptr.neq(nullPtr),
-	        exprManager.and(
-	            exprManager.lessThan(ptr, ptrBound), // not overflow
-	            exprManager.or(
-	                lastRegion.eq(nullPtr), // last region is null (not allocated)
-	                exprManager.lessThanOrEqual(lastRegionBound, ptr)  // larger than the last allocated region
-	                )));
+	    BooleanExpression res = exprManager.and(
+	    		exprManager.implies(
+	    				ptr.neq(nullPtr),
+	    				exprManager.and(
+	    						exprManager.lessThan(ptr, ptrBound), // not overflow
+	    						exprManager.or(
+	    								lastRegion.eq(nullPtr), // last region is null (not allocated)
+	    								exprManager.lessThanOrEqual(lastRegionBound, ptr)  // larger than the last allocated region
+	    								))),
+	    		ptr.eq(lastHeapRegion));
+	    
+	    lastRegion = exprManager.ifThenElse(lastHeapRegion.eq(nullPtr), lastHeapRegion, lastRegion);	    
 	    return res;
 		} catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
     }
   }
+
+	@Override
+	public BooleanExpression validMalloc(Iterable<Expression> heapVars,
+			ArrayExpression sizeArr, Expression ptr, Expression size) {
+		return validMalloc(sizeArr, ptr, size);
+	}
 }

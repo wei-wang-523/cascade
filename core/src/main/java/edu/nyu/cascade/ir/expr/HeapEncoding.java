@@ -2,7 +2,6 @@ package edu.nyu.cascade.ir.expr;
 
 import xtc.tree.Node;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import edu.nyu.cascade.c.preprocessor.AliasVar;
@@ -24,33 +23,21 @@ public interface HeapEncoding {
 	Expression freshRegion(String regionName, Node regionNode);
 	
 	ArrayExpression updateSizeArr(ArrayExpression sizeArr, Expression lval, Expression rval);
-		
-	ImmutableSet<BooleanExpression> disjointMemLayoutSound();
 	
-	ImmutableSet<BooleanExpression> disjointMemLayoutSound(
-			Iterable<ImmutableList<Expression>> varSets,
+	Iterable<Iterable<Expression>> getMemoryVarSets();
+		
+	ImmutableSet<BooleanExpression> disjointMemLayout();
+	
+	ImmutableSet<BooleanExpression> disjointMemLayout(
+			Iterable<Iterable<Expression>> varSets,
 			ArrayExpression sizeArr);
 	
-	/**
-	 * Unsound allocation encoding: just pick an order and assert that
-   * the stack variables and regions, heap regions are allocated
-   * in that order
-   * 
-	 * @param varSets
-	 * @param lastRegion
-	 * @param sizeArr
-	 * @return
-	 */
-	ImmutableSet<BooleanExpression> disjointMemLayoutOrder(
-			Iterable<ImmutableList<Expression>> varSets,
-			Expression lastRegion, ArrayExpression sizeArr);
-	
 	ImmutableSet<BooleanExpression> validMemAccess(
-			Iterable<ImmutableList<Expression>> varSets,
+			Iterable<Iterable<Expression>> varSets,
 			ArrayExpression sizeArr, Expression ptr);
 	
 	ImmutableSet<BooleanExpression> validMemAccess(
-			Iterable<ImmutableList<Expression>> varSets,
+			Iterable<Iterable<Expression>> varSets,
 			ArrayExpression sizeArr, Expression ptr, Expression size);
 	
 	ImmutableSet<BooleanExpression> validMemAccess(ArrayExpression sizeArr,
@@ -59,14 +46,11 @@ public interface HeapEncoding {
 	ImmutableSet<BooleanExpression> validMemAccess(ArrayExpression sizeArr,
 			Expression ptr, Expression size);
 	
-	BooleanExpression validMallocSound(final Iterable<Expression> heapVars, 
+	BooleanExpression validMalloc(final Iterable<Expression> heapVars, 
 			ArrayExpression sizeArr, Expression ptr, Expression size);
 	
-	BooleanExpression validMallocSound(ArrayExpression sizeArr, Expression ptr,
+	BooleanExpression validMalloc(ArrayExpression sizeArr, Expression ptr,
 			Expression size);
-	
-	BooleanExpression validMallocOrder(Expression lastRegion, ArrayExpression sizeArr, 
-			Expression ptr, Expression size);
 	
 	BooleanExpression validFree(ArrayExpression sizeArr, Expression ptr);
 	
@@ -74,8 +58,12 @@ public interface HeapEncoding {
 	
 	Expression getValueZero();
 	
+	Expression getUnknownValue();
+	
+	Expression getUnknownAddress();
+	
 	Expression getNullAddress();
 	
-	Iterable<ImmutableList<Expression>> getCategorizedVars(
+	Iterable<Iterable<Expression>> getCategorizedVars(
 			Iterable<AliasVar> equivVars);
 }

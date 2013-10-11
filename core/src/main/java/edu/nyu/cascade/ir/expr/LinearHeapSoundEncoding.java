@@ -9,6 +9,7 @@ import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TheoremProverException;
 
 public class LinearHeapSoundEncoding extends LinearHeapEncoding {
@@ -22,9 +23,8 @@ public class LinearHeapSoundEncoding extends LinearHeapEncoding {
 	}
 
 	@Override
-  public ImmutableSet<BooleanExpression> disjointMemLayoutSound(
-  		Iterable<ImmutableList<Expression>> multiSets,
-      ArrayExpression sizeArr) {
+  public ImmutableSet<BooleanExpression> disjointMemLayout(
+  		Iterable<Iterable<Expression>> multiSets, ArrayExpression sizeArr) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
 		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
 
@@ -32,6 +32,8 @@ public class LinearHeapSoundEncoding extends LinearHeapEncoding {
 		Iterable<Expression> stackVars = Iterables.get(multiSets, 0);
 		Iterable<Expression> stackRegions = Iterables.get(multiSets, 1);
 		Iterable<Expression> heapRegions = Iterables.get(multiSets, 2);
+		
+		ExpressionManager exprManager = getExpressionManager();
 		
 		try {
 			
@@ -114,7 +116,7 @@ public class LinearHeapSoundEncoding extends LinearHeapEncoding {
   }
 	
 	@Override
-  public BooleanExpression validMallocSound(Iterable<Expression> heapVars,
+  public BooleanExpression validMalloc(Iterable<Expression> heapVars,
       ArrayExpression sizeArr, Expression ptr, Expression size) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
 		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
@@ -122,6 +124,8 @@ public class LinearHeapSoundEncoding extends LinearHeapEncoding {
 		Preconditions.checkArgument(size.getType().equals(valueType));
 		
     ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
+    
+    ExpressionManager exprManager = getExpressionManager();
     
     try {
       Expression nullPtr = exprManager.bitVectorZero(addrType.getSize());
@@ -156,4 +160,11 @@ public class LinearHeapSoundEncoding extends LinearHeapEncoding {
       throw new ExpressionFactoryException(e);
     }
   }
+
+	@Override
+	public BooleanExpression validMalloc(ArrayExpression sizeArr, Expression ptr,
+			Expression size) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
