@@ -78,11 +78,11 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
   
   private final Set<Expression> lvals; // lvals: variables in stack
   private final List<Expression> stackRegions, heapRegions;
-  private final Map<String, Expression> currentMemElems;
+  private final Map<String, ArrayExpression> currentMemElems;
   private final Map<String, ArrayExpression> viewVars;
   
   private TypeCastAnalysis analyzer = null;
-  private Expression currentAlloc = null;
+  private ArrayExpression currentAlloc = null;
   private Expression prevDerefState = null;
   private ExpressionClosure currentState = null;
 
@@ -372,10 +372,10 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
       currentMemElems.putAll(getRecordElems(state.getChild(0)));
       prevDerefState = state;
     }
-    if(currentAlloc == null)    currentAlloc = state.getChild(1);
+    if(currentAlloc == null)    currentAlloc = state.getChild(1).asArray();
     
     ExpressionManager em = getExpressionManager();
-    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
+    xtc.type.Type pType = CType.getType(p.getNode());
     String typeName = CTypeNameAnalyzer.getTypeName(pType);
     
     if(currentMemElems.containsKey(typeName)) {
@@ -431,9 +431,7 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
     Expression rval = null;
-    xtc.type.Type lvalType = (xtc.type.Type) 
-        lval.getNode().getProperty(TYPE);
-    CellKind kind = CType.getCellKind(lvalType);
+    CellKind kind = CType.getCellKind(CType.getType(lval.getNode()));
     switch(kind) {
     case SCALAR:
       rval = getExpressionEncoding().getIntegerEncoding().unknown(); break;
@@ -485,7 +483,7 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
     
     Expression currentMem = updateMemState(state.getChild(0), ptr, locVar);
     
-    if(currentAlloc == null)    currentAlloc = state.getChild(1);
+    if(currentAlloc == null)    currentAlloc = state.getChild(1).asArray();
     currentAlloc = currentAlloc.asArray().update(refVar, size);
     Expression viewPrime = updateViewWithMem(state, currentMem, state.getChild(2));
     Expression statePrime = getUpdatedState(state, currentMem, currentAlloc, viewPrime);
@@ -496,8 +494,7 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
   
   @Override
   public Expression addressOf(Expression content) {
-    xtc.type.Type type = (xtc.type.Type) content.getNode()
-        .getProperty(TYPE);
+    xtc.type.Type type = CType.getType(content.getNode());
     while(type.isAlias() || type.isAnnotated()) {
       type = type.resolve();
       type = type.deannotate();
@@ -587,8 +584,8 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
           Expression memVar_mem = memoryVar.getChild(0);
           Expression memory_mem = memory.getChild(0);
           
-          Map<String, Expression> memVarMemMap = getRecordElems(memVar_mem);
-          Map<String, Expression> memoryMemMap = getRecordElems(memory_mem);
+          Map<String, ArrayExpression> memVarMemMap = getRecordElems(memVar_mem);
+          Map<String, ArrayExpression> memoryMemMap = getRecordElems(memory_mem);
           
           List<Expression> oldArgs_mem = Lists.newLinkedList();
           List<Expression> newArgs_mem = Lists.newLinkedList();
@@ -734,8 +731,8 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
    */
   private Expression updateViewWithMem(Expression state, Expression mem, Expression view) {    
     // update viewPrime
-    Map<String, Expression> prevMemElemsMap = getRecordElems(state.getChild(0));
-    Map<String, Expression> currentMemElemsMap = getRecordElems(mem);
+    Map<String, ArrayExpression> prevMemElemsMap = getRecordElems(state.getChild(0));
+    Map<String, ArrayExpression> currentMemElemsMap = getRecordElems(mem);
     List<Expression> oldElems = Lists.newLinkedList();
     List<Expression> newElems = Lists.newLinkedList();
     for(String elemName : prevMemElemsMap.keySet()) {
@@ -756,7 +753,7 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
   
   private RecordExpression updateMemState(Expression memState, Expression lval, Expression rval) { 
     currentMemElems.putAll(getRecordElems(memState));
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
+    xtc.type.Type lvalType = CType.getType(lval.getNode());
     ExpressionManager em = getExpressionManager();
     ArrayExpression tgtArray = null;
     boolean isMemUpdated = false;
@@ -775,7 +772,7 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
         rval= getExpressionEncoding().castToBoolean(rval); break;
       default: break;
       }
-      tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
+      tgtArray =  currentMemElems.get(lvalTypeName).update(lval, rval);
     } else { // newly type name
       isMemUpdated = true;
       CellKind kind = CType.getCellKind(lvalType);
@@ -813,7 +810,7 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
   private Expression updateView(RecordExpression memState, TupleExpression viewState, 
       Expression indexExpr) {
     if(!hasView(indexExpr.getNode()))  return viewState;
-    xtc.type.Type indexType = (xtc.type.Type) indexExpr.getNode().getProperty(TYPE);
+    xtc.type.Type indexType = CType.getType(indexExpr.getNode());
     String indexTypeName = CTypeNameAnalyzer.getTypeName(indexType);
     
     Expression scalarViewState = viewState.asTuple().index(0);

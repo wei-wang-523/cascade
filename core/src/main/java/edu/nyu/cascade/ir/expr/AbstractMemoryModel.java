@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -17,7 +18,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
+import edu.nyu.cascade.c.preprocessor.AliasVar;
 import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
+import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -34,8 +37,9 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   protected static final String DEFAULT_MEMORY_STATE_TYPE = "memType";
   protected static final String DEFAULT_ALLOC_STATE_TYPE = "sizeType";
   protected static final String DEFAULT_STATE_TYPE = "stateType";
-  protected static final String TYPE = xtc.Constants.TYPE;
-  protected static final String SCOPE = xtc.Constants.SCOPE;
+  protected static final String ARRAY_MEM_PREFIX = "mem";
+  protected static final String ARRAY_ALLOC_PREFIX = "size";
+  protected static final Map<String, String> elemArrScopeMap = Maps.newHashMap();
   
   private final ExpressionEncoding encoding;
   
@@ -106,18 +110,19 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   @Override
   public Expression combineRecordStates(BooleanExpression guard, 
       RecordExpression rec_1, RecordExpression rec_0) {    
+    if(rec_1.equals(rec_0))	return rec_0;
     
-    RecordType memType_1 = rec_1.getType();
-    Iterable<String> elemNames_1 = pickFieldNames(memType_1.getElementNames());
+    Map<String, ArrayExpression> elemMap_0 = getRecordElems(rec_0);
+    Map<String, ArrayExpression> elemMap_1 = getRecordElems(rec_1);
     
-    RecordType memType_0 = rec_0.getType();
-    final Iterable<String> elemNames_0 = pickFieldNames(memType_0.getElementNames());
+    final Set<String> elemNames_1 = elemMap_1.keySet();
+    final Set<String> elemNames_0 = elemMap_0.keySet();
     
     Iterable<String> commonElemNames = Iterables.filter(elemNames_1, 
         new Predicate<String>(){
       @Override
       public boolean apply(String elemName) {
-        return Iterables.contains(elemNames_0, elemName);
+        return elemNames_0.contains(elemName);
       }
     });
     
@@ -126,31 +131,34 @@ public abstract class AbstractMemoryModel implements MemoryModel {
     List<Type> elemTypes = Lists.newArrayListWithCapacity(
         Iterables.size(commonElemNames));
     
-    ExpressionManager em = getExpressionManager();
-    final String arrName_1 = memType_1.getName();
-    final String arrName_0 = memType_0.getName();
+    ExpressionManager exprManager = getExpressionManager();
     
-    Iterable<String> elemNames_1_prime = recomposeFieldNames(arrName_1, commonElemNames);
-    Iterable<String> elemNames_0_prime = recomposeFieldNames(arrName_0, commonElemNames);
-    Iterator<String> elemNames_1_prime_itr = elemNames_1_prime.iterator();
-    Iterator<String> elemNames_0_prime_itr = elemNames_0_prime.iterator();
-    
-    while(elemNames_1_prime_itr.hasNext() && elemNames_0_prime_itr.hasNext()) {
-      String elemName_1 = elemNames_1_prime_itr.next();
-      String elemName_0 = elemNames_0_prime_itr.next();
-      Expression elem = em.ifThenElse(guard, rec_1.select(elemName_1), rec_0.select(elemName_0));
+    for(String elemName : commonElemNames) {
+    	Expression elem_1 = elemMap_1.get(elemName);
+    	Expression elem_0 = elemMap_0.get(elemName);
+    	Expression elem = null;
+    	if(elem_1.equals(elem_0)) 
+    		elem = elem_0;
+    	else
+    		elem = exprManager.ifThenElse(guard, elem_1, elem_0);
       elems.add(elem);
       elemTypes.add(elem.getType());
     }
     
-    Preconditions.checkArgument(memType_0.getName().startsWith(DEFAULT_MEMORY_STATE_TYPE)
-    		|| memType_0.getName().startsWith(DEFAULT_ALLOC_STATE_TYPE));
-    String typeName = memType_0.getName().startsWith(DEFAULT_MEMORY_STATE_TYPE) ?
-    		Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE) :
-    			Identifiers.uniquify(DEFAULT_ALLOC_STATE_TYPE);
+    String recordStateName = rec_0.getType().getName();
+    
+    String typeName = null;
+    if(recordStateName.startsWith(DEFAULT_MEMORY_STATE_TYPE)) {
+    	typeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
+    } else if(recordStateName.startsWith(DEFAULT_ALLOC_STATE_TYPE)) {
+    	typeName = Identifiers.uniquify(DEFAULT_ALLOC_STATE_TYPE);
+    } else {
+    	throw new IllegalArgumentException("Unknown record name " + recordStateName);
+    }
+    
     Iterable<String> elemNames = recomposeFieldNames(typeName, commonElemNames);   
-    RecordType recordType = em.recordType(typeName, elemNames, elemTypes);
-    Expression res = em.record(recordType, elems);
+    RecordType recordType = exprManager.recordType(typeName, elemNames, elemTypes);
+    Expression res = exprManager.record(recordType, elems);
     
     return res;
   }  
@@ -203,7 +211,7 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   }
   
 	protected final RecordType getRecordTypeFromMap(String typeName, 
-			final Map<String, Expression> map) {
+			final Map<String, ArrayExpression> map) {
 		Preconditions.checkArgument(map != null);
 	  Iterable<Type> elemTypes = Iterables.transform(map.values(), 
 	      new Function<Expression, Type>(){
@@ -220,9 +228,9 @@ public abstract class AbstractMemoryModel implements MemoryModel {
 	  return currentMemType;
 	}
 
-	protected Map<String, Expression> getRecordElems(Expression recordState) {
+	protected Map<String, ArrayExpression> getRecordElems(Expression recordState) {
 	  Preconditions.checkArgument(recordState.isRecord());
-	  Map<String, Expression> resMap = Maps.newLinkedHashMap();
+	  Map<String, ArrayExpression> resMap = Maps.newLinkedHashMap();
 	  RecordExpression mem = recordState.asRecord();
 	  Iterable<String> elemNames = mem.getType().getElementNames();
 	  Iterable<String> fieldNames = pickFieldNames(elemNames);
@@ -233,10 +241,34 @@ public abstract class AbstractMemoryModel implements MemoryModel {
 	    String elemName = elemNameItr.next();
 	    String fieldName = fieldNameItr.next();
 	    Expression value = mem.select(elemName);
-	    resMap.put(fieldName, value);
+	    resMap.put(fieldName, value.asArray());
 	  }
 	  return resMap;
 	}
+	
+  protected String getMemArrElemName(AliasVar var) {
+  	StringBuilder sb = new StringBuilder()
+  		.append(ARRAY_MEM_PREFIX)
+    	.append(Identifiers.ARRAY_NAME_INFIX)
+    	.append(var.getName())
+    	.append(Identifiers.ARRAY_NAME_INFIX)
+    	.append(var.getScope());
+  	String res = Identifiers.toValidId(sb.toString());
+  	elemArrScopeMap.put(res, var.getScope());
+  	return res;
+  }
+  
+  protected String getAllocArrElemName(AliasVar var) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(ARRAY_ALLOC_PREFIX)
+    	.append(Identifiers.ARRAY_NAME_INFIX)
+    	.append(var.getName())
+    	.append(Identifiers.ARRAY_NAME_INFIX)
+    	.append(var.getScope());
+  	String res = Identifiers.toValidId(sb.toString());
+  	elemArrScopeMap.put(res, var.getScope());
+  	return res;
+  }
 
 	private Iterable<String> pickFieldNames(Iterable<String> fieldsName){
 	  return Iterables.transform(fieldsName, 

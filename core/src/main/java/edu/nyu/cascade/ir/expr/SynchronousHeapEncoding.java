@@ -1,6 +1,10 @@
 package edu.nyu.cascade.ir.expr;
 
 import java.util.Collection;
+import java.util.List;
+
+import xtc.tree.GNode;
+import xtc.tree.Node;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -9,6 +13,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.preprocessor.AliasVar;
+import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -20,7 +26,7 @@ import edu.nyu.cascade.prover.type.Type;
 public class SynchronousHeapEncoding implements HeapEncoding {
 	
 	private final Type ptrType, refType;
-	private final BitVectorType scalarType, offType;
+	private final BitVectorType valueType, offType;
 	private final ExpressionManager exprManager;
 	private final ExpressionEncoding encoding;
 	private final Collection<Expression> heapRegions, stackRegions, stackVars;
@@ -30,81 +36,85 @@ public class SynchronousHeapEncoding implements HeapEncoding {
 		exprManager = encoding.getExpressionManager();
 		int cellSize = encoding.getCellSize();
 		ptrType = encoding.getPointerEncoding().getType();
-		scalarType = exprManager.bitVectorType(cellSize);
+		valueType = exprManager.bitVectorType(cellSize);
 		refType = ptrType.asTuple().getElementTypes().get(0);
 		offType = ptrType.asTuple().getElementTypes().get(1).asBitVectorType();
 		heapRegions = Lists.newLinkedList();
 		stackVars = Sets.newHashSet();
 		stackRegions = Sets.newHashSet();
-		assert offType.getSize() > scalarType.getSize();
+		assert offType.getSize() >= valueType.getSize();
 	}
 	
 	protected static SynchronousHeapEncoding create(ExpressionEncoding encoding) {
 		return new SynchronousHeapEncoding(encoding);
 	}
 
+	@Override
 	public ArrayType getSizeArrType() {
-		return exprManager.arrayType(refType, scalarType);
+		return exprManager.arrayType(refType, valueType);
 	}
 	
+	@Override
 	public Type getAddressType() {
 		return ptrType;
 	}
 	
+	@Override
 	public Type getValueType() {
-		return scalarType;
+		return valueType;
 	}
 	
 	@Override
 	public Expression getValueZero() {
-	  return exprManager.bitVectorZero(scalarType.getSize());
+	  return exprManager.bitVectorZero(valueType.getSize());
+	}
+	
+	@Override
+	public Expression getNullAddress() {
+		return encoding.getPointerEncoding().getNullPtr();
 	}
 
 	@Override
-	public Expression freshAddress(String name, xtc.type.Type type) {
+	public Expression freshAddress(String name, Node node) {
 		Expression res = encoding.getPointerEncoding().freshPtr(name);
+		res.setNode(GNode.cast(node));
 		stackVars.add(res.getChild(0));
-		xtc.type.Type unwrappedType = CType.unwrapped(type);
-		if(unwrappedType.isArray() 
-				|| unwrappedType.isUnion() 
-				|| unwrappedType.isStruct())
+		xtc.type.Type unwrappedType = CType.unwrapped(CType.getType(node));
+		if(unwrappedType.isArray() || unwrappedType.isUnion() || unwrappedType.isStruct())
 			stackRegions.add(res);
 		return res;
 	}
 	
 	@Override
-	public Expression freshRegion(String name) {
+	public Expression freshRegion(String name, Node node) {
 		Expression res = encoding.getPointerEncoding().freshPtr(name);
+		res.setNode(GNode.cast(node));
 		heapRegions.add(res.getChild(0));
 		return res;
 	}
 	
 	@Override
-	public Expression updateSizeArr(Expression sizeArr, Expression lval, Expression rval) {
-		Preconditions.checkArgument(sizeArr.isArray());
+	public ArrayExpression updateSizeArr(ArrayExpression sizeArr, Expression lval, Expression rval) {
+		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(refType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
 		Preconditions.checkArgument(lval.getType().equals(ptrType));
-		Preconditions.checkArgument(rval.getType().equals(scalarType));
+		Preconditions.checkArgument(rval.getType().equals(valueType));
 		Expression lval_ref = lval.asTuple().index(0);
-		return sizeArr.asArray().update(lval_ref, rval);
+		return sizeArr.update(lval_ref, rval);
 	}
-
+	
 	@Override
-	public BooleanExpression disjointStack() {
-		Expression nullRef = encoding.getPointerEncoding().getNullPtr().getChild(0);
-		
-    ImmutableList<Expression> distinctRefs = new ImmutableList.Builder<Expression>()
-        .addAll(stackVars).add(nullRef).build();
-    if(distinctRefs.size() > 1) 
-    	return exprManager.distinct(distinctRefs);
-    else
-    	return exprManager.tt();
-	}
-
-	@Override
-	public ImmutableSet<BooleanExpression> disjointStackHeap() {
+	public ImmutableSet<BooleanExpression> disjointMemLayoutSound() {
 		ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
 
 		try {
+			Expression nullRef = encoding.getPointerEncoding().getNullPtr().getChild(0);
+			
+	    ImmutableList<Expression> distinctRefs = new ImmutableList.Builder<Expression>()
+	        .addAll(stackVars).add(nullRef).build();
+	    if(distinctRefs.size() > 1) 
+	    	builder.add(exprManager.distinct(distinctRefs));
+	    
 			for(Expression heapRegion : heapRegions) {
 				for(Expression lval : stackVars) {
 					builder.add(lval.neq(heapRegion));
@@ -117,8 +127,9 @@ public class SynchronousHeapEncoding implements HeapEncoding {
 	}
 
 	@Override
-	public ImmutableSet<BooleanExpression> validStackAccess(Expression sizeArr,Expression ptr) {
-		Preconditions.checkArgument(sizeArr.isArray());
+	public ImmutableSet<BooleanExpression> validMemAccess(ArrayExpression sizeArr,Expression ptr) {
+		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(refType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
 		Preconditions.checkArgument(ptr.getType().equals(ptrType));
 		
 		ImmutableSet.Builder<BooleanExpression> disjs = 
@@ -128,11 +139,11 @@ public class SynchronousHeapEncoding implements HeapEncoding {
 		try {
 			Expression ptrRef = ptr.asTuple().index(0);
 			Expression ptrOff = ptr.asTuple().index(1);
-			
-			Expression sizeZro = exprManager.bitVectorZero(scalarType.getSize());
+			Expression nullRef = encoding.getPointerEncoding().getNullPtr().getChild(0);
+			Expression sizeZro = exprManager.bitVectorZero(valueType.getSize());
 			
 	    for( Expression var : stackVars) {
-	      Expression sizeVar = sizeArr.asArray().index(var);
+	      Expression sizeVar = sizeArr.index(var);
 	      disjs.add(
 	          exprManager.and(
 	          		ptrRef.eq(var), 
@@ -144,31 +155,9 @@ public class SynchronousHeapEncoding implements HeapEncoding {
 	                      exprManager.lessThan(ptrOff, sizeVar)),
 	                      ptrOff.eq(sizeVar))));
 	    }
-		} catch (TheoremProverException e) {
-      throw new ExpressionFactoryException(e);
-    }
-    return disjs.build();
-	}
-
-	@Override
-	public ImmutableSet<BooleanExpression> validHeapAccess(
-			Expression sizeArr, Expression ptr) {
-		Preconditions.checkArgument(sizeArr.isArray());
-		Preconditions.checkArgument(ptr.getType().equals(ptrType));
-		
-		ImmutableSet.Builder<BooleanExpression> disjs = 
-				new ImmutableSet.Builder<BooleanExpression>();
-		
-		try {
-			Expression ptrRef = ptr.asTuple().index(0);
-			Expression ptrOff = ptr.asTuple().index(1);
-			
-			Expression nullRef = encoding.getPointerEncoding().getNullPtr().getChild(0);
-			
-			Expression sizeZro = exprManager.bitVectorZero(scalarType.getSize());
 			
 			for(Expression var : heapRegions) {
-				Expression sizeVar = sizeArr.asArray().index(var);
+				Expression sizeVar = sizeArr.index(var);
 				disjs.add(
 	          exprManager.and(
 	          		var.neq(nullRef),
@@ -179,16 +168,16 @@ public class SynchronousHeapEncoding implements HeapEncoding {
 		} catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
     }
-		
-		return disjs.build(); 
+    return disjs.build();
 	}
 	
 	@Override
-	public ImmutableSet<BooleanExpression> validStackAccess(
-			Expression sizeArr,Expression ptr, Expression size) {
-		Preconditions.checkArgument(sizeArr.isArray());
+	public ImmutableSet<BooleanExpression> validMemAccess(
+			ArrayExpression sizeArr,Expression ptr, Expression size) {
+		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(refType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
 		Preconditions.checkArgument(ptr.getType().equals(ptrType));
-		Preconditions.checkArgument(size.getType().equals(scalarType));
+		Preconditions.checkArgument(size.getType().equals(valueType));
 		
 		ImmutableSet.Builder<BooleanExpression> disjs = 
 				new ImmutableSet.Builder<BooleanExpression>();
@@ -197,12 +186,13 @@ public class SynchronousHeapEncoding implements HeapEncoding {
 			Expression ptrRef = ptr.asTuple().index(0);
 			Expression ptrOff = ptr.asTuple().index(1);
 			
-			Expression boundOff = exprManager.plus(scalarType.getSize(), ptrOff, size);
+			Expression boundOff = exprManager.plus(valueType.getSize(), ptrOff, size);
 			
-			Expression sizeZro = exprManager.bitVectorZero(scalarType.getSize());
+			Expression nullRef = encoding.getPointerEncoding().getNullPtr().getChild(0);
+			Expression sizeZro = exprManager.bitVectorZero(valueType.getSize());
 			
 	    for( Expression var : stackVars) {
-        Expression sizeVar = sizeArr.asArray().index(var);
+        Expression sizeVar = sizeArr.index(var);
         disjs.add(
             exprManager.and(
                 ptrRef.eq(var), 
@@ -214,33 +204,9 @@ public class SynchronousHeapEncoding implements HeapEncoding {
                         exprManager.lessThan(boundOff, sizeVar)),
                         ptrOff.eq(sizeVar)))); 
 	    }
-		} catch (TheoremProverException e) {
-      throw new ExpressionFactoryException(e);
-    }
-    return disjs.build();
-	}
-
-	@Override
-	public ImmutableSet<BooleanExpression> validHeapAccess(
-			Expression sizeArr, Expression ptr, Expression size) {
-		Preconditions.checkArgument(sizeArr.isArray());
-		Preconditions.checkArgument(ptr.getType().equals(ptrType));
-		Preconditions.checkArgument(size.getType().equals(scalarType));
-		
-		ImmutableSet.Builder<BooleanExpression> disjs = 
-				new ImmutableSet.Builder<BooleanExpression>();
-		
-		try {
-			Expression ptrRef = ptr.asTuple().index(0);
-			Expression ptrOff = ptr.asTuple().index(1);
-			
-			Expression nullRef = encoding.getPointerEncoding().getNullPtr().getChild(0);
-			
-			Expression boundOff = exprManager.plus(scalarType.getSize(), ptrOff, size);		
-			Expression sizeZro = exprManager.bitVectorZero(scalarType.getSize());
 			
 			for(Expression var : heapRegions) {
-				Expression sizeVar = sizeArr.asArray().index(var);
+				Expression sizeVar = sizeArr.index(var);
         disjs.add(
             exprManager.and(
             		var.neq(nullRef),
@@ -251,29 +217,32 @@ public class SynchronousHeapEncoding implements HeapEncoding {
 		} catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
     }
-		
-		return disjs.build(); 
+    return disjs.build();
 	}
-
+	
 	@Override
-  public BooleanExpression validMallocSound(Expression sizeArr, Expression ptr, Expression size) {
-		Preconditions.checkArgument(sizeArr.isArray());
+  public BooleanExpression validMallocSound(ArrayExpression sizeArr, Expression ptr, Expression size) {
+		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(refType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
 		Preconditions.checkArgument(ptr.getType().equals(ptrType));
-		Preconditions.checkArgument(size.getType().equals(scalarType));
+		Preconditions.checkArgument(size.getType().equals(valueType));
 		
 		ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
     
 		try {
 			Expression nullPtr = encoding.getPointerEncoding().getNullPtr();
 			Expression nullRef = nullPtr.getChild(0);
-	    Expression sizeZro = exprManager.bitVectorZero(scalarType.getSize());
+	    Expression sizeZro = exprManager.bitVectorZero(valueType.getSize());
 	    
 	    Expression assump = exprManager.neq(ptr, nullPtr); // ptr != null
 	    
 	    /* Only analyze heap part */
 	    Expression ptrRef = ptr.asTuple().index(0);
-	    for(Expression var : heapRegions) {
-	      Expression sizeVar = sizeArr.asArray().index(var);
+	    List<Expression> heapRegs = Lists.newLinkedList(heapRegions);
+	    heapRegs.remove(heapRegs.size()-1);
+	    
+	    for(Expression var : heapRegs) {
+	      Expression sizeVar = sizeArr.index(var);
 	      
 	      Expression assump_local = exprManager.and(
             exprManager.greaterThan(sizeVar, sizeZro),
@@ -290,107 +259,77 @@ public class SynchronousHeapEncoding implements HeapEncoding {
   }
 
 	@Override
-  public BooleanExpression validFree(Expression sizeArr, Expression ptr) {
-		Preconditions.checkArgument(sizeArr.isArray());
+  public BooleanExpression validFree(ArrayExpression sizeArr, Expression ptr) {
+		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(refType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
 		Preconditions.checkArgument(ptr.getType().equals(ptrType));
 		
 		Expression ptrRef = ptr.asTuple().index(0);
-    Expression ptrSize = sizeArr.asArray().index(ptrRef);
+    Expression ptrSize = sizeArr.index(ptrRef);
     Expression nullPtr = encoding.getPointerEncoding().getNullPtr();
     return exprManager.or(
     		exprManager.eq(ptr, nullPtr), 
     		exprManager.greaterThan(ptrSize, 
-    				exprManager.bitVectorZero(scalarType.getSize())));
+    				exprManager.bitVectorZero(valueType.getSize())));
   }
 	
 	@Override
 	public Expression getConstSizeArr(ArrayType sizeArrType) {
 		Preconditions.checkArgument(sizeArrType.getIndexType().equals(refType));
-		Preconditions.checkArgument(sizeArrType.getElementType().equals(scalarType));
-		Expression sizeZro = exprManager.bitVectorZero(scalarType.getSize());
+		Preconditions.checkArgument(sizeArrType.getElementType().equals(valueType));
+		Expression sizeZro = exprManager.bitVectorZero(valueType.getSize());
 		return exprManager.storeAll(sizeZro, sizeArrType);
 	}
 
 	@Override
-  public ImmutableSet<BooleanExpression> validStackAccess(
-      Iterable<Expression> stackVars, Iterable<Expression> stackRegions,
-      Expression sizeArr, Expression ptr) {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public ImmutableSet<BooleanExpression> validStackAccess(
-      Iterable<Expression> stackVars, Iterable<Expression> stackRegions,
-      Expression sizeArr, Expression ptr, Expression size) {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public BooleanExpression validMallocOrder(Expression lastRegion,
-      Expression sizeArr, Expression ptr, Expression size) {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-	public boolean addToStackVars(Collection<Expression> stackVars,
-			Expression address) {
-	  // TODO Auto-generated method stub
-	  return false;
+	public ImmutableSet<BooleanExpression> disjointMemLayoutSound(
+			Iterable<ImmutableList<Expression>> varSets, ArrayExpression sizeArr) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override
-	public boolean addToHeapRegions(Collection<Expression> heapRegions, 
-			Expression region) {
-	  // TODO Auto-generated method stub
-	  return false;
+	public ImmutableSet<BooleanExpression> validMemAccess(
+			Iterable<ImmutableList<Expression>> varSets, ArrayExpression sizeArr,
+			Expression ptr) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override
-	public ImmutableSet<BooleanExpression> disjointStackSound(
-	    Iterable<Expression> stackVars, Iterable<Expression> stackRegions,
-	    Expression sizeArr) {
-	  // TODO Auto-generated method stub
-	  return null;
+	public ImmutableSet<BooleanExpression> validMemAccess(
+			Iterable<ImmutableList<Expression>> varSets, ArrayExpression sizeArr,
+			Expression ptr, Expression size) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	@Override
+	public BooleanExpression validMallocSound(Iterable<Expression> heapVars,
+			ArrayExpression sizeArr, Expression ptr, Expression size) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override
-  public ImmutableSet<BooleanExpression> disjointStackHeapSound(
-      Iterable<Expression> heapVars, Iterable<Expression> stackVars,
-      Iterable<Expression> stackRegions, Expression sizeArr) {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
+	public BooleanExpression validMallocOrder(Expression lastRegion,
+			ArrayExpression sizeArr, Expression ptr, Expression size) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
 	@Override
-  public ImmutableSet<BooleanExpression> disjointStackHeapOrder(
-      Iterable<Expression> stackVars, Iterable<Expression> stackRegions,
-      Expression lastRegion, Expression sizeArr) {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
+	public Iterable<ImmutableList<Expression>> getCategorizedVars(
+			Iterable<AliasVar> equivVars) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
 	@Override
-  public ImmutableSet<BooleanExpression> validHeapAccess(
-      Iterable<Expression> heapVars, Expression sizeArr, Expression ptr) {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public ImmutableSet<BooleanExpression> validHeapAccess(
-      Iterable<Expression> heapVars, Expression sizeArr, Expression ptr,
-      Expression size) {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public BooleanExpression validMallocSound(Iterable<Expression> heapVars,
-      Expression sizeArr, Expression ptr, Expression size) {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
+	public ImmutableSet<BooleanExpression> disjointMemLayoutOrder(
+			Iterable<ImmutableList<Expression>> varSets, Expression lastRegion,
+			ArrayExpression sizeArr) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

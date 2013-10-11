@@ -874,8 +874,7 @@ public abstract class AbstractExpressionEncoding
     if(theory.equals(Preferences.OPTION_THEORY_BURSTALL) ||
         theory.equals(Preferences.OPTION_THEORY_BURSTALLFIX) ||
         theory.equals(Preferences.OPTION_THEORY_BURSTALLView)) {
-      CellKind srcKind = CType.getCellKind((Type) 
-        src.getNode().getProperty(xtc.Constants.TYPE));
+      CellKind srcKind = CType.getCellKind(CType.getType(src.getNode()));
       CellKind targetKind = CType.getCellKind(targetType);
       if(CellKind.POINTER.equals(targetKind) && CellKind.SCALAR.equals(srcKind)) {
         assert src.isConstant();

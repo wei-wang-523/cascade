@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import xtc.Constants;
 import xtc.tree.GNode;
 import xtc.tree.Node;
 import xtc.type.Reference;
@@ -417,10 +416,10 @@ public class Statement implements IRStatement {
       Node lhs = getOperand(0).getSourceNode();
       Node rhs = getOperand(1).getSourceNode();
       
-      Type lType = (Type) lhs.getProperty(Constants.TYPE);
-      Type rType = (Type) rhs.getProperty(Constants.TYPE);
-      String lScope = lhs.getStringProperty(Constants.SCOPE);
-      String rScope = rhs.getStringProperty(Constants.SCOPE);
+      Type lType = CType.getType(lhs);
+      Type rType = CType.getType(rhs);
+      String lScope = CType.getScope(lhs);
+      String rScope = CType.getScope(rhs);
       String lRefName = CType.getReferenceName(lType);
       String rRefName = CType.getReferenceName(rType);
       
@@ -468,8 +467,8 @@ public class Statement implements IRStatement {
     }
     case ALLOC: {
       Node lhs = getOperand(0).getSourceNode();
-      xtc.type.Type lType = (xtc.type.Type) lhs.getProperty(Constants.TYPE);
-      String lScope = lhs.getStringProperty(Constants.SCOPE);
+      xtc.type.Type lType = CType.getType(lhs);
+      String lScope = CType.getScope(lhs);
       String lRefName = CType.getReferenceName(lType);
       AliasVar lTypeVar = analyzer.getRepVar(lRefName, lScope, lType);
       analyzer.heapAssign(lTypeVar, lType);

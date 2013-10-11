@@ -2,15 +2,19 @@ package edu.nyu.cascade.ir.expr;
 
 import java.util.Iterator;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 
+import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 
 public class LinearHeapOrderEncoding extends LinearHeapEncoding {
-
+	
 	private LinearHeapOrderEncoding(ExpressionEncoding encoding) {
 		super(encoding);
 	}
@@ -20,14 +24,17 @@ public class LinearHeapOrderEncoding extends LinearHeapEncoding {
 	}
 
 	@Override
-	public ImmutableSet<BooleanExpression> disjointStackHeapOrder(
-			Iterable<Expression> stackVars,
-	    Iterable<Expression> stackRegions, 
-	    Expression lastRegion, Expression sizeArr) {
+	public ImmutableSet<BooleanExpression> disjointMemLayoutOrder(
+			Iterable<ImmutableList<Expression>> varSets,
+	    Expression lastRegion, ArrayExpression sizeArr) {
+		Preconditions.checkArgument(Iterables.size(varSets) == 2);
+		Preconditions.checkArgument(lastRegion.getType().equals(addrType));
+		
 		ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
 		
 		try {
       /* All the stack vars are ordered */
+			ImmutableList<Expression> stackVars = Iterables.get(varSets, 0);
       Iterator<Expression> stVarsItr = stackVars.iterator();
       Expression stackBound = null;
       
@@ -41,41 +48,44 @@ public class LinearHeapOrderEncoding extends LinearHeapEncoding {
         stackBound = stVal2;
       }
       
-      /* The upper bound of the stack region won't overflow */
-      for (Expression region : stackRegions) {
-        Expression regionSize = sizeArr.asArray().index(region);
-        BitVectorExpression regionBound = exprManager.plus(addrType
-            .getSize(), region, regionSize);
+      if(sizeArr != null) {
+        /* The upper bound of the stack region won't overflow */
+        ImmutableList<Expression> stackRegions = Iterables.get(varSets, 1);
+        for (Expression region : stackRegions) {
+          Expression regionSize = sizeArr.index(region);
+          BitVectorExpression regionBound = exprManager.plus(addrType
+              .getSize(), region, regionSize);
+          
+          builder.add(exprManager.greaterThan(regionBound, region));
+        }
         
-        builder.add(exprManager.greaterThan(regionBound, region));
-      }
-      
-      /* All the stack regions are ordered */
-      Iterator<Expression> stRegsItr = stackRegions.iterator();
-      if( stackBound == null && stRegsItr.hasNext() ) {
-      	stackBound = stRegsItr.next();
-      }
-      
-      while (stRegsItr.hasNext()) {
-        Expression stReg = stRegsItr.next();
-        Expression stRegBound = exprManager.plus(addrType.getSize(), 
-        		stReg, sizeArr.asArray().index(stReg));
-        builder.add(exprManager.greaterThan(stackBound, stRegBound));       
-        stackBound = stReg;
-      }
-      
-      if(stackBound != null) {
-      	
-      	Expression nullPtr = exprManager.bitVectorZero(addrType.getSize());
+        /* All the stack regions are ordered */
+        Iterator<Expression> stRegsItr = stackRegions.iterator();
+        if( stackBound == null && stRegsItr.hasNext() ) {
+        	stackBound = stRegsItr.next();
+        }
         
-        // lastRegionBound = lastRegion != 0 ? lastRegion + Alloc[lastRegion] : 0;
-        Expression heapBound = exprManager.ifThenElse(
-            lastRegion.neq(nullPtr),
-            exprManager.plus(addrType.getSize(), lastRegion, 
-            		sizeArr.asArray().index(lastRegion)),
-            nullPtr);
+        while (stRegsItr.hasNext()) {
+          Expression stReg = stRegsItr.next();
+          Expression stRegBound = exprManager.plus(addrType.getSize(), 
+          		stReg, sizeArr.index(stReg));
+          builder.add(exprManager.greaterThan(stackBound, stRegBound));       
+          stackBound = stReg;
+        }
         
-        builder.add(exprManager.greaterThan(stackBound, heapBound));
+        if(stackBound != null) {
+        	
+        	Expression nullPtr = exprManager.bitVectorZero(addrType.getSize());
+          
+          // lastRegionBound = lastRegion != 0 ? lastRegion + Alloc[lastRegion] : 0;
+          Expression heapBound = exprManager.ifThenElse(
+              lastRegion.neq(nullPtr),
+              exprManager.plus(addrType.getSize(), lastRegion, 
+              		sizeArr.index(lastRegion)),
+              nullPtr);
+          
+          builder.add(exprManager.greaterThan(stackBound, heapBound));
+        }
       }
 		} catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
@@ -85,10 +95,16 @@ public class LinearHeapOrderEncoding extends LinearHeapEncoding {
 
 	@Override
   public BooleanExpression validMallocOrder(Expression lastRegion,
-      Expression sizeArr, Expression ptr, Expression size) {
+  		ArrayExpression sizeArr, Expression ptr, Expression size) {
+		Preconditions.checkArgument(lastRegion.getType().equals(addrType));
+		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
+		Preconditions.checkArgument(ptr.getType().equals(addrType));
+		Preconditions.checkArgument(size.getType().equals(valueType));
+		
 		try {
 			Expression lastRegionBound = exprManager.plus(addrType.getSize(), 
-	        lastRegion, sizeArr.asArray().index(lastRegion));
+	        lastRegion, sizeArr.index(lastRegion));
 	    
 	    Expression ptrBound = exprManager.plus(addrType.getSize(), ptr, size);
 	    Expression nullPtr = exprManager.bitVectorZero(addrType.getSize());
@@ -106,81 +122,4 @@ public class LinearHeapOrderEncoding extends LinearHeapEncoding {
       throw new ExpressionFactoryException(e);
     }
   }
-
-	@Override
-	public BooleanExpression validMallocSound(Iterable<Expression> heapVars,
-	    Expression sizeArr, Expression ptr, Expression size) {
-	  // TODO Auto-generated method stub
-	  return null;
-	}
-	
-	@Override
-  public ImmutableSet<BooleanExpression> disjointStackHeapSound(
-      Iterable<Expression> heapVars, Iterable<Expression> stackVars,
-      Iterable<Expression> stackRegions, Expression sizeArr) {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public Expression freshRegion(String regionName) {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public BooleanExpression disjointStack() {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public ImmutableSet<BooleanExpression> disjointStackHeap() {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public ImmutableSet<BooleanExpression> validStackAccess(Expression sizeArr,
-      Expression ptr) {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public ImmutableSet<BooleanExpression> validStackAccess(Expression sizeArr,
-      Expression ptr, Expression size) {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public ImmutableSet<BooleanExpression> validHeapAccess(Expression sizeArr,
-      Expression ptr) {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public ImmutableSet<BooleanExpression> validHeapAccess(Expression sizeArr,
-      Expression ptr, Expression size) {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public BooleanExpression validMallocSound(Expression child, Expression ptr,
-      Expression size) {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public ImmutableSet<BooleanExpression> disjointStackSound(
-      Iterable<Expression> stackVars, Iterable<Expression> stackRegions,
-      Expression sizeArr) {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
 }

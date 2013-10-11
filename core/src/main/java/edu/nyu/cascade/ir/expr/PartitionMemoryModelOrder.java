@@ -66,9 +66,6 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
     Preconditions.checkArgument(encoding instanceof PointerExpressionEncoding);
     return new PartitionMemoryModelOrder(encoding);
   }
-
-  private static final String ARRAY_MEM_PREFIX = "mem_";
-  private static final String ARRAY_ALLOC_PREFIX = "size_";
   
   private BitVectorType addrType, cellType;
   private RecordType memType, allocType; // with multiple array types
@@ -77,7 +74,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
   // Keep track of stack variables and allocated heap regions
   private final Map<Pair<String, String>, Expression> lvals, heapRegions;
   private final Set<Expression> stackRegions; // track the stack region variable
-  private final Map<String, Expression> currentMemElems, currentAllocElems;
+  private final Map<String, ArrayExpression> currentMemElems, currentAllocElems;
   
   private AliasAnalysis analyzer = null;
   private Expression prevDerefState = null;
@@ -131,10 +128,9 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
     final String regionName = region_var.getName();
     Expression region = em.variable(regionName, addrType, false);
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
-    xtc.type.Type regionType = region_var.getType();
-    regionType.mark(regionNode);
+    region_var.getType().mark(regionNode);
     final String regionScope = region_var.getScope();
-    regionNode.setProperty(SCOPE, regionScope);
+    regionNode.setProperty(CType.SCOPE, regionScope);
     region.setNode(regionNode);
     
     // For dynamic memory allocation, add to the end
@@ -153,7 +149,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
         Type cellType = getArrayElemType(region_var.getType());
         ArrayType arrType = em.arrayType(addrType, cellType);
         String regionArrName = getMemArrElemName(region_var);
-        Expression regionArr = em.variable(regionArrName, arrType, false);
+        ArrayExpression regionArr = em.variable(regionArrName, arrType, false).asArray();
         currentMemElems.put(regionArrName, regionArr);
       }
     }
@@ -229,7 +225,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
     
     String pArrName = getMemArrElemName(pRepVar);
     if(currentMemElems.containsKey(pArrName)) {
-      ArrayExpression pArray = currentMemElems.get(pArrName).asArray();
+      ArrayExpression pArray = currentMemElems.get(pArrName);
       pValCell = pArray.index(p);
     } else { // Add an element to currentMemElem
       Type cellType = getArrayElemType(pRepVar.getType());
@@ -263,12 +259,11 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
   
   @Override
   public Expression createLval(String prefix, Node node) {
-    Preconditions.checkArgument(node.hasProperty(SCOPE));
     Preconditions.checkArgument(node.hasName("PrimaryIdentifier") 
         || node.hasName("SimpleDeclarator"));
     ExpressionManager exprManager = getExpressionManager();
     String name = node.getString(0);
-    String scope = node.getStringProperty(SCOPE);
+    String scope = CType.getScope(node);
     VariableExpression res = exprManager.variable(prefix+name, addrType, true);
     lvals.put(Pair.of(name, scope), res);
     return res;
@@ -282,7 +277,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
 
     AliasVar ptr_var = loadRepVar(ptr.getNode());
-    analyzer.heapAssign(ptr_var, (xtc.type.Type) ptr.getNode().getProperty(TYPE));
+    analyzer.heapAssign(ptr_var, CType.getType(ptr.getNode()));
     AliasVar region_var = analyzer.getAllocRegion(ptr_var);
     
     String regionName = region_var.getName();
@@ -291,7 +286,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
     xtc.type.Type regionType = region_var.getType();
     regionType.mark(regionNode);
     String regionScope = region_var.getScope();
-    regionNode.setProperty(SCOPE, regionScope);
+    regionNode.setProperty(CType.SCOPE, regionScope);
     region.setNode(regionNode);
     
     heapRegions.put(Pair.of(regionName, regionScope), region); // For dynamic memory allocation, add to the end
@@ -302,7 +297,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
     
     String allocArrName = getAllocArrElemName(region_var);
     assert currentAllocElems.containsKey(allocArrName);
-    ArrayExpression allocArr = currentAllocElems.get(allocArrName).asArray();
+    ArrayExpression allocArr = currentAllocElems.get(allocArrName);
     
     Expression nullPtr = exprManager.bitVectorZero(addrType.getSize());
     Expression regionBound = exprManager.plus(addrType.getSize(), region, size);
@@ -328,8 +323,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
   
   @Override
   public Expression addressOf(Expression content) {
-    Preconditions.checkArgument(content.getNode().hasProperty(TYPE));
-    xtc.type.Type type = (xtc.type.Type) content.getNode().getProperty(TYPE);
+    xtc.type.Type type = CType.getType(content.getNode());
     while(type.isAlias() || type.isAnnotated() || type.isVariable()) {
       type = type.resolve();
       type = type.deannotate();
@@ -382,7 +376,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
         String allocArrName = getAllocArrElemName(repVar);
         
         if(currentAllocElems.containsKey(allocArrName)) {            
-          ArrayExpression allocArr = currentAllocElems.get(allocArrName).asArray();
+          ArrayExpression allocArr = currentAllocElems.get(allocArrName);
           
           /* The soundness of stack regions */
           
@@ -480,8 +474,8 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
           Expression memVar_mem = memoryVar.getChild(0);
           Expression memory_mem = memory.getChild(0);
           
-          Map<String, Expression> memVarMemMap = getRecordElems(memVar_mem.asRecord());
-          Map<String, Expression> memoryMemMap = getRecordElems(memory_mem.asRecord());
+          Map<String, ArrayExpression> memVarMemMap = getRecordElems(memVar_mem.asRecord());
+          Map<String, ArrayExpression> memoryMemMap = getRecordElems(memory_mem.asRecord());
           
           List<Expression> oldArgs_mem = Lists.newLinkedList();
           List<Expression> newArgs_mem = Lists.newLinkedList();
@@ -502,8 +496,8 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
           Expression memVar_alloc = memoryVar.getChild(1);
           Expression memory_alloc = memory.getChild(1);
           
-          Map<String, Expression> memVarAllocMap = getRecordElems(memVar_alloc.asRecord());
-          Map<String, Expression> memoryAllocMap = getRecordElems(memory_alloc.asRecord());
+          Map<String, ArrayExpression> memVarAllocMap = getRecordElems(memVar_alloc.asRecord());
+          Map<String, ArrayExpression> memoryAllocMap = getRecordElems(memory_alloc.asRecord());
           
           List<Expression> oldArgs_alloc = Lists.newLinkedList();
           List<Expression> newArgs_alloc = Lists.newLinkedList();
@@ -644,7 +638,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
       initCurrentAllocElems(state.getChild(1));
       String allocArrName = getAllocArrElemName(ptr2RepVar);
       assert currentAllocElems.containsKey(allocArrName);
-      ArrayExpression allocArr = currentAllocElems.get(allocArrName).asArray();
+      ArrayExpression allocArr = currentAllocElems.get(allocArrName);
       
       /* TODO: Check the scope of local variable, this will be unsound to take 
        * address of local variable out of scope */
@@ -709,7 +703,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
       initCurrentAllocElems(state.getChild(1));
       String allocArrName = getAllocArrElemName(ptr2RepVar);
       assert currentAllocElems.containsKey(allocArrName);
-      ArrayExpression allocArr = currentAllocElems.get(allocArrName).asArray();
+      ArrayExpression allocArr = currentAllocElems.get(allocArrName);
       
       /* TODO: Check the scope of local variable, this will be unsound to take 
        * address of local variable out of scope */ 
@@ -768,7 +762,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
     initCurrentAllocElems(state.getChild(1));
     String allocArrName = getAllocArrElemName(ptr2RepVar);
     assert currentAllocElems.containsKey(allocArrName);
-    ArrayExpression allocArr = currentAllocElems.get(allocArrName).asArray();
+    ArrayExpression allocArr = currentAllocElems.get(allocArrName);
     
     ExpressionManager exprManager = getExpressionManager();
     Expression size = allocArr.index(ptr);
@@ -792,7 +786,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
   
   private RecordExpression updateAllocState(Expression allocState) {
   	Preconditions.checkArgument(allocState.isRecord());
-    Map<String, Expression> map = getRecordElems(allocState);
+    Map<String, ArrayExpression> map = getRecordElems(allocState);
     int preSize = map.size();
     map.putAll(currentAllocElems);
     
@@ -809,7 +803,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
   }
   
   private RecordExpression updateRecord(RecordExpression record, Expression lval, Expression rval, boolean mem) {
-    Map<String, Expression> map = mem ? currentMemElems : currentAllocElems;
+    Map<String, ArrayExpression> map = mem ? currentMemElems : currentAllocElems;
     boolean stateTypeChanged = !map.isEmpty();
     map.putAll(getRecordElems(record));
     
@@ -819,7 +813,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
     String lvalRepArrName = mem ? getMemArrElemName(lvalRepVar) : getAllocArrElemName(lvalRepVar);
     
     if(map.containsKey(lvalRepArrName)) {
-      ArrayExpression lvalRepArr = map.get(lvalRepArrName).asArray();
+      ArrayExpression lvalRepArr = map.get(lvalRepArrName);
 //      Type cellType = lvalRepArr.getType().getElementType();
 //      rval = castExprToCell(rval, cellType);
       lvalRepArr = lvalRepArr.update(lval, rval);
@@ -850,10 +844,8 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
    * @param gnode
    */
   private AliasVar getRepVar(GNode gnode) {
-    Preconditions.checkArgument(gnode.hasProperty(TYPE) && gnode.hasProperty(SCOPE));
-    
-    xtc.type.Type type = (xtc.type.Type) gnode.getProperty(TYPE);
-    String scope = gnode.getStringProperty(SCOPE);
+    xtc.type.Type type = CType.getType(gnode);
+    String scope = CType.getScope(gnode);
     String refName = CType.getReferenceName(type);
     
     AliasVar repVar = analyzer.getRepVar(refName, scope, type);
@@ -869,24 +861,12 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
    */
   private AliasVar loadRepVar(GNode gnode) {
     try {
-      String scope = gnode.getStringProperty(SCOPE);
+      String scope = CType.getScope(gnode);
       Pair<GNode, String> key = Pair.of(gnode, scope);
       return cache.get(key);
     } catch (ExecutionException e) {
       throw new ExpressionFactoryException(e);
     }
-  }
-  
-  private String getMemArrElemName(AliasVar var) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(ARRAY_MEM_PREFIX).append(var.getName()).append('_').append(var.getScope());
-    return Identifiers.toValidId(sb.toString());
-  }
-  
-  private String getAllocArrElemName(AliasVar var) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(ARRAY_ALLOC_PREFIX).append(var.getName()).append('_').append(var.getScope());
-    return Identifiers.toValidId(sb.toString());
   }
   
   /**
@@ -979,7 +959,7 @@ public class PartitionMemoryModelOrder extends AbstractMemoryModel {
     initCurrentAllocElems(state.getChild(1));
     String allocArrName = getAllocArrElemName(pRepVar);
     assert currentAllocElems.containsKey(allocArrName);
-    ArrayExpression allocArr = currentAllocElems.get(allocArrName).asArray();
+    ArrayExpression allocArr = currentAllocElems.get(allocArrName);
     
     Expression lastRegion = state.getChild(2);
     Expression lastRegionBound = exprManager.plus(addrType.getSize(), 

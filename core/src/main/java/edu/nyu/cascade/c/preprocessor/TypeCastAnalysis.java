@@ -3,7 +3,6 @@ package edu.nyu.cascade.c.preprocessor;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
-import xtc.Constants;
 import xtc.tree.Node;
 import xtc.type.FieldReference;
 import xtc.type.Reference;
@@ -15,6 +14,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.AddressOfReference;
+import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 
 public class TypeCastAnalysis {
@@ -42,8 +42,8 @@ public class TypeCastAnalysis {
    * @param opNode
    */
   public void cast(Node typeNode, Node opNode) {
-    Type type = (Type) typeNode.getProperty(Constants.TYPE);
-    Type srcType = (Type) opNode.getProperty(Constants.TYPE);
+    Type type = CType.getType(typeNode);
+    Type srcType = CType.getType(opNode);
     
     // pointer casting ?
     if(type.resolve().isPointer() && srcType.resolve().isPointer()) {
@@ -60,7 +60,7 @@ public class TypeCastAnalysis {
    * @param op
    */
   public void declareStruct(Node opNode) {
-    Type type = (Type) opNode.getProperty(Constants.TYPE);
+    Type type = CType.getType(opNode);
     if(type.resolve().isUnion() && type.hasShape()) {
       Reference ref = type.getShape();
       Reference add_ref = new AddressOfReference(ref);
@@ -74,7 +74,7 @@ public class TypeCastAnalysis {
    * @param op
    */
   public void heapAssign(Node opNode) {
-    Type ptrType = (Type) opNode.getProperty(Constants.TYPE);
+    Type ptrType = CType.getType(opNode);
     Type type = ptrType.resolve().toPointer().getType();
     if(type.resolve().isUnion()/* || type.resolve().isStruct()*/) {
       if(ptrType.hasShape()) {
@@ -90,8 +90,8 @@ public class TypeCastAnalysis {
    * it too.
    */
   public void assign(Node lhsNode, Node rhsNode) {
-    Type lhsType = (Type) lhsNode.getProperty(Constants.TYPE);
-    Type rhsType = (Type) rhsNode.getProperty(Constants.TYPE);
+    Type lhsType = CType.getType(lhsNode);
+    Type rhsType = CType.getType(rhsNode);
     
     if(rhsType.hasShape()) {
       Reference rhsRef = rhsType.getShape();
@@ -110,7 +110,7 @@ public class TypeCastAnalysis {
    * @return
    */
   public boolean hasView(Node node) {
-    Type type = (Type) node.getProperty(Constants.TYPE);
+    Type type = CType.getType(node);
     boolean res = false;
     if(type.hasShape()) {
       try {

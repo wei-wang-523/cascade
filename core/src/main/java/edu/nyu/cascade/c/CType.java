@@ -1,5 +1,6 @@
 package edu.nyu.cascade.c;
 
+import xtc.tree.Node;
 import xtc.type.*;
 
 import com.google.common.base.Preconditions;
@@ -12,7 +13,10 @@ import edu.nyu.cascade.util.Identifiers;
  */
 public class CType {
 
-  public final static String CONSTANT = Identifiers.toValidId("Constant");
+  public static final String CONSTANT = Identifiers.toValidId("Constant");
+  
+  public static final String TYPE = xtc.Constants.TYPE;
+  public static final String SCOPE = xtc.Constants.SCOPE;
   
   public enum CellKind {
     SCALAR, POINTER, STRUCTORUNION, ARRAY, BOOL
@@ -87,21 +91,21 @@ public class CType {
     StringBuffer sb =  new StringBuffer();
     if(type.isBoolean()) {
       String kindName = type.toBoolean().getName();
-      sb.append(Identifiers.BURSTALL_ARRAY_NAME_INFIX)
+      sb.append(Identifiers.ARRAY_NAME_INFIX)
       .append(kindName);
     } else if(type.isPointer()) {
       xtc.type.Type pType = type.toPointer().getType();
-      sb.append(Identifiers.BURSTALL_ARRAY_NAME_INFIX)
+      sb.append(Identifiers.ARRAY_NAME_INFIX)
       .append("PointerT").append(parseTypeName(pType));
     } else if(type.isArray()) {
       xtc.type.Type aType = type.toArray().getType();
-      sb.append(Identifiers.BURSTALL_ARRAY_NAME_INFIX)
+      sb.append(Identifiers.ARRAY_NAME_INFIX)
       .append("ArrayT").append(parseTypeName(aType));
     } else if(type.isStruct()) {
-      sb.append(Identifiers.BURSTALL_ARRAY_NAME_INFIX)
+      sb.append(Identifiers.ARRAY_NAME_INFIX)
       .append(type.getName());
     } else if(type.isUnion()) {
-      sb.append(Identifiers.BURSTALL_ARRAY_NAME_INFIX).append(type.getName());
+      sb.append(Identifiers.ARRAY_NAME_INFIX).append(type.getName());
     } else if(type.isAnnotated()){
       AnnotatedT annoType = type.toAnnotated();
       if(annoType.hasShape()) {
@@ -125,10 +129,10 @@ public class CType {
       sb.append(parseTypeName(varType));
     } else if(type.isInteger()){
       String kindName = type.toInteger().getKind().name();
-      sb.append(Identifiers.BURSTALL_ARRAY_NAME_INFIX)
+      sb.append(Identifiers.ARRAY_NAME_INFIX)
       .append(kindName);
     } else if(type.isLabel()){
-      sb.append(Identifiers.BURSTALL_ARRAY_NAME_INFIX)
+      sb.append(Identifiers.ARRAY_NAME_INFIX)
       .append(type.toLabel().getName());
     } else {
       throw new IllegalArgumentException("Cannot parse type " + type.getName());
@@ -143,5 +147,15 @@ public class CType {
     if(ref instanceof AddressOfReference)
       currentNum--;
     return currentNum;
+  }
+  
+  public static Type getType(Node node) {
+  	Preconditions.checkArgument(node.hasProperty(TYPE));
+  	return (Type) node.getProperty(TYPE);
+  }
+  
+  public static String getScope(Node node) {
+  	Preconditions.checkArgument(node.hasProperty(SCOPE));
+  	return node.getStringProperty(SCOPE);
   }
 }

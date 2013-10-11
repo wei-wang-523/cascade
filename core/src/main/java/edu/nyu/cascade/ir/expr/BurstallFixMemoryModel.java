@@ -69,7 +69,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
   
   private final Set<Expression> lvals; // lvals: variables in stack
   private final List<Expression> stackRegions, heapRegions;
-  private final Map<String, Expression> currentMemElems;
+  private final Map<String, ArrayExpression> currentMemElems;
   private Expression currentAlloc = null;
   private Expression prevDerefState = null;
   private ExpressionClosure currentState = null;
@@ -281,8 +281,8 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
       Expression lval,
       Expression rval) {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
-    xtc.type.Type lType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
-    xtc.type.Type rType = (xtc.type.Type) rval.getNode().getProperty(TYPE);
+    xtc.type.Type lType = CType.getType(lval.getNode());
+    xtc.type.Type rType = CType.getType(rval.getNode());
     if(CellKind.SCALAR.equals(CType.getCellKind(lType)) 
         && CellKind.SCALAR.equals(CType.getCellKind(rType))) {
       int lval_size = getSizeofType(lType);
@@ -316,7 +316,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
     
     ExpressionManager em = getExpressionManager();
     ArrayExpression tgtArray = null;
-    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
+    xtc.type.Type pType = CType.getType(p.getNode());
     String typeName = CTypeNameAnalyzer.getTypeName(pType);
   
     if(currentMemElems.containsKey(typeName)) {
@@ -362,7 +362,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(lval.getType().equals( ptrType ));
     // FIXME: What if element size and integer size don't agree?
     Expression rval = null;
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
+    xtc.type.Type lvalType = CType.getType(lval.getNode());
     CellKind kind = CType.getCellKind(lvalType);
     switch(kind) {
     case SCALAR: {
@@ -429,8 +429,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
   
   @Override
   public Expression addressOf(Expression content) {
-    xtc.type.Type type = CType.unwrapped((xtc.type.Type) content.getNode()
-        .getProperty(TYPE));
+    xtc.type.Type type = CType.unwrapped(CType.getType(content.getNode()));
     if(type.isStruct() || type.isUnion() || type.isArray())
       return content;
     else
@@ -519,8 +518,8 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
         Expression memVar_mem = memoryVar.getChild(0);
         Expression memory_mem = memory.getChild(0);
         
-        Map<String, Expression> memVarMemMap = getRecordElems(memVar_mem);
-        Map<String, Expression> memoryMemMap = getRecordElems(memory_mem);
+        Map<String, ArrayExpression> memVarMemMap = getRecordElems(memVar_mem);
+        Map<String, ArrayExpression> memoryMemMap = getRecordElems(memory_mem);
         
         List<Expression> oldArgs_mem = Lists.newLinkedList();
         List<Expression> newArgs_mem = Lists.newLinkedList();
@@ -717,14 +716,14 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
     ExpressionManager em = getExpressionManager();
     boolean isMemUpdated = false;
     ArrayExpression tgtArray = null;
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
+    xtc.type.Type lvalType = CType.getType(lval.getNode());
     String lvalTypeName = CTypeNameAnalyzer.getTypeName(lvalType);
     if(currentMemElems.containsKey(lvalTypeName)) { // declared type name
       CellKind kind = CType.getCellKind(lvalType);
       switch(kind) {
       case BOOL: { // cascade_conditions
         rval = getExpressionEncoding().castToBoolean(rval);
-        tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
+        tgtArray =  currentMemElems.get(lvalTypeName).update(lval, rval);
         break;
       }
       case POINTER: {
@@ -733,11 +732,11 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
           assert rval.isConstant();
           rval = getExpressionEncoding().getPointerEncoding().getNullPtr();
         }
-        tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval);
+        tgtArray =  currentMemElems.get(lvalTypeName).update(lval, rval);
         break;
       } 
       case SCALAR:
-        tgtArray =  currentMemElems.get(lvalTypeName).asArray().update(lval, rval); break;
+        tgtArray =  currentMemElems.get(lvalTypeName).update(lval, rval); break;
       default:
         throw new IllegalArgumentException("Invalid kind " + kind);
       }      

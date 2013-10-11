@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.prover.ArrayVariableExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -24,10 +25,7 @@ import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 
-public class BitVectorMemoryModelOrder extends AbstractMemoryModel {  
-  protected static final String REGION_VARIABLE_NAME = "region";
-  protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
-  protected static final String DEFAULT_ALLOC_VARIABLE_NAME = "size";
+public class BitVectorMemoryModelOrder extends AbstractMemoryModel {
 
   /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
    * integral number of words.
@@ -534,7 +532,7 @@ public class BitVectorMemoryModelOrder extends AbstractMemoryModel {
   
   @Override
   public Expression addressOf(Expression content) {
-    xtc.type.Type type = (xtc.type.Type) content.getNode().getProperty(TYPE);
+    xtc.type.Type type = CType.getType(content.getNode());
     while(type.isAlias() || type.isAnnotated() || type.isVariable()) {
       type = type.resolve();
       type = type.deannotate();

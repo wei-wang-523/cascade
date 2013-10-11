@@ -1,6 +1,7 @@
 package edu.nyu.cascade.ir.expr;
 
 import xtc.tree.Node;
+import xtc.util.SymbolTable;
 import xtc.util.SymbolTable.Scope;
 import edu.nyu.cascade.prover.ExpressionManager;
 
@@ -19,6 +20,7 @@ public interface ExpressionEncoder {
   ExpressionEncoding getEncoding();
   ExpressionManager getExpressionManager();
   MemoryModel getMemoryModel();
+  SymbolTable.Scope getCurrentScope();
   
   ExpressionClosure toBoolean(Node node);
   ExpressionClosure toBoolean(Node node, Scope scope);

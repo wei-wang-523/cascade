@@ -240,6 +240,8 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     } else {
     	resMemState = getITEExpression(memStateBuilder.build(), preGuards);
     }
+    
+    getMemoryModel().setStateType(resMemState.getType());
     Expression resPC = getExpressionManager().or(pcBuilder.build());
     
     return getUpdatedPathState(resMemState, resPC);

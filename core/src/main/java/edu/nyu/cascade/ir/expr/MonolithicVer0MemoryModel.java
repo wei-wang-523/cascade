@@ -186,8 +186,7 @@ public class MonolithicVer0MemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptrType.equals(p.getType()));
     Expression cell = state.getChild(0).asArray().index(p);
     
-    xtc.type.Type pType = (xtc.type.Type) p.getNode().getProperty(TYPE);
-    CellKind kind = CType.getCellKind(pType);
+    CellKind kind = CType.getCellKind(CType.getType(p.getNode()));
     switch(kind) {
     case BOOL:
     case SCALAR:
@@ -208,8 +207,7 @@ public class MonolithicVer0MemoryModel extends AbstractMemoryModel {
     ExpressionManager em = getExpressionManager();
     Expression rval = null;
     
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
-    CellKind kind = CType.getCellKind(lvalType);
+    CellKind kind = CType.getCellKind(CType.getType(lval.getNode()));
     switch(kind) {
     case SCALAR:  rval = getExpressionEncoding().getIntegerEncoding().unknown(); break;
     case POINTER: rval = getExpressionEncoding().getPointerEncoding().unknown(); break;
@@ -392,9 +390,7 @@ public class MonolithicVer0MemoryModel extends AbstractMemoryModel {
   
   @Override
   public Expression addressOf(Expression content) {
-    Preconditions.checkArgument(content.getNode().hasProperty(TYPE));
-    xtc.type.Type contentType = CType.unwrapped((xtc.type.Type) 
-        (content.getNode().getProperty(TYPE)));
+    xtc.type.Type contentType = CType.unwrapped(CType.getType(content.getNode()));
     
     if(contentType.isUnion() || contentType.isStruct()) {
       return content;
@@ -577,8 +573,7 @@ public class MonolithicVer0MemoryModel extends AbstractMemoryModel {
     // Compose the cell value with rval
     Expression cellVal = null;
     
-    xtc.type.Type lvalType = (xtc.type.Type) lval.getNode().getProperty(TYPE);
-    CellKind kind = CType.getCellKind(lvalType);
+    CellKind kind = CType.getCellKind(CType.getType(lval.getNode()));
     switch(kind) {
     case BOOL:
     case SCALAR:
