@@ -10,7 +10,7 @@ import xtc.type.Type;
  *
  */
 
-public interface AliasVar {
+public interface IREquivalentVar {
   String getName() ;
   Type getType() ;
   String getScope() ;

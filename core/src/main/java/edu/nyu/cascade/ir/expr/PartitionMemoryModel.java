@@ -21,9 +21,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.c.CType;
-import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
-import edu.nyu.cascade.c.preprocessor.AliasVar;
-import edu.nyu.cascade.c.preprocessor.EquivalentClass;
+import edu.nyu.cascade.c.preprocessor.IREquivalentClosure;
+import edu.nyu.cascade.c.preprocessor.IRPreAnalysis;
+import edu.nyu.cascade.c.preprocessor.IREquivalentVar;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -66,11 +66,11 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   private final Map<String, ExpressionClosure> sideEffectMemClosure;
   private final Map<String, ExpressionClosure> sideEffectSizeClosure;
   
-  private AliasAnalysis analyzer = null;
+  private IRPreAnalysis analyzer = null;
   
-  private final LoadingCache<Pair<GNode, String>, AliasVar> cache = CacheBuilder
-      .newBuilder().build(new CacheLoader<Pair<GNode, String>, AliasVar>(){
-        public AliasVar load(Pair<GNode, String> key) {
+  private final LoadingCache<Pair<GNode, String>, IREquivalentVar> cache = CacheBuilder
+      .newBuilder().build(new CacheLoader<Pair<GNode, String>, IREquivalentVar>(){
+        public IREquivalentVar load(Pair<GNode, String> key) {
           return getRepVar(key.fst());
         }
       });
@@ -106,8 +106,8 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
     Preconditions.checkArgument(size.getType().equals( valueType ));
     
-    AliasVar ptrVar = loadRepVar(ptr.getNode());
-    AliasVar regionVar = analyzer.getAllocRegion(ptrVar);
+    IREquivalentVar ptrVar = loadRepVar(ptr.getNode());
+    IREquivalentVar regionVar = analyzer.getAllocRegion(ptrVar);
     
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
@@ -171,7 +171,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   public Expression deref(Expression state, Expression p) {
     Preconditions.checkArgument(addrType.equals(p.getType()));
     
-    AliasVar pRepVar = loadRepVar(p.getNode());
+    IREquivalentVar pRepVar = loadRepVar(p.getNode());
     ArrayExpression pArray = getMemArray(state, pRepVar);    
     return heapEncoder.indexMemArr(pArray, p);
   }
@@ -191,7 +191,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   public Expression createLval(Expression state, String name, IRVarInfo info, Node node) {
     Expression res = heapEncoder.freshAddress(name, info, CType.unwrapped(CType.getType(node)));
 
-    AliasVar repVar = loadRepVar(GNode.cast(node));
+    IREquivalentVar repVar = loadRepVar(GNode.cast(node));
     updateMemArray(state, repVar);
     return res;
   }
@@ -201,9 +201,9 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
     Preconditions.checkArgument(size.getType().equals( valueType ));
     
-    AliasVar ptrVar = loadRepVar(ptr.getNode());
+    IREquivalentVar ptrVar = loadRepVar(ptr.getNode());
     analyzer.heapAssign(ptrVar, CType.getType(ptr.getNode()));
-    AliasVar regionVar = analyzer.getAllocRegion(ptrVar);
+    IREquivalentVar regionVar = analyzer.getAllocRegion(ptrVar);
     
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
@@ -212,7 +212,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
 
     Expression region = heapEncoder.freshRegion(regionName, regionNode);
     
-    AliasVar regionRepVar = analyzer.getPointsToRepVar(ptrVar);
+    IREquivalentVar regionRepVar = analyzer.getPointsToRepVar(ptrVar);
 
     /* Update side effect memory state */
     ArrayExpression array1 = popMemArray(state, ptrVar);
@@ -229,7 +229,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     updateSideEffectSizeClosure(regArrName, suspend(state, array2));
     
     /* Find related heap regions and size array */
-    EquivalentClass equivAliasVars = analyzer.getEquivClass(regionVar);    
+    IREquivalentClosure equivAliasVars = analyzer.getEquivClass(regionVar);    
     return heapEncoder.validMalloc(equivAliasVars, array2, region, size);
   }
   
@@ -241,21 +241,21 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   @Override
   public ImmutableSet<BooleanExpression> getAssumptions(Expression state) {
     
-    ImmutableMap<AliasVar, Set<AliasVar>> map = analyzer.snapshot();
+    ImmutableMap<IREquivalentVar, Set<IREquivalentVar>> map = analyzer.snapshot();
     
     ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
     
     Set<String> memMapKeySet = getRecordElems(state.getChild(0)).keySet();
     Map<String, ArrayExpression> sizeMap = getRecordElems(state.getChild(1));
     
-    for(AliasVar repVar : map.keySet()) {
+    for(IREquivalentVar repVar : map.keySet()) {
     	String repVarMemArrName = getMemArrElemName(repVar);
     	
     	/* If the repVar is not referred in the execution paths */
     	if(!memMapKeySet.contains(repVarMemArrName)) continue;
     	
     	/* Categorize vars into stVar, stReg, and hpReg */
-    	EquivalentClass equivAliasVars = analyzer.getEquivClass(repVar);    	
+    	IREquivalentClosure equivAliasVars = analyzer.getEquivClass(repVar);    	
       String sizeArrName = getSizeArrElemName(repVar);
       ArrayExpression sizeArr = sizeMap.get(sizeArrName); // might be null
       builder.addAll(heapEncoder.disjointMemLayout(equivAliasVars, sizeArr));
@@ -423,7 +423,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   }
 
   @Override
-  public void setAliasAnalyzer(AliasAnalysis analyzer) {
+  public void setAliasAnalyzer(IRPreAnalysis analyzer) {
     this.analyzer = analyzer;
     IOUtils.err().println(analyzer.displaySnapShort());
   }
@@ -433,9 +433,9 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
     
     /* Find related heap regions and alloc array */
-    AliasVar pRepVar = loadRepVar(ptr.getNode());
-    AliasVar ptr2RepVar = analyzer.getPointsToRepVar(pRepVar);
-    EquivalentClass equivAliasVars = analyzer.getEquivClass(ptr2RepVar);
+    IREquivalentVar pRepVar = loadRepVar(ptr.getNode());
+    IREquivalentVar ptr2RepVar = analyzer.getPointsToRepVar(pRepVar);
+    IREquivalentClosure equivAliasVars = analyzer.getEquivClass(ptr2RepVar);
     
     /* Get the related alloc array */
     Map<String, ArrayExpression> map = getRecordElems(state.getChild(1));
@@ -454,9 +454,9 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(size.getType().equals( valueType ));
 
     /* Find related heap regions and alloc array */
-    AliasVar pRepVar = loadRepVar(ptr.getNode());
-    AliasVar ptr2RepVar = analyzer.getPointsToRepVar(pRepVar);
-    EquivalentClass equivAliasVars = analyzer.getEquivClass(ptr2RepVar);
+    IREquivalentVar pRepVar = loadRepVar(ptr.getNode());
+    IREquivalentVar ptr2RepVar = analyzer.getPointsToRepVar(pRepVar);
+    IREquivalentClosure equivAliasVars = analyzer.getEquivClass(ptr2RepVar);
     
     /* Get the related alloc array */
     Map<String, ArrayExpression> map = getRecordElems(state.getChild(1));
@@ -475,10 +475,10 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(size.getType().equals( valueType ));
     
     /* Find related heap regions and alloc array */
-    AliasVar pRepVar = loadRepVar(ptr.getNode());
+    IREquivalentVar pRepVar = loadRepVar(ptr.getNode());
     pRepVar = analyzer.getPointsToRepVar(pRepVar);
     
-    EquivalentClass equivAliasVars = analyzer.getEquivClass(pRepVar);
+    IREquivalentClosure equivAliasVars = analyzer.getEquivClass(pRepVar);
     
     Map<String, ArrayExpression> map = getRecordElems(state.getChild(1));
     String sizeArrName = getSizeArrElemName(pRepVar);
@@ -494,8 +494,8 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   	Preconditions.checkArgument(ptr.getType().equals( addrType ));
   	
     /* Find related heap regions and alloc array */
-    AliasVar pRepVar = loadRepVar(ptr.getNode());
-    AliasVar ptr2RepVar = analyzer.getPointsToRepVar(pRepVar);
+    IREquivalentVar pRepVar = loadRepVar(ptr.getNode());
+    IREquivalentVar ptr2RepVar = analyzer.getPointsToRepVar(pRepVar);
     
     Map<String, ArrayExpression> map = getRecordElems(state.getChild(1));
     String sizeArrName = getSizeArrElemName(ptr2RepVar);
@@ -600,7 +600,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     Map<String, ArrayExpression> map = getRecordElems(record);
     ExpressionManager exprManager = getExpressionManager();
     if(mem) {
-    	AliasVar lvalRepVar = loadRepVar(lval.getNode());
+    	IREquivalentVar lvalRepVar = loadRepVar(lval.getNode());
     	String lvalRepArrName = getMemArrElemName(lvalRepVar);
     	assert map.containsKey(lvalRepArrName);
     	ArrayExpression lvalRepArr = map.get(lvalRepArrName);
@@ -610,7 +610,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
       Type recordType = record.getType();
       
     	if(rval.getNode() != null) {
-        AliasVar rvalRepVar = loadRepVar(rval.getNode());
+        IREquivalentVar rvalRepVar = loadRepVar(rval.getNode());
         if(!rvalRepVar.isNullLoc()) {
         	String rvalRepArrName = getMemArrElemName(rvalRepVar);
         	if(!map.containsKey(rvalRepArrName)) {
@@ -627,7 +627,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     } else {    	
     	Type recordType = record.getType();    	
     	ArrayExpression lvalRepArr = null;
-     	AliasVar lvalRepVar = loadRepVar(lval.getNode());
+     	IREquivalentVar lvalRepVar = loadRepVar(lval.getNode());
      	String lvalRepArrName = getSizeArrElemName(lvalRepVar);
      	if(!map.containsKey(lvalRepArrName)) {
 //     		ArrayType sizeArrType = heapEncoder.getSizeArrType();
@@ -652,7 +652,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
    * Get representative alias variable in the pointer analyzer
    * @param gnode
    */
-  private AliasVar getRepVar(GNode gnode) {
+  private IREquivalentVar getRepVar(GNode gnode) {
     xtc.type.Type type = CType.getType(gnode);
     String scope = CType.getScope(gnode);
     String refName = CType.getReferenceName(type);
@@ -665,7 +665,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
    * @param gnode
    * @return alias variable
    */
-  private AliasVar loadRepVar(GNode gnode) {
+  private IREquivalentVar loadRepVar(GNode gnode) {
     try {
       String scope = CType.getScope(gnode);
       Pair<GNode, String> key = Pair.of(gnode, scope);
@@ -704,7 +704,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
    * @param var
    * @return the element memory array of <code>var</code>
    */
-  private ArrayExpression getMemArray(Expression state, AliasVar var) {
+  private ArrayExpression getMemArray(Expression state, IREquivalentVar var) {
   	Preconditions.checkArgument(state.isTuple());
   	String arrName = getMemArrElemName(var);
   	ArrayExpression resMem = null;
@@ -728,7 +728,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
    * @param var
    * @return <code>true</code> if updated, otherwise <code>false</code>
    */
-  private boolean updateMemArray(Expression state, AliasVar var) {
+  private boolean updateMemArray(Expression state, IREquivalentVar var) {
   	Preconditions.checkArgument(state.isTuple());
   	String arrName = getMemArrElemName(var);
   	ArrayExpression resMem = null;
@@ -754,7 +754,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
    * @param var
    * @return resMem
    */
-  private ArrayExpression popMemArray(Expression state, AliasVar var) {
+  private ArrayExpression popMemArray(Expression state, IREquivalentVar var) {
   	Preconditions.checkArgument(state.isTuple());
   	String arrName = getMemArrElemName(var);
   	ArrayExpression resMem = null;
@@ -781,7 +781,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
    * @param var
    * @return resSize
    */
-  private ArrayExpression popSizeArray(Expression state, AliasVar var) {
+  private ArrayExpression popSizeArray(Expression state, IREquivalentVar var) {
   	Preconditions.checkArgument(state.isTuple());
   	String arrName = getSizeArrElemName(var);
   	ArrayExpression resSize = null;
@@ -797,6 +797,38 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
       resSize = heapEncoder.getConstSizeArr(heapEncoder.getSizeArrType());
     }   
     return resSize;
+  }
+  
+	/**
+	 * Get the name of memory array element of <code>var</code>
+	 * @param var
+	 * @return the name of memory array of <code>var</code>
+	 */
+  private String getMemArrElemName(IREquivalentVar var) {
+  	StringBuilder sb = new StringBuilder()
+  		.append(ARRAY_MEM_PREFIX)
+    	.append(Identifiers.ARRAY_NAME_INFIX)
+    	.append(var.getName())
+    	.append(Identifiers.ARRAY_NAME_INFIX)
+    	.append(var.getScope());
+  	String res = Identifiers.toValidId(sb.toString());
+  	return res;
+  }
+  
+	/**
+	 * Get the name of size array element of <code>var</code>
+	 * @param var
+	 * @return the name of size array of <code>var</code>
+	 */
+  private String getSizeArrElemName(IREquivalentVar var) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(ARRAY_ALLOC_PREFIX)
+    	.append(Identifiers.ARRAY_NAME_INFIX)
+    	.append(var.getName())
+    	.append(Identifiers.ARRAY_NAME_INFIX)
+    	.append(var.getScope());
+  	String res = Identifiers.toValidId(sb.toString());
+  	return res;
   }
 
 	@Override

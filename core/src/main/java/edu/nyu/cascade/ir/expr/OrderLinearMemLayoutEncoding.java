@@ -130,7 +130,8 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	    return exprManager.implies(
 	    		ptr.neq(nullPtr),
 	    		exprManager.and(
-	    				exprManager.lessThan(ptr, ptrBound), // not overflow
+	    				exprManager.lessThanOrEqual(ptr, ptrBound), // not over flow but size could be zero
+//	    				exprManager.lessThan(ptr, ptrBound),
 	    				exprManager.or(
 	    						lastRegion.eq(nullPtr), // last region is null (not allocated)
 	    						exprManager.lessThanOrEqual(lastRegionBound, ptr)  // larger than the last allocated region

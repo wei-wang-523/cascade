@@ -1,13 +1,14 @@
 package edu.nyu.cascade.ir;
 
 import java.util.List;
+
 import xtc.tree.Node;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
-import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
+import edu.nyu.cascade.c.preprocessor.IRPreAnalysis;
+import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalysis;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
@@ -112,6 +113,6 @@ public interface IRStatement {
   ImmutableSet<String> getPreLabels();
   ImmutableSet<String> getPostLabels();
   
-  void prePointerAnalysis(PathEncoding factory, AliasAnalysis analyzer);
+  void prePointerAnalysis(PathEncoding factory, IRPreAnalysis analyzer);
   void preTypeCastAnalysis(PathEncoding factory, TypeCastAnalysis analyzer);
 }

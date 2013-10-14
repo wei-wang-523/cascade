@@ -15,7 +15,7 @@ import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CType.CellKind;
-import edu.nyu.cascade.c.preprocessor.AliasVar;
+import edu.nyu.cascade.c.preprocessor.IREquivalentVar;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -196,10 +196,10 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	}
 
 	@Override
-	public MemoryVarSets getCategorizedVars(Iterable<AliasVar> equivVars) {
+	public MemoryVarSets getCategorizedVars(Iterable<IREquivalentVar> equivVars) {
 	  MemoryVarSets.Builder builder = new MemoryVarSets.Builder();
 		
-	  for(AliasVar var : equivVars) {
+	  for(IREquivalentVar var : equivVars) {
 	  	String varName = var.getName();
 	  	String varKey = new StringBuilder().append(varName)
 	  			.append(var.getScope()).toString();

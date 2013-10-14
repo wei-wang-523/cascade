@@ -1,11 +1,11 @@
-package edu.nyu.cascade.c.steensgaard;
+package edu.nyu.cascade.c.preprocessor.steensgaard;
 
 import java.util.Collection;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
 
-import edu.nyu.cascade.c.steensgaard.ValueType.ValueTypeKind;
+import edu.nyu.cascade.c.preprocessor.steensgaard.ValueType.ValueTypeKind;
 import edu.nyu.cascade.util.UnionFind;
 
 /**

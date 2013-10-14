@@ -1,7 +1,7 @@
 package edu.nyu.cascade.ir.expr;
 
 import xtc.tree.Node;
-import edu.nyu.cascade.c.preprocessor.AliasVar;
+import edu.nyu.cascade.c.preprocessor.IREquivalentVar;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -40,7 +40,7 @@ public interface IRHeapEncoding {
 	
 	Expression addressOf(Expression expr);
 	
-	MemoryVarSets getCategorizedVars(Iterable<AliasVar> equivVars);
+	MemoryVarSets getCategorizedVars(Iterable<IREquivalentVar> iterable);
 	
 	Expression getLastRegion();
 	

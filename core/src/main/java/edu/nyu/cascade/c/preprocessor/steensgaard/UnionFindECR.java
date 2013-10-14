@@ -1,6 +1,6 @@
-package edu.nyu.cascade.c.steensgaard;
+package edu.nyu.cascade.c.preprocessor.steensgaard;
 
-import static edu.nyu.cascade.c.steensgaard.ValueType.ValueTypeKind.BOTTOM;
+import static edu.nyu.cascade.c.preprocessor.steensgaard.ValueType.ValueTypeKind.BOTTOM;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -12,13 +12,13 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
-import edu.nyu.cascade.c.preprocessor.AliasVar;
-import edu.nyu.cascade.c.steensgaard.ValueType.ValueTypeKind;
+import edu.nyu.cascade.c.preprocessor.IREquivalentVar;
+import edu.nyu.cascade.c.preprocessor.steensgaard.ValueType.ValueTypeKind;
 import edu.nyu.cascade.util.UnionFind;
 import edu.nyu.cascade.util.UnionFind.Partition;
 
 public class UnionFindECR {
-  UnionFind<AliasVar> uf;
+  UnionFind<IREquivalentVar> uf;
   
   private UnionFindECR () {
     uf = UnionFind.create();
@@ -213,9 +213,9 @@ public class UnionFindECR {
   /**
    * Get the snapshot of union find
    */
-  protected ImmutableMap<ECR, Set<AliasVar>> snapshot() {
-    SetMultimap<Partition, AliasVar> map = uf.snapshot();
-    ImmutableMap.Builder<ECR, Set<AliasVar>> builder = ImmutableMap.builder();
+  protected ImmutableMap<ECR, Set<IREquivalentVar>> snapshot() {
+    SetMultimap<Partition, IREquivalentVar> map = uf.snapshot();
+    ImmutableMap.Builder<ECR, Set<IREquivalentVar>> builder = ImmutableMap.builder();
     for (Partition ecr : map.asMap().keySet()) {
       builder.put((ECR) ecr, ImmutableSet.copyOf(map.asMap().get(ecr)));
     }
@@ -225,7 +225,7 @@ public class UnionFindECR {
   /**
    * Get the alias variable equivalent class of union find
    */
-  protected ImmutableSet<AliasVar> getEquivClass(ECR e) {
+  protected ImmutableSet<IREquivalentVar> getEquivClass(ECR e) {
     return ImmutableSet.copyOf(uf.getEquivClass(e));
   }
 }

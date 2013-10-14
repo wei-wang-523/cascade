@@ -40,9 +40,9 @@ import com.google.common.base.Preconditions;
 import edu.nyu.cascade.c.AddressOfReference;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CType.CellKind;
-import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
-import edu.nyu.cascade.c.preprocessor.AliasVar;
-import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
+import edu.nyu.cascade.c.preprocessor.IRPreAnalysis;
+import edu.nyu.cascade.c.preprocessor.IREquivalentVar;
+import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalysis;
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRLocation;
 import edu.nyu.cascade.ir.IRLocations;
@@ -410,7 +410,7 @@ public class Statement implements IRStatement {
    * assumption/assertion in the annotation
    */
   @Override
-  public void prePointerAnalysis(PathEncoding factory, AliasAnalysis analyzer) {
+  public void prePointerAnalysis(PathEncoding factory, IRPreAnalysis analyzer) {
     switch (getType()) {
     case ASSIGN: {
       Node lhs = getOperand(0).getSourceNode();
@@ -431,23 +431,23 @@ public class Statement implements IRStatement {
         if(ref instanceof AddressOfReference) {
           Reference base = rType.getShape().getBase();
           Type rType_ = base.getType().annotate().shape(base);
-          AliasVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
-          AliasVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType_);
+          IREquivalentVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
+          IREquivalentVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType_);
           analyzer.addrAssign(lTypeVar_, rTypeVar_); break;
         }
         if(ref.isIndirect()) {
           Reference base = rType.getShape().getBase();
           Type rType_ = base.getType().annotate().shape(base);
-          AliasVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
-          AliasVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType_);
+          IREquivalentVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
+          IREquivalentVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType_);
           analyzer.ptrAssign(lTypeVar_, rTypeVar_); break;
         }
       } 
       
       CellKind rKind = CType.getCellKind(rType);
       if(CellKind.STRUCTORUNION.equals(rKind) || CellKind.ARRAY.equals(rKind)) {
-        AliasVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
-        AliasVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType);
+        IREquivalentVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
+        IREquivalentVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType);
         analyzer.addrAssign(lTypeVar_, rTypeVar_); break;
       }
       
@@ -455,14 +455,14 @@ public class Statement implements IRStatement {
         if(lType.getShape().isIndirect()) {
           Reference base = lType.getShape().getBase();
           Type lType_ = base.getType().annotate().shape(base);
-          AliasVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType_);
-          AliasVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType);
+          IREquivalentVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType_);
+          IREquivalentVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType);
           analyzer.assignPtr(lTypeVar_, rTypeVar_); break;
         }
       }
       
-      AliasVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
-      AliasVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType);
+      IREquivalentVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
+      IREquivalentVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType);
       analyzer.simpleAssign(lTypeVar_, rTypeVar_); break;
     }
     case ALLOC: {
@@ -470,7 +470,7 @@ public class Statement implements IRStatement {
       xtc.type.Type lType = CType.getType(lhs);
       String lScope = CType.getScope(lhs);
       String lRefName = CType.getReferenceName(lType);
-      AliasVar lTypeVar = analyzer.getRepVar(lRefName, lScope, lType);
+      IREquivalentVar lTypeVar = analyzer.getRepVar(lRefName, lScope, lType);
       analyzer.heapAssign(lTypeVar, lType);
       break;
     }

@@ -21,7 +21,7 @@ import com.google.common.collect.Sets;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CTypeNameAnalyzer;
 import edu.nyu.cascade.c.CType.CellKind;
-import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
+import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalysis;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;

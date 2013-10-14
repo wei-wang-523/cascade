@@ -17,9 +17,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
-import edu.nyu.cascade.c.preprocessor.AliasVar;
-import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
+import edu.nyu.cascade.c.preprocessor.IRPreAnalysis;
+import edu.nyu.cascade.c.preprocessor.IREquivalentVar;
+import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalysis;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -101,7 +101,7 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   }
   
   @Override
-  public void setAliasAnalyzer(AliasAnalysis analyzer) {};
+  public void setAliasAnalyzer(IRPreAnalysis analyzer) {};
   
   @Override
   public void setTypeCastAnalyzer(TypeCastAnalysis analyzer) {};
@@ -279,38 +279,6 @@ public abstract class AbstractMemoryModel implements MemoryModel {
 		return Iterables.contains(
 				pickFieldNames(recordState.asRecord()), elemName);
 	}
-	
-	/**
-	 * Get the name of memory array element of <code>var</code>
-	 * @param var
-	 * @return the name of memory array of <code>var</code>
-	 */
-  protected String getMemArrElemName(AliasVar var) {
-  	StringBuilder sb = new StringBuilder()
-  		.append(ARRAY_MEM_PREFIX)
-    	.append(Identifiers.ARRAY_NAME_INFIX)
-    	.append(var.getName())
-    	.append(Identifiers.ARRAY_NAME_INFIX)
-    	.append(var.getScope());
-  	String res = Identifiers.toValidId(sb.toString());
-  	return res;
-  }
-  
-	/**
-	 * Get the name of size array element of <code>var</code>
-	 * @param var
-	 * @return the name of size array of <code>var</code>
-	 */
-  protected String getSizeArrElemName(AliasVar var) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(ARRAY_ALLOC_PREFIX)
-    	.append(Identifiers.ARRAY_NAME_INFIX)
-    	.append(var.getName())
-    	.append(Identifiers.ARRAY_NAME_INFIX)
-    	.append(var.getScope());
-  	String res = Identifiers.toValidId(sb.toString());
-  	return res;
-  }
 
 	private Iterable<String> pickFieldNames(RecordExpression record){
 	  return Iterables.transform(record.getType().getElementNames(), 

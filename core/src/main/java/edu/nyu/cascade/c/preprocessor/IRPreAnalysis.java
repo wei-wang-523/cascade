@@ -11,7 +11,7 @@ import xtc.type.Type;
  * @author Wei
  *
  */
-public interface AliasAnalysis {
+public interface IRPreAnalysis {
   
   /**
    * Add a variable with @param name, @param type and @param Scope 
@@ -19,48 +19,48 @@ public interface AliasAnalysis {
    * @return an alias variable
    */
   
-  AliasVar addVariable(String name, String scope, Type type) ;
+  IREquivalentVar addVariable(String name, String scope, Type type) ;
   
   /**
    * Compute aliases for the assignment of an address (x = &y).
    * @param lhs
    * @param addr
    */
-  void addrAssign(AliasVar lhs, AliasVar addr);
+  void addrAssign(IREquivalentVar lhs, IREquivalentVar addr);
   
   /**
    * Compute aliases for assigning to a pointer (*x = y).
    * @param ptr
    * @param rhs
    */
-  void assignPtr(AliasVar ptr, AliasVar rhs);
+  void assignPtr(IREquivalentVar ptr, IREquivalentVar rhs);
   
   /**
    * Compute aliases for assigning dynamically allocated memory.
    * @param lhs
    */
-  void heapAssign(AliasVar lhs, Type lhsType);
+  void heapAssign(IREquivalentVar lhs, Type lhsType);
   
   /**
    * Compute alias for an operation (x = op(y1,�,yN)).
    * @param lhs
    * @param opnds
    */
-  void opAssign(AliasVar lhs, Iterable<AliasVar> opnds);
+  void opAssign(IREquivalentVar lhs, Iterable<IREquivalentVar> opnds);
   
   /**
    * Compute aliases for a pointer assignment (x = *y).
    * @param lhs
    * @param ptr
    */
-  void ptrAssign(AliasVar lhs, AliasVar ptr);
+  void ptrAssign(IREquivalentVar lhs, IREquivalentVar ptr);
   
   /**
    * Compute aliases for assignment statement (x = y).
    * @param lhs
    * @param rhs
    */
-  void simpleAssign(AliasVar lhs, AliasVar rhs);
+  void simpleAssign(IREquivalentVar lhs, IREquivalentVar rhs);
   
   /**
    * Compute aliases caused by a function call.
@@ -68,7 +68,7 @@ public interface AliasAnalysis {
    * @param func
    * @param args
    */
-  void functionCall(AliasVar lhs, AliasVar func, Iterable<AliasVar> args) ;
+  void functionCall(IREquivalentVar lhs, IREquivalentVar func, Iterable<IREquivalentVar> args) ;
   
   /**
    * Compute aliases for the formal parameters and return value of a function definition.
@@ -76,29 +76,29 @@ public interface AliasAnalysis {
    * @param params
    * @param retval
    */
-  void functionDef(AliasVar func, Iterable<AliasVar> params, AliasVar retval) ;
+  void functionDef(IREquivalentVar func, Iterable<IREquivalentVar> params, IREquivalentVar retval) ;
   
   /**
    * Get the representative type variable
    */
   
-  AliasVar getRepVar(String name, String scope, Type type) ;
+  IREquivalentVar getRepVar(String name, String scope, Type type) ;
   
   /**
    * Get the snapshot map of analysis
    */
-  ImmutableMap<AliasVar, Set<AliasVar>> snapshot() ;
+  ImmutableMap<IREquivalentVar, Set<IREquivalentVar>> snapshot() ;
   
   /**
    * Get the region var allocated for <code>var</code>
    * @param var
    */
-  AliasVar getAllocRegion(AliasVar var);
+  IREquivalentVar getAllocRegion(IREquivalentVar var);
   
   /**
    * Get the representative of points to var of @param var
    */
-  AliasVar getPointsToRepVar(AliasVar var);
+  IREquivalentVar getPointsToRepVar(IREquivalentVar var);
   
   /**
    * Get the snapshot of the alias partition sets
@@ -108,11 +108,11 @@ public interface AliasAnalysis {
   /**
    * Get the null location
    */
-  AliasVar getNullLoc();
+  IREquivalentVar getNullLoc();
 
   /**
    * Get all alias vars in the same partition of @param var
    */
-  EquivalentClass getEquivClass(AliasVar var);
+  IREquivalentClosure getEquivClass(IREquivalentVar var);
 
 }

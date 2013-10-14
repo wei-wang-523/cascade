@@ -1,10 +1,10 @@
-package edu.nyu.cascade.c.steensgaard;
+package edu.nyu.cascade.c.preprocessor.steensgaard;
 
 import xtc.type.Type;
-import edu.nyu.cascade.c.preprocessor.AliasVar;
+import edu.nyu.cascade.c.preprocessor.IREquivalentVar;
 import edu.nyu.cascade.util.Identifiers;
 
-public class TypeVar implements AliasVar {
+public class TypeVar implements IREquivalentVar {
   private final ECR ecr;
   private final String name;
   private final Type type;

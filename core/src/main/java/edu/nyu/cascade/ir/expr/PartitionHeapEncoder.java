@@ -6,8 +6,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
-import edu.nyu.cascade.c.preprocessor.AliasVar;
-import edu.nyu.cascade.c.preprocessor.EquivalentClass;
+import edu.nyu.cascade.c.preprocessor.IREquivalentClosure;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -111,31 +110,28 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
 
 	@Override
   public ImmutableSet<BooleanExpression> disjointMemLayout(
-  		EquivalentClass equivClass, ArrayExpression sizeArr) {
-		AliasVar repVar = equivClass.getRepVar();
+  		IREquivalentClosure equivClass, ArrayExpression sizeArr) {
 		MemoryVarSets multiSets = 
 				heapEncoding.getCategorizedVars(equivClass.getElements());
 		if(soundMemEncoding != null) {
 			return soundMemEncoding.disjointMemLayout(multiSets, sizeArr);
 		} else {
-			String key = new StringBuilder().append(repVar.getName()).append(repVar.getScope()).toString();
+			String key = equivClass.getName();
 			Expression lastRegion = heapEncoding.getLastRegion(key);
 			return orderMemEncoding.disjointMemLayout(multiSets, sizeArr, lastRegion);
 		}
   }
 	
 	@Override
-  public BooleanExpression validMalloc(EquivalentClass equivClass, 
+  public BooleanExpression validMalloc(IREquivalentClosure equivClass, 
       ArrayExpression sizeArr, Expression ptr, Expression size) {
-		AliasVar repVar = equivClass.getRepVar();
 		MemoryVarSets multiSets = 
 				heapEncoding.getCategorizedVars(equivClass.getElements());
 		if(soundMemEncoding != null) {
 			Iterable<Expression> heapRegions = multiSets.getHeapRegions();
 			return soundMemEncoding.validMalloc(heapRegions, sizeArr, ptr, size);
 		} else {
-	    String key = new StringBuilder().append(repVar.getName())
-	    		.append(repVar.getScope()).toString();
+	    String key = equivClass.getName();
 			Expression lastRegion = heapEncoding.getLastRegion(key);
 			BooleanExpression res = orderMemEncoding.validMalloc(sizeArr, lastRegion, ptr, size);
 			// The region just allocated
@@ -155,7 +151,7 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
 
 	@Override
   public ImmutableSet<BooleanExpression> validMemAccess(
-  		EquivalentClass equivClass, ArrayExpression sizeArr, Expression ptr) {
+  		IREquivalentClosure equivClass, ArrayExpression sizeArr, Expression ptr) {
 		MemoryVarSets varSets = 
 				heapEncoding.getCategorizedVars(equivClass.getElements());
 		if(soundMemEncoding != null)
@@ -166,7 +162,7 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
 
 	@Override
   public ImmutableSet<BooleanExpression> validMemAccess(
-  		EquivalentClass equivClass, ArrayExpression sizeArr, Expression ptr, Expression size) {
+  		IREquivalentClosure equivClass, ArrayExpression sizeArr, Expression ptr, Expression size) {
 		MemoryVarSets varSets = 
 				heapEncoding.getCategorizedVars(equivClass.getElements());
 		if(soundMemEncoding != null)

@@ -1,4 +1,4 @@
-package edu.nyu.cascade.c.steensgaard;
+package edu.nyu.cascade.c.preprocessor.steensgaard;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -16,10 +16,9 @@ import xtc.util.SymbolTable;
 import xtc.util.SymbolTable.Scope;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CType.CellKind;
-import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
-import edu.nyu.cascade.c.preprocessor.AliasVar;
-import edu.nyu.cascade.c.preprocessor.EquivalentClass;
-import edu.nyu.cascade.c.steensgaard.ValueType.ValueTypeKind;
+import edu.nyu.cascade.c.preprocessor.IRPreAnalysis;
+import edu.nyu.cascade.c.preprocessor.IREquivalentVar;
+import edu.nyu.cascade.c.preprocessor.steensgaard.ValueType.ValueTypeKind;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Pair;
@@ -30,7 +29,7 @@ import edu.nyu.cascade.util.Pair;
  * @author Wei
  *
  */
-public class Steensgaard implements AliasAnalysis {
+public class Steensgaard implements IRPreAnalysis {
   
   protected static final String REGION_VARIABLE_NAME = "region_";
   private UnionFindECR uf;
@@ -48,12 +47,12 @@ public class Steensgaard implements AliasAnalysis {
   }
   
   @Override
-  public AliasVar getNullLoc() {
+  public IREquivalentVar getNullLoc() {
     return TypeVar.createNullLoc();
   }
 
   @Override
-  public AliasVar addVariable(String name, String scope, Type type) {
+  public IREquivalentVar addVariable(String name, String scope, Type type) {
     Pair<String, String> key = Pair.of(name, scope);
     TypeVar res = null;
     if(!varsMap.containsKey(key))  {
@@ -71,7 +70,7 @@ public class Steensgaard implements AliasAnalysis {
   }
 
   @Override
-  public void addrAssign(AliasVar lhs, AliasVar addr) {
+  public void addrAssign(IREquivalentVar lhs, IREquivalentVar addr) {
     Preconditions.checkArgument(lhs instanceof TypeVar && addr instanceof TypeVar);
     ValueType lhs_type = uf.getType(((TypeVar) lhs).getECR());
     assert(ValueTypeKind.LOCATION.equals(lhs_type.getKind()));
@@ -83,7 +82,7 @@ public class Steensgaard implements AliasAnalysis {
   }
 
   @Override
-  public void assignPtr(AliasVar ptr, AliasVar rhs) {
+  public void assignPtr(IREquivalentVar ptr, IREquivalentVar rhs) {
     Preconditions.checkArgument(ptr instanceof TypeVar && rhs instanceof TypeVar);
     ValueType ptr_type = uf.getType(((TypeVar) ptr).getECR());
     ValueType rhs_type = uf.getType(((TypeVar) rhs).getECR());
@@ -108,7 +107,7 @@ public class Steensgaard implements AliasAnalysis {
   }
 
   @Override
-  public void heapAssign(AliasVar lhs, Type lhsType) {
+  public void heapAssign(IREquivalentVar lhs, Type lhsType) {
     Preconditions.checkArgument(lhs instanceof TypeVar);
     ValueType lhs_type = uf.getType(((TypeVar) lhs).getECR());
     assert(ValueTypeKind.LOCATION.equals(lhs_type.getKind()));
@@ -127,13 +126,13 @@ public class Steensgaard implements AliasAnalysis {
   }
 
   @Override
-  public void opAssign(AliasVar lhs, Iterable<AliasVar> opnds) {
+  public void opAssign(IREquivalentVar lhs, Iterable<IREquivalentVar> opnds) {
     // TODO Auto-generated method stub
     
   }
 
   @Override
-  public void ptrAssign(AliasVar lhs, AliasVar ptr) {
+  public void ptrAssign(IREquivalentVar lhs, IREquivalentVar ptr) {
     Preconditions.checkArgument(lhs instanceof TypeVar && ptr instanceof TypeVar);
     ValueType lhs_type = uf.getType(((TypeVar) lhs).getECR());
     ValueType ptr_type = uf.getType(((TypeVar) ptr).getECR());
@@ -157,7 +156,7 @@ public class Steensgaard implements AliasAnalysis {
   }
 
   @Override
-  public void simpleAssign(AliasVar lhs, AliasVar rhs) {
+  public void simpleAssign(IREquivalentVar lhs, IREquivalentVar rhs) {
     Preconditions.checkArgument(lhs instanceof TypeVar && rhs instanceof TypeVar);
     ValueType lhs_type = uf.getType(((TypeVar) lhs).getECR());
     ValueType rhs_type = uf.getType(((TypeVar) rhs).getECR());
@@ -176,20 +175,20 @@ public class Steensgaard implements AliasAnalysis {
   }
 
   @Override
-  public void functionCall(AliasVar lhs, AliasVar func, Iterable<AliasVar> args) {
+  public void functionCall(IREquivalentVar lhs, IREquivalentVar func, Iterable<IREquivalentVar> args) {
     // TODO Auto-generated method stub
     
   }
 
   @Override
-  public void functionDef(AliasVar func, Iterable<AliasVar> params,
-      AliasVar retval) {
+  public void functionDef(IREquivalentVar func, Iterable<IREquivalentVar> params,
+      IREquivalentVar retval) {
     // TODO Auto-generated method stub
     
   }
   
   @Override
-  public AliasVar getRepVar(String name, String scope, Type type) {
+  public IREquivalentVar getRepVar(String name, String scope, Type type) {
     if(Identifiers.NULL_LOC_NAME.equals(name)) {
       TypeVar nullLoc = TypeVar.createNullLoc();
       Pair<String, String> key = Pair.of(nullLoc.getName(), nullLoc.getScope());
@@ -225,10 +224,10 @@ public class Steensgaard implements AliasAnalysis {
   }
   
   @Override
-  public ImmutableMap<AliasVar, Set<AliasVar>> snapshot() {
-    ImmutableMap.Builder<AliasVar, Set<AliasVar>> builder = 
-        new ImmutableMap.Builder<AliasVar, Set<AliasVar>>();
-    for(Entry<ECR, Set<AliasVar>> pair : uf.snapshot().entrySet()) {
+  public ImmutableMap<IREquivalentVar, Set<IREquivalentVar>> snapshot() {
+    ImmutableMap.Builder<IREquivalentVar, Set<IREquivalentVar>> builder = 
+        new ImmutableMap.Builder<IREquivalentVar, Set<IREquivalentVar>>();
+    for(Entry<ECR, Set<IREquivalentVar>> pair : uf.snapshot().entrySet()) {
       builder.put(uf.getRootInitVar(pair.getKey()),
           pair.getValue());
     }
@@ -236,7 +235,7 @@ public class Steensgaard implements AliasAnalysis {
   }
 
   @Override
-  public AliasVar getAllocRegion(AliasVar var) {
+  public IREquivalentVar getAllocRegion(IREquivalentVar var) {
     Preconditions.checkArgument(var instanceof TypeVar);
     ECR ecr = ((TypeVar) var).getECR();
     ValueType type = uf.getType(ecr);
@@ -264,21 +263,21 @@ public class Steensgaard implements AliasAnalysis {
    * Get the alias variable equivalent class of union find
    */
   @Override
-  public EquivalentClass getEquivClass(AliasVar var) {
-    Iterable<AliasVar> elements = uf.getEquivClass(((TypeVar) var).getECR());
-    return EquivalentClass.create(var, elements);
+  public AliasEquivalentClosure getEquivClass(IREquivalentVar var) {
+    Iterable<IREquivalentVar> elements = uf.getEquivClass(((TypeVar) var).getECR());
+    return AliasEquivalentClosure.create(var, elements);
   }
   
   @Override
   public String displaySnapShort() {
-    ImmutableCollection<Set<AliasVar>> sets = uf.snapshot().values();
+    ImmutableCollection<Set<IREquivalentVar>> sets = uf.snapshot().values();
     StringBuilder sb = new StringBuilder();
     if(sets != null) {
       sb.append("Snapshot of partition (size >= 1) :\n ");
-      for(Set<AliasVar> set : sets) {
+      for(Set<IREquivalentVar> set : sets) {
         if(set == null || set.size() <= 1) continue;
         sb.append("  Partition { ");
-        for(AliasVar var : set)
+        for(IREquivalentVar var : set)
           sb.append(var.getName()).append('@').append(var.getScope()).append(' ');
         sb.append("}\n");
       }
@@ -286,9 +285,9 @@ public class Steensgaard implements AliasAnalysis {
     
     sb.append("\nThe points to chain:\n");
     if(sets != null) {
-      for(Set<AliasVar> set : sets) {
+      for(Set<IREquivalentVar> set : sets) {
         if(set == null) continue;
-        Iterator<AliasVar> itr = set.iterator();
+        Iterator<IREquivalentVar> itr = set.iterator();
         ECR ecr = ((TypeVar) itr.next()).getECR();
         if(!uf.hasPointsToChain(ecr)) continue;
         sb.append("  ").append(uf.getPointsToChain(ecr).substring(3));
@@ -299,7 +298,7 @@ public class Steensgaard implements AliasAnalysis {
   }
   
   @Override
-  public AliasVar getPointsToRepVar(AliasVar var) {
+  public IREquivalentVar getPointsToRepVar(IREquivalentVar var) {
     Preconditions.checkArgument(var instanceof TypeVar);
     ECR ecr = ((TypeVar) var).getECR();
     ValueType type = uf.getType(ecr);
