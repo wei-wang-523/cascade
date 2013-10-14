@@ -39,7 +39,7 @@ class RunMergeProcessor implements RunProcessor {
     this.symbolTables = symbolTables;
     this.cfgs = cfgs;
     this.cAnalyzer = cAnalyzer;
-    this.pathEncoder = PathMergeEncoder.create(SimplePathEncoding.create(exprEncoder));
+    this.pathEncoder = PathMergeEncoder.create(SimplePathEncodingVer1.create(exprEncoder));
   }
   
   private final Map<File, CSymbolTable> symbolTables;

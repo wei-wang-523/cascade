@@ -485,7 +485,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 
     public Expression visitPrimaryIdentifier(GNode node)
         throws ExpressionFactoryException {
-      Expression binding = getLvalBinding(node);
+      Expression binding = getLvalBinding(memory, node);
       Expression res = derefMemory(memory, binding);
       return res.setNode(node);
     }
@@ -784,7 +784,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 
     public Expression visitPrimaryIdentifier(GNode node)
         throws ExpressionFactoryException {
-      return getLvalBinding(node).setNode(node);
+      return getLvalBinding(memory, node).setNode(node);
     }
 
     public Expression visitSimpleDeclarator(GNode node)
@@ -1004,14 +1004,15 @@ class CExpressionEncoder implements ExpressionEncoder {
 	 * <code>&x</code>. The rvalue of <code>x</code> is
 	 * <code>exprFactory.deref(lookupVar(x))</code>.
 	 * */
-	private Expression getLvalBinding(GNode node) throws ExpressionFactoryException {
+	private Expression getLvalBinding(Expression memory, GNode node) throws ExpressionFactoryException {
 	  IRVarInfo varInfo = lookupVar(node);
 	  Expression iExpr = null;
 	  if (varInfo.hasProperty(VAR_EXPR_MAP)) {
 	    // TODO: map expressions per-factory
 	    iExpr = (Expression) varInfo.getProperty(VAR_EXPR_MAP);     
 	  } else {
-	    iExpr = getMemoryModel().createLval(VAR_PREFIX, node);
+	  	String name = VAR_PREFIX + varInfo.getName();
+	    iExpr = getMemoryModel().createLval(memory, name, varInfo, node);
 	    varInfo.setProperty(CExpressionEncoder.VAR_EXPR_MAP, iExpr);     
 	  }
 	  return iExpr.setNode(node);
