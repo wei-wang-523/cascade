@@ -37,9 +37,9 @@ public class FlatTheory implements Theory {
     	IRHeapEncoding heapEncoding = LinearHeapEncoding.create(encoding);
     	IRHeapEncoding heapEncoding_sync = SynchronousHeapEncoding.create(encoding);
     	IRSoundMemLayoutEncoding memLayout = SoundMemLayoutEncodingFactory
-    			.create(heapEncoding_sync);
+    			.create(heapEncoding);
     	parHeapEncoder = PartitionHeapEncoder
-    			.createSoundEncoding(heapEncoding_sync, memLayout);
+    			.createSoundEncoding(heapEncoding, memLayout);
     }
     heapEncoder = SingleHeapEncoderAdapter.create(parHeapEncoder);
   	memoryModel = FlatMemoryModel.create(encoding, heapEncoder);	
