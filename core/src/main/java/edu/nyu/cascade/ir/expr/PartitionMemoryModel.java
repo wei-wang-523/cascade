@@ -40,11 +40,8 @@ import edu.nyu.cascade.util.Pair;
 
 /**
  * Partition memory mode, with a multiple memory arrays for multiple
- * variables. These arrays map a pointer to actual cell, where cell type 
- * is union of pointer type and scalar type. We also have a default
- * Merge Array, whenever an alias relation is detected among two arrays
- * by pointer assignment, just put both of them into the Merge Array.
- * However, currently, we have no clue how to merge arrays based on smtlib.
+ * variable closures based on the points-to graph built of Steensgaard
+ * preprocessor.
  *  
  * @author Wei
  *
@@ -52,12 +49,8 @@ import edu.nyu.cascade.util.Pair;
 
 public class PartitionMemoryModel extends AbstractMemoryModel {
 
-  /** Create an expression factory with the given pointer and word sizes. A pointer must be an 
-   * integral number of words.
-   */
   public static PartitionMemoryModel create(
-      ExpressionEncoding encoding,
-      IRPartitionHeapEncoder heapEncoder)
+      ExpressionEncoding encoding, IRPartitionHeapEncoder heapEncoder)
       throws ExpressionFactoryException {
     Preconditions.checkArgument(encoding instanceof PointerExpressionEncoding);
     return new PartitionMemoryModel(encoding, heapEncoder);
@@ -70,10 +63,10 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   private final IRPartitionHeapEncoder heapEncoder;
   
   private final Map<String, ArrayExpression> sideEffectMem;
-  private final Map<String, ExpressionClosure> sideEffectMemClosure, sideEffectSizeClosure;
+  private final Map<String, ExpressionClosure> sideEffectMemClosure;
+  private final Map<String, ExpressionClosure> sideEffectSizeClosure;
   
   private AliasAnalysis analyzer = null;
-//  private ExpressionClosure currentState = null;
   
   private final LoadingCache<Pair<GNode, String>, AliasVar> cache = CacheBuilder
       .newBuilder().build(new CacheLoader<Pair<GNode, String>, AliasVar>(){

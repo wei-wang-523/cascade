@@ -65,7 +65,10 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	        BitVectorExpression regionBound = exprManager.plus(addrType
 	            .getSize(), region, regionSize);
 	        
-	        /* The upper bound of the stack region won't overflow */
+	        /* The upper bound of the stack region won't overflow.
+	         * The size of the stack region will be larger than zero (won't be zero).
+	         */
+	        
 	        builder.add(exprManager.greaterThan(regionBound, region));
 	        
 	        /* Every stack variable doesn't falls into any stack region*/
@@ -147,8 +150,9 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
       
       Expression assump = exprManager.neq(ptr, nullPtr);
       
-      /* size not overflow */
-      builder.add(exprManager.lessThan(ptr, ptrBound));
+      /* size not overflow, but could be zero -- malloc(0) */
+//      builder.add(exprManager.lessThan(ptr, ptrBound));
+      builder.add(exprManager.lessThanOrEqual(ptr, ptrBound));
       
 	    List<Expression> heapRegs = Lists.newLinkedList(heapVars);
 	    heapRegs.remove(heapRegs.size()-1);

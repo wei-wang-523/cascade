@@ -135,7 +135,7 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	      disjs.add( /* aggregate variable: size > 0; */
 	          exprManager.and(
 	          		ptrRef.eq(var),
-	          		exprManager.greaterThanOrEqual(ptrOff, sizeZro),
+	          		exprManager.lessThanOrEqual(sizeZro, ptrOff),
 	          		exprManager.lessThan(ptrOff, sizeVar)));
 	    }
 	    
@@ -147,7 +147,7 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 								var.neq(nullRef), 
 								sizeVar.neq(sizeZro),
 								ptrRef.eq(var),
-								exprManager.greaterThanOrEqual(ptrOff, sizeZro),
+								exprManager.lessThanOrEqual(sizeZro, ptrOff),
 								exprManager.lessThan(ptrOff, sizeVar)));
 			}
 		} catch (TheoremProverException e) {
