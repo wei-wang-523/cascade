@@ -15,6 +15,8 @@ public interface IRSingleHeapEncoder {
 	
 	ArrayType getSizeArrType();
 	
+	ArrayType getMemoryType();
+	
 	Type getAddressType();
 	
 	Type getValueType();
@@ -24,6 +26,8 @@ public interface IRSingleHeapEncoder {
 	Expression freshRegion(String regionName, Node regionNode);
 	
 	ArrayExpression updateSizeArr(ArrayExpression sizeArr, Expression lval, Expression rval);
+	
+	ArrayExpression updateMemArr(ArrayExpression memArr, Expression lval, Expression rval);
 	
 	Expression getConstSizeArr(ArrayType sizeArrType);
 	
@@ -47,4 +51,8 @@ public interface IRSingleHeapEncoder {
 	
 	ImmutableSet<BooleanExpression> validMemAccess(
 			ArrayExpression sizeArr, Expression ptr, Expression size);
+
+	Expression indexMemArr(ArrayExpression memArr, Expression p);
+
+	Expression addressOf(Expression content);
 }

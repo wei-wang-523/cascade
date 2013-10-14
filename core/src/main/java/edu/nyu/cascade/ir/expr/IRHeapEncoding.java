@@ -12,6 +12,8 @@ public interface IRHeapEncoding {
 	
 	ArrayType getSizeArrType();
 	
+	ArrayType getMemoryType();
+
 	Type getAddressType();
 	
 	Type getValueType();

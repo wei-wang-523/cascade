@@ -88,6 +88,11 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	}
 	
 	@Override
+	public ArrayType getMemoryType() {
+		return exprManager.arrayType(ptrType, mixType);
+	}
+	
+	@Override
 	public Type getAddressType() {
 		return ptrType;
 	}

@@ -52,6 +52,11 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	public static LinearHeapEncoding create(ExpressionEncoding encoding) {
 		return new LinearHeapEncoding(encoding);
 	}
+	
+	@Override
+	public ArrayType getMemoryType() {
+		return exprManager.arrayType(addrType, valueType);
+	}
 
 	@Override
 	public ArrayType getSizeArrType() {

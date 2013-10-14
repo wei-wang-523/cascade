@@ -478,7 +478,9 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   
   @Override
   public BooleanExpression valid_malloc(Expression state, Expression ptr, Expression size) {
-  	
+    Preconditions.checkArgument(ptr.getType().equals( addrType ));
+    Preconditions.checkArgument(size.getType().equals( valueType ));
+    
     /* Find related heap regions and alloc array */
     AliasVar pRepVar = loadRepVar(ptr.getNode());
     pRepVar = analyzer.getPointsToRepVar(pRepVar);
@@ -496,6 +498,8 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   
   @Override
   public BooleanExpression valid_free(Expression state, Expression ptr) {
+  	Preconditions.checkArgument(ptr.getType().equals( addrType ));
+  	
     /* Find related heap regions and alloc array */
     AliasVar pRepVar = loadRepVar(ptr.getNode());
     AliasVar ptr2RepVar = analyzer.getPointsToRepVar(pRepVar);
