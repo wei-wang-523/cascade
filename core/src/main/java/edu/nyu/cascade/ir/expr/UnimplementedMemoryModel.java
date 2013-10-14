@@ -6,12 +6,12 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
 import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
+import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TupleExpression;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
 
 public class UnimplementedMemoryModel implements MemoryModel {
@@ -64,12 +64,6 @@ public class UnimplementedMemoryModel implements MemoryModel {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("getStateType");
   }
-  
-  @Override
-  public Type getMemoryType() {
-    // TODO Auto-generated method stub
-    return null;
-  }
 
   @Override
   public ExpressionClosure suspend(Expression memory, Expression expr) {
@@ -88,13 +82,6 @@ public class UnimplementedMemoryModel implements MemoryModel {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("valid");
   }
-  
-  @Override
-  public VariableExpression createLval(String prefix, Node node) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("createLval");
-  }
-  
   @Override
   public Expression initialState() {
     // TODO Auto-generated method stub
@@ -175,14 +162,8 @@ public class UnimplementedMemoryModel implements MemoryModel {
   }
   
   @Override
-  public Expression substAlloc(Expression expr) {
+  public Expression substSizeArr(Expression expr) {
     return expr;
-  }
-
-  @Override
-  public Type getAllocType() {
-    // TODO Auto-generated method stub
-    return null;
   }
 
 	@Override
@@ -209,5 +190,12 @@ public class UnimplementedMemoryModel implements MemoryModel {
   public boolean setStateType(Type stateType) {
 	  // TODO Auto-generated method stub
 	  return false;
+  }
+
+	@Override
+  public Expression createLval(Expression state, String name,
+      IRVarInfo varInfo, Node node) {
+	  // TODO Auto-generated method stub
+	  return null;
   }
 }

@@ -162,11 +162,6 @@ public abstract class AbstractMemoryModel implements MemoryModel {
     return res;
   }  
   
-  /**
-   * Recreate state from @param memoryPrime and @param allocPrime and create a new state
-   * type if state type is changed from the type of state
-   * @return a new state
-   */
   @Override
   public final TupleExpression getUpdatedState(Expression state, Expression... elems) {
   	return getUpdatedState(state, Arrays.asList(elems));
@@ -209,6 +204,14 @@ public abstract class AbstractMemoryModel implements MemoryModel {
     return exprManager.tuple(stateTypePrime, elems);
   }
   
+  /**
+   * Get a record type from <code>map</code> that mapping from element name
+   * to element value, with <code>typeName</code>. Note that all element
+   * expressions agree with type
+   * @param typeName
+   * @param map
+   * @return updated record type
+   */
 	protected final RecordType getRecordTypeFromMap(String typeName, 
 			final Map<String, ArrayExpression> map) {
 		Preconditions.checkArgument(map != null);
@@ -227,12 +230,17 @@ public abstract class AbstractMemoryModel implements MemoryModel {
 	  return currentMemType;
 	}
 
+	/**
+	 * Pick all the element name of value from <code>recordState</code>
+	 * @param recordState
+	 * @return map mapping from element name to element value
+	 */
 	protected Map<String, ArrayExpression> getRecordElems(Expression recordState) {
 	  Preconditions.checkArgument(recordState.isRecord());
 	  Map<String, ArrayExpression> resMap = Maps.newLinkedHashMap();
 	  RecordExpression mem = recordState.asRecord();
 	  Iterable<String> elemNames = mem.getType().getElementNames();
-	  Iterable<String> fieldNames = pickFieldNames(elemNames);
+	  Iterable<String> fieldNames = pickFieldNames(recordState.asRecord());
 	  assert(Iterables.size(elemNames) == Iterables.size(fieldNames));
 	  Iterator<String> elemNameItr = elemNames.iterator();
 	  Iterator<String> fieldNameItr = fieldNames.iterator();
@@ -245,6 +253,38 @@ public abstract class AbstractMemoryModel implements MemoryModel {
 	  return resMap;
 	}
 	
+	/**
+	 * Select element from <code>recordState</code> of <code>elemName</code>
+	 * @param recordState
+	 * @param elemArrName
+	 * @return the corresponding element
+	 */
+	protected ArrayExpression selectRecordElem(Expression recordState, String elemName) {
+		Preconditions.checkArgument(recordState.isRecord());
+		Preconditions.checkArgument(Iterables.contains(
+				pickFieldNames(recordState.asRecord()), elemName));
+		String recordTypeName = recordState.getType().asRecord().getName();
+		StringBuilder sb = new StringBuilder().append(recordTypeName)
+				.append(Identifiers.RECORD_SELECT_NAME_INFIX).append(elemName);
+		return recordState.asRecord().select(sb.toString()).asArray();
+	}
+	
+	/**
+	 * Check if <code>elemName</code> is one of the element names of <code>recordState</code>
+	 * @param recordState
+	 * @param elemArrName
+	 * @return <code>true</code> if contained, otherwise <code>false</code>
+	 */
+	protected boolean isElemInRecord(Expression recordState, String elemName) {
+		return Iterables.contains(
+				pickFieldNames(recordState.asRecord()), elemName);
+	}
+	
+	/**
+	 * Get the name of memory array element of <code>var</code>
+	 * @param var
+	 * @return the name of memory array of <code>var</code>
+	 */
   protected String getMemArrElemName(AliasVar var) {
   	StringBuilder sb = new StringBuilder()
   		.append(ARRAY_MEM_PREFIX)
@@ -256,6 +296,11 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   	return res;
   }
   
+	/**
+	 * Get the name of size array element of <code>var</code>
+	 * @param var
+	 * @return the name of size array of <code>var</code>
+	 */
   protected String getSizeArrElemName(AliasVar var) {
     StringBuilder sb = new StringBuilder();
     sb.append(ARRAY_ALLOC_PREFIX)
@@ -267,8 +312,8 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   	return res;
   }
 
-	private Iterable<String> pickFieldNames(Iterable<String> fieldsName){
-	  return Iterables.transform(fieldsName, 
+	private Iterable<String> pickFieldNames(RecordExpression record){
+	  return Iterables.transform(record.getType().getElementNames(), 
 	      new Function<String, String>(){
 	    @Override
 	    public String apply(String elemName) {

@@ -8,7 +8,6 @@ import java.util.Set;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
 import xtc.type.DynamicReference;
@@ -19,6 +18,7 @@ import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
 import edu.nyu.cascade.c.preprocessor.AliasVar;
+import edu.nyu.cascade.c.preprocessor.EquivalentClass;
 import edu.nyu.cascade.c.steensgaard.ValueType.ValueTypeKind;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
@@ -264,8 +264,9 @@ public class Steensgaard implements AliasAnalysis {
    * Get the alias variable equivalent class of union find
    */
   @Override
-  public ImmutableSet<AliasVar> getEquivClass(AliasVar var) {
-    return uf.getEquivClass(((TypeVar) var).getECR());
+  public EquivalentClass getEquivClass(AliasVar var) {
+    Iterable<AliasVar> elements = uf.getEquivClass(((TypeVar) var).getECR());
+    return EquivalentClass.create(var, elements);
   }
   
   @Override

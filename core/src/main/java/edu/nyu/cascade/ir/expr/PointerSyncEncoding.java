@@ -23,7 +23,7 @@ import edu.nyu.cascade.util.EqualsUtil;
 import edu.nyu.cascade.util.HashCodeUtil;
 import edu.nyu.cascade.util.Identifiers;
 
-public class PointerFoldEncoding implements PointerEncoding<TupleExpression> {
+public class PointerSyncEncoding implements PointerEncoding<TupleExpression> {
   private static final String UNKNOWN_VARIABLE_NAME = "bv_encoding_unknown";
   private static final String REF_TYPE_NAME = Identifiers.toValidId("refType");
   private static final String NULL_PTR_NAME = Identifiers.toValidId("nullRef");
@@ -35,11 +35,11 @@ public class PointerFoldEncoding implements PointerEncoding<TupleExpression> {
   
   private final ExpressionManager exprManager;
   
-  public static PointerFoldEncoding create(ExpressionManager exprManager, int size) {
-    return new PointerFoldEncoding(exprManager, size);
+  public static PointerSyncEncoding create(ExpressionManager exprManager, int size) {
+    return new PointerSyncEncoding(exprManager, size);
   }
   
-  private PointerFoldEncoding(ExpressionManager exprManager, int size) {
+  private PointerSyncEncoding(ExpressionManager exprManager, int size) {
     this.exprManager = exprManager;
     refType = exprManager.uninterpretedType(REF_TYPE_NAME);
     offType = exprManager.bitVectorType(size);

@@ -3,7 +3,6 @@ package edu.nyu.cascade.c.preprocessor;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
 import xtc.type.Type;
 
@@ -114,6 +113,6 @@ public interface AliasAnalysis {
   /**
    * Get all alias vars in the same partition of @param var
    */
-  ImmutableSet<AliasVar> getEquivClass(AliasVar var);
+  EquivalentClass getEquivClass(AliasVar var);
 
 }

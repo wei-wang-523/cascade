@@ -12,6 +12,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayVariableExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -312,11 +313,9 @@ public class BitVectorMemoryModelOrder extends AbstractMemoryModel {
   }
   
   @Override
-  public VariableExpression createLval(String prefix, Node node) {
-    Preconditions.checkArgument(node.hasName("PrimaryIdentifier") 
-        || node.hasName("SimpleDeclarator"));
-    String name = node.getString(0);
-    VariableExpression res = getExpressionManager().variable(prefix+name, addressType, true);
+  public Expression createLval(Expression state, String name,
+      IRVarInfo varInfo, Node node) {
+    VariableExpression res = getExpressionManager().variable(name, addressType, true);
     lvals.add(res);
     return res;
   }
@@ -420,16 +419,6 @@ public class BitVectorMemoryModelOrder extends AbstractMemoryModel {
     Expression allocVar = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, memType, true);
     Expression nullPtr = exprManager.bitVectorZero(addressType.getSize());
     return exprManager.tuple(stateType, memVar, allocVar, nullPtr);
-  }
-  
-  @Override
-  public ArrayType getMemoryType() {
-    return memType;
-  }
-  
-  @Override
-  public ArrayType getAllocType() {
-    return memType;
   }
   
   @Override
@@ -588,7 +577,7 @@ public class BitVectorMemoryModelOrder extends AbstractMemoryModel {
   }
   
   @Override
-  public Expression substAlloc(Expression expr) {
+  public Expression substSizeArr(Expression expr) {
     ExpressionManager exprManager = getExpressionManager();
     Expression initialAlloc = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, memType, false);
     Expression constAlloc = exprManager.storeAll(exprManager.bitVectorZero(cellType.getSize()), memType);

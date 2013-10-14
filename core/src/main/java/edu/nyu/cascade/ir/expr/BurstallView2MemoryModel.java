@@ -18,6 +18,7 @@ import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CTypeNameAnalyzer;
 import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
+import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -69,7 +70,7 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
   private final TupleType ptrType; // tuple (ref-type, off-type)
   private final Type refType;
   private final BitVectorType scalarType, offType; // cell type
-  private final ArrayType allocType; // Array refType offType
+  private final ArrayType sizeArrType; // Array refType offType
   private final ArrayType scalarViewType; 
   private final ArrayType ptrViewType;
   private final TupleType viewType;
@@ -111,7 +112,7 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
     ptrViewType = exprManager.arrayType(ptrType, ptrArrayType);
     viewType = exprManager.tupleType(DEFAULT_VIEW_STATE_TYPE, scalarViewType, ptrViewType);
     
-    allocType = exprManager.arrayType(refType, offType);
+    sizeArrType = exprManager.arrayType(refType, offType);
     
     List<String> elemNames = Lists.newArrayList();
     List<Type> elemTypes = Lists.newArrayList();
@@ -119,7 +120,7 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
         Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE), elemNames, elemTypes);
     
     stateType = exprManager.tupleType(
-        Identifiers.uniquify(DEFAULT_STATE_TYPE), memType, allocType, viewType);
+        Identifiers.uniquify(DEFAULT_STATE_TYPE), memType, sizeArrType, viewType);
   }
   
   @Override
@@ -454,12 +455,10 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
   }
   
   @Override
-  public Expression createLval(String prefix, Node node) {
-    Preconditions.checkArgument(node.hasName("PrimaryIdentifier") 
-        || node.hasName("SimpleDeclarator"));
-    String name = node.getString(0);
+  public Expression createLval(Expression state, String name,
+      IRVarInfo varInfo, Node node) {
     ExpressionManager exprManager = getExpressionManager();
-    VariableExpression ref = exprManager.variable(prefix+name, refType, true);
+    VariableExpression ref = exprManager.variable(name, refType, true);
     Expression off = exprManager.bitVectorZero(offType.getSize());
     Expression res = exprManager.tuple(ptrType, ref, off);
     lvals.add(ref);
@@ -544,15 +543,10 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
     Expression memVar = exprManager.variable(DEFAULT_MEMORY_VARIABLE_NAME, 
         memType, true);
     Expression allocVar = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, 
-        allocType, true);
+        sizeArrType, true);
     Expression viewVar = exprManager.variable(DEFAULT_VIEW_VARIABLE_NAME, 
         viewType, true);
     return exprManager.tuple(stateType, memVar, allocVar, viewVar);
-  }
-  
-  @Override
-  public RecordType getMemoryType() {
-    return memType;
   }
   
   @Override
@@ -665,7 +659,7 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
             allocPrime = alloc.subst(memoryVar.getChild(1), memory_alloc);
           }
           
-          /* Update memType, allocType and stateType -- static member of memory model */
+          /* Update memType, sizeArrType and stateType -- static member of memory model */
           setStateType(expr.getType());
           
           return exprManager.tuple(expr.getType(), memPrime, allocPrime, memory.getChild(2));
@@ -707,18 +701,13 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
   }
   
   @Override
-  public Expression substAlloc(Expression expr) {
+  public Expression substSizeArr(Expression expr) {
     ExpressionManager exprManager = getExpressionManager();
-    Expression initialAlloc = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, allocType, false);
-    Expression constAlloc = exprManager.storeAll(exprManager.bitVectorZero(offType.getSize()), allocType);
+    Expression initialAlloc = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, sizeArrType, false);
+    Expression constAlloc = exprManager.storeAll(exprManager.bitVectorZero(offType.getSize()), sizeArrType);
     Expression res = expr.subst(initialAlloc, constAlloc);
     return res;
   }
-  
-  @Override
-	public ArrayType getAllocType() {
-	  return allocType;
-	}
 
 	@Override
 	public void setTypeCastAnalyzer(TypeCastAnalysis analyzer) {

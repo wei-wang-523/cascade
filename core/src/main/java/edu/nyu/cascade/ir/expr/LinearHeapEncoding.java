@@ -6,33 +6,33 @@ import xtc.tree.GNode;
 import xtc.tree.Node;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.c.preprocessor.AliasVar;
+import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
-import edu.nyu.cascade.prover.BitVectorExpression;
-import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
-import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.IOUtils;
 
-public abstract class LinearHeapEncoding implements HeapEncoding {
+public final class LinearHeapEncoding implements IRHeapEncoding {
 	
 	private final ExpressionManager exprManager;
 	private final ExpressionEncoding encoding;
-	protected final BitVectorType addrType;
-	protected final BitVectorType valueType;
 	private final LinkedHashMap<String, Expression> heapRegions, stackVars, stackRegions;
 	
+	private Expression lastRegion;
+	private final LinkedHashMap<String, Expression> lastRegions;
+	
+	private final BitVectorType addrType;
+	private final BitVectorType valueType;
+
 	protected LinearHeapEncoding(ExpressionEncoding encoding) {
 		this.encoding = encoding;
 		exprManager = encoding.getExpressionManager();
@@ -44,6 +44,13 @@ public abstract class LinearHeapEncoding implements HeapEncoding {
 		heapRegions = Maps.newLinkedHashMap();
 		stackVars = Maps.newLinkedHashMap();
 		stackRegions = Maps.newLinkedHashMap();
+		
+		lastRegions = Maps.newLinkedHashMap();
+		lastRegion = exprManager.bitVectorZero(addrType.getSize());
+	}
+	
+	public static LinearHeapEncoding create(ExpressionEncoding encoding) {
+		return new LinearHeapEncoding(encoding);
 	}
 
 	@Override
@@ -71,22 +78,63 @@ public abstract class LinearHeapEncoding implements HeapEncoding {
 		return exprManager.bitVectorZero(addrType.getSize());
 	}
 	
+	/**
+	 * Get the cell type of the array in memory record for node with certain type
+	 * FIXME: if types of equivalent class elements are not agree
+	 * @param type
+	 * @return array element type
+	 */
 	@Override
-	public Iterable<Iterable<Expression>> getMemoryVarSets() {
-		return new ImmutableList.Builder<Iterable<Expression>>()
-				.add(stackVars.values())
-				.add(stackRegions.values())
-				.add(heapRegions.values()).build();
+	public Type getArrayElemType(xtc.type.Type type) {
+	  Type resType = null;
+	  switch(CType.getCellKind(type)) {
+	  case SCALAR :
+	  case BOOL :     resType = valueType; break;
+	  case ARRAY : 
+	  case POINTER :  
+	  case STRUCTORUNION : resType = addrType; break;
+	  default:    throw new IllegalArgumentException("Unsupported type " + type);
+	  }
+	  return resType;
+	}
+
+	@Override
+	public boolean isLinear() {
+		return true;
 	}
 	
-	protected ExpressionManager getExpressionManager() {
-		return exprManager;
+	@Override
+	public boolean isSync() {
+		return false;
 	}
-
-	protected Expression getLastRegion() {
-		return Iterables.getLast(heapRegions.values(), null);
+	
+	@Override
+	public LinearHeapEncoding castToLinear() {
+		return this;
 	}
-
+	
+	@Override
+	public SynchronousHeapEncoding castToSync() {
+		throw new ExpressionFactoryException("Linear heap encoding cannot be casted to sync.");
+	}
+	
+	@Override
+	public ArrayExpression updateMemArr(ArrayExpression memArr, Expression lval,
+	    Expression rval) {
+		Preconditions.checkArgument(memArr.getType().getIndexType().equals(addrType));
+		Preconditions.checkArgument(memArr.getType().getElementType().equals(valueType));
+		Preconditions.checkArgument(lval.getType().equals(addrType));
+		Preconditions.checkArgument(rval.getType().equals(valueType));
+		return memArr.update(lval, rval);
+	}
+	
+	@Override
+	public Expression indexMemArr(ArrayExpression memArr, Expression lval) {
+		Preconditions.checkArgument(memArr.getType().getIndexType().equals(addrType));
+		Preconditions.checkArgument(lval.getType().equals(addrType));
+		return memArr.index(lval);
+	}
+	
 	@Override
 	public ArrayExpression updateSizeArr(ArrayExpression sizeArr, Expression lval,
 	    Expression rval) {
@@ -98,129 +146,7 @@ public abstract class LinearHeapEncoding implements HeapEncoding {
 	}
 
 	@Override
-	public ImmutableSet<BooleanExpression> validMemAccess(
-			Iterable<Iterable<Expression>> varSets,
-			ArrayExpression sizeArr, Expression ptr) {
-		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
-		Preconditions.checkArgument(ptr.getType().equals(addrType));
-		
-		ImmutableSet.Builder<BooleanExpression> disjs =
-				new ImmutableSet.Builder<BooleanExpression>();
-		
-    Iterable<Expression> stVars = Iterables.get(varSets, 0);
-    Iterable<Expression> stRegs = Iterables.get(varSets, 1);
-    Iterable<Expression> hpRegs = Iterables.get(varSets, 2);
-		
-		try {
-	    /* TODO: Check the scope of local variable, this will be unsound to take 
-	     * address of local variable out of scope */
-	    for( Expression stVar : stVars)    disjs.add(ptr.eq(stVar));
-	    
-	    // In any stack region
-	    for(Expression region : stRegs) {
-	      Expression regionSize = sizeArr.index(region);
-	      
-	      BitVectorExpression regionBound = exprManager.plus(addrType
-	          .getSize(), region, regionSize);
-	      disjs.add(
-	          exprManager.and(
-	              exprManager.lessThanOrEqual(region, ptr),
-	              exprManager.lessThan(ptr, regionBound)));
-	    }
-	    
-	    // In any heap region
-	    Expression nullPtr = exprManager.bitVectorZero(addrType.getSize());
-	    Expression sizeZro = exprManager.bitVectorZero(valueType.getSize());
-	   
-	    for( Expression region : hpRegs ) {
-	      Expression regionSize = sizeArr.index(region);        
-	      BitVectorExpression regionBound = exprManager.plus(addrType.getSize(), 
-	          region, regionSize);
-	      disjs.add(
-	          exprManager.and(
-	              region.neq(nullPtr),
-	              regionSize.neq(sizeZro),
-	              exprManager.lessThanOrEqual(region, ptr),
-	              exprManager.lessThan(ptr, regionBound)));
-	    }
-		} catch (TheoremProverException e) {
-      throw new ExpressionFactoryException(e);
-    }
-    return disjs.build();
-	}
-
-	@Override
-	public ImmutableSet<BooleanExpression> validMemAccess(
-			Iterable<Iterable<Expression>> varSets,
-	    ArrayExpression sizeArr, Expression ptr, Expression size) {
-		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
-		Preconditions.checkArgument(ptr.getType().equals(addrType));
-		Preconditions.checkArgument(size.getType().equals(valueType));
-		
-		ImmutableSet.Builder<BooleanExpression> disjs = 
-				new ImmutableSet.Builder<BooleanExpression>();
-		
-    Iterable<Expression> stVars = Iterables.get(varSets, 0);
-    Iterable<Expression> stRegs = Iterables.get(varSets, 1);
-    Iterable<Expression> hpRegs = Iterables.get(varSets, 2);
-		
-		try {
-			
-	    Expression nullPtr = exprManager.bitVectorZero(addrType.getSize());
-	    Expression sizeZro = exprManager.bitVectorZero(valueType.getSize());
-      BitVectorExpression ptrBound = exprManager.plus(addrType.getSize(), 
-          ptr, size);	    
-	    
-			for( Expression stVar : stVars)    
-        disjs.add(exprManager.and(ptr.eq(stVar), size.eq(sizeZro)));
-      
-      // In any stack region
-      for(Expression region : stRegs) {
-        Expression regionSize = sizeArr.index(region);
-        BitVectorExpression regionBound = exprManager.plus(addrType.getSize(), 
-            region, regionSize);
-        
-        disjs.add(
-            exprManager.and(
-                exprManager.lessThanOrEqual(region, ptr),
-                exprManager.lessThan(ptrBound, regionBound)));
-      }
-      
-      // In any heap region
-      for( Expression region : hpRegs ) {
-        Expression regionSize = sizeArr.index(region);
-        BitVectorExpression regionBound = exprManager.plus(addrType.getSize(),
-            region, regionSize);
-        
-        disjs.add(
-            exprManager.and(
-                region.neq(nullPtr), 
-                regionSize.neq(sizeZro),
-                exprManager.lessThanOrEqual(region, ptr),
-                exprManager.lessThan(ptrBound, regionBound)));
-      }
-		} catch (TheoremProverException e) {
-	    throw new ExpressionFactoryException(e);
-	  }
-		
-		return disjs.build();
-	}
-	
-	@Override
-	public BooleanExpression validFree(ArrayExpression sizeArr, Expression ptr) {
-		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
-		Preconditions.checkArgument(ptr.getType().equals(addrType));
-    Expression size = sizeArr.index(ptr);
-    Expression nullPtr = exprManager.bitVectorZero(addrType.getSize());
-    Expression sizeZro = exprManager.bitVectorZero(valueType.getSize());
-    return exprManager.or(ptr.eq(nullPtr), exprManager.greaterThan(size, sizeZro));
-	}
-
-	@Override
-	public Expression getConstSizeArr(ArrayType sizeArrType) {
+	public ArrayExpression getConstSizeArr(ArrayType sizeArrType) {
 		Preconditions.checkArgument(sizeArrType.getIndexType().equals(addrType));
 		Preconditions.checkArgument(sizeArrType.getElementType().equals(valueType));
 		Expression sizeZro = exprManager.bitVectorZero(valueType.getSize());
@@ -228,11 +154,15 @@ public abstract class LinearHeapEncoding implements HeapEncoding {
 	}
 
 	@Override
-	public Expression freshAddress(String varName, Node varNode) {
+	public Expression freshAddress(String varName, IRVarInfo info, xtc.type.Type type) {
 		VariableExpression res = exprManager.variable(varName, addrType, true);
-		res.setNode(GNode.cast(varNode));
-		String varNodeName = varNode.getString(0);
-		heapRegions.put(varNodeName + CType.getScope(varNode), res);
+		String varKey = new StringBuilder().append(info.getName())
+				.append(info.getScope().getQualifiedName()).toString();
+		if(type.isArray() || type.isUnion() || type.isStruct()) {
+			stackRegions.put(varKey, res);
+		} else {
+			stackVars.put(varKey, res);
+		}
 		return res;
 	}
 
@@ -240,17 +170,14 @@ public abstract class LinearHeapEncoding implements HeapEncoding {
 	public Expression freshRegion(String regionName, Node regionNode) {
 		VariableExpression res = exprManager.variable(regionName, addrType, false);
 		res.setNode(GNode.cast(regionNode));
-		heapRegions.put(regionName + CType.getScope(regionNode), res);
+		String varKey = regionName + CType.getScope(regionNode);
+		heapRegions.put(varKey, res);
 		return res;
 	}
 
 	@Override
-	public Iterable<Iterable<Expression>> getCategorizedVars(
-	    Iterable<AliasVar> equivVars) {
-	  ImmutableList.Builder<Expression> stVarsBuilder, stRegsBuilder, hpRegsBuilder;
-	  stVarsBuilder = new ImmutableList.Builder<Expression>();
-	  stRegsBuilder = new ImmutableList.Builder<Expression>();
-	  hpRegsBuilder = new ImmutableList.Builder<Expression>();
+	public MemoryVarSets getCategorizedVars(Iterable<AliasVar> equivVars) {
+	  MemoryVarSets.Builder builder = new MemoryVarSets.Builder();
 	
 	  for(AliasVar var : equivVars) {
 	  	String varName = var.getName();
@@ -258,58 +185,80 @@ public abstract class LinearHeapEncoding implements HeapEncoding {
 	  			.append(var.getScope()).toString();
 	    if(CType.CONSTANT.equals(varName)) continue;
 	    if(stackVars.containsKey(varKey)) {
-	      stVarsBuilder.add(stackVars.get(varKey));
+	    	builder.addStackVar(stackVars.get(varKey));
 	    } else if(stackRegions.containsKey(varKey)) {
-	    	stRegsBuilder.add(stackRegions.get(varKey));
+	    	builder.addStackRegion(stackRegions.get(varKey));
 	    } else if(heapRegions.containsKey(varKey)) {
-	      hpRegsBuilder.add(heapRegions.get(varKey));
+	      builder.addHeapRegion(heapRegions.get(varKey));
 	    } else {
 	      IOUtils.out().println("Variable " + varName + " @" + var.getScope() + " not yet be analyzed");
 	    }
 	  }
 	  
-	  ImmutableList.Builder<Iterable<Expression>> builder = 
-	      new ImmutableList.Builder<Iterable<Expression>>();
-	  builder.add(stVarsBuilder.build());
-	  builder.add(stRegsBuilder.build());
-	  builder.add(hpRegsBuilder.build());
 	  return builder.build();
 	}
 	
 	@Override
-	public Expression getUnknownValue() {
-		return encoding.getIntegerEncoding().unknown(valueType);
-	}
-
-	@Override
-	public Expression getUnknownAddress() {
-		return encoding.getIntegerEncoding().unknown(addrType);
+	public Expression getUnknownValue(xtc.type.Type type) {
+    CellKind kind = CType.getCellKind(type);
+    switch(kind) {
+    case POINTER:	return encoding.getIntegerEncoding().unknown(addrType);
+    case SCALAR:  
+    case BOOL:    return encoding.getIntegerEncoding().unknown(valueType);
+    default: throw new IllegalArgumentException("Invalid kind " + kind);
+    }
 	}
 	
 	@Override
-	public ImmutableSet<BooleanExpression> disjointMemLayout() {
-		// TODO Auto-generated method stub
-		return null;
+	public Expression getLastRegion() {
+		return lastRegion;
 	}
 
 	@Override
-	public ImmutableSet<BooleanExpression> disjointMemLayout(
-			Iterable<Iterable<Expression>> varSets, ArrayExpression sizeArr) {
-		// TODO Auto-generated method stub
-		return null;
+  public Expression getLastRegion(String name) {
+		if(lastRegions.containsKey(name)) {
+			return lastRegions.get(name);
+		} else {
+			Expression res = getNullAddress();
+			lastRegions.put(name, res);
+			return res;
+		}
+  }
+
+	@Override
+	public void updateLastRegion(Expression region) {
+		lastRegion = getExpressionManager().ifThenElse(
+				region.eq(getNullAddress()), lastRegion, region);
+	}
+	
+	@Override
+	public void updateLastRegion(String name, Expression region) {
+		Preconditions.checkArgument(lastRegions.containsKey(name));
+		Expression lastRegion = lastRegions.get(name);
+		Expression lastRegionPrime = getExpressionManager().ifThenElse(
+				region.eq(getNullAddress()), lastRegion, region);
+		lastRegions.put(name, lastRegionPrime);
+	}
+	
+	@Override
+	public MemoryVarSets getMemVarSets() {
+		return new MemoryVarSets.Builder().addHeapRegions(heapRegions.values())
+				.addStackRegions(stackRegions.values())
+				.addStackVars(stackVars.values()).build();
+	}
+
+	protected ExpressionManager getExpressionManager() {
+		return exprManager;
 	}
 
 	@Override
-	public ImmutableSet<BooleanExpression> validMemAccess(ArrayExpression sizeArr,
-			Expression ptr) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public ImmutableSet<BooleanExpression> validMemAccess(ArrayExpression sizeArr,
-			Expression ptr, Expression size) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+  public Expression addressOf(Expression expr) {
+		Preconditions.checkArgument(expr.getNode() != null);
+    CellKind kind = CType.getCellKind(CType.getType(expr.getNode()));
+    switch(kind) {
+    case STRUCTORUNION: 
+    case ARRAY:   return expr;
+    default:      return expr.getChild(1);
+    }
+  }
 }

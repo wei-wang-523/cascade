@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
 import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
+import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -44,11 +45,11 @@ public interface MemoryModel {
   /** Get the current state of memory model. It's used to create a back door to
    * get the memory state update with assume statement (for _allocated predicate)
    */
-  ExpressionClosure getCurrentState();
-  
+	ExpressionClosure getCurrentState();
+
   /** Clear current state of memory model to avoid side-effect.
    */
-  void clearCurrentState();
+	void clearCurrentState();
   
   /**
    * Allocate a region with size <code>size</code> to the memory location 
@@ -113,16 +114,6 @@ public interface MemoryModel {
   Type getStateType();
   
   /**
-   * Get memory array type
-   */
-  Type getMemoryType();
-  
-  /**
-   * Get alloc array type
-   */
-  Type getAllocType();
-  
-  /**
    * Set state type, return if changed
    */
   boolean setStateType(Type stateType);
@@ -135,10 +126,12 @@ public interface MemoryModel {
    * create a left variables with <code>name</code> and store it 
    * to the auxiliary structure to ensure that right variables and 
    * left variables won't overlap
+   * @param state
+   * @param varInfo 
    * @param name
    * @param string 
    */
-  Expression createLval(String prefix, Node node);
+	Expression createLval(Expression state, String name, IRVarInfo varInfo, Node node);
 
   Expression addressOf(Expression content);
   
@@ -163,9 +156,9 @@ public interface MemoryModel {
   BooleanExpression valid_malloc(Expression state, Expression ptr, Expression size);
   
   /**
-   * Substitute the alloc element in state type.
+   * Substitute the size array element in state type.
    */
-  Expression substAlloc(Expression expr);
+  Expression substSizeArr(Expression expr);
 	
   /**
    * Combine the previous record states with <code>guard</code>
@@ -178,10 +171,10 @@ public interface MemoryModel {
 			RecordExpression rec_1, RecordExpression rec_0);
 	
 	/**
-	 * Compose a new state with new <code>elems</code>, 
+	 * Update <code>state</code> with new <code>elems</code>, 
 	 * @param state
 	 * @param elems
-	 * @return a updated state
+	 * @return an updated state
 	 */
 	TupleExpression getUpdatedState(Expression state, Expression... elems);
 	TupleExpression getUpdatedState(Expression state, Iterable<Expression> elems);

@@ -4,12 +4,12 @@ import xtc.tree.Node;
 
 import com.google.common.base.Preconditions;
 
+import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.expr.AbstractMemoryModel;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
 
 public class TemporalMemoryModel extends AbstractMemoryModel {
@@ -89,23 +89,7 @@ public class TemporalMemoryModel extends AbstractMemoryModel {
   }
 
   @Override
-  public VariableExpression createLval(String prefix, Node node) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("createLval");
-  }
-
-  @Override
   public Type getStateType() {
-    return getExpressionManager().booleanType();
-  }
-  
-  @Override
-  public Type getMemoryType() {
-    return getExpressionManager().booleanType();
-  }
-  
-  @Override
-  public Type getAllocType() {
     return getExpressionManager().booleanType();
   }
   
@@ -146,7 +130,7 @@ public class TemporalMemoryModel extends AbstractMemoryModel {
   }
 
   @Override
-  public Expression substAlloc(Expression expr) {
+  public Expression substSizeArr(Expression expr) {
     // TODO Auto-generated method stub
     return null;
   }
@@ -155,5 +139,12 @@ public class TemporalMemoryModel extends AbstractMemoryModel {
   public boolean setStateType(Type stateType) {
 	  // TODO Auto-generated method stub
 	  return false;
+  }
+
+	@Override
+  public Expression createLval(Expression state, String name,
+      IRVarInfo varInfo, Node node) {
+	  // TODO Auto-generated method stub
+	  return null;
   }
 }

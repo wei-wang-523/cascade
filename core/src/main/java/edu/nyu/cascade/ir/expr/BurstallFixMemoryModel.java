@@ -17,6 +17,7 @@ import com.google.common.collect.Sets;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CTypeNameAnalyzer;
 import edu.nyu.cascade.c.CType.CellKind;
+import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -388,12 +389,10 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
   }
   
   @Override
-  public Expression createLval(String prefix, Node node) {
-    Preconditions.checkArgument(node.hasName("PrimaryIdentifier") 
-        || node.hasName("SimpleDeclarator"));
-    String name = node.getString(0);
+  public Expression createLval(Expression state, String name,
+      IRVarInfo varInfo, Node node) {
     ExpressionManager exprManager = getExpressionManager();
-    VariableExpression ref = exprManager.variable(prefix+name, refType, true);
+    VariableExpression ref = exprManager.variable(name, refType, true);
     Expression off = exprManager.bitVectorZero(offType.getSize());
     Expression res = exprManager.tuple(ptrType, ref, off);
     lvals.add(ref);
@@ -477,16 +476,6 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
     Expression allocVar = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, 
         allocType, true);
     return exprManager.tuple(stateType, memVar, allocVar);
-  }
-  
-  @Override
-  public RecordType getMemoryType() {
-    return memType;
-  }
-  
-  @Override
-  public ArrayType getAllocType() {
-    return allocType;
   }
   
   @Override
@@ -703,7 +692,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
   }
   
   @Override
-  public Expression substAlloc(Expression expr) {
+  public Expression substSizeArr(Expression expr) {
     ExpressionManager exprManager = getExpressionManager();
     Expression initialAlloc = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, allocType, false);
     Expression constAlloc = exprManager.storeAll(exprManager.bitVectorZero(offType.getSize()), allocType);
