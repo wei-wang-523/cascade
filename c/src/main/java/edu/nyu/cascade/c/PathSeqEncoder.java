@@ -2,8 +2,9 @@ package edu.nyu.cascade.c;
 
 import java.util.List;
 
-import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
-import edu.nyu.cascade.c.steensgaard.Steensgaard;
+import edu.nyu.cascade.c.preprocessor.IRPreAnalysis;
+import edu.nyu.cascade.c.preprocessor.steensgaard.Steensgaard;
+import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalysis;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
@@ -68,7 +69,7 @@ final class PathSeqEncoder implements PathEncoder {
     if(Preferences.isSet(Preferences.OPTION_THEORY)) {
       String theory = Preferences.getString((Preferences.OPTION_THEORY));
       if(Preferences.OPTION_THEORY_PARTITION.equals(theory)) {
-        Steensgaard analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());       
+        IRPreAnalysis analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());       
         for(IRStatement stmt : path) {
           stmt.prePointerAnalysis(pathEncoding, analyzer);
         }

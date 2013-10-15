@@ -9,9 +9,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import edu.nyu.cascade.c.preprocessor.AliasAnalysis;
-import edu.nyu.cascade.c.preprocessor.TypeCastAnalysis;
-import edu.nyu.cascade.c.steensgaard.Steensgaard;
+import edu.nyu.cascade.c.preprocessor.IRPreAnalysis;
+import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalysis;
+import edu.nyu.cascade.c.preprocessor.steensgaard.Steensgaard;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
@@ -80,7 +80,7 @@ final class PathMergeEncoder implements PathEncoder {
     if(Preferences.isSet(Preferences.OPTION_THEORY)) {
       String theory = Preferences.getString((Preferences.OPTION_THEORY));
       if(Preferences.OPTION_THEORY_PARTITION.equals(theory)) {
-      	AliasAnalysis analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());        
+      	IRPreAnalysis analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());        
       	pathEncoding.getExpressionEncoder().getMemoryModel().setAliasAnalyzer(analyzer);
         preAliasAnalysis(analyzer, graph.predecessorMap, graph.destPath);
       } else if(Preferences.OPTION_THEORY_BURSTALLView.equals(theory)) {
@@ -226,7 +226,7 @@ final class PathMergeEncoder implements PathEncoder {
     return pathExpr;
   }
   
-  private void preAliasAnalysis(AliasAnalysis analyzer, final Map<Path, Set<Path>> map, final Path path) {
+  private void preAliasAnalysis(IRPreAnalysis analyzer, final Map<Path, Set<Path>> map, final Path path) {
   	Preconditions.checkArgument(map != null);
   	if(!map.isEmpty()) {
   		Set<Path> prePaths = map.get(path); 	
