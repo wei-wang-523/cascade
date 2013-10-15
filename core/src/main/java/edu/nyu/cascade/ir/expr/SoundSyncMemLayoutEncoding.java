@@ -233,7 +233,7 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	    
 	    Expression assump = exprManager.neq(ptr, nullPtr); // ptr != null
 	    
-	    /* size not overflow cannot be checked in here */
+	    /* size not overflow cannot be checked in synchronous model */
 //	    builder.add(exprManager.lessThan(ptr, ptr + size));
 	    
 	    /* Only analyze heap part */
