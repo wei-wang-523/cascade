@@ -64,7 +64,6 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 
 		try {
 			Expression nullRef = heapEncoding.getNullAddress().getChild(0);
-			Expression sizeZro = heapEncoding.getValueZero();
 			
 	    ImmutableList<Expression> distinctRefs = new ImmutableList.Builder<Expression>()
 	        .addAll(stVars).addAll(stRegs).add(nullRef).build();
@@ -77,14 +76,17 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	      
 	      /* Disjoint of the heap region or stack region/variable */
 	      for (Expression region : hpRegs) {
-	        Expression regionSize = sizeArr.index(region);
+//	        Expression regionSize = sizeArr.index(region);
 	        
 	        /* Disjoint of the heap region or stack variable */
 	        for (Expression lval : stVars) {
 	          builder.add(
 	          		exprManager.implies(
-	          				// heap region is non-null and not freed before
-	          				exprManager.and(region.neq(nullRef), regionSize.neq(sizeZro)),
+	  	              /* heap region is non-null (and not freed before),
+	  	               * even freed should not be equal to lval
+	  	               */
+//	          				exprManager.and(region.neq(nullRef), regionSize.neq(sizeZro)),
+	          				region.neq(nullRef),
 	          				lval.neq(region)));
 	        }
 	        
@@ -92,8 +94,11 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	        for (Expression region2 : stRegs) {
 	          builder.add(
 	          		exprManager.implies(
-	          				// heap region is non-null and not freed before
-	          				exprManager.and(region.neq(nullRef), regionSize.neq(sizeZro)),
+	  	              /* heap region is non-null (and not freed before),
+	  	               * even freed should not be equal to lval
+	  	               */
+//	          				exprManager.and(region.neq(nullRef), regionSize.neq(sizeZro)),
+	          				region.neq(nullRef),
 	          				region2.neq(region)));
 	        }
 	      }

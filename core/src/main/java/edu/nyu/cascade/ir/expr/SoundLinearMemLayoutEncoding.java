@@ -104,24 +104,38 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	        /* Disjoint of the heap region or stack variable */
 	        for (Expression lval : stackVars) {
 	          builder.add(exprManager.implies(
-	              // heap region is non-null and not freed before
-	              exprManager.and(region.neq(nullPtr), regionSize.neq(sizeZro)),
-	              exprManager.or(
-	                  exprManager.lessThan(lval, region),
-	                  exprManager.lessThanOrEqual(regionBound, lval))));
+	              /* heap region is non-null (and not freed before),
+	               * even freed should not be equal to lval
+	               */
+//	              exprManager.and(region.neq(nullPtr), regionSize.neq(sizeZro)),
+	          		region.neq(nullPtr),
+	          		exprManager.ifThenElse(regionSize.neq(sizeZro),
+	          				exprManager.or( 			// regionBound > region
+	          						exprManager.lessThan(lval, region),
+	          						exprManager.lessThanOrEqual(regionBound, lval)),
+	          				lval.neq(region)))); 	// regionBound == region
 	        }
 	        
 	        /* Disjoint of the heap region or stack region */
 	        for (Expression region2 : stackRegions) {
+	        	
+	        	// regionBound2 >= region2, sizeArr[region2] >= 0
 	          BitVectorExpression regionBound2 = exprManager.plus(
 	          		addrType.getSize(), region2, sizeArr.index(region2));
 	          
 	          builder.add(exprManager.implies(
-	              // heap region is non-null and not freed before
-	              exprManager.and(region.neq(nullPtr), regionSize.neq(sizeZro)),
-	              exprManager.or(
-	                  exprManager.lessThan(regionBound2, region),
-	                  exprManager.lessThanOrEqual(regionBound, region2))));
+	              /* heap region is non-null (and not freed before),
+	               * even freed should not be equal to lval
+	               */
+//	              exprManager.and(region.neq(nullPtr), regionSize.neq(sizeZro)),
+	          		region.neq(nullPtr),
+	          		exprManager.ifThenElse(regionSize.neq(sizeZro),
+	          				exprManager.or(  		// regionBound > region
+	          						exprManager.lessThan(regionBound2, region),
+	          						exprManager.lessThanOrEqual(regionBound, region2)),
+	          				exprManager.or(  		// regionBound == region
+	          						exprManager.lessThan(regionBound2, region),
+	          						exprManager.lessThan(region, region2)))));
 	        }
 	      }
       }
