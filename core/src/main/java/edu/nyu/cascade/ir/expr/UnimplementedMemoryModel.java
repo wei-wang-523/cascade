@@ -4,8 +4,7 @@ import xtc.tree.Node;
 
 import com.google.common.collect.ImmutableSet;
 
-import edu.nyu.cascade.c.preprocessor.IRPreAnalysis;
-import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalysis;
+import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -137,15 +136,9 @@ public class UnimplementedMemoryModel implements MemoryModel {
   }
 
   @Override
-  public void setAliasAnalyzer(IRPreAnalysis analyzer) {
+  public void setPreProcessor(IRPreProcessor analyzer) {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("setAliasAnalyzer"); 
-  }
-  
-  @Override
-  public void setTypeCastAnalyzer(TypeCastAnalysis analyzer) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("setTypeCastAnalyzer"); 
   }
 
   @Override

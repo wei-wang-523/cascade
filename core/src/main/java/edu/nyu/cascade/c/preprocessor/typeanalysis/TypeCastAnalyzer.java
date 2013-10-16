@@ -15,9 +15,11 @@ import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.AddressOfReference;
 import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
+import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 
-public class TypeCastAnalysis {
+public class TypeCastAnalyzer implements IRPreProcessor {
   
   private final LoadingCache<Reference, Boolean> cache = CacheBuilder
       .newBuilder().build(new CacheLoader<Reference, Boolean>(){
@@ -28,12 +30,12 @@ public class TypeCastAnalysis {
   
   private Set<Reference> hasViewSet;
   
-  private TypeCastAnalysis() {
+  private TypeCastAnalyzer() {
     hasViewSet = Sets.newHashSet();
   }
   
-  public static TypeCastAnalysis create() {
-    return new TypeCastAnalysis();
+  public static TypeCastAnalyzer create() {
+    return new TypeCastAnalyzer();
   }
   
   /**
@@ -41,7 +43,7 @@ public class TypeCastAnalysis {
    * @param typeNode
    * @param opNode
    */
-  public void cast(Node typeNode, Node opNode) {
+  private void cast(Node typeNode, Node opNode) {
     Type type = CType.getType(typeNode);
     Type srcType = CType.getType(opNode);
     
@@ -59,7 +61,7 @@ public class TypeCastAnalysis {
    * data := struct[sizeof(union Data)]
    * @param op
    */
-  public void declareStruct(Node opNode) {
+  private void declareStruct(Node opNode) {
     Type type = CType.getType(opNode);
     if(type.resolve().isUnion() && type.hasShape()) {
       Reference ref = type.getShape();
@@ -73,7 +75,7 @@ public class TypeCastAnalysis {
    * alloc(data)
    * @param op
    */
-  public void heapAssign(Node opNode) {
+  private void heapAssign(Node opNode) {
     Type ptrType = CType.getType(opNode);
     Type type = ptrType.resolve().toPointer().getType();
     if(type.resolve().isUnion()/* || type.resolve().isStruct()*/) {
@@ -89,7 +91,7 @@ public class TypeCastAnalysis {
    * is contained in hasViewSet, add the reference of @param lhsNode to
    * it too.
    */
-  public void assign(Node lhsNode, Node rhsNode) {
+  private void assign(Node lhsNode, Node rhsNode) {
     Type lhsType = CType.getType(lhsNode);
     Type rhsType = CType.getType(rhsNode);
     
@@ -122,18 +124,7 @@ public class TypeCastAnalysis {
     return res;
   }
   
-  private boolean hasView(Reference ref) {
-    if(ref.isIndirect()) {
-      Reference base = ref.getBase();
-      return hasViewSet.contains(base);
-    } else if(ref instanceof FieldReference) {
-      return hasView(ref.getBase());
-    } else {
-      Reference addr = new AddressOfReference(ref);
-      return hasViewSet.contains(addr);
-    }
-  }
-  
+  @Override
   public String displaySnapShot() {
     StringBuilder sb = new StringBuilder();
     sb.append("HasView set contains: { ");
@@ -143,4 +134,44 @@ public class TypeCastAnalysis {
     sb.append("}\n");
     return sb.toString();
   }
+  
+  public void analysis(IRStatement stmt) {
+    switch (stmt.getType()) {
+    case CAST: {
+      Node type = stmt.getOperand(0).getSourceNode();
+      Node op = stmt.getOperand(1).getSourceNode();
+      cast(type, op);
+      break;
+    }
+    case ASSIGN: {
+      Node lhs = stmt.getOperand(0).getSourceNode();
+      Node rhs = stmt.getOperand(1).getSourceNode();
+      assign(lhs, rhs);
+      break;
+    }
+    case ALLOC: {
+      Node lhs = stmt.getOperand(0).getSourceNode();
+      heapAssign(lhs);
+      break;
+    }
+    case DECLARE_STRUCT: {
+      Node op = stmt.getOperand(0).getSourceNode();
+      declareStruct(op);
+      break;
+    }
+    default:
+    }
+  }
+
+	private boolean hasView(Reference ref) {
+	  if(ref.isIndirect()) {
+	    Reference base = ref.getBase();
+	    return hasViewSet.contains(base);
+	  } else if(ref instanceof FieldReference) {
+	    return hasView(ref.getBase());
+	  } else {
+	    Reference addr = new AddressOfReference(ref);
+	    return hasViewSet.contains(addr);
+	  }
+	}
 }

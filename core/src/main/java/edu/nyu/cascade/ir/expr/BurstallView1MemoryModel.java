@@ -21,7 +21,8 @@ import com.google.common.collect.Sets;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CTypeNameAnalyzer;
 import edu.nyu.cascade.c.CType.CellKind;
-import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalysis;
+import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
+import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalyzer;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -90,7 +91,7 @@ public class BurstallView1MemoryModel extends AbstractMemoryModel {
   private ArrayExpression currentView = null;
   private Expression prevDerefState = null;
   private ExpressionClosure currentState = null;
-  private TypeCastAnalysis analyzer = null;
+  private TypeCastAnalyzer analyzer = null;
   
   private BurstallView1MemoryModel(ExpressionEncoding encoding) {
     super(encoding);
@@ -769,8 +770,9 @@ public class BurstallView1MemoryModel extends AbstractMemoryModel {
   }
   
   @Override
-  public void setTypeCastAnalyzer(TypeCastAnalysis analyzer) {
-    this.analyzer = analyzer;
+  public void setPreProcessor(IRPreProcessor analyzer) {
+  	Preconditions.checkArgument(analyzer instanceof TypeCastAnalyzer);
+    this.analyzer = (TypeCastAnalyzer) analyzer;
     IOUtils.debug().pln(analyzer.displaySnapShot());
   }
   

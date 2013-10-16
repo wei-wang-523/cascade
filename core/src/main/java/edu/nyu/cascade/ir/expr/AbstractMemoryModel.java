@@ -17,9 +17,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import edu.nyu.cascade.c.preprocessor.IRPreAnalysis;
-import edu.nyu.cascade.c.preprocessor.IREquivalentVar;
-import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalysis;
+import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -101,10 +99,7 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   }
   
   @Override
-  public void setAliasAnalyzer(IRPreAnalysis analyzer) {};
-  
-  @Override
-  public void setTypeCastAnalyzer(TypeCastAnalysis analyzer) {};
+  public void setPreProcessor(IRPreProcessor analyzer) {};
   
   @Override
   public Expression combineRecordStates(BooleanExpression guard, 

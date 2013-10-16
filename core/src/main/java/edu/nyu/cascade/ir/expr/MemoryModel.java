@@ -4,8 +4,7 @@ import xtc.tree.Node;
 
 import com.google.common.collect.ImmutableSet;
 
-import edu.nyu.cascade.c.preprocessor.IRPreAnalysis;
-import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalysis;
+import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -138,12 +137,7 @@ public interface MemoryModel {
   /**
    * set pointer alias map for partition memory model
    */
-  void setAliasAnalyzer(IRPreAnalysis analyzer);
-  
-  /**
-   * set pointer alias map for partition memory model
-   */
-  void setTypeCastAnalyzer(TypeCastAnalysis analyzer);
+  void setPreProcessor(IRPreProcessor analyzer);
 
   /**
    * valid free operation

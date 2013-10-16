@@ -28,21 +28,12 @@ import java.util.Set;
 
 import xtc.tree.GNode;
 import xtc.tree.Node;
-import xtc.type.Reference;
-import xtc.type.Type;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.google.common.base.Preconditions;
 
-import edu.nyu.cascade.c.AddressOfReference;
-import edu.nyu.cascade.c.CType;
-import edu.nyu.cascade.c.CType.CellKind;
-import edu.nyu.cascade.c.preprocessor.IRPreAnalysis;
-import edu.nyu.cascade.c.preprocessor.IREquivalentVar;
-import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalysis;
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRLocation;
 import edu.nyu.cascade.ir.IRLocations;
@@ -222,6 +213,7 @@ public class Statement implements IRStatement {
     return getOperand(i).toExpression(encoder);
   }
 
+  @Override
   public IRExpression getOperand(int i) {
     Preconditions.checkArgument(i >= 0 && i < getOperands().size());
     return getOperands().get(i);
@@ -402,112 +394,6 @@ public class Statement implements IRStatement {
 
     default:
       return sourceNode.getName();
-    }
-  }
-
-  /**
-   * TODO: to support the equality relation between pointers 
-   * assumption/assertion in the annotation
-   */
-  @Override
-  public void prePointerAnalysis(PathEncoding factory, IRPreAnalysis analyzer) {
-    switch (getType()) {
-    case ASSIGN: {
-      Node lhs = getOperand(0).getSourceNode();
-      Node rhs = getOperand(1).getSourceNode();
-      
-      Type lType = CType.getType(lhs);
-      Type rType = CType.getType(rhs);
-      String lScope = CType.getScope(lhs);
-      String rScope = CType.getScope(rhs);
-      String lRefName = CType.getReferenceName(lType);
-      String rRefName = CType.getReferenceName(rType);
-      
-      if(rType.hasShape()) {
-        Reference ref = rType.getShape();
-        if(ref.isCast())    
-          ref = ref.getBase();
-        
-        if(ref instanceof AddressOfReference) {
-          Reference base = rType.getShape().getBase();
-          Type rType_ = base.getType().annotate().shape(base);
-          IREquivalentVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
-          IREquivalentVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType_);
-          analyzer.addrAssign(lTypeVar_, rTypeVar_); break;
-        }
-        if(ref.isIndirect()) {
-          Reference base = rType.getShape().getBase();
-          Type rType_ = base.getType().annotate().shape(base);
-          IREquivalentVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
-          IREquivalentVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType_);
-          analyzer.ptrAssign(lTypeVar_, rTypeVar_); break;
-        }
-      } 
-      
-      CellKind rKind = CType.getCellKind(rType);
-      if(CellKind.STRUCTORUNION.equals(rKind) || CellKind.ARRAY.equals(rKind)) {
-        IREquivalentVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
-        IREquivalentVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType);
-        analyzer.addrAssign(lTypeVar_, rTypeVar_); break;
-      }
-      
-      if(lType.hasShape()) {
-        if(lType.getShape().isIndirect()) {
-          Reference base = lType.getShape().getBase();
-          Type lType_ = base.getType().annotate().shape(base);
-          IREquivalentVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType_);
-          IREquivalentVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType);
-          analyzer.assignPtr(lTypeVar_, rTypeVar_); break;
-        }
-      }
-      
-      IREquivalentVar lTypeVar_ = analyzer.getRepVar(lRefName, lScope, lType);
-      IREquivalentVar rTypeVar_ = analyzer.getRepVar(rRefName, rScope, rType);
-      analyzer.simpleAssign(lTypeVar_, rTypeVar_); break;
-    }
-    case ALLOC: {
-      Node lhs = getOperand(0).getSourceNode();
-      xtc.type.Type lType = CType.getType(lhs);
-      String lScope = CType.getScope(lhs);
-      String lRefName = CType.getReferenceName(lType);
-      IREquivalentVar lTypeVar = analyzer.getRepVar(lRefName, lScope, lType);
-      analyzer.heapAssign(lTypeVar, lType);
-      break;
-    }
-    default:
-    }
-  }
-  
-  /**
-   * TODO: to support the equality relation between pointers 
-   * assumption/assertion in the annotation
-   */
-  @Override
-  public void preTypeCastAnalysis(PathEncoding factory, TypeCastAnalysis analyzer) {
-    switch (getType()) {
-    case CAST: {
-      Node type = getOperand(0).getSourceNode();
-      Node op = getOperand(1).getSourceNode();
-      analyzer.cast(type, op);
-      break;
-    }
-    case ASSIGN: {
-      Node lhs = getOperand(0).getSourceNode();
-      Node rhs = getOperand(1).getSourceNode();
-      analyzer.assign(lhs, rhs);
-      break;
-    }
-    case ALLOC: {
-      Node lhs = getOperand(0).getSourceNode();
-      analyzer.heapAssign(lhs);
-      break;
-    }
-    case DECLARE_STRUCT: {
-      Node op = getOperand(0).getSourceNode();
-      analyzer.declareStruct(op);
-      break;
-    }
-    default:
     }
   }
 }

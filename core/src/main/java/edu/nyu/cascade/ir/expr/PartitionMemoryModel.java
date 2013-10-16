@@ -22,7 +22,8 @@ import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IREquivalentClosure;
-import edu.nyu.cascade.c.preprocessor.IRPreAnalysis;
+import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
+import edu.nyu.cascade.c.preprocessor.steensgaard.Steensgaard;
 import edu.nyu.cascade.c.preprocessor.IREquivalentVar;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
@@ -66,7 +67,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   private final Map<String, ExpressionClosure> sideEffectMemClosure;
   private final Map<String, ExpressionClosure> sideEffectSizeClosure;
   
-  private IRPreAnalysis analyzer = null;
+  private Steensgaard analyzer = null;
   
   private final LoadingCache<Pair<GNode, String>, IREquivalentVar> cache = CacheBuilder
       .newBuilder().build(new CacheLoader<Pair<GNode, String>, IREquivalentVar>(){
@@ -423,9 +424,10 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   }
 
   @Override
-  public void setAliasAnalyzer(IRPreAnalysis analyzer) {
-    this.analyzer = analyzer;
-    IOUtils.err().println(analyzer.displaySnapShort());
+  public void setPreProcessor(IRPreProcessor analyzer) {
+  	Preconditions.checkArgument(analyzer instanceof Steensgaard);
+    this.analyzer = (Steensgaard) analyzer;
+    IOUtils.err().println(analyzer.displaySnapShot());
   }
   
   @Override
