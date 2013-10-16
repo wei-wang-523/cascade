@@ -555,7 +555,7 @@ class RunMergeProcessor implements RunProcessor {
   /** Get the function declare Node for the function call statement. */
   private Node findFuncDeclareNode (IRStatement stmt) throws RunProcessorException {
     Preconditions.checkArgument(stmt.getType().equals(StatementType.CALL));
-    String funcName = ((Statement) stmt).getOperand(0).toString();    
+    String funcName = stmt.getOperand(0).toString();    
     File file = stmt.getLocation().getFile();
     CSymbolTable symbolTable = symbolTables.get(file);
     return findFuncDeclareNode(symbolTable, funcName);
@@ -664,7 +664,7 @@ class RunMergeProcessor implements RunProcessor {
     if(repStmt != null) {
       switch(repStmt.getType()) {
       case ASSIGN: {
-        Node argNode = ((Statement) repStmt).getOperand(1).getSourceNode().getNode(1); 
+        Node argNode = repStmt.getOperand(1).getSourceNode().getNode(1); 
         for(int i=0; i<args.size(); i++) {
           Node arg_call = args.get(i).getSourceNode();
           Node arg_assign = argNode.getNode(i);
@@ -1151,7 +1151,7 @@ class RunMergeProcessor implements RunProcessor {
     for(int i = 0; i < callPoints.size(); i++) {
       CallPoint call = callPoints.get(i);
       String name1 = call.getFuncName();
-      String name2 = ((Statement) stmt).getOperand(0).toString();
+      String name2 = stmt.getOperand(0).toString();
       if(name1.equals(name2)) {
         if(call.getFuncId().intValue() == ++count) return call;
       }

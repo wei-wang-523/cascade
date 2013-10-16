@@ -2,9 +2,9 @@ package edu.nyu.cascade.c;
 
 import java.util.List;
 
-import edu.nyu.cascade.c.preprocessor.IRPreAnalysis;
+import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
 import edu.nyu.cascade.c.preprocessor.steensgaard.Steensgaard;
-import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalysis;
+import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalyzer;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
@@ -69,17 +69,17 @@ final class PathSeqEncoder implements PathEncoder {
     if(Preferences.isSet(Preferences.OPTION_THEORY)) {
       String theory = Preferences.getString((Preferences.OPTION_THEORY));
       if(Preferences.OPTION_THEORY_PARTITION.equals(theory)) {
-        IRPreAnalysis analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());       
+        IRPreProcessor analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());
+        mm.setPreProcessor(analyzer);
         for(IRStatement stmt : path) {
-          stmt.prePointerAnalysis(pathEncoding, analyzer);
+        	analyzer.analysis(stmt);
         }
-        mm.setAliasAnalyzer(analyzer);
       } else if(Preferences.OPTION_THEORY_BURSTALLView.equals(theory)) {
-      	TypeCastAnalysis analyzer = TypeCastAnalysis.create();       
+      	TypeCastAnalyzer analyzer = TypeCastAnalyzer.create();
+      	mm.setPreProcessor(analyzer);
         for(IRStatement stmt : path) {
-        	stmt.preTypeCastAnalysis(pathEncoding, analyzer);
+        	analyzer.analysis(stmt);
         }
-        mm.setTypeCastAnalyzer(analyzer);
       }
     }
   }

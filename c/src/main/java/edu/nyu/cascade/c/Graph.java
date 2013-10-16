@@ -211,8 +211,8 @@ final class Graph {
   /** Replace the last return statement as assign statement. */
   private IRStatement replaceReturnStmt(IRStatement returnStmt, IRStatement assignStmt) {
     Preconditions.checkArgument(returnStmt.getType().equals(StatementType.RETURN));
-    IRExpressionImpl lExpr = (IRExpressionImpl) ((Statement) assignStmt).getOperand(0);
-    IRExpressionImpl rExpr = (IRExpressionImpl) ((Statement) returnStmt).getOperand(0);
+    IRExpressionImpl lExpr = (IRExpressionImpl) assignStmt.getOperand(0);
+    IRExpressionImpl rExpr = (IRExpressionImpl) returnStmt.getOperand(0);
     Node assignNode = GNode.create("AssignmentExpression", 
         lExpr.getSourceNode(), "=", rExpr.getSourceNode());
     assignNode.setLocation(assignStmt.getSourceNode().getLocation());
@@ -384,7 +384,7 @@ final class Graph {
       		new Function<IRStatement, IRStatement>(){
       	@Override
       	public IRStatement apply(IRStatement stmt) {
-      		IRExpressionImpl lval = (IRExpressionImpl) ((Statement) stmt).getOperand(0);
+      		IRExpressionImpl lval = (IRExpressionImpl) stmt.getOperand(0);
           return Statement.havoc(lval.getSourceNode(), lval);
       	}
       });

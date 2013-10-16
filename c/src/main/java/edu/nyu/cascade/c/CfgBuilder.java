@@ -1923,7 +1923,7 @@ public class CfgBuilder extends Visitor {
           new Function<IRStatement, IRStatement>() {
             @Override
             public IRStatement apply(IRStatement stmt) {
-              IRExpressionImpl lval = (IRExpressionImpl) ((Statement) stmt).getOperand(0);
+              IRExpressionImpl lval = (IRExpressionImpl) stmt.getOperand(0);
               return Statement.havoc(lval.getSourceNode(), lval);
             }
           }
@@ -2042,7 +2042,7 @@ public class CfgBuilder extends Visitor {
           new Function<IRStatement, IRStatement>() {
             @Override
             public IRStatement apply(IRStatement stmt) {
-              IRExpressionImpl lval = (IRExpressionImpl) ((Statement) stmt).getOperand(0);
+              IRExpressionImpl lval = (IRExpressionImpl) stmt.getOperand(0);;
               return Statement.havoc(lval.getSourceNode(), lval);
             }
           }

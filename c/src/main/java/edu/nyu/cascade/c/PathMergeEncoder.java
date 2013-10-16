@@ -9,8 +9,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import edu.nyu.cascade.c.preprocessor.IRPreAnalysis;
-import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalysis;
+import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
+import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalyzer;
 import edu.nyu.cascade.c.preprocessor.steensgaard.Steensgaard;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;
@@ -79,15 +79,14 @@ final class PathMergeEncoder implements PathEncoder {
   	Preconditions.checkArgument(symbolTable != null && graph != null);
     if(Preferences.isSet(Preferences.OPTION_THEORY)) {
       String theory = Preferences.getString((Preferences.OPTION_THEORY));
+    	IRPreProcessor analyzer = null;
       if(Preferences.OPTION_THEORY_PARTITION.equals(theory)) {
-      	IRPreAnalysis analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());        
-      	pathEncoding.getExpressionEncoder().getMemoryModel().setAliasAnalyzer(analyzer);
-        preAliasAnalysis(analyzer, graph.predecessorMap, graph.destPath);
+      	analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());        
       } else if(Preferences.OPTION_THEORY_BURSTALLView.equals(theory)) {
-        TypeCastAnalysis analyzer = TypeCastAnalysis.create();        
-        pathEncoding.getExpressionEncoder().getMemoryModel().setTypeCastAnalyzer(analyzer);
-        preTypeCastAnalysis(analyzer, graph.predecessorMap, graph.destPath);
+      	analyzer = TypeCastAnalyzer.create();
       }
+    	pathEncoding.getExpressionEncoder().getMemoryModel().setPreProcessor(analyzer);
+    	preprocessPath(analyzer, graph.predecessorMap, graph.destPath);
     }
   }
 
@@ -226,38 +225,20 @@ final class PathMergeEncoder implements PathEncoder {
     return pathExpr;
   }
   
-  private void preAliasAnalysis(IRPreAnalysis analyzer, final Map<Path, Set<Path>> map, final Path path) {
+  private void preprocessPath(IRPreProcessor analyzer, final Map<Path, Set<Path>> map, final Path path) {
   	Preconditions.checkArgument(map != null);
   	if(!map.isEmpty()) {
   		Set<Path> prePaths = map.get(path); 	
   		if(prePaths != null) {
   			for(Path prePath : prePaths) {
-  				preAliasAnalysis(analyzer, map, prePath);
+  				preprocessPath(analyzer, map, prePath);
   			}
   		}
   	}
   	
   	if(path.stmts != null) {
     	for(IRStatement stmt : path.stmts) {
-    		stmt.prePointerAnalysis(pathEncoding, analyzer);
-    	}
-  	}
-  }
-  
-  private void preTypeCastAnalysis(TypeCastAnalysis analyzer, final Map<Path, Set<Path>> map, final Path path) {
-  	Preconditions.checkArgument(map != null);
-  	if(!map.isEmpty()) {
-  		Set<Path> prePaths = map.get(path); 	
-  		if(prePaths != null) {
-  			for(Path prePath : prePaths) {
-  				preTypeCastAnalysis(analyzer, map, prePath);
-  			}
-  		}
-  	}
-  	
-  	if(path.stmts != null) {
-    	for(IRStatement stmt : path.stmts) {
-    		stmt.preTypeCastAnalysis(pathEncoding, analyzer);
+    		analyzer.analysis(stmt);
     	}
   	}
   }

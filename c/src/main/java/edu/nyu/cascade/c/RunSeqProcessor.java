@@ -334,7 +334,7 @@ class RunSeqProcessor implements RunProcessor {
   
   /** Get the function declare Node for the function call statement. */
   private Node findFuncDeclareNode (IRStatement stmt) throws RunProcessorException {
-    String name = ((Statement) stmt).getOperand(0).toString();
+    String name = stmt.getOperand(0).toString();
     
     File file = stmt.getLocation().getFile();
     CSymbolTable symbolTable = symbolTables.get(file);
@@ -469,7 +469,7 @@ class RunSeqProcessor implements RunProcessor {
     if(repStmt != null) {
       switch(repStmt.getType()) {
       case ASSIGN: {
-        Node argNode = ((Statement) repStmt).getOperand(1).getSourceNode().getNode(1); 
+        Node argNode = repStmt.getOperand(1).getSourceNode().getNode(1); 
         for(int i=0; i<args.size(); i++) {
           Node arg_call = args.get(i).getSourceNode();
           Node arg_assign = argNode.getNode(i);
@@ -484,7 +484,7 @@ class RunSeqProcessor implements RunProcessor {
         break;
       }
       case CALL: {
-        List<IRExpression> args_call = Lists.newArrayList(((Statement) repStmt).getOperands());
+        List<IRExpression> args_call = Lists.newArrayList(repStmt.getOperands());
         args_call = args_call.subList(1, args_call.size());
         for(int i=0; i<args.size(); i++) {
           IRExpression arg = args.get(i);
@@ -709,7 +709,7 @@ class RunSeqProcessor implements RunProcessor {
     for(int i = 0; i < callPoints.size(); i++) {
       CallPoint call = callPoints.get(i);
       String name1 = call.getFuncName();
-      String name2 = ((Statement) stmt).getOperand(0).toString();
+      String name2 = stmt.getOperand(0).toString();
       if(name1.equals(name2)) {
         if(call.getFuncId().intValue() == ++count) return call;
       }
@@ -744,8 +744,8 @@ class RunSeqProcessor implements RunProcessor {
   /** Replace the last return statement as assign statement. */
   private IRStatement replaceReturnStmt(IRStatement returnStmt, IRStatement assignStmt) {
     Preconditions.checkArgument(returnStmt.getType().equals(StatementType.RETURN));
-    IRExpressionImpl lExpr = (IRExpressionImpl) ((Statement) assignStmt).getOperand(0);
-    IRExpressionImpl rExpr = (IRExpressionImpl) ((Statement) returnStmt).getOperand(0);
+    IRExpressionImpl lExpr = (IRExpressionImpl) assignStmt.getOperand(0);
+    IRExpressionImpl rExpr = (IRExpressionImpl) returnStmt.getOperand(0);
     GNode assignNode = GNode.create("AssignmentExpression", 
         lExpr.getSourceNode(), "=", rExpr.getSourceNode());
     assignNode.setLocation(assignStmt.getSourceNode().getLocation());
@@ -983,7 +983,7 @@ class RunSeqProcessor implements RunProcessor {
         /* First statement is conditional guard variable assignment statement*/
         for(IRStatement stmt : loopPath.subList(1, loopPath.size())) {
           if(stmt.getType() == StatementType.ASSIGN) {
-            IRExpressionImpl lval = (IRExpressionImpl) ((Statement) stmt).getOperand(0);
+            IRExpressionImpl lval = (IRExpressionImpl) stmt.getOperand(0);
             havocStmts.add(Statement.havoc(lval.getSourceNode(), lval));
           }           
         }
