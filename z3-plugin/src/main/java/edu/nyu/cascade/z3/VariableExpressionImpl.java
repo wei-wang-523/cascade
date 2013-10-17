@@ -15,11 +15,11 @@ import com.microsoft.z3.Expr;
 import com.microsoft.z3.Z3Exception;
 import com.microsoft.z3.Sort;
 
-import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.CacheException;
 
 public class VariableExpressionImpl extends ExpressionImpl implements
     VariableExpression {

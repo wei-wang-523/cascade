@@ -16,10 +16,10 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Sort;
 import com.microsoft.z3.Z3Exception;
 
-import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.IOUtils;
 
 public final class RecordTypeImpl extends TypeImpl implements RecordType {

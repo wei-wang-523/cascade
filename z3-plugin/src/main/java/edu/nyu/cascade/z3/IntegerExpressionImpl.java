@@ -22,11 +22,11 @@ import com.microsoft.z3.IntExpr;
 import com.microsoft.z3.Z3Exception;
 import com.microsoft.z3.Context;
 
-import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.IntegerExpression;
 import edu.nyu.cascade.prover.RationalExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
+import edu.nyu.cascade.util.CacheException;
 
 public final class IntegerExpressionImpl extends ExpressionImpl implements
     IntegerExpression {

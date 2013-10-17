@@ -17,11 +17,11 @@ import com.microsoft.z3.FuncDecl;
 import com.microsoft.z3.Sort;
 import com.microsoft.z3.Z3Exception;
 
-import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.IOUtils;
 
 public class FunctionDeclarator extends TypeImpl

@@ -7,10 +7,10 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.microsoft.z3.Z3Exception;
 
-import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.RationalType;
+import edu.nyu.cascade.util.CacheException;
 
 public class RationalTypeImpl extends TypeImpl implements RationalType {
   

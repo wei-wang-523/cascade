@@ -10,10 +10,10 @@ import com.microsoft.z3.Expr;
 import com.microsoft.z3.Z3Exception;
 
 import edu.nyu.cascade.prover.BooleanExpression;
-import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.IntegerType;
+import edu.nyu.cascade.util.CacheException;
 
 public class IntegerTypeImpl extends TypeImpl implements IntegerType {
   

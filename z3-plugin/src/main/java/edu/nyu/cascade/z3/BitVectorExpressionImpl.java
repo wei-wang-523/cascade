@@ -40,10 +40,10 @@ import com.microsoft.z3.Z3Exception;
 
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
-import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.BitVectorType;
+import edu.nyu.cascade.util.CacheException;
 
 public class BitVectorExpressionImpl extends ExpressionImpl implements
     BitVectorExpression {

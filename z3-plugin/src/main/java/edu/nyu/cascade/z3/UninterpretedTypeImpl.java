@@ -9,10 +9,10 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.MapMaker;
 
-import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.prover.type.UninterpretedType;
+import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.IOUtils;
 
 public final class UninterpretedTypeImpl extends TypeImpl implements UninterpretedType {
