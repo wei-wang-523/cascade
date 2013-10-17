@@ -15,7 +15,7 @@ import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CType.CellKind;
-import edu.nyu.cascade.c.preprocessor.IREquivalentVar;
+import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -28,6 +28,7 @@ import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Identifiers;
 
 public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	
@@ -196,14 +197,14 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	}
 
 	@Override
-	public MemoryVarSets getCategorizedVars(Iterable<IREquivalentVar> equivVars) {
+	public MemoryVarSets getCategorizedVars(Iterable<IRVar> equivVars) {
 	  MemoryVarSets.Builder builder = new MemoryVarSets.Builder();
 		
-	  for(IREquivalentVar var : equivVars) {
+	  for(IRVar var : equivVars) {
 	  	String varName = var.getName();
 	  	String varKey = new StringBuilder().append(varName)
 	  			.append(var.getScope()).toString();
-	    if(CType.CONSTANT.equals(varName)) continue;
+	    if(Identifiers.CONSTANT.equals(varName)) continue;
 	    if(stackVars.containsKey(varKey)) {
 	    	builder.addStackVar(stackVars.get(varKey));
 	    } else if(stackRegions.containsKey(varKey)) {

@@ -12,13 +12,13 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
-import edu.nyu.cascade.c.preprocessor.IREquivalentVar;
+import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.c.preprocessor.steensgaard.ValueType.ValueTypeKind;
 import edu.nyu.cascade.util.UnionFind;
 import edu.nyu.cascade.util.UnionFind.Partition;
 
 public class UnionFindECR {
-  UnionFind<IREquivalentVar> uf;
+  UnionFind<IRVar> uf;
   
   private UnionFindECR () {
     uf = UnionFind.create();
@@ -29,7 +29,7 @@ public class UnionFindECR {
   }
   
 
-  protected void add(TypeVar var) {
+  protected void add(IRVarImpl var) {
     uf.add(var, var.getECR());
   }
   
@@ -99,7 +99,7 @@ public class UnionFindECR {
     }
   }
   
-  protected void setInitVar(ECR e, TypeVar initVar) {
+  protected void setInitVar(ECR e, IRVarImpl initVar) {
     ECR root = (ECR) e.findRoot();
     root.setInitVar(initVar);
   }
@@ -129,7 +129,7 @@ public class UnionFindECR {
   /**
    * Get the initial type variable of root ecr
    */
-  protected TypeVar getRootInitVar(ECR e) {
+  protected IRVarImpl getRootInitVar(ECR e) {
     ECR root = (ECR) e.findRoot();
     return root.getInitTypeVar();
   }
@@ -213,9 +213,9 @@ public class UnionFindECR {
   /**
    * Get the snapshot of union find
    */
-  protected ImmutableMap<ECR, Set<IREquivalentVar>> snapshot() {
-    SetMultimap<Partition, IREquivalentVar> map = uf.snapshot();
-    ImmutableMap.Builder<ECR, Set<IREquivalentVar>> builder = ImmutableMap.builder();
+  protected ImmutableMap<ECR, Set<IRVar>> snapshot() {
+    SetMultimap<Partition, IRVar> map = uf.snapshot();
+    ImmutableMap.Builder<ECR, Set<IRVar>> builder = ImmutableMap.builder();
     for (Partition ecr : map.asMap().keySet()) {
       builder.put((ECR) ecr, ImmutableSet.copyOf(map.asMap().get(ecr)));
     }
@@ -225,7 +225,7 @@ public class UnionFindECR {
   /**
    * Get the alias variable equivalent class of union find
    */
-  protected ImmutableSet<IREquivalentVar> getEquivClass(ECR e) {
+  protected ImmutableSet<IRVar> getEquivClass(ECR e) {
     return ImmutableSet.copyOf(uf.getEquivClass(e));
   }
 }

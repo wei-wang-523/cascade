@@ -1,4 +1,4 @@
-package edu.nyu.cascade.prover;
+package edu.nyu.cascade.util;
 
 @SuppressWarnings("serial")
 public class CacheException extends RuntimeException {

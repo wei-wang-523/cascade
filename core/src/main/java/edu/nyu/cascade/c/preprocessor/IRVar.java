@@ -10,9 +10,10 @@ import xtc.type.Type;
  *
  */
 
-public interface IREquivalentVar {
+public interface IRVar {
   String getName() ;
   Type getType() ;
   String getScope() ;
   boolean isNullLoc() ;
+  String toString() ;
 }

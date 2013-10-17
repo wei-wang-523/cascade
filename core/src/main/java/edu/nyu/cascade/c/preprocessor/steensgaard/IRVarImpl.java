@@ -1,28 +1,28 @@
 package edu.nyu.cascade.c.preprocessor.steensgaard;
 
 import xtc.type.Type;
-import edu.nyu.cascade.c.preprocessor.IREquivalentVar;
+import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.util.Identifiers;
 
-public class TypeVar implements IREquivalentVar {
+public class IRVarImpl implements IRVar {
   private final ECR ecr;
   private final String name;
   private final Type type;
   private final String scope;
   
-  private TypeVar(String _name, Type _type, String _scope) {
+  private IRVarImpl(String _name, Type _type, String _scope) {
     name = _name;
     type = _type;
     scope = _scope;
     ecr = ECR.create(this, ValueType.location(ECR.createBottom(), ECR.createBottom()));
   }
   
-  protected static TypeVar create(String _name, Type _type, String _scope) {
-    return new TypeVar(_name, _type, _scope);
+  protected static IRVarImpl create(String _name, Type _type, String _scope) {
+    return new IRVarImpl(_name, _type, _scope);
   }
   
-  protected static TypeVar createNullLoc() {
-    return new TypeVar(Identifiers.NULL_LOC_NAME, null, null);
+  protected static IRVarImpl createNullLoc() {
+    return new IRVarImpl(Identifiers.NULL_LOC_NAME, null, null);
   }
   
   protected ECR getECR() {
@@ -33,44 +33,46 @@ public class TypeVar implements IREquivalentVar {
     return ecr;
   }
   
+  @Override
   public String getName() {
     return name;
   }
-  
+
+  @Override
   public Type getType() {
     return type;
   }
   
+  @Override
   public String getScope() {
     return scope;
   }
   
+  @Override
   public boolean isNullLoc() {
     return Identifiers.NULL_LOC_NAME.equals(name) && type == null && scope == null;
   }
   
   @Override
   public boolean equals(Object o) {
-    if(!(o instanceof TypeVar)) return false;
-    TypeVar var = (TypeVar) o;
+    if(!(o instanceof IRVarImpl)) return false;
+    IRVarImpl var = (IRVarImpl) o;
     return name.equals(var.getName()) && type == var.getType() && scope.equals(var.getScope());
   }
   
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("(TypeVar (name ").append(name).append(") ");
+    sb.append(name);
     if(scope != null) 
-      sb.append("(scope ").append(scope)
-      .append(") ");
+      sb.append(scope);
     if(type != null)
       sb.append("(type ").append(type.getName()).append(") ");
-    sb.append(")");
     return sb.toString();
   }
   
   protected String toStringShort() {
     StringBuilder sb = new StringBuilder();
-    return sb.append("(TypeVar (name ").append(name).append(')').toString();
+    return sb.append(name).toString();
   }
 }

@@ -9,7 +9,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 
-import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
+import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.Pair;
 
 /**
@@ -41,7 +41,7 @@ public class CTypeNameAnalyzer {
     try {
       return cache.get(Pair.of(type, type.getShape()));
     } catch (ExecutionException e) {
-      throw new ExpressionFactoryException(e);
+      throw new CacheException(e);
     }
   }  
 }

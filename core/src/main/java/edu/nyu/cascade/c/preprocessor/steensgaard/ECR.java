@@ -24,7 +24,7 @@ public final class ECR extends UnionFind.Partition {
 
   private ValueType type;
   
-  private TypeVar initVar;
+  private IRVarImpl initVar;
   
   /**
    * A list of 'pending' joins for this ECR.  We make conditional joins,
@@ -34,7 +34,7 @@ public final class ECR extends UnionFind.Partition {
    */
   private Set<ECR> pending;
   
-  private ECR(TypeVar var, ValueType _type) {
+  private ECR(IRVarImpl var, ValueType _type) {
     super();
     pending = null;
     type = _type;
@@ -45,7 +45,7 @@ public final class ECR extends UnionFind.Partition {
     return new ECR(null, ValueType.bottom());
   }
   
-  protected static ECR create(TypeVar var, ValueType type) {
+  protected static ECR create(IRVarImpl var, ValueType type) {
     return new ECR(var, type);
   }
 
@@ -56,7 +56,7 @@ public final class ECR extends UnionFind.Partition {
   /**
    * @return the initial type variable
    */
-  protected TypeVar getInitTypeVar() {
+  protected IRVarImpl getInitTypeVar() {
     return initVar;
   }
   
@@ -71,7 +71,7 @@ public final class ECR extends UnionFind.Partition {
     type = _type;
   }
   
-  protected void setInitVar(TypeVar var) {
+  protected void setInitVar(IRVarImpl var) {
     initVar = var;
   }
   

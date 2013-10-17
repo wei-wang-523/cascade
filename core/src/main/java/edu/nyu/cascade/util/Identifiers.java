@@ -16,6 +16,8 @@ public class Identifiers {
   public static final char RECORD_SELECT_NAME_INFIX = '@';
   public static final char ARRAY_NAME_INFIX = '$';
   public static final String NULL_LOC_NAME = "<null>";
+  public static final String REGION_VARIABLE_NAME = "region_";
+  public static final String CONSTANT = "Constant";
   
   public static enum IdType {
     DEFAULT,

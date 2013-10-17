@@ -6,7 +6,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
-import edu.nyu.cascade.c.preprocessor.IREquivalentClosure;
+import edu.nyu.cascade.c.preprocessor.IREquivClosure;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -110,7 +110,7 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
 
 	@Override
   public ImmutableSet<BooleanExpression> disjointMemLayout(
-  		IREquivalentClosure equivClass, ArrayExpression sizeArr) {
+  		IREquivClosure equivClass, ArrayExpression sizeArr) {
 		MemoryVarSets multiSets = 
 				heapEncoding.getCategorizedVars(equivClass.getElements());
 		if(soundMemEncoding != null) {
@@ -123,7 +123,7 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
   }
 	
 	@Override
-  public BooleanExpression validMalloc(IREquivalentClosure equivClass, 
+  public BooleanExpression validMalloc(IREquivClosure equivClass, 
       ArrayExpression sizeArr, Expression ptr, Expression size) {
 		MemoryVarSets multiSets = 
 				heapEncoding.getCategorizedVars(equivClass.getElements());
@@ -151,7 +151,7 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
 
 	@Override
   public ImmutableSet<BooleanExpression> validMemAccess(
-  		IREquivalentClosure equivClass, ArrayExpression sizeArr, Expression ptr) {
+  		IREquivClosure equivClass, ArrayExpression sizeArr, Expression ptr) {
 		MemoryVarSets varSets = 
 				heapEncoding.getCategorizedVars(equivClass.getElements());
 		if(soundMemEncoding != null)
@@ -162,7 +162,7 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
 
 	@Override
   public ImmutableSet<BooleanExpression> validMemAccess(
-  		IREquivalentClosure equivClass, ArrayExpression sizeArr, Expression ptr, Expression size) {
+  		IREquivClosure equivClass, ArrayExpression sizeArr, Expression ptr, Expression size) {
 		MemoryVarSets varSets = 
 				heapEncoding.getCategorizedVars(equivClass.getElements());
 		if(soundMemEncoding != null)

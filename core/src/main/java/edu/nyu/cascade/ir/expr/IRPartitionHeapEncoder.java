@@ -4,7 +4,7 @@ import xtc.tree.Node;
 
 import com.google.common.collect.ImmutableSet;
 
-import edu.nyu.cascade.c.preprocessor.IREquivalentClosure;
+import edu.nyu.cascade.c.preprocessor.IREquivClosure;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -43,16 +43,16 @@ public interface IRPartitionHeapEncoder {
 	Type getArrayElemType(xtc.type.Type type);
 
 	ImmutableSet<BooleanExpression> disjointMemLayout(
-			IREquivalentClosure equivClass, ArrayExpression sizeArr);
+			IREquivClosure equivClass, ArrayExpression sizeArr);
 	
-	BooleanExpression validMalloc(IREquivalentClosure equivClass,
+	BooleanExpression validMalloc(IREquivClosure equivClass,
       ArrayExpression sizeArr, Expression ptr, Expression size);	
 
 	BooleanExpression validFree(ArrayExpression sizeArr, Expression ptr);
 	
 	ImmutableSet<BooleanExpression> validMemAccess(
-			IREquivalentClosure equivClass, ArrayExpression sizeArr, Expression ptr);
+			IREquivClosure equivClass, ArrayExpression sizeArr, Expression ptr);
 	
 	ImmutableSet<BooleanExpression> validMemAccess(
-			IREquivalentClosure equivClass, ArrayExpression sizeArr, Expression ptr, Expression size);
+			IREquivClosure equivClass, ArrayExpression sizeArr, Expression ptr, Expression size);
 }

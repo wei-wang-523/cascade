@@ -71,7 +71,9 @@ public class Preferences {
   
   public static final String OPTION_THEORY_BURSTALLView = "BurstallView";
   
-  public static final String OPTION_THEORY_FLAT = "BitVector";
+  public static final String OPTION_THEORY_BITVECTOR = "BitVector";
+  
+  public static final String OPTION_THEORY_FLAT = "Flat";
   
   public static final String OPTION_THEORY_PARTITION = "Partition";
   

@@ -17,14 +17,14 @@ import edu.nyu.cascade.c.AddressOfReference;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
 import edu.nyu.cascade.ir.IRStatement;
-import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
+import edu.nyu.cascade.util.CacheException;
 
 public class TypeCastAnalyzer implements IRPreProcessor {
   
   private final LoadingCache<Reference, Boolean> cache = CacheBuilder
       .newBuilder().build(new CacheLoader<Reference, Boolean>(){
         public Boolean load(Reference ref) {
-          return hasView(ref);
+          return loadView(ref);
         }
       });
   
@@ -118,7 +118,7 @@ public class TypeCastAnalyzer implements IRPreProcessor {
       try {
         res = cache.get(type.getShape());
       } catch (ExecutionException e) {
-        throw new ExpressionFactoryException(e);
+        throw new CacheException(e);
       }
     }
     return res;
@@ -163,12 +163,12 @@ public class TypeCastAnalyzer implements IRPreProcessor {
     }
   }
 
-	private boolean hasView(Reference ref) {
+	private boolean loadView(Reference ref) {
 	  if(ref.isIndirect()) {
 	    Reference base = ref.getBase();
 	    return hasViewSet.contains(base);
 	  } else if(ref instanceof FieldReference) {
-	    return hasView(ref.getBase());
+	    return loadView(ref.getBase());
 	  } else {
 	    Reference addr = new AddressOfReference(ref);
 	    return hasViewSet.contains(addr);

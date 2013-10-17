@@ -12,9 +12,6 @@ import edu.nyu.cascade.util.Identifiers;
  *
  */
 public class CType {
-
-  public static final String CONSTANT = Identifiers.toValidId("Constant");
-  
   public static final String TYPE = xtc.Constants.TYPE;
   public static final String SCOPE = xtc.Constants.SCOPE;
   
@@ -46,7 +43,7 @@ public class CType {
   public static String getReferenceName(Type type) {
     if(!(type.hasShape() 
         || (type.hasConstant() && type.getConstant().isReference())))   
-      return CONSTANT;
+      return Identifiers.CONSTANT;
     
     if(type.hasConstant() && type.getConstant().isReference()) {
       Reference constRef = type.getConstant().refValue();
@@ -90,9 +87,7 @@ public class CType {
     Preconditions.checkArgument(type != null);     
     StringBuffer sb =  new StringBuffer();
     if(type.isBoolean()) {
-      String kindName = type.toBoolean().getName();
-      sb.append(Identifiers.ARRAY_NAME_INFIX)
-      .append(kindName);
+      sb.append(Identifiers.ARRAY_NAME_INFIX).append("BoolT");
     } else if(type.isPointer()) {
       xtc.type.Type pType = type.toPointer().getType();
       sb.append(Identifiers.ARRAY_NAME_INFIX)

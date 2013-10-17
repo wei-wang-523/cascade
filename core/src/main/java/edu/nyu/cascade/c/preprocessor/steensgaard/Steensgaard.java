@@ -19,7 +19,7 @@ import xtc.util.SymbolTable.Scope;
 import edu.nyu.cascade.c.AddressOfReference;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CType.CellKind;
-import edu.nyu.cascade.c.preprocessor.IREquivalentVar;
+import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
 import edu.nyu.cascade.c.preprocessor.steensgaard.ValueType.ValueTypeKind;
 import edu.nyu.cascade.ir.IRStatement;
@@ -34,10 +34,8 @@ import edu.nyu.cascade.util.Pair;
  *
  */
 public class Steensgaard implements IRPreProcessor {
-  
-  protected static final String REGION_VARIABLE_NAME = "region_";
   private UnionFindECR uf;
-  private Map<Pair<String, String>, TypeVar> varsMap; 
+  private Map<Pair<String, String>, IRVarImpl> varsMap; 
   private SymbolTable symbolTable;
   
   private Steensgaard (SymbolTable _symbolTable) {
@@ -72,23 +70,23 @@ public class Steensgaard implements IRPreProcessor {
 	      if(ref instanceof AddressOfReference) {
 	        Reference base = rType.getShape().getBase();
 	        Type rType_ = base.getType().annotate().shape(base);
-	        IREquivalentVar lTypeVar_ = getRepVar(lRefName, lScope, lType);
-	        IREquivalentVar rTypeVar_ = getRepVar(rRefName, rScope, rType_);
+	        IRVar lTypeVar_ = getRepVar(lRefName, lScope, lType);
+	        IRVar rTypeVar_ = getRepVar(rRefName, rScope, rType_);
 	        addrAssign(lTypeVar_, rTypeVar_); break;
 	      }
 	      if(ref.isIndirect()) {
 	        Reference base = rType.getShape().getBase();
 	        Type rType_ = base.getType().annotate().shape(base);
-	        IREquivalentVar lTypeVar_ = getRepVar(lRefName, lScope, lType);
-	        IREquivalentVar rTypeVar_ = getRepVar(rRefName, rScope, rType_);
+	        IRVar lTypeVar_ = getRepVar(lRefName, lScope, lType);
+	        IRVar rTypeVar_ = getRepVar(rRefName, rScope, rType_);
 	        ptrAssign(lTypeVar_, rTypeVar_); break;
 	      }
 	    } 
 	    
 	    CellKind rKind = CType.getCellKind(rType);
 	    if(CellKind.STRUCTORUNION.equals(rKind) || CellKind.ARRAY.equals(rKind)) {
-	      IREquivalentVar lTypeVar_ = getRepVar(lRefName, lScope, lType);
-	      IREquivalentVar rTypeVar_ = getRepVar(rRefName, rScope, rType);
+	      IRVar lTypeVar_ = getRepVar(lRefName, lScope, lType);
+	      IRVar rTypeVar_ = getRepVar(rRefName, rScope, rType);
 	      addrAssign(lTypeVar_, rTypeVar_); break;
 	    }
 	    
@@ -96,14 +94,14 @@ public class Steensgaard implements IRPreProcessor {
 	      if(lType.getShape().isIndirect()) {
 	        Reference base = lType.getShape().getBase();
 	        Type lType_ = base.getType().annotate().shape(base);
-	        IREquivalentVar lTypeVar_ = getRepVar(lRefName, lScope, lType_);
-	        IREquivalentVar rTypeVar_ = getRepVar(rRefName, rScope, rType);
+	        IRVar lTypeVar_ = getRepVar(lRefName, lScope, lType_);
+	        IRVar rTypeVar_ = getRepVar(rRefName, rScope, rType);
 	        assignPtr(lTypeVar_, rTypeVar_); break;
 	      }
 	    }
 	    
-	    IREquivalentVar lTypeVar_ = getRepVar(lRefName, lScope, lType);
-	    IREquivalentVar rTypeVar_ = getRepVar(rRefName, rScope, rType);
+	    IRVar lTypeVar_ = getRepVar(lRefName, lScope, lType);
+	    IRVar rTypeVar_ = getRepVar(rRefName, rScope, rType);
 	    simpleAssign(lTypeVar_, rTypeVar_); break;
 	  }
 	  case ALLOC: {
@@ -111,7 +109,7 @@ public class Steensgaard implements IRPreProcessor {
 	    xtc.type.Type lType = CType.getType(lhs);
 	    String lScope = CType.getScope(lhs);
 	    String lRefName = CType.getReferenceName(lType);
-	    IREquivalentVar lTypeVar = getRepVar(lRefName, lScope, lType);
+	    IRVar lTypeVar = getRepVar(lRefName, lScope, lType);
 	    heapAssign(lTypeVar, lType);
 	    break;
 	  }
@@ -121,14 +119,14 @@ public class Steensgaard implements IRPreProcessor {
 
 	@Override
 	public String displaySnapShot() {
-	  ImmutableCollection<Set<IREquivalentVar>> sets = uf.snapshot().values();
+	  ImmutableCollection<Set<IRVar>> sets = uf.snapshot().values();
 	  StringBuilder sb = new StringBuilder();
 	  if(sets != null) {
 	    sb.append("Snapshot of partition (size >= 1) :\n ");
-	    for(Set<IREquivalentVar> set : sets) {
+	    for(Set<IRVar> set : sets) {
 	      if(set == null || set.size() <= 1) continue;
 	      sb.append("  Partition { ");
-	      for(IREquivalentVar var : set)
+	      for(IRVar var : set)
 	        sb.append(var.getName()).append('@').append(var.getScope()).append(' ');
 	      sb.append("}\n");
 	    }
@@ -136,10 +134,10 @@ public class Steensgaard implements IRPreProcessor {
 	  
 	  sb.append("\nThe points to chain:\n");
 	  if(sets != null) {
-	    for(Set<IREquivalentVar> set : sets) {
+	    for(Set<IRVar> set : sets) {
 	      if(set == null) continue;
-	      Iterator<IREquivalentVar> itr = set.iterator();
-	      ECR ecr = ((TypeVar) itr.next()).getECR();
+	      Iterator<IRVar> itr = set.iterator();
+	      ECR ecr = ((IRVarImpl) itr.next()).getECR();
 	      if(!uf.hasPointsToChain(ecr)) continue;
 	      sb.append("  ").append(uf.getPointsToChain(ecr).substring(3));
 	      sb.append("\n");
@@ -148,13 +146,13 @@ public class Steensgaard implements IRPreProcessor {
 	  return sb.toString();
 	}
 
-	public IREquivalentVar getNullLoc() {
-    return TypeVar.createNullLoc();
+	public IRVar getNullLoc() {
+    return IRVarImpl.createNullLoc();
   }
 
-  public IREquivalentVar getRepVar(String name, String scope, Type type) {
+  public IRVar getRepVar(String name, String scope, Type type) {
     if(Identifiers.NULL_LOC_NAME.equals(name)) {
-      TypeVar nullLoc = TypeVar.createNullLoc();
+      IRVarImpl nullLoc = IRVarImpl.createNullLoc();
       Pair<String, String> key = Pair.of(nullLoc.getName(), nullLoc.getScope());
       varsMap.put(key, nullLoc);
       return nullLoc;
@@ -162,35 +160,35 @@ public class Steensgaard implements IRPreProcessor {
       Scope currentScope = symbolTable.getScope(scope);
       Scope scope_ = currentScope.isDefined(name) ? currentScope.lookupScope(name) : currentScope;
       Pair<String, Scope> key = Pair.of(name, scope_);
-      TypeVar var;
+      IRVarImpl var;
       if(varsMap.containsKey(key)) {
         var = varsMap.get(key);
       } else {
         Type type_ = currentScope.isDefined(name) ? (Type) currentScope.lookup(name) : type;
-        var = (TypeVar) addVariable(name, scope_.getQualifiedName(), type_);
+        var = (IRVarImpl) addVariable(name, scope_.getQualifiedName(), type_);
       }
       
-      TypeVar res = uf.getRootInitVar(var.getECR());
+      IRVarImpl res = uf.getRootInitVar(var.getECR());
       if(type.hasShape()) {
         int num = CType.numOfIndRef(type.getShape());
         while(num > 0) {
-          res = (TypeVar) getPointsToRepVar(res); 
+          res = (IRVarImpl) getPointsToRepVar(res); 
           num--;
         }
       }  
       
       if(res == null) {
         IOUtils.debug().pln(type.getShape() + " is uninitialized.");
-        res = TypeVar.createNullLoc();
+        res = IRVarImpl.createNullLoc();
       }
       return res;
     }
   }
 
-  public ImmutableMap<IREquivalentVar, Set<IREquivalentVar>> snapshot() {
-    ImmutableMap.Builder<IREquivalentVar, Set<IREquivalentVar>> builder = 
-        new ImmutableMap.Builder<IREquivalentVar, Set<IREquivalentVar>>();
-    for(Entry<ECR, Set<IREquivalentVar>> pair : uf.snapshot().entrySet()) {
+  public ImmutableMap<IRVar, Set<IRVar>> snapshot() {
+    ImmutableMap.Builder<IRVar, Set<IRVar>> builder = 
+        new ImmutableMap.Builder<IRVar, Set<IRVar>>();
+    for(Entry<ECR, Set<IRVar>> pair : uf.snapshot().entrySet()) {
       builder.put(uf.getRootInitVar(pair.getKey()),
           pair.getValue());
     }
@@ -200,16 +198,16 @@ public class Steensgaard implements IRPreProcessor {
   /**
    * Get the alias variable equivalent class of union find
    */
-  public AliasEquivalentClosure getEquivClass(IREquivalentVar var) {
-    Iterable<IREquivalentVar> elements = uf.getEquivClass(((TypeVar) var).getECR());
-    return AliasEquivalentClosure.create(var, elements);
+  public AliasEquivClosure getEquivClass(IRVar var) {
+    Iterable<IRVar> elements = uf.getEquivClass(((IRVarImpl) var).getECR());
+    return AliasEquivClosure.create(var, elements);
   }
   
-  public IREquivalentVar addVariable(String name, String scope, Type type) {
+  public IRVar addVariable(String name, String scope, Type type) {
 	  Pair<String, String> key = Pair.of(name, scope);
-	  TypeVar res = null;
+	  IRVarImpl res = null;
 	  if(!varsMap.containsKey(key))  {
-	    res = TypeVar.create(name, type, scope);
+	    res = IRVarImpl.create(name, type, scope);
 	    uf.add(res);
 	    varsMap.put(key, res);
 	  } else {
@@ -222,16 +220,16 @@ public class Steensgaard implements IRPreProcessor {
 	  return res;
 	}
 
-	public void heapAssign(IREquivalentVar lhs, Type lhsType) {
-	  Preconditions.checkArgument(lhs instanceof TypeVar);
-	  ValueType lhs_type = uf.getType(((TypeVar) lhs).getECR());
+	public void heapAssign(IRVar lhs, Type lhsType) {
+	  Preconditions.checkArgument(lhs instanceof IRVarImpl);
+	  ValueType lhs_type = uf.getType(((IRVarImpl) lhs).getECR());
 	  assert(ValueTypeKind.LOCATION.equals(lhs_type.getKind()));
 	  ECR lhs0_ecr = (ECR) lhs_type.getOperand(0);
-	  String freshRegionName = Identifiers.uniquify(REGION_VARIABLE_NAME + lhs.getName());
+	  String freshRegionName = Identifiers.uniquify(Identifiers.REGION_VARIABLE_NAME + lhs.getName());
 	  assert(lhsType.resolve().isPointer());
 	  Type regionType = CType.unwrapped(lhsType).toPointer().getType();
 	  regionType = regionType.annotate().shape(new DynamicReference(freshRegionName, regionType));
-	  TypeVar region = (TypeVar) addVariable(freshRegionName, lhs.getScope(), regionType);
+	  IRVarImpl region = (IRVarImpl) addVariable(freshRegionName, lhs.getScope(), regionType);
 	  ECR region_ecr = region.getECR();
 	  // Attach the fresh region directly the first operand of target var of malloc
 	  if(!lhs0_ecr.hasInitTypeVar()) {
@@ -240,9 +238,9 @@ public class Steensgaard implements IRPreProcessor {
 	  uf.join(lhs0_ecr, region_ecr);
 	}
 
-	public IREquivalentVar getAllocRegion(IREquivalentVar var) {
-	  Preconditions.checkArgument(var instanceof TypeVar);
-	  ECR ecr = ((TypeVar) var).getECR();
+	public IRVar getAllocRegion(IRVar var) {
+	  Preconditions.checkArgument(var instanceof IRVarImpl);
+	  ECR ecr = ((IRVarImpl) var).getECR();
 	  ValueType type = uf.getType(ecr);
 	  assert(ValueTypeKind.LOCATION.equals(type.getKind()));
 	  /* For array, structure or union, just return the root ECR's 
@@ -264,9 +262,9 @@ public class Steensgaard implements IRPreProcessor {
 	  }
 	}
 
-	public IREquivalentVar getPointsToRepVar(IREquivalentVar var) {
-    Preconditions.checkArgument(var instanceof TypeVar);
-    ECR ecr = ((TypeVar) var).getECR();
+	public IRVar getPointsToRepVar(IRVar var) {
+    Preconditions.checkArgument(var instanceof IRVarImpl);
+    ECR ecr = ((IRVarImpl) var).getECR();
     ValueType type = uf.getType(ecr);
     assert(ValueTypeKind.LOCATION.equals(type.getKind()));
     /* For array, structure or union, just return the root ECR's 
@@ -289,10 +287,10 @@ public class Steensgaard implements IRPreProcessor {
     }
   }
   
-  private void simpleAssign(IREquivalentVar lhs, IREquivalentVar rhs) {
-	  Preconditions.checkArgument(lhs instanceof TypeVar && rhs instanceof TypeVar);
-	  ValueType lhs_type = uf.getType(((TypeVar) lhs).getECR());
-	  ValueType rhs_type = uf.getType(((TypeVar) rhs).getECR());
+  private void simpleAssign(IRVar lhs, IRVar rhs) {
+	  Preconditions.checkArgument(lhs instanceof IRVarImpl && rhs instanceof IRVarImpl);
+	  ValueType lhs_type = uf.getType(((IRVarImpl) lhs).getECR());
+	  ValueType rhs_type = uf.getType(((IRVarImpl) rhs).getECR());
 	  assert(ValueTypeKind.LOCATION.equals(lhs_type.getKind()) 
 	      && ValueTypeKind.LOCATION.equals(rhs_type.getKind()));
 	  ECR lhs0_ecr = lhs_type.getOperand(0);
@@ -307,10 +305,10 @@ public class Steensgaard implements IRPreProcessor {
 	  
 	}
 
-	private void assignPtr(IREquivalentVar ptr, IREquivalentVar rhs) {
-	  Preconditions.checkArgument(ptr instanceof TypeVar && rhs instanceof TypeVar);
-	  ValueType ptr_type = uf.getType(((TypeVar) ptr).getECR());
-	  ValueType rhs_type = uf.getType(((TypeVar) rhs).getECR());
+	private void assignPtr(IRVar ptr, IRVar rhs) {
+	  Preconditions.checkArgument(ptr instanceof IRVarImpl && rhs instanceof IRVarImpl);
+	  ValueType ptr_type = uf.getType(((IRVarImpl) ptr).getECR());
+	  ValueType rhs_type = uf.getType(((IRVarImpl) rhs).getECR());
 	  assert(ValueTypeKind.LOCATION.equals(rhs_type.getKind()) 
 	      && ValueTypeKind.LOCATION.equals(ptr_type.getKind()));
 	  ECR ptr0_ecr = ptr_type.getOperand(0);
@@ -331,21 +329,21 @@ public class Steensgaard implements IRPreProcessor {
 	  }
 	}
 
-	private void addrAssign(IREquivalentVar lhs, IREquivalentVar addr) {
-	  Preconditions.checkArgument(lhs instanceof TypeVar && addr instanceof TypeVar);
-	  ValueType lhs_type = uf.getType(((TypeVar) lhs).getECR());
+	private void addrAssign(IRVar lhs, IRVar addr) {
+	  Preconditions.checkArgument(lhs instanceof IRVarImpl && addr instanceof IRVarImpl);
+	  ValueType lhs_type = uf.getType(((IRVarImpl) lhs).getECR());
 	  assert(ValueTypeKind.LOCATION.equals(lhs_type.getKind()));
 	  ECR lhs0_ecr = lhs_type.getOperand(0);
-	  ECR addr_ecr = ((TypeVar) addr).getECR();
+	  ECR addr_ecr = ((IRVarImpl) addr).getECR();
 	  if(!lhs0_ecr.equals(addr_ecr)) {
 	    uf.join(lhs0_ecr, addr_ecr);
 	  }
 	}
 
-	private void ptrAssign(IREquivalentVar lhs, IREquivalentVar ptr) {
-	  Preconditions.checkArgument(lhs instanceof TypeVar && ptr instanceof TypeVar);
-	  ValueType lhs_type = uf.getType(((TypeVar) lhs).getECR());
-	  ValueType ptr_type = uf.getType(((TypeVar) ptr).getECR());
+	private void ptrAssign(IRVar lhs, IRVar ptr) {
+	  Preconditions.checkArgument(lhs instanceof IRVarImpl && ptr instanceof IRVarImpl);
+	  ValueType lhs_type = uf.getType(((IRVarImpl) lhs).getECR());
+	  ValueType ptr_type = uf.getType(((IRVarImpl) ptr).getECR());
 	  assert(ValueTypeKind.LOCATION.equals(lhs_type.getKind()) 
 	      && ValueTypeKind.LOCATION.equals(ptr_type.getKind()));
 	  ECR ptr0_ecr = ptr_type.getOperand(0);
