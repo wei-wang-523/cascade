@@ -37,8 +37,8 @@ public class SimplePathEncodingVer1 extends AbstractPathEncoding {
     pathType = getExpressionManager().tupleType(Identifiers.uniquify(DEFAULT_PATH_STATE_NAME), memType, em.booleanType());
   }
 
-  public FlatMemoryModel getMemoryModel() {
-  	return (FlatMemoryModel) super.getMemoryModel();
+  public BurstallMemoryModel getMemoryModel() {
+  	return (BurstallMemoryModel) super.getMemoryModel();
   }
   
   @Override

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
+
 import xtc.tree.GNode;
 import xtc.tree.Node;
 
@@ -14,11 +15,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IREquivClosure;
 import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
 import edu.nyu.cascade.c.preprocessor.IRVar;
-import edu.nyu.cascade.c.preprocessor.steensgaard.Steensgaard;
 import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeAnalyzer;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
@@ -95,19 +96,19 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   @Override
   public TupleExpression alloc(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
+    Preconditions.checkArgument(size.getType().equals( valueType )); 
     
-    xtc.type.Type pType = CType.unwrapped(CType.getType(ptr.getNode()));
+    String pName = CType.getReferenceName(CType.getType(ptr.getNode()));
+    xtc.type.Type pType = CType.getType(ptr.getNode());
     String pScope = CType.getScope(ptr.getNode());
+    IRVar pVar = analyzer.getVariable(pName, pType, pScope);
+    IRVar regionVar = analyzer.getAllocVar(pVar, pType);
     
-    String regionName = Identifiers.uniquify(Identifiers.REGION_VARIABLE_NAME 
-    		+ CType.getReferenceName(pType));
+    String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
-    xtc.type.Type regionType = pType.toPointer().getType();
-    regionType.mark(regionNode);
-    regionNode.setProperty(CType.SCOPE, pScope);
+    regionVar.getType().mark(regionNode);
+    regionNode.setProperty(CType.SCOPE, regionVar.getScope());
     
-    analyzer.addVariable(regionName, regionType, pScope);
     Expression region = heapEncoder.freshRegion(regionName, regionNode);
     
     RecordExpression memory = updateMemoryState(state.getChild(0), ptr, region);
@@ -159,7 +160,9 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
 	@Override
 	public Expression deref(Expression state, Expression p) {
     Preconditions.checkArgument(addrType.equals(p.getType()));
-    ArrayExpression pArray = getMemArray(state, CType.getType(p.getNode()));    
+    xtc.type.Type pType = CType.getType(p.getNode());
+    updateMemArray(state, pType);
+    ArrayExpression pArray = getMemArray(state, pType);    
     return heapEncoder.indexMemArr(pArray, p);
 	}
 
@@ -178,9 +181,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
 	public Expression createLval(Expression state, String name,
 	    IRVarInfo info, Node node) {	
 		xtc.type.Type type = CType.getType(node);
-    Expression res = heapEncoder.freshAddress(name, info, CType.unwrapped(type));
-    updateMemArray(state, type);
-    return res;
+		return heapEncoder.freshAddress(name, info, CType.unwrapped(type));
 	}
 
 	@Override
@@ -188,17 +189,18 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
     Preconditions.checkArgument(size.getType().equals( valueType ));
     
-    xtc.type.Type pType = CType.unwrapped(CType.getType(ptr.getNode()));
-    assert pType.isPointer();    
-    String regionName = Identifiers.uniquify(Identifiers.REGION_VARIABLE_NAME 
-    		+ CType.getReferenceName(pType));
-    GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
-    xtc.type.Type regionType = pType.toPointer().getType();
-    regionType.mark(regionNode);
-    String scope = CType.getScope(ptr.getNode());
-    regionNode.setProperty(CType.SCOPE, scope);
+    String pName = CType.getReferenceName(CType.getType(ptr.getNode()));
+    xtc.type.Type pType = CType.getType(ptr.getNode());
+    String pScope = CType.getScope(ptr.getNode());
+    IRVar pVar = analyzer.getVariable(pName, pType, pScope);
     
-    analyzer.addVariable(regionName, regionType, scope);
+    IRVar regionVar = analyzer.createAllocVar(pVar);
+    String regionName = regionVar.getName();
+    GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
+    xtc.type.Type regionType = regionVar.getType();
+    regionType.mark(regionNode);
+    regionNode.setProperty(CType.SCOPE, regionVar.getScope());
+    
     Expression region = heapEncoder.freshRegion(regionName, regionNode);
 
     /* Update side effect memory state */
@@ -208,7 +210,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     String ptrArrName = getMemArrElemName(pTypeName);
     updateSideEffectMemClosure(ptrArrName, suspend(state, array1));
     	
-    updateMemArray(state, pType);
+    updateMemArray(state, regionType);
     
     /* Update side effect size state */
     ArrayExpression array2 = popSizeArray(state, regionType);
@@ -388,7 +390,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   			sideEffectMem.clear();
   		}
   		
-  		if(!map.isEmpty()) memPrime = updateMemoryState(mem, map);
+  		if(!map.isEmpty()) memPrime = clearSideEffectMem(mem, map);
   	}
   	
   	Expression sizePrime = size;
@@ -404,7 +406,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   			sideEffectSizeClosure.clear();
   		}
   	
-  		if(!map.isEmpty()) sizePrime = updateSizeState(size, map);
+  		if(!map.isEmpty()) sizePrime = clearSideEffectSize(size, map);
   	}
   	
     return getUpdatedState(state, memPrime, sizePrime);
@@ -412,7 +414,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   
   @Override
   public void setPreProcessor(IRPreProcessor analyzer) {
-  	Preconditions.checkArgument(analyzer instanceof Steensgaard);
+  	Preconditions.checkArgument(analyzer instanceof TypeAnalyzer);
     this.analyzer = (TypeAnalyzer) analyzer;
     IOUtils.err().println(analyzer.displaySnapShot());
   }
@@ -464,12 +466,13 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(size.getType().equals( valueType ));
     
     /* Find related heap regions and alloc array */
-    String typeName = analyzer.getTypeName(CType.getType(ptr.getNode()));
+    String ptr2TypeName = analyzer.getTypeName(
+    		CType.unwrapped(CType.getType(ptr.getNode())).toPointer().getType());
     
-    IREquivClosure equivAliasVars = analyzer.getEquivClass(typeName);
+    IREquivClosure equivAliasVars = analyzer.getEquivClass(ptr2TypeName);
     
     Map<String, ArrayExpression> map = getRecordElems(state.getChild(1));
-    String sizeArrName = getSizeArrElemName(typeName);
+    String sizeArrName = getSizeArrElemName(ptr2TypeName);
     ArrayExpression sizeArr = map.get(sizeArrName);
     assert sizeArr != null;
     
@@ -498,6 +501,59 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   }
   
   /**
+	 * Update memory state with side effect map
+	 * @param record
+	 * @param sideEffectMap
+	 * @return updated memory state
+	 */
+	private RecordExpression clearSideEffectMem(Expression record,
+			Map<String, ArrayExpression> sideEffectMap) {
+		Preconditions.checkArgument(record.isRecord());
+		if(sideEffectMap.isEmpty())	return record.asRecord();
+		RecordExpression res = clearSideEffectRecord(record.asRecord(), sideEffectMap, true);
+		sideEffectMap.clear();
+		return res;
+	}
+
+	/**
+	 * Update size state with side effect map
+	 * @param record
+	 * @param sideEffectMap
+	 * @return updated size state
+	 */
+	private RecordExpression clearSideEffectSize(Expression record,
+			Map<String, ArrayExpression> sideEffectMap) {
+		Preconditions.checkArgument(record.isRecord());
+		if(sideEffectMap.isEmpty())	return record.asRecord();
+		RecordExpression res = clearSideEffectRecord(record.asRecord(), sideEffectMap, false);
+		sideEffectMap.clear();
+		return res;
+	}
+
+	/**
+	 * Update <code>record</code> with side effect map
+	 * @param record
+	 * @param sideEffectMap
+	 * @param mem is true indicate is memory update, otherwise is size update
+	 * @return updated record
+	 */
+	private RecordExpression clearSideEffectRecord(RecordExpression record, 
+			Map<String, ArrayExpression> sideEffectMap, boolean mem) {
+		Preconditions.checkArgument(!sideEffectMap.isEmpty());
+	  
+	  Map<String, ArrayExpression> map = getRecordElems(record);
+	  map.putAll(sideEffectMap);
+	  
+	  Type recordTypePrime = record.getType();
+	  if(map.size() > record.getArity()) {
+	  	String recordTypeName = mem ? Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE) :
+	  		Identifiers.uniquify(DEFAULT_ALLOC_STATE_TYPE);
+	  	recordTypePrime = getRecordTypeFromMap(recordTypeName, map);
+	  } 
+	  return getExpressionManager().record(recordTypePrime, map.values());
+	}
+
+	/**
    * Update memory state with assignment lval := rval
    * @param record
    * @param lval
@@ -524,59 +580,6 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   }
   
   /**
-   * Update memory state with side effect map
-   * @param record
-   * @param sideEffectMap
-   * @return updated memory state
-   */
-  private RecordExpression updateMemoryState(Expression record,
-  		Map<String, ArrayExpression> sideEffectMap) {
-  	Preconditions.checkArgument(record.isRecord());
-  	if(sideEffectMap.isEmpty())	return record.asRecord();
-  	RecordExpression res = updateRecord(record.asRecord(), sideEffectMap, true);
-  	sideEffectMap.clear();
-  	return res;
-  }
-  
-  /**
-   * Update size state with side effect map
-   * @param record
-   * @param sideEffectMap
-   * @return updated size state
-   */
-  private RecordExpression updateSizeState(Expression record,
-  		Map<String, ArrayExpression> sideEffectMap) {
-  	Preconditions.checkArgument(record.isRecord());
-  	if(sideEffectMap.isEmpty())	return record.asRecord();
-  	RecordExpression res = updateRecord(record.asRecord(), sideEffectMap, false);
-  	sideEffectMap.clear();
-  	return res;
-  }
-  
-  /**
-   * Update <code>record</code> with side effect map
-   * @param record
-   * @param sideEffectMap
-   * @param mem is true indicate is memory update, otherwise is size update
-   * @return updated record
-   */
-  private RecordExpression updateRecord(RecordExpression record, 
-  		Map<String, ArrayExpression> sideEffectMap, boolean mem) {
-  	Preconditions.checkArgument(!sideEffectMap.isEmpty());
-    
-    Map<String, ArrayExpression> map = getRecordElems(record);
-    map.putAll(sideEffectMap);
-    
-    Type recordTypePrime = record.getType();
-    if(map.size() > record.getArity()) {
-    	String recordTypeName = mem ? Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE) :
-    		Identifiers.uniquify(DEFAULT_ALLOC_STATE_TYPE);
-    	recordTypePrime = getRecordTypeFromMap(recordTypeName, map);
-    } 
-    return getExpressionManager().record(recordTypePrime, map.values());
-  }
-  
-  /**
    * Update <code>record</code> with assignment lval := rval
    * @param record
    * @param lval
@@ -587,16 +590,27 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   private RecordExpression updateRecord(RecordExpression record, Expression lval, Expression rval, boolean mem) {
     Map<String, ArrayExpression> map = getRecordElems(record);
     ExpressionManager exprManager = getExpressionManager();
+    int preSize = map.size();
+    
     if(mem) {
-    	String lTypeName = analyzer.getTypeName(CType.getType(lval.getNode()));
-    	String lMemArrName = getMemArrElemName(lTypeName);
-    	assert map.containsKey(lMemArrName);
-    	ArrayExpression lvalRepArr = map.get(lMemArrName);
-    	lvalRepArr = heapEncoder.updateMemArr(lvalRepArr, lval, rval);
-      map.put(lMemArrName, lvalRepArr);
+    	xtc.type.Type lType = CType.getType(lval.getNode());
+    	String lTypeName = analyzer.getTypeName(CType.getType(lval.getNode()));    	
+    	assert !lTypeName.equals(Identifiers.CONSTANT);
     	
-      Type recordType = record.getType();
+    	/* Update the memory array for lval type in memory */
+    	ArrayExpression lMemArr = null;
+    	String lMemArrName = getMemArrElemName(lTypeName);
+    	if(!map.containsKey(lMemArrName)) {
+    		Type valueType = heapEncoder.getArrayElemType(lType);
+    		lMemArr = exprManager.arrayVar(lMemArrName, addrType, valueType, false);
+    	} else {
+    		lMemArr = map.get(lMemArrName);
+    	}
+    	
+    	lMemArr = heapEncoder.updateMemArr(lMemArr, lval, rval);
+      map.put(lMemArrName, lMemArr);
       
+      /* Update the mem array for rval type in memory */
     	if(rval.getNode() != null) {
     		xtc.type.Type rType = CType.getType(rval.getNode());
     		String rTypeName = analyzer.getTypeName(rType);
@@ -607,21 +621,23 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
         		ArrayExpression rMemArr = getExpressionManager()
         				.arrayVar(rMemArrName, addrType, valueType, false);
         		map.put(rMemArrName, rMemArr);
-        		String typeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
-        		recordType = getRecordTypeFromMap(typeName, map);
         	}
         }
     	}
+    	
+    	Type recordType = record.getType();
+    	if(map.size() > preSize) {
+    		String typeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
+    		recordType = getRecordTypeFromMap(typeName, map);
+    	}
+    	
     	return exprManager.record(recordType, map.values());
-    } else {    	
+    } else {
     	Type recordType = record.getType();    	
     	ArrayExpression lvalRepArr = null;
     	String lTypeName = analyzer.getTypeName(CType.getType(lval.getNode()));
      	String lSizeArrName = getSizeArrElemName(lTypeName);
      	if(!map.containsKey(lSizeArrName)) {
-//     		ArrayType sizeArrType = heapEncoder.getSizeArrType();
-//     		lvalRepArr = getExpressionManager()
-//     				.variable(lvalRepArrName, sizeArrType, false).asArray();
      		/* Initialize as constant array with zero everywhere */
      		lvalRepArr = heapEncoder.getConstSizeArr(heapEncoder.getSizeArrType());
      		lvalRepArr = heapEncoder.updateSizeArr(lvalRepArr, lval, rval);
@@ -684,7 +700,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   }
   
   /**
-   * Check if the memory array of var is defined, if not, create
+   * Check if the memory array of <code>type</code> is defined, if not, create
    * a new one, and store it in side effect memory.
    * @param mem
    * @param var

@@ -618,7 +618,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
         	String rvalRepArrName = getMemArrElemName(rvalRepVar);
         	if(!map.containsKey(rvalRepArrName)) {
         		Type valueType = heapEncoder.getArrayElemType(rvalRepVar.getType());
-        		ArrayExpression rvalRepArr = getExpressionManager()
+        		ArrayExpression rvalRepArr = exprManager
         				.arrayVar(rvalRepArrName, addrType, valueType, false);
         		map.put(rvalRepArrName, rvalRepArr);
         		String typeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
