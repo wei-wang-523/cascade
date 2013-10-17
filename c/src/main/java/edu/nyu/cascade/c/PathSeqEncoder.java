@@ -9,7 +9,6 @@ import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalyzer;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
-import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.PathEncoding;
 import edu.nyu.cascade.ir.expr.PathFactoryException;
 import edu.nyu.cascade.prover.Expression;
@@ -66,7 +65,6 @@ final class PathSeqEncoder implements PathEncoder {
   }
 
   protected void preprocessPath(CSymbolTable symbolTable, List<IRStatement> path) {
-  	MemoryModel mm = pathEncoding.getExpressionEncoder().getMemoryModel();
     if(Preferences.isSet(Preferences.OPTION_THEORY)) {
       String theory = Preferences.getString((Preferences.OPTION_THEORY));
       IRPreProcessor analyzer = null;
@@ -77,10 +75,10 @@ final class PathSeqEncoder implements PathEncoder {
       } else if(Preferences.OPTION_THEORY_BURSTALL.equals(theory)) {
       	analyzer = TypeAnalyzer.create(symbolTable.getOriginalSymbolTable());
       }
-    	mm.setPreProcessor(analyzer);
       for(IRStatement stmt : path) {
       	analyzer.analysis(stmt);
       }
+      pathEncoding.getExpressionEncoder().getMemoryModel().setPreProcessor(analyzer);
     }
   }
   

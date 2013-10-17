@@ -1061,7 +1061,37 @@ public class CfgBuilder extends Visitor {
         || ReservedFunction.FUN_VALID.equals(funcName)
         || ReservedFunction.FUN_VALID_MALLOC.equals(funcName)
         || ReservedFunction.FUN_VALID_FREE.equals(funcName)) {
-    } else if(ReservedFunction.FREE.equals(funcName)) {
+    } /*else if(ReservedFunction.FUN_ALLOCATED.equals(funcName)) {
+      Location loc = node.getLocation();
+    	GNode funcNode = GNode.create("PrimaryIdentifier", ReservedFunction.MALLOC);  
+    	funcNode.setLocation(loc);
+      GNode newArgList = GNode.create("ExpressionList", argList.getNode(1)); 
+      newArgList.setLocation(loc);
+    	GNode mallocNode = GNode.create("FunctionCall", funcNode, newArgList); 
+    	mallocNode.setLocation(loc);
+    	GNode typeQuantNode = GNode.create("TypeQualifierList"); 
+    	typeQuantNode.setLocation(loc);
+    	GNode pointerNode = GNode.create("Pointer", typeQuantNode, null);	
+    	pointerNode.setLocation(loc);
+    	GNode abstractNode = GNode.create("AbstractDeclarator", pointerNode, null); 
+    	abstractNode.setLocation(loc);
+    	GNode typeNameNode = GNode.create("TypeName", argList.getNode(1).getNode(0).getNode(0), abstractNode);
+    	typeNameNode.setLocation(loc);
+    	GNode castNode = GNode.create("CastExpression", typeNameNode, mallocNode);
+    	castNode.setLocation(loc);
+    	GNode assignNode = GNode.create("AssignmentExpression", argList.getNode(0), "=", castNode);
+    	assignNode.setLocation(loc);
+      cAnalyzer.processExpression(assignNode);
+    	addStatement(Statement.alloc(assignNode, argExprs.get(0), argExprs.get(1)));
+    	
+      GNode funcVMNode = GNode.create("PrimaryIdentifier", ReservedFunction.FUN_VALID_MALLOC);
+      GNode validMallocNode = GNode.create("FunctionCall", funcVMNode, argList);
+      funcVMNode.setLocation(loc);
+      validMallocNode.setLocation(loc);
+      cAnalyzer.processExpression(validMallocNode);
+      addStatement(Statement.assumeStmt(validMallocNode, expressionOf(validMallocNode)));
+    } */
+    else if(ReservedFunction.FREE.equals(funcName)) {
       GNode funcNode = GNode.create("PrimaryIdentifier", ReservedFunction.FUN_VALID_FREE);
       GNode validFreeNode = GNode.create("FunctionCall", funcNode, argList);
       Location loc = node.getLocation();

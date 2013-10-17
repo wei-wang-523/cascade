@@ -10,6 +10,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
+import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeAnalyzer;
 import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalyzer;
 import edu.nyu.cascade.c.preprocessor.steensgaard.Steensgaard;
 import edu.nyu.cascade.ir.IRStatement;
@@ -84,9 +85,11 @@ final class PathMergeEncoder implements PathEncoder {
       	analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());        
       } else if(Preferences.OPTION_THEORY_BURSTALLView.equals(theory)) {
       	analyzer = TypeCastAnalyzer.create();
+      } else if(Preferences.OPTION_THEORY_BURSTALL.equals(theory)) {
+      	analyzer = TypeAnalyzer.create(symbolTable.getOriginalSymbolTable());
       }
-    	pathEncoding.getExpressionEncoder().getMemoryModel().setPreProcessor(analyzer);
     	preprocessPath(analyzer, graph.predecessorMap, graph.destPath);
+    	pathEncoding.getExpressionEncoder().getMemoryModel().setPreProcessor(analyzer);
     }
   }
 
