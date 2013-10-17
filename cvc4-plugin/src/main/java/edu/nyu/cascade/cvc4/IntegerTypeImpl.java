@@ -6,11 +6,12 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
+
 import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.cascade.prover.BooleanExpression;
-import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.IntegerType;
+import edu.nyu.cascade.util.CacheException;
 
 public class IntegerTypeImpl extends TypeImpl implements IntegerType {
   

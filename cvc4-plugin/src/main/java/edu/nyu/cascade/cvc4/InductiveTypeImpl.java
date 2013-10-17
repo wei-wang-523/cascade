@@ -26,7 +26,6 @@ import edu.nyu.acsys.CVC4.ExprManager;
 import edu.nyu.acsys.CVC4.vectorDatatype;
 import edu.nyu.acsys.CVC4.vectorDatatypeType;
 import edu.nyu.cascade.prover.BooleanExpression;
-import edu.nyu.cascade.prover.CacheException;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.InductiveExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
@@ -34,6 +33,7 @@ import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.IOUtils;
 
 public class InductiveTypeImpl extends TypeImpl implements InductiveType {
