@@ -203,7 +203,7 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	  for(IRVar var : equivVars) {
 	  	String varName = var.getName();
 	  	String varKey = new StringBuilder().append(varName)
-	  			.append(var.getScope()).toString();
+	  			.append(var.getScopeName()).toString();
 	    if(Identifiers.CONSTANT.equals(varName)) continue;
 	    if(stackVars.containsKey(varKey)) {
 	    	builder.addStackVar(stackVars.get(varKey));
@@ -212,7 +212,7 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	    } else if(heapRegions.containsKey(varKey)) {
 	      builder.addHeapRegion(heapRegions.get(varKey));
 	    } else {
-	      IOUtils.out().println("Variable " + varName + " @" + var.getScope() + " not yet be analyzed");
+	      IOUtils.out().println("Variable " + varName + " @" + var.getScopeName() + " not yet be analyzed");
 	    }
 	  }
 	  

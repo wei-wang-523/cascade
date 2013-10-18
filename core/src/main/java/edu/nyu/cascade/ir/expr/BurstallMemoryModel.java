@@ -102,12 +102,12 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     xtc.type.Type pType = CType.getType(ptr.getNode());
     String pScope = CType.getScope(ptr.getNode());
     IRVar pVar = analyzer.getVariable(pName, pType, pScope);
-    IRVar regionVar = analyzer.getAllocVar(pVar, pType);
+    IRVar regionVar = analyzer.getAllocVar(pVar, pType, pScope);
     
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
     regionVar.getType().mark(regionNode);
-    regionNode.setProperty(CType.SCOPE, regionVar.getScope());
+    regionNode.setProperty(CType.SCOPE, regionVar.getScopeName());
     
     Expression region = heapEncoder.freshRegion(regionName, regionNode);
     
@@ -195,11 +195,11 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     IRVar pVar = analyzer.getVariable(pName, pType, pScope);
     
     xtc.type.Type regionType = pType.resolve().toPointer().getType();
-    IRVar regionVar = analyzer.createAllocVar(pVar, regionType);
+    IRVar regionVar = analyzer.getAllocatedVar(pVar, regionType, pScope);
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
     regionType.mark(regionNode);
-    regionNode.setProperty(CType.SCOPE, regionVar.getScope());
+    regionNode.setProperty(CType.SCOPE, regionVar.getScopeName());
     
     Expression region = heapEncoder.freshRegion(regionName, regionNode);
 

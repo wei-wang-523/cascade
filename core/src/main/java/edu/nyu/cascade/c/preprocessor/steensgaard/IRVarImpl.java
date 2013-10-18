@@ -44,7 +44,7 @@ public class IRVarImpl implements IRVar {
   }
   
   @Override
-  public String getScope() {
+  public String getScopeName() {
     return scope;
   }
   
@@ -57,7 +57,7 @@ public class IRVarImpl implements IRVar {
   public boolean equals(Object o) {
     if(!(o instanceof IRVarImpl)) return false;
     IRVarImpl var = (IRVarImpl) o;
-    return name.equals(var.getName()) && type == var.getType() && scope.equals(var.getScope());
+    return name.equals(var.getName()) && type == var.getType() && scope.equals(var.getScopeName());
   }
   
   @Override

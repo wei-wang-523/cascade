@@ -9,7 +9,7 @@ public class AliasEquivClosure implements IREquivClosure {
 	final Iterable<IRVar> elements;
 	
 	private AliasEquivClosure(IRVar repVar, Iterable<IRVar> elements) {
-		this.name = new StringBuilder().append(repVar.getName()).append(repVar.getScope()).toString();
+		this.name = new StringBuilder().append(repVar.getName()).append(repVar.getScopeName()).toString();
 		this.repVar = repVar;
 		this.elements = elements;
 	}

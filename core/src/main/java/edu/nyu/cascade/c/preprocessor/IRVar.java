@@ -13,7 +13,7 @@ import xtc.type.Type;
 public interface IRVar {
   String getName() ;
   Type getType() ;
-  String getScope() ;
+  String getScopeName() ;
   boolean isNullLoc() ;
   String toString() ;
 }

@@ -127,7 +127,7 @@ public class Steensgaard implements IRPreProcessor {
 	      if(set == null || set.size() <= 1) continue;
 	      sb.append("  Partition { ");
 	      for(IRVar var : set)
-	        sb.append(var.getName()).append('@').append(var.getScope()).append(' ');
+	        sb.append(var.getName()).append('@').append(var.getScopeName()).append(' ');
 	      sb.append("}\n");
 	    }
 	  }
@@ -153,7 +153,7 @@ public class Steensgaard implements IRPreProcessor {
   public IRVar getRepVar(String name, String scope, Type type) {
     if(Identifiers.NULL_LOC_NAME.equals(name)) {
       IRVarImpl nullLoc = IRVarImpl.createNullLoc();
-      Pair<String, String> key = Pair.of(nullLoc.getName(), nullLoc.getScope());
+      Pair<String, String> key = Pair.of(nullLoc.getName(), nullLoc.getScopeName());
       varsMap.put(key, nullLoc);
       return nullLoc;
     } else {
@@ -229,7 +229,7 @@ public class Steensgaard implements IRPreProcessor {
 	  assert(lhsType.resolve().isPointer());
 	  Type regionType = CType.unwrapped(lhsType).toPointer().getType();
 	  regionType = regionType.annotate().shape(new DynamicReference(freshRegionName, regionType));
-	  IRVarImpl region = (IRVarImpl) addVariable(freshRegionName, lhs.getScope(), regionType);
+	  IRVarImpl region = (IRVarImpl) addVariable(freshRegionName, lhs.getScopeName(), regionType);
 	  ECR region_ecr = region.getECR();
 	  // Attach the fresh region directly the first operand of target var of malloc
 	  if(!lhs0_ecr.hasInitTypeVar()) {
