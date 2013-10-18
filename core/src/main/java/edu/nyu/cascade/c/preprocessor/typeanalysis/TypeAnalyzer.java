@@ -105,10 +105,11 @@ public class TypeAnalyzer implements IRPreProcessor {
 				Reference srcRef = srcType.getShape();
 				IRVarImpl srcVar = getVariable(name, srcRef.getBase(), srcScope).fst();
 				String fieldName = srcType.getShape().getField();
-				createAllocVarOfField(srcVar, fieldName);
+				createAllocVarOfField(srcVar, srcType, fieldName);
 			} else {
 				IRVarImpl srcVar = getVariable(name, srcType, srcScope);
-				createAllocVar(srcVar);
+				Type ptr2Type = srcType.resolve().toPointer().getType();
+				createAllocVar(srcVar, ptr2Type);
 			}			
 			break;
 		}
@@ -156,15 +157,15 @@ public class TypeAnalyzer implements IRPreProcessor {
 	  return builder.build();
 	}
 
-	public IRVarImpl createAllocVarOfField(IRVarImpl rootVar, String fieldName) {
+	public IRVarImpl createAllocVarOfField(IRVarImpl rootVar, Type type, String fieldName) {
 		IRVarImpl var = rootVar.createAllocVarOfField(fieldName);
-		updateVarMap(var.getType(), var);
+		updateVarMap(type, var);
 		return var;
 	}
 
-	public IRVarImpl createAllocVar(IRVar pVar) {
+	public IRVarImpl createAllocVar(IRVar pVar, Type type) {
 		IRVarImpl var = ((IRVarImpl) pVar).createAllocVar();
-		updateVarMap(var.getType(), var);
+		updateVarMap(type, var);
 		return var;
 	}
 

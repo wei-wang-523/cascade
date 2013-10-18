@@ -194,10 +194,10 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     String pScope = CType.getScope(ptr.getNode());
     IRVar pVar = analyzer.getVariable(pName, pType, pScope);
     
-    IRVar regionVar = analyzer.createAllocVar(pVar);
+    xtc.type.Type regionType = pType.resolve().toPointer().getType();
+    IRVar regionVar = analyzer.createAllocVar(pVar, regionType);
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
-    xtc.type.Type regionType = regionVar.getType();
     regionType.mark(regionNode);
     regionNode.setProperty(CType.SCOPE, regionVar.getScope());
     
@@ -424,15 +424,14 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
     
     /* Find related heap regions and size array */
-    xtc.type.Type ptr2Type = CType.unwrapped(CType.getType(ptr.getNode())).toPointer().getType();
+    xtc.type.Type ptrType = CType.getType(ptr.getNode());
+    xtc.type.Type ptr2Type = ptrType.resolve().toPointer().getType();
     String typeName = analyzer.getTypeName(ptr2Type);
     IREquivClosure equivAliasVars = analyzer.getEquivClass(typeName);
     
     /* Get the related alloc array */
-    Map<String, ArrayExpression> map = getRecordElems(state.getChild(1));
-    String sizeArrName = getSizeArrElemName(typeName);
-    ArrayExpression sizeArr = map.get(sizeArrName);
-    assert sizeArr != null;
+    ArrayExpression sizeArr = popSizeArray(state, ptr2Type);
+    assert(sizeArr != null);
       
     Collection<BooleanExpression> res = heapEncoder.validMemAccess(equivAliasVars, sizeArr, ptr);
     
@@ -635,7 +634,8 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     } else {
     	Type recordType = record.getType();    	
     	ArrayExpression lvalRepArr = null;
-    	String lTypeName = analyzer.getTypeName(CType.getType(lval.getNode()));
+    	xtc.type.Type lType = CType.getType(lval.getNode());
+    	String lTypeName = analyzer.getTypeName(lType);
      	String lSizeArrName = getSizeArrElemName(lTypeName);
      	if(!map.containsKey(lSizeArrName)) {
      		/* Initialize as constant array with zero everywhere */
@@ -709,14 +709,13 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   private boolean updateMemArray(Expression state, xtc.type.Type type) {
   	Preconditions.checkArgument(state.isTuple());
   	String arrName = getMemArrElemName(analyzer.getTypeName(type));
-  	ArrayExpression resMem = null;
     if(sideEffectMem.containsKey(arrName) || 
     		sideEffectMemClosure.containsKey(arrName) || 
     		isElemInRecord(state.getChild(0), arrName)) {
     	return false;
     } else { // Fresh element
       Type valueType = heapEncoder.getArrayElemType(type);
-      resMem = getExpressionManager()
+      ArrayExpression resMem = getExpressionManager()
     			.arrayVar(arrName, addrType, valueType, false);
       sideEffectMem.put(arrName, resMem);
       return true;
@@ -785,7 +784,6 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   private String getMemArrElemName(String name) {
   	StringBuilder sb = new StringBuilder()
   		.append(ARRAY_MEM_PREFIX)
-    	.append(Identifiers.ARRAY_NAME_INFIX)
     	.append(name);
   	String res = Identifiers.toValidId(sb.toString());
   	return res;
@@ -799,7 +797,6 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   private String getSizeArrElemName(String name) {
     StringBuilder sb = new StringBuilder();
     sb.append(ARRAY_ALLOC_PREFIX)
-    	.append(Identifiers.ARRAY_NAME_INFIX)
     	.append(name);
   	String res = Identifiers.toValidId(sb.toString());
   	return res;

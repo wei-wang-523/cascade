@@ -29,15 +29,6 @@ public class IRVarImpl implements IRVar {
 		return new IRVarImpl(_name, _type, _scope, null);
 	}
 	
-	/**
-	 * It mainly used for replace the name of early created place holder
-	 * @param _name
-	 */
-	private void setName(String _name) {
-		Preconditions.checkArgument(isNullLoc());
-		name = _name;
-	}
-	
 	@Override
 	public String getName() {
 		return name;
@@ -104,29 +95,12 @@ public class IRVarImpl implements IRVar {
 	}
 
   protected IRVarImpl createAllocVar() {
-  	if(allocVar.isNullLoc()) {
-  		String	varName = Identifiers.uniquify(
-  				new StringBuilder().append(Identifiers.REGION_VARIABLE_NAME).append(name).toString());
-  		allocVar.setName(varName);
-  		return allocVar;
-  	} else {
-    	IRVarImpl regionVar = allocVar();
-  		allocVar = regionVar;
-  		return regionVar;
-  	}
+  	IRVarImpl regionVar = allocVar();
+  	allocVar = regionVar;
+  	return regionVar;
 	}
 
-	protected IRVarImpl createAllocVarOfField(String fieldName) {
-		if(allocVarMap.containsKey(fieldName)) {
-			IRVarImpl var = allocVarMap.get(fieldName);
-			if(var.isNullLoc()) {
-				String varName = Identifiers.uniquify(new StringBuilder()
-				.append(name).append(Identifiers.RECORD_SELECT_NAME_INFIX).append(fieldName).toString());
-				var.setName(varName);
-				return var;
-			}
-		}
-		
+	protected IRVarImpl createAllocVarOfField(String fieldName) {		
 		IRVarImpl regionVar = allocVarOfField(fieldName);
 		allocVarMap.put(fieldName, regionVar);
 		return regionVar;
@@ -137,8 +111,7 @@ public class IRVarImpl implements IRVar {
 	}
 
 	protected IRVarImpl getAllocVar() {
-		if(allocVar != null) 	return allocVar;
-		else									return allocNull();
+		return allocVar;
 	}
 
 	protected IRVarImpl getAllocVarOfField(String fieldName) {
@@ -147,10 +120,8 @@ public class IRVarImpl implements IRVar {
 		if(!fieldType.resolve().isPointer())
 			return this;
 		else {
-			if(allocVarMap.containsKey(fieldName))
-				return allocVarMap.get(fieldName);
-			else
-				return allocNullOfField(fieldName);
+			Preconditions.checkArgument(allocVarMap.containsKey(fieldName));
+			return allocVarMap.get(fieldName);
 		}
 	}
 
