@@ -9,7 +9,8 @@ int main() {
   acc r;
   r.balance = 1;
   acc *s;
-  s = (acc *)malloc(sizeof(acc));
+//  s = (acc *)malloc(sizeof(acc));
+  ASSUME(allocated(s, sizeof(acc)));
   s->account_number = 2;
   s->first_name = (char *)malloc(sizeof(char));
   s->first_name[0] = 'c';
