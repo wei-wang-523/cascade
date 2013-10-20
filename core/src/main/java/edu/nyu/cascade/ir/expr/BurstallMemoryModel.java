@@ -9,6 +9,8 @@ import java.util.Map.Entry;
 
 import xtc.tree.GNode;
 import xtc.tree.Node;
+import xtc.type.FieldReference;
+import xtc.type.Reference;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -103,7 +105,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     String pScope = CType.getScope(ptr.getNode());
     IRVar pVar = analyzer.getVariable(pName, pType, pScope);
     IRVar regionVar = analyzer.getAllocVar(pVar, pType, pScope);
-    
+
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
     regionVar.getType().mark(regionNode);
@@ -194,8 +196,10 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     String pScope = CType.getScope(ptr.getNode());
     IRVar pVar = analyzer.getVariable(pName, pType, pScope);
     
-    xtc.type.Type regionType = pType.resolve().toPointer().getType();
+    xtc.type.Type regionType = analyzer.getPtr2Type(pType);
     IRVar regionVar = analyzer.getAllocatedVar(pVar, regionType, pScope);
+    IOUtils.err().println(analyzer.displaySnapShot());
+    
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
     regionType.mark(regionNode);
@@ -424,14 +428,12 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
     
     /* Find related heap regions and size array */
-    xtc.type.Type ptrType = CType.getType(ptr.getNode());
-    xtc.type.Type ptr2Type = ptrType.resolve().toPointer().getType();
+    xtc.type.Type ptr2Type = analyzer.getPtr2Type(CType.getType(ptr.getNode()));
     String typeName = analyzer.getTypeName(ptr2Type);
     IREquivClosure equivAliasVars = analyzer.getEquivClass(typeName);
     
     /* Get the related alloc array */
     ArrayExpression sizeArr = popSizeArray(state, ptr2Type);
-    assert(sizeArr != null);
       
     Collection<BooleanExpression> res = heapEncoder.validMemAccess(equivAliasVars, sizeArr, ptr);
     
@@ -444,15 +446,12 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(size.getType().equals( valueType ));
 
     /* Find related heap regions and size array */
-    xtc.type.Type ptr2Type = CType.unwrapped(CType.getType(ptr.getNode())).toPointer().getType();
+    xtc.type.Type ptr2Type = analyzer.getPtr2Type(CType.getType(ptr.getNode()));
     String typeName = analyzer.getTypeName(ptr2Type);
     IREquivClosure equivAliasVars = analyzer.getEquivClass(typeName);
     
     /* Get the related alloc array */
-    Map<String, ArrayExpression> map = getRecordElems(state.getChild(1));
-    String sizeArrName = getSizeArrElemName(typeName);
-    ArrayExpression sizeArr = map.get(sizeArrName);
-    assert sizeArr != null;
+    ArrayExpression sizeArr = popSizeArray(state, ptr2Type);
 
     Collection<BooleanExpression> res = heapEncoder.validMemAccess(equivAliasVars, sizeArr, ptr, size);
     
@@ -465,13 +464,13 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(size.getType().equals( valueType ));
     
     /* Find related heap regions and alloc array */
-    String ptr2TypeName = analyzer.getTypeName(
-    		CType.unwrapped(CType.getType(ptr.getNode())).toPointer().getType());
+    xtc.type.Type ptr2Type = analyzer.getPtr2Type(CType.getType(ptr.getNode()));
+    String typeName = analyzer.getTypeName(ptr2Type);
     
-    IREquivClosure equivAliasVars = analyzer.getEquivClass(ptr2TypeName);
+    IREquivClosure equivAliasVars = analyzer.getEquivClass(typeName);
     
     Map<String, ArrayExpression> map = getRecordElems(state.getChild(1));
-    String sizeArrName = getSizeArrElemName(ptr2TypeName);
+    String sizeArrName = getSizeArrElemName(typeName);
     ArrayExpression sizeArr = map.get(sizeArrName);
     assert sizeArr != null;
     
@@ -484,13 +483,9 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   	Preconditions.checkArgument(ptr.getType().equals( addrType ));
   	
     /* Find related heap regions and alloc array */
-    xtc.type.Type ptr2Type = CType.unwrapped(CType.getType(ptr.getNode())).toPointer().getType();
-    String typeName = analyzer.getTypeName(ptr2Type);
-    
-    Map<String, ArrayExpression> map = getRecordElems(state.getChild(1));
-    String sizeArrName = getSizeArrElemName(typeName);
-    ArrayExpression sizeArr = map.get(sizeArrName);
-    assert sizeArr != null;
+    xtc.type.Type ptr2Type = analyzer.getPtr2Type(CType.getType(ptr.getNode()));
+    ArrayExpression sizeArr = popSizeArray(state, ptr2Type);
+
     return heapEncoder.validFree(sizeArr, ptr);
   }
   
@@ -760,6 +755,13 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
    */
   private ArrayExpression popSizeArray(Expression state, xtc.type.Type type) {
   	Preconditions.checkArgument(state.isTuple());
+  	while(type.hasShape() && type.getShape() instanceof FieldReference) {
+  		Reference ref = type.getShape();
+  		if(ref instanceof FieldReference) {
+  			type = ref.getBase().getType();
+  		}
+  	} 	
+  	
   	String arrName = getSizeArrElemName(analyzer.getTypeName(type));
   	ArrayExpression resSize = null;
     if(sideEffectSizeClosure.containsKey(arrName)) { 
@@ -767,12 +769,9 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     	resSize = resUpdate.eval(state).asArray();   	
     } else if(isElemInRecord(state.getChild(1), arrName)) {
     	resSize = selectRecordElem(state.getChild(1), arrName);
-    } else { // Fresh element
-//    	ArrayType sizeArrType = heapEncoder.getSizeArrType();
-//      resSize = getExpressionManager()
-//    			.variable(arrName, sizeArrType, false).asArray();
+    } else {
       resSize = heapEncoder.getConstSizeArr(heapEncoder.getSizeArrType());
-    }   
+    }
     return resSize;
   }
   
