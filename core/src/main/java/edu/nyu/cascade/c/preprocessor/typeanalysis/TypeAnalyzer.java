@@ -1,8 +1,9 @@
 package edu.nyu.cascade.c.preprocessor.typeanalysis;
 
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -19,6 +20,7 @@ import com.google.common.base.Predicates;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
@@ -37,6 +39,7 @@ import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Pair;
+import edu.nyu.cascade.util.ReservedFunction;
 import edu.nyu.cascade.util.Triple;
 
 public class TypeAnalyzer implements IRPreProcessor {
@@ -49,10 +52,10 @@ public class TypeAnalyzer implements IRPreProcessor {
         }
       });
   
-  static private final LoadingCache<Triple<String, Type, Scope>, IRVarImpl> varCache = CacheBuilder
-      .newBuilder().build(new CacheLoader<Triple<String, Type, Scope>, IRVarImpl>(){
+  static private final LoadingCache<Triple<String, Pair<Type, Reference>, Scope>, IRVarImpl> varCache = CacheBuilder
+      .newBuilder().build(new CacheLoader<Triple<String, Pair<Type, Reference>, Scope>, IRVarImpl>(){
         @Override
-        public IRVarImpl load(Triple<String, Type, Scope> triple) {
+        public IRVarImpl load(Triple<String, Pair<Type, Reference>, Scope> triple) {
           return loadVariable(triple.fst(), triple.snd(), triple.thd());
         }
       });
@@ -63,6 +66,9 @@ public class TypeAnalyzer implements IRPreProcessor {
 	private TypeAnalyzer(SymbolTable _symbolTable) {
 		symbolTable = _symbolTable;
 		varTypeMap = Maps.newLinkedHashMap();
+		// discard all entries in caches for each test case
+		typeNameCache.invalidateAll();
+		varCache.invalidateAll();
 	}
 	
 	public static TypeAnalyzer create(SymbolTable _symbolTable) {
@@ -73,6 +79,31 @@ public class TypeAnalyzer implements IRPreProcessor {
 	public void analysis(IRStatement stmt) {
 		IOUtils.err().println("Preprocessing: " + stmt.toString());
 		switch(stmt.getType()) {
+		case ASSUME : {
+			IRExpression operand = stmt.getOperand(0);
+			Node srcNode = operand.getSourceNode();
+			// Find all allocated(...) predicates
+			Iterable<Node> allocated = findAllocatedFuncNode(srcNode);
+			for(Node alloc : allocated) {
+				Node ptrNode = alloc.getNode(1).getNode(0);
+				Type ptrType = CType.getType(ptrNode);
+				String name = CType.getReferenceName(ptrType);
+				String ptrScopeName = CType.getScope(ptrNode);
+				Scope ptrScope = symbolTable.getScope(ptrScopeName);
+				if(ptrType.hasShape() && ptrType.getShape().hasField()) { 
+					Reference ptrRef = ptrType.getShape();
+					IRVarImpl ptrVar = getVariable(name, ptrType, ptrScope);
+					String fieldName = ptrRef.getField();
+					Type ptr2Type = ptrType.resolve().toPointer().getType();
+					createAllocVarOfField(ptrVar, ptr2Type, fieldName, ptrScope);
+				} else {
+					IRVarImpl ptrVar = getVariable(name, ptrType, ptrScope);
+					Type ptr2Type = ptrType.resolve().toPointer().getType();
+					createAllocVar(ptrVar, ptr2Type, ptrScope);
+				}
+			}
+			break;
+		}
 		case ALLOC : {
 			IRExpression operand = stmt.getOperand(0);
 			Node srcNode = operand.getSourceNode();
@@ -81,14 +112,13 @@ public class TypeAnalyzer implements IRPreProcessor {
 			String srcScopeName = CType.getScope(srcNode);
 			Scope srcScope = symbolTable.getScope(srcScopeName);
 			
-			if(srcType.hasShape() && srcType.getShape().hasField()) { 
-				Reference srcRef = srcType.getShape();
-				IRVarImpl srcVar = getVariablePre(name, srcRef.getBase(), srcScope).fst();
-				String fieldName = srcRef.getField();
+			if(srcType.hasShape() && srcType.getShape().hasField()) {
+				IRVarImpl srcVar = getVariable(name, srcType, srcScope);
+				String fieldName = srcType.getShape().getField();
 				Type ptr2Type = srcType.resolve().toPointer().getType();
 				createAllocVarOfField(srcVar, ptr2Type, fieldName, srcScope);
 			} else {
-				IRVarImpl srcVar = getVariablePre(name, srcType, srcScope);
+				IRVarImpl srcVar = getVariable(name, srcType, srcScope);
 				Type ptr2Type = srcType.resolve().toPointer().getType();
 				createAllocVar(srcVar, ptr2Type, srcScope);
 			}
@@ -113,23 +143,23 @@ public class TypeAnalyzer implements IRPreProcessor {
 	      if(ref instanceof AddressOfReference) {
 	        Reference base = ref.getBase();
 	        Type rType_ = base.getType().annotate().shape(base);
-	        IRVarImpl lTypeVar_ = getVariablePre(lRefName, lType, lScope);
-	        IRVarImpl rTypeVar_ = getVariablePre(rRefName, rType_, rScope);
+	        IRVarImpl lTypeVar_ = getVariable(lRefName, lType, lScope);
+	        IRVarImpl rTypeVar_ = getVariable(rRefName, rType_, rScope);
 	        addrAssign(lType, lTypeVar_, rTypeVar_); break;
 	      }
 	      if(ref.isIndirect()) {
 	        Reference base = ref.getBase();
 	        Type rType_ = base.getType().annotate().shape(base);
-	        IRVarImpl lTypeVar_ = getVariablePre(lRefName, lType, lScope);
-	        IRVarImpl rTypeVar_ = getVariablePre(rRefName, rType_, rScope);
+	        IRVarImpl lTypeVar_ = getVariable(lRefName, lType, lScope);
+	        IRVarImpl rTypeVar_ = getVariable(rRefName, rType_, rScope);
 	        ptrAssign(lType, lTypeVar_, rTypeVar_); break;
 	      }
 	    } 
 	    
 	    CellKind rKind = CType.getCellKind(rType);
 	    if(CellKind.STRUCTORUNION.equals(rKind) || CellKind.ARRAY.equals(rKind)) {
-	    	IRVarImpl lTypeVar_ = getVariablePre(lRefName, lType, lScope);
-	    	IRVarImpl rTypeVar_ =  getVariablePre(rRefName, rType, rScope);
+	    	IRVarImpl lTypeVar_ = getVariable(lRefName, lType, lScope);
+	    	IRVarImpl rTypeVar_ =  getVariable(rRefName, rType, rScope);
 	      addrAssign(lType, lTypeVar_, rTypeVar_); break;
 	    }
 	    
@@ -137,14 +167,14 @@ public class TypeAnalyzer implements IRPreProcessor {
 	      if(lType.getShape().isIndirect()) {
 	        Reference base = lType.getShape().getBase();
 	        Type lType_ = base.getType().annotate().shape(base);
-	        IRVarImpl lTypeVar_ = getVariablePre(lRefName, lType_, lScope);
-	        IRVarImpl rTypeVar_ = getVariablePre(rRefName, rType, rScope);
+	        IRVarImpl lTypeVar_ = getVariable(lRefName, lType_, lScope);
+	        IRVarImpl rTypeVar_ = getVariable(rRefName, rType, rScope);
 	        assignPtr(lType, lTypeVar_, rTypeVar_); break;
 	      }
 	    }
 	    
-	    getVariablePre(lRefName, lType, lScope);
-	    getVariablePre(rRefName, rType, rScope);
+	    getVariable(lRefName, lType, lScope);
+	    getVariable(rRefName, rType, rScope);
 	    break;
 		}
 		case FREE : {
@@ -155,12 +185,11 @@ public class TypeAnalyzer implements IRPreProcessor {
 			String srcScopeName = CType.getScope(srcNode);
 			Scope srcScope = symbolTable.getScope(srcScopeName);
 			if(srcType.hasShape() && srcType.getShape().hasField()) { 
-				Reference srcRef = srcType.getShape();
-				IRVarImpl srcVar = getVariablePre(name, srcRef.getBase(), srcScope).fst();
+				IRVarImpl srcVar = getVariable(name, srcType, srcScope);
 				String fieldName = srcType.getShape().getField();
 				freeAllocVarOfField(srcVar, fieldName, srcScope);
 			} else {
-				IRVarImpl srcVar = getVariablePre(name, srcType, srcScope);
+				IRVarImpl srcVar = getVariable(name, srcType, srcScope);
 				freeAllocVar(srcVar, srcScope);
 			}			
 			break;
@@ -175,7 +204,7 @@ public class TypeAnalyzer implements IRPreProcessor {
 				String name = CType.getReferenceName(srcType);			    
 				String srcScopeName = CType.getScope(srcNode);
 				Scope srcScope = symbolTable.getScope(srcScopeName);
-				getVariablePre(name, srcType, srcScope);
+				getVariable(name, srcType, srcScope);
 		  }
 			break;			
 		}
@@ -249,28 +278,6 @@ public class TypeAnalyzer implements IRPreProcessor {
 	  		new ImmutableMap.Builder<String, Set<IRVar>>().putAll(varTypeMap);
 	  return builder.build();
 	}
-
-	/**
-	 * Get allocated variable of <code>rootVar</code>, it either get a earlier
-	 * created placeholder, or create a new region variable
-	 * @param rootVar
-	 * @param type
-	 * @param scopeName
-	 * @return an allocated variable
-	 */
-	public IRVarImpl getAllocatedVar(IRVar rootVar, Type type, String scopeName) {
-		IRVarImpl var = (IRVarImpl) rootVar;
-		Scope scope = symbolTable.getScope(scopeName);
-		IRVarImpl res;
-		if(type.hasShape() && type.getShape() instanceof FieldReference) {
-			String fieldName = type.getShape().getField();
-			res = var.createAllocatedVarOfField(fieldName, scope);		
-		} else {
-			res = var.createAllocatedVar(scope);
-		}
-		updateVarMap(type, res);
-		return res;
-	}
 	
 	/**
 	 * Get the allocated region variable for <code>pVar</code>.
@@ -282,97 +289,43 @@ public class TypeAnalyzer implements IRPreProcessor {
 	public IRVarImpl getAllocVar(IRVar pVar, Type pType, String scopeName) {
 		IRVarImpl var = (IRVarImpl) pVar;
 		Scope scope = symbolTable.getScope(scopeName);
-		return getAllocVar(var, pType, scope);
+		if(pType.hasShape() && pType.getShape() instanceof FieldReference) {
+			String fieldName = pType.getShape().getField();
+			return var.getUntouchedAllocVarOfField(fieldName, scope);
+		} else {
+			return var.getUntouchedAllocVar(scope);
+		}
 	}
 	
 	/**
-	 * Get the variable stored in <code>varTypeMap</code>
+	 * Get the variable stored in <code>varCache</code>
 	 * @param name
 	 * @param type
 	 * @param scopeName
-	 * @return a variable
+	 * @return a variable or <code>null</code> if <code>varCache</code> does
+	 * not have it
 	 */
 	public IRVarImpl getVariable(String name, Type type, String scopeName) {
 		Scope scope = symbolTable.getScope(scopeName);
-		IRVarImpl res;
-		if(type.hasShape()) {
-			res = getVariablePre(name, type.getShape(), scope).fst();
-		} else {
-			try {
-				Scope currentScope = scope;
-				// scope and type of the root variable with name
-				Scope scope_ = currentScope.isDefined(name) ? currentScope.lookupScope(name) : currentScope;
-				Type type_ = currentScope.isDefined(name) ? (Type) currentScope.lookup(name) : type;
-				// get the root variable
-				res = varCache.get(Triple.of(name, type_, scope_));
-			} catch (ExecutionException e) {
-				throw new CacheException(e);
-			}
+		
+		IRVarImpl res = null;
+		
+		if(!name.equals(Identifiers.CONSTANT)) { // skip constant			
+			Pair<Type, Reference> pair = Pair.of(type, type.getShape());
+			Scope scope_ = scope.isDefined(name) ? scope.lookupScope(name) : scope;
+			res = varCache.getIfPresent(Triple.of(name, pair, scope_));
 		}
 		
 		if(res == null) {
 			IOUtils.err().println("WARNING: Cannot find vairable for " + name 
 					+ " (" + type.resolve().getName() + ')');
-		} else {
-			updateVarMap(type, res);
 		}
 		return res;
 	}
 
 	/**
-	 * Get the allocated region variable for <code>var</code>.
-	 * @param pVar
-	 * @param pType
-	 * @param scope
-	 * @return a region variable
-	 */
-	private IRVarImpl getAllocVar(IRVarImpl var, Type pType, Scope scope) {		
-		try{
-			if(pType.hasShape() && pType.getShape() instanceof FieldReference) {
-				String fieldName = pType.getShape().getField();
-				return Iterables.find(
-						var.getAllocVarSetAtScopeOfField(fieldName, scope),
-						Predicates.and(Predicates.not(IRVarImpl.isNullPredicate), 
-								Predicates.not(IRVarImpl.isTouchedPredicate)));
-			} else {
-				return Iterables.find(
-						var.getAllocVarSetAtScope(scope),
-						Predicates.and(Predicates.not(IRVarImpl.isNullPredicate), 
-								Predicates.not(IRVarImpl.isTouchedPredicate)));
-			}
-		} catch(NoSuchElementException e) {
-			throw new ExpressionFactoryException(e);
-		}
-	}
-	
-	/**
-	 * Get the allocated region variable for <code>var</code>.
-	 * @param pVar
-	 * @param pType
-	 * @param scope
-	 * @return a region variable
-	 */
-	private IRVarImpl findAllocVar(IRVarImpl var, Type pType, Scope scope) {		
-		try{
-			if(pType.hasShape() && pType.getShape() instanceof FieldReference) {
-				String fieldName = pType.getShape().getField();
-				return Iterables.find(
-						var.getAllocVarSetOfFieldNearScope(fieldName, scope),
-						Predicates.and(Predicates.not(IRVarImpl.isNullPredicate), 
-								Predicates.not(IRVarImpl.isTouchedPredicate)));
-			} else {
-				return Iterables.find(
-						var.getAllocVarSetNearScope(scope),
-						Predicates.and(Predicates.not(IRVarImpl.isNullPredicate), 
-								Predicates.not(IRVarImpl.isTouchedPredicate)));
-			}
-		} catch(NoSuchElementException e) {
-			throw new ExpressionFactoryException(e);
-		}
-	}
-
-	/**
-	 * Create a allocated variable in <code>rootVar</code> with <code>fieldName</code>
+	 * Pre-processing: create a allocated variable in <code>rootVar</code> with 
+	 * <code>fieldName</code>
 	 * @param rootVar
 	 * @param type
 	 * @param fieldName
@@ -386,7 +339,7 @@ public class TypeAnalyzer implements IRPreProcessor {
 	}
 
 	/**
-	 * Create a allocated variable in <code>rootVar</code>
+	 * Pre-processing: create a allocated variable in <code>rootVar</code>
 	 * @param pVar
 	 * @param type
 	 * @param scope
@@ -399,7 +352,7 @@ public class TypeAnalyzer implements IRPreProcessor {
 	}
 
 	/**
-	 * Free the allocated variable of <code>rootVar</code>
+	 * Pre-processing: free the allocated variable of <code>rootVar</code>
 	 * @param pVar
 	 * @param scope
 	 */
@@ -408,7 +361,8 @@ public class TypeAnalyzer implements IRPreProcessor {
 	}
 	
 	/**
-	 * Free the allocated variable of <code>rootVar</code> with <code>fieldName</code>
+	 * Pre-processing: free the allocated variable of <code>rootVar</code> with 
+	 * <code>fieldName</code>
 	 * @param rootVar
 	 * @param fieldName
 	 * @param scope
@@ -418,149 +372,30 @@ public class TypeAnalyzer implements IRPreProcessor {
 	}
 
 	/**
-	 * Pre-processing: get allocated and not freed variable of <code>pVar</code>, 
-	 * if not yet allocated, create placeholder null variable.
-	 * @param pVar
-	 * @param pType
-	 * @param scope
-	 * @return a allocated variable
-	 */
-	private IRVarImpl getAllocOrCreateNullVar(IRVar pVar, Type pType, Scope scope) {
-		IRVarImpl var = (IRVarImpl) pVar;
-		
-		if(pType.hasShape() && pType.getShape() instanceof FieldReference) {
-			String fieldName = pType.getShape().getField();
-			Iterable<IRVarImpl> res = Iterables.filter(
-					var.getAllocVarSetOfFieldNearScope(fieldName, scope), 
-					Predicates.not(IRVarImpl.isFreePredicate));
-			if(res == null || Iterables.isEmpty(res)) {
-				return var.createNullAllocVarOfField(fieldName, scope);
-			} else {
-				return Iterables.getFirst(res, null);
-			}
-		} else {
-			Iterable<IRVarImpl> res = Iterables.filter(
-					var.getAllocVarSetNearScope(scope), 
-					Predicates.not(IRVarImpl.isFreePredicate));
-			assert res != null;
-			if(Iterables.isEmpty(res)) {
-				return var.createNullAllocVar(scope);
-			} else {
-				return Iterables.getFirst(res, null);
-			}
-		}
-	}
-
-	/**
-	 * Pre-processing: get a variable from <code>varTypeMap</code>, if not contained,
-	 * just create a new variable.
+	 * Pre-processing: get a variable from <code>varCache</code>, if not contained,
+	 * just create a new one.
 	 * @param name
 	 * @param type
 	 * @param scope
-	 * @param preprocess indicates if new region variable is allowed to create. If <code>true</code>,
-	 * means region creation is enabled, otherwise, it is not.
 	 * @return a variable
 	 */
-	private IRVarImpl getVariablePre(String name, Type type, Scope scope) {
+	private IRVarImpl getVariable(String name, Type type, Scope scope) {
 		if(name.equals(Identifiers.CONSTANT)) return null; // skip constant
-		
-		IRVarImpl res;
-		if(type.hasShape()) {
-			res = getVariablePre(name, type.getShape(), scope).fst();
-		} else {
-			try {
-				Scope currentScope = scope;
-				// scope and type of the root variable with name
-				Scope scope_ = currentScope.isDefined(name) ? currentScope.lookupScope(name) : currentScope;
-				Type type_ = currentScope.isDefined(name) ? (Type) currentScope.lookup(name) : type;
-				// get the root variable
-				res = varCache.get(Triple.of(name, type_, scope_));
-			} catch (ExecutionException e) {
-				throw new CacheException(e);
-			}
-		}
-		
-		if(res == null) {
-			IOUtils.err().println("WARNING: Cannot find vairable for " + name 
-					+ " (" + type.resolve().getName() + ')');
-		} else {
-			updateVarMap(type, res);
-		}
-		return res;
-	}
-	
-	/**
-	 * Pre-processing: get the base variable from <code>name</code> and <code>scope</code>, 
-	 * from the reference get the target variable. The references considered are indirect reference, 
-	 * field reference, and address of reference. For field reference, return the base variable
-	 * and field name for case analysis <code>(*s).f</code>, return the variable of <code>
-	 * (*s)</code>, and field name <code>f</code>. For higher level analysis <code>(*(*s).f)</code>,
-	 * get <code>(region_s, f)</code> from <code>(*s).f</code>, and thus get <code>region_s_f</code>
-	 * for <code>(*(*s).f)</code>.
-	 * 
-	 * @param name
-	 * @param ref
-	 * @param scope
-	 * @param preprocess indicates if new region variable is allowed to create. If <code>true</code>,
-	 * means region creation is enabled, otherwise, it is not.
-	 * @return a pair of variable and field name
-	 */
-	private Pair<IRVarImpl, String> getVariablePre(String name, Reference ref, Scope scope) {
-		if(ref.isIndirect()) {
-			Pair<IRVarImpl, String> pair = getVariablePre(name, ref.getBase(), scope);
-			IRVarImpl baseVar = pair.fst();
-			return Pair.of(getAllocOrCreateNullVar(baseVar, ref.getType(), scope), null);			
-		} 
-		
-		if(ref instanceof FieldReference) {
-			Pair<IRVarImpl, String> pair = getVariablePre(name, ref.getBase(), scope);
-			assert pair.snd() == null;
-			String fieldName = ref.getField();
-			return Pair.of(pair.fst(), fieldName);
-		}
-		
-		if(ref instanceof IndexReference) {
-			Pair<IRVarImpl, String> pair = getVariablePre(name, ref.getBase(), scope);
-			return pair;
-		}
-	
-		if(ref instanceof AddressOfReference) {
-			Pair<IRVarImpl, String> pair = getVariablePre(name, ref.getBase(), scope);
-			assert pair.snd() == null;
-			IRVarImpl res  = pair.fst().getRootVar();
-			return Pair.of(res, null);
-		}
-	
+				
 		try {
-			Scope currentScope = scope;
-			// scope and type of the root variable with name
-			Scope scope_ = currentScope.isDefined(name) ? currentScope.lookupScope(name) : currentScope;
-			Type type_ = currentScope.isDefined(name) ? (Type) currentScope.lookup(name) : ref.getType();
-			// get the root variable
-			IRVarImpl res = varCache.get(Triple.of(name, type_, scope_));
-			return Pair.of(res, null);
+			Pair<Type, Reference> pair = Pair.of(type, type.getShape());
+			Scope scope_ = scope.isDefined(name) ? scope.lookupScope(name) : scope;
+			IRVarImpl res = varCache.get(Triple.of(name, pair, scope_));
+			if(res == null) {
+				IOUtils.err().println("WARNING: Cannot find vairable for " + name 
+						+ " (" + type.resolve().getName() + ')');
+			} else {
+				updateVarMap(type, res);
+			}
+			return res;
 		} catch (ExecutionException e) {
 			throw new CacheException(e);
 		}
-	}
-
-	private static String loadTypeName(Type type) {
-	    Preconditions.checkArgument(type != null);
-	/*    if(type.hasConstant() && type.getConstant().isReference()) {
-	      Reference ref = type.getConstant().refValue();
-	      if(ref.getType().isBoolean())
-	        return "$BoolT";
-	    }*/
-	    try {
-	      return typeNameCache.get(Pair.of(type, type.getShape()));
-	    } catch (ExecutionException e) {
-	      throw new CacheException(e);
-	    }
-	  }
-
-	private static IRVarImpl loadVariable(String name, Type type, Scope scope) {
-	  IRVarImpl res = IRVarImpl.create(name, type, scope);
-	  return res;
 	}
 
 	private void updateVarMap(Type type, IRVar var) {
@@ -572,6 +407,28 @@ public class TypeAnalyzer implements IRPreProcessor {
 		} else {
 			varTypeMap.put(typeName, Sets.newHashSet(var));
 		}
+	}
+
+	/**
+	 * Pre-processing: pick all <code>allocated(...)</code> children nodes 
+	 * from <code>node</code>
+	 * @param node
+	 * @return a collection of allocated nodes
+	 */
+	private Iterable<Node> findAllocatedFuncNode(Node node) {
+		if(node.hasName("FunctionCall") && 
+				ReservedFunction.FUN_ALLOCATED.equals(node.getNode(0).getString(0))) {
+			return Collections.singleton(node);
+		}
+		
+		ImmutableList.Builder<Node> builder = new ImmutableList.Builder<Node>();
+		Iterator<Object> itr = node.iterator();
+		while(itr.hasNext()) {
+			Object elem = itr.next();
+			if(elem instanceof Node)
+				builder.addAll(findAllocatedFuncNode((Node) elem));
+		}
+		return builder.build();
 	}
 
 	private void addrAssign(Type type, IRVarImpl lhs, IRVarImpl addr) {
@@ -590,5 +447,83 @@ public class TypeAnalyzer implements IRPreProcessor {
 	
 	private void ptrAssign(Type type, IRVarImpl lhs, IRVarImpl ptr) {
 		return;
+	}
+
+	private static String loadTypeName(Type type) {
+	    Preconditions.checkArgument(type != null);
+	/*    if(type.hasConstant() && type.getConstant().isReference()) {
+	      Reference ref = type.getConstant().refValue();
+	      if(ref.getType().isBoolean())
+	        return "$BoolT";
+	    }*/
+	    try {
+	      return typeNameCache.get(Pair.of(type, type.getShape()));
+	    } catch (ExecutionException e) {
+	      throw new CacheException(e);
+	    }
+	  }
+	
+	private static IRVarImpl loadVariable(String name, Pair<Type, Reference> pair, Scope scope) {
+		
+		if(pair.snd() != null) {
+			Reference ref = pair.snd();
+			
+			if(ref.isIndirect()) {
+				IRVarImpl baseVar = loadVariable(name, Pair.of(ref.getBase().getType(), ref.getBase()), scope);
+				Type type = pair.fst();
+				
+				return getNonFreeAllocVar(baseVar, type, scope);
+			} 
+			
+			if(ref instanceof FieldReference) {
+				IRVarImpl baseVar = loadVariable(name, Pair.of(ref.getBase().getType(), ref.getBase()), scope);
+				return baseVar;
+			}
+			
+			if(ref instanceof IndexReference) {
+				IRVarImpl baseVar = loadVariable(name, Pair.of(ref.getBase().getType(), ref.getBase()), scope);
+				return baseVar;
+			}
+		
+			if(ref instanceof AddressOfReference) {
+				IRVarImpl baseVar = loadVariable(name, Pair.of(ref.getBase().getType(), ref.getBase()), scope);
+				return baseVar.getRootVar();
+			}
+		}
+		
+		// scope and type of the root variable with name
+
+		// get the root variable
+		Type type_ = scope.isDefined(name) ? (Type) scope.lookup(name) : pair.fst();
+		IRVarImpl res = varCache.getIfPresent(Triple.of(name, Pair.of(type_, type_.getShape()), scope));
+		return res != null ? res : IRVarImpl.create(name, type_, scope);
+	}
+
+	/**
+	 * Pre-processing: get allocated and not freed variable of <code>pVar</code>, 
+	 * if not yet allocated, create placeholder null variable.
+	 * @param pVar
+	 * @param pType
+	 * @param scope
+	 * @return a allocated variable
+	 */
+	private static IRVarImpl getNonFreeAllocVar(IRVarImpl var, Type pType, Scope scope) {
+		IRVarImpl res = null;
+		if(pType.hasShape() && pType.getShape() instanceof FieldReference) {
+			String fieldName = pType.getShape().getField();
+			res = Iterables.find(
+					var.getAllocVarSetOfField(fieldName, scope), 
+					Predicates.not(IRVarImpl.isFreePredicate), null);
+		} else {
+			res = Iterables.find(var.getAllocVarSet(scope), 
+					Predicates.not(IRVarImpl.isFreePredicate), null);
+		}
+		
+		if(res == null) {
+			throw new ExpressionFactoryException("ERROR: preprocessing cannot "
+					+ "find variable for " + var.toStringShort());
+		}
+		
+		return res;
 	}
 }
