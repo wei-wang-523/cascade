@@ -18,12 +18,12 @@ import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 
 public class IRVarImpl implements IRVar {
-	private String name;
+	private final String name;
 	private final Type type;
 	private final Scope scope;
 	private final Map<String, Set<IRVarImpl>> allocVarMap;
-	private final IRVarImpl rootVar;
 	private final Set<IRVarImpl> allocVarSet;
+	private IRVarImpl rootVar;
 	private boolean isNullLoc = false, isFreed = false, isTouched = false;
 	
 	protected static Predicate<IRVarImpl> isFreePredicate  = new Predicate<IRVarImpl>() {
@@ -135,7 +135,7 @@ public class IRVarImpl implements IRVar {
   protected IRVarImpl createAllocatedVar(Scope scope) {
   	Preconditions.checkArgument(allocVarSet != null);
 		IRVarImpl nullVar = Iterables.find(
-				getAllocVarSetOutScope(scope), 
+				getAllocVarSetAtScope(scope), 
 				Predicates.and(isNullPredicate, Predicates.not(isTouchedPredicate)), 
 				null);
     	
@@ -160,10 +160,10 @@ public class IRVarImpl implements IRVar {
    * @return a region variable
    */
 	protected IRVarImpl createAllocatedVarOfField(String fieldName, Scope scope) {
-		Preconditions.checkArgument(allocVarMap != null && allocVarMap.containsKey(fieldName));
+		Preconditions.checkArgument(allocVarMap != null);
 		
 		IRVarImpl nullVar = Iterables.find(
-				getAllocVarSetOutScopeOfField(fieldName, scope), 
+				getAllocVarSetAtScopeOfField(fieldName, scope), 
 				Predicates.and(isNullPredicate, Predicates.not(isTouchedPredicate)), 
 				null);
   	
@@ -193,7 +193,7 @@ public class IRVarImpl implements IRVar {
    * @return a region variable
    */
 	protected IRVarImpl createAllocVarOfField(String fieldName, Scope scope) {
-		Preconditions.checkArgument(allocVarMap != null && allocVarMap.containsKey(fieldName));
+		Preconditions.checkArgument(allocVarMap != null);
 		IRVarImpl regionVar = allocVarOfField(fieldName, scope);
 		addAllocVarMap(fieldName, regionVar);
 		return regionVar;
@@ -262,33 +262,96 @@ public class IRVarImpl implements IRVar {
 		return rootVar;
 	}
 	
+	protected void setRootVar(IRVarImpl _rootVar) {
+		if(rootVar != null) {
+			IOUtils.err().println("WARNING: reset root variable");
+		}
+		rootVar = _rootVar;
+	}
+	
+	protected Scope getScope() {
+		return this.scope;
+	}
+
 	/**
 	 * Get the set of allocated region variables defined in
-	 * <code>scope</code> or or out of <code>scope</code>.
+	 * <code>scope</code> or or near the <code>scope</code>.
 	 * 
 	 * @param scope
 	 */
-	protected Iterable<IRVarImpl> getAllocVarSetOutScope(final Scope scope) {
+	protected Iterable<IRVarImpl> getAllocVarSetNearScope(final Scope scope) {
+		Preconditions.checkArgument(allocVarSet != null);
+		return allocVarSet;
+//		Iterable<IRVarImpl> res = Iterables.filter(allocVarSet, new Predicate<IRVarImpl>() {
+//			@Override
+//			public boolean apply(IRVarImpl var) {
+//				return var.getScope().equals(scope) || var.getScope().hasNested(scope.getName());
+//			}
+//		});
+	}
+	
+	/**
+	 * Get the set of allocated variables associate with <code>fieldName</code> 
+	 * in <code>allocVarMap</code>, which is defined in <code>scope</code>, 
+	 * or near the <code>scope</code>. 
+	 * 
+	 * @param fieldName
+	 * @param scope 
+	 * @return  a set of region variables
+	 */
+	protected Iterable<IRVarImpl> getAllocVarSetOfFieldNearScope(String fieldName, final Scope scope) {
+		Preconditions.checkArgument(allocVarMap != null);
+		Preconditions.checkArgument(allocVarMap.containsKey(fieldName));
+		Type fieldType = type.resolve().toStructOrUnion().lookup(fieldName);
+		if(!fieldType.resolve().isPointer()) {
+			return Sets.newHashSet(this);
+		} else {
+			Iterable<IRVarImpl> set = allocVarMap.get(fieldName);
+			return set;
+
+/*			for(IRVarImpl elem : set) {
+				int weight = Integer.MAX_VALUE;
+				Scope elemScope = elem.getScope();
+				while(elemScope.equals(scope) || elemScope.equals(obj)) {
+					weightedMap.put(elem, Integer.MAX_VALUE);
+				}
+			}
+			
+			return Iterables.filter(allocVarMap.get(fieldName), new Predicate<IRVarImpl>() {
+				@Override
+				public boolean apply(IRVarImpl var) {
+					return var.getScope().equals(scope) || var.getScope().hasNested(scope.getName());
+				}
+			});*/
+		}
+	}
+	
+	/**
+	 * Get the set of allocated region variables defined in
+	 * <code>scope</code>.
+	 * 
+	 * @param scope
+	 */
+	protected Iterable<IRVarImpl> getAllocVarSetAtScope(final Scope scope) {
 		Preconditions.checkArgument(allocVarSet != null);
 		// Only returns the region variables defined in the same or parent scope
 		return Iterables.filter(allocVarSet, new Predicate<IRVarImpl>() {
 			@Override
 			public boolean apply(IRVarImpl var) {
-				return var.getScope().equals(scope) || var.getScope().hasNested(scope.getName());
+				return var.getScope().equals(scope);
 			}
 		});
 	}
 	
 	/**
 	 * Get the set of allocated variables associate with <code>fieldName</code> 
-	 * in <code>allocVarMap</code>, which is defined in <code>scope</code>, 
-	 * or out of <code>scope</code>. 
+	 * in <code>allocVarMap</code>, which is defined in <code>scope</code>.
 	 * 
 	 * @param fieldName
 	 * @param scope 
 	 * @return  a set of region variables
 	 */
-	protected Iterable<IRVarImpl> getAllocVarSetOutScopeOfField(String fieldName, final Scope scope) {
+	protected Iterable<IRVarImpl> getAllocVarSetAtScopeOfField(String fieldName, final Scope scope) {
 		Preconditions.checkArgument(allocVarMap != null);
 		Preconditions.checkArgument(allocVarMap.containsKey(fieldName));
 		Type fieldType = type.resolve().toStructOrUnion().lookup(fieldName);
@@ -299,7 +362,7 @@ public class IRVarImpl implements IRVar {
 			return Iterables.filter(allocVarMap.get(fieldName), new Predicate<IRVarImpl>() {
 				@Override
 				public boolean apply(IRVarImpl var) {
-					return var.getScope().equals(scope) || var.getScope().hasNested(scope.getName());
+					return var.getScope().equals(scope);
 				}
 			});
 		}
@@ -334,14 +397,14 @@ public class IRVarImpl implements IRVar {
 	 */
 	private IRVarImpl addAllocVarMap(String fieldName, IRVarImpl var) {
 		Preconditions.checkArgument(allocVarMap != null);
+		Set<IRVarImpl> set;
 		if(allocVarMap.containsKey(fieldName)) {
-			Set<IRVarImpl> set = allocVarMap.get(fieldName);
-			set.add(var);
-			allocVarMap.put(fieldName, set);
+			set = allocVarMap.get(fieldName);
 		} else {
-			Set<IRVarImpl> set = Sets.newHashSet(var);
-			allocVarMap.put(fieldName, set);
+			set = Sets.newLinkedHashSet();
 		}
+		set.add(var);
+		allocVarMap.put(fieldName, set);
 		return var;
 	}
 
@@ -375,10 +438,6 @@ public class IRVarImpl implements IRVar {
 		return regionVar;
 	}
 	
-	private Scope getScope() {
-		return this.scope;
-	}
-
 	private boolean free() {
 		if(this.isFreed) {
 			IOUtils.err().println("WARNING: double free " + toStringShort());
