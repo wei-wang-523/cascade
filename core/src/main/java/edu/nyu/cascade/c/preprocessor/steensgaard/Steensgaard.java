@@ -68,14 +68,14 @@ public class Steensgaard implements IRPreProcessor {
 	        ref = ref.getBase();
 	      
 	      if(ref instanceof AddressOfReference) {
-	        Reference base = rType.getShape().getBase();
+	        Reference base = ref.getBase();
 	        Type rType_ = base.getType().annotate().shape(base);
 	        IRVar lTypeVar_ = getRepVar(lRefName, lScope, lType);
 	        IRVar rTypeVar_ = getRepVar(rRefName, rScope, rType_);
 	        addrAssign(lTypeVar_, rTypeVar_); break;
 	      }
 	      if(ref.isIndirect()) {
-	        Reference base = rType.getShape().getBase();
+	        Reference base = ref.getBase();
 	        Type rType_ = base.getType().annotate().shape(base);
 	        IRVar lTypeVar_ = getRepVar(lRefName, lScope, lType);
 	        IRVar rTypeVar_ = getRepVar(rRefName, rScope, rType_);
