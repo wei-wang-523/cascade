@@ -110,6 +110,13 @@ public class CType {
           xtc.type.Type baseType = fieldRef.getBase().getType();
           String baseTypeName = parseTypeName(baseType);
           sb.append(baseTypeName).append('.').append(fieldRef.getField());
+        } else if(ref instanceof AddressOfReference){
+        	AddressOfReference addrRef = (AddressOfReference) ref;
+        	Reference baseRef = addrRef.getBase();
+        	xtc.type.Type baseType = addrRef.getType();
+        	baseType = baseType.annotate().shape(baseRef);
+        	String baseTypeName = parseTypeName(baseType);
+        	sb.append(Identifiers.ARRAY_NAME_INFIX).append("PointerT").append(baseTypeName);
         } else {
           sb.append(parseTypeName(ref.getType()));
         }
@@ -129,6 +136,9 @@ public class CType {
     } else if(type.isLabel()){
       sb.append(Identifiers.ARRAY_NAME_INFIX)
       .append(type.toLabel().getName());
+    } else if(type.isVoid()) {
+    	sb.append(Identifiers.ARRAY_NAME_INFIX)
+    	.append(type.toVoid().getName());
     } else {
       throw new IllegalArgumentException("Cannot parse type " + type.getName());
     }
