@@ -15,6 +15,6 @@ int main() {
   s->first_name = (char *)malloc(sizeof(char));
   s->first_name[0] = 'c';
   s->last_name[0] = 'd';
-  ASSERT(	r.balance == 1 && s->account_number == 2 && s->first_name[0] == 'c' && s->last_name[0] == 'd');
+  ASSERT(r.balance == 1 && s->account_number == 2 && s->first_name[0] == 'c' && s->last_name[0] == 'd');
   return 0;
 }
