@@ -1,5 +1,7 @@
 package edu.nyu.cascade.c.preprocessor.typeanalysis;
 
+import com.google.common.collect.Iterables;
+
 import edu.nyu.cascade.c.preprocessor.IREquivClosure;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 
@@ -26,5 +28,10 @@ public class TypeEquivClosure implements IREquivClosure {
   public Iterable<IRVar> getElements() {
 		return elements;
   }
+	
+	@Override
+	public boolean hasElements() {
+		return elements == null || Iterables.isEmpty(elements);
+	}
 
 }

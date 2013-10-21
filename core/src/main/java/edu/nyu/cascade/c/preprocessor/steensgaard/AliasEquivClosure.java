@@ -1,5 +1,7 @@
 package edu.nyu.cascade.c.preprocessor.steensgaard;
 
+import com.google.common.collect.Iterables;
+
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.c.preprocessor.IREquivClosure;
 
@@ -30,6 +32,11 @@ public class AliasEquivClosure implements IREquivClosure {
 	@Override
 	public String getName() {
 		return name;
+	}
+	
+	@Override
+	public boolean hasElements() {
+		return elements == null || Iterables.isEmpty(elements);
 	}
 	
 }

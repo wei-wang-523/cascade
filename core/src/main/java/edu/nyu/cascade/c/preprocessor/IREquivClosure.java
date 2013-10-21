@@ -5,4 +5,6 @@ public interface IREquivClosure {
 	String getName();
 
 	Iterable<IRVar> getElements();
+	
+	boolean hasElements();
 }

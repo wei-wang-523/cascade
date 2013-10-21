@@ -109,7 +109,8 @@ public class CType {
           FieldReference fieldRef = (FieldReference) ref;
           xtc.type.Type baseType = fieldRef.getBase().getType();
           String baseTypeName = parseTypeName(baseType);
-          sb.append(baseTypeName).append('.').append(fieldRef.getField());
+          sb.append(baseTypeName).append(Identifiers.NAME_INFIX)
+          .append(fieldRef.getField());
         } else if(ref instanceof AddressOfReference){
         	AddressOfReference addrRef = (AddressOfReference) ref;
         	Reference baseRef = addrRef.getBase();

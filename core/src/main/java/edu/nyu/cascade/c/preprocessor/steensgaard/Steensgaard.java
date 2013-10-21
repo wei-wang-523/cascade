@@ -50,6 +50,7 @@ public class Steensgaard implements IRPreProcessor {
 
   @Override
 	public void analysis(IRStatement stmt) {
+  	IOUtils.err().println(stmt.toString());
 	  switch (stmt.getType()) {
 	  case ASSIGN: {
 	    Node lhs = stmt.getOperand(0).getSourceNode();
@@ -225,7 +226,8 @@ public class Steensgaard implements IRPreProcessor {
 	  ValueType lhs_type = uf.getType(((IRVarImpl) lhs).getECR());
 	  assert(ValueTypeKind.LOCATION.equals(lhs_type.getKind()));
 	  ECR lhs0_ecr = (ECR) lhs_type.getOperand(0);
-	  String freshRegionName = Identifiers.uniquify(Identifiers.REGION_VARIABLE_NAME + lhs.getName());
+	  String freshRegionName = Identifiers.uniquify(Identifiers.REGION_VARIABLE_NAME 
+	  		+ Identifiers.NAME_INFIX + lhs.getName());
 	  assert(lhsType.resolve().isPointer());
 	  Type regionType = CType.unwrapped(lhsType).toPointer().getType();
 	  regionType = regionType.annotate().shape(new DynamicReference(freshRegionName, regionType));
