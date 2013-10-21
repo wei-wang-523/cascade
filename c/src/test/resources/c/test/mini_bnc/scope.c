@@ -11,7 +11,7 @@ int returnOne(){
 int main(int a, int b, int c){
 	int flag1,flag2;
 	
-/*	if (a > b) {
+	if (a > b) {
 		int y1 = 1;
 	} else {
 		int y2 = 0;
@@ -42,7 +42,7 @@ int main(int a, int b, int c){
 	while (j<3) {
 		int y8 = 0;
 		j++;
-	} */
+	}
 	
 	if ( flag2 -flag1 <= 0 ) {
 		if (flag1 + flag2 < 1){
