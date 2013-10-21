@@ -31,7 +31,6 @@ import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.ReachMemoryModel;
 import edu.nyu.cascade.ir.impl.VarInfo;
 import edu.nyu.cascade.ir.type.IRIntegerType;
-import edu.nyu.cascade.ir.type.IRType;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.VariableExpression;
@@ -1029,31 +1028,20 @@ class CExpressionEncoder implements ExpressionEncoder {
       throw new ExpressionFactoryException("Symbol table not found for file: "
           + file);
     }
-    symbolTable.setScope(scope);
-    if (!symbolTable.isDefined(name))   addVar(node);
-    IRVarInfo varInfo = symbolTable.lookup(name);
-    if (varInfo == null) {
-      throw new ExpressionFactoryException("Variable not found: " + name);
-    } else {
-      return varInfo;
-    }
-  }
-  
-  private void addVar(GNode node) throws ExpressionFactoryException {
-    String name = node.getString(0);
-    File file = new File(node.getLocation().file);
-    SymbolTable symbolTable = symbolTables.get(file);
-    if (symbolTable == null) {
-      throw new ExpressionFactoryException("Symbol table not found for file: "
-          + file);
-    }
-    symbolTable.setScope(scope);
     
-    if(!symbolTable.isDefined(name)) {    
-      IRType itype = IRIntegerType.getInstance();    
-      IRVarInfo varInfo = new VarInfo(scope, name, itype, node);
-      symbolTable.define(name, varInfo);
+    IRVarInfo varInfo = null;
+    if(!scope.isDefined(name)) {
+    	// quantified variable, no need to add in symbol table
+    	varInfo = new VarInfo(symbolTable.getScope(CType.getScope(node)), 
+      		name, IRIntegerType.getInstance(), node);
+    } else {
+      symbolTable.setScope(scope);
+      varInfo = symbolTable.lookup(name);
+      if (varInfo == null)
+        throw new ExpressionFactoryException("Variable not found: " + name);
     }
+    
+    return varInfo;
   }
   
   private int sizeofType(Type t) {

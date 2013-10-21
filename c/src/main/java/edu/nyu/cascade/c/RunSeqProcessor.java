@@ -593,15 +593,15 @@ class RunSeqProcessor implements RunProcessor {
         // Create temporary variable node for function call node.
         String varName = Identifiers.uniquify(TEMP_VAR_PREFIX);
         GNode varNode = GNode.create("PrimaryIdentifier", varName);
-        xtc.type.Type nodeType = CType.getType(node);
-        Reference ref = new DynamicReference(varName, nodeType);
-        xtc.type.Type type = new AnnotatedT(nodeType);
-        type.shape(ref);
-        type.mark(varNode);
-        symbolTable.toXtcSymbolTable().mark(varNode);
         varNode.setLocation(node.getLocation());
-        IRVarInfo varInfo = new VarInfo(symbolTable.getCurrentScope(), varName, 
-            IRIntegerType.getInstance(), varNode);
+        xtc.type.Type funcType = CType.getType(node);
+        Reference ref = new DynamicReference(varName, funcType);
+        xtc.type.Type type = new AnnotatedT(funcType).shape(ref);
+        type.mark(varNode);
+        cAnalyzer.processExpression(varNode);
+
+        IRVarInfo varInfo = new VarInfo(symbolTable.getScope(CType.getScope(node)),
+        		varName, IRIntegerType.getInstance(), varNode);
         symbolTable.define(varName, varInfo);
         
         if(node.equals(resNode)) {

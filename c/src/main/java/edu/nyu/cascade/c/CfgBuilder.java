@@ -540,6 +540,8 @@ public class CfgBuilder extends Visitor {
   private Node defineStringConstNode(Node node, String string) {
     GNode stringNode = GNode.create("StringConstant", string);
     stringNode.setLocation(node.getLocation());
+    
+    //FIXME: cAnalyzer.processExpression(stringNode);
     symbolTable.toXtcSymbolTable().mark(stringNode);
     return stringNode; 
   }
@@ -1332,7 +1334,9 @@ public class CfgBuilder extends Visitor {
   }
 
   CExpression expressionOf(Node node) {
-    return CExpression.create(node, symbolTable.getCurrentScope());
+  	return symbolTable.hasScope(node) ? 
+  			CExpression.create(node, symbolTable.getScope(node)) :
+  				CExpression.create(node, symbolTable.getCurrentScope());
   }
 
   public CExpression visitIndirectionExpression(GNode node) {
@@ -1698,8 +1702,20 @@ public class CfgBuilder extends Visitor {
     debug().pln(
         "Looking up binding for variable: " + name + " in symbol table "
             + symbolTable);
-    IRVarInfo binding = symbolTable.lookup(name);
-    debug().pln("Binding: " + binding).flush();
+    
+    if(symbolTable.hasScope(node)) {
+      IRVarInfo binding;
+      if(!symbolTable.isDefined(name)) {
+      	// temporary variable created in Cascade
+      	binding = new VarInfo(symbolTable.getScope(CType.getScope(node)), 
+        		name, IRIntegerType.getInstance(), node);
+        symbolTable.define(name, binding);
+      } else {
+      	binding = symbolTable.lookup(name);
+      }
+      debug().pln("Binding: " + binding).flush();
+    } // otherwise, label node with goto statement, no need for VarInfo
+    
     return expressionOf(node);
   }
 
