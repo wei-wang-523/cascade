@@ -108,7 +108,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
     regionType.mark(regionNode);
-    regionNode.setProperty(CType.SCOPE, regionVar.getScopeName());
+    regionNode.setProperty(CType.SCOPE, regionVar.getScope().getQualifiedName());
     
     Expression region = heapEncoder.freshRegion(regionName, regionNode);
     
@@ -199,7 +199,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
     regionType.mark(regionNode);
-    regionNode.setProperty(CType.SCOPE, regionVar.getScopeName());
+    regionNode.setProperty(CType.SCOPE, regionVar.getScope().getQualifiedName());
     
     Expression region = heapEncoder.freshRegion(regionName, regionNode);
 
@@ -220,7 +220,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     updateSideEffectSizeClosure(regArrName, suspend(state, array2));
     
     /* Find related heap regions and size array */
-    IREquivClosure equivAliasVars = analyzer.getEquivClass(regionTypeName);    
+    IREquivClosure equivAliasVars = analyzer.getEquivClass(regionType);    
     return heapEncoder.validMalloc(equivAliasVars, array2, region, size);
 	}
 
@@ -231,21 +231,22 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
 
 	@Override
 	public ImmutableSet<BooleanExpression> getAssumptions(Expression state) {    
-    ImmutableMap<String, Set<IRVar>> map = analyzer.snapshot();
+    ImmutableMap<xtc.type.Type, Set<IRVar>> map = analyzer.snapshot();
     
     ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
     
     Set<String> memMapKeySet = getRecordElems(state.getChild(0)).keySet();
     Map<String, ArrayExpression> sizeMap = getRecordElems(state.getChild(1));
     
-    for(String typeName : map.keySet()) {
+    for(xtc.type.Type type : map.keySet()) {
+    	String typeName = analyzer.getTypeName(type);
     	String memArrName = getMemArrElemName(typeName);
     	
     	/* If the repVar is not referred in the execution paths */
     	if(!memMapKeySet.contains(memArrName)) continue;
     	
     	/* Categorize vars into stVar, stReg, and hpReg */
-    	IREquivClosure equivAliasVars = analyzer.getEquivClass(typeName);    	
+    	IREquivClosure equivAliasVars = analyzer.getEquivClass(type);    	
       String sizeArrName = getSizeArrElemName(typeName);
       ArrayExpression sizeArr = sizeMap.get(sizeArrName); // might be null
       builder.addAll(heapEncoder.disjointMemLayout(equivAliasVars, sizeArr));
@@ -416,7 +417,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   public void setPreProcessor(IRPreProcessor analyzer) {
   	Preconditions.checkArgument(analyzer instanceof TypeAnalyzer);
     this.analyzer = (TypeAnalyzer) analyzer;
-    IOUtils.err().println(analyzer.displaySnapShot());
+//    IOUtils.err().println(analyzer.displaySnapShot());
   }
 
   @Override
@@ -426,11 +427,10 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     /* Find related heap regions and size array */
     xtc.type.Type ptrType = CType.getType(ptr.getNode());
     xtc.type.Type ptr2Type = analyzer.getPtr2Type(ptrType);
-    String typeName = analyzer.getTypeName(ptr2Type);
-    IREquivClosure equivAliasVars = analyzer.getEquivClass(typeName);
+    IREquivClosure equivAliasVars = analyzer.getEquivClass(ptr2Type);
     
     if(equivAliasVars.getElements() == null) {
-    	IOUtils.err().println("No variables in type " + typeName);
+    	IOUtils.err().println("No variables in type " + ptr2Type.getName());
     	return getExpressionManager().ff();
     }
     
@@ -450,11 +450,10 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     /* Find related heap regions and size array */
     xtc.type.Type ptrType = CType.getType(ptr.getNode());
     xtc.type.Type ptr2Type = analyzer.getPtr2Type(ptrType);
-    String typeName = analyzer.getTypeName(ptr2Type);
-    IREquivClosure equivAliasVars = analyzer.getEquivClass(typeName);
+    IREquivClosure equivAliasVars = analyzer.getEquivClass(ptr2Type);
     
     if(equivAliasVars == null) {
-    	IOUtils.err().println("No variables in type " + typeName);
+    	IOUtils.err().println("No variables in type " + ptr2Type.getName());
     	return getExpressionManager().ff();
     }
     
@@ -473,11 +472,11 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     
     /* Find related heap regions and alloc array */
     xtc.type.Type ptr2Type = analyzer.getPtr2Type(CType.getType(ptr.getNode()));
-    String typeName = analyzer.getTypeName(ptr2Type);
     
-    IREquivClosure equivAliasVars = analyzer.getEquivClass(typeName);
+    IREquivClosure equivAliasVars = analyzer.getEquivClass(ptr2Type);
     
     Map<String, ArrayExpression> map = getRecordElems(state.getChild(1));
+    String typeName = analyzer.getTypeName(ptr2Type);
     String sizeArrName = getSizeArrElemName(typeName);
     ArrayExpression sizeArr = map.get(sizeArrName);
     assert sizeArr != null;

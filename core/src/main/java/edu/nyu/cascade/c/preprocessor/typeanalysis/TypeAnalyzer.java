@@ -1,5 +1,6 @@
 package edu.nyu.cascade.c.preprocessor.typeanalysis;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
@@ -11,9 +12,7 @@ import java.util.concurrent.ExecutionException;
 import xtc.tree.Node;
 import xtc.type.FieldReference;
 import xtc.type.Reference;
-import xtc.type.StructOrUnionT;
 import xtc.type.Type;
-import xtc.type.VariableT;
 import xtc.util.SymbolTable;
 import xtc.util.SymbolTable.Scope;
 
@@ -22,10 +21,13 @@ import com.google.common.base.Predicate;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.AddressOfReference;
@@ -61,17 +63,58 @@ public class TypeAnalyzer implements IRPreProcessor {
         }
       });
   
-  private Map<String, Set<IRVar>> varTypeMap;
+  private Map<Type, Set<IRVar>> varTypeMap;
   private SymbolTable symbolTable;
 	
 	private TypeAnalyzer(SymbolTable _symbolTable) {
 		symbolTable = _symbolTable;
-		varTypeMap = Maps.newLinkedHashMap();
+		varTypeMap = Maps.newHashMap();
+		Map<Type, Collection<IRVar>> tmpMap = parseSymbolTable(_symbolTable);
+		for(Entry<Type, Collection<IRVar>> entry : tmpMap.entrySet()) {
+			varTypeMap.put(entry.getKey(), Sets.newHashSet(entry.getValue()));
+		}
 		// discard all entries in caches for each test case
 		typeNameCache.invalidateAll();
 		varCache.invalidateAll();
 	}
 	
+	private Map<Type, Collection<IRVar>> parseSymbolTable(SymbolTable _symbolTable) {
+		Map<IRVar, Type> resMap = parseSymbolTableWithScope(_symbolTable.current());
+		SetMultimap<Type, IRVar> map = Multimaps.invertFrom(
+				Multimaps.forMap(resMap), 
+				HashMultimap.<Type, IRVar> create());
+		return map.asMap();
+	}
+	
+	private Map<IRVar, Type> parseSymbolTableWithScope(Scope scope) {
+		Map<IRVar, Type> resMap = Maps.newLinkedHashMap();
+		if(scope.hasSymbols()) {
+			Iterator<String> itr = scope.symbols();
+			while(itr.hasNext()) {
+				String name = itr.next();
+				if(Identifiers.FUNC.equals(name)) continue;
+				Type type = (Type) scope.lookup(name);
+				if( type.resolve().isFunction() ) continue;
+				if( type.isAlias() )	continue; // alias structure type
+				if( !type.hasShape() ) continue; // tag(_addr)
+				
+				IRVar var = IRVarImpl.create(name, type, scope);
+				if(type.resolve().isArray()) type = type.resolve().toArray().getType();
+				resMap.put(var, type);
+			}
+		}
+		
+		if(scope.hasNested()) {
+			Iterator<String> itr = scope.nested();
+			while(itr.hasNext()) {
+				String scopeName = itr.next();
+				Scope nestScope = scope.getNested(scopeName);
+				resMap.putAll(parseSymbolTableWithScope(nestScope));
+			}
+		}
+		return resMap;
+	}
+
 	public static TypeAnalyzer create(SymbolTable _symbolTable) {
 		return new TypeAnalyzer(_symbolTable);
 	}
@@ -80,7 +123,6 @@ public class TypeAnalyzer implements IRPreProcessor {
 	public void analysis(IRStatement stmt) {
 //		IOUtils.err().println("Preprocessing: " + stmt.toString());
 		switch(stmt.getType()) {
-		case CALL : break;
 		case ASSUME : {
 			IRExpression operand = stmt.getOperand(0);
 			Node srcNode = operand.getSourceNode();
@@ -90,11 +132,7 @@ public class TypeAnalyzer implements IRPreProcessor {
 				Node ptrNode = alloc.getNode(1).getNode(0);
 				Type ptrType = CType.getType(ptrNode);
 				String ptrScopeName = CType.getScope(ptrNode);
-				Scope ptrScope = symbolTable.getScope(ptrScopeName);
-				
-				String name = CType.getReferenceName(ptrType);	
-				getVariable(name, ptrType, ptrScope);
-				
+				Scope ptrScope = symbolTable.getScope(ptrScopeName);				
 				Type ptr2Type = getPtr2Type(ptrType);
 				createAllocVar(ptrNode, ptr2Type, ptrScope);
 			}
@@ -108,7 +146,7 @@ public class TypeAnalyzer implements IRPreProcessor {
 			Node srcNode = operand.getSourceNode();
 			Type srcType = CType.getType(srcNode);
 			
-			if(!(srcType.hasShape() && srcType.getShape().isConstant()))
+			if(!(srcType.hasConstant()))
 				IOUtils.err().println("WARNING: pre-processing " + stmt);
 			
 			break;
@@ -119,24 +157,11 @@ public class TypeAnalyzer implements IRPreProcessor {
 			Type srcType = CType.getType(srcNode);
 			String srcScopeName = CType.getScope(srcNode);
 			Scope srcScope = symbolTable.getScope(srcScopeName);
-			
-			String name = CType.getReferenceName(srcType);	
-			getVariable(name, srcType, srcScope);
-			
 			Type ptr2Type = getPtr2Type(srcType);
 			createAllocVar(srcNode, ptr2Type, srcScope);
 			break;
 		}
 		default : {
-			Iterable<IRExpression> operands = stmt.getOperands();
-			for(IRExpression operand : operands) {
-				Node srcNode = operand.getSourceNode();
-				Type srcType = CType.getType(srcNode);
-				String name = CType.getReferenceName(srcType);			    
-				String srcScopeName = CType.getScope(srcNode);
-				Scope srcScope = symbolTable.getScope(srcScopeName);
-				getVariable(name, srcType, srcScope);
-		  }
 			break;			
 		}
 		}
@@ -146,8 +171,8 @@ public class TypeAnalyzer implements IRPreProcessor {
 	@Override
 	public String displaySnapShot() {
 		StringBuilder sb = new StringBuilder();
-		for(Entry<String, Set<IRVar>> entry : varTypeMap.entrySet()) {
-			sb.append(entry.getKey()).append(": ");
+		for(Entry<Type, Set<IRVar>> entry : varTypeMap.entrySet()) {
+			sb.append(getTypeName(entry.getKey())).append(": ");
 			for(IRVar var : entry.getValue()) {
 				sb.append(((IRVarImpl) var).toStringShort()).append(' ');
 			}
@@ -162,7 +187,7 @@ public class TypeAnalyzer implements IRPreProcessor {
 	public String getTypeName(Type type) {
 		return loadTypeName(type);
 	}
-	
+
 	/**
 	 * Get the points-to type of <code>type</code>. AddressOf reference 
 	 * <code>&((*a).z)</code> should be taken care in order to pick
@@ -187,13 +212,21 @@ public class TypeAnalyzer implements IRPreProcessor {
 		return type.resolve().toPointer().getType();
 	}
 
-	public IREquivClosure getEquivClass(String name) {
-	  return TypeEquivClosure.create(name, varTypeMap.get(name));
+	public IREquivClosure getEquivClass(Type type) {
+		if(type.hasShape()) {
+			Reference ref = type.getShape();
+			while(ref instanceof FieldReference) {
+				ref = ref.getBase();
+			}
+			type = ref.getType();
+		}
+		
+	  return TypeEquivClosure.create(getTypeName(type), varTypeMap.get(type));
 	}
 
-	public ImmutableMap<String, Set<IRVar>> snapshot() {
-	  ImmutableMap.Builder<String, Set<IRVar>> builder = 
-	  		new ImmutableMap.Builder<String, Set<IRVar>>().putAll(varTypeMap);
+	public ImmutableMap<Type, Set<IRVar>> snapshot() {
+	  ImmutableMap.Builder<Type, Set<IRVar>> builder = 
+	  		new ImmutableMap.Builder<Type, Set<IRVar>>().putAll(varTypeMap);
 	  return builder.build();
 	}
 	
@@ -205,13 +238,12 @@ public class TypeAnalyzer implements IRPreProcessor {
 	 * @return a region variable
 	 */
 	public IRVar getAllocVar(final Node node, Type pType, final String scopeName) {
-		String typeName = getTypeName(pType);
-		Iterable<IRVar> vars = varTypeMap.get(typeName);
+		Iterable<IRVar> vars = varTypeMap.get(pType);
 		Iterable<IRVar> selectedVars = Iterables.filter(vars, new Predicate<IRVar>(){
 			@Override
       public boolean apply(IRVar input) {
 	      IRVarImpl var = (IRVarImpl) input;
-	      return var.getScopeName().equals(scopeName) && var.hasNode() &&
+	      return var.getScope().getQualifiedName().equals(scopeName) && var.hasNode() &&
 	      		var.getNode().equals(node);
       }
 		});
@@ -237,52 +269,35 @@ public class TypeAnalyzer implements IRPreProcessor {
 		return var;
 	}
 
-	/**
-	 * Pre-processing: get a variable from <code>varCache</code>, if not contained,
-	 * just create a new one.
-	 * @param name
-	 * @param type
-	 * @param scope
-	 * @return a variable
-	 */
-	private IRVarImpl getVariable(String name, Type type, Scope scope) {
-		if(name.equals(Identifiers.CONSTANT)) return null; // skip constant
-				
-		try {
-			Scope scope_ = scope.isDefined(name) ? scope.lookupScope(name) : scope;
-			Type type_ = scope.isDefined(name) ? (Type) scope.lookup(name) : type;
-			IRVarImpl res = varCache.get(Triple.of(name, type_, scope_));
-			updateVarMap(type_, res);
-			return res;
-		} catch (ExecutionException e) {
-			throw new CacheException(e);
-		}
-	}
+//	/**
+//	 * Pre-processing: get a variable from <code>varCache</code>, if not contained,
+//	 * just create a new one.
+//	 * @param name
+//	 * @param type
+//	 * @param scope
+//	 * @return a variable
+//	 */
+//	private IRVarImpl getVariable(String name, Type type, Scope scope) {
+//		if(name.equals(Identifiers.CONSTANT)) return null; // skip constant
+//				
+//		try {
+//			Scope scope_ = scope.isDefined(name) ? scope.lookupScope(name) : scope;
+//			Type type_ = scope.isDefined(name) ? (Type) scope.lookup(name) : type;
+//			IRVarImpl res = varCache.get(Triple.of(name, type_, scope_));
+//			updateVarMap(type_, res);
+//			return res;
+//		} catch (ExecutionException e) {
+//			throw new CacheException(e);
+//		}
+//	}
 
 	private void updateVarMap(Type type, IRVar var) {
-	  String typeName = loadTypeName(type);
-		if(varTypeMap.containsKey(typeName)) {
-			Set<IRVar> srcVarSet = varTypeMap.get(typeName);
+		if(varTypeMap.containsKey(type)) {
+			Set<IRVar> srcVarSet = varTypeMap.get(type);
 			srcVarSet.add(var);
-			varTypeMap.put(typeName, srcVarSet);
+			varTypeMap.put(type, srcVarSet);
 		} else {
-			varTypeMap.put(typeName, Sets.newHashSet(var));
-		}
-		
-		if(type.resolve().isStruct() || type.resolve().isUnion()) {
-			StructOrUnionT suType = type.resolve().toStructOrUnion();
-			for(VariableT elem : suType.getMembers()) {
-				String elemTypeName = new StringBuilder().append(typeName)
-						.append(Identifiers.NAME_INFIX)
-						.append(elem.getName()).toString();
-				if(varTypeMap.containsKey(elemTypeName)) {
-					Set<IRVar> srcVarSet = varTypeMap.get(elemTypeName);
-					srcVarSet.add(var);
-					varTypeMap.put(elemTypeName, srcVarSet);
-				} else {
-					varTypeMap.put(elemTypeName, Sets.newHashSet(var));
-				}
-			}
+			varTypeMap.put(type, Sets.newHashSet(var));
 		}
 	}
 

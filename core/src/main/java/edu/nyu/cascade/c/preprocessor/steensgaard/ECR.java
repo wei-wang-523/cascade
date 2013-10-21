@@ -125,7 +125,7 @@ public final class ECR extends UnionFind.Partition {
       sb.append(" -> ");
       if(root.hasInitTypeVar()) {
         sb.append(root.getInitTypeVar().getName()).append('@')
-        .append(root.getInitTypeVar().getScopeName());
+        .append(root.getInitTypeVar().getScope().getQualifiedName());
       } else {
         sb.append("null");
       }

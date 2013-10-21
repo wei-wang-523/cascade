@@ -21,12 +21,13 @@ import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
+import edu.nyu.cascade.util.Pair;
 
 public final class LinearHeapEncoding implements IRHeapEncoding {
 	
 	private final ExpressionManager exprManager;
 	private final ExpressionEncoding encoding;
-	private final LinkedHashMap<String, Expression> heapRegions, stackVars, stackRegions;
+	private final LinkedHashMap<Pair<String, String>, Expression> heapRegions, stackVars, stackRegions;
 	
 	private Expression lastRegion;
 	private final LinkedHashMap<String, Expression> lastRegions;
@@ -162,8 +163,8 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	@Override
 	public Expression freshAddress(String varName, IRVarInfo info, xtc.type.Type type) {
 		VariableExpression res = exprManager.variable(varName, addrType, true);
-		String varKey = new StringBuilder().append(info.getName())
-				.append(info.getScope().getQualifiedName()).toString();
+		Pair<String, String> varKey = Pair.of(info.getName(),
+				info.getScope().getQualifiedName());
 		if(type.isArray() || type.isUnion() || type.isStruct()) {
 			stackRegions.put(varKey, res);
 		} else {
@@ -176,7 +177,8 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	public Expression freshRegion(String regionName, Node regionNode) {
 		VariableExpression res = exprManager.variable(regionName, addrType, false);
 		res.setNode(GNode.cast(regionNode));
-		String varKey = regionName + CType.getScope(regionNode);
+		Pair<String, String> varKey = Pair.of(regionName,
+				CType.getScope(regionNode));
 		heapRegions.put(varKey, res);
 		return res;
 	}
@@ -187,8 +189,8 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	
 	  for(IRVar var : equivVars) {
 	  	String varName = var.getName();
-	  	String varKey = new StringBuilder().append(varName)
-	  			.append(var.getScopeName()).toString();
+	  	Pair<String, String> varKey = Pair.of(varName,
+	  			var.getScope().getQualifiedName());
 	    if(Identifiers.CONSTANT.equals(varName)) continue;
 	    if(stackVars.containsKey(varKey)) {
 	    	builder.addStackVar(stackVars.get(varKey));
@@ -197,7 +199,8 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	    } else if(heapRegions.containsKey(varKey)) {
 	      builder.addHeapRegion(heapRegions.get(varKey));
 	    } else {
-	      IOUtils.err().println("Variable " + varName + " @" + var.getScopeName() + " not yet be analyzed");
+	      IOUtils.debug().pln("Variable " + varName + " @" +
+	      		var.getScope().getQualifiedName() + " not yet be analyzed");
 	    }
 	  }
 	  

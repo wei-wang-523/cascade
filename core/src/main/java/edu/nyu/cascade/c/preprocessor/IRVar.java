@@ -1,6 +1,7 @@
 package edu.nyu.cascade.c.preprocessor;
 
 import xtc.type.Type;
+import xtc.util.SymbolTable.Scope;
 
 /**
  * A class which maintains information about an expression (variable 
@@ -13,7 +14,7 @@ import xtc.type.Type;
 public interface IRVar {
   String getName() ;
   Type getType() ;
-  String getScopeName() ;
   boolean isNullLoc() ;
   String toString() ;
+  Scope getScope();
 }

@@ -67,6 +67,8 @@ public class Preferences {
   
   public static final String OPTION_THEORY_BURSTALL = "Burstall";
   
+	public static final String OPTION_THEORY_BURSTALLSync = "BurstallSync";
+  
   public static final String OPTION_THEORY_BURSTALLFIX = "BurstallFix";
   
   public static final String OPTION_THEORY_BURSTALLView = "BurstallView";

@@ -2821,7 +2821,7 @@ public class CAnalyzer extends Visitor {
     table.mark(n);
 
     // C99 6.4.2.2: Declare the function name.
-    table.current().define("__func__", toFuncType(name));
+    table.current().define(Identifiers.FUNC, toFuncType(name));
     
     // Process the parameters.
     processParameters(n, type.resolve().toFunction());

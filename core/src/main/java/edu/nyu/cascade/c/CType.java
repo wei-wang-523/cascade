@@ -36,6 +36,7 @@ public class CType {
     else if(type.isArray())     return CellKind.ARRAY;
     else if(type.isStruct())    return CellKind.STRUCTORUNION;
     else if(type.isUnion())     return CellKind.STRUCTORUNION;
+    else if(type.isVoid())			return CellKind.SCALAR;
     else
       throw new IllegalArgumentException("Unknown type " + type);
   }

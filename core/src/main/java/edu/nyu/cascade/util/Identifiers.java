@@ -19,6 +19,7 @@ public class Identifiers {
   public static final String NULL_LOC_NAME = "<null>";
   public static final String REGION_VARIABLE_NAME = "region";
   public static final String CONSTANT = "Constant";
+	public static final String FUNC = "__func__";
   
   public static enum IdType {
     DEFAULT,
@@ -33,7 +34,7 @@ public class Identifiers {
 
   private static final Pattern C_VALID_ID = Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
   
-  private static final char DEFAULT_REPLACEMENT_CHAR = '_';;
+  private static final char DEFAULT_REPLACEMENT_CHAR = '_';
 
   private static String addWart(String id) {
     Preconditions.checkArgument(isValidId(id));

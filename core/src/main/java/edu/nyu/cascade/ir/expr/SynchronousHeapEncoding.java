@@ -29,12 +29,13 @@ import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
+import edu.nyu.cascade.util.Pair;
 
 public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	
 	private final ExpressionManager exprManager;
 	private final ExpressionEncoding encoding;
-	private final LinkedHashMap<String, Expression> heapRegions, stackVars, stackRegions;
+	private final LinkedHashMap<Pair<String, String>, Expression> heapRegions, stackVars, stackRegions;
 	private Expression lastRegion;
 	private final LinkedHashMap<String, Expression> lastRegions;
 	
@@ -142,8 +143,8 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	@Override
 	public Expression freshAddress(String name, IRVarInfo info, xtc.type.Type type) {
 		Expression res = encoding.getPointerEncoding().freshPtr(name);
-		String varKey = new StringBuilder().append(info.getName())
-				.append(info.getScope().getQualifiedName()).toString();
+		Pair<String, String> varKey = Pair.of(info.getName(),
+				info.getScope().getQualifiedName());
 		if(type.isArray() || type.isUnion() || type.isStruct()) {
 			stackRegions.put(varKey, res.getChild(0));
 		} else {
@@ -156,7 +157,7 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	public Expression freshRegion(String name, Node node) {
 		Expression res = encoding.getPointerEncoding().freshPtr(name);
 		res.setNode(GNode.cast(node));
-		String varKey = name + CType.getScope(node);
+		Pair<String, String> varKey = Pair.of(name, CType.getScope(node));
 		heapRegions.put(varKey, res.getChild(0));
 		return res;
 	}
@@ -202,8 +203,8 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 		
 	  for(IRVar var : equivVars) {
 	  	String varName = var.getName();
-	  	String varKey = new StringBuilder().append(varName)
-	  			.append(var.getScopeName()).toString();
+	  	Pair<String, String> varKey = Pair.of(varName,
+	  			var.getScope().getQualifiedName());
 	    if(Identifiers.CONSTANT.equals(varName)) continue;
 	    if(stackVars.containsKey(varKey)) {
 	    	builder.addStackVar(stackVars.get(varKey));
@@ -212,7 +213,8 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	    } else if(heapRegions.containsKey(varKey)) {
 	      builder.addHeapRegion(heapRegions.get(varKey));
 	    } else {
-	      IOUtils.out().println("Variable " + varName + " @" + var.getScopeName() + " not yet be analyzed");
+	      IOUtils.debug().pln("Variable " + varName + " @"
+	      		+ var.getScope().getQualifiedName() + " not yet be analyzed");
 	    }
 	  }
 	  

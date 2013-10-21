@@ -871,7 +871,7 @@ public abstract class AbstractExpressionEncoding
     if(!Preferences.isSet(Preferences.OPTION_THEORY)) return src;
     
     String theory = Preferences.getString(Preferences.OPTION_THEORY);
-    if(theory.equals(Preferences.OPTION_THEORY_BURSTALL) ||
+    if(theory.equals(Preferences.OPTION_THEORY_BURSTALLSync) ||
         theory.equals(Preferences.OPTION_THEORY_BURSTALLFIX) ||
         theory.equals(Preferences.OPTION_THEORY_BURSTALLView)) {
       CellKind srcKind = CType.getCellKind(CType.getType(src.getNode()));

@@ -35,7 +35,7 @@ import edu.nyu.cascade.util.Pair;
  */
 public class Steensgaard implements IRPreProcessor {
   private UnionFindECR uf;
-  private Map<Pair<String, String>, IRVarImpl> varsMap; 
+  private Map<Pair<String, Scope>, IRVarImpl> varsMap; 
   private SymbolTable symbolTable;
   
   private Steensgaard (SymbolTable _symbolTable) {
@@ -128,7 +128,7 @@ public class Steensgaard implements IRPreProcessor {
 	      if(set == null || set.size() <= 1) continue;
 	      sb.append("  Partition { ");
 	      for(IRVar var : set)
-	        sb.append(var.getName()).append('@').append(var.getScopeName()).append(' ');
+	        sb.append(var.getName()).append('@').append(var.getScope().getQualifiedName()).append(' ');
 	      sb.append("}\n");
 	    }
 	  }
@@ -154,7 +154,7 @@ public class Steensgaard implements IRPreProcessor {
   public IRVar getRepVar(String name, String scope, Type type) {
     if(Identifiers.NULL_LOC_NAME.equals(name)) {
       IRVarImpl nullLoc = IRVarImpl.createNullLoc();
-      Pair<String, String> key = Pair.of(nullLoc.getName(), nullLoc.getScopeName());
+      Pair<String, Scope> key = Pair.of(nullLoc.getName(), nullLoc.getScope());
       varsMap.put(key, nullLoc);
       return nullLoc;
     } else {
@@ -166,7 +166,7 @@ public class Steensgaard implements IRPreProcessor {
         var = varsMap.get(key);
       } else {
         Type type_ = currentScope.isDefined(name) ? (Type) currentScope.lookup(name) : type;
-        var = (IRVarImpl) addVariable(name, scope_.getQualifiedName(), type_);
+        var = (IRVarImpl) addVariable(name, scope_, type_);
       }
       
       IRVarImpl res = uf.getRootInitVar(var.getECR());
@@ -204,8 +204,8 @@ public class Steensgaard implements IRPreProcessor {
     return AliasEquivClosure.create(var, elements);
   }
   
-  public IRVar addVariable(String name, String scope, Type type) {
-	  Pair<String, String> key = Pair.of(name, scope);
+  public IRVar addVariable(String name, Scope scope, Type type) {
+	  Pair<String, Scope> key = Pair.of(name, scope);
 	  IRVarImpl res = null;
 	  if(!varsMap.containsKey(key))  {
 	    res = IRVarImpl.create(name, type, scope);
@@ -231,7 +231,7 @@ public class Steensgaard implements IRPreProcessor {
 	  assert(lhsType.resolve().isPointer());
 	  Type regionType = CType.unwrapped(lhsType).toPointer().getType();
 	  regionType = regionType.annotate().shape(new DynamicReference(freshRegionName, regionType));
-	  IRVarImpl region = (IRVarImpl) addVariable(freshRegionName, lhs.getScopeName(), regionType);
+	  IRVarImpl region = (IRVarImpl) addVariable(freshRegionName, lhs.getScope(), regionType);
 	  ECR region_ecr = region.getECR();
 	  // Attach the fresh region directly the first operand of target var of malloc
 	  if(!lhs0_ecr.hasInitTypeVar()) {

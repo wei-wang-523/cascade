@@ -1,6 +1,7 @@
 package edu.nyu.cascade.c.preprocessor.steensgaard;
 
 import xtc.type.Type;
+import xtc.util.SymbolTable.Scope;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.util.Identifiers;
 
@@ -8,16 +9,16 @@ public class IRVarImpl implements IRVar {
   private final ECR ecr;
   private final String name;
   private final Type type;
-  private final String scope;
+  private final Scope scope;
   
-  private IRVarImpl(String _name, Type _type, String _scope) {
+  private IRVarImpl(String _name, Type _type, Scope _scope) {
     name = _name;
     type = _type;
     scope = _scope;
     ecr = ECR.create(this, ValueType.location(ECR.createBottom(), ECR.createBottom()));
   }
   
-  protected static IRVarImpl create(String _name, Type _type, String _scope) {
+  protected static IRVarImpl create(String _name, Type _type, Scope _scope) {
     return new IRVarImpl(_name, _type, _scope);
   }
   
@@ -44,8 +45,8 @@ public class IRVarImpl implements IRVar {
   }
   
   @Override
-  public String getScopeName() {
-    return scope;
+  public Scope getScope() {
+  	return scope;
   }
   
   @Override
@@ -57,7 +58,7 @@ public class IRVarImpl implements IRVar {
   public boolean equals(Object o) {
     if(!(o instanceof IRVarImpl)) return false;
     IRVarImpl var = (IRVarImpl) o;
-    return name.equals(var.getName()) && type == var.getType() && scope.equals(var.getScopeName());
+    return name.equals(var.getName()) && type == var.getType() && scope.equals(var.getScope());
   }
   
   @Override

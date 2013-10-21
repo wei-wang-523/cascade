@@ -114,7 +114,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
     regionVar.getType().mark(regionNode);
-    String regionScope = regionVar.getScopeName();
+    String regionScope = regionVar.getScope().getQualifiedName();
     regionNode.setProperty(CType.SCOPE, regionScope);
     
     Expression region = heapEncoder.freshRegion(regionName, regionNode);
@@ -210,7 +210,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
     regionVar.getType().mark(regionNode);
-    regionNode.setProperty(CType.SCOPE, regionVar.getScopeName());
+    regionNode.setProperty(CType.SCOPE, regionVar.getScope().getQualifiedName());
 
     Expression region = heapEncoder.freshRegion(regionName, regionNode);
     
@@ -813,7 +813,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     	.append(Identifiers.ARRAY_NAME_INFIX)
     	.append(var.getName())
     	.append(Identifiers.ARRAY_NAME_INFIX)
-    	.append(var.getScopeName());
+    	.append(var.getScope().getName());
   	String res = Identifiers.toValidId(sb.toString());
   	return res;
   }
@@ -829,7 +829,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     	.append(Identifiers.ARRAY_NAME_INFIX)
     	.append(var.getName())
     	.append(Identifiers.ARRAY_NAME_INFIX)
-    	.append(var.getScopeName());
+    	.append(var.getScope().getName());
   	String res = Identifiers.toValidId(sb.toString());
   	return res;
   }

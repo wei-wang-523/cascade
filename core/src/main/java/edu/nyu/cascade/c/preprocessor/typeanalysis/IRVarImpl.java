@@ -1,6 +1,5 @@
 package edu.nyu.cascade.c.preprocessor.typeanalysis;
 
-import com.google.common.base.Predicate;
 import xtc.tree.Node;
 import xtc.type.Type;
 import xtc.util.SymbolTable.Scope;
@@ -11,14 +10,6 @@ public class IRVarImpl implements IRVar {
 	private final Type type;
 	private final Scope scope;
 	private final Node srcNode;
-	private final boolean isTouched = false;
-	
-	protected static Predicate<IRVarImpl> isTouchedPredicate  = new Predicate<IRVarImpl>() {
-		@Override
-		public boolean apply(IRVarImpl var) {
-			return var.isTouched;
-		}
-	};
 	
 	private IRVarImpl(String _name, Node _srcNode, Type _type, Scope _scope) {
 		name = _name;
@@ -53,11 +44,6 @@ public class IRVarImpl implements IRVar {
 	public boolean hasNode() {
 		return srcNode != null;
 	}
-
-	@Override
-	public String getScopeName() {
-		return scope.getQualifiedName();
-	}
 	
   @Override
   public boolean equals(Object o) {
@@ -74,20 +60,19 @@ public class IRVarImpl implements IRVar {
 	@Override
 	public String toString() {
 	  StringBuilder sb = new StringBuilder().append(name);
-	  if(isTouched) sb.append(".touched");
 	  if(scope != null) sb.append(scope.getQualifiedName());
 	  if(type != null)	sb.append("(type ").append(type.getName()).append(") ");
 	  return sb.toString();
   }
 
 	protected String toStringShort() {
-	  StringBuilder sb = new StringBuilder();
-	  sb.append(name);
-	  if(isTouched) sb.append(".touched");
+	  StringBuilder sb = new StringBuilder().append(name);
+	  if(scope != null)  sb.append(scope.getQualifiedName());
 	  return sb.toString();
 	}
 	
-	private Scope getScope() {
+	@Override
+	public Scope getScope() {
 		return this.scope;
 	}
 }
