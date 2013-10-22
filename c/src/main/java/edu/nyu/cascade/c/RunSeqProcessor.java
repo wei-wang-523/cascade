@@ -423,12 +423,12 @@ class RunSeqProcessor implements RunProcessor {
    * repStmt is a flattened version of function call stmt, rmvStmt is not.
    * It's the reason why both are required arguments.
    */
-  private List<IRStatement> assignArgToParam(IRStatement stmt) 
+  private List<IRStatement> assignArgToParam(CSymbolTable symbolTable, IRStatement stmt) 
       throws RunProcessorException {
-    return assignArgToParam(null, stmt); 
+    return assignArgToParam(symbolTable, null, stmt); 
   }
   
-  private List<IRStatement> assignArgToParam(IRStatement repStmt, IRStatement rmvStmt) 
+  private List<IRStatement> assignArgToParam(CSymbolTable symbolTable, IRStatement repStmt, IRStatement rmvStmt) 
       throws RunProcessorException {
     if(!rmvStmt.getType().equals(StatementType.CALL)) {
       throw new RunProcessorException("Invalid statement type: " + rmvStmt);
@@ -439,9 +439,6 @@ class RunSeqProcessor implements RunProcessor {
     
     if(defNode == null)     return assignments;
     
-    // Pick the new scope for the function declaration    
-    File file = new File(defNode.getLocation().file);
-    CSymbolTable symbolTable = symbolTables.get(file);  
     Scope paramScope = symbolTable.getScope(defNode);
     
     Node paramDeclare = null;
@@ -520,12 +517,19 @@ class RunSeqProcessor implements RunProcessor {
       assert("SimpleDeclarator".equals(paramNode.getName()));
       IRExpressionImpl param = CExpression.create(paramNode, paramScope);
       IRExpressionImpl arg = (IRExpressionImpl) args.get(i);
-      GNode assignNode = GNode.create("AssignmentExpression", 
-          param.getSourceNode(), "=", arg.getSourceNode());
-      assignNode.setLocation(paramNode.getLocation());
-      cAnalyzer.processExpression(arg.getSourceNode());
-      Statement assign = Statement.assign(assignNode, param, arg);
-      assignments.add(assign);
+      Node argNode = arg.getSourceNode();
+      if(argNode.hasName("FunctionCall") 
+      		&& argNode.getNode(0).getString(0).equals((ReservedFunction.ANNO_NONDET))) {
+      	Statement havoc = Statement.havoc(argNode, param);
+      	assignments.add(havoc);
+      } else {
+        GNode assignNode = GNode.create("AssignmentExpression", 
+        		paramNode, "=", argNode);
+        assignNode.setLocation(paramNode.getLocation());
+        cAnalyzer.processExpression(argNode);
+        Statement assign = Statement.assign(assignNode, param, arg);
+        assignments.add(assign);
+      }
     }    
     return assignments; 
   }
@@ -536,15 +540,15 @@ class RunSeqProcessor implements RunProcessor {
    * 2) statements collected from the function body.
    * @throws RunProcessorException 
    */
-  private List<IRStatement> getStmtForCall(IRStatement stmt) throws RunProcessorException {
-    return getStmtForCall(stmt, null);
+  private List<IRStatement> getStmtForCall(CSymbolTable symbolTable, IRStatement stmt) throws RunProcessorException {
+    return getStmtForCall(symbolTable, stmt, null);
   }
   
-  private List<IRStatement> getStmtForCall(IRStatement stmt, CallPoint func) throws RunProcessorException {
+  private List<IRStatement> getStmtForCall(CSymbolTable symbolTable, IRStatement stmt, CallPoint func) throws RunProcessorException {
     if(!stmt.getType().equals(StatementType.CALL)) {
       throw new RunProcessorException("Invalid statement type: " + stmt);
     }
-    List<IRStatement> func_path = assignArgToParam(stmt);
+    List<IRStatement> func_path = assignArgToParam(symbolTable, stmt);
     if(func != null)    func_path.addAll(collectStmtFromFunction(stmt, func));
     else                func_path.addAll(collectStmtFromFunction(stmt));
     return func_path;
@@ -598,8 +602,8 @@ class RunSeqProcessor implements RunProcessor {
         Reference ref = new DynamicReference(varName, funcType);
         xtc.type.Type type = new AnnotatedT(funcType).shape(ref);
         type.mark(varNode);
+//        cAnalyzer.analyze(varNode, symbolTable.getOriginalSymbolTable());
         cAnalyzer.processExpression(varNode);
-
         IRVarInfo varInfo = new VarInfo(symbolTable.getScope(CType.getScope(node)),
         		varName, IRIntegerType.getInstance(), varNode);
         symbolTable.define(varName, varInfo);
@@ -679,6 +683,7 @@ class RunSeqProcessor implements RunProcessor {
         Node exprListNode = createNodeWithArgList(srcNode.getNode(1), argRepNodes);
         replaceNode = substituteNode(stmt.getSourceNode(), funcNode, exprListNode);
       }
+//      cAnalyzer.analyze(replaceNode, symbolTable.getOriginalSymbolTable());
       cAnalyzer.processExpression(replaceNode);
       switch(stmt.getType()) {
       case ASSIGN:
@@ -742,13 +747,14 @@ class RunSeqProcessor implements RunProcessor {
   }
   
   /** Replace the last return statement as assign statement. */
-  private IRStatement replaceReturnStmt(IRStatement returnStmt, IRStatement assignStmt) {
+  private IRStatement replaceReturnStmt(CSymbolTable symbolTable, IRStatement returnStmt, IRStatement assignStmt) {
     Preconditions.checkArgument(returnStmt.getType().equals(StatementType.RETURN));
     IRExpressionImpl lExpr = (IRExpressionImpl) assignStmt.getOperand(0);
     IRExpressionImpl rExpr = (IRExpressionImpl) returnStmt.getOperand(0);
     GNode assignNode = GNode.create("AssignmentExpression", 
         lExpr.getSourceNode(), "=", rExpr.getSourceNode());
     assignNode.setLocation(assignStmt.getSourceNode().getLocation());
+//    cAnalyzer.analyze(assignNode, symbolTable.getOriginalSymbolTable());
     cAnalyzer.processExpression(assignNode);
     IRStatement assignResult = Statement.assign(assignNode, lExpr, rExpr);
     return assignResult;
@@ -760,27 +766,27 @@ class RunSeqProcessor implements RunProcessor {
    * 2) statements collected from the function body.
    * 3) return statement
    */
-  private List<IRStatement> getStmtForAssignCallStmt(IRStatement lhsStmt, IRStatement rhsStmt, CallPoint func) 
+  private List<IRStatement> getStmtForAssignCallStmt(CSymbolTable symbolTable, IRStatement lhsStmt, IRStatement rhsStmt, CallPoint func) 
       throws RunProcessorException {
-    List<IRStatement> paramPassStmts = assignArgToParam(lhsStmt, rhsStmt);
+    List<IRStatement> paramPassStmts = assignArgToParam(symbolTable, lhsStmt, rhsStmt);
     List<IRStatement> funcStmts = collectStmtFromFunction(rhsStmt, func);
     funcStmts.addAll(0, paramPassStmts);
     
     /* replace all the return statements. */
     IRStatement lastStmt = funcStmts.get(funcStmts.size()-1);
     if(lastStmt.getType().equals(StatementType.RETURN)) {
-      IRStatement assignResult = replaceReturnStmt(lastStmt, lhsStmt);
+      IRStatement assignResult = replaceReturnStmt(symbolTable, lastStmt, lhsStmt);
       funcStmts.set(funcStmts.size()-1, assignResult);
     }
     return funcStmts;
   }
   
-  private List<IRStatement> getStmtForAllAssignCallStmt(List<IRStatement> pathRep, List<IRStatement> pathRmv) 
+  private List<IRStatement> getStmtForAllAssignCallStmt(CSymbolTable symbolTable, List<IRStatement> pathRep, List<IRStatement> pathRmv) 
       throws RunProcessorException {
-    return getStmtForAllAssignCallStmt(pathRep, pathRmv, null);
+    return getStmtForAllAssignCallStmt(symbolTable, pathRep, pathRmv, null);
   }
   
-  private List<IRStatement> getStmtForAllAssignCallStmt(List<IRStatement> pathRep, List<IRStatement> pathRmv, 
+  private List<IRStatement> getStmtForAllAssignCallStmt(CSymbolTable symbolTable, List<IRStatement> pathRep, List<IRStatement> pathRmv, 
       Iterable<CallPoint> funcs) throws RunProcessorException {
     Preconditions.checkArgument(pathRep.size() <= pathRmv.size());
     
@@ -809,7 +815,7 @@ class RunSeqProcessor implements RunProcessor {
           }
         }
       }
-      List<IRStatement> tmpPath = getStmtForAssignCallStmt(stmtRep, stmtRmv, func);
+      List<IRStatement> tmpPath = getStmtForAssignCallStmt(symbolTable, stmtRep, stmtRmv, func);
       if(path == null)     path = tmpPath;
       else                 path.addAll(tmpPath);
       
@@ -879,9 +885,9 @@ class RunSeqProcessor implements RunProcessor {
         List<IRStatement> callPath = null;
         if(callPosition != null) {
           CallPoint call = findCallPointForStmt(funcCallStmt, callPosition.getFunctions());
-          callPath = getStmtForCall(funcCallStmt, call);
+          callPath = getStmtForCall(symbolTable, funcCallStmt, call);
         } else {
-          callPath = getStmtForCall(funcCallStmt);
+          callPath = getStmtForCall(symbolTable, funcCallStmt);
         }
         resPath.addAll(0, callPath);
       }
@@ -911,9 +917,9 @@ class RunSeqProcessor implements RunProcessor {
         }
         
         if(callPosition != null) {
-          callPath = getStmtForAllAssignCallStmt(stmtRep, funcPath, callPosition.getFunctions());
+          callPath = getStmtForAllAssignCallStmt(symbolTable, stmtRep, funcPath, callPosition.getFunctions());
         } else {
-          callPath = getStmtForAllAssignCallStmt(stmtRep, funcPath);
+          callPath = getStmtForAllAssignCallStmt(symbolTable, stmtRep, funcPath);
         }
         resPath.addAll(0, callPath);
       } 

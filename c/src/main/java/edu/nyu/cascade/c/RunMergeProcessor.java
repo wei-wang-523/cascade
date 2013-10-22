@@ -715,12 +715,19 @@ class RunMergeProcessor implements RunProcessor {
       assert("SimpleDeclarator".equals(paramNode.getName()));
       IRExpressionImpl param = CExpression.create(paramNode, paramScope);
       IRExpressionImpl arg = (IRExpressionImpl) args.get(i);
-      Node assignNode = GNode.create("AssignmentExpression", 
-          paramNode, "=", arg.getSourceNode());
-      assignNode.setLocation(paramNode.getLocation());
-      cAnalyzer.processExpression(arg.getSourceNode());     
-      Statement assign = Statement.assign(assignNode, param, arg);
-      assignments.add(assign);
+      Node argNode = arg.getSourceNode();
+      if(argNode.hasName("FunctionCall") 
+      		&& argNode.getNode(0).getString(0).equals((ReservedFunction.ANNO_NONDET))) {
+      	cAnalyzer.analyze(argNode);
+      	Statement havoc = Statement.havoc(argNode, param);
+      	assignments.add(havoc);
+      } else {
+        Node assignNode = GNode.create("AssignmentExpression", paramNode, "=", argNode);
+        assignNode.setLocation(paramNode.getLocation());
+        cAnalyzer.analyze(assignNode);     
+        Statement assign = Statement.assign(assignNode, param, arg);
+        assignments.add(assign);
+      }
     }    
     return assignments; 
   }
@@ -813,7 +820,7 @@ class RunMergeProcessor implements RunProcessor {
         Reference ref = new DynamicReference(varName, nodeType);
         xtc.type.Type type = new AnnotatedT(nodeType).shape(ref);
         type.mark(varNode);
-        cAnalyzer.processExpression(varNode);
+        cAnalyzer.analyze(varNode);
 
         IRVarInfo varInfo = new VarInfo(symbolTable.getScope(CType.getScope(node)),
         		varName, IRIntegerType.getInstance(), varNode);
@@ -898,7 +905,7 @@ class RunMergeProcessor implements RunProcessor {
         Node exprListNode = createNodeWithArgList(srcNode.getNode(1), argRepNodes);
         replaceNode = substituteNode(stmt.getSourceNode(), funcNode, exprListNode);
       }
-      cAnalyzer.processExpression(replaceNode);
+      cAnalyzer.analyze(replaceNode);
       
       switch(stmt.getType()) {
       case ASSIGN:
