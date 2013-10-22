@@ -82,11 +82,11 @@ final class PathMergeEncoder implements PathEncoder {
       String theory = Preferences.getString((Preferences.OPTION_THEORY));
     	IRPreProcessor analyzer = null;
       if(Preferences.OPTION_THEORY_PARTITION.equals(theory)) {
-      	analyzer = Steensgaard.create(symbolTable.getOriginalSymbolTable());        
+      	analyzer = Steensgaard.create(symbolTable);        
       } else if(Preferences.OPTION_THEORY_BURSTALLView.equals(theory)) {
       	analyzer = TypeCastAnalyzer.create();
       } else if(Preferences.OPTION_THEORY_BURSTALL.equals(theory)) {
-      	analyzer = TypeAnalyzer.create(symbolTable.getOriginalSymbolTable());
+      	analyzer = TypeAnalyzer.create(symbolTable);
       }
     	preprocessPath(analyzer, graph.predecessorMap, graph.destPath);
     	pathEncoding.getExpressionEncoder().getMemoryModel().setPreProcessor(analyzer);

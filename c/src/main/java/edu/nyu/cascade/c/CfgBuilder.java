@@ -541,8 +541,7 @@ public class CfgBuilder extends Visitor {
     GNode stringNode = GNode.create("StringConstant", string);
     stringNode.setLocation(node.getLocation());
     
-    //FIXME: cAnalyzer.processExpression(stringNode);
-    symbolTable.toXtcSymbolTable().mark(stringNode);
+    cAnalyzer.processExpression(stringNode);
     return stringNode; 
   }
   
@@ -1694,6 +1693,8 @@ public class CfgBuilder extends Visitor {
     debug().pln("Binding: " + varInfo);
     symbolTable.undefine(name);
     symbolTable.define(name, varInfo);
+    /* attach type and scope properties to node */
+    cAnalyzer.processExpression(node);
     return expressionOf(node);
   }
 

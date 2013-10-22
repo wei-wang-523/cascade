@@ -564,7 +564,7 @@ class RunMergeProcessor implements RunProcessor {
   private Node findFuncDeclareNode (CSymbolTable symbolTable, String funcName) 
       throws RunProcessorException {
     IRVarInfo info = symbolTable.lookup(funcName);
-    if(info == null)    return null; /* For undeclared function. */
+    if(info == null)    return null; // For undeclared function.
     Location funcDeclareLoc = info.getDeclarationNode().getLocation();
     
     String funcFile = funcDeclareLoc.file;
@@ -616,16 +616,17 @@ class RunMergeProcessor implements RunProcessor {
   
   /** 
    * Create the assign statements from arguments to parameters. 
-   * E.g. repStmt: TEMP_VAR_1 := addOne(x, TEMP_VAR_0), rmvStmt: addOne(x,returnOne());
+   * E.g. repStmt: cascade_tmp_1 := addOne(x, cascade_tmp_0), rmvStmt: addOne(x,returnOne());
    * repStmt is a flattened version of function call stmt, rmvStmt is not.
    * It's the reason why both are required arguments.
    */
-  private List<IRStatement> assignArgToParam(IRStatement stmt) 
+  private List<IRStatement> assignArgToParam(CSymbolTable symbolTable, IRStatement stmt) 
       throws RunProcessorException {
-    return assignArgToParam(null, stmt); 
+    return assignArgToParam(symbolTable, null, stmt); 
   }
   
-  private List<IRStatement> assignArgToParam(IRStatement repStmt, IRStatement rmvStmt) 
+  private List<IRStatement> assignArgToParam(CSymbolTable symbolTable, 
+  		IRStatement repStmt, IRStatement rmvStmt) 
       throws RunProcessorException {
     Preconditions.checkArgument(rmvStmt.getType().equals(StatementType.CALL));
       
@@ -634,9 +635,7 @@ class RunMergeProcessor implements RunProcessor {
     
     if(defNode == null)     return assignments;
     
-    /* Pick the new scope for the function declaration */  
-    File file = new File(defNode.getLocation().file);
-    CSymbolTable symbolTable = symbolTables.get(file);  
+    /* Pick the new scope for the function declaration */
     Scope paramScope = symbolTable.getScope(defNode);
     
     Node paramDeclare = null;
@@ -718,12 +717,14 @@ class RunMergeProcessor implements RunProcessor {
       Node argNode = arg.getSourceNode();
       if(argNode.hasName("FunctionCall") 
       		&& argNode.getNode(0).getString(0).equals((ReservedFunction.ANNO_NONDET))) {
-      	cAnalyzer.analyze(argNode);
       	Statement havoc = Statement.havoc(argNode, param);
       	assignments.add(havoc);
       } else {
         Node assignNode = GNode.create("AssignmentExpression", paramNode, "=", argNode);
         assignNode.setLocation(paramNode.getLocation());
+        /* FIXME: assign node has root scope, it is inappropriate with attach with
+         * argNode (with caller scope), or paramNode (with callee scope).
+         */
         cAnalyzer.analyze(assignNode);     
         Statement assign = Statement.assign(assignNode, param, arg);
         assignments.add(assign);
@@ -738,9 +739,10 @@ class RunMergeProcessor implements RunProcessor {
    * 2) statements collected from the function body.
    * 3) return statement
    */
-  private Graph getGraphForAssignCallStmt(IRStatement lhsStmt, IRStatement rhsStmt, CallPoint func) 
+  private Graph getGraphForAssignCallStmt(CSymbolTable symbolTable, 
+  		IRStatement lhsStmt, IRStatement rhsStmt, CallPoint func) 
       throws RunProcessorException {
-    List<IRStatement> paramPassStmts = assignArgToParam(lhsStmt, rhsStmt);
+    List<IRStatement> paramPassStmts = assignArgToParam(symbolTable, lhsStmt, rhsStmt);
     Graph funcGraph = collectStmtFromFunction(rhsStmt, func);
     funcGraph.appendPrePath(Path.createSingleton(paramPassStmts));
     
@@ -755,13 +757,13 @@ class RunMergeProcessor implements RunProcessor {
    * 1) assign statements to assign arguments to parameters, 
    * 2) statements collected from the function body.
    */
-  private Graph getGraphForCallStmt(IRStatement stmt) throws RunProcessorException {
-    return getGraphForCallStmt(stmt, null);
+  private Graph getGraphForCallStmt(CSymbolTable symbolTable, IRStatement stmt) throws RunProcessorException {
+    return getGraphForCallStmt(symbolTable, stmt, null);
   }
     
-  private Graph getGraphForCallStmt(IRStatement stmt, CallPoint func) throws RunProcessorException {
+  private Graph getGraphForCallStmt(CSymbolTable symbolTable, IRStatement stmt, CallPoint func) throws RunProcessorException {
     Preconditions.checkArgument(stmt.getType().equals(StatementType.CALL));
-    List<IRStatement> funcPath = assignArgToParam(stmt);
+    List<IRStatement> funcPath = assignArgToParam(symbolTable, stmt);
     Graph funcGraph = null;
     if(func != null)    funcGraph = collectStmtFromFunction(stmt, func);
     else                funcGraph = collectStmtFromFunction(stmt);
@@ -804,7 +806,8 @@ class RunMergeProcessor implements RunProcessor {
       }
     } 
     
-    /* build pairs by replace function call to temp_var if such function call
+    /* 
+     * build pairs by replace function call to cascade_tmp if such function call
      * node hasn't been replaced before
      */
     if(!funcNodeReplaceMap.containsKey(resNode) && "FunctionCall".equals(resNode.getName())) {
@@ -812,7 +815,11 @@ class RunMergeProcessor implements RunProcessor {
       if(!ReservedFunction.Functions.contains(resFuncName)) {
         if(symbolTable.lookup(resFuncName) == null)
           throw new RunProcessorException("Undeclared function: " + resFuncName);
-        /* Create temporary variable node for function call node. */
+        
+        /* 
+         * Create temporary variable node for function call node.
+         */
+        
         String varName = Identifiers.uniquify(TEMP_VAR_PREFIX);
         GNode varNode = GNode.create("PrimaryIdentifier", varName);
         varNode.setLocation(node.getLocation());
@@ -820,17 +827,19 @@ class RunMergeProcessor implements RunProcessor {
         Reference ref = new DynamicReference(varName, nodeType);
         xtc.type.Type type = new AnnotatedT(nodeType).shape(ref);
         type.mark(varNode);
-        cAnalyzer.analyze(varNode);
+        cAnalyzer.analyze(varNode, symbolTable.getOriginalSymbolTable());
 
-        IRVarInfo varInfo = new VarInfo(symbolTable.getScope(CType.getScope(node)),
+        IRVarInfo varInfo = new VarInfo(symbolTable.getCurrentScope(),
         		varName, IRIntegerType.getInstance(), varNode);
+        
+        assert !symbolTable.isDefined(varName);
         symbolTable.define(varName, varInfo);
         
         if(node.equals(resNode)) {
-          funcNodeReplaceMap.put(node, (Node)varNode); // f(a) : TEMP_VAR_x
+          funcNodeReplaceMap.put(node, (Node)varNode); // f(a) : cascade_tmp_x
         } else {
-          funcNodeReplaceMap.put(node, resNode); // g(f(a)) : g(TEMP_VAR_x1)
-          funcNodeReplaceMap.put(resNode, (Node)varNode); // g(TEMP_VAR_x1) : TEMP_VAR_x2
+          funcNodeReplaceMap.put(node, resNode); // g(f(a)) : g(cascade_tmp_x1)
+          funcNodeReplaceMap.put(resNode, (Node)varNode); // g(cascade_tmp_x1) : cascade_tmp_x2
         }
       } else {
         if(!node.equals(resNode))  funcNodeReplaceMap.put(node, resNode);
@@ -853,10 +862,16 @@ class RunMergeProcessor implements RunProcessor {
     for(IRExpression argExpr : argExprs) {
       Node argNode = argExpr.getSourceNode();
       Scope scope = argExpr.getScope();
-      Scope currScope = symbolTable.getCurrentScope();
-      symbolTable.setScope(scope);
+      
+      /* 
+       * Keep the scope of return cascade_tmp_x = f(a) as the scope of caller function,
+       * rather than enter the scope of argNode a
+       */
+      
+//      Scope currScope = symbolTable.getCurrentScope();
+//      symbolTable.setScope(scope);
       Map<Node, Node> argPairs = replaceFuncCallwithVar(argNode, symbolTable);
-      symbolTable.setScope(currScope);
+//      symbolTable.setScope(currScope);
       pairs.putAll(argPairs);
       if(argPairs.isEmpty())
         argExprsRep.add(argExpr);
@@ -877,7 +892,7 @@ class RunMergeProcessor implements RunProcessor {
     for(Map.Entry<Node, Node> pair : pairs.entrySet()) {
       Node keyNode = pair.getKey();
       Node valNode = pair.getValue();
-      /* For f(a) = TEMP_VAR_x, add assign statement TEMP_VAR_x := f(a) */
+      /* For f(a) = cascade_tmp_x, add assign statement cascade_tmp_x := f(a) */
       if(!("FunctionCall".equals(keyNode.getName()) && 
           "PrimaryIdentifier".equals(valNode.getName())))   continue;
       Scope scope = symbolTable.getScope(valNode);
@@ -905,7 +920,7 @@ class RunMergeProcessor implements RunProcessor {
         Node exprListNode = createNodeWithArgList(srcNode.getNode(1), argRepNodes);
         replaceNode = substituteNode(stmt.getSourceNode(), funcNode, exprListNode);
       }
-      cAnalyzer.analyze(replaceNode);
+      cAnalyzer.analyze(replaceNode, symbolTable.getOriginalSymbolTable());
       
       switch(stmt.getType()) {
       case ASSIGN:
@@ -932,19 +947,21 @@ class RunMergeProcessor implements RunProcessor {
  
   /**
    * Substitute the rhs of each element in pathRep with the related element of 
-   * pathRmv. The element in pathRep is in form as "TEMP_VAR_0 := addOne(x)". 
+   * pathRmv. The element in pathRep is in form as "cascade_tmp_0 := addOne(x)". 
    * addOne(x) is created in stmt is generated based on symbolTable, whose info is incorrect.
    * 
    * But, pathRmv's element has the corresponding statement - addOne(x) directly 
    * picked from cfg, whose info is correct. Here, we substitute the "addOne(x)" 
    * in pathRep to the "addOne(x)" in pathRmv.
    */
-  private Graph getGraphForAllAssignCallStmt(List<IRStatement> pathRep, List<IRStatement> pathRmv) 
+  private Graph getGraphForAllAssignCallStmt(CSymbolTable symbolTable, 
+  		List<IRStatement> pathRep, List<IRStatement> pathRmv) 
       throws RunProcessorException {
-    return getGraphForAllAssignCallStmt(pathRep, pathRmv, null);
+    return getGraphForAllAssignCallStmt(symbolTable, pathRep, pathRmv, null);
   }
   
-  private Graph getGraphForAllAssignCallStmt(List<IRStatement> pathRep, List<IRStatement> pathRmv, 
+  private Graph getGraphForAllAssignCallStmt(CSymbolTable symbolTable, 
+  		List<IRStatement> pathRep, List<IRStatement> pathRmv, 
       Iterable<CallPoint> funcs) throws RunProcessorException {
     Preconditions.checkArgument(pathRep.size() <= pathRmv.size());
     
@@ -973,7 +990,7 @@ class RunMergeProcessor implements RunProcessor {
           }
         }
       }
-      Graph tmpGraph = getGraphForAssignCallStmt(stmtRep, stmtRmv, func);
+      Graph tmpGraph = getGraphForAssignCallStmt(symbolTable, stmtRep, stmtRmv, func);
       if(graph == null)     graph = tmpGraph;
       else                  graph.appendPostGraph(tmpGraph);
       
@@ -1213,9 +1230,9 @@ class RunMergeProcessor implements RunProcessor {
         Graph callGraph = null;
         if(callPosition != null) {
           CallPoint call = findCallPointForStmt(funcCallStmt, callPosition.getFunctions());
-          callGraph = getGraphForCallStmt(funcCallStmt, call);
+          callGraph = getGraphForCallStmt(symbolTable, funcCallStmt, call);
         } else {
-          callGraph = getGraphForCallStmt(funcCallStmt);
+          callGraph = getGraphForCallStmt(symbolTable, funcCallStmt);
         }
         if(resGraph == null)    resGraph = callGraph;
         else                    resGraph.appendPreGraph(callGraph);
@@ -1250,9 +1267,11 @@ class RunMergeProcessor implements RunProcessor {
         }
         
         if(callPosition != null) {
-          callGraph = getGraphForAllAssignCallStmt(stmtRep, funcPath.stmts, callPosition.getFunctions());
+          callGraph = getGraphForAllAssignCallStmt(symbolTable, 
+          		stmtRep, funcPath.stmts, callPosition.getFunctions());
         } else {
-          callGraph = getGraphForAllAssignCallStmt(stmtRep, funcPath.stmts);
+          callGraph = getGraphForAllAssignCallStmt(symbolTable,
+          		stmtRep, funcPath.stmts);
         }
         if(resGraph == null)    resGraph = callGraph;
         else                    resGraph.appendPreGraph(callGraph);

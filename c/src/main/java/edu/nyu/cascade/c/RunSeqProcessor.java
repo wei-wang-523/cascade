@@ -191,8 +191,7 @@ class RunSeqProcessor implements RunProcessor {
       IRBasicBlock start, IRBasicBlock target) 
           throws RunProcessorException {
     List<IRStatement> path = Lists.newArrayList();
-    /*
-     * Find the shortest path from block to target, using a backwards
+    /* Find the shortest path from block to target, using a backwards
      * breadth-first search. pathMap will associate each block with its
      * "next hop" in the shortest path.
      */
@@ -203,7 +202,8 @@ class RunSeqProcessor implements RunProcessor {
     /* For finding a loop from start to start/target. Add incoming 
      * edges and their source nodes into pathMap and visited set
      * before entering into while-loop. It means to avoid labeling
-     * start as visited node. */
+     * start as visited node.
+     */
     if(start.equals(target) && 
         (start.getType().equals(IRBasicBlock.Type.LOOP) || 
             (start.getType()).equals(IRBasicBlock.Type.SWITCH))) {
@@ -243,7 +243,8 @@ class RunSeqProcessor implements RunProcessor {
     /* For finding a loop from start to start/target. Add incoming 
      * edges and their source nodes into pathMap and visited set
      * before entering into while-loop. It means to avoid labeling
-     * start as visited node. */
+     * start as visited node.
+     */
     if((start.equals(target) && 
         (start.getType().equals(IRBasicBlock.Type.LOOP) || 
             (start.getType()).equals(IRBasicBlock.Type.SWITCH)))) {
@@ -358,7 +359,7 @@ class RunSeqProcessor implements RunProcessor {
     }
     
     if(bestNode == null) {
-      // FIXME: continue find in the parent scope or stays at root scope initially?
+      /* FIXME: continue find in the parent scope or stays at root scope initially? */
       IOUtils.debug().pln("Cannot find the function declaration node for " + stmt);
     }
     return bestNode;
@@ -419,7 +420,10 @@ class RunSeqProcessor implements RunProcessor {
   
   /** 
    * Create the assign statements from arguments to parameters. 
-   * E.g. repStmt: TEMP_VAR_1 := addOne(x, TEMP_VAR_0), rmvStmt: addOne(x,returnOne());
+   * 
+   * E.g. repStmt: cascade_tmp_1 := addOne(x, cascade_tmp_0), 
+   * rmvStmt: addOne(x,returnOne());
+   * 
    * repStmt is a flattened version of function call stmt, rmvStmt is not.
    * It's the reason why both are required arguments.
    */
@@ -459,7 +463,7 @@ class RunSeqProcessor implements RunProcessor {
     
     if(paramDeclare == null)    return assignments;
     
-    // Pick all arguments
+    /* Pick all arguments */
     List<IRExpression> args = Lists.newArrayList(rmvStmt.getOperands());
     args = args.subList(1, args.size());
     
@@ -526,7 +530,10 @@ class RunSeqProcessor implements RunProcessor {
         GNode assignNode = GNode.create("AssignmentExpression", 
         		paramNode, "=", argNode);
         assignNode.setLocation(paramNode.getLocation());
-        cAnalyzer.processExpression(argNode);
+        /* FIXME: assign node has root scope, it is inappropriate with attach with
+         * argNode (with caller scope), or paramNode (with callee scope).
+         */
+        cAnalyzer.analyze(assignNode);
         Statement assign = Statement.assign(assignNode, param, arg);
         assignments.add(assign);
       }
@@ -563,7 +570,9 @@ class RunSeqProcessor implements RunProcessor {
       throws RunProcessorException {
     Node resNode = node; 
     LinkedHashMap<Node, Node> funcNodeReplaceMap = Maps.newLinkedHashMap();
-    // replace operands of node if we can find the replace candidate operands from "funcNodeReplaceMap"
+    /* replace operands of node if we can find the replace candidate operands from 
+     * "funcNodeReplaceMap"
+     */
     if(!node.isEmpty()) {
       // Collect operands of node
       boolean updated = false;
@@ -573,7 +582,7 @@ class RunSeqProcessor implements RunProcessor {
         Object substituteArg = arg;
         if(arg instanceof Node) {
           Node argNode = (Node) arg;
-          // update "argList" if we can find new pair by step into the operands of argx
+          /* update "argList" if we can find new pair by step into the operands of argx */
           funcNodeReplaceMap.putAll(replaceFuncCallwithVar(argNode, symbolTable));
           if(funcNodeReplaceMap.containsKey(argNode)) { // substitute arg
             substituteArg = funcNodeReplaceMap.get(argNode);
@@ -587,14 +596,15 @@ class RunSeqProcessor implements RunProcessor {
       }
     } 
     
-    // build pairs by replace function call to temp_var if such function call
-    // node hasn't been replaced before
+    /* build pairs by replace function call to cascade_tmp_x if such function call
+     * node hasn't been replaced before
+     */
     if(!funcNodeReplaceMap.containsKey(resNode) && "FunctionCall".equals(resNode.getName())) {
       String resFuncName = resNode.getNode(0).getString(0);
       if(!ReservedFunction.Functions.contains(resFuncName)) {
         if(symbolTable.lookup(resFuncName) == null)
           throw new RunProcessorException("Undeclared function: " + resFuncName);
-        // Create temporary variable node for function call node.
+        /* Create temporary variable node for function call node. */
         String varName = Identifiers.uniquify(TEMP_VAR_PREFIX);
         GNode varNode = GNode.create("PrimaryIdentifier", varName);
         varNode.setLocation(node.getLocation());
@@ -602,17 +612,19 @@ class RunSeqProcessor implements RunProcessor {
         Reference ref = new DynamicReference(varName, funcType);
         xtc.type.Type type = new AnnotatedT(funcType).shape(ref);
         type.mark(varNode);
-//        cAnalyzer.analyze(varNode, symbolTable.getOriginalSymbolTable());
-        cAnalyzer.processExpression(varNode);
-        IRVarInfo varInfo = new VarInfo(symbolTable.getScope(CType.getScope(node)),
+        cAnalyzer.analyze(varNode, symbolTable.getOriginalSymbolTable());
+        
+        IRVarInfo varInfo = new VarInfo(symbolTable.getCurrentScope(),
         		varName, IRIntegerType.getInstance(), varNode);
+        
+        assert !symbolTable.isDefined(varName);
         symbolTable.define(varName, varInfo);
         
         if(node.equals(resNode)) {
-          funcNodeReplaceMap.put(node, (Node)varNode); // f(a) : TEMP_VAR_x
+          funcNodeReplaceMap.put(node, (Node)varNode); // f(a) : cascade_tmp_x
         } else {
-          funcNodeReplaceMap.put(node, resNode); // g(f(a)) : g(TEMP_VAR_x1)
-          funcNodeReplaceMap.put(resNode, (Node)varNode); // g(TEMP_VAR_x1) : TEMP_VAR_x2
+          funcNodeReplaceMap.put(node, resNode); // g(f(a)) : g(cascade_tmp_x1)
+          funcNodeReplaceMap.put(resNode, (Node)varNode); // g(cascade_tmp_x1) : cascade_tmp_x2
         }
       } else {
         if(!node.equals(resNode))  funcNodeReplaceMap.put(node, resNode);
@@ -636,10 +648,16 @@ class RunSeqProcessor implements RunProcessor {
     for(IRExpression argExpr : argExprs) {
       Node argNode = argExpr.getSourceNode();
       Scope scope = argExpr.getScope();
-      Scope currentScope = symbolTable.getCurrentScope();
-      symbolTable.setScope(scope);
+      
+      /* 
+       * Keep the scope of return cascade_tmp_x = f(a) as the scope of caller function,
+       * rather than enter the scope of argNode a
+       */
+      
+//      Scope currentScope = symbolTable.getCurrentScope();
+//      symbolTable.setScope(scope);
       Map<Node, Node> argPairs = replaceFuncCallwithVar(argNode, symbolTable);
-      symbolTable.setScope(currentScope);
+//      symbolTable.setScope(currentScope);
       pairs.putAll(argPairs);
       if(argPairs.isEmpty())
         argExprsRep.add(argExpr);
@@ -655,7 +673,7 @@ class RunSeqProcessor implements RunProcessor {
     for(Map.Entry<Node, Node> pair : pairs.entrySet()) {
       Node keyNode = pair.getKey();
       Node valNode = pair.getValue();
-      /* For f(a) = TEMP_VAR_x, add assign statement TEMP_VAR_x := f(a) */
+      /* For f(a) = cascade_tmp_x, add assign statement cascade_tmp_x := f(a) */
       if(!("FunctionCall".equals(keyNode.getName()) && 
           "PrimaryIdentifier".equals(valNode.getName())))   continue;
       Scope scope = symbolTable.getScope(valNode);
@@ -666,7 +684,7 @@ class RunSeqProcessor implements RunProcessor {
       IRStatement assignStmt = Statement.assign(assignNode, valExpr, keyExpr);
       assignStmts.add(assignStmt);
     }
-    /* TEMP_VAR_x := f(a), substitute f(a) to TEMP_VAR_x in the original statement */
+    /* cascade_tmp_x := f(a), substitute f(a) to cascade_tmp_x in the original statement */
     if(!pairs.isEmpty()) {
       IRStatement replaceStmt = null;
       Node replaceNode = null;
@@ -683,8 +701,8 @@ class RunSeqProcessor implements RunProcessor {
         Node exprListNode = createNodeWithArgList(srcNode.getNode(1), argRepNodes);
         replaceNode = substituteNode(stmt.getSourceNode(), funcNode, exprListNode);
       }
-//      cAnalyzer.analyze(replaceNode, symbolTable.getOriginalSymbolTable());
-      cAnalyzer.processExpression(replaceNode);
+      cAnalyzer.analyze(replaceNode, symbolTable.getOriginalSymbolTable());
+//      cAnalyzer.processExpression(replaceNode);
       switch(stmt.getType()) {
       case ASSIGN:
         replaceStmt = Statement.assign(replaceNode, 
@@ -754,8 +772,8 @@ class RunSeqProcessor implements RunProcessor {
     GNode assignNode = GNode.create("AssignmentExpression", 
         lExpr.getSourceNode(), "=", rExpr.getSourceNode());
     assignNode.setLocation(assignStmt.getSourceNode().getLocation());
-//    cAnalyzer.analyze(assignNode, symbolTable.getOriginalSymbolTable());
-    cAnalyzer.processExpression(assignNode);
+    cAnalyzer.analyze(assignNode, symbolTable.getOriginalSymbolTable());
+//    cAnalyzer.processExpression(assignNode);
     IRStatement assignResult = Statement.assign(assignNode, lExpr, rExpr);
     return assignResult;
   }
@@ -970,9 +988,10 @@ class RunSeqProcessor implements RunProcessor {
       CExpression argExpr = CExpression.create(spec,symbolTable.getCurrentScope());
       IOUtils.debug().pln(argExpr.toString()).flush();
       
-      /** FIXME: CVC4 has incremental support problem, multiple queries are not supported
+      /* FIXME: CVC4 has incremental support problem, multiple queries are not supported
        * well. If this assertion statement is added, will have invalid memory access inside
-       * CVC4*/
+       * CVC4
+       */
       stmts.add(Statement.assertStmt(spec, argExpr));
       
       // Pick all statements from the loop body
