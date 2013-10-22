@@ -242,8 +242,13 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     	String typeName = analyzer.getTypeName(type);
     	String memArrName = getMemArrElemName(typeName);
     	
-    	/* If the repVar is not referred in the execution paths */
-    	if(!memMapKeySet.contains(memArrName)) continue;
+    	/* If the repVar is not referred in the execution paths.
+    	 * Special case: memMapKeySet contains $STRUCT.FOO, the type name
+    	 * is $STRUCT. We should keep it.
+    	 */
+    	boolean isStructOrUnion = type.resolve().isStruct() || type.resolve().isUnion();
+    	if(!isStructOrUnion && 
+    			!memMapKeySet.contains(memArrName)) continue;
     	
     	/* Categorize vars into stVar, stReg, and hpReg */
     	IREquivClosure equivAliasVars = analyzer.getEquivClass(type);    	

@@ -13,7 +13,6 @@ import xtc.tree.Node;
 import xtc.type.FieldReference;
 import xtc.type.Reference;
 import xtc.type.Type;
-import xtc.util.SymbolTable;
 import xtc.util.SymbolTable.Scope;
 
 import com.google.common.base.Preconditions;
@@ -37,6 +36,8 @@ import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRStatement;
+import edu.nyu.cascade.ir.IRVarInfo;
+import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.IOUtils;
@@ -78,43 +79,6 @@ public class TypeAnalyzer implements IRPreProcessor {
 		varCache.invalidateAll();
 	}
 	
-	private Map<Type, Collection<IRVar>> parseSymbolTable(SymbolTable _symbolTable) {
-		Map<IRVar, Type> resMap = parseSymbolTableWithScope(_symbolTable.current());
-		SetMultimap<Type, IRVar> map = Multimaps.invertFrom(
-				Multimaps.forMap(resMap), 
-				HashMultimap.<Type, IRVar> create());
-		return map.asMap();
-	}
-	
-	private Map<IRVar, Type> parseSymbolTableWithScope(Scope scope) {
-		Map<IRVar, Type> resMap = Maps.newLinkedHashMap();
-		if(scope.hasSymbols()) {
-			Iterator<String> itr = scope.symbols();
-			while(itr.hasNext()) {
-				String name = itr.next();
-				if(Identifiers.FUNC.equals(name)) continue;
-				Type type = (Type) scope.lookup(name);
-				if( type.resolve().isFunction() ) continue;
-				if( type.isAlias() )	continue; // alias structure type
-				if( !type.hasShape() ) continue; // tag(_addr)
-				
-				IRVar var = IRVarImpl.create(name, type, scope);
-				if(type.resolve().isArray()) type = type.resolve().toArray().getType();
-				resMap.put(var, type);
-			}
-		}
-		
-		if(scope.hasNested()) {
-			Iterator<String> itr = scope.nested();
-			while(itr.hasNext()) {
-				String scopeName = itr.next();
-				Scope nestScope = scope.getNested(scopeName);
-				resMap.putAll(parseSymbolTableWithScope(nestScope));
-			}
-		}
-		return resMap;
-	}
-
 	public static TypeAnalyzer create(SymbolTable _symbolTable) {
 		return new TypeAnalyzer(_symbolTable);
 	}
@@ -253,6 +217,51 @@ public class TypeAnalyzer implements IRPreProcessor {
 		} catch (NoSuchElementException e) {
 			throw new ExpressionFactoryException("Cannot find allocated variable");
 		}
+	}
+
+	private Map<Type, Collection<IRVar>> parseSymbolTable(SymbolTable _symbolTable) {
+		Map<IRVar, Type> resMap = parseSymbolTableWithScope(_symbolTable.getCurrentScope());
+		SetMultimap<Type, IRVar> map = Multimaps.invertFrom(
+				Multimaps.forMap(resMap), 
+				HashMultimap.<Type, IRVar> create());
+		return map.asMap();
+	}
+
+	private Map<IRVar, Type> parseSymbolTableWithScope(Scope scope) {
+		Map<IRVar, Type> resMap = Maps.newLinkedHashMap();
+		Scope origScope = symbolTable.getCurrentScope();
+		symbolTable.setScope(scope);
+		if(scope.hasSymbols()) {
+			Iterator<String> itr = scope.symbols();
+			while(itr.hasNext()) {
+				String name = itr.next();
+				if(Identifiers.FUNC.equals(name)) continue;
+				Type type = symbolTable.lookupType(name);
+				if( type.resolve().isFunction() ) continue;
+				if( type.isAlias() )	continue; // alias structure type
+				if( !type.hasShape() ) continue; // tag(_addr)
+
+				IRVarInfo info = symbolTable.lookup(name);
+				if(!(info.getScope().equals(scope) // check info consistency
+						&& CType.getType(info.getDeclarationNode()).equals(type))) {
+					throw new ExpressionFactoryException("Inconsistent scope and type for " + name);
+				}
+				IRVar var = IRVarImpl.create(name, type, info.getScope());
+				if(type.resolve().isArray()) type = type.resolve().toArray().getType();
+				resMap.put(var, type);
+			}
+		}
+		
+		if(scope.hasNested()) {
+			Iterator<String> itr = scope.nested();
+			while(itr.hasNext()) {
+				String scopeName = itr.next();
+				Scope nestScope = scope.getNested(scopeName);
+				resMap.putAll(parseSymbolTableWithScope(nestScope));
+			}
+		}
+		symbolTable.setScope(origScope);
+		return resMap;
 	}
 
 	/**
