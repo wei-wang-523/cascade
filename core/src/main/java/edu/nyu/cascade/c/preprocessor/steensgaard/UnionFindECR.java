@@ -33,6 +33,12 @@ public class UnionFindECR {
     uf.add(var, var.getECR());
   }
   
+  protected void addAll(Iterable<IRVarImpl> vars) {
+  	for(IRVarImpl var : vars) {
+  		uf.add(var, var.getECR());
+  	}
+  }
+  
  /**
   * Conditional join two ECRs@param e1
   * @param e2

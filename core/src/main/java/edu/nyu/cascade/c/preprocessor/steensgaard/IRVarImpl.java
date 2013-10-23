@@ -1,5 +1,7 @@
 package edu.nyu.cascade.c.preprocessor.steensgaard;
 
+import com.google.common.base.Preconditions;
+
 import xtc.type.Type;
 import xtc.util.SymbolTable.Scope;
 import edu.nyu.cascade.c.preprocessor.IRVar;
@@ -19,11 +21,12 @@ public class IRVarImpl implements IRVar {
   }
   
   protected static IRVarImpl create(String _name, Type _type, Scope _scope) {
+  	Preconditions.checkArgument(_type != null && _scope != null);
     return new IRVarImpl(_name, _type, _scope);
   }
   
-  protected static IRVarImpl createNullLoc() {
-    return new IRVarImpl(Identifiers.NULL_LOC_NAME, null, null);
+  protected static IRVarImpl createNullLoc(Type _type, Scope _scope) {
+    return new IRVarImpl(Identifiers.NULL_LOC_NAME, _type, _scope);
   }
   
   protected ECR getECR() {
@@ -66,7 +69,7 @@ public class IRVarImpl implements IRVar {
     StringBuilder sb = new StringBuilder();
     sb.append(name);
     if(scope != null) 
-      sb.append(scope);
+      sb.append('@').append(scope.getName());
     if(type != null)
       sb.append("(type ").append(type.getName()).append(") ");
     return sb.toString();

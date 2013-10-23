@@ -5545,6 +5545,7 @@ public class CAnalyzer extends Visitor {
     if (null == result) {
       if(bVarTypeMap.containsKey(n)) {
         result = bVarTypeMap.get(n);
+        table.current().define(n.getString(0), result);
       } else if(n.hasProperty(Constants.TYPE)) {
         result = (Type) n.getProperty(Constants.TYPE);
         table.current().define(n.getString(0), result);

@@ -171,9 +171,9 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
 
   @Override
   public Expression deref(Expression state, Expression p) {
-    Preconditions.checkArgument(addrType.equals(p.getType()));
-    
+    Preconditions.checkArgument(addrType.equals(p.getType()));    
     IRVar pRepVar = loadRepVar(p.getNode());
+    updateMemArray(state, pRepVar);
     ArrayExpression pArray = getMemArray(state, pRepVar);    
     return heapEncoder.indexMemArr(pArray, p);
   }
@@ -192,9 +192,6 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   @Override
   public Expression createLval(Expression state, String name, IRVarInfo info, Node node) {
     Expression res = heapEncoder.freshAddress(name, info, CType.unwrapped(CType.getType(node)));
-
-    IRVar repVar = loadRepVar(GNode.cast(node));
-    updateMemArray(state, repVar);
     return res;
   }
   
@@ -204,17 +201,19 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(size.getType().equals( valueType ));
     
     IRVar ptrVar = loadRepVar(ptr.getNode());
-    analyzer.heapAssign(ptrVar, CType.getType(ptr.getNode()));
     IRVar regionVar = analyzer.getAllocRegion(ptrVar);
     
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
     regionVar.getType().mark(regionNode);
-    regionNode.setProperty(CType.SCOPE, regionVar.getScope().getQualifiedName());
-
+    String regionScope = regionVar.getScope().getQualifiedName();
+    regionNode.setProperty(CType.SCOPE, regionScope);
+    
     Expression region = heapEncoder.freshRegion(regionName, regionNode);
     
-    IRVar regionRepVar = analyzer.getPointsToRepVar(ptrVar);
+//    IRVar regionRepVar = analyzer.getPointsToRepVar(ptrVar);
+    
+    IRVar regionRepVar = loadRepVar(regionNode);
 
     /* Update side effect memory state */
     ArrayExpression array1 = popMemArray(state, ptrVar);
@@ -440,12 +439,9 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     IRVar ptr2RepVar = analyzer.getPointsToRepVar(pRepVar);
     IREquivClosure equivAliasVars = analyzer.getEquivClass(ptr2RepVar);
     
-    /* Get the related alloc array */
-    Map<String, ArrayExpression> map = getRecordElems(state.getChild(1));
-    String sizeArrName = getSizeArrElemName(ptr2RepVar);
-    ArrayExpression sizeArr = map.get(sizeArrName);
-    assert sizeArr != null;
-      
+    /* Get the related size array */
+    ArrayExpression sizeArr = popSizeArray(state, ptr2RepVar);
+    
     Collection<BooleanExpression> res = heapEncoder.validMemAccess(equivAliasVars, sizeArr, ptr);
     
     return getExpressionManager().or(res);
@@ -461,11 +457,8 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     IRVar ptr2RepVar = analyzer.getPointsToRepVar(pRepVar);
     IREquivClosure equivAliasVars = analyzer.getEquivClass(ptr2RepVar);
     
-    /* Get the related alloc array */
-    Map<String, ArrayExpression> map = getRecordElems(state.getChild(1));
-    String sizeArrName = getSizeArrElemName(ptr2RepVar);
-    ArrayExpression sizeArr = map.get(sizeArrName);
-    assert sizeArr != null;
+    /* Get the related size array */
+    ArrayExpression sizeArr = popSizeArray(state, ptr2RepVar);
 
     Collection<BooleanExpression> res = heapEncoder.validMemAccess(equivAliasVars, sizeArr, ptr, size);
     
@@ -499,11 +492,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     /* Find related heap regions and alloc array */
     IRVar pRepVar = loadRepVar(ptr.getNode());
     IRVar ptr2RepVar = analyzer.getPointsToRepVar(pRepVar);
-    
-    Map<String, ArrayExpression> map = getRecordElems(state.getChild(1));
-    String sizeArrName = getSizeArrElemName(ptr2RepVar);
-    ArrayExpression sizeArr = map.get(sizeArrName);
-    assert sizeArr != null;
+    ArrayExpression sizeArr = popSizeArray(state, ptr2RepVar);
     return heapEncoder.validFree(sizeArr, ptr);
   }
   
@@ -602,16 +591,24 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   private RecordExpression updateRecord(RecordExpression record, Expression lval, Expression rval, boolean mem) {
     Map<String, ArrayExpression> map = getRecordElems(record);
     ExpressionManager exprManager = getExpressionManager();
+    int preSize = map.size();
     if(mem) {
     	IRVar lvalRepVar = loadRepVar(lval.getNode());
     	String lvalRepArrName = getMemArrElemName(lvalRepVar);
-    	assert map.containsKey(lvalRepArrName);
-    	ArrayExpression lvalRepArr = map.get(lvalRepArrName);
+    	
+    	/* Update the memory array for lval type in memory */
+    	ArrayExpression lvalRepArr = null;
+    	if(!map.containsKey(lvalRepArrName)) {
+    		Type valueType = heapEncoder.getArrayElemType(lvalRepVar.getType());
+    		lvalRepArr = exprManager.arrayVar(lvalRepArrName, addrType, valueType, false);
+    	} else {
+    		lvalRepArr = map.get(lvalRepArrName);
+    	}
+    	
     	lvalRepArr = heapEncoder.updateMemArr(lvalRepArr, lval, rval);
       map.put(lvalRepArrName, lvalRepArr);
-    	
-      Type recordType = record.getType();
       
+      /* Update the mem array for rval type in memory */
     	if(rval.getNode() != null) {
         IRVar rvalRepVar = loadRepVar(rval.getNode());
         if(!rvalRepVar.isNullLoc()) {
@@ -621,11 +618,16 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
         		ArrayExpression rvalRepArr = exprManager
         				.arrayVar(rvalRepArrName, addrType, valueType, false);
         		map.put(rvalRepArrName, rvalRepArr);
-        		String typeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
-        		recordType = getRecordTypeFromMap(typeName, map);
         	}
         }
     	}
+    	
+    	Type recordType = record.getType();
+    	if(map.size() > preSize) {
+    		String typeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
+    		recordType = getRecordTypeFromMap(typeName, map);
+    	}
+    	
     	return exprManager.record(recordType, map.values());
     } else {    	
     	Type recordType = record.getType();    	
@@ -633,9 +635,6 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
      	IRVar lvalRepVar = loadRepVar(lval.getNode());
      	String lvalRepArrName = getSizeArrElemName(lvalRepVar);
      	if(!map.containsKey(lvalRepArrName)) {
-//     		ArrayType sizeArrType = heapEncoder.getSizeArrType();
-//     		lvalRepArr = getExpressionManager()
-//     				.variable(lvalRepArrName, sizeArrType, false).asArray();
      		/* Initialize as constant array with zero everywhere */
      		lvalRepArr = heapEncoder.getConstSizeArr(heapEncoder.getSizeArrType());
      		lvalRepArr = heapEncoder.updateSizeArr(lvalRepArr, lval, rval);
@@ -794,9 +793,6 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     } else if(isElemInRecord(state.getChild(1), arrName)) {
     	resSize = selectRecordElem(state.getChild(1), arrName);
     } else { // Fresh element
-//    	ArrayType sizeArrType = heapEncoder.getSizeArrType();
-//      resSize = getExpressionManager()
-//    			.variable(arrName, sizeArrType, false).asArray();
       resSize = heapEncoder.getConstSizeArr(heapEncoder.getSizeArrType());
     }   
     return resSize;
