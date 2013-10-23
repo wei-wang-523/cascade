@@ -17,7 +17,7 @@ import com.google.common.collect.Sets;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CTypeNameAnalyzer;
 import edu.nyu.cascade.c.CType.CellKind;
-import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
+import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalyzer;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
@@ -711,7 +711,7 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
   }
 
 	@Override
-	public void setPreProcessor(IRPreProcessor analyzer) {
+	public void setPreProcessor(PreProcessor analyzer) {
 		Preconditions.checkArgument(analyzer instanceof TypeCastAnalyzer);
 	  this.analyzer = (TypeCastAnalyzer) analyzer;
 	  IOUtils.debug().pln(analyzer.displaySnapShot());

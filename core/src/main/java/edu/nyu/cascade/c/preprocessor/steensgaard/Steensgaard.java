@@ -26,7 +26,7 @@ import edu.nyu.cascade.c.AddressOfReference;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.c.preprocessor.IRVar;
-import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
+import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.c.preprocessor.steensgaard.ValueType.ValueTypeKind;
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRStatement;
@@ -45,7 +45,7 @@ import edu.nyu.cascade.util.ReservedFunction;
  * @author Wei
  *
  */
-public class Steensgaard implements IRPreProcessor<IRVar> {
+public class Steensgaard implements PreProcessor<IRVar> {
   private UnionFindECR uf;
   private Map<Pair<String, Scope>, IRVarImpl> varsMap; 
   private SymbolTable symbolTable;

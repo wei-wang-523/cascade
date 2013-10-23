@@ -20,7 +20,7 @@ import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IREquivClosure;
-import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
+import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeAnalyzer;
 import edu.nyu.cascade.ir.IRVarInfo;
@@ -416,7 +416,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   }
   
   @Override
-  public void setPreProcessor(IRPreProcessor<?> analyzer) {
+  public void setPreProcessor(PreProcessor<?> analyzer) {
   	Preconditions.checkArgument(analyzer instanceof TypeAnalyzer);
     this.analyzer = (TypeAnalyzer) analyzer;
     IOUtils.debug().pln(analyzer.displaySnapShot());

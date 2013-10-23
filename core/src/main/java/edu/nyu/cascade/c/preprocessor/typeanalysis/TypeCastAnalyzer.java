@@ -17,13 +17,13 @@ import com.google.common.collect.Sets;
 import edu.nyu.cascade.c.AddressOfReference;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IREquivClosure;
-import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
+import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.util.CacheException;
 
 @SuppressWarnings("rawtypes")
-public class TypeCastAnalyzer implements IRPreProcessor {
+public class TypeCastAnalyzer implements PreProcessor {
   
   private final LoadingCache<Reference, Boolean> cache = CacheBuilder
       .newBuilder().build(new CacheLoader<Reference, Boolean>(){

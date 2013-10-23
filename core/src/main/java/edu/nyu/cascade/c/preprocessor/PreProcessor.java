@@ -13,7 +13,7 @@ import edu.nyu.cascade.ir.IRStatement;
  * @author Wei
  *
  */
-public interface IRPreProcessor<T> {
+public interface PreProcessor<T> {
 
   /**
    * Pre analysis statement <code>stmt</code>

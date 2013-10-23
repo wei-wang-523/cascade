@@ -17,7 +17,7 @@ import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IREquivClosure;
-import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
+import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.c.preprocessor.steensgaard.Steensgaard;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.ir.IRVarInfo;
@@ -413,7 +413,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   }
 
   @Override
-  public void setPreProcessor(IRPreProcessor<?> analyzer) {
+  public void setPreProcessor(PreProcessor<?> analyzer) {
   	Preconditions.checkArgument(analyzer instanceof Steensgaard);
     this.analyzer = (Steensgaard) analyzer;
     IOUtils.debug().pln(analyzer.displaySnapShot());

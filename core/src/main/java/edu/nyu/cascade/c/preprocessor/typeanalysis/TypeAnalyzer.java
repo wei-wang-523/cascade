@@ -32,7 +32,7 @@ import com.google.common.collect.Sets;
 import edu.nyu.cascade.c.AddressOfReference;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IREquivClosure;
-import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
+import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRStatement;
@@ -46,7 +46,7 @@ import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.ReservedFunction;
 import edu.nyu.cascade.util.Triple;
 
-public class TypeAnalyzer implements IRPreProcessor<Type> {
+public class TypeAnalyzer implements PreProcessor<Type> {
 	
   static private final LoadingCache<Pair<Type, Reference>, String> typeNameCache = CacheBuilder
       .newBuilder().build(new CacheLoader<Pair<Type, Reference>, String>(){
