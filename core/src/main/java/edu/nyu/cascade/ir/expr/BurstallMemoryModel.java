@@ -160,8 +160,9 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
 	public Expression deref(Expression state, Expression p) {
     Preconditions.checkArgument(addrType.equals(p.getType()));
     xtc.type.Type pType = CType.getType(p.getNode());
-    updateMemArray(state, pType);
-    ArrayExpression pArray = getMemArray(state, pType);    
+    String pTypeName = analyzer.getTypeName(pType);
+    updateMemArray(state, pType, pTypeName);
+    ArrayExpression pArray = getMemArray(state, pTypeName);    
     return heapEncoder.indexMemArr(pArray, p);
 	}
 
@@ -200,18 +201,18 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
 
     /* Update side effect memory state */
     xtc.type.Type pType = CType.getType(ptr.getNode());
-    ArrayExpression array1 = popMemArray(state, pType);
-    array1 = heapEncoder.updateMemArr(array1, ptr, region);
     String pTypeName = analyzer.getTypeName(pType);
+    ArrayExpression array1 = popMemArray(state, pType, pTypeName);
+    array1 = heapEncoder.updateMemArr(array1, ptr, region);
     String ptrArrName = getMemArrElemName(pTypeName);
     updateSideEffectMemClosure(ptrArrName, suspend(state, array1));
-    	
-    updateMemArray(state, regionType);
+    
+    String regionTypeName = analyzer.getTypeName(regionType);
+    updateMemArray(state, regionType, regionTypeName);
     
     /* Update side effect size state */
-    ArrayExpression array2 = popSizeArray(state, regionType);
+    ArrayExpression array2 = popSizeArray(state, regionType, regionTypeName);
     array2 = heapEncoder.updateSizeArr(array2, region, size);
-    String regionTypeName = analyzer.getTypeName(regionType);
     String regArrName = getSizeArrElemName(regionTypeName);
     updateSideEffectSizeClosure(regArrName, suspend(state, array2));
     
@@ -435,7 +436,8 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     }
     
     /* Get the related alloc array */
-    ArrayExpression sizeArr = popSizeArray(state, ptr2Type);
+    String ptr2TypeName = analyzer.getTypeName(ptr2Type);
+    ArrayExpression sizeArr = popSizeArray(state, ptr2Type, ptr2TypeName);
       
     Collection<BooleanExpression> res = heapEncoder.validMemAccess(equivAliasVars, sizeArr, ptr);
     
@@ -457,7 +459,8 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     }
     
     /* Get the related alloc array */
-    ArrayExpression sizeArr = popSizeArray(state, ptr2Type);
+    String ptr2TypeName = analyzer.getTypeName(ptr2Type);
+    ArrayExpression sizeArr = popSizeArray(state, ptr2Type, ptr2TypeName);
 
     Collection<BooleanExpression> res = heapEncoder.validMemAccess(equivAliasVars, sizeArr, ptr, size);
     
@@ -489,7 +492,8 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   	
     /* Find related heap regions and alloc array */
     xtc.type.Type ptr2Type = analyzer.getPointsToElem(ptr.getNode());
-    ArrayExpression sizeArr = popSizeArray(state, ptr2Type);
+    String ptr2TypeName = analyzer.getTypeName(ptr2Type);
+    ArrayExpression sizeArr = popSizeArray(state, ptr2Type, ptr2TypeName);
 
     return heapEncoder.validFree(sizeArr, ptr);
   }
@@ -682,9 +686,9 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
    * @param var
    * @return the element memory array of <code>var</code>
    */
-  private ArrayExpression getMemArray(Expression state, xtc.type.Type type) {
+  private ArrayExpression getMemArray(Expression state, String typeName) {
   	Preconditions.checkArgument(state.isTuple());
-  	String arrName = getMemArrElemName(analyzer.getTypeName(type));
+  	String arrName = getMemArrElemName(typeName);
   	ArrayExpression resMem = null;
     if(sideEffectMem.containsKey(arrName)) {
     	resMem = sideEffectMem.get(arrName);      
@@ -694,7 +698,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     } else if(isElemInRecord(state.getChild(0), arrName)) {
     	resMem = selectRecordElem(state.getChild(0), arrName);
     } else {
-    	throw new IllegalArgumentException("Not defined " + type.getName());
+    	throw new IllegalArgumentException("Not defined " + typeName);
     }   
     return resMem;
   }
@@ -706,9 +710,9 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
    * @param var
    * @return <code>true</code> if updated, otherwise <code>false</code>
    */
-  private boolean updateMemArray(Expression state, xtc.type.Type type) {
+  private boolean updateMemArray(Expression state, xtc.type.Type type, String typeName) {
   	Preconditions.checkArgument(state.isTuple());
-  	String arrName = getMemArrElemName(analyzer.getTypeName(type));
+  	String arrName = getMemArrElemName(typeName);
     if(sideEffectMem.containsKey(arrName) || 
     		sideEffectMemClosure.containsKey(arrName) || 
     		isElemInRecord(state.getChild(0), arrName)) {
@@ -731,9 +735,9 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
    * @param var
    * @return resMem
    */
-  private ArrayExpression popMemArray(Expression state, xtc.type.Type type) {
+  private ArrayExpression popMemArray(Expression state, xtc.type.Type type, String typeName) {
   	Preconditions.checkArgument(state.isTuple());
-  	String arrName = getMemArrElemName(analyzer.getTypeName(type));
+  	String arrName = getMemArrElemName(typeName);
   	ArrayExpression resMem = null;
     if(sideEffectMem.containsKey(arrName)) {
     	resMem = sideEffectMem.remove(arrName);      
@@ -758,7 +762,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
    * @param var
    * @return resSize
    */
-  private ArrayExpression popSizeArray(Expression state, xtc.type.Type type) {
+  private ArrayExpression popSizeArray(Expression state, xtc.type.Type type, String typeName) {
   	Preconditions.checkArgument(state.isTuple());
   	while(type.hasShape() && type.getShape() instanceof FieldReference) {
   		Reference ref = type.getShape();
@@ -767,7 +771,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   		}
   	} 	
   	
-  	String arrName = getSizeArrElemName(analyzer.getTypeName(type));
+  	String arrName = getSizeArrElemName(typeName);
   	ArrayExpression resSize = null;
     if(sideEffectSizeClosure.containsKey(arrName)) { 
     	ExpressionClosure resUpdate = sideEffectSizeClosure.remove(arrName);
