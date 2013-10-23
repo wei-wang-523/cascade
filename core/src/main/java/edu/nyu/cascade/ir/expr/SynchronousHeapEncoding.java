@@ -142,7 +142,7 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 
 	@Override
 	public Expression freshAddress(String name, IRVarInfo info, xtc.type.Type type) {
-		Expression res = encoding.getPointerEncoding().freshPtr(name);
+		Expression res = encoding.getPointerEncoding().freshPtr(name, true);
 		Pair<String, String> varKey = Pair.of(info.getName(),
 				info.getScope().getQualifiedName());
 		if(type.isArray() || type.isUnion() || type.isStruct()) {
@@ -155,7 +155,7 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	
 	@Override
 	public Expression freshRegion(String name, Node node) {
-		Expression res = encoding.getPointerEncoding().freshPtr(name);
+		Expression res = encoding.getPointerEncoding().freshPtr(name, false);
 		res.setNode(GNode.cast(node));
 		Pair<String, String> varKey = Pair.of(name, CType.getScope(node));
 		heapRegions.put(varKey, res.getChild(0));

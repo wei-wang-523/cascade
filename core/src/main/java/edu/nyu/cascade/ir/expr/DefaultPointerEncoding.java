@@ -171,7 +171,7 @@ public class DefaultPointerEncoding implements PointerEncoding<TupleExpression> 
 	}
 
 	@Override
-	public TupleExpression freshPtr(String name) {
+	public TupleExpression freshPtr(String name, boolean fresh) {
 		// TODO Auto-generated method stub
 		return null;
 	}

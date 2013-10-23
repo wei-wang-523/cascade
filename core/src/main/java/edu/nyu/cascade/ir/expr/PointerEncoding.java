@@ -45,5 +45,5 @@ public interface PointerEncoding<T extends Expression> {
 	T getNullPtr();
 	TupleType getType();
 	T unknown();
-	T freshPtr(String name);
+	T freshPtr(String name, boolean fresh);
 }

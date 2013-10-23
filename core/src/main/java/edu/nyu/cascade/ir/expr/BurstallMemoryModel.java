@@ -422,7 +422,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   public void setPreProcessor(IRPreProcessor analyzer) {
   	Preconditions.checkArgument(analyzer instanceof TypeAnalyzer);
     this.analyzer = (TypeAnalyzer) analyzer;
-//    IOUtils.err().println(analyzer.displaySnapShot());
+    IOUtils.debug().pln(analyzer.displaySnapShot());
   }
 
   @Override

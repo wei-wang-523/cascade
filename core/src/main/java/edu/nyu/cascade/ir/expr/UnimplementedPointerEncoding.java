@@ -227,7 +227,7 @@ public class UnimplementedPointerEncoding<T extends Expression> implements Point
 	}
 
 	@Override
-	public T freshPtr(String name) {
+	public T freshPtr(String name, boolean fresh) {
 		// TODO Auto-generated method stub
 		return null;
 	}

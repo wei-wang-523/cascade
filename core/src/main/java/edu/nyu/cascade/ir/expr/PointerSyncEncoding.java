@@ -212,8 +212,8 @@ public class PointerSyncEncoding implements PointerEncoding<TupleExpression> {
   }
 
 	@Override
-	public TupleExpression freshPtr(String name) {
-    Expression refVar = exprManager.variable(name, refType, false);
+	public TupleExpression freshPtr(String name, boolean fresh) {
+    Expression refVar = exprManager.variable(name, refType, fresh);
     Expression offZero = exprManager.bitVectorZero(offType.getSize());
     TupleExpression ptr = exprManager.tuple(type, refVar, offZero);
     return ptr;
