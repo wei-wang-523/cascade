@@ -1,5 +1,11 @@
 package edu.nyu.cascade.c.preprocessor;
 
+import java.util.Set;
+
+import xtc.tree.Node;
+
+import com.google.common.collect.ImmutableMap;
+
 import edu.nyu.cascade.ir.IRStatement;
 
 /**
@@ -7,7 +13,7 @@ import edu.nyu.cascade.ir.IRStatement;
  * @author Wei
  *
  */
-public interface IRPreProcessor {
+public interface IRPreProcessor<T> {
 
   /**
    * Pre analysis statement <code>stmt</code>
@@ -19,4 +25,12 @@ public interface IRPreProcessor {
    * Display the snap shot
    */
 	String displaySnapShot();
+
+	IREquivClosure getEquivClass(T arg);
+
+	ImmutableMap<T, Set<IRVar>> snapshot();
+
+	T getPointsToElem(Node node);
+
+	IRVar getAllocateElem(Node node);
 }

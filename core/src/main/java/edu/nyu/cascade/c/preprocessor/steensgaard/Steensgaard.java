@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+
 import xtc.tree.Node;
 import xtc.type.DynamicReference;
 import xtc.type.Reference;
@@ -38,7 +39,7 @@ import edu.nyu.cascade.util.ReservedFunction;
  * @author Wei
  *
  */
-public class Steensgaard implements IRPreProcessor {
+public class Steensgaard implements IRPreProcessor<IRVar> {
   private UnionFindECR uf;
   private Map<Pair<String, Scope>, IRVarImpl> varsMap; 
   private SymbolTable symbolTable;
@@ -66,7 +67,7 @@ public class Steensgaard implements IRPreProcessor {
 
   @Override
 	public void analysis(IRStatement stmt) {
-  	IOUtils.err().println(stmt.toString());
+  	IOUtils.debug().pln(stmt.toString());
 	  switch (stmt.getType()) {
 		case ASSUME : {
 			IRExpression operand = stmt.getOperand(0);
@@ -77,7 +78,7 @@ public class Steensgaard implements IRPreProcessor {
 				Node ptrNode = alloc.getNode(1).getNode(0);
 				Type ptrType = CType.getType(ptrNode);
 		    String ptrName = CType.getReferenceName(ptrType);
-				String ptrScopeName = CType.getScope(ptrNode);			
+				String ptrScopeName = CType.getScopeName(ptrNode);			
 				IRVar ptrVar = getRepVar(ptrName, ptrScopeName, ptrType);
 				heapAssign(ptrVar, ptrType);
 			}
@@ -89,8 +90,8 @@ public class Steensgaard implements IRPreProcessor {
 	    
 	    Type lType = CType.getType(lhs);
 	    Type rType = CType.getType(rhs);
-	    String lScope = CType.getScope(lhs);
-	    String rScope = CType.getScope(rhs);
+	    String lScope = CType.getScopeName(lhs);
+	    String rScope = CType.getScopeName(rhs);
 	    String lRefName = CType.getReferenceName(lType);
 	    String rRefName = CType.getReferenceName(rType);
 	    
@@ -139,7 +140,7 @@ public class Steensgaard implements IRPreProcessor {
 	  case ALLOC: {
 	    Node lhs = stmt.getOperand(0).getSourceNode();
 	    xtc.type.Type lType = CType.getType(lhs);
-	    String lScope = CType.getScope(lhs);
+	    String lScope = CType.getScopeName(lhs);
 	    String lRefName = CType.getReferenceName(lType);
 	    IRVar lTypeVar = getRepVar(lRefName, lScope, lType);
 	    heapAssign(lTypeVar, lType);
@@ -178,10 +179,42 @@ public class Steensgaard implements IRPreProcessor {
 	  return sb.toString();
 	}
 	
-  public IRVar getRepVar(String name, String scopeName, Type type) {
-  	if(Identifiers.CONSTANT.equals(name))	return constant;
+  /**
+	 * Get the alias variable equivalent class of union find
+	 */
+	@Override
+	public AliasEquivClosure getEquivClass(IRVar var) {
+	  Iterable<IRVar> elements = uf.getEquivClass(((IRVarImpl) var).getECR());
+	  return AliasEquivClosure.create(var, elements);
+	}
+
+	@Override
+	public IRVar getPointsToElem(Node node) {
+    xtc.type.Type nodeType = CType.getType(node);
+    String nodeScopeName = CType.getScopeName(node);
+    String refName = CType.getReferenceName(nodeType);
+    
+    IRVar var = getRepVar(refName, nodeScopeName, nodeType);
+    return getPointsToVar(var);
+	}
+
+	@Override
+	public ImmutableMap<IRVar, Set<IRVar>> snapshot() {
+	  ImmutableMap.Builder<IRVar, Set<IRVar>> builder = 
+	      new ImmutableMap.Builder<IRVar, Set<IRVar>>();
+	  for(Entry<ECR, Set<IRVar>> pair : uf.snapshot().entrySet()) {
+	    builder.put(uf.getRootInitVar(pair.getKey()),
+	        pair.getValue());
+	  }
+	  return builder.build();
+	}
+
+	public IRVar getRepVar(String name, String scopeName, Type type) {
+  	if(Identifiers.CONSTANT.equals(name))	
+  		return constant;
   	
-  	if(Identifiers.NULL_LOC_NAME.equals(name))	return nullLoc;
+  	if(Identifiers.NULL_LOC_NAME.equals(name))	
+  		return nullLoc;
   	
     Scope currentScope = symbolTable.getScope(scopeName);
     Scope scope = currentScope.isDefined(name) ? // region is not defined under scope
@@ -214,59 +247,28 @@ public class Steensgaard implements IRPreProcessor {
     
     if(num == 0) 	return res;
     
-    IRVarImpl resPrime = res;
+    IRVar resPrime = res;
     while(num > 0) {
-    	resPrime = getPointsToRepVar(resPrime); 
+    	resPrime = getPointsToVar(resPrime); 
     	num--;
     }  
       
     if(resPrime == null) {
-    	// IOUtils.err().println(displaySnapShot());
-    	IOUtils.err().println(type.getShape() + " is uninialized.");
+    	IOUtils.debug().pln(type.getShape() + " is uninialized.");
     	return nullLoc;
     }
     
     return resPrime;
   }
 
-  public ImmutableMap<IRVar, Set<IRVar>> snapshot() {
-    ImmutableMap.Builder<IRVar, Set<IRVar>> builder = 
-        new ImmutableMap.Builder<IRVar, Set<IRVar>>();
-    for(Entry<ECR, Set<IRVar>> pair : uf.snapshot().entrySet()) {
-      builder.put(uf.getRootInitVar(pair.getKey()),
-          pair.getValue());
-    }
-    return builder.build();
-  }
-
-  /**
-   * Get the alias variable equivalent class of union find
-   */
-  public AliasEquivClosure getEquivClass(IRVar var) {
-    Iterable<IRVar> elements = uf.getEquivClass(((IRVarImpl) var).getECR());
-    return AliasEquivClosure.create(var, elements);
-  }
-  
-  public void heapAssign(IRVar lhs, Type lhsType) {
-	  Preconditions.checkArgument(lhs instanceof IRVarImpl);
-	  ValueType lhs_type = uf.getType(((IRVarImpl) lhs).getECR());
-	  assert(ValueTypeKind.LOCATION.equals(lhs_type.getKind()));
-	  ECR lhs0_ecr = (ECR) lhs_type.getOperand(0);
-	  String freshRegionName = Identifiers.uniquify(Identifiers.REGION_VARIABLE_NAME 
-	  		+ Identifiers.NAME_INFIX + lhs.getName());
-	  assert(lhsType.resolve().isPointer());
-	  Type regionType = CType.unwrapped(lhsType).toPointer().getType();
-	  regionType = regionType.annotate().shape(new DynamicReference(freshRegionName, regionType));
-	  IRVarImpl region = addVariable(freshRegionName, regionType, lhs.getScope());
-	  ECR region_ecr = region.getECR();
-	  // Attach the fresh region directly the first operand of target var of malloc
-	  if(!lhs0_ecr.hasInitTypeVar()) {
-	    lhs0_ecr.setInitVar(region_ecr.getInitTypeVar());
-	  }
-	  uf.join(lhs0_ecr, region_ecr);
-	}
-
-	public IRVar getAllocRegion(IRVar var) {
+	@Override
+	public IRVar getAllocateElem(final Node node) {
+    xtc.type.Type nodeType = CType.getType(node);
+    String nodeScopeName = CType.getScopeName(node);
+    String refName = CType.getReferenceName(nodeType);
+    
+    IRVar var = getRepVar(refName, nodeScopeName, nodeType);
+    
 	  Preconditions.checkArgument(var instanceof IRVarImpl);
 	  ECR ecr = ((IRVarImpl) var).getECR();
 	  ValueType type = uf.getType(ecr);
@@ -290,31 +292,6 @@ public class Steensgaard implements IRPreProcessor {
 	  }
 	}
 
-	public IRVarImpl getPointsToRepVar(IRVar var) {
-    Preconditions.checkArgument(var instanceof IRVarImpl);
-    ECR ecr = ((IRVarImpl) var).getECR();
-    ValueType type = uf.getType(ecr);
-    assert(ValueTypeKind.LOCATION.equals(type.getKind()));
-    /* For array, structure or union, just return the root ECR's 
-     * initial type variable
-     */
-    CellKind kind = CType.getCellKind(var.getType());
-    switch(kind) {
-    case POINTER:       
-      return uf.getRootInitVar(type.getOperand(0));
-    case ARRAY:
-    case STRUCTORUNION: {
-      if(uf.hasPointsToChain(ecr)) {
-        return uf.getRootInitVar(type.getOperand(0));
-      } else {
-        return uf.getRootInitVar(ecr);
-      }
-    }
-    default:
-      throw new IllegalArgumentException("No points to variable for " + var.getType().getShape());
-    }
-  }
-	
 	private Map<Pair<String, Scope>, IRVarImpl> parseSymbolTable(SymbolTable _symbolTable) {
 		return parseSymbolTableWithScope(_symbolTable.getCurrentScope());
 	}
@@ -362,6 +339,25 @@ public class Steensgaard implements IRPreProcessor {
   	varsMap.put(key, res);
     uf.add(res);
 	  return res;
+	}
+
+	private void heapAssign(IRVar lhs, Type lhsType) {
+	  Preconditions.checkArgument(lhs instanceof IRVarImpl);
+	  ValueType lhs_type = uf.getType(((IRVarImpl) lhs).getECR());
+	  assert(ValueTypeKind.LOCATION.equals(lhs_type.getKind()));
+	  ECR lhs0_ecr = (ECR) lhs_type.getOperand(0);
+	  String freshRegionName = Identifiers.uniquify(Identifiers.REGION_VARIABLE_NAME 
+	  		+ Identifiers.NAME_INFIX + lhs.getName());
+	  assert(lhsType.resolve().isPointer());
+	  Type regionType = CType.unwrapped(lhsType).toPointer().getType();
+	  regionType = regionType.annotate().shape(new DynamicReference(freshRegionName, regionType));
+	  IRVarImpl region = addVariable(freshRegionName, regionType, lhs.getScope());
+	  ECR region_ecr = region.getECR();
+	  // Attach the fresh region directly the first operand of target var of malloc
+	  if(!lhs0_ecr.hasInitTypeVar()) {
+	    lhs0_ecr.setInitVar(region_ecr.getInitTypeVar());
+	  }
+	  uf.join(lhs0_ecr, region_ecr);
 	}
 
 	private void simpleAssign(IRVar lhs, IRVar rhs) {
@@ -437,6 +433,30 @@ public class Steensgaard implements IRPreProcessor {
 	    ECR ptr01_ecr = uf.getType(ptr0_ecr).getOperand(1);
 	    if(lhs1_ecr.equals(ptr01_ecr)) 
 	      uf.cjoin(lhs1_ecr, ptr01_ecr);
+	  }
+	}
+	
+	private IRVar getPointsToVar(IRVar var) {    
+	  ECR ecr = ((IRVarImpl) var).getECR();
+	  ValueType type = uf.getType(ecr);
+	  assert(ValueTypeKind.LOCATION.equals(type.getKind()));
+	  /* For array, structure or union, just return the root ECR's 
+	   * initial type variable
+	   */
+	  CellKind kind = CType.getCellKind(var.getType());
+	  switch(kind) {
+	  case POINTER:       
+	    return uf.getRootInitVar(type.getOperand(0));
+	  case ARRAY:
+	  case STRUCTORUNION: {
+	    if(uf.hasPointsToChain(ecr)) {
+	      return uf.getRootInitVar(type.getOperand(0));
+	    } else {
+	      return uf.getRootInitVar(ecr);
+	    }
+	  }
+	  default:
+	    throw new IllegalArgumentException("No points to variable for " + var.getType().getShape());
 	  }
 	}
 	

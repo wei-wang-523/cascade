@@ -37,35 +37,26 @@ public class IRVarImpl implements IRVar {
 		return type;
 	}
 	
-	public Node getNode() {
-		return srcNode;
-	}
-	
-	public boolean hasNode() {
-		return srcNode != null;
-	}
-	
-  @Override
+	@Override
   public boolean equals(Object o) {
     if(!(o instanceof IRVarImpl)) return false;
     IRVarImpl var = (IRVarImpl) o;
     return name.equals(var.getName()) && type == var.getType() && scope.equals(var.getScope()) && srcNode.equals(var.getNode());
   }
-	
-  @Override
-	public boolean isNullLoc() {
-	  return false;
-	}
 
 	@Override
 	public String toString() {
-	  StringBuilder sb = new StringBuilder().append(name);
-	  if(scope != null) sb.append(scope.getQualifiedName());
-	  if(type != null)	sb.append("(type ").append(type.getName()).append(") ");
-	  return sb.toString();
+    StringBuilder sb = new StringBuilder();
+    sb.append(name);
+    if(scope != null) 
+      sb.append('@').append(scope.getName());
+    if(type != null)
+      sb.append("(type ").append(type.getName()).append(") ");
+    return sb.toString();
   }
 
-	protected String toStringShort() {
+	@Override
+	public String toStringShort() {
 	  StringBuilder sb = new StringBuilder().append(name);
 	  if(scope != null)  sb.append(scope.getQualifiedName());
 	  return sb.toString();
@@ -74,5 +65,13 @@ public class IRVarImpl implements IRVar {
 	@Override
 	public Scope getScope() {
 		return this.scope;
+	}
+
+	protected Node getNode() {
+		return srcNode;
+	}
+
+	protected boolean hasNode() {
+		return srcNode != null;
 	}
 }

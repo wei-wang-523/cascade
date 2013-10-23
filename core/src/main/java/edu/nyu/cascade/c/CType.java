@@ -161,7 +161,7 @@ public class CType {
   	return (Type) node.getProperty(TYPE);
   }
   
-  public static String getScope(Node node) {
+  public static String getScopeName(Node node) {
   	Preconditions.checkArgument(node.hasProperty(SCOPE));
   	return node.getStringProperty(SCOPE);
   }

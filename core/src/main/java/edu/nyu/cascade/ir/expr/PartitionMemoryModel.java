@@ -108,8 +108,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
     Preconditions.checkArgument(size.getType().equals( valueType ));
     
-    IRVar ptrVar = loadRepVar(ptr.getNode());
-    IRVar regionVar = analyzer.getAllocRegion(ptrVar);
+    IRVar regionVar = analyzer.getAllocateElem(ptr.getNode());
     
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
@@ -200,8 +199,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
     Preconditions.checkArgument(size.getType().equals( valueType ));
     
-    IRVar ptrVar = loadRepVar(ptr.getNode());
-    IRVar regionVar = analyzer.getAllocRegion(ptrVar);
+    IRVar regionVar = analyzer.getAllocateElem(ptr.getNode());
     
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
@@ -212,15 +210,15 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     Expression region = heapEncoder.freshRegion(regionName, regionNode);
     
 //    IRVar regionRepVar = analyzer.getPointsToRepVar(ptrVar);
-    
-    IRVar regionRepVar = loadRepVar(regionNode);
 
     /* Update side effect memory state */
+    IRVar ptrVar = loadRepVar(ptr.getNode());
     ArrayExpression array1 = popMemArray(state, ptrVar);
     array1 = heapEncoder.updateMemArr(array1, ptr, region);
     String ptrArrName = getMemArrElemName(ptrVar);
     updateSideEffectMemClosure(ptrArrName, suspend(state, array1));
-    	
+    
+    IRVar regionRepVar = loadRepVar(regionNode);
     updateMemArray(state, regionRepVar);
     
     /* Update side effect size state */   	
@@ -424,10 +422,10 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   }
 
   @Override
-  public void setPreProcessor(IRPreProcessor analyzer) {
+  public void setPreProcessor(IRPreProcessor<?> analyzer) {
   	Preconditions.checkArgument(analyzer instanceof Steensgaard);
     this.analyzer = (Steensgaard) analyzer;
-    IOUtils.err().println(analyzer.displaySnapShot());
+    IOUtils.debug().pln(analyzer.displaySnapShot());
   }
   
   @Override
@@ -435,8 +433,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
     
     /* Find related heap regions and alloc array */
-    IRVar pRepVar = loadRepVar(ptr.getNode());
-    IRVar ptr2RepVar = analyzer.getPointsToRepVar(pRepVar);
+    IRVar ptr2RepVar = analyzer.getPointsToElem(ptr.getNode());
     IREquivClosure equivAliasVars = analyzer.getEquivClass(ptr2RepVar);
     
     /* Get the related size array */
@@ -453,8 +450,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(size.getType().equals( valueType ));
 
     /* Find related heap regions and alloc array */
-    IRVar pRepVar = loadRepVar(ptr.getNode());
-    IRVar ptr2RepVar = analyzer.getPointsToRepVar(pRepVar);
+    IRVar ptr2RepVar = analyzer.getPointsToElem(ptr.getNode());
     IREquivClosure equivAliasVars = analyzer.getEquivClass(ptr2RepVar);
     
     /* Get the related size array */
@@ -471,9 +467,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(size.getType().equals( valueType ));
     
     /* Find related heap regions and alloc array */
-    IRVar pRepVar = loadRepVar(ptr.getNode());
-    pRepVar = analyzer.getPointsToRepVar(pRepVar);
-    
+    IRVar pRepVar = analyzer.getPointsToElem(ptr.getNode());
     IREquivClosure equivAliasVars = analyzer.getEquivClass(pRepVar);
     
     Map<String, ArrayExpression> map = getRecordElems(state.getChild(1));
@@ -490,8 +484,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   	Preconditions.checkArgument(ptr.getType().equals( addrType ));
   	
     /* Find related heap regions and alloc array */
-    IRVar pRepVar = loadRepVar(ptr.getNode());
-    IRVar ptr2RepVar = analyzer.getPointsToRepVar(pRepVar);
+    IRVar ptr2RepVar = analyzer.getPointsToElem(ptr.getNode());
     ArrayExpression sizeArr = popSizeArray(state, ptr2RepVar);
     return heapEncoder.validFree(sizeArr, ptr);
   }
@@ -611,7 +604,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
       /* Update the mem array for rval type in memory */
     	if(rval.getNode() != null) {
         IRVar rvalRepVar = loadRepVar(rval.getNode());
-        if(!rvalRepVar.isNullLoc()) {
+        if(!Identifiers.NULL_LOC_NAME.equals(rvalRepVar.getName())) { // <NULL>
         	String rvalRepArrName = getMemArrElemName(rvalRepVar);
         	if(!map.containsKey(rvalRepArrName)) {
         		Type valueType = heapEncoder.getArrayElemType(rvalRepVar.getType());
@@ -656,7 +649,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
    */
   private IRVar getRepVar(GNode gnode) {
     xtc.type.Type type = CType.getType(gnode);
-    String scope = CType.getScope(gnode);
+    String scope = CType.getScopeName(gnode);
     String refName = CType.getReferenceName(type);
     
     return analyzer.getRepVar(refName, scope, type);
@@ -669,7 +662,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
    */
   private IRVar loadRepVar(GNode gnode) {
     try {
-      String scope = CType.getScope(gnode);
+      String scope = CType.getScopeName(gnode);
       Pair<GNode, String> key = Pair.of(gnode, scope);
       return cache.get(key);
     } catch (ExecutionException e) {

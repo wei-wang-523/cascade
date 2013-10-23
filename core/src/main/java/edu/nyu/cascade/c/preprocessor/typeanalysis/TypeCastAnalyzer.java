@@ -11,14 +11,18 @@ import xtc.type.Type;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.AddressOfReference;
 import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.preprocessor.IREquivClosure;
 import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
+import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.util.CacheException;
 
+@SuppressWarnings("rawtypes")
 public class TypeCastAnalyzer implements IRPreProcessor {
   
   private final LoadingCache<Reference, Boolean> cache = CacheBuilder
@@ -173,5 +177,29 @@ public class TypeCastAnalyzer implements IRPreProcessor {
 	    Reference addr = new AddressOfReference(ref);
 	    return hasViewSet.contains(addr);
 	  }
+	}
+
+	@Override
+	public IREquivClosure getEquivClass(Object var) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ImmutableMap snapshot() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public IRVar getAllocateElem(Node node) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object getPointsToElem(Node node) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

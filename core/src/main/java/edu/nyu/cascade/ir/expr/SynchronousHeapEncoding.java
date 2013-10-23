@@ -157,7 +157,7 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	public Expression freshRegion(String name, Node node) {
 		Expression res = encoding.getPointerEncoding().freshPtr(name, false);
 		res.setNode(GNode.cast(node));
-		Pair<String, String> varKey = Pair.of(name, CType.getScope(node));
+		Pair<String, String> varKey = Pair.of(name, CType.getScopeName(node));
 		heapRegions.put(varKey, res.getChild(0));
 		return res;
 	}

@@ -12,9 +12,9 @@ import xtc.util.SymbolTable.Scope;
  */
 
 public interface IRVar {
+	String toStringShort();
   String getName() ;
   Type getType() ;
-  boolean isNullLoc() ;
   String toString() ;
   Scope getScope();
 }

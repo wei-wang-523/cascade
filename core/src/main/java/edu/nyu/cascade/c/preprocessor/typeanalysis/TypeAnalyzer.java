@@ -46,7 +46,7 @@ import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.ReservedFunction;
 import edu.nyu.cascade.util.Triple;
 
-public class TypeAnalyzer implements IRPreProcessor {
+public class TypeAnalyzer implements IRPreProcessor<Type> {
 	
   static private final LoadingCache<Pair<Type, Reference>, String> typeNameCache = CacheBuilder
       .newBuilder().build(new CacheLoader<Pair<Type, Reference>, String>(){
@@ -94,10 +94,9 @@ public class TypeAnalyzer implements IRPreProcessor {
 			Iterable<Node> allocated = findAllocatedFuncNode(srcNode);
 			for(Node alloc : allocated) {
 				Node ptrNode = alloc.getNode(1).getNode(0);
-				Type ptrType = CType.getType(ptrNode);
-				String ptrScopeName = CType.getScope(ptrNode);
+				String ptrScopeName = CType.getScopeName(ptrNode);
 				Scope ptrScope = symbolTable.getScope(ptrScopeName);				
-				Type ptr2Type = getPtr2Type(ptrType);
+				Type ptr2Type = getPointsToElem(ptrNode);
 				createAllocVar(ptrNode, ptr2Type, ptrScope);
 			}
 			break;
@@ -118,10 +117,9 @@ public class TypeAnalyzer implements IRPreProcessor {
 		case ALLOC : {
 			IRExpression operand = stmt.getOperand(0);
 			Node srcNode = operand.getSourceNode();
-			Type srcType = CType.getType(srcNode);
-			String srcScopeName = CType.getScope(srcNode);
+			String srcScopeName = CType.getScopeName(srcNode);
 			Scope srcScope = symbolTable.getScope(srcScopeName);
-			Type ptr2Type = getPtr2Type(srcType);
+			Type ptr2Type = getPointsToElem(srcNode);
 			createAllocVar(srcNode, ptr2Type, srcScope);
 			break;
 		}
@@ -138,20 +136,13 @@ public class TypeAnalyzer implements IRPreProcessor {
 		for(Entry<Type, Set<IRVar>> entry : varTypeMap.entrySet()) {
 			sb.append(getTypeName(entry.getKey())).append(": ");
 			for(IRVar var : entry.getValue()) {
-				sb.append(((IRVarImpl) var).toStringShort()).append(' ');
+				sb.append(var.toStringShort()).append(' ');
 			}
 			sb.append('\n');
 		}
 		return sb.toString();
 	}
 	
-	/**
-	 * Get the name of <code>type</code>
-	 */
-	public String getTypeName(Type type) {
-		return loadTypeName(type);
-	}
-
 	/**
 	 * Get the points-to type of <code>type</code>. AddressOf reference 
 	 * <code>&((*a).z)</code> should be taken care in order to pick
@@ -160,7 +151,9 @@ public class TypeAnalyzer implements IRPreProcessor {
 	 * @param type
 	 * @return
 	 */
-	public Type getPtr2Type(Type type) {
+	@Override
+	public Type getPointsToElem(Node node) {
+		Type type = CType.getType(node);
 		Preconditions.checkArgument(type.resolve().isPointer());
 		if(type.hasShape()) {
 			Reference ref = type.getShape();
@@ -176,6 +169,7 @@ public class TypeAnalyzer implements IRPreProcessor {
 		return type.resolve().toPointer().getType();
 	}
 
+	@Override
 	public IREquivClosure getEquivClass(Type type) {
 		if(type.hasShape()) {
 			Reference ref = type.getShape();
@@ -195,13 +189,23 @@ public class TypeAnalyzer implements IRPreProcessor {
 	}
 	
 	/**
+	 * Get the name of <code>type</code>
+	 */
+	public String getTypeName(Type type) {
+		return loadTypeName(type);
+	}
+
+	/**
 	 * Get the allocated region variable for <code>pVar</code>.
 	 * @param pVar
 	 * @param pType
 	 * @param scopeName
 	 * @return a region variable
 	 */
-	public IRVar getAllocVar(final Node node, Type pType, final String scopeName) {
+	@Override
+	public IRVar getAllocateElem(final Node node) {
+		Type pType = getPointsToElem(node);
+		final String scopeName = CType.getScopeName(node);
 		Iterable<IRVar> vars = varTypeMap.get(pType);
 		Iterable<IRVar> selectedVars = Iterables.filter(vars, new Predicate<IRVar>(){
 			@Override

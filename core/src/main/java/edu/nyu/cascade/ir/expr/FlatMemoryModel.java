@@ -72,7 +72,7 @@ public class FlatMemoryModel extends AbstractMemoryModel {
     String regionName = Identifiers.uniquify(REGION_VARIABLE_NAME);
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
     CType.unwrapped(CType.getType(ptr.getNode())).toPointer().getType().mark(regionNode);
-    String regionScope = CType.getScope(ptr.getNode());
+    String regionScope = CType.getScopeName(ptr.getNode());
     regionNode.setProperty(CType.SCOPE, regionScope);
     
     Expression region = heapEncoder.freshRegion(regionName, regionNode);
@@ -154,7 +154,7 @@ public class FlatMemoryModel extends AbstractMemoryModel {
     String regionName = Identifiers.uniquify(REGION_VARIABLE_NAME);
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
     CType.unwrapped(CType.getType(ptr.getNode())).toPointer().getType().mark(regionNode);
-    regionNode.setProperty(CType.SCOPE, CType.getScope(ptr.getNode()));
+    regionNode.setProperty(CType.SCOPE, CType.getScopeName(ptr.getNode()));
 
     Expression region = heapEncoder.freshRegion(regionName, regionNode);
     ArrayExpression mem = heapEncoder.updateMemArr(getMemory(state), ptr, region);

@@ -178,7 +178,7 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 		VariableExpression res = exprManager.variable(regionName, addrType, false);
 		res.setNode(GNode.cast(regionNode));
 		Pair<String, String> varKey = Pair.of(regionName,
-				CType.getScope(regionNode));
+				CType.getScopeName(regionNode));
 		heapRegions.put(varKey, res);
 		return res;
 	}

@@ -100,13 +100,11 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
     Preconditions.checkArgument(size.getType().equals( valueType )); 
     
-    xtc.type.Type pType = CType.getType(ptr.getNode());
-    String pScope = CType.getScope(ptr.getNode());
-    xtc.type.Type regionType = analyzer.getPtr2Type(pType);
-    IRVar regionVar = analyzer.getAllocVar(ptr.getNode(), regionType, pScope);
+    IRVar regionVar = analyzer.getAllocateElem(ptr.getNode());
     
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
+    xtc.type.Type regionType = analyzer.getPointsToElem(ptr.getNode());
     regionType.mark(regionNode);
     regionNode.setProperty(CType.SCOPE, regionVar.getScope().getQualifiedName());
     
@@ -190,11 +188,8 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
     Preconditions.checkArgument(size.getType().equals( valueType ));
     
-    xtc.type.Type pType = CType.getType(ptr.getNode());
-    String pScope = CType.getScope(ptr.getNode());
-    
-    xtc.type.Type regionType = analyzer.getPtr2Type(pType);
-    IRVar regionVar = analyzer.getAllocVar(ptr.getNode(), regionType, pScope);
+    xtc.type.Type regionType = analyzer.getPointsToElem(ptr.getNode());
+    IRVar regionVar = analyzer.getAllocateElem(ptr.getNode());
     
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
@@ -204,6 +199,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Expression region = heapEncoder.freshRegion(regionName, regionNode);
 
     /* Update side effect memory state */
+    xtc.type.Type pType = CType.getType(ptr.getNode());
     ArrayExpression array1 = popMemArray(state, pType);
     array1 = heapEncoder.updateMemArr(array1, ptr, region);
     String pTypeName = analyzer.getTypeName(pType);
@@ -419,7 +415,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   }
   
   @Override
-  public void setPreProcessor(IRPreProcessor analyzer) {
+  public void setPreProcessor(IRPreProcessor<?> analyzer) {
   	Preconditions.checkArgument(analyzer instanceof TypeAnalyzer);
     this.analyzer = (TypeAnalyzer) analyzer;
     IOUtils.debug().pln(analyzer.displaySnapShot());
@@ -430,8 +426,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
     
     /* Find related heap regions and size array */
-    xtc.type.Type ptrType = CType.getType(ptr.getNode());
-    xtc.type.Type ptr2Type = analyzer.getPtr2Type(ptrType);
+    xtc.type.Type ptr2Type = analyzer.getPointsToElem(ptr.getNode());
     IREquivClosure equivAliasVars = analyzer.getEquivClass(ptr2Type);
     
     if(equivAliasVars.getElements() == null) {
@@ -453,8 +448,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(size.getType().equals( valueType ));
 
     /* Find related heap regions and size array */
-    xtc.type.Type ptrType = CType.getType(ptr.getNode());
-    xtc.type.Type ptr2Type = analyzer.getPtr2Type(ptrType);
+    xtc.type.Type ptr2Type = analyzer.getPointsToElem(ptr.getNode());
     IREquivClosure equivAliasVars = analyzer.getEquivClass(ptr2Type);
     
     if(equivAliasVars == null) {
@@ -476,8 +470,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(size.getType().equals( valueType ));
     
     /* Find related heap regions and alloc array */
-    xtc.type.Type ptr2Type = analyzer.getPtr2Type(CType.getType(ptr.getNode()));
-    
+    xtc.type.Type ptr2Type = analyzer.getPointsToElem(ptr.getNode());   
     IREquivClosure equivAliasVars = analyzer.getEquivClass(ptr2Type);
     
     Map<String, ArrayExpression> map = getRecordElems(state.getChild(1));
@@ -495,7 +488,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   	Preconditions.checkArgument(ptr.getType().equals( addrType ));
   	
     /* Find related heap regions and alloc array */
-    xtc.type.Type ptr2Type = analyzer.getPtr2Type(CType.getType(ptr.getNode()));
+    xtc.type.Type ptr2Type = analyzer.getPointsToElem(ptr.getNode());
     ArrayExpression sizeArr = popSizeArray(state, ptr2Type);
 
     return heapEncoder.validFree(sizeArr, ptr);

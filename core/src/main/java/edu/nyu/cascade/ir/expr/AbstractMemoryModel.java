@@ -99,7 +99,7 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   }
   
   @Override
-  public void setPreProcessor(IRPreProcessor analyzer) {};
+  public void setPreProcessor(IRPreProcessor<?> analyzer) {};
   
   @Override
   public Expression combineRecordStates(BooleanExpression guard, 

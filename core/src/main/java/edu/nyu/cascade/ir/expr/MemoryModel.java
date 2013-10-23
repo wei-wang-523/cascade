@@ -137,7 +137,7 @@ public interface MemoryModel {
   /**
    * set pointer alias map for partition memory model
    */
-  void setPreProcessor(IRPreProcessor analyzer);
+  void setPreProcessor(IRPreProcessor<?> analyzer);
 
   /**
    * valid free operation

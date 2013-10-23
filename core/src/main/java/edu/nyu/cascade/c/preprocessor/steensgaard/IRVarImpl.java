@@ -53,11 +53,6 @@ public class IRVarImpl implements IRVar {
   }
   
   @Override
-  public boolean isNullLoc() {
-    return Identifiers.NULL_LOC_NAME.equals(name) && type == null && scope == null;
-  }
-  
-  @Override
   public boolean equals(Object o) {
     if(!(o instanceof IRVarImpl)) return false;
     IRVarImpl var = (IRVarImpl) o;
@@ -75,7 +70,8 @@ public class IRVarImpl implements IRVar {
     return sb.toString();
   }
   
-  protected String toStringShort() {
+  @Override
+  public String toStringShort() {
     StringBuilder sb = new StringBuilder();
     return sb.append(name).toString();
   }
