@@ -134,7 +134,7 @@ public class TypeAnalyzer implements IRPreProcessor<Type> {
 	public String displaySnapShot() {
 		StringBuilder sb = new StringBuilder();
 		for(Entry<Type, Set<IRVar>> entry : varTypeMap.entrySet()) {
-			sb.append(getTypeName(entry.getKey())).append(": ");
+			sb.append(getRepName(entry.getKey())).append(": ");
 			for(IRVar var : entry.getValue()) {
 				sb.append(var.toStringShort()).append(' ');
 			}
@@ -179,7 +179,7 @@ public class TypeAnalyzer implements IRPreProcessor<Type> {
 			type = ref.getType();
 		}
 		
-	  return TypeEquivClosure.create(getTypeName(type), varTypeMap.get(type));
+	  return TypeEquivClosure.create(getRepName(type), varTypeMap.get(type));
 	}
 
 	public ImmutableMap<Type, Set<IRVar>> snapshot() {
@@ -188,10 +188,16 @@ public class TypeAnalyzer implements IRPreProcessor<Type> {
 	  return builder.build();
 	}
 	
+	@Override
+	public Type getRep(Node node) {
+		return CType.getType(node);
+	}
+
 	/**
 	 * Get the name of <code>type</code>
 	 */
-	public String getTypeName(Type type) {
+	@Override
+	public String getRepName(Type type) {
 		return loadTypeName(type);
 	}
 
@@ -336,6 +342,10 @@ public class TypeAnalyzer implements IRPreProcessor<Type> {
 		return builder.build();
 	}
 
+	private static IRVarImpl loadVariable(String name, Type type, Scope scope) {
+		return IRVarImpl.create(name, type, scope);
+	}
+
 	private static String loadTypeName(Type type) {
 	    Preconditions.checkArgument(type != null);
 	/*    if(type.hasConstant() && type.getConstant().isReference()) {
@@ -349,8 +359,4 @@ public class TypeAnalyzer implements IRPreProcessor<Type> {
 	      throw new CacheException(e);
 	    }
 	  }
-	
-	private static IRVarImpl loadVariable(String name, Type type, Scope scope) {
-		return IRVarImpl.create(name, type, scope);
-	}
 }

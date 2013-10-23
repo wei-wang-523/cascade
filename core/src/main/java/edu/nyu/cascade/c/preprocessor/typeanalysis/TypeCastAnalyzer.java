@@ -202,4 +202,16 @@ public class TypeCastAnalyzer implements IRPreProcessor {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+	public String getRepName(Object arg) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object getRep(Node node) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

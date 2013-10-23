@@ -257,10 +257,18 @@ public class Steensgaard implements IRPreProcessor<IRVar> {
 	  }
 	}
 	
-	public IRVar getRepVar(GNode gnode) {
+	@Override
+	public String getRepName(IRVar var) {
+		return new StringBuilder().append(var.getName())
+      	.append(Identifiers.NAME_INFIX)
+      	.append(var.getScope().getName()).toString();
+	}
+	
+	@Override
+	public IRVar getRep(Node node) {
     try {
-      String scope = CType.getScopeName(gnode);
-      Pair<GNode, String> key = Pair.of(gnode, scope);
+      String scope = CType.getScopeName(node);
+      Pair<GNode, String> key = Pair.of(GNode.cast(node), scope);
       return cache.get(key);
     } catch (ExecutionException e) {
       throw new CacheException(e);

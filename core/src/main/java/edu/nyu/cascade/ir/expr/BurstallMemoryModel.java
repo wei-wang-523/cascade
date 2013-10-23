@@ -104,9 +104,9 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
-    xtc.type.Type regionType = analyzer.getPointsToElem(ptr.getNode());
-    regionType.mark(regionNode);
-    regionNode.setProperty(CType.SCOPE, regionVar.getScope().getQualifiedName());
+    regionVar.getType().mark(regionNode);
+    String regionScope = regionVar.getScope().getQualifiedName();
+    regionNode.setProperty(CType.SCOPE, regionScope);
     
     Expression region = heapEncoder.freshRegion(regionName, regionNode);
     
@@ -159,8 +159,8 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
 	@Override
 	public Expression deref(Expression state, Expression p) {
     Preconditions.checkArgument(addrType.equals(p.getType()));
-    xtc.type.Type pType = CType.getType(p.getNode());
-    String pTypeName = analyzer.getTypeName(pType);
+    xtc.type.Type pType = analyzer.getRep(p.getNode());
+    String pTypeName = analyzer.getRepName(pType);
     updateMemArray(state, pType, pTypeName);
     ArrayExpression pArray = getMemArray(state, pTypeName);    
     return heapEncoder.indexMemArr(pArray, p);
@@ -189,8 +189,8 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
     Preconditions.checkArgument(size.getType().equals( valueType ));
     
-    xtc.type.Type regionType = analyzer.getPointsToElem(ptr.getNode());
     IRVar regionVar = analyzer.getAllocateElem(ptr.getNode());
+    xtc.type.Type regionType = regionVar.getType();
     
     String regionName = regionVar.getName();
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
@@ -200,14 +200,14 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Expression region = heapEncoder.freshRegion(regionName, regionNode);
 
     /* Update side effect memory state */
-    xtc.type.Type pType = CType.getType(ptr.getNode());
-    String pTypeName = analyzer.getTypeName(pType);
+    xtc.type.Type pType = analyzer.getRep(ptr.getNode());
+    String pTypeName = analyzer.getRepName(pType);
     ArrayExpression array1 = popMemArray(state, pType, pTypeName);
     array1 = heapEncoder.updateMemArr(array1, ptr, region);
     String ptrArrName = getMemArrElemName(pTypeName);
     updateSideEffectMemClosure(ptrArrName, suspend(state, array1));
     
-    String regionTypeName = analyzer.getTypeName(regionType);
+    String regionTypeName = analyzer.getRepName(regionType);
     updateMemArray(state, regionType, regionTypeName);
     
     /* Update side effect size state */
@@ -236,7 +236,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     Map<String, ArrayExpression> sizeMap = getRecordElems(state.getChild(1));
     
     for(xtc.type.Type type : map.keySet()) {
-    	String typeName = analyzer.getTypeName(type);
+    	String typeName = analyzer.getRepName(type);
     	String memArrName = getMemArrElemName(typeName);
     	
     	/* If the repVar is not referred in the execution paths.
@@ -436,7 +436,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     }
     
     /* Get the related alloc array */
-    String ptr2TypeName = analyzer.getTypeName(ptr2Type);
+    String ptr2TypeName = analyzer.getRepName(ptr2Type);
     ArrayExpression sizeArr = popSizeArray(state, ptr2Type, ptr2TypeName);
       
     Collection<BooleanExpression> res = heapEncoder.validMemAccess(equivAliasVars, sizeArr, ptr);
@@ -459,7 +459,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     }
     
     /* Get the related alloc array */
-    String ptr2TypeName = analyzer.getTypeName(ptr2Type);
+    String ptr2TypeName = analyzer.getRepName(ptr2Type);
     ArrayExpression sizeArr = popSizeArray(state, ptr2Type, ptr2TypeName);
 
     Collection<BooleanExpression> res = heapEncoder.validMemAccess(equivAliasVars, sizeArr, ptr, size);
@@ -477,7 +477,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     IREquivClosure equivAliasVars = analyzer.getEquivClass(ptr2Type);
     
     Map<String, ArrayExpression> map = getRecordElems(state.getChild(1));
-    String typeName = analyzer.getTypeName(ptr2Type);
+    String typeName = analyzer.getRepName(ptr2Type);
     String sizeArrName = getSizeArrElemName(typeName);
     ArrayExpression sizeArr = map.get(sizeArrName);
     assert sizeArr != null;
@@ -492,7 +492,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   	
     /* Find related heap regions and alloc array */
     xtc.type.Type ptr2Type = analyzer.getPointsToElem(ptr.getNode());
-    String ptr2TypeName = analyzer.getTypeName(ptr2Type);
+    String ptr2TypeName = analyzer.getRepName(ptr2Type);
     ArrayExpression sizeArr = popSizeArray(state, ptr2Type, ptr2TypeName);
 
     return heapEncoder.validFree(sizeArr, ptr);
@@ -596,8 +596,8 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     int preSize = map.size();
     
     if(mem) {
-    	xtc.type.Type lType = CType.getType(lval.getNode());
-    	String lTypeName = analyzer.getTypeName(CType.getType(lval.getNode()));    	
+    	xtc.type.Type lType = analyzer.getRep(lval.getNode());
+    	String lTypeName = analyzer.getRepName(lType);    	
     	assert !lTypeName.equals(Identifiers.CONSTANT);
     	
     	/* Update the memory array for lval type in memory */
@@ -615,8 +615,8 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
       
       /* Update the mem array for rval type in memory */
     	if(rval.getNode() != null) {
-    		xtc.type.Type rType = CType.getType(rval.getNode());
-    		String rTypeName = analyzer.getTypeName(rType);
+    		xtc.type.Type rType = analyzer.getRep(rval.getNode());
+    		String rTypeName = analyzer.getRepName(rType);
         if(!rTypeName.equals(Identifiers.CONSTANT)) {
         	String rMemArrName = getMemArrElemName(rTypeName);
         	if(!map.containsKey(rMemArrName)) {
@@ -638,8 +638,8 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     } else {
     	Type recordType = record.getType();    	
     	ArrayExpression lvalRepArr = null;
-    	xtc.type.Type lType = CType.getType(lval.getNode());
-    	String lTypeName = analyzer.getTypeName(lType);
+    	xtc.type.Type lType = analyzer.getRep(lval.getNode());
+    	String lTypeName = analyzer.getRepName(lType);
      	String lSizeArrName = getSizeArrElemName(lTypeName);
      	if(!map.containsKey(lSizeArrName)) {
      		/* Initialize as constant array with zero everywhere */

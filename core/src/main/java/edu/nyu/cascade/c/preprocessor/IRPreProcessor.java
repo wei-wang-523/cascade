@@ -33,4 +33,8 @@ public interface IRPreProcessor<T> {
 	T getPointsToElem(Node node);
 
 	IRVar getAllocateElem(Node node);
+
+	String getRepName(T arg);
+
+	T getRep(Node node);
 }
