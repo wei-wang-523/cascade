@@ -4,14 +4,19 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
+import xtc.tree.GNode;
 import xtc.tree.Node;
 import xtc.type.DynamicReference;
 import xtc.type.Reference;
@@ -28,6 +33,7 @@ import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
+import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Pair;
@@ -45,6 +51,17 @@ public class Steensgaard implements IRPreProcessor<IRVar> {
   private SymbolTable symbolTable;
   
   private final IRVarImpl constant, nullLoc;
+  
+  private final LoadingCache<Pair<GNode, String>, IRVar> cache = CacheBuilder
+      .newBuilder().build(new CacheLoader<Pair<GNode, String>, IRVar>(){
+        public IRVar load(Pair<GNode, String> key) {
+        	GNode gnode = key.fst();
+          Type type = CType.getType(gnode);
+          String scopeName = CType.getScopeName(gnode);
+          String refName = CType.getReferenceName(type);
+          return loadRepVar(refName, scopeName, type);
+        }
+      });
   
   private Steensgaard (SymbolTable _symbolTable) {
     symbolTable = _symbolTable;
@@ -79,7 +96,7 @@ public class Steensgaard implements IRPreProcessor<IRVar> {
 				Type ptrType = CType.getType(ptrNode);
 		    String ptrName = CType.getReferenceName(ptrType);
 				String ptrScopeName = CType.getScopeName(ptrNode);			
-				IRVar ptrVar = getRepVar(ptrName, ptrScopeName, ptrType);
+				IRVar ptrVar = loadRepVar(ptrName, ptrScopeName, ptrType);
 				heapAssign(ptrVar, ptrType);
 			}
 			break;
@@ -103,23 +120,23 @@ public class Steensgaard implements IRPreProcessor<IRVar> {
 	      if(ref instanceof AddressOfReference) {
 	        Reference base = ref.getBase();
 	        Type rType_ = base.getType().annotate().shape(base);
-	        IRVar lTypeVar_ = getRepVar(lRefName, lScope, lType);
-	        IRVar rTypeVar_ = getRepVar(rRefName, rScope, rType_);
+	        IRVar lTypeVar_ = loadRepVar(lRefName, lScope, lType);
+	        IRVar rTypeVar_ = loadRepVar(rRefName, rScope, rType_);
 	        addrAssign(lTypeVar_, rTypeVar_); break;
 	      }
 	      if(ref.isIndirect()) {
 	        Reference base = ref.getBase();
 	        Type rType_ = base.getType().annotate().shape(base);
-	        IRVar lTypeVar_ = getRepVar(lRefName, lScope, lType);
-	        IRVar rTypeVar_ = getRepVar(rRefName, rScope, rType_);
+	        IRVar lTypeVar_ = loadRepVar(lRefName, lScope, lType);
+	        IRVar rTypeVar_ = loadRepVar(rRefName, rScope, rType_);
 	        ptrAssign(lTypeVar_, rTypeVar_); break;
 	      }
 	    } 
 	    
 	    CellKind rKind = CType.getCellKind(rType);
 	    if(CellKind.STRUCTORUNION.equals(rKind) || CellKind.ARRAY.equals(rKind)) {
-	      IRVar lTypeVar_ = getRepVar(lRefName, lScope, lType);
-	      IRVar rTypeVar_ = getRepVar(rRefName, rScope, rType);
+	      IRVar lTypeVar_ = loadRepVar(lRefName, lScope, lType);
+	      IRVar rTypeVar_ = loadRepVar(rRefName, rScope, rType);
 	      addrAssign(lTypeVar_, rTypeVar_); break;
 	    }
 	    
@@ -127,14 +144,14 @@ public class Steensgaard implements IRPreProcessor<IRVar> {
 	      if(lType.getShape().isIndirect()) {
 	        Reference base = lType.getShape().getBase();
 	        Type lType_ = base.getType().annotate().shape(base);
-	        IRVar lTypeVar_ = getRepVar(lRefName, lScope, lType_);
-	        IRVar rTypeVar_ = getRepVar(rRefName, rScope, rType);
+	        IRVar lTypeVar_ = loadRepVar(lRefName, lScope, lType_);
+	        IRVar rTypeVar_ = loadRepVar(rRefName, rScope, rType);
 	        assignPtr(lTypeVar_, rTypeVar_); break;
 	      }
 	    }
 	    
-	    IRVar lTypeVar_ = getRepVar(lRefName, lScope, lType);
-	    IRVar rTypeVar_ = getRepVar(rRefName, rScope, rType);
+	    IRVar lTypeVar_ = loadRepVar(lRefName, lScope, lType);
+	    IRVar rTypeVar_ = loadRepVar(rRefName, rScope, rType);
 	    simpleAssign(lTypeVar_, rTypeVar_); break;
 	  }
 	  case ALLOC: {
@@ -142,7 +159,7 @@ public class Steensgaard implements IRPreProcessor<IRVar> {
 	    xtc.type.Type lType = CType.getType(lhs);
 	    String lScope = CType.getScopeName(lhs);
 	    String lRefName = CType.getReferenceName(lType);
-	    IRVar lTypeVar = getRepVar(lRefName, lScope, lType);
+	    IRVar lTypeVar = loadRepVar(lRefName, lScope, lType);
 	    heapAssign(lTypeVar, lType);
 	    break;
 	  }
@@ -194,7 +211,7 @@ public class Steensgaard implements IRPreProcessor<IRVar> {
     String nodeScopeName = CType.getScopeName(node);
     String refName = CType.getReferenceName(nodeType);
     
-    IRVar var = getRepVar(refName, nodeScopeName, nodeType);
+    IRVar var = loadRepVar(refName, nodeScopeName, nodeType);
     return getPointsToVar(var);
 	}
 
@@ -209,65 +226,13 @@ public class Steensgaard implements IRPreProcessor<IRVar> {
 	  return builder.build();
 	}
 
-	public IRVar getRepVar(String name, String scopeName, Type type) {
-  	if(Identifiers.CONSTANT.equals(name))	
-  		return constant;
-  	
-  	if(Identifiers.NULL_LOC_NAME.equals(name))	
-  		return nullLoc;
-  	
-    Scope currentScope = symbolTable.getScope(scopeName);
-    Scope scope = currentScope.isDefined(name) ? // region is not defined under scope
-    		currentScope.lookupScope(name) : currentScope;
-    Pair<String, Scope> key = Pair.of(name, scope);
-
-    IRVarImpl var = null;
-    if(varsMap.containsKey(key)) {
-    	 var = varsMap.get(key);
-    } else { // bound variable in assertion
-    	Scope origScope = symbolTable.getCurrentScope();
-    	symbolTable.setScope(scope);
-    	Type type_ = symbolTable.lookupType(name);
-    	IRVarInfo info = symbolTable.lookup(name);
-    	Scope scope_ = info.getScope();
-    	if(!(scope_.equals(scope) 
-    			&& type_.equals(CType.getType(info.getDeclarationNode())))) {
-    		throw new ExpressionFactoryException("Inconsistent info for " + name + '@' + scopeName);
-    	}
-    	var = addVariable(name, type_, scope_);
-    	symbolTable.setScope(origScope);
-    }
-      
-    IRVarImpl res = uf.getRootInitVar(var.getECR());
-    
-    if(!type.hasShape())	return res;
-    
-    int num = CType.numOfIndRef(type.getShape());
-    assert(num >= 0);
-    
-    if(num == 0) 	return res;
-    
-    IRVar resPrime = res;
-    while(num > 0) {
-    	resPrime = getPointsToVar(resPrime); 
-    	num--;
-    }  
-      
-    if(resPrime == null) {
-    	IOUtils.debug().pln(type.getShape() + " is uninialized.");
-    	return nullLoc;
-    }
-    
-    return resPrime;
-  }
-
 	@Override
 	public IRVar getAllocateElem(final Node node) {
     xtc.type.Type nodeType = CType.getType(node);
     String nodeScopeName = CType.getScopeName(node);
     String refName = CType.getReferenceName(nodeType);
     
-    IRVar var = getRepVar(refName, nodeScopeName, nodeType);
+    IRVar var = loadRepVar(refName, nodeScopeName, nodeType);
     
 	  Preconditions.checkArgument(var instanceof IRVarImpl);
 	  ECR ecr = ((IRVarImpl) var).getECR();
@@ -290,6 +255,16 @@ public class Steensgaard implements IRPreProcessor<IRVar> {
 	  default:
 	    throw new IllegalArgumentException("No points to variable for " + var.getType().getShape());
 	  }
+	}
+	
+	public IRVar getRepVar(GNode gnode) {
+    try {
+      String scope = CType.getScopeName(gnode);
+      Pair<GNode, String> key = Pair.of(gnode, scope);
+      return cache.get(key);
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
+    }
 	}
 
 	private Map<Pair<String, Scope>, IRVarImpl> parseSymbolTable(SymbolTable _symbolTable) {
@@ -436,6 +411,58 @@ public class Steensgaard implements IRPreProcessor<IRVar> {
 	  }
 	}
 	
+	private IRVar loadRepVar(String name, String scopeName, Type type) {
+		if(Identifiers.CONSTANT.equals(name))	
+			return constant;
+		
+		if(Identifiers.NULL_LOC_NAME.equals(name))	
+			return nullLoc;
+		
+	  Scope currentScope = symbolTable.getScope(scopeName);
+	  Scope scope = currentScope.isDefined(name) ? // region is not defined under scope
+	  		currentScope.lookupScope(name) : currentScope;
+	  Pair<String, Scope> key = Pair.of(name, scope);
+	
+	  IRVarImpl var = null;
+	  if(varsMap.containsKey(key)) {
+	  	 var = varsMap.get(key);
+	  } else { // bound variable in assertion
+	  	Scope origScope = symbolTable.getCurrentScope();
+	  	symbolTable.setScope(scope);
+	  	Type type_ = symbolTable.lookupType(name);
+	  	IRVarInfo info = symbolTable.lookup(name);
+	  	Scope scope_ = info.getScope();
+	  	if(!(scope_.equals(scope) 
+	  			&& type_.equals(CType.getType(info.getDeclarationNode())))) {
+	  		throw new ExpressionFactoryException("Inconsistent info for " + name + '@' + scopeName);
+	  	}
+	  	var = addVariable(name, type_, scope_);
+	  	symbolTable.setScope(origScope);
+	  }
+	    
+	  IRVarImpl res = uf.getRootInitVar(var.getECR());
+	  
+	  if(!type.hasShape())	return res;
+	  
+	  int num = CType.numOfIndRef(type.getShape());
+	  assert(num >= 0);
+	  
+	  if(num == 0) 	return res;
+	  
+	  IRVar resPrime = res;
+	  while(num > 0) {
+	  	resPrime = getPointsToVar(resPrime); 
+	  	num--;
+	  }  
+	    
+	  if(resPrime == null) {
+	  	IOUtils.debug().pln(type.getShape() + " is uninialized.");
+	  	return nullLoc;
+	  }
+	  
+	  return resPrime;
+	}
+
 	private IRVar getPointsToVar(IRVar var) {    
 	  ECR ecr = ((IRVarImpl) var).getECR();
 	  ValueType type = uf.getType(ecr);

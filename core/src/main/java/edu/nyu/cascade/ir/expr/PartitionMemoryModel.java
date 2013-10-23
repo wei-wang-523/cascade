@@ -6,15 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-
 import xtc.tree.GNode;
 import xtc.tree.Node;
 
 import com.google.common.base.Preconditions;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -35,10 +30,8 @@ import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
-import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
-import edu.nyu.cascade.util.Pair;
 
 /**
  * Partition memory mode, with a multiple memory arrays for multiple
@@ -69,13 +62,6 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   private final Map<String, ExpressionClosure> sideEffectSizeClosure;
   
   private Steensgaard analyzer = null;
-  
-  private final LoadingCache<Pair<GNode, String>, IRVar> cache = CacheBuilder
-      .newBuilder().build(new CacheLoader<Pair<GNode, String>, IRVar>(){
-        public IRVar load(Pair<GNode, String> key) {
-          return getRepVar(key.fst());
-        }
-      });
   
   private PartitionMemoryModel(ExpressionEncoding encoding,
   		IRPartitionHeapEncoder heapEncoder) {
@@ -171,7 +157,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   @Override
   public Expression deref(Expression state, Expression p) {
     Preconditions.checkArgument(addrType.equals(p.getType()));    
-    IRVar pRepVar = loadRepVar(p.getNode());
+    IRVar pRepVar = analyzer.getRepVar(p.getNode());
     updateMemArray(state, pRepVar);
     ArrayExpression pArray = getMemArray(state, pRepVar);    
     return heapEncoder.indexMemArr(pArray, p);
@@ -212,13 +198,13 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
 //    IRVar regionRepVar = analyzer.getPointsToRepVar(ptrVar);
 
     /* Update side effect memory state */
-    IRVar ptrVar = loadRepVar(ptr.getNode());
+    IRVar ptrVar = analyzer.getRepVar(ptr.getNode());
     ArrayExpression array1 = popMemArray(state, ptrVar);
     array1 = heapEncoder.updateMemArr(array1, ptr, region);
     String ptrArrName = getMemArrElemName(ptrVar);
     updateSideEffectMemClosure(ptrArrName, suspend(state, array1));
     
-    IRVar regionRepVar = loadRepVar(regionNode);
+    IRVar regionRepVar = analyzer.getRepVar(regionNode);
     updateMemArray(state, regionRepVar);
     
     /* Update side effect size state */   	
@@ -586,7 +572,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
     int preSize = map.size();
     if(mem) {
-    	IRVar lvalRepVar = loadRepVar(lval.getNode());
+    	IRVar lvalRepVar = analyzer.getRepVar(lval.getNode());
     	String lvalRepArrName = getMemArrElemName(lvalRepVar);
     	
     	/* Update the memory array for lval type in memory */
@@ -603,7 +589,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
       
       /* Update the mem array for rval type in memory */
     	if(rval.getNode() != null) {
-        IRVar rvalRepVar = loadRepVar(rval.getNode());
+        IRVar rvalRepVar = analyzer.getRepVar(rval.getNode());
         if(!Identifiers.NULL_LOC_NAME.equals(rvalRepVar.getName())) { // <NULL>
         	String rvalRepArrName = getMemArrElemName(rvalRepVar);
         	if(!map.containsKey(rvalRepArrName)) {
@@ -625,7 +611,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     } else {    	
     	Type recordType = record.getType();    	
     	ArrayExpression lvalRepArr = null;
-     	IRVar lvalRepVar = loadRepVar(lval.getNode());
+     	IRVar lvalRepVar = analyzer.getRepVar(lval.getNode());
      	String lvalRepArrName = getSizeArrElemName(lvalRepVar);
      	if(!map.containsKey(lvalRepArrName)) {
      		/* Initialize as constant array with zero everywhere */
@@ -640,33 +626,6 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     		map.put(lvalRepArrName, lvalRepArr);
     	}     	
       return exprManager.record(recordType, map.values());
-    }
-  }
-  
-  /**
-   * Get representative alias variable in the pointer analyzer
-   * @param gnode
-   */
-  private IRVar getRepVar(GNode gnode) {
-    xtc.type.Type type = CType.getType(gnode);
-    String scope = CType.getScopeName(gnode);
-    String refName = CType.getReferenceName(type);
-    
-    return analyzer.getRepVar(refName, scope, type);
-  }
-  
-  /**
-   * Load representative alias variable from cache
-   * @param gnode
-   * @return alias variable
-   */
-  private IRVar loadRepVar(GNode gnode) {
-    try {
-      String scope = CType.getScopeName(gnode);
-      Pair<GNode, String> key = Pair.of(gnode, scope);
-      return cache.get(key);
-    } catch (ExecutionException e) {
-      throw new CacheException(e);
     }
   }
   
