@@ -1032,7 +1032,7 @@ class CExpressionEncoder implements ExpressionEncoder {
     IRVarInfo varInfo = null;
     if(!scope.isDefined(name)) {
     	// quantified variable, no need to add in symbol table
-    	varInfo = new VarInfo(symbolTable.getScope(CType.getScope(node)), 
+    	varInfo = new VarInfo(symbolTable.getScope(CType.getScopeName(node)), 
       		name, IRIntegerType.getInstance(), node);
     	symbolTable.define(name, varInfo);
     } else {

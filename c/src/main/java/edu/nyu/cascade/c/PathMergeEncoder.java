@@ -80,7 +80,7 @@ final class PathMergeEncoder implements PathEncoder {
   	Preconditions.checkArgument(symbolTable != null && graph != null);
     if(Preferences.isSet(Preferences.OPTION_THEORY)) {
       String theory = Preferences.getString((Preferences.OPTION_THEORY));
-    	IRPreProcessor analyzer = null;
+    	IRPreProcessor<?> analyzer = null;
       if(Preferences.OPTION_THEORY_PARTITION.equals(theory)) {
       	analyzer = Steensgaard.create(symbolTable);        
       } else if(Preferences.OPTION_THEORY_BURSTALLView.equals(theory)) {
@@ -228,7 +228,7 @@ final class PathMergeEncoder implements PathEncoder {
     return pathExpr;
   }
   
-  private void preprocessPath(IRPreProcessor analyzer, final Map<Path, Set<Path>> map, final Path path) {
+  private void preprocessPath(IRPreProcessor<?> analyzer, final Map<Path, Set<Path>> map, final Path path) {
   	Preconditions.checkArgument(map != null);
   	if(!map.isEmpty()) {
   		Set<Path> prePaths = map.get(path); 	

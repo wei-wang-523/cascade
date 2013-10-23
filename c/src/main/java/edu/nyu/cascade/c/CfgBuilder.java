@@ -1708,7 +1708,7 @@ public class CfgBuilder extends Visitor {
       IRVarInfo binding;
       if(!symbolTable.isDefined(name)) {
       	// temporary variable created in Cascade
-      	binding = new VarInfo(symbolTable.getScope(CType.getScope(node)), 
+      	binding = new VarInfo(symbolTable.getScope(CType.getScopeName(node)), 
         		name, IRIntegerType.getInstance(), node);
         symbolTable.define(name, binding);
       } else {
