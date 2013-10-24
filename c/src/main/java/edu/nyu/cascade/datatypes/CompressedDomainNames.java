@@ -1,6 +1,7 @@
 package edu.nyu.cascade.datatypes;
 
 import edu.nyu.cascade.c.Theory;
+import edu.nyu.cascade.c.preprocessor.PreProcessor.Builder;
 import edu.nyu.cascade.ir.expr.BitVectorMemoryModelSound;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
@@ -29,6 +30,12 @@ public class CompressedDomainNames implements Theory {
   @Override
   public MemoryModel getMemoryModel() {
     return memoryModel;
+  }
+
+	@Override
+  public Builder<?> getPreprocessorBuilder() {
+	  // TODO Auto-generated method stub
+	  return null;
   }
 
 }
