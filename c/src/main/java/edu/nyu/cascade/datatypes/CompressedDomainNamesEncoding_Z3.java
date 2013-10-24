@@ -64,13 +64,14 @@ import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.ir.expr.ArrayEncoding;
 import edu.nyu.cascade.ir.expr.BitVectorIntegerEncoding;
-import edu.nyu.cascade.ir.expr.BitVectorMemoryModelSound;
 import edu.nyu.cascade.ir.expr.BooleanEncoding;
 import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
 import edu.nyu.cascade.ir.expr.DefaultBooleanEncoding;
 import edu.nyu.cascade.ir.expr.DefaultPointerEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
+import edu.nyu.cascade.ir.expr.FlatMemoryModel;
+import edu.nyu.cascade.ir.expr.IRSingleHeapEncoder;
 import edu.nyu.cascade.ir.expr.IntegerEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.PointerEncoding;
@@ -124,9 +125,9 @@ import edu.nyu.cascade.util.Preferences;
 
 public class CompressedDomainNamesEncoding_Z3 extends CompressedDomainNamesEncoding {
 
-  public static MemoryModel createMemoryModel(ExpressionEncoding encoding) { 
+  public static MemoryModel createMemoryModel(ExpressionEncoding encoding, IRSingleHeapEncoder heapEncoder) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
-    return BitVectorMemoryModelSound.create(encoding);
+    return FlatMemoryModel.create(encoding, heapEncoder);
   }
   
   private final BitVectorIntegerEncoding bitVectorFactory;

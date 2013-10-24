@@ -9,6 +9,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -232,10 +233,12 @@ public class FlatMemoryModel extends AbstractMemoryModel {
     };
   }
   
+  @Override
   public boolean hasSideEffect() {
     return sideEffectMemClosure != null || sideEffectSizeClosure != null;
   }
   
+  @Override
   public Expression clearSideEffect(Expression state) {
   	Preconditions.checkArgument(state.isTuple());
   	Expression mem = state.getChild(0);
@@ -297,18 +300,6 @@ public class FlatMemoryModel extends AbstractMemoryModel {
     Expression res = expr.subst(initialSizeArr, constSizeArr);
     return res;
   }
-
-	@Override
-  public ExpressionClosure getCurrentState() {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public void clearCurrentState() {
-	  // TODO Auto-generated method stub
-	  
-  }
 	
 	private ArrayExpression getMemory(Expression state) {
 		if(sideEffectMemClosure != null) { 
@@ -325,4 +316,9 @@ public class FlatMemoryModel extends AbstractMemoryModel {
 			return state.getChild(1).asArray();
 		}
 	}
+
+	@Override
+  public void setPreProcessor(PreProcessor<?> analyzer) {
+		throw new UnsupportedOperationException("No pre processor is needed for flat memory model");
+  }
 }

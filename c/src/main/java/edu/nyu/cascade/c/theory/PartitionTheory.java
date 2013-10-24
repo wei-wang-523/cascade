@@ -33,8 +33,13 @@ public class PartitionTheory implements Theory {
     			.create(heapEncoding);
     	heapEncoder = PartitionHeapEncoder.createOrderEncoding(heapEncoding, memLayout);
     } else {
-    	IRHeapEncoding heapEncoding = LinearHeapEncoding.create(encoding);
-    	IRHeapEncoding heapEncoding_sync = SynchronousHeapEncoding.create(encoding);
+    	String exprEncoding = Preferences.getString(Preferences.OPTION_EXPR_ENCODING);
+    	IRHeapEncoding heapEncoding = null;
+    	if(Preferences.ENCODING_SYNC.equals(exprEncoding)) {
+    		heapEncoding = SynchronousHeapEncoding.create(encoding);
+    	} else {
+    		heapEncoding = LinearHeapEncoding.create(encoding);
+    	}
     	IRSoundMemLayoutEncoding memLayout = SoundMemLayoutEncodingFactory
     			.create(heapEncoding);
     	heapEncoder = PartitionHeapEncoder.createSoundEncoding(heapEncoding, memLayout);

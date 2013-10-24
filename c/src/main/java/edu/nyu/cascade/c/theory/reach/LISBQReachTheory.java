@@ -1,11 +1,12 @@
-package edu.nyu.cascade.c.theory;
+package edu.nyu.cascade.c.theory.reach;
 
 import edu.nyu.cascade.c.Theory;
 import edu.nyu.cascade.c.preprocessor.PreProcessor.Builder;
-import edu.nyu.cascade.ir.expr.LISBQwithQFReachEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
-import edu.nyu.cascade.ir.expr.LISBQwithRRReachEncoding;
-import edu.nyu.cascade.ir.expr.ReachMemoryModel;
+import edu.nyu.cascade.ir.expr.MemoryModel;
+import edu.nyu.cascade.ir.expr.bak.LISBQwithQFReachEncoding;
+import edu.nyu.cascade.ir.expr.bak.LISBQwithRRReachEncoding;
+import edu.nyu.cascade.ir.expr.bak.ReachMemoryModel;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TheoremProver;
 
@@ -31,8 +32,8 @@ public class LISBQReachTheory implements Theory {
   }
 
   @Override
-  public ReachMemoryModel getMemoryModel() {
-    return memoryModel;
+  public MemoryModel getMemoryModel() {
+    return (MemoryModel) memoryModel;
   }
 
 	@Override

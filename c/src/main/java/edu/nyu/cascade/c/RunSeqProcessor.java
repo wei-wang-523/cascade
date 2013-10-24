@@ -41,7 +41,7 @@ class RunSeqProcessor implements RunProcessor {
     this.cfgs = cfgs;
     this.cAnalyzer = cAnalyzer;
 //    this.pathEncoder = PathSeqEncoder.create(DynamicPathEncoding.create(exprEncoder));
-    this.pathEncoder = PathSeqEncoder.create(SimplePathEncodingVer1.create(exprEncoder));
+    this.pathEncoder = PathSeqEncoder.create(SimplePathEncoding.create(exprEncoder));
     this.builder = builder;
   }
   

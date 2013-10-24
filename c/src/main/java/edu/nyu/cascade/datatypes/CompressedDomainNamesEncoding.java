@@ -53,11 +53,13 @@ package edu.nyu.cascade.datatypes;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
+
 import edu.nyu.cascade.ir.expr.AbstractExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ArrayEncoding;
-import edu.nyu.cascade.ir.expr.BitVectorMemoryModelSound;
 import edu.nyu.cascade.ir.expr.BooleanEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
+import edu.nyu.cascade.ir.expr.FlatMemoryModel;
+import edu.nyu.cascade.ir.expr.IRSingleHeapEncoder;
 import edu.nyu.cascade.ir.expr.IntegerEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.PointerEncoding;
@@ -128,9 +130,9 @@ public abstract class CompressedDomainNamesEncoding extends AbstractExpressionEn
   public static final String OPTION_EXPLICIT_UNDEFINED = "explicit-undef";
   public static final String OPTION_FRAME_AXIOM = "frame-axiom";
 
-  public static MemoryModel createMemoryModel(ExpressionEncoding encoding) { 
+  public static MemoryModel createMemoryModel(ExpressionEncoding encoding, IRSingleHeapEncoder heapEncoder) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
-    return BitVectorMemoryModelSound.create(encoding);
+    return FlatMemoryModel.create(encoding, heapEncoder);
   }
   
   protected CompressedDomainNamesEncoding(

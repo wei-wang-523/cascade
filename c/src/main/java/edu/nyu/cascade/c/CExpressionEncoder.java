@@ -28,7 +28,7 @@ import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.ir.expr.MemoryModel;
-import edu.nyu.cascade.ir.expr.ReachMemoryModel;
+import edu.nyu.cascade.ir.expr.bak.ReachMemoryModel;
 import edu.nyu.cascade.ir.impl.VarInfo;
 import edu.nyu.cascade.ir.type.IRIntegerType;
 import edu.nyu.cascade.prover.Expression;

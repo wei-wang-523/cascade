@@ -1,4 +1,4 @@
-package edu.nyu.cascade.ir.expr;
+package edu.nyu.cascade.ir.expr.bak;
 
 import java.util.List;
 import java.util.Map;
@@ -8,6 +8,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import edu.nyu.cascade.ir.expr.ExpressionEncoding;
+import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.ArrayVariableExpression;
 import edu.nyu.cascade.prover.BooleanExpression;

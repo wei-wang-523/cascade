@@ -118,25 +118,13 @@ public class UnimplementedMemoryModel implements MemoryModel {
   }
 
   @Override
-  public ExpressionClosure getCurrentState() {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("getCurrentState");
-  }
-  
-  @Override
-  public void clearCurrentState() {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("clearCurrentState");    
-  }
-
-  @Override
   public Expression addressOf(Expression content) {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("addressOf");    
   }
 
   @Override
-  public void setPreProcessor(PreProcessor analyzer) {
+  public void setPreProcessor(PreProcessor<?> analyzer) {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("setAliasAnalyzer"); 
   }
@@ -188,6 +176,18 @@ public class UnimplementedMemoryModel implements MemoryModel {
 	@Override
   public Expression createLval(Expression state, String name,
       IRVarInfo varInfo, Node node) {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
+
+	@Override
+  public boolean hasSideEffect() {
+	  // TODO Auto-generated method stub
+	  return false;
+  }
+
+	@Override
+  public Expression clearSideEffect(Expression state) {
 	  // TODO Auto-generated method stub
 	  return null;
   }

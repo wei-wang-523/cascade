@@ -4,9 +4,9 @@ import xtc.tree.Node;
 
 import com.google.common.base.Preconditions;
 
+import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.expr.AbstractMemoryModel;
-import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -98,18 +98,6 @@ public class TemporalMemoryModel extends AbstractMemoryModel {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("allocated");
   }
-  
-  @Override
-  public ExpressionClosure getCurrentState() {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("getCurrentState");
-  }
-  
-  @Override
-  public void clearCurrentState() {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("clearCurrentState");    
-  }
 
   @Override
   public Expression addressOf(Expression content) {
@@ -144,6 +132,24 @@ public class TemporalMemoryModel extends AbstractMemoryModel {
 	@Override
   public Expression createLval(Expression state, String name,
       IRVarInfo varInfo, Node node) {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
+
+	@Override
+  public void setPreProcessor(PreProcessor<?> analyzer) {
+	  // TODO Auto-generated method stub
+	  
+  }
+
+	@Override
+  public boolean hasSideEffect() {
+	  // TODO Auto-generated method stub
+	  return false;
+  }
+
+	@Override
+  public Expression clearSideEffect(Expression state) {
 	  // TODO Auto-generated method stub
 	  return null;
   }

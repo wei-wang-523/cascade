@@ -1,12 +1,13 @@
-package edu.nyu.cascade.c.theory;
+package edu.nyu.cascade.c.theory.reach;
 
 import edu.nyu.cascade.c.Theory;
 import edu.nyu.cascade.c.preprocessor.PreProcessor.Builder;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
-import edu.nyu.cascade.ir.expr.LoLLiwithQFReachEncoding;
-import edu.nyu.cascade.ir.expr.LoLLiwithRRReachEncoding;
-import edu.nyu.cascade.ir.expr.ReachMemoryModel;
-import edu.nyu.cascade.ir.expr.ReachEncoding;
+import edu.nyu.cascade.ir.expr.MemoryModel;
+import edu.nyu.cascade.ir.expr.bak.LoLLiwithQFReachEncoding;
+import edu.nyu.cascade.ir.expr.bak.LoLLiwithRRReachEncoding;
+import edu.nyu.cascade.ir.expr.bak.ReachEncoding;
+import edu.nyu.cascade.ir.expr.bak.ReachMemoryModel;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TheoremProver;
 
@@ -32,8 +33,8 @@ public class LoLLiReachTheory implements Theory {
   }
 
   @Override
-  public ReachMemoryModel getMemoryModel() {
-    return memoryModel;
+  public MemoryModel getMemoryModel() {
+    return (MemoryModel) memoryModel;
   }
 
 	@Override

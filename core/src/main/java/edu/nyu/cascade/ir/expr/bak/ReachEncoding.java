@@ -1,9 +1,10 @@
-package edu.nyu.cascade.ir.expr;
+package edu.nyu.cascade.ir.expr.bak;
 
 import edu.nyu.cascade.ir.expr.AbstractExpressionEncoding;
 import edu.nyu.cascade.ir.expr.BitVectorIntegerEncoding;
 import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
 import edu.nyu.cascade.ir.expr.DefaultBooleanEncoding;
+import edu.nyu.cascade.ir.expr.DefaultPointerEncoding;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;

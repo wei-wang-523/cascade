@@ -41,10 +41,19 @@ import edu.nyu.cascade.datatypes.CompressedDomainNamesEncoding;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.SymbolTableFactory;
 import edu.nyu.cascade.ir.expr.BitVectorExpressionEncoding;
-import edu.nyu.cascade.ir.expr.BitVectorMemoryModelSound;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
+import edu.nyu.cascade.ir.expr.FlatMemoryModel;
+import edu.nyu.cascade.ir.expr.IRHeapEncoding;
+import edu.nyu.cascade.ir.expr.IROrderMemLayoutEncoding;
+import edu.nyu.cascade.ir.expr.IRSingleHeapEncoder;
+import edu.nyu.cascade.ir.expr.LinearHeapEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
+import edu.nyu.cascade.ir.expr.OrderMemLayoutEncodingFactory;
+import edu.nyu.cascade.ir.expr.PartitionHeapEncoder;
+import edu.nyu.cascade.ir.expr.PointerExpressionEncoding;
+import edu.nyu.cascade.ir.expr.SingleHeapEncoderAdapter;
+import edu.nyu.cascade.ir.expr.bak.BitVectorMemoryModelSound;
 import edu.nyu.cascade.prover.TheoremProver;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.TheoremProverFactory;
@@ -614,9 +623,15 @@ public class Main {
               builder = theory.getPreprocessorBuilder();
             } else {           
               // TODO: Fix bit-vector sizes to agree with encoding              
-              encoding = BitVectorExpressionEncoding.create(theoremProver
+              encoding = PointerExpressionEncoding.create(theoremProver
                   .getExpressionManager()); 
-              memoryModel = BitVectorMemoryModelSound.create(encoding);
+              IRHeapEncoding heapEncoding = LinearHeapEncoding.create(encoding);
+            	IROrderMemLayoutEncoding memLayout = OrderMemLayoutEncodingFactory
+            			.create(heapEncoding);
+            	PartitionHeapEncoder parHeapEncoder = PartitionHeapEncoder
+            			.createOrderEncoding(heapEncoding, memLayout);
+            	IRSingleHeapEncoder heapEncoder = SingleHeapEncoderAdapter.create(parHeapEncoder);
+            	memoryModel = FlatMemoryModel.create(encoding, heapEncoder);
             }
             
             CExpressionEncoder encoder = CExpressionEncoder.create(encoding,

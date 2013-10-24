@@ -1,4 +1,4 @@
-package edu.nyu.cascade.ir.expr;
+package edu.nyu.cascade.ir.expr.bak;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -30,7 +30,7 @@ import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.Preferences;
 
-public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
+public class LISBQwithQFArrReachEncoding extends ReachEncoding {
   
   public static ReachMemoryModel createMemoryModel(ExpressionEncoding encoding) { 
     Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
@@ -43,17 +43,11 @@ public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
   /** The null variable in elt */
   private final Expression nil;
   
-  /** The elt -> elt mapping */
+  /** The Array of elt -> elt mapping */
   private ArrayExpression f;
-  
+
   /** The (elt, elt, elt) -> bool mapping */
-  private final FunctionType rf_avoid;
-  
-  /** The elt -> bool mapping */
-  private final FunctionType cycle;
-  
-  /** The (elt, elt) -> elt mapping */
-  private final FunctionType join;
+  private final FunctionType rf;
   
   /** Constructor and Selector for the elt type*/
   
@@ -63,7 +57,7 @@ public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
   
   private final Selector nextSel;
   
-  public LoLLiwithQFArrReachEncoding(ExpressionManager exprManager) {
+  public LISBQwithQFArrReachEncoding(ExpressionManager exprManager) {
     super(exprManager);
 
     try {
@@ -78,12 +72,9 @@ public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
       
       nil = getEltExpr(exprManager.bitVectorZero(DEFAULT_WORD_SIZE));
       f = exprManager.arrayVar(FUN_F, eltType, eltType, true);
-      rf_avoid = exprManager.functionType(FUN_RF_AVOID, 
-          Arrays.asList(eltType, eltType, eltType), 
+      rf = exprManager.functionType(FUN_RF, 
+          ImmutableList.of(eltType, eltType, eltType), 
           exprManager.booleanType());
-      cycle = exprManager.functionType(FUN_CYCLE, eltType, exprManager.booleanType());
-      join = exprManager.functionType(FUN_JOIN, 
-          Arrays.asList(eltType, eltType), eltType);
       
     } catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
@@ -98,20 +89,10 @@ public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
         checkArgument(args.size() == 1);
         return f.index(args.get(0));
       }
-      
-      if (FUN_RF_AVOID.equals(name)) {
+
+      if (FUN_RF.equals(name)) {
         checkArgument(args.size() == 3);
-        return rf_avoid.apply(args);
-      }
-      
-      if (FUN_CYCLE.equals(name)) {
-        checkArgument(args.size() == 1);
-        return cycle.apply(args.get(0));
-      }
-      
-      if (FUN_JOIN.equals(name)) {
-        checkArgument(args.size() == 2);
-        return join.apply(args);
+        return rf.apply(args);
       }
 
       /* Otherwise, pass through to the underlying bit-vector encoding */
@@ -133,24 +114,14 @@ public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
     return ImmutableSet.copyOf(Sets.union(getRewriteRules(), super.getAssumptions()));
   }
   
-  protected Expression applyF(Expression arg) {
+  public Expression applyF(Expression arg) {
     return f.index(arg);
   }
-  
-  protected BooleanExpression applyCycle(Expression arg) {
-    return getExpressionManager().applyExpr(cycle, arg).asBooleanExpression();
-  }
-  
-  protected BooleanExpression applyRfAvoid(Expression... args) {
+
+  protected BooleanExpression applyRf(Expression... args) {
     Preconditions.checkArgument(args.length == 3);
     ImmutableList<Expression> argExprs = new ImmutableList.Builder<Expression>().add(args).build();
-    return getExpressionManager().applyExpr(rf_avoid, argExprs).asBooleanExpression();
-  }
-  
-  protected Expression applyJoin(Expression... args) {
-    Preconditions.checkArgument(args.length == 2);
-    ImmutableList<Expression> argExprs = new ImmutableList.Builder<Expression>().add(args).build();
-    return getExpressionManager().applyExpr(join, argExprs);
+    return getExpressionManager().applyExpr(rf, argExprs).asBooleanExpression();
   }
   
   private ImmutableSet<BooleanExpression> getRewriteRules() {
@@ -164,16 +135,15 @@ public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
   /**
    * Check if <code>expr</code> contains applyF sub-expression.
    */
-  private ImmutableSet<? extends Expression> checkApplyF(Expression expr) {
-    ImmutableSet.Builder<Expression> instCand_builder = ImmutableSet.builder();
-    
+  private ImmutableSet<? extends Expression> checkApplyF(Expression expr, List<? extends Expression> bounds) {
+    ImmutableSet.Builder<Expression> instCand_builder = ImmutableSet.builder();    
     if(expr.getArity() == 0)    return instCand_builder.build();   
     if(expr.getKind().equals(Kind.ARRAY_INDEX)) 
       if(f.equals(expr.getChild(0)))
         return instCand_builder.add(expr.getChild(1)).build();
   
     for(Expression child : expr.getChildren())
-      instCand_builder.addAll(checkApplyF(child));
+      instCand_builder.addAll(checkApplyF(child, bounds));
     
     return instCand_builder.build();
   }
@@ -185,8 +155,7 @@ public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
       Iterable<? extends Expression> ground_terms) {
     List<ImmutableList<Expression>> res = Lists.newLinkedList();
     if(size == 1) {
-      for(Expression term : ground_terms)   res.add(
-          new ImmutableList.Builder<Expression>().add(term).build());
+      for(Expression term : ground_terms)   res.add(ImmutableList.of(term));
     } else {
       List<ImmutableList<Expression>> prev_res = collectInstTerms(size-1, ground_terms);
       for(ImmutableList<Expression> prev_list : prev_res) {
@@ -235,8 +204,8 @@ public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
         ImmutableSet<? extends Expression> instCand = null;
         if(Preferences.isSet(Preferences.OPTION_PARTIAL_INST)) {
           if(!getInstOpt().equals(InstOpt.ELEMENT)) // field instantiation is not applicable here
-            throw new IllegalArgumentException("--partial-inst has invalid arg for this theory.");
-          instCand = checkApplyF(body); // check if body contains applyF(x)
+            throw new IllegalArgumentException("--partial-inst has invalid arg for this theory: field.");
+          instCand = checkApplyF(body, axiom.getBounds()); // check if body contains applyF(x)
         } else { // TOTOALLY_INST
           ImmutableSet.Builder<Expression> instCand_builder = ImmutableSet.builder();
           for(Expression key : axiom.getBounds()) {
@@ -251,15 +220,6 @@ public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
             
           List<? extends Expression> boundVars = Lists.newArrayList(rule.getBoundVars());
           for(Expression cand : instCand)   boundVars.remove(axiom.getVar(cand));
-          
-          /* List<Iterable<? extends Expression>> instTriggerList = Lists.newArrayList();
-            Iterable<? extends Expression> triggers = rule.getTriggers().get(0); 
-            for(Expression trigger : triggers){
-              List<? extends Expression> instTrigger = instantiate(trigger, instCand, gterms);
-              instTriggerList.add(instTrigger);
-            }          
-            Iterator<Iterable<? extends Expression>> iter = instTriggerList.iterator();
-           */
           for(Expression instBody : instBodyList) {
             BooleanExpression inst_rule = boundVars.isEmpty() ? instBody.asBooleanExpression() :
               getExpressionManager().forall(boundVars, instBody/*, iter.next()*/);
@@ -292,7 +252,7 @@ public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
   
   @Override
   public BooleanExpression reach(String field, Expression arg1, Expression arg2, Expression arg3) {
-    return applyRfAvoid(getEltExpr(arg1), getEltExpr(arg2), getEltExpr(arg3));
+    return applyRf(getEltExpr(arg1), getEltExpr(arg2), getEltExpr(arg3));
   }
   
   @Override
@@ -316,7 +276,6 @@ public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
     return nil;
   }
   
-  /** f(null)=null */
   private Axiom nil_axiom() {
     Axiom axiom = Axiom.create("nil");
     BooleanExpression body = applyF(nil).eq(nil);
@@ -325,47 +284,42 @@ public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
   }
   
   @SuppressWarnings("unused")
-  /** Rf_avoid(x, x, u) */
   private Axiom refl_axiom() {
     ExpressionManager exprManager = getExpressionManager();
     Axiom axiom = Axiom.create("refl");
-    Expression xbounds[] = new Expression[2];
-    VariableExpression xvars[] = new VariableExpression[2];
-    for(int i = 0; i < 2; i++) {
+    Expression xbounds[] = new Expression[1];
+    VariableExpression xvars[] = new VariableExpression[1];
+    for(int i = 0; i < 1; i++) {
       xbounds[i] = exprManager.boundExpression(i, eltType);
       xvars[i] = exprManager.variable("x", eltType, true);
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
-    BooleanExpression body = applyRfAvoid(xbounds[1], xbounds[1], xbounds[0]);
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
+    BooleanExpression body = applyRf(xbounds[0], xbounds[0], xbounds[0]);
     axiom.setRule(exprManager.forall(vars, body));
     return axiom;
   }
   
-  /** Rf_avoid(x, f(x), y) || x = y */
   private Axiom step_axiom() {
     ExpressionManager exprManager = getExpressionManager();
     Axiom axiom = Axiom.create("step");
-    Expression xbounds[] = new Expression[2];
-    VariableExpression xvars[] = new VariableExpression[2];
-    for(int i = 0; i < 2; i++) {
+    Expression xbounds[] = new Expression[1];
+    VariableExpression xvars[] = new VariableExpression[1];
+    for(int i = 0; i < 1; i++) {
       xbounds[i] = exprManager.boundExpression(i, eltType);
       xvars[i] = exprManager.variable("x", eltType, true);
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
-    Expression _let_0 = applyF(xbounds[1]);
-    BooleanExpression body = exprManager.or(
-        applyRfAvoid(xbounds[1], _let_0, xbounds[0]),
-        xbounds[1].eq(xbounds[0]));
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
+    Expression _let_0 = applyF(xbounds[0]);
+    BooleanExpression body = applyRf(xbounds[0], _let_0, _let_0);
     axiom.setRule(exprManager.forall(vars, body));
     return axiom;
   }
   
-  /** f(x) = x && Rf_avoid(x, y, y) => x = y */
-  private Axiom selfLoop_axiom() {
+  private Axiom reach_axiom() {
     ExpressionManager exprManager = getExpressionManager();
-    Axiom axiom = Axiom.create("selfLoop");
+    Axiom axiom = Axiom.create("reach");
     Expression xbounds[] = new Expression[2];
     VariableExpression xvars[] = new VariableExpression[2];
     for(int i = 0; i < 2; i++) {
@@ -373,17 +327,33 @@ public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
       xvars[i] = exprManager.variable("x", eltType, true);
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
-    Expression _let_0 = applyF(xbounds[1]);
-    BooleanExpression head = exprManager.and(
-        _let_0.eq(xbounds[1]),
-        applyRfAvoid(xbounds[1], xbounds[0], xbounds[0]));
-    BooleanExpression body = xbounds[1].eq(xbounds[0]);
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
+    BooleanExpression head = applyRf(xbounds[1], xbounds[0], xbounds[0]);
+    BooleanExpression body = exprManager.or(
+        exprManager.eq(xbounds[1], xbounds[0]), 
+        applyRf(xbounds[1], applyF(xbounds[1]), xbounds[0]));
     axiom.setRule(exprManager.forall(vars, head.implies(body)));
-    return axiom;
+    return axiom;   
   }
   
-  /** Rf_avoid(x, y, x) => x = y */
+  private Axiom cycle_axiom() {
+    ExpressionManager exprManager = getExpressionManager();
+    Axiom axiom = Axiom.create("cycle");
+    Expression xbounds[] = new Expression[2];
+    VariableExpression xvars[] = new VariableExpression[2];
+    for(int i = 0; i < 2; i++) {
+      xbounds[i] = exprManager.boundExpression(i, eltType);
+      xvars[i] = exprManager.variable("x", eltType, true);
+      axiom.putBoundVar(xbounds[i], xvars[i]);
+    }
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
+    BooleanExpression head = applyRf(xbounds[1], xbounds[0], xbounds[0]).
+        and(applyF(xbounds[1]).eq(xbounds[1]));
+    BooleanExpression body = exprManager.eq(xbounds[1], xbounds[0]);
+    axiom.setRule(exprManager.forall(vars, head.implies(body)));
+    return axiom;   
+  }
+  
   private Axiom sandwich_axiom() {
     ExpressionManager exprManager = getExpressionManager();
     Axiom axiom = Axiom.create("sandwich");
@@ -394,101 +364,72 @@ public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
       xvars[i] = exprManager.variable("x", eltType, true);
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
-    BooleanExpression head = applyRfAvoid(xbounds[0], xbounds[1], xbounds[0]);
-    BooleanExpression body = xbounds[1].eq(xbounds[0]);
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
+    BooleanExpression head = applyRf(xbounds[0], xbounds[1], xbounds[0]);
+    BooleanExpression body = exprManager.eq(xbounds[0], xbounds[1]);
     axiom.setRule(exprManager.forall(vars, head.implies(body)));
-    return axiom;
+    return axiom;   
   }
   
-  /** Rf_avoid(x, y, u) => Rf_avoid(x, y, y) */
-  private Axiom reach_axiom() {
+  private Axiom order1_axiom() {
     ExpressionManager exprManager = getExpressionManager();
-    Axiom axiom = Axiom.create("reach");
+    Axiom axiom = Axiom.create("order1");
     Expression xbounds[] = new Expression[3];
     VariableExpression xvars[] = new VariableExpression[3];
     for(int i = 0; i < 3; i++) {
       xbounds[i] = exprManager.boundExpression(i, eltType);
-      xvars[i] = exprManager.variable("x", eltType, true);
+      xvars[i] = exprManager.variable("x", eltType, true);     
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
-    BooleanExpression head = applyRfAvoid(xbounds[0], xbounds[1], xbounds[2]);
-    BooleanExpression body = applyRfAvoid(xbounds[0], xbounds[1], xbounds[1]);
-    axiom.setRule(exprManager.forall(vars, head.implies(body)));
-    return axiom;
-  }
-  
-  /** Rf_avoid(x, y, y) => Rf_avoid(x, u, y) || Rf_avoid(x, y, u) */
-  private Axiom linear1_axiom() {
-    ExpressionManager exprManager = getExpressionManager();
-    Axiom axiom = Axiom.create("linear1");
-    Expression xbounds[] = new Expression[3];
-    VariableExpression xvars[] = new VariableExpression[3];
-    for(int i = 0; i < 3; i++) {
-      xbounds[i] = exprManager.boundExpression(i, eltType);
-      xvars[i] = exprManager.variable("x", eltType, true);
-      axiom.putBoundVar(xbounds[i], xvars[i]);
-    }
-    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
-    BooleanExpression head = applyRfAvoid(xbounds[0], xbounds[1], xbounds[1]);
-    BooleanExpression body = exprManager.or(
-        applyRfAvoid(xbounds[0], xbounds[2], xbounds[1]),
-        applyRfAvoid(xbounds[0], xbounds[1], xbounds[2]));
-    axiom.setRule(exprManager.forall(vars, head.implies(body)));
-    return axiom;
-  }
-  
-  /** Rf_avoid(x, y, u) && Rf_avoid(x, z, v) => 
-   * (Rf_avoid(x, z, u) && Rf_avoid(z, y, u)) || 
-   * (Rf_avoid(x, y, v) && Rf_avoid(y, z, v))
-   */
-  private Axiom linear2_axiom() {
-    ExpressionManager exprManager = getExpressionManager();
-    Axiom axiom = Axiom.create("linear2");
-    Expression xbounds[] = new Expression[5];
-    VariableExpression xvars[] = new VariableExpression[5];
-    for(int i = 0; i < 5; i++) {
-      xbounds[i] = exprManager.boundExpression(i, eltType);
-      xvars[i] = exprManager.variable("x", eltType, true);
-      axiom.putBoundVar(xbounds[i], xvars[i]);
-    }
-    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = exprManager.and(
-        applyRfAvoid(xbounds[0], xbounds[1], xbounds[3]),
-        applyRfAvoid(xbounds[0], xbounds[2], xbounds[4]));
+        applyRf(xbounds[0], xbounds[1], xbounds[1]), 
+        applyRf(xbounds[0], xbounds[2], xbounds[2]));
     BooleanExpression body = exprManager.or(
-        exprManager.and(
-            applyRfAvoid(xbounds[0], xbounds[2], xbounds[3]),
-            applyRfAvoid(xbounds[2], xbounds[1], xbounds[3])), 
-        exprManager.and(
-            applyRfAvoid(xbounds[0], xbounds[1], xbounds[4]),
-            applyRfAvoid(xbounds[1], xbounds[2], xbounds[4])));
+        applyRf(xbounds[0], xbounds[1], xbounds[2]), 
+        applyRf(xbounds[0], xbounds[2], xbounds[1]));
     axiom.setRule(exprManager.forall(vars, head.implies(body)));
-    return axiom;
+    return axiom;   
   }
   
-  /** Rf_avoid(x, y, u) && Rf_avoid(y, z, u) => Rf_avoid(x, z, u)*/
+  private Axiom order2_axiom() {
+    ExpressionManager exprManager = getExpressionManager();
+    Axiom axiom = Axiom.create("order2");
+    Expression xbounds[] = new Expression[3];
+    VariableExpression xvars[] = new VariableExpression[3];
+    for(int i = 0; i < 3; i++) {
+      xbounds[i] = exprManager.boundExpression(i, eltType);
+      xvars[i] = exprManager.variable("x", eltType, true);
+      axiom.putBoundVar(xbounds[i], xvars[i]);
+    }
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
+    BooleanExpression head = applyRf(xbounds[0], xbounds[1], xbounds[2]);
+    BooleanExpression body = exprManager.and(
+        applyRf(xbounds[0], xbounds[1], xbounds[1]), 
+        applyRf(xbounds[1], xbounds[2], xbounds[2]));
+    axiom.setRule(exprManager.forall(vars, head.implies(body)));
+    return axiom;   
+  }
+  
   private Axiom trans1_axiom() {
     ExpressionManager exprManager = getExpressionManager();
     Axiom axiom = Axiom.create("trans1");
-    Expression xbounds[] = new Expression[4];
-    VariableExpression xvars[] = new VariableExpression[4];
-    for(int i = 0; i < 4; i++) {
+    Expression xbounds[] = new Expression[3];
+    VariableExpression xvars[] = new VariableExpression[3];
+    for(int i = 0; i < 3; i++) {
       xbounds[i] = exprManager.boundExpression(i, eltType);
       xvars[i] = exprManager.variable("x", eltType, true);
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = exprManager.and(
-        applyRfAvoid(xbounds[0], xbounds[1], xbounds[3]), 
-        applyRfAvoid(xbounds[1], xbounds[2], xbounds[3]));
-    BooleanExpression body = applyRfAvoid(xbounds[0], xbounds[2], xbounds[3]);
+        applyRf(xbounds[0], xbounds[1], xbounds[1]), 
+        applyRf(xbounds[1], xbounds[2], xbounds[2]));
+    BooleanExpression body = applyRf(xbounds[0], xbounds[2], xbounds[2]);
     axiom.setRule(exprManager.forall(vars, head.implies(body)));
-    return axiom;
+    return axiom;   
   }
   
-  /** Rf_avoid(x, y, z) && Rf_avoid(y, u, z) && Rf_avoid(y, z, z) => Rf(f, x, y, u) */
   private Axiom trans2_axiom() {
     ExpressionManager exprManager = getExpressionManager();
     Axiom axiom = Axiom.create("trans2");
@@ -499,157 +440,52 @@ public class LoLLiwithQFArrReachEncoding extends ReachEncoding {
       xvars[i] = exprManager.variable("x", eltType, true);
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = exprManager.and(
-        applyRfAvoid(xbounds[0], xbounds[1], xbounds[2]), 
-        applyRfAvoid(xbounds[1], xbounds[3], xbounds[2]),
-        applyRfAvoid(xbounds[1], xbounds[2], xbounds[2]));
-    BooleanExpression body = applyRfAvoid(xbounds[0], xbounds[1], xbounds[3]);
+        applyRf(xbounds[0], xbounds[1], xbounds[2]), 
+        applyRf(xbounds[1], xbounds[3], xbounds[2]));
+    BooleanExpression body = exprManager.and(
+        applyRf(xbounds[0], xbounds[1], xbounds[3]), 
+        applyRf(xbounds[0], xbounds[3], xbounds[2]));
     axiom.setRule(exprManager.forall(vars, head.implies(body)));
-    return axiom;
+    return axiom;   
   }
   
-  /** Rf_avoid(x, join(f, x, y), join(f, x, y) */
-  private Axiom join1_axiom() {
+  private Axiom trans3_axiom() {
     ExpressionManager exprManager = getExpressionManager();
-    Axiom axiom = Axiom.create("join1");
-    Expression xbounds[] = new Expression[2];
-    VariableExpression xvars[] = new VariableExpression[2];
-    for(int i = 0; i < 2; i++) {
+    Axiom axiom = Axiom.create("trans3");
+    Expression xbounds[] = new Expression[4];
+    VariableExpression xvars[] = new VariableExpression[4];
+    for(int i = 0; i < 4; i++) {
       xbounds[i] = exprManager.boundExpression(i, eltType);
       xvars[i] = exprManager.variable("x", eltType, true);
       axiom.putBoundVar(xbounds[i], xvars[i]);
     }
-    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
-    Expression _let_0 = applyJoin(xbounds[0], xbounds[1]);
-    BooleanExpression body = applyRfAvoid(xbounds[0], _let_0, _let_0);
-    axiom.setRule(exprManager.forall(vars, body));
-    return axiom;
-  }
-  
-  /** Rf_avoid(x, z, z) && Rf_avoid(y, z, z) => Rf_avoid(y, join(f, x, y), join(f, x, y))*/
-  private Axiom join2_axiom() {
-    ExpressionManager exprManager = getExpressionManager();
-    Axiom axiom = Axiom.create("join2");
-    Expression xbounds[] = new Expression[3];
-    VariableExpression xvars[] = new VariableExpression[3];
-    for(int i = 0; i < 3; i++) {
-      xbounds[i] = exprManager.boundExpression(i, eltType);
-      xvars[i] = exprManager.variable("x", eltType, true);
-      axiom.putBoundVar(xbounds[i], xvars[i]);
-    }
-    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
-    Expression _let_0 = applyJoin(xbounds[0], xbounds[1]);
+    Iterable<VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
     BooleanExpression head = exprManager.and(
-        applyRfAvoid(xbounds[0], xbounds[2], xbounds[2]),
-        applyRfAvoid(xbounds[1], xbounds[2], xbounds[2]));
-    BooleanExpression body = applyRfAvoid(xbounds[1], _let_0, _let_0);
+        applyRf(xbounds[0], xbounds[1], xbounds[2]), 
+        applyRf(xbounds[0], xbounds[3], xbounds[1]));
+    BooleanExpression body = exprManager.and(
+        applyRf(xbounds[0], xbounds[3], xbounds[2]), 
+        applyRf(xbounds[3], xbounds[1], xbounds[2]));
     axiom.setRule(exprManager.forall(vars, head.implies(body)));
-    return axiom;
+    return axiom;   
   }
   
-  /** Rf_avoid(x, z, z) && Rf_avoid(y, z, z) => Rf_avoid(x, join(f, x, y), z) */
-  private Axiom join3_axiom() {
-    ExpressionManager exprManager = getExpressionManager();
-    Axiom axiom = Axiom.create("join3");
-    Expression xbounds[] = new Expression[3];
-    VariableExpression xvars[] = new VariableExpression[3];
-    for(int i = 0; i < 3; i++) {
-      xbounds[i] = exprManager.boundExpression(i, eltType);
-      xvars[i] = exprManager.variable("x", eltType, true);
-      axiom.putBoundVar(xbounds[i], xvars[i]);
-    }
-    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
-    Expression _let_0 = applyJoin(xbounds[0], xbounds[1]);
-    BooleanExpression head = exprManager.and(
-        applyRfAvoid(xbounds[0], xbounds[2], xbounds[2]), 
-        applyRfAvoid(xbounds[1], xbounds[2], xbounds[2]));
-    BooleanExpression body = applyRfAvoid(xbounds[0], _let_0, xbounds[2]);
-    axiom.setRule(exprManager.forall(vars, head.implies(body)));
-    return axiom;
-  }
-  
-  /** Rf_avoid(y, join(f, x, y), join(f, x, y)) || x = join(f, x, y) */
-  private Axiom join4_axiom() {
-    ExpressionManager exprManager = getExpressionManager();
-    Axiom axiom = Axiom.create("join4");
-    Expression xbounds[] = new Expression[2];
-    VariableExpression xvars[] = new VariableExpression[2];
-    for(int i = 0; i < 2; i++) {
-      xbounds[i] = exprManager.boundExpression(i, eltType);
-      xvars[i] = exprManager.variable("x", eltType, true);
-      axiom.putBoundVar(xbounds[i], xvars[i]);
-    }
-    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
-    Expression _let_0 = applyJoin(xbounds[0], xbounds[1]);
-    BooleanExpression body = exprManager.or(
-        applyRfAvoid(xbounds[1], _let_0, _let_0),
-        _let_0.eq(xbounds[0]));
-    axiom.setRule(exprManager.forall(vars, body));
-    return axiom;
-  }
-  
-  /** Rf_avoid(x, y, y) && Rf_avoid(y, x, x) => cycle(f, x) || x = y */
-  private Axiom cycle1_axiom() {
-    ExpressionManager exprManager = getExpressionManager();
-    Axiom axiom = Axiom.create("cycle1");
-    Expression xbounds[] = new Expression[2];
-    VariableExpression xvars[] = new VariableExpression[2];
-    for(int i = 0; i < 2; i++) {
-      xbounds[i] = exprManager.boundExpression(i, eltType);
-      xvars[i] = exprManager.variable("x", eltType, true);
-      axiom.putBoundVar(xbounds[i], xvars[i]);
-    }
-    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
-    BooleanExpression head = exprManager.and(
-        applyRfAvoid(xbounds[0], xbounds[1], xbounds[1]),
-        applyRfAvoid(xbounds[1], xbounds[0], xbounds[0]));
-    BooleanExpression body = exprManager.or(
-        applyCycle(xbounds[0]), 
-        xbounds[0].eq(xbounds[1]));
-    axiom.setRule(exprManager.forall(vars, head.implies(body)));
-    return axiom;
-  }
-  
-  /** cycle(f, x) && Rf_avoid(x, y, y) => Rf_avoid(y, x, x) */
-  private Axiom cycle2_axiom() {
-    ExpressionManager exprManager = getExpressionManager();
-    Axiom axiom = Axiom.create("cycle2");
-    Expression xbounds[] = new Expression[2];
-    VariableExpression xvars[] = new VariableExpression[2];
-    for(int i = 0; i < 2; i++) {
-      xbounds[i] = exprManager.boundExpression(i, eltType);
-      xvars[i] = exprManager.variable("x", eltType, true);
-      axiom.putBoundVar(xbounds[i], xvars[i]);
-    }
-    Iterable<? extends VariableExpression> vars = Lists.reverse(Arrays.asList(xvars));
-    BooleanExpression head = exprManager.and(
-        applyCycle(xbounds[0]), 
-        applyRfAvoid(xbounds[0], xbounds[1], xbounds[1]));
-    BooleanExpression body = applyRfAvoid(xbounds[1], xbounds[0], xbounds[0]);
-    axiom.setRule(exprManager.forall(vars, head.implies(body)));
-    return axiom;
-  }
-  
-  private void composeRewriteRules() {    
+  private void composeRewriteRules() {
     if(rewrite_axioms == null) {
       ImmutableSet.Builder<Axiom> rewrite_rulesetBuilder = ImmutableSet
         .builder();
       rewrite_rulesetBuilder.add(nil_axiom());
       rewrite_rulesetBuilder.add(step_axiom());
-      rewrite_rulesetBuilder.add(selfLoop_axiom());
-      rewrite_rulesetBuilder.add(sandwich_axiom());
       rewrite_rulesetBuilder.add(reach_axiom());
-      rewrite_rulesetBuilder.add(linear1_axiom());
-      rewrite_rulesetBuilder.add(linear2_axiom());
+      rewrite_rulesetBuilder.add(cycle_axiom());
+      rewrite_rulesetBuilder.add(sandwich_axiom());
+      rewrite_rulesetBuilder.add(order1_axiom());
+      rewrite_rulesetBuilder.add(order2_axiom());
       rewrite_rulesetBuilder.add(trans1_axiom());
       rewrite_rulesetBuilder.add(trans2_axiom());
-      rewrite_rulesetBuilder.add(join1_axiom());
-      rewrite_rulesetBuilder.add(join2_axiom());
-      rewrite_rulesetBuilder.add(join3_axiom());
-      rewrite_rulesetBuilder.add(join4_axiom());
-      rewrite_rulesetBuilder.add(cycle1_axiom());
-      rewrite_rulesetBuilder.add(cycle2_axiom());
+      rewrite_rulesetBuilder.add(trans3_axiom());
       rewrite_axioms = rewrite_rulesetBuilder.build();
     }
   }

@@ -1,4 +1,4 @@
-package edu.nyu.cascade.ir.expr;
+package edu.nyu.cascade.ir.expr.bak;
 
 import java.util.List;
 import java.util.Map;
@@ -18,6 +18,11 @@ import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CTypeNameAnalyzer;
 import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.ir.IRVarInfo;
+import edu.nyu.cascade.ir.expr.bak.AbstractMemoryModel;
+import edu.nyu.cascade.ir.expr.ExpressionClosure;
+import edu.nyu.cascade.ir.expr.ExpressionEncoding;
+import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
+import edu.nyu.cascade.ir.expr.PointerExpressionEncoding;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;

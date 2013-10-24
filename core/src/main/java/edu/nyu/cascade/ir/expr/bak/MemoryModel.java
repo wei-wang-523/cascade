@@ -1,4 +1,4 @@
-package edu.nyu.cascade.ir.expr;
+package edu.nyu.cascade.ir.expr.bak;
 
 import xtc.tree.Node;
 
@@ -6,6 +6,8 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRVarInfo;
+import edu.nyu.cascade.ir.expr.ExpressionClosure;
+import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -40,6 +42,17 @@ public interface MemoryModel {
    * <code>memory</code> wrt which it is defined.
    */
   ExpressionClosure suspend(Expression state, Expression expr);
+  
+  /** Removed in updated version
+   * Get the current state of memory model. It's used to create a back door to
+   * get the memory state update with assume statement (for _allocated predicate)
+   */
+	ExpressionClosure getCurrentState();
+
+  /** Removed in updated version
+   * Clear current state of memory model to avoid side-effect.
+   */
+	void clearCurrentState();
   
   /**
    * Allocate a region with size <code>size</code> to the memory location 
@@ -163,18 +176,4 @@ public interface MemoryModel {
 	 */
 	TupleExpression getUpdatedState(Expression state, Expression... elems);
 	TupleExpression getUpdatedState(Expression state, Iterable<Expression> elems);
-	
-	/**
-	 * Check if current memory state has side effect with dereference and allocated 
-	 * operation.
-	 * @return
-	 */
-	boolean hasSideEffect();
-	
-	/**
-	 * Clean the side effect by combine them into current state of memory in path encoding
-	 * @param state
-	 * @return
-	 */
-	Expression clearSideEffect(Expression state);
 }

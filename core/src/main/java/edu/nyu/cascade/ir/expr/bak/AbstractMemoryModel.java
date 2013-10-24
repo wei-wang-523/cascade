@@ -1,4 +1,4 @@
-package edu.nyu.cascade.ir.expr;
+package edu.nyu.cascade.ir.expr.bak;
 
 //import java.util.List;
 
@@ -17,6 +17,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import edu.nyu.cascade.c.preprocessor.PreProcessor;
+import edu.nyu.cascade.ir.expr.ExpressionClosure;
+import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -96,6 +99,9 @@ public abstract class AbstractMemoryModel implements MemoryModel {
       }
     };
   }
+  
+  @Override
+  public void setPreProcessor(PreProcessor<?> analyzer) {};
   
   @Override
   public Expression combineRecordStates(BooleanExpression guard, 

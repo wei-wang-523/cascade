@@ -365,11 +365,13 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     };
   }
   
+  @Override
   public boolean hasSideEffect() {
     return !(sideEffectMem.isEmpty() && sideEffectMemClosure.isEmpty()
     		&& sideEffectSizeClosure.isEmpty());
   }
   
+  @Override
   public Expression clearSideEffect(Expression state) {
   	Preconditions.checkArgument(state.isTuple());
   	Expression mem = state.getChild(0);
@@ -808,17 +810,5 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     	.append(name);
   	String res = Identifiers.toValidId(sb.toString());
   	return res;
-  }
-
-	@Override
-  public ExpressionClosure getCurrentState() {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public void clearCurrentState() {
-	  // TODO Auto-generated method stub
-	  
   }
 }

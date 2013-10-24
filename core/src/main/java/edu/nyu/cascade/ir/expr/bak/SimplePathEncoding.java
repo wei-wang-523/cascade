@@ -1,4 +1,4 @@
-package edu.nyu.cascade.ir.expr;
+package edu.nyu.cascade.ir.expr.bak;
 
 /** A path factory which extends states along a path using function expressions.
  * Given an ExpressionEncoding which encode program states as an Expression,
@@ -13,6 +13,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
+import edu.nyu.cascade.ir.expr.bak.AbstractPathEncoding;
+import edu.nyu.cascade.ir.expr.BooleanEncoding;
+import edu.nyu.cascade.ir.expr.ExpressionClosure;
+import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -21,26 +25,22 @@ import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.Identifiers;
 
-public class SimplePathEncodingVer1 extends AbstractPathEncoding {
-  public static <Mem extends Expression> SimplePathEncodingVer1 create(
+public class SimplePathEncoding extends AbstractPathEncoding {
+  public static <Mem extends Expression> SimplePathEncoding create(
       ExpressionEncoder encoder) {
-    return new SimplePathEncodingVer1(encoder);
+    return new SimplePathEncoding(encoder);
   }
 
   private TupleType pathType;
   private static final String DEFAULT_PATH_STATE_NAME = "pathState";
   
-  private SimplePathEncodingVer1(ExpressionEncoder encoder) {
+  private SimplePathEncoding(ExpressionEncoder encoder) {
     super(encoder);
     ExpressionManager em = encoder.getExpressionManager();
     Type memType = encoder.getMemoryModel().getStateType();
     pathType = getExpressionManager().tupleType(Identifiers.uniquify(DEFAULT_PATH_STATE_NAME), memType, em.booleanType());
   }
 
-  public BurstallMemoryModel getMemoryModel() {
-  	return (BurstallMemoryModel) super.getMemoryModel();
-  }
-  
   @Override
   public Expression alloc(Expression pre, ExpressionClosure lval,
       ExpressionClosure rval) {
@@ -48,29 +48,28 @@ public class SimplePathEncodingVer1 extends AbstractPathEncoding {
     Expression pc = pre.getChild(1);
     
     Expression memPrime = mem;
-    if(getMemoryModel().hasSideEffect()) {
-    	memPrime = getMemoryModel().clearSideEffect(mem);
-    }
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    if(currentState != null) memPrime = currentState.eval(mem);
+    //    getMemoryModel().clearCurrentState();
     
     memPrime = getMemoryModel().alloc(memPrime, lval.eval(mem), rval.eval(mem));
-    
+    getMemoryModel().clearCurrentState();
     return getUpdatedPathState(memPrime, pc);
   }
 
-  @Override
+@Override
   public Expression assign(Expression pre,
       ExpressionClosure var, ExpressionClosure val) {
     Expression mem = pre.getChild(0);
-    Expression pc = pre.getChild(1);
-    
+
     Expression memPrime = mem;
-    if(getMemoryModel().hasSideEffect()) {
-    	memPrime = getMemoryModel().clearSideEffect(mem);
-    }
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    if(currentState != null) memPrime = currentState.eval(mem);
+    //    getMemoryModel().clearCurrentState();
     
     memPrime = getMemoryModel().assign(memPrime, var.eval(mem), val.eval(mem));
-    
-    return getUpdatedPathState(memPrime, pc);
+    getMemoryModel().clearCurrentState();
+    return getUpdatedPathState(memPrime, pre.getChild(1));
   }
 
   @Override
@@ -85,13 +84,12 @@ public class SimplePathEncodingVer1 extends AbstractPathEncoding {
     Expression pc = pre.getChild(1);
     
     Expression memPrime = mem;
-    if(getMemoryModel().hasSideEffect()) {
-    	memPrime = getMemoryModel().clearSideEffect(mem);
-    }
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    if(currentState != null) memPrime = currentState.eval(mem);
+    getMemoryModel().clearCurrentState();
     
     ExpressionManager exprManager = getExpressionManager();
-    Expression pcPrime = exprManager.ifThenElse(
-    		pc, expr.eval(mem).asBooleanExpression(), 
+    Expression pcPrime = exprManager.ifThenElse(pc, expr.eval(memPrime).asBooleanExpression(), 
         exprManager.ff());
     return getUpdatedPathState(memPrime, pcPrime);
   }
@@ -102,9 +100,9 @@ public class SimplePathEncodingVer1 extends AbstractPathEncoding {
     Expression pc = pre.getChild(1);
     
     Expression memPrime = mem;
-    if(getMemoryModel().hasSideEffect()) {
-    	memPrime = getMemoryModel().clearSideEffect(mem);
-    }
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    if(currentState != null) memPrime = currentState.eval(mem);
+    getMemoryModel().clearCurrentState();
     return getUpdatedPathState(memPrime, pc);
   }
 
@@ -115,28 +113,28 @@ public class SimplePathEncodingVer1 extends AbstractPathEncoding {
     Expression pc = pre.getChild(1);
     
     Expression memPrime = mem;
-    if(getMemoryModel().hasSideEffect()) {
-    	memPrime = getMemoryModel().clearSideEffect(mem);
-    }
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    if(currentState != null) memPrime = currentState.eval(mem);
+    //    getMemoryModel().clearCurrentState();
     
     memPrime = getMemoryModel().declareArray(memPrime, ptr.eval(mem), size.eval(mem));
-    
+    getMemoryModel().clearCurrentState();
     return getUpdatedPathState(memPrime, pc);
   }
 
-  @Override
+@Override
   public Expression declareStruct(Expression pre, ExpressionClosure ptr,
       ExpressionClosure size) {
     Expression mem = pre.getChild(0);
     Expression pc = pre.getChild(1);
     
     Expression memPrime = mem;
-    if(getMemoryModel().hasSideEffect()) {
-    	memPrime = getMemoryModel().clearSideEffect(mem);
-    }
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    if(currentState != null) memPrime = currentState.eval(mem);
+    //    getMemoryModel().clearCurrentState();
     
     memPrime = getMemoryModel().declareStruct(memPrime, ptr.eval(mem), size.eval(mem));
-    
+    getMemoryModel().clearCurrentState();
     return getUpdatedPathState(memPrime, pc);
   }
 
@@ -150,37 +148,32 @@ public class SimplePathEncodingVer1 extends AbstractPathEncoding {
   @Override
   public Expression fieldAssign(Expression pre, ExpressionClosure lval,
       String field, ExpressionClosure rval) {
+    ExpressionManager exprManager =  getExpressionManager();
     Expression mem = pre.getChild(0);
     Expression pc = pre.getChild(1);
     
-    Expression memPrime = mem;
-    if(getMemoryModel().hasSideEffect()) {
-    	memPrime = getMemoryModel().clearSideEffect(mem);
-    }
-    
     Expression pcPrime = pc;
-//    if(getMemoryModel() instanceof ReachMemoryModel) {
-//      ReachMemoryModel mm = (ReachMemoryModel) getMemoryModel();
-//      Expression memAssume = mm.fieldAssign(memPrime, lval.eval(mem), field, rval.eval(mem));
-//    	ExpressionManager exprManager = getExpressionManager();
-//      pcPrime = exprManager.ifThenElse(pc, memAssume, exprManager.ff());
-//    }
-    
-    return getUpdatedPathState(memPrime, pcPrime);
+    if(getMemoryModel() instanceof ReachMemoryModel) {
+      ReachMemoryModel mm = (ReachMemoryModel) getMemoryModel();
+      Expression memAssume = mm.fieldAssign(mem, lval.eval(mem), field, rval.eval(mem));
+      pcPrime = exprManager.ifThenElse(pc, memAssume, exprManager.ff());
+    }
+    getMemoryModel().clearCurrentState();
+    return getUpdatedPathState(mem, pcPrime);
   }
 
-  @Override
+@Override
   public Expression free(Expression pre, ExpressionClosure ptr) {
     Expression mem = pre.getChild(0);
     Expression pc = pre.getChild(1);
     
     Expression memPrime = mem;
-    if(getMemoryModel().hasSideEffect()) {
-    	memPrime = getMemoryModel().clearSideEffect(mem);
-    }
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    if(currentState != null) memPrime = currentState.eval(mem);
+//    getMemoryModel().clearCurrentState();
     
     memPrime = getMemoryModel().free(memPrime, ptr.eval(mem));
-    
+    getMemoryModel().clearCurrentState();
     return getUpdatedPathState(memPrime, pc);
   }
 
@@ -197,18 +190,18 @@ public class SimplePathEncodingVer1 extends AbstractPathEncoding {
   	return true;
   }
 
-  @Override
+@Override
   public Expression havoc(Expression pre, ExpressionClosure lval) {
-  	Expression mem = pre.getChild(0);
-  	Expression pc = pre.getChild(1);
-  	
-  	Expression memPrime = mem;
-  	if(getMemoryModel().hasSideEffect()) {
-  		memPrime = getMemoryModel().clearSideEffect(mem);
-  	}
+    Expression mem = pre.getChild(0);
+    Expression pc = pre.getChild(1);
+    
+    Expression memPrime = mem;
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    if(currentState != null) memPrime = currentState.eval(mem);
+    //    getMemoryModel().clearCurrentState();
     
     memPrime = getMemoryModel().havoc(memPrime, lval.eval(mem));
-    
+    getMemoryModel().clearCurrentState();
     return getUpdatedPathState(memPrime, pc);
   }
   
@@ -265,15 +258,18 @@ public class SimplePathEncodingVer1 extends AbstractPathEncoding {
         pathType.getElementTypes().get(0) ));
     Preconditions.checkArgument( bool.getOutputType().isBoolean() );
     
+    ExpressionManager em = getExpressionManager();
     Expression mem = pre.getChild(0);
     Expression pc = pre.getChild(1);
+    BooleanExpression memorySafe = em.and(getMemoryModel().getAssumptions(mem));
     
-    ExpressionManager exprManager = getExpressionManager();
-    BooleanExpression memorySafe = exprManager.and(getMemoryModel().getAssumptions(mem));
+    ExpressionClosure currentState = getMemoryModel().getCurrentState();
+    /* The same currentState as check(). */
+    if(currentState != null) getMemoryModel().clearCurrentState();
     
-    Expression res = exprManager.implies(exprManager.and(pc, memorySafe), bool.eval(mem));
+    Expression res = em.implies(em.and(pc, memorySafe), bool.eval(mem));
     
-    /* Substitute size array's initial variable as constant array with all zero */
+    /* Substitute size array element's initial variable as constant array with all zero */
     res = getMemoryModel().substSizeArr(res);
 
     return res.asBooleanExpression();
@@ -319,14 +315,15 @@ private Expression getITEExpression(Iterable<? extends Expression> exprs,
   private TupleExpression getUpdatedPathState(Expression memoryPrime, Expression pcPrime) {
 		ExpressionManager exprManager = getExpressionManager();
   	boolean isUpdated = !(
-  			getPathType().asTuple().getElementTypes().get(0).equals(memoryPrime.getType()) &&
-  			getPathType().asTuple().getElementTypes().get(1).equals(pcPrime.getType()));
+  			pathType.asTuple().getElementTypes().get(0).equals(memoryPrime.getType()) &&
+  			pathType.asTuple().getElementTypes().get(1).equals(pcPrime.getType()));
   	
+  	TupleType pathTypePrime = pathType;
   	if(isUpdated) {
-  		Type pathTypePrime = exprManager.tupleType(Identifiers.uniquify(DEFAULT_PATH_STATE_NAME), 
+  		pathTypePrime = exprManager.tupleType(Identifiers.uniquify(DEFAULT_PATH_STATE_NAME), 
   				memoryPrime.getType(), pcPrime.getType());
-  		setPathType(pathTypePrime);
+  		pathType = pathTypePrime;
   	}
-  	return exprManager.tuple(getPathType(), memoryPrime, pcPrime);
+  	return exprManager.tuple(pathTypePrime, memoryPrime, pcPrime);
   }
 }

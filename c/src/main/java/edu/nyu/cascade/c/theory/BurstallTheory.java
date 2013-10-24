@@ -33,12 +33,18 @@ public class BurstallTheory implements Theory {
     	IROrderMemLayoutEncoding memLayout = OrderMemLayoutEncodingFactory
     			.create(heapEncoding);
     	heapEncoder = PartitionHeapEncoder.createOrderEncoding(heapEncoding, memLayout);
-    } else {
-    	IRHeapEncoding heapEncoding = LinearHeapEncoding.create(encoding);
-    	IRHeapEncoding heapEncoding_sync = SynchronousHeapEncoding.create(encoding);
+    } else { // sound alloc
+    	String exprEncoding = Preferences.getString(Preferences.OPTION_EXPR_ENCODING);
+    	IRHeapEncoding heapEncoding = null;
+    	if(Preferences.ENCODING_SYNC.equals(exprEncoding)) {
+    		heapEncoding = SynchronousHeapEncoding.create(encoding);
+    	} else {
+    		heapEncoding = LinearHeapEncoding.create(encoding);
+    	}
+    	
     	IRSoundMemLayoutEncoding memLayout = SoundMemLayoutEncodingFactory
-    			.create(heapEncoding_sync);
-    	heapEncoder = PartitionHeapEncoder.createSoundEncoding(heapEncoding_sync, memLayout);
+    			.create(heapEncoding);
+    	heapEncoder = PartitionHeapEncoder.createSoundEncoding(heapEncoding, memLayout);
     }
   	memoryModel = BurstallMemoryModel.create(encoding, heapEncoder);	
   }
