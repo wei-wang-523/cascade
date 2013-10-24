@@ -1,6 +1,7 @@
 package edu.nyu.cascade.c.theory;
 
 import edu.nyu.cascade.c.Theory;
+import edu.nyu.cascade.c.preprocessor.PreProcessor.Builder;
 import edu.nyu.cascade.ir.expr.BitVectorExpressionEncoding;
 import edu.nyu.cascade.ir.expr.BitVectorMemoryModelOrder;
 import edu.nyu.cascade.ir.expr.BitVectorMemoryModelSound;
@@ -29,6 +30,12 @@ public class BitVectorTheory implements Theory {
   @Override
   public MemoryModel getMemoryModel() {
     return memoryModel;
+  }
+
+	@Override
+  public Builder<?> getPreprocessorBuilder() {
+	  // TODO Auto-generated method stub
+	  return null;
   }
 
 }

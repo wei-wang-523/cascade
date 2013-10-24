@@ -1,6 +1,7 @@
 package edu.nyu.cascade.c.theory;
 
 import edu.nyu.cascade.c.Theory;
+import edu.nyu.cascade.c.preprocessor.PreProcessor.Builder;
 import edu.nyu.cascade.ir.expr.LISBQwithQFReachEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.LISBQwithRRReachEncoding;
@@ -32,5 +33,11 @@ public class LISBQReachTheory implements Theory {
   @Override
   public ReachMemoryModel getMemoryModel() {
     return memoryModel;
+  }
+
+	@Override
+  public Builder<?> getPreprocessorBuilder() {
+	  // TODO Auto-generated method stub
+	  return null;
   }
 }

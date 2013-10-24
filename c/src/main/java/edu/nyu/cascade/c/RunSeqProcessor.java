@@ -15,6 +15,8 @@ import com.google.common.collect.*;
 
 import edu.nyu.cascade.c.CAnalyzer;
 import edu.nyu.cascade.c.CSpecParser;
+import edu.nyu.cascade.c.preprocessor.PreProcessor;
+import edu.nyu.cascade.c.preprocessor.PreProcessor.Builder;
 import edu.nyu.cascade.control.*;
 import edu.nyu.cascade.control.jaxb.InsertionType;
 import edu.nyu.cascade.control.jaxb.Position.Command;
@@ -33,19 +35,21 @@ class RunSeqProcessor implements RunProcessor {
   
   public RunSeqProcessor(Map<File, CSymbolTable> symbolTables,
       Map<Node, IRControlFlowGraph> cfgs, CAnalyzer cAnalyzer,
-      CExpressionEncoder exprEncoder)
+      CExpressionEncoder exprEncoder, Builder<?> builder)
       throws RunProcessorException {
     this.symbolTables = symbolTables;
     this.cfgs = cfgs;
     this.cAnalyzer = cAnalyzer;
 //    this.pathEncoder = PathSeqEncoder.create(DynamicPathEncoding.create(exprEncoder));
     this.pathEncoder = PathSeqEncoder.create(SimplePathEncodingVer1.create(exprEncoder));
+    this.builder = builder;
   }
   
   private final Map<File, CSymbolTable> symbolTables;
   private final Map<Node, IRControlFlowGraph> cfgs;
   private final CAnalyzer cAnalyzer;
   private final PathSeqEncoder pathEncoder;
+  private final PreProcessor.Builder<?> builder;
 
   @Override
   public boolean process(Run run) throws RunProcessorException {
@@ -66,8 +70,13 @@ class RunSeqProcessor implements RunProcessor {
       }
       
       File file = run.getStartPosition().getFile();
-      CSymbolTable symbolTable = symbolTables.get(file);
-      pathEncoder.preprocessPath(symbolTable, path);
+
+      if(builder != null) {
+        CSymbolTable symbolTable = symbolTables.get(file);
+        PreProcessor<?> preprocessor = builder.setSymbolTable(symbolTable).build();
+        pathEncoder.preprocessPath(preprocessor, path);
+      }
+      
       pathEncoder.encodePath(path);
 
       if (pathEncoder.runIsValid() && !pathEncoder.runIsFeasible()) {

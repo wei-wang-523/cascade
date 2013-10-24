@@ -1,6 +1,7 @@
 package edu.nyu.cascade.c.theory;
 
 import edu.nyu.cascade.c.Theory;
+import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeAnalyzer;
 import edu.nyu.cascade.ir.expr.BurstallMemoryModel;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.IRHeapEncoding;
@@ -21,9 +22,12 @@ public class BurstallTheory implements Theory {
   private final ExpressionEncoding encoding;
   private final IRPartitionHeapEncoder heapEncoder;
   private final MemoryModel memoryModel;
+  private final TypeAnalyzer.Builder preprocessorBuilder;
   
   public BurstallTheory(ExpressionManager exprManager) {
     encoding = PointerExpressionEncoding.create(exprManager);
+    preprocessorBuilder = new TypeAnalyzer.Builder();
+    
     if(Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
     	IRHeapEncoding heapEncoding = LinearHeapEncoding.create(encoding);
     	IROrderMemLayoutEncoding memLayout = OrderMemLayoutEncodingFactory
@@ -33,12 +37,17 @@ public class BurstallTheory implements Theory {
     	IRHeapEncoding heapEncoding = LinearHeapEncoding.create(encoding);
     	IRHeapEncoding heapEncoding_sync = SynchronousHeapEncoding.create(encoding);
     	IRSoundMemLayoutEncoding memLayout = SoundMemLayoutEncodingFactory
-    			.create(heapEncoding);
-    	heapEncoder = PartitionHeapEncoder.createSoundEncoding(heapEncoding, memLayout);
+    			.create(heapEncoding_sync);
+    	heapEncoder = PartitionHeapEncoder.createSoundEncoding(heapEncoding_sync, memLayout);
     }
   	memoryModel = BurstallMemoryModel.create(encoding, heapEncoder);	
   }
 
+  @Override
+  public TypeAnalyzer.Builder getPreprocessorBuilder() {
+  	return preprocessorBuilder;
+  }
+  
   @Override
   public ExpressionEncoding getEncoding() {
     return encoding;

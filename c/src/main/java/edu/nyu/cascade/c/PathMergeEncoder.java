@@ -9,10 +9,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import edu.nyu.cascade.c.preprocessor.IRPreProcessor;
-import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeAnalyzer;
-import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalyzer;
-import edu.nyu.cascade.c.preprocessor.steensgaard.Steensgaard;
+import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
@@ -76,21 +73,10 @@ final class PathMergeEncoder implements PathEncoder {
     return encodePath(graph, graph.destPath, pathExprMap);
   }
   
-  protected void preprocessGraph(final CSymbolTable symbolTable, final Graph graph) {
-  	Preconditions.checkArgument(symbolTable != null && graph != null);
-    if(Preferences.isSet(Preferences.OPTION_THEORY)) {
-      String theory = Preferences.getString((Preferences.OPTION_THEORY));
-    	IRPreProcessor<?> analyzer = null;
-      if(Preferences.OPTION_THEORY_PARTITION.equals(theory)) {
-      	analyzer = Steensgaard.create(symbolTable);        
-      } else if(Preferences.OPTION_THEORY_BURSTALLView.equals(theory)) {
-      	analyzer = TypeCastAnalyzer.create();
-      } else if(Preferences.OPTION_THEORY_BURSTALL.equals(theory)) {
-      	analyzer = TypeAnalyzer.create(symbolTable);
-      }
-    	preprocessPath(analyzer, graph.predecessorMap, graph.destPath);
-    	pathEncoding.getExpressionEncoder().getMemoryModel().setPreProcessor(analyzer);
-    }
+  protected void preprocessGraph(final PreProcessor<?> preprocessor, final Graph graph) {
+  	preprocessPath(preprocessor, graph.predecessorMap, graph.destPath);
+  	pathEncoding.getExpressionEncoder()
+  		.getMemoryModel().setPreProcessor(preprocessor);
   }
 
   /**
@@ -228,20 +214,20 @@ final class PathMergeEncoder implements PathEncoder {
     return pathExpr;
   }
   
-  private void preprocessPath(IRPreProcessor<?> analyzer, final Map<Path, Set<Path>> map, final Path path) {
+  private void preprocessPath(PreProcessor<?> preprocessor, final Map<Path, Set<Path>> map, final Path path) {
   	Preconditions.checkArgument(map != null);
   	if(!map.isEmpty()) {
   		Set<Path> prePaths = map.get(path); 	
   		if(prePaths != null) {
   			for(Path prePath : prePaths) {
-  				preprocessPath(analyzer, map, prePath);
+  				preprocessPath(preprocessor, map, prePath);
   			}
   		}
   	}
   	
   	if(path.stmts != null) {
     	for(IRStatement stmt : path.stmts) {
-    		analyzer.analysis(stmt);
+    		preprocessor.analysis(stmt);
     	}
   	}
   }

@@ -32,6 +32,7 @@ import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 
+import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.control.ControlFile;
 import edu.nyu.cascade.control.ControlFileException;
 import edu.nyu.cascade.control.Run;
@@ -591,6 +592,7 @@ public class Main {
             TheoryId theoryId = controlFile.getTheoryId();
             ExpressionEncoding encoding;
             MemoryModel memoryModel;
+            PreProcessor.Builder<?> builder = null;
             
             if(Preferences.isSet(Preferences.OPTION_THEORY)) {
               // TODO: ugly way to append prefix of qname of theory
@@ -603,6 +605,7 @@ public class Main {
               Theory theory = theoryId.getInstance(theoremProver.getExpressionManager());
               encoding = theory.getEncoding();
               memoryModel = theory.getMemoryModel();
+              builder = theory.getPreprocessorBuilder();
             } else {           
               // TODO: Fix bit-vector sizes to agree with encoding              
               encoding = BitVectorExpressionEncoding.create(theoremProver
@@ -617,10 +620,10 @@ public class Main {
             
             if( Preferences.isSet(Preferences.OPTION_SEQ_PATH) ) {
               runProcessor = new RunSeqProcessor(symbolTables, cfgs,
-                    cAnalyzer, encoder);
+                    cAnalyzer, encoder, builder);
             } else {
               runProcessor = new RunMergeProcessor(symbolTables, cfgs,
-                cAnalyzer, encoder);
+                cAnalyzer, encoder, builder);
             }
             
             if( Preferences.isSet(OPTION_FEASIBILITY)) {

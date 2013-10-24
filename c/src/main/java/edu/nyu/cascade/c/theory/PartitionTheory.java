@@ -1,6 +1,7 @@
 package edu.nyu.cascade.c.theory;
 
 import edu.nyu.cascade.c.Theory;
+import edu.nyu.cascade.c.preprocessor.steensgaard.Steensgaard;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.IRHeapEncoding;
 import edu.nyu.cascade.ir.expr.IROrderMemLayoutEncoding;
@@ -21,9 +22,11 @@ public class PartitionTheory implements Theory {
   private final ExpressionEncoding encoding;
   private final IRPartitionHeapEncoder heapEncoder;
   private final MemoryModel memoryModel;
+  private final Steensgaard.Builder preprocessorBuilder;
   
   public PartitionTheory(ExpressionManager exprManager) {
     encoding = PointerExpressionEncoding.create(exprManager);
+    preprocessorBuilder = new Steensgaard.Builder();
     if(Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
     	IRHeapEncoding heapEncoding = LinearHeapEncoding.create(encoding);
     	IROrderMemLayoutEncoding memLayout = OrderMemLayoutEncodingFactory
@@ -39,6 +42,11 @@ public class PartitionTheory implements Theory {
   	memoryModel = PartitionMemoryModel.create(encoding, heapEncoder);	
   }
 
+  @Override
+  public Steensgaard.Builder getPreprocessorBuilder() {
+  	return preprocessorBuilder;
+  }
+  
   @Override
   public ExpressionEncoding getEncoding() {
     return encoding;

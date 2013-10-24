@@ -16,6 +16,7 @@ import com.google.common.collect.*;
 
 import edu.nyu.cascade.c.CAnalyzer;
 import edu.nyu.cascade.c.CSpecParser;
+import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.control.*;
 import edu.nyu.cascade.control.jaxb.InsertionType;
 import edu.nyu.cascade.control.jaxb.Position.Command;
@@ -34,18 +35,20 @@ class RunMergeProcessor implements RunProcessor {
   
   public RunMergeProcessor(Map<File, CSymbolTable> symbolTables,
       Map<Node, IRControlFlowGraph> cfgs, CAnalyzer cAnalyzer,
-      CExpressionEncoder exprEncoder)
+      CExpressionEncoder exprEncoder, PreProcessor.Builder<?> builder)
       throws RunProcessorException {
     this.symbolTables = symbolTables;
     this.cfgs = cfgs;
     this.cAnalyzer = cAnalyzer;
     this.pathEncoder = PathMergeEncoder.create(SimplePathEncodingVer1.create(exprEncoder));
+    this.builder = builder;
   }
   
   private final Map<File, CSymbolTable> symbolTables;
   private final Map<Node, IRControlFlowGraph> cfgs;
   private final CAnalyzer cAnalyzer;
   private final PathMergeEncoder pathEncoder;
+  private final PreProcessor.Builder<?> builder;
   
   @Override
   public boolean process(Run run) throws RunProcessorException {
@@ -59,8 +62,12 @@ class RunMergeProcessor implements RunProcessor {
       graph.simplify();
       
       File file = run.getStartPosition().getFile();
-      CSymbolTable symbolTable = symbolTables.get(file);
-      preprocessGraph(symbolTable, graph);      
+      
+      if(builder != null) {
+        CSymbolTable symbolTable = symbolTables.get(file);
+        PreProcessor<?> preprocessor = builder.setSymbolTable(symbolTable).build();
+        preprocessGraph(preprocessor, graph);
+      }
       
       pathEncoder.encodeGraph(graph);
       return pathEncoder.runIsValid();
@@ -1552,8 +1559,8 @@ class RunMergeProcessor implements RunProcessor {
     return newNode;
   }
   
-  private void preprocessGraph(final CSymbolTable symbolTable, final Graph graph) {
-  	pathEncoder.preprocessGraph(symbolTable, graph);
+  private void preprocessGraph(final PreProcessor<?> preprocessor, final Graph graph) {
+  	pathEncoder.preprocessGraph(preprocessor, graph);
   }
   
   @Override

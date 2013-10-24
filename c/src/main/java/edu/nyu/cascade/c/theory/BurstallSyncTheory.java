@@ -1,6 +1,7 @@
 package edu.nyu.cascade.c.theory;
 
 import edu.nyu.cascade.c.Theory;
+import edu.nyu.cascade.c.preprocessor.PreProcessor.Builder;
 import edu.nyu.cascade.ir.expr.BurstallMemoryModelSync;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
@@ -24,6 +25,12 @@ public class BurstallSyncTheory implements Theory {
   @Override
   public MemoryModel getMemoryModel() {
     return memoryModel;
+  }
+
+	@Override
+  public Builder<?> getPreprocessorBuilder() {
+	  // TODO Auto-generated method stub
+	  return null;
   }
 
 }
