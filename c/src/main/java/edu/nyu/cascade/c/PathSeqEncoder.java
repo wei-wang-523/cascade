@@ -62,14 +62,11 @@ final class PathSeqEncoder implements PathEncoder {
   }
 
   protected void preprocessPath(PreProcessor<?> preprocessor, List<IRStatement> path) {
-    if(Preferences.isSet(Preferences.OPTION_THEORY)) {
-      String theory = Preferences.getString((Preferences.OPTION_THEORY));
-      for(IRStatement stmt : path) {
-      	preprocessor.analysis(stmt);
-      }
-      pathEncoding.getExpressionEncoder()
-      	.getMemoryModel().setPreProcessor(preprocessor);
+    for(IRStatement stmt : path) {
+    	preprocessor.analysis(stmt);
     }
+    pathEncoding.getExpressionEncoder()
+    	.getMemoryModel().setPreProcessor(preprocessor);
   }
   
   protected void encodePath(List<IRStatement> path) throws PathFactoryException {
