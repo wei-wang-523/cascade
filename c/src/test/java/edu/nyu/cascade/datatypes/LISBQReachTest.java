@@ -5,10 +5,10 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
 
-import edu.nyu.cascade.ir.expr.LISBQwithQFReachEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
-import edu.nyu.cascade.ir.expr.LISBQwithRRReachEncoding;
-import edu.nyu.cascade.ir.expr.ReachEncoding;
+import edu.nyu.cascade.ir.expr.bak.LISBQwithQFReachEncoding;
+import edu.nyu.cascade.ir.expr.bak.LISBQwithRRReachEncoding;
+import edu.nyu.cascade.ir.expr.bak.ReachEncoding;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;

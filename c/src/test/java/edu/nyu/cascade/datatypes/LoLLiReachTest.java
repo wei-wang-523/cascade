@@ -6,14 +6,16 @@ import static org.junit.Assert.assertTrue;
 //import java.io.PrintStream;
 //import edu.nyu.cascade.util.IOUtils;
 
+
+
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
-import edu.nyu.cascade.ir.expr.LoLLiwithQFReachEncoding;
-import edu.nyu.cascade.ir.expr.LoLLiwithRRReachEncoding;
-import edu.nyu.cascade.ir.expr.ReachEncoding;
+import edu.nyu.cascade.ir.expr.bak.LoLLiwithQFReachEncoding;
+import edu.nyu.cascade.ir.expr.bak.LoLLiwithRRReachEncoding;
+import edu.nyu.cascade.ir.expr.bak.ReachEncoding;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
