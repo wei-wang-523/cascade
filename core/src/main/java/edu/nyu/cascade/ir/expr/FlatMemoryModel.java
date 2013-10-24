@@ -37,7 +37,7 @@ public class FlatMemoryModel extends AbstractMemoryModel {
   public static FlatMemoryModel create(ExpressionEncoding encoding, 
   		IRSingleHeapEncoder heapEncoder)
       throws ExpressionFactoryException {
-    Preconditions.checkArgument(encoding instanceof PointerExpressionEncoding);
+//    Preconditions.checkArgument(encoding instanceof PointerExpressionEncoding);
     return new FlatMemoryModel(encoding, heapEncoder);
   }
 
