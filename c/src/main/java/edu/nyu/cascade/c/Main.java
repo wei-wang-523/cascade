@@ -176,10 +176,16 @@ public class Main {
               .create()) //
       .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_THEORY) //
-              .withDescription("Use a particular theory.") //
+              .withDescription("Use a particular theory: Flat(default), Burstall, Partition") //
               .hasArg() //
               .withType(String.class)
               .create()) //
+      .addOption(
+          OptionBuilder.withLongOpt(Preferences.OPTION_EXPR_ENCODING) //
+              .withDescription("Use either encoding: linear(default), synchronous, or linearFix") //
+              .hasArg() //
+              .withType(String.class)
+              .create()) //          
       .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_SEQ_PATH) //
               .withDescription("Run sequantial analysis without merge ite branches") //
@@ -190,7 +196,7 @@ public class Main {
               .create()) //
       .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_INLINE_ANNOTATION) //
-              .withDescription("Merge multiple paths in analysis.") //
+              .withDescription("Eable annotation inlined in code.") //
               .create()) //
       .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_TOTAL_INST) //

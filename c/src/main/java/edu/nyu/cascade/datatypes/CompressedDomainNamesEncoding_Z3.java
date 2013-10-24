@@ -181,19 +181,17 @@ public class CompressedDomainNamesEncoding_Z3 extends CompressedDomainNamesEncod
   public static CompressedDomainNamesEncoding_Z3 create(
       ExpressionManager expressionManager) throws ExpressionFactoryException {
     int cellSize = 
-        Preferences.isSet(Preferences.OPTION_THEORY) ? 
-            Preferences.get(Preferences.OPTION_THEORY).equals(Preferences.OPTION_THEORY_BURSTALLFIX) ? 
+    		Preferences.ENCODING_FIX.equals(
+            Preferences.getString(Preferences.OPTION_EXPR_ENCODING)) ? 
                 DefaultSize
                 : Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ?
                     Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE) 
-                    : DefaultSize
                     : DefaultSize;
 
     int intCellSize = 
-        Preferences.isSet(Preferences.OPTION_THEORY) ?
-            Preferences.get(Preferences.OPTION_THEORY).equals(Preferences.OPTION_THEORY_BURSTALLFIX) ?
+    		Preferences.ENCODING_FIX.equals(
+            Preferences.getString(Preferences.OPTION_EXPR_ENCODING)) ? 
                 (int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * cellSize) 
-                : cellSize
                 : cellSize;
     
     DEFAULT_WORD_SIZE = intCellSize;

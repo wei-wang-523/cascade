@@ -61,24 +61,14 @@ public class Preferences {
   
   public static final String OPTION_SEQ_PATH = "seq-path";
   
+  public static final String OPTION_EXPR_ENCODING = "expr-encoding";
+  
   public static final String OPTION_INLINE_ANNOTATION = "inline-anno";
   
   public static final String OPTION_MEMORY_CHECK = "memory-check";
   
-  public static final String OPTION_THEORY_BURSTALL = "Burstall";
-  
-	public static final String OPTION_THEORY_BURSTALLSync = "BurstallSync";
-  
-  public static final String OPTION_THEORY_BURSTALLFIX = "BurstallFix";
-  
-  public static final String OPTION_THEORY_BURSTALLView = "BurstallView";
-  
-  public static final String OPTION_THEORY_BITVECTOR = "BitVector";
-  
-  public static final String OPTION_THEORY_FLAT = "Flat";
-  
-  public static final String OPTION_THEORY_PARTITION = "Partition";
-  
+  public static final String ENCODING_SYNC = "sync";
+  public static final String ENCODING_FIX = "Fix";
   
   public static void clearAll() {
     getProperties().clear();

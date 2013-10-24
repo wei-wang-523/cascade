@@ -617,8 +617,8 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitTypedefName(GNode node) 
         throws ExpressionFactoryException {
-      if(Preferences.OPTION_THEORY_BURSTALLFIX.equals(
-          Preferences.get(Preferences.OPTION_THEORY))) {
+      if(Preferences.ENCODING_FIX.equals(
+          Preferences.get(Preferences.OPTION_EXPR_ENCODING))) {
         return ((Expression) dispatch(node.getNode(0))).setNode(node);
       } else {
         Type type = lookupType(node);
@@ -1046,8 +1046,8 @@ class CExpressionEncoder implements ExpressionEncoder {
   }
   
   private int sizeofType(Type t) {
-    if(Preferences.OPTION_THEORY_BURSTALLFIX.equals(
-        Preferences.get(Preferences.OPTION_THEORY))) {
+    if(Preferences.ENCODING_FIX.equals(
+        Preferences.get(Preferences.OPTION_EXPR_ENCODING))) {
       return (int) cAnalyzer.getSize(t);
     }
     
@@ -1094,8 +1094,8 @@ class CExpressionEncoder implements ExpressionEncoder {
   }
   
   private int getOffset(StructOrUnionT t, String name) {
-    if(Preferences.OPTION_THEORY_BURSTALLFIX.equals(
-        Preferences.get(Preferences.OPTION_THEORY))) {
+    if(Preferences.ENCODING_FIX.equals(
+        Preferences.get(Preferences.OPTION_EXPR_ENCODING))){
       return (int) cAnalyzer.getOffset(t.toStructOrUnion(), name);
     }
     

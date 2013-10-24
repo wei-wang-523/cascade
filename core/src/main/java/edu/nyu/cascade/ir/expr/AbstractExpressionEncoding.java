@@ -868,22 +868,21 @@ public abstract class AbstractExpressionEncoding
   
   @Override
   public Expression castExpression(Expression src, Type targetType) {
-    if(!Preferences.isSet(Preferences.OPTION_THEORY)) return src;
+    if(!Preferences.isSet(Preferences.OPTION_EXPR_ENCODING)) return src;
     
-    String theory = Preferences.getString(Preferences.OPTION_THEORY);
-    if(theory.equals(Preferences.OPTION_THEORY_BURSTALLSync) ||
-        theory.equals(Preferences.OPTION_THEORY_BURSTALLFIX) ||
-        theory.equals(Preferences.OPTION_THEORY_BURSTALLView)) {
-      CellKind srcKind = CType.getCellKind(CType.getType(src.getNode()));
-      CellKind targetKind = CType.getCellKind(targetType);
+    String encoding = Preferences.getString(Preferences.OPTION_EXPR_ENCODING);
+    CellKind srcKind = CType.getCellKind(CType.getType(src.getNode()));
+    CellKind targetKind = CType.getCellKind(targetType);
+    
+    if(Preferences.ENCODING_SYNC.equals(encoding)) {
       if(CellKind.POINTER.equals(targetKind) && CellKind.SCALAR.equals(srcKind)) {
         assert src.isConstant();
         return pointerEncoding.getNullPtr();
       }
+    }
       
-      if(theory.equals(Preferences.OPTION_THEORY_BURSTALLFIX)
-          && CellKind.SCALAR.equals(targetKind) 
-          && targetKind.equals(srcKind)) {
+    if(Preferences.ENCODING_FIX.equals(encoding)) {
+    	if(CellKind.SCALAR.equals(targetKind) && targetKind.equals(srcKind)) {
         int srcSize = src.getType().asBitVectorType().getSize();
         int targetSize = (int) (getCAnalyzer().getSize(targetType) * getCellSize());
         if(srcSize < targetSize)
@@ -896,13 +895,14 @@ public abstract class AbstractExpressionEncoding
   }
   
   @Override
-  public Expression castConstant(int value, xtc.type.Type targetType) {
-    if(!(Preferences.isSet(Preferences.OPTION_THEORY) &&
-        Preferences.get(Preferences.OPTION_THEORY).equals(Preferences.OPTION_THEORY_BURSTALLFIX)))
-    return integerConstant(value);
+  public Expression castConstant(int value, xtc.type.Type targetType) {    
+    String encoding = Preferences.getString(Preferences.OPTION_EXPR_ENCODING);
+    if(Preferences.ENCODING_FIX.equals(encoding)) {
+      int size = (int) (getCAnalyzer().getSize(targetType) * getCellSize());
+      return getExpressionManager().bitVectorConstant(value, size);
+    }
     
-    int size = (int) (getCAnalyzer().getSize(targetType) * getCellSize());
-    return getExpressionManager().bitVectorConstant(value, size);
+    return integerConstant(value);
   }
   
   @Override
