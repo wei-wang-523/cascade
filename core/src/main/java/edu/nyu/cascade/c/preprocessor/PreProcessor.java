@@ -7,34 +7,41 @@ import xtc.tree.Node;
 import com.google.common.collect.ImmutableMap;
 
 import edu.nyu.cascade.ir.IRStatement;
+import edu.nyu.cascade.ir.SymbolTable;
 
 /**
  * Pre-analysis statement
  * @author Wei
  *
  */
-public interface PreProcessor<T> {
-
+public abstract class PreProcessor<T> {
+	
+	public static abstract class Builder<T> {
+		public Builder() {}
+		public abstract Builder<T> setSymbolTable(SymbolTable _symbolTable);
+		public abstract PreProcessor<T> build();	
+	}
+	
   /**
    * Pre analysis statement <code>stmt</code>
    * @param stmt
    */
-	void analysis(IRStatement stmt);
+	public abstract void analysis(IRStatement stmt);
 
   /**
    * Display the snap shot
    */
-	String displaySnapShot();
+	public abstract String displaySnapShot();
 
-	IREquivClosure getEquivClass(T arg);
+	public abstract IREquivClosure getEquivClass(T arg);
 
-	ImmutableMap<T, Set<IRVar>> snapshot();
+	public abstract ImmutableMap<T, Set<IRVar>> snapshot();
 
-	T getPointsToElem(Node node);
+	public abstract T getPointsToElem(Node node);
 
-	IRVar getAllocateElem(Node node);
+	public abstract IRVar getAllocateElem(Node node);
 
-	String getRepName(T arg);
+	public abstract String getRepName(T arg);
 
-	T getRep(Node node);
+	public abstract T getRep(Node node);
 }

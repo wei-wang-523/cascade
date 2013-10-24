@@ -46,7 +46,24 @@ import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.ReservedFunction;
 import edu.nyu.cascade.util.Triple;
 
-public class TypeAnalyzer implements PreProcessor<Type> {
+public class TypeAnalyzer extends PreProcessor<Type> {
+	
+  public static final class Builder extends PreProcessor.Builder<Type> {
+  	SymbolTable symbolTable;
+
+  	public Builder() {}
+  	
+		@Override
+    public Builder setSymbolTable(SymbolTable _symbolTable) {
+			symbolTable = _symbolTable;
+	    return this;
+    }
+
+		@Override
+    public TypeAnalyzer build() {
+	    return TypeAnalyzer.create(symbolTable);
+    }
+  }
 	
   static private final LoadingCache<Pair<Type, Reference>, String> typeNameCache = CacheBuilder
       .newBuilder().build(new CacheLoader<Pair<Type, Reference>, String>(){

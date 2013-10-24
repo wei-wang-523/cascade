@@ -23,7 +23,7 @@ import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.util.CacheException;
 
 @SuppressWarnings("rawtypes")
-public class TypeCastAnalyzer implements PreProcessor {
+public class TypeCastAnalyzer extends PreProcessor {
   
   private final LoadingCache<Reference, Boolean> cache = CacheBuilder
       .newBuilder().build(new CacheLoader<Reference, Boolean>(){

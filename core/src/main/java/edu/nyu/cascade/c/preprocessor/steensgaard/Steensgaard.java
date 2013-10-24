@@ -45,7 +45,26 @@ import edu.nyu.cascade.util.ReservedFunction;
  * @author Wei
  *
  */
-public class Steensgaard implements PreProcessor<IRVar> {
+public class Steensgaard extends PreProcessor<IRVar> {
+	
+  public static final class Builder extends PreProcessor.Builder<IRVar> {
+  	SymbolTable symbolTable;
+
+  	public Builder() {}
+  	
+		@Override
+    public Builder setSymbolTable(SymbolTable _symbolTable) {
+			symbolTable = _symbolTable;
+	    return this;
+    }
+
+		@Override
+    public Steensgaard build() {
+	    return Steensgaard.create(symbolTable);
+    }
+  }
+	
+	
   private UnionFindECR uf;
   private Map<Pair<String, Scope>, IRVarImpl> varsMap; 
   private SymbolTable symbolTable;
@@ -79,7 +98,7 @@ public class Steensgaard implements PreProcessor<IRVar> {
   }
   
   public static Steensgaard create(SymbolTable symbolTable) {
-    return new Steensgaard(symbolTable);
+    return Steensgaard.create(symbolTable);
   }
 
   @Override

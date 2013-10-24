@@ -711,7 +711,7 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
   }
 
 	@Override
-	public void setPreProcessor(PreProcessor analyzer) {
+	public void setPreProcessor(PreProcessor<?> analyzer) {
 		Preconditions.checkArgument(analyzer instanceof TypeCastAnalyzer);
 	  this.analyzer = (TypeCastAnalyzer) analyzer;
 	  IOUtils.debug().pln(analyzer.displaySnapShot());
