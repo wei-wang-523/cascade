@@ -98,7 +98,7 @@ public class Steensgaard extends PreProcessor<IRVar> {
   }
   
   public static Steensgaard create(SymbolTable symbolTable) {
-    return Steensgaard.create(symbolTable);
+    return new Steensgaard(symbolTable);
   }
 
   @Override
