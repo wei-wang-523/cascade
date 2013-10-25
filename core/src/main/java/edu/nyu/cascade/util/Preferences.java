@@ -37,7 +37,7 @@ public class Preferences {
   /** User-defined properties */
   private static final Map<String, Object> PROPERTIES = Maps.newHashMap();
 
-  public static final String OPTION_SOUND_ALLOC = "sound-alloc";
+  public static final String OPTION_SOUND_ALLOC = "sound";
   
   public static final String OPTION_COUNTER_EXAMPLE = "counter-example";
 
@@ -45,7 +45,7 @@ public class Preferences {
   
   public static final String OPTION_ITERATION_TIMES = "iter-times";
   
-  public static final String OPTION_ORDER_ALLOC = "order-alloc";
+  public static final String OPTION_ORDER_ALLOC = "order";
   
   public static final String OPTION_SIGNED_OPERATION = "signed";
   
