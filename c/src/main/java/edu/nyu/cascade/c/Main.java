@@ -665,7 +665,7 @@ public class Main {
               IOUtils.debug().incr();
 
               boolean runIsValid = runProcessor.process(run);
-              IOUtils.err().println(runIsValid ? "Valid" : "Invalid");
+              IOUtils.out().println(runIsValid ? "Valid" : "Invalid");
               IOUtils.debug().decr();
               i++;
             }
@@ -714,7 +714,7 @@ public class Main {
       }
     }
     time = System.currentTimeMillis() - time;
-    IOUtils.err()
+    IOUtils.out()
     .println(
         "Cascade took time: "
             + time/1000.0 + "s");

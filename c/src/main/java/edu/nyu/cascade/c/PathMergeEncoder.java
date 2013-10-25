@@ -127,7 +127,7 @@ final class PathMergeEncoder implements PathEncoder {
   private Expression encodeStatement(IRStatement stmt, final Expression preCond) 
       throws PathFactoryException {
     /* Precondition is OK, encode the postcondition. */
-    IOUtils.out().println(stmt.getLocation() + " " + stmt); 
+    IOUtils.err().println(stmt.getLocation() + " " + stmt); 
     Expression  postCond = stmt.getPostCondition(pathEncoding, preCond);
     if(IOUtils.debugEnabled())
       IOUtils.debug().pln("Post-condition: " + postCond).flush();
