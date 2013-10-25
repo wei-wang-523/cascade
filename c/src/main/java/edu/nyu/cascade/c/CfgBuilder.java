@@ -1387,7 +1387,6 @@ public class CfgBuilder extends Visitor {
         if(unwrapped(varType).isStruct() || unwrapped(varType).isUnion()) {
           if(!isAliasName(varNode)) {
             Node sizeNode = getSizeofTypeNode(varType, varNode.getLocation());
-            CExpression sizeExpr = expressionOf(sizeNode);
             GNode funcNode = GNode.create("PrimaryIdentifier", ReservedFunction.AUX_STRUCT_ALLOC);
             GNode argList = GNode.create("ExpressionList", varNodePrime, sizeNode);
             GNode allocNode = GNode.create("FunctionCall", funcNode, argList);
@@ -1395,6 +1394,7 @@ public class CfgBuilder extends Visitor {
             argList.setLocation(loc);
             allocNode.setLocation(loc);
             cAnalyzer.processExpression(allocNode);
+            CExpression sizeExpr = expressionOf(sizeNode);
             Statement declareStmt = Statement.declareStruct(allocNode, varExpr, sizeExpr);
             addStatementGlobalOrLocal(declareStmt);
           }
