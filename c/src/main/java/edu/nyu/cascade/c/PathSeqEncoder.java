@@ -71,7 +71,7 @@ final class PathSeqEncoder implements PathEncoder {
   
   protected void encodePath(List<IRStatement> path) throws PathFactoryException {
   	for (IRStatement stmt : path) {
-  		IOUtils.err().println(stmt.getLocation() + " " + stmt); 
+  		IOUtils.debug().pln(stmt.getLocation() + " " + stmt); 
   		if (!encodeStatement(stmt))
   			break;
   	}

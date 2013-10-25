@@ -666,6 +666,7 @@ public class Main {
 
               boolean runIsValid = runProcessor.process(run);
               IOUtils.out().println(runIsValid ? "Valid" : "Invalid");
+              IOUtils.err().println(runIsValid ? "Valid" : "Invalid");
               IOUtils.debug().decr();
               i++;
             }
