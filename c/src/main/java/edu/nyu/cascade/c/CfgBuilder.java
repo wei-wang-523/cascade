@@ -635,6 +635,7 @@ public class CfgBuilder extends Visitor {
     node1.setLocation(loc);
     node2.setLocation(loc);
     node3.setLocation(loc);
+    cAnalyzer.processExpression(node3);
     return expressionOf(node3);
   }
   
@@ -655,6 +656,7 @@ public class CfgBuilder extends Visitor {
         GNode val = (GNode) exprList.get(i).getSourceNode();
         GNode indexNode = GNode.create("IntegerConstant", ((Integer)i).toString());
         indexNode.setLocation(loc);
+        cAnalyzer.processExpression(indexNode);
         indexList.add(0, expressionOf(indexNode));
         initializeArray(var, val, dimension, indexList);
         indexList.remove(0);
@@ -1774,10 +1776,11 @@ public class CfgBuilder extends Visitor {
     }
     
     GNode initListNode = GNode.createFromPair("InitializerList", operands);
+    cAnalyzer.processExpression(initListNode);
     
     // string variable
     Node stringVarNode = defineStringVarNode(node);
-    CExpression stringVarExpr = expressionOf(stringVarNode);
+    CExpression stringVarExpr = recurseOnExpression(stringVarNode);
     
     // length * sizeof(char)
     GNode lhsNode = GNode.create("IntegerConstant", Integer.toString(content.length()+1));
@@ -1793,8 +1796,8 @@ public class CfgBuilder extends Visitor {
     allocNode.setLocation(loc);
     
     // string_allocated(STRING_VAR_*, length * sizeof(char))
-    CExpression sizeExpr = expressionOf(multNode);
     cAnalyzer.processExpression(allocNode);
+    CExpression sizeExpr = expressionOf(multNode);
     Statement declareStmt = Statement.declareArray(allocNode, stringVarExpr, sizeExpr);
     addStatementGlobalOrLocal(declareStmt);
     
