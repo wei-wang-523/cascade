@@ -19,7 +19,6 @@
 package edu.nyu.cascade.c;
 
 import java.math.BigInteger;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -31,17 +30,15 @@ import java.util.Set;
 
 import com.google.common.collect.Maps;
 
+import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
-
 import xtc.Constants;
 import xtc.Limits;
-
 import xtc.tree.Attribute;
 import xtc.tree.GNode;
 import xtc.tree.Node;
 import xtc.tree.Token;
 import xtc.tree.Visitor;
-
 import xtc.type.AliasT;
 import xtc.type.ArrayT;
 import xtc.type.BooleanT;
@@ -71,7 +68,6 @@ import xtc.type.Type.Tag;
 import xtc.type.UnionT;
 import xtc.type.VariableT;
 import xtc.type.VoidT;
-
 import xtc.util.SymbolTable;
 import xtc.util.SymbolTable.Scope;
 import xtc.util.Runtime;
@@ -6811,7 +6807,10 @@ public class CAnalyzer extends Visitor {
       if(node.hasProperty(Constants.TYPE)) {
         Type oldType = (Type) node.removeProperty(Constants.TYPE);
         if(!oldType.equals(type))
-          throw new IllegalArgumentException("Inconsistent types for node " + node);
+        	/* TODO: override equals method in PointT: regards two PointerT
+        	 * to be equals as long as they points to the same type 
+        	 */
+          IOUtils.err().println("Inconsistent types for node " + node);
       }
       type.mark(node);
       if(!node.hasProperty(Constants.SCOPE)) {

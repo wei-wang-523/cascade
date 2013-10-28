@@ -103,7 +103,7 @@ public class Steensgaard extends PreProcessor<IRVar> {
 
   @Override
 	public void analysis(IRStatement stmt) {
-  	IOUtils.debug().pln(stmt.toString());
+  	IOUtils.err().println(stmt.toString());
 	  switch (stmt.getType()) {
 		case ASSUME : {
 			IRExpression operand = stmt.getOperand(0);
@@ -472,22 +472,28 @@ public class Steensgaard extends PreProcessor<IRVar> {
 	  if(!type.hasShape())	return res;
 	  
 	  int num = CType.numOfIndRef(type.getShape());
-	  assert(num >= 0);
 	  
-	  if(num == 0) 	return res;
-	  
-	  IRVar resPrime = res;
-	  while(num > 0) {
-	  	resPrime = getPointsToVar(resPrime); 
-	  	num--;
-	  }  
-	    
-	  if(resPrime == null) {
-	  	IOUtils.debug().pln(type.getShape() + " is uninialized.");
-	  	return nullLoc;
+	  if(num < 0) {
+	  	assert(type.resolve().isPointer() && (
+	  			type.resolve().toPointer().getType().isUnion() || 
+	  			type.resolve().toPointer().getType().isStruct()));
+	  	return res;
+	  } else if(num == 0) {
+	  	return res;
+	  } else {
+		  IRVar resPrime = res;
+		  while(num > 0) {
+		  	resPrime = getPointsToVar(resPrime); 
+		  	num--;
+		  }  
+		    
+		  if(resPrime == null) {
+		  	IOUtils.debug().pln(type.getShape() + " is uninialized.");
+		  	return nullLoc;
+		  }
+		  
+		  return resPrime;
 	  }
-	  
-	  return resPrime;
 	}
 
 	private IRVar getPointsToVar(IRVar var) {    
