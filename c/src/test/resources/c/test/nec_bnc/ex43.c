@@ -8,7 +8,7 @@ typedef int size_t; // redef type size_t as int
 typedef int data_t;
 typedef size_t idx_t;
 typedef int bool_t;
-
+#define NULL (int *) 0
 int __NONDET__();
 int ASSUME(int);
 int ASSERT(int);
