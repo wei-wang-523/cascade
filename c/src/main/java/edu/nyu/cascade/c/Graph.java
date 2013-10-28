@@ -23,13 +23,21 @@ import edu.nyu.cascade.ir.IRStatement.StatementType;
 import edu.nyu.cascade.ir.impl.IRExpressionImpl;
 import edu.nyu.cascade.ir.impl.Statement;
 
-final class Graph {
-  private final static String COND_ASSUME_LABEL = "COND_ASSUME";
-  Map<Path, Set<Path>> predecessorMap = null;
-  Path srcPath = null;
-  Path destPath = null;
+public final class Graph {
+  final static String COND_ASSUME_LABEL = "COND_ASSUME";
+  private Map<Path, Set<Path>> predecessorMap = null;
+  private Path srcPath = null;
+  private Path destPath = null;
   
-  static Graph createSingleton(Path path) {
+  public Path getSrcPath() {
+		return srcPath;
+	}
+
+	public Path getDestPath() {
+		return destPath;
+	}
+
+	static Graph createSingleton(Path path) {
     Map<Path, Set<Path>> emptyMap = Maps.newLinkedHashMap();
     return new Graph(emptyMap, path, path);
   }
@@ -39,7 +47,7 @@ final class Graph {
     return new Graph(map, srcPath, destPath);
   }
   
-  Graph(Map<Path, Set<Path>> map, Path srcPath, Path destPath) {
+  private Graph(Map<Path, Set<Path>> map, Path srcPath, Path destPath) {
     //FIXME: destPath = destPath.copy() ?
     this.destPath = destPath;
     this.srcPath = srcPath;
@@ -54,18 +62,22 @@ final class Graph {
     this.srcPath = srcPath;
   }
   
-  boolean hasEmptyMap() {
-    return predecessorMap.isEmpty();
+  boolean hasNullMap() {
+  	return predecessorMap == null;
+  }
+  
+  Map<Path, Set<Path>> getPredecessorMap() {
+  	return predecessorMap;
   }
   
   IRBasicBlock getDestBlock() {
     if(destPath == null)    return null;
-    return destPath.destBlock;
+    return destPath.getDestBlock();
   }
   
   IRBasicBlock getSrcBlock() {
     if(srcPath == null)     return null;
-    return srcPath.srcBlock;
+    return srcPath.getSrcBlock();
   }
   
   IRStatement getLastStmt() {
@@ -183,7 +195,7 @@ final class Graph {
       Path prePath = prePaths.iterator().next();
       return hasReturnStmt(prePath);
     } else {
-      IRStatement stmt = path.stmts.get(path.stmts.size()-1);
+      IRStatement stmt = path.getStmts().get(path.getStmts().size()-1);
       return stmt.getType().equals(IRStatement.StatementType.RETURN);
     }
   }
@@ -198,7 +210,7 @@ final class Graph {
       Path prePath = prePaths.iterator().next();
       return getReturnStmt(prePath);
     } else {
-      IRStatement stmt = path.stmts.get(path.stmts.size()-1);
+      IRStatement stmt = path.getStmts().get(path.getStmts().size()-1);
       return stmt;
     }
   }
@@ -277,8 +289,8 @@ final class Graph {
       return path;
     } else {
       // Path with first statement is conditional assume statement
-      if(path.stmts.size() > 0 && 
-          path.stmts.get(0).getPreLabels().contains(COND_ASSUME_LABEL)) {
+      if(path.getStmts().size() > 0 && 
+          path.getStmts().get(0).getPreLabels().contains(COND_ASSUME_LABEL)) {
         predecessorMap.put(path, simplifyPaths);
         return path;
       } else {
@@ -314,8 +326,8 @@ final class Graph {
       Path currPath = topPath;
       Set<Path> prePaths = predecessorMap.get(currPath);
       /* It's okay to merge prePath with currPath */
-      while(prePaths != null && prePaths.size() == 1 && (currPath.stmts.size() == 0 || 
-          !currPath.stmts.get(0).getPreLabels().contains(COND_ASSUME_LABEL))) {
+      while(prePaths != null && prePaths.size() == 1 && (currPath.getStmts().size() == 0 || 
+          !currPath.getStmts().get(0).getPreLabels().contains(COND_ASSUME_LABEL))) {
         Path prePath = prePaths.iterator().next();
         currPath = Path.mergePath(prePath, currPath);  
         prePaths = predecessorMap.remove(prePath);
@@ -372,7 +384,7 @@ final class Graph {
     while(!queue.isEmpty()) {
       Path currPath = queue.poll();
       if(visited.contains(currPath))    continue;
-      Iterable<IRStatement> assignStmts = Iterables.filter(currPath.stmts, 
+      Iterable<IRStatement> assignStmts = Iterables.filter(currPath.getStmts(), 
       		new Predicate<IRStatement>(){
       	@Override
 				public boolean apply(IRStatement stmt) {

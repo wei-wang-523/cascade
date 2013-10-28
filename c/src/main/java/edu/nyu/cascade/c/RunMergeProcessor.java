@@ -291,16 +291,19 @@ class RunMergeProcessor implements RunProcessor {
       if(loopGraph == null) 
         loopGraph = singleLoop;
       else { /* Tricky part to merge two loop graph */
-        // loopGraph.destPath != singleLoop.srcPath 
-        assert(loopGraph.destPath.isCopyOf(singleLoop.srcPath)); 
+        // loopGraph.getDestPath() != singleLoop.getSrcPath() 
+        assert(loopGraph.getDestPath().isCopyOf(singleLoop.getSrcPath())); 
         
-        Set<Path> preLoopPaths = loopGraph.predecessorMap.remove(loopGraph.destPath);        
-        loopGraph.predecessorMap.put(singleLoop.srcPath, preLoopPaths);
+        Map<Path, Set<Path>> loopMap = loopGraph.getPredecessorMap();
+        Map<Path, Set<Path>> singleMap = singleLoop.getPredecessorMap();
         
-        Set<Path> preSinglePaths = singleLoop.predecessorMap.remove(singleLoop.srcPath);
-        singleLoop.predecessorMap.put(loopGraph.destPath, preSinglePaths);
+        Set<Path> preLoopPaths = loopMap.remove(loopGraph.getDestPath());        
+        loopMap.put(singleLoop.getSrcPath(), preLoopPaths);
         
-        loopGraph.predecessorMap.putAll(singleLoop.predecessorMap);
+        Set<Path> preSinglePaths = singleMap.remove(singleLoop.getSrcPath());
+        singleMap.put(loopGraph.getDestPath(), preSinglePaths);
+        
+        loopMap.putAll(singleMap);
       }
       iterTimes--;
     }
@@ -363,7 +366,7 @@ class RunMergeProcessor implements RunProcessor {
         
         if (edge.getGuard() != null) { // edge has guard
           Statement stmt = Statement.assumeStmt(edge.getSourceNode(), edge.getGuard());
-          stmt.addPreLabel(COND_ASSUME_LABEL);
+          stmt.addPreLabel(Graph.COND_ASSUME_LABEL);
           Path edgePath  = Path.createSingleton(stmt);
           predecessorMap.put(edgePath, Sets.newHashSet(srcPath));
           prePaths.add(edgePath);
@@ -379,16 +382,18 @@ class RunMergeProcessor implements RunProcessor {
         block.clearIterTimes();
         Graph loopGraph = loopUnrolling(cfg, block ,iterTimes);
         
-        assert(loopGraph.destPath.isCopyOf(path));
-        Set<Path> preLoopPaths = loopGraph.predecessorMap.remove(loopGraph.destPath);
-        loopGraph.predecessorMap.put(path, preLoopPaths);
+        assert(loopGraph.getDestPath().isCopyOf(path));
+        Map<Path, Set<Path>> loopMap = loopGraph.getPredecessorMap();
+        
+        Set<Path> preLoopPaths = loopMap.remove(loopGraph.getDestPath());
+        loopMap.put(path, preLoopPaths);
 
         Set<Path> preGraphPaths = predecessorMap.remove(path);
-        predecessorMap.put(loopGraph.destPath, preGraphPaths);
+        predecessorMap.put(loopGraph.getDestPath(), preGraphPaths);
         
-        predecessorMap.putAll(loopGraph.predecessorMap);
+        predecessorMap.putAll(loopMap);
         
-        predecessorMap.put(loopGraph.srcPath, prePaths);
+        predecessorMap.put(loopGraph.getSrcPath(), prePaths);
         continue;
       }
       
@@ -1033,13 +1038,13 @@ class RunMergeProcessor implements RunProcessor {
     
     /* BFS traverse the graph's paths, collect those with function call statement */
     Queue<Path> queue = Lists.newLinkedList();
-    queue.add(graph.destPath);
+    queue.add(graph.getDestPath());
     List<Path> visited = Lists.newLinkedList();
     while(!queue.isEmpty()) {
       Path currPath = queue.poll();
       if(visited.contains(currPath))    continue;
       
-      if(Iterables.any(currPath.stmts, new Predicate<IRStatement>(){
+      if(Iterables.any(currPath.getStmts(), new Predicate<IRStatement>(){
         @Override
         public boolean apply(IRStatement stmt) {
           boolean res = false;
@@ -1053,7 +1058,7 @@ class RunMergeProcessor implements RunProcessor {
         }})) {
         funcPathMap.put(currPath, null);
       }
-      Set<Path> prePaths = graph.predecessorMap.get(currPath);
+      Set<Path> prePaths = graph.getPredecessorMap().get(currPath);
       visited.add(currPath);
       if(prePaths != null)  queue.addAll(prePaths);     
     }
@@ -1080,14 +1085,14 @@ class RunMergeProcessor implements RunProcessor {
     /* Generate a new graph predecessor map */
     Map<Path, Set<Path>> predecessorMap = Maps.newHashMap();
     
-    for(Map.Entry<Path, Set<Path>> entry : graph.predecessorMap.entrySet()) { 
+    for(Map.Entry<Path, Set<Path>> entry : graph.getPredecessorMap().entrySet()) { 
       Set<Path> prePaths = Sets.newHashSet(entry.getValue());
       /* Update the value, if contains function call path */
       for(Path prePath : entry.getValue()) {
         if(funcPathMap.containsKey(prePath)) {
           Graph funcGraph = funcPathMap.get(prePath);
           prePaths.remove(prePath);
-          prePaths.add(funcGraph.destPath);
+          prePaths.add(funcGraph.getDestPath());
         }
       }
       
@@ -1095,25 +1100,25 @@ class RunMergeProcessor implements RunProcessor {
       Path keyPath = entry.getKey();
       if(funcPathMap.containsKey(keyPath)) {
         Graph funcGraph = funcPathMap.get(keyPath);
-        predecessorMap.put(funcGraph.srcPath, prePaths);
+        predecessorMap.put(funcGraph.getSrcPath(), prePaths);
       } else {
         predecessorMap.put(keyPath, prePaths);
       }
     }
     
     for(Path keyPath : funcPathMap.keySet())
-      predecessorMap.putAll(funcPathMap.get(keyPath).predecessorMap);
+      predecessorMap.putAll(funcPathMap.get(keyPath).getPredecessorMap());
     
-    if(!(graph.srcPath == graph.destPath)) {
-      Path srcPath = funcPathMap.containsKey(graph.srcPath) ? 
-          funcPathMap.get(graph.srcPath).srcPath : graph.srcPath;
-      Path destPath = funcPathMap.containsKey(graph.destPath) ? 
-          funcPathMap.get(graph.destPath).destPath : graph.destPath;
+    if(!(graph.getSrcPath() == graph.getDestPath())) {
+      Path srcPath = funcPathMap.containsKey(graph.getSrcPath()) ? 
+          funcPathMap.get(graph.getSrcPath()).getSrcPath() : graph.getSrcPath();
+      Path destPath = funcPathMap.containsKey(graph.getDestPath()) ? 
+          funcPathMap.get(graph.getDestPath()).getDestPath() : graph.getDestPath();
       
       return Graph.create(predecessorMap, srcPath, destPath);
     } else {
-      Path destPath = funcPathMap.containsKey(graph.destPath) ? 
-          funcPathMap.get(graph.destPath).destPath : graph.destPath;
+      Path destPath = funcPathMap.containsKey(graph.getDestPath()) ? 
+          funcPathMap.get(graph.getDestPath()).getDestPath() : graph.getDestPath();
           
       return Graph.create(predecessorMap, destPath, destPath);
     }
@@ -1153,7 +1158,7 @@ class RunMergeProcessor implements RunProcessor {
     if(destGraph == null)    
       throw new RunProcessorException("Invalid graph for path: " + destPath);
     
-    Map<Path, Set<Path>> map = graph.predecessorMap;    
+    Map<Path, Set<Path>> map = graph.getPredecessorMap();    
     if(map.containsKey(destPath)) {
       Set<Path> prePaths = map.get(destPath);  
       List<Graph> preGraphs = Lists.newArrayList();
@@ -1172,7 +1177,7 @@ class RunMergeProcessor implements RunProcessor {
   private Graph functionInlineGraph(CSymbolTable symbolTable, Graph graph) 
       throws RunProcessorException {
     Map<Path, Graph> pathGraphMap = Maps.newHashMap();
-    return functionInlineGraph(symbolTable, graph, graph.destPath, pathGraphMap);
+    return functionInlineGraph(symbolTable, graph, graph.getDestPath(), pathGraphMap);
   }
   */
   
@@ -1204,7 +1209,7 @@ class RunMergeProcessor implements RunProcessor {
 
     while(tmpPath != null && !tmpPath.isEmpty()) {
       
-      int lastIndex = tmpPath.stmts.size()-1;
+      int lastIndex = tmpPath.getStmts().size()-1;
       IRStatement last_stmt = tmpPath.getLastStmt();
       
       /* function call statement f(x) with declared function */
@@ -1275,10 +1280,10 @@ class RunMergeProcessor implements RunProcessor {
         
         if(callPosition != null) {
           callGraph = getGraphForAllAssignCallStmt(symbolTable, 
-          		stmtRep, funcPath.stmts, callPosition.getFunctions());
+          		stmtRep, funcPath.getStmts(), callPosition.getFunctions());
         } else {
           callGraph = getGraphForAllAssignCallStmt(symbolTable,
-          		stmtRep, funcPath.stmts);
+          		stmtRep, funcPath.getStmts());
         }
         if(resGraph == null)    resGraph = callGraph;
         else                    resGraph.appendPreGraph(callGraph);
@@ -1362,7 +1367,7 @@ class RunMergeProcessor implements RunProcessor {
 
       ImmutableList.Builder<IRStatement> postBuilder = 
       		new ImmutableList.Builder<IRStatement>();
-      postBuilder.addAll(loopGraph.destPath.stmts);
+      postBuilder.addAll(loopGraph.getDestPath().getStmts());
       postBuilder.add(Statement.assertStmt(spec, argExpr));
       
       invariantGraph = loopGraph;
@@ -1462,7 +1467,7 @@ class RunMergeProcessor implements RunProcessor {
             
         Path wayPath = Path.createSingleton(processPosition(pos, symbolTable));
 //        if(InsertionType.BEFORE.equals(((Position)pos).getInsertionType())) {
-//          wayGraph.insertBefore(wayGraph.destPath, wayPath);
+//          wayGraph.insertBefore(wayGraph.getDestPath(), wayPath);
 //        } else {
         wayGraph.appendPostPath(wayPath);
 //        }

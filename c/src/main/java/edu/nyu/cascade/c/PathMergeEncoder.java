@@ -8,6 +8,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRStatement;
@@ -70,11 +71,12 @@ final class PathMergeEncoder implements PathEncoder {
   
   protected Expression encodeGraph(final Graph graph) throws PathFactoryException {
     Map<Path, Expression> pathExprMap = Maps.newHashMap();
-    return encodePath(graph, graph.destPath, pathExprMap);
+    return encodePath(graph, graph.getDestPath(), pathExprMap);
   }
   
   protected void preprocessGraph(final PreProcessor<?> preprocessor, final Graph graph) {
-  	preprocessPath(preprocessor, graph.predecessorMap, graph.destPath);
+  	Set<Path> visitedPath = Sets.newHashSet();
+  	preprocessPath(preprocessor, graph, graph.getDestPath(), visitedPath);
   	pathEncoding.getExpressionEncoder()
   		.getMemoryModel().setPreProcessor(preprocessor);
   }
@@ -127,7 +129,7 @@ final class PathMergeEncoder implements PathEncoder {
   private Expression encodeStatement(IRStatement stmt, final Expression preCond) 
       throws PathFactoryException {
     /* Precondition is OK, encode the postcondition. */
-    IOUtils.debug().pln(stmt.getLocation() + " " + stmt); 
+    IOUtils.out().println(stmt.getLocation() + " " + stmt); 
     Expression  postCond = stmt.getPostCondition(pathEncoding, preCond);
     if(IOUtils.debugEnabled())
       IOUtils.debug().pln("Post-condition: " + postCond).flush();
@@ -154,7 +156,7 @@ final class PathMergeEncoder implements PathEncoder {
       preCond = pathEncoding.noop(preConds, preGuards);      
     }
 
-    for(IRStatement stmt : currPath.stmts) {
+    for(IRStatement stmt : currPath.getStmts()) {
       preCond = encodeStatement(stmt, preCond);
       
       /* This stmt is conditional control flow graph guard */
@@ -182,11 +184,11 @@ final class PathMergeEncoder implements PathEncoder {
       return pathExprMap.get(currPath);
     
     List<Expression> preConds = null, preGuards = null;
-    Map<Path, Set<Path>> map = graph.predecessorMap;  
+    Map<Path, Set<Path>> map = graph.getPredecessorMap();  
     if(map == null)
       preConds = Lists.newArrayList(pathEncoding.emptyPath());
     else {    
-      Set<Path> prePaths = graph.predecessorMap.get(currPath);
+      Set<Path> prePaths = map.get(currPath);
       if(prePaths == null) {
         preConds = Lists.newArrayList(pathEncoding.emptyPath());
       } else {
@@ -197,7 +199,7 @@ final class PathMergeEncoder implements PathEncoder {
           if(preCond == null)  return null;
           preConds.add(preCond);
           if(prePath.hasGuard()) {
-            Expression guard = pathEncoding.getExpressionManager().and(prePath.guards);
+            Expression guard = pathEncoding.getExpressionManager().and(prePath.getGuards());
             if(preGuards == null) 
               preGuards = Lists.newArrayList(guard);
             else
@@ -214,21 +216,27 @@ final class PathMergeEncoder implements PathEncoder {
     return pathExpr;
   }
   
-  private void preprocessPath(PreProcessor<?> preprocessor, final Map<Path, Set<Path>> map, final Path path) {
-  	Preconditions.checkArgument(map != null);
+  private void preprocessPath(PreProcessor<?> preprocessor, final Graph graph, final Path path,  Set<Path> visitedPath) {
+  	if(visitedPath.contains(path))	return;
+  	
+    if(graph.hasNullMap())	return;
+    
+    Map<Path, Set<Path>> map = graph.getPredecessorMap();
   	if(!map.isEmpty()) {
   		Set<Path> prePaths = map.get(path); 	
   		if(prePaths != null) {
   			for(Path prePath : prePaths) {
-  				preprocessPath(preprocessor, map, prePath);
+  				preprocessPath(preprocessor, graph, prePath, visitedPath);
   			}
   		}
   	}
   	
-  	if(path.stmts != null) {
-    	for(IRStatement stmt : path.stmts) {
+  	if(path.getStmts() != null) {
+    	for(IRStatement stmt : path.getStmts()) {
     		preprocessor.analysis(stmt);
     	}
   	}
+  	
+  	visitedPath.add(path);
   }
 }

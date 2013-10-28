@@ -12,17 +12,33 @@ import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.prover.Expression;
 
 final class Path {
-  final IRBasicBlock srcBlock;
-  final List<IRStatement> stmts;
-  final IRBasicBlock destBlock;
-  Stack<Expression> guards = null;
+  private final IRBasicBlock srcBlock;
+  private final List<IRStatement> stmts;
+  private final IRBasicBlock destBlock;
+  private Stack<Expression> guards = null;
   
   static Path createSingleton(List<? extends IRStatement> stmts) {
     if(stmts == null || stmts.isEmpty()) return null;
     return create(stmts, null, null);
   }
   
-  static Path createSingleton(IRStatement stmt) {
+  IRBasicBlock getSrcBlock() {
+		return srcBlock;
+	}
+
+	List<IRStatement> getStmts() {
+		return stmts;
+	}
+
+	IRBasicBlock getDestBlock() {
+		return destBlock;
+	}
+
+	Stack<Expression> getGuards() {
+		return guards;
+	}
+
+	static Path createSingleton(IRStatement stmt) {
     List<IRStatement> stmts = Lists.newArrayList(stmt);
     return create(stmts, null, null);
   }
@@ -32,7 +48,7 @@ final class Path {
     return new Path(stmts, srcBlock, destBlock);
   }
   
-  Path(List<? extends IRStatement> stmts, IRBasicBlock srcBlock, IRBasicBlock destBlock) {
+  private Path(List<? extends IRStatement> stmts, IRBasicBlock srcBlock, IRBasicBlock destBlock) {
     this.destBlock = destBlock;
     this.srcBlock = srcBlock;
     this.stmts = Lists.newArrayList(stmts);
@@ -127,7 +143,7 @@ final class Path {
     return sb.toString();
   }
   
-  public boolean isCopyOf(Object other) {
+  boolean isCopyOf(Object other) {
     if(other == null)   return false;
     if(!(other instanceof Path)) return false;
     if(other == this) return true;
