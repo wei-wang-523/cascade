@@ -876,7 +876,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     return val.asInductive().test(constructor);
   }
   
-  @SuppressWarnings("unchecked")
   BooleanExpressionImpl toBooleanExpression(Expr e) throws TheoremProverException {
     // try {
     // IOUtils.debug().indent().incr().pln(">> toBooleanExpression(" +
@@ -937,14 +936,14 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
         return ff();
     } else if (e.getKind() == edu.nyu.acsys.CVC4.Kind.FORALL) {
       vectorExpr childExpr = e.getChildren();
-      Vector<VariableExpression> vars = new Vector();
+      Vector<VariableExpression> vars = new Vector<VariableExpression>();
       for(int i = 0; i < childExpr.size()-1; i++) 
         vars.add((VariableExpressionImpl) toExpression(e.getChild(i)));
       BooleanExpression body = toBooleanExpression(e.getChild(childExpr.size()-1));
       return forall(vars, body);
     } else if (e.getKind() == edu.nyu.acsys.CVC4.Kind.EXISTS) {
       vectorExpr childExpr = e.getChildren();
-      Vector<VariableExpression> vars = new Vector();
+      Vector<VariableExpression> vars = new Vector<VariableExpression>();
       for(int i = 0; i < childExpr.size()-1; i++) 
         vars.add((VariableExpressionImpl) toExpression(e.getChild(i)));
       BooleanExpression body = toBooleanExpression(e.getChild(childExpr.size()-1));
@@ -1128,12 +1127,12 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       return importExpression(lessThan((Expression) toExpression(e.getChild(0)),
           (Expression) toExpression(e.getChild(1))));
     } else if (e.getKind() == edu.nyu.acsys.CVC4.Kind.TUPLE) {
-      Vector<Expression> args = new Vector();
+      Vector<Expression> args = new Vector<Expression>();
       for(int i = 0; i < e.getNumChildren(); i++)
         args.add((Expression) toExpression(e.getChild(i)));
       return (ExpressionImpl) tuple(toType(e.getType()), args);
     } else if (e.getKind() == edu.nyu.acsys.CVC4.Kind.RECORD) {
-      Vector<Expression> args = new Vector();
+      Vector<Expression> args = new Vector<Expression>();
       for(int i = 0; i < e.getNumChildren(); i++)
         args.add((Expression) toExpression(e.getChild(i)));
       return (ExpressionImpl) record(toType(e.getType()), args);
@@ -1144,6 +1143,8 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       return (ExpressionImpl) storeAll(toExpression(expr), toType(type));
     } else if (e.getType().isBoolean()) {
       return toBooleanExpression(e);
+    } else if (e.getKind() == edu.nyu.acsys.CVC4.Kind.UNINTERPRETED_CONSTANT) { 
+    	return new ExpressionImpl(this, Kind.UNINTERPRETED, e, uninterpretedType(e.getType().toString()));
     } else {
       // TODO: ExprMut is (_TUPLE_SELECT 0), how to get it?
       // IOUtils.debug().indent().pln("NOT HANDLED--INT");
