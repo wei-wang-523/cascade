@@ -473,9 +473,10 @@ public class Steensgaard extends PreProcessor<IRVar> {
 	  
 	  int num = CType.numOfIndRef(type.getShape());
 	  
-	  if(num < 0) {
-		Type resType = res.getType().resolve();
-	  	assert resType.isUnion() || resType.isStruct() || resType.isArray();
+	  if(num <= 0) {
+		  /*FIXME: int a; &a */
+//		Type resType = res.getType().resolve();
+//	  	assert resType.isUnion() || resType.isStruct() || resType.isArray();
 	  	return res;
 	  } else {
 		  IRVar resPrime = res;
