@@ -103,7 +103,7 @@ public class Steensgaard extends PreProcessor<IRVar> {
 
   @Override
 	public void analysis(IRStatement stmt) {
-  	IOUtils.err().println(stmt.toString());
+  	IOUtils.debug().pln(stmt.toString());
 	  switch (stmt.getType()) {
 		case ASSUME : {
 			IRExpression operand = stmt.getOperand(0);
