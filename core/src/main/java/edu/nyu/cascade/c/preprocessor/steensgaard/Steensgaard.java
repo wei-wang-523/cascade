@@ -476,7 +476,8 @@ public class Steensgaard extends PreProcessor<IRVar> {
 	  if(num < 0) {
 	  	assert(type.resolve().isPointer() && (
 	  			type.resolve().toPointer().getType().isUnion() || 
-	  			type.resolve().toPointer().getType().isStruct()));
+	  			type.resolve().toPointer().getType().isStruct() ||
+	  			type.resolve().toPointer().getType().isArray()));
 	  	return res;
 	  } else if(num == 0) {
 	  	return res;
