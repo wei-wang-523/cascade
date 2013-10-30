@@ -42,6 +42,9 @@ public class MainTest {
   private static final File twoLayer_programs_location = new File(programs_test_location,
       "2layer_bnc");
   
+  private static final File smtFile_dump_location = new File(mini_programs_location,
+      "dump");
+  
   private static final FilenameFilter cFileFilter = new FilenameFilter() {
     public boolean accept(File dir, String name) {
       return name.endsWith(".c");
@@ -88,8 +91,9 @@ public class MainTest {
         try {
           List<String> argList = Lists.newArrayList(args);
           argList.add(f.toString());
-/*          argList.add("--smt2-file");
-          argList.add("/Users/Wei/Workspace/tmp/nec/" + f.getName().replaceFirst("ctrl", "smt2"));*/
+          argList.add("--smt2-file");
+          File dumpFile = new File(smtFile_dump_location, f.getName().replaceFirst("ctrl", "cvc"));
+          argList.add(dumpFile.getAbsolutePath());
           runCascade(argList.toArray(new String[0]));
         } catch (ParseException e) {
           throw new AssertionError(e);
@@ -311,8 +315,9 @@ public class MainTest {
   
   @Test
   public void testMiniBenchmark() {
+  	smtFile_dump_location.mkdir();
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
-        parserTest("--feasibility", "-inline-anno", "--order", "--signed", "--prover", "z3", "--theory", "Partition"), false);
+        parserTest("--feasibility", "-inline-anno", "--order", "--signed", "--prover", "cvc4", "--theory", "Flat"), false);
   }
   
   @Test
