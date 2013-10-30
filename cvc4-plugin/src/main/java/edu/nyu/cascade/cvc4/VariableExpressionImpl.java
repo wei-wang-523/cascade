@@ -3,7 +3,14 @@ package edu.nyu.cascade.cvc4;
 import static edu.nyu.cascade.prover.Expression.Kind.SKOLEM;
 import static edu.nyu.cascade.prover.Expression.Kind.VARIABLE;
 
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+
 import com.google.common.base.Preconditions;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.MapMaker;
 
 import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.acsys.CVC4.ExprManager;
@@ -11,9 +18,18 @@ import edu.nyu.acsys.CVC4.DatatypeType;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.CacheException;
 
 public class VariableExpressionImpl extends ExpressionImpl implements
     VariableExpression {
+  private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, Expr>> varCache = CacheBuilder
+      .newBuilder().build(
+          new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, Expr>>(){
+            public ConcurrentMap<String, Expr> load(ExpressionManagerImpl expressionManager) {
+              return new MapMaker().makeMap();
+            }
+          });
+	
   static VariableExpressionImpl valueOf(
       ExpressionManagerImpl exprManager, Expression e) {
     if (e instanceof VariableExpressionImpl) {
@@ -64,7 +80,7 @@ public class VariableExpressionImpl extends ExpressionImpl implements
     setName(name);
   }
   
-  protected VariableExpressionImpl(ExpressionManagerImpl exprManager, String name, Type type, boolean fresh) {
+  protected VariableExpressionImpl(final ExpressionManagerImpl exprManager, String name, Type type, boolean fresh) {
     super(exprManager, new VariableConstructionStrategy() {
       @Override
       public Expr apply(ExprManager em, String name, edu.nyu.acsys.CVC4.Type type) {
@@ -73,17 +89,25 @@ public class VariableExpressionImpl extends ExpressionImpl implements
          * the API so that it only takes the name.
          */
 //        if( IOUtils.debugEnabled() && em.lookupVar(name) == null ) {
-          
-        if(type.isDatatype()) {
-          DatatypeType dtt = new DatatypeType(type);
-          String dtName = dtt.getDatatype().getName();
-          TheoremProverImpl.tpFileCommand(name + " : " + dtName);
-          TheoremProverImpl.debugCommand(name + " : " + dtName);
-        } else {
-          TheoremProverImpl.tpFileCommand(name + " : " + type.toString());
-          TheoremProverImpl.debugCommand(name + " : " + type.toString());
+        try {
+          if(varCache.get(exprManager).containsKey(name)) {
+            return varCache.get(exprManager).get(name);
+          } 
+          if(type.isDatatype()) {
+          	DatatypeType dtt = new DatatypeType(type);
+          	String dtName = dtt.getDatatype().getName();
+          	TheoremProverImpl.tpFileCommand(name + " : " + dtName);
+          	TheoremProverImpl.debugCommand(name + " : " + dtName);
+          } else {
+          	TheoremProverImpl.tpFileCommand(name + " : " + type.toString());
+          	TheoremProverImpl.debugCommand(name + " : " + type.toString());
+          }
+          Expr res = em.mkVar(name, type);
+          varCache.get(exprManager).put(name, res);
+          return res;
+        } catch (ExecutionException e) {
+          throw new CacheException(e);
         }
-        return em.mkVar(name, type);
       }
     }, name, type, fresh);
   }

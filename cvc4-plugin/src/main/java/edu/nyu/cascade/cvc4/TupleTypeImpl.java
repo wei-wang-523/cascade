@@ -8,6 +8,7 @@ import edu.nyu.acsys.CVC4.vectorType;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.IOUtils;
 
 public final class TupleTypeImpl extends TypeImpl implements TupleType {
   static TupleTypeImpl create(ExpressionManagerImpl em, String tname, Type firstType,
@@ -37,14 +38,25 @@ public final class TupleTypeImpl extends TypeImpl implements TupleType {
     this.elementTypes = ImmutableList.copyOf(types);
     this.typeName = tname;
     
+    StringBuilder sb = new StringBuilder();
+    
+    sb.append(typeName + " : TYPE = [");
+    
     vectorType cvc4Types = new vectorType();
     for (Type t : elementTypes) {
       cvc4Types.add(em.toCvc4Type(t));
+      sb.append(em.toCvc4Type(t)).append(',');
     }
+    
+    sb.replace(sb.lastIndexOf(","), sb.lastIndexOf(",")+1, "]");
 
     try {
       setCVC4Type(em.getTheoremProver().getCvc4ExprManager().mkTupleType(
           cvc4Types));
+      if(IOUtils.debugEnabled())
+        TheoremProverImpl.debugCommand(sb.toString());
+      if(IOUtils.tpFileEnabled())
+        TheoremProverImpl.tpFileCommand(sb.toString());
     } catch (Exception e) {
       throw new TheoremProverException(e);
     }

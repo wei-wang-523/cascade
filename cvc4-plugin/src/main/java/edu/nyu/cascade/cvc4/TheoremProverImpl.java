@@ -265,8 +265,8 @@ public class TheoremProverImpl implements TheoremProver {
                                     .toString()).flush();
       }
       
-//      debugCommand("CHECKSAT " + getSmtEngine().simplify(cvc4Expr).toString());
-//      tpFileCommand("CHECKSAT " + getSmtEngine().simplify(cvc4Expr).toString());
+      debugCommand("CHECKSAT " + getSmtEngine().simplify(cvc4Expr).toString());
+      tpFileCommand("CHECKSAT " + getSmtEngine().simplify(cvc4Expr).toString());
       
       Result cvc4SatResult = getSmtEngine().checkSat(cvc4Expr);
       IOUtils.debug().pln(cvc4SatResult.toString()).flush();
@@ -285,23 +285,26 @@ public class TheoremProverImpl implements TheoremProver {
         List<BooleanExpression> ctrex = Lists.newLinkedList();
         boolean modelWorked = false;
         
-        try {
-          for (Expression e: exprManager.getVariables()) {
-            Expr eValue = getSmtEngine().getValue(exprManager.toCvc4Expr(e));
-            ctrex.add(e.eq((ExpressionImpl) exprManager.toExpression(eValue)));
-          }   
-          modelWorked = true;
-        } catch (Exception e) {
-          IOUtils.err().println("[WARNING] " + e.getMessage());
-          // e.printStackTrace(IOUtils.err());
-          ctrex.clear();
-        }
+        if(Preferences.isSet(Preferences.OPTION_COUNTER_EXAMPLE)) {
+          try {
+            for (Expression e: exprManager.getVariables()) {
+              Expr eValue = getSmtEngine().getValue(exprManager.toCvc4Expr(e));
+              ctrex.add(e.eq((ExpressionImpl) exprManager.toExpression(eValue)));
+            }   
+            modelWorked = true;
+          } catch (Exception e) {
+            IOUtils.err().println("[WARNING] " + e.getMessage());
+            // e.printStackTrace(IOUtils.err());
+            ctrex.clear();
+          }
           
-        if (!modelWorked) {
-          for (Expression e : exprManager.getVariables()) {
-            ctrex.add(e.asBooleanExpression());
+          if (!modelWorked) {
+            for (Expression e : exprManager.getVariables()) {
+              ctrex.add(e.asBooleanExpression());
+            }
           }
         }
+        
         res = SatResult.valueOf(resultType, expr, assumptions, ctrex);
       } else { // resultType = UNKNOWN
         res = SatResult.valueOf(resultType, expr, assumptions, 
@@ -342,8 +345,8 @@ public class TheoremProverImpl implements TheoremProver {
                                     .toString()).flush();
       }
       
-//      debugCommand("QUERY " + getSmtEngine().simplify(cvc4Expr).toString());
-//      tpFileCommand("QUERY " + getSmtEngine().simplify(cvc4Expr).toString());
+      debugCommand("QUERY " + cvc4Expr.toString());
+      tpFileCommand("QUERY " + cvc4Expr.toString());
       
 //      IOUtils.out().println(ManagementFactory.getRuntimeMXBean().getName());
       Result cvc4QueryResult = getSmtEngine().query(cvc4Expr);
