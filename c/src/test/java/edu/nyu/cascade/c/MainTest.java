@@ -91,9 +91,9 @@ public class MainTest {
         try {
           List<String> argList = Lists.newArrayList(args);
           argList.add(f.toString());
-          argList.add("--smt2-file");
-          File dumpFile = new File(smtFile_dump_location, f.getName().replaceFirst("ctrl", "cvc"));
-          argList.add(dumpFile.getAbsolutePath());
+//          argList.add("--smt2-file");
+//          File dumpFile = new File(smtFile_dump_location, f.getName().replaceFirst("ctrl", "cvc"));
+//          argList.add(dumpFile.getAbsolutePath());
           runCascade(argList.toArray(new String[0]));
         } catch (ParseException e) {
           throw new AssertionError(e);
@@ -315,9 +315,9 @@ public class MainTest {
   
   @Test
   public void testMiniBenchmark() {
-  	smtFile_dump_location.mkdir();
+//  	smtFile_dump_location.mkdir();
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
-        parserTest("--feasibility", "-inline-anno", "--order", "--signed", "--prover", "cvc4", "--theory", "Flat"), false);
+        parserTest("--feasibility", "-inline-anno", "--order", "--signed", "--prover", "z3", "--theory", "Flat"), false);
   }
   
   @Test
