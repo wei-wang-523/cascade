@@ -180,13 +180,13 @@ public class MainTest {
   
   private Map<Tester<File>, String[]> validOptMap() {
     Map<Tester<File>, String[]> optMap = Maps.newLinkedHashMap();
-    Tester<File> mem_9 = parserTest("--feasibility", "--mem-cell-size", "9", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> mem_13 = parserTest("--feasibility", "--mem-cell-size", "13", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sound = parserTest("--feasibility", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> signed = parserTest("--feasibility", "--signed", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> signed_mem_9 = parserTest("--feasibility", "--signed", "--mem-cell-size", "9", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> signed_mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--sound", "--signed", "--prover", "z3", "--theory", "Partition");
+    Tester<File> mem_9 = parserTest("--unsigned", "--feasibility", "--mem-cell-size", "9", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> mem_11 = parserTest("--unsigned", "--feasibility", "--mem-cell-size", "11", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> mem_13 = parserTest("--unsigned", "--feasibility", "--mem-cell-size", "13", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> sound = parserTest("--unsigned", "--feasibility", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> signed = parserTest("--feasibility", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> signed_mem_9 = parserTest("--feasibility", "--mem-cell-size", "9", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> signed_mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--sound", "--prover", "z3", "--theory", "Partition");
     
     String[] mem_9_bnc = {/*"ex21-100.ctrl"*/};
     String[] mem_11_bnc = {"ex2-3.ctrl", /*"ex2-1024.ctrl",*/ "ex9-3.ctrl" /*, "ex9-1024.ctrl"*/};
@@ -212,14 +212,14 @@ public class MainTest {
   
   private Map<Tester<File>, String[]> invalidOptMap() {
     Map<Tester<File>, String[]> optMap = Maps.newLinkedHashMap();
-    Tester<File> sgn_mem_9 = parserTest("--mem-cell-size", "9", "--sound", "--signed", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sgn_mem_11 = parserTest("--mem-cell-size", "11", "--sound", "--signed", "--prover", "z3", "--theory", "Partition");
-    Tester<File> mem_9 = parserTest("--mem-cell-size", "9", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sound = parserTest("--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sgn = parserTest("--signed", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> fea_sgn = parserTest("--feasibility", "--signed", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> fea_mem_10 = parserTest("--feasibility", "--mem-cell-size", "10", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> fea_mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> sgn_mem_9 = parserTest("--mem-cell-size", "9", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> sgn_mem_11 = parserTest("--mem-cell-size", "11", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> mem_9 = parserTest("--mem-cell-size", "9", "--sound", "--unsigned", "--prover", "z3", "--theory", "Partition");
+    Tester<File> sound = parserTest("--sound", "--unsigned", "--prover", "z3", "--theory", "Partition");
+    Tester<File> sgn = parserTest("--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> fea_sgn = parserTest("--feasibility", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> fea_mem_10 = parserTest("--feasibility", "--mem-cell-size", "10", "--unsigned", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> fea_mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--unsigned", "--sound", "--prover", "z3", "--theory", "Partition");
     
     String[] sgn_mem_9_bnc = {/*"ex27-200.ctrl"*/};
     String[] sgn_mem_11_bnc = {"ex20-1.ctrl"/*, "ex20-1024.ctrl"*/};
@@ -245,12 +245,12 @@ public class MainTest {
   
   private Map<Tester<File>, String[]> invValidOptMap() {
     Map<Tester<File>, String[]> optMap = Maps.newLinkedHashMap();
-    Tester<File> mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> mem_9 = parserTest("--feasibility", "--mem-cell-size", "9", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> mem_13 = parserTest("--feasibility", "--mem-cell-size", "13", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sound = parserTest("--feasibility", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sgn = parserTest("--feasibility", "--signed", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sgn_mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--sound", "--signed", "--prover", "z3", "--theory", "Partition");
+    Tester<File> mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--unsigned", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> mem_9 = parserTest("--feasibility", "--mem-cell-size", "9", "--unsigned", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> mem_13 = parserTest("--feasibility", "--mem-cell-size", "13", "--unsigned", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> sound = parserTest("--feasibility", "--unsigned", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> sgn = parserTest("--feasibility", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> sgn_mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--sound", "--prover", "z3", "--theory", "Partition");
     
     String[] mem_11_bnc = {"ex1-inv.ctrl", "ex2-inv.ctrl", "ex9-inv.ctrl"};
     String[] mem_9_bnc = {"ex21-inv.ctrl"};
@@ -271,13 +271,13 @@ public class MainTest {
   
   private Map<Tester<File>, String[]> invInvalidOptMap() {
     Map<Tester<File>, String[]> optMap = Maps.newLinkedHashMap();
-    Tester<File> sgn_mem_11 = parserTest("--mem-cell-size", "11", "--sound", "--signed", "--prover", "z3", "--theory", "Partition");
-    Tester<File> mem_9 = parserTest("--mem-cell-size", "9", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sound = parserTest("--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sgn = parserTest("--sound", "--signed", "--prover", "z3", "--theory", "Partition");
-    Tester<File> fea_sgn = parserTest("--feasibility", "--signed", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> fea_mem_10 = parserTest("--feasibility", "--mem-cell-size", "10", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sgn_mem_9 = parserTest("--mem-cell-size", "9", "--signed", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> sgn_mem_11 = parserTest("--mem-cell-size", "11", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> mem_9 = parserTest("--unsigned", "--mem-cell-size", "9", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> sound = parserTest("--unsigned", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> sgn = parserTest("--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> fea_sgn = parserTest("--feasibility", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> fea_mem_10 = parserTest("--unsigned", "--feasibility", "--mem-cell-size", "10", "--sound", "--prover", "z3", "--theory", "Partition");
+    Tester<File> sgn_mem_9 = parserTest("--mem-cell-size", "9", "--sound", "--prover", "z3", "--theory", "Partition");
     
     String[] fea_sgn_bnc = {"ex16-inv.ctrl"};
     String[] sgn_mem_9_bnc = {"ex22-inv.ctrl", "ex27-inv.ctrl"};
@@ -314,17 +314,25 @@ public class MainTest {
   }
   
   @Test
+//  @Ignore
+  public void testNec_Benchmark() {
+    final File valid_nec_location = new File(nec_programs_location, "valid");
+    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter,
+        parserTest("--mem-cell-size", "32", "--time-limit", "1", "--order", "--prover", "z3", "--theory", "Flat"), false);
+  }
+  
+  @Test
   public void testMiniBenchmark() {
 //  	smtFile_dump_location.mkdir();
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
-        parserTest("--feasibility", "-inline-anno", "--order", "--signed", "--prover", "z3", "--theory", "Flat"), false);
+        parserTest("--feasibility", "-inline-anno", "--order", "--prover", "z3", "--theory", "Flat"), false);
   }
   
   @Test
   @Ignore
   public void test2LayerBenchmark() {
     TestUtils.checkDirectory(twoLayer_programs_location, ctrlFileFilter,
-        parserTest("--feasibility", "--inline-anno", "--sound", "--signed", "--prover", "z3", "--theory", "Partition"), false);
+        parserTest("--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--theory", "Partition"), false);
   }
 
   /** FIXME: This is really a test for tp-tp */
