@@ -34,9 +34,9 @@ public class BurstallTheory implements Theory {
     			.create(heapEncoding);
     	heapEncoder = PartitionHeapEncoder.createOrderEncoding(heapEncoding, memLayout);
     } else { // sound alloc
-    	String exprEncoding = Preferences.getString(Preferences.OPTION_EXPR_ENCODING);
+    	String exprEncoding = Preferences.getString(Preferences.OPTION_MEM_ENCODING);
     	IRHeapEncoding heapEncoding = null;
-    	if(Preferences.ENCODING_SYNC.equals(exprEncoding)) {
+    	if(Preferences.MEM_ENCODING_SYNC.equals(exprEncoding)) {
     		heapEncoding = SynchronousHeapEncoding.create(encoding);
     	} else {
     		heapEncoding = LinearHeapEncoding.create(encoding);

@@ -35,9 +35,9 @@ public class FlatTheory implements Theory {
     	parHeapEncoder = PartitionHeapEncoder
     			.createOrderEncoding(heapEncoding, memLayout);
     } else {
-    	String exprEncoding = Preferences.getString(Preferences.OPTION_EXPR_ENCODING);
+    	String exprEncoding = Preferences.getString(Preferences.OPTION_MEM_ENCODING);
     	IRHeapEncoding heapEncoding = null;
-    	if(Preferences.ENCODING_SYNC.equals(exprEncoding)) {
+    	if(Preferences.MEM_ENCODING_SYNC.equals(exprEncoding)) {
     		heapEncoding = SynchronousHeapEncoding.create(encoding);
     	} else {
     		heapEncoding = LinearHeapEncoding.create(encoding);

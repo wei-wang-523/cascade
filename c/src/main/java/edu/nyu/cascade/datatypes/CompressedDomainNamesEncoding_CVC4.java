@@ -176,16 +176,16 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
   public static CompressedDomainNamesEncoding_CVC4 create(
       ExpressionManager exprManager) throws ExpressionFactoryException {
     int cellSize = 
-    		Preferences.ENCODING_FIX.equals(
-            Preferences.getString(Preferences.OPTION_EXPR_ENCODING)) ? 
+    		Preferences.MEM_ENCODING_FIX.equals(
+            Preferences.getString(Preferences.OPTION_MEM_ENCODING)) ? 
                 DefaultSize
                 : Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ?
                     Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE) 
                     : DefaultSize;
 
     int intCellSize = 
-    		Preferences.ENCODING_FIX.equals(
-            Preferences.getString(Preferences.OPTION_EXPR_ENCODING)) ? 
+    		Preferences.MEM_ENCODING_FIX.equals(
+            Preferences.getString(Preferences.OPTION_MEM_ENCODING)) ? 
                 (int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * cellSize) 
                 : cellSize;
     

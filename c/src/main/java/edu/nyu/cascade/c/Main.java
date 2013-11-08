@@ -171,8 +171,12 @@ public class Main {
           OptionBuilder.withLongOpt(Preferences.OPTION_ORDER_ALLOC) //
               .withDescription("Use an ordered allocation model (unsound).") //
               .create()) //
-      .addOption(OptionBuilder.withLongOpt(Preferences.OPTION_SIGNED_OPERATION)
-              .withDescription("Enable signed numeric operations.")
+      .addOption(
+          OptionBuilder.withLongOpt(Preferences.OPTION_NON_OVERFLOW) //
+              .withDescription("Do not check overflow (use integer incoding).") //
+              .create()) //
+      .addOption(OptionBuilder.withLongOpt(Preferences.OPTION_UNSIGNED_OPERATION)
+              .withDescription("Enable unsigned numeric operations.")
               .create()) //
       .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_PARTIAL_INST) //
@@ -188,7 +192,7 @@ public class Main {
               .withType(String.class)
               .create()) //
       .addOption(
-          OptionBuilder.withLongOpt(Preferences.OPTION_EXPR_ENCODING) //
+          OptionBuilder.withLongOpt(Preferences.OPTION_MEM_ENCODING) //
               .withDescription("Use either encoding: linear(default), synchronous, or linearFix") //
               .hasArg() //
               .withType(String.class)

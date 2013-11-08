@@ -498,22 +498,22 @@ class CExpressionEncoder implements ExpressionEncoder {
               try {
                 Expression b;
                 if (">".equals(relOp)) {
-                  if(Preferences.isSet(Preferences.OPTION_SIGNED_OPERATION))
+                  if(!Preferences.isSet(Preferences.OPTION_UNSIGNED_OPERATION))
                     b = encoding.signedGreaterThan(coerceToInteger(left), coerceToInteger(right));
                   else
                     b = encoding.greaterThan(coerceToInteger(left), coerceToInteger(right));
                 } else if (">=".equals(relOp)) {
-                  if(Preferences.isSet(Preferences.OPTION_SIGNED_OPERATION))
+                  if(!Preferences.isSet(Preferences.OPTION_UNSIGNED_OPERATION))
                     b = encoding.signedGreaterThanOrEqual(coerceToInteger(left), coerceToInteger(right));
                   else
                     b = encoding.greaterThanOrEqual(coerceToInteger(left), coerceToInteger(right));
                 } else if ("<".equals(relOp)) {
-                  if(Preferences.isSet(Preferences.OPTION_SIGNED_OPERATION))
+                  if(!Preferences.isSet(Preferences.OPTION_UNSIGNED_OPERATION))
                     b = encoding.signedLessThan(coerceToInteger(left), coerceToInteger(right));
                   else
                     b = encoding.lessThan(coerceToInteger(left), coerceToInteger(right));
                 } else if ("<=".equals(relOp)) {
-                  if(Preferences.isSet(Preferences.OPTION_SIGNED_OPERATION))
+                  if(!Preferences.isSet(Preferences.OPTION_UNSIGNED_OPERATION))
                     b = encoding.signedLessThanOrEqual(coerceToInteger(left), coerceToInteger(right));
                   else
                     b = encoding.lessThanOrEqual(coerceToInteger(left), coerceToInteger(right));
@@ -617,8 +617,8 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitTypedefName(GNode node) 
         throws ExpressionFactoryException {
-      if(Preferences.ENCODING_FIX.equals(
-          Preferences.get(Preferences.OPTION_EXPR_ENCODING))) {
+      if(Preferences.MEM_ENCODING_FIX.equals(
+          Preferences.get(Preferences.OPTION_MEM_ENCODING))) {
         return ((Expression) dispatch(node.getNode(0))).setNode(node);
       } else {
         Type type = lookupType(node);
@@ -649,12 +649,12 @@ class CExpressionEncoder implements ExpressionEncoder {
             if ("*".equals(multOperator)) {
               return encoding.times(coerceToInteger(left), coerceToInteger(right));
               } else if ("/".equals(multOperator)) {
-                if(Preferences.isSet(Preferences.OPTION_SIGNED_OPERATION))
+                if(!Preferences.isSet(Preferences.OPTION_UNSIGNED_OPERATION))
                   return encoding.signedDivide(coerceToInteger(left), coerceToInteger(right));
                 else
                   return encoding.divide(coerceToInteger(left), coerceToInteger(right));
                 } else if ("%".equals(multOperator)) {
-                  if(Preferences.isSet(Preferences.OPTION_SIGNED_OPERATION))
+                  if(!Preferences.isSet(Preferences.OPTION_UNSIGNED_OPERATION))
                     return encoding.signedRem(coerceToInteger(left), coerceToInteger(right));
                   else
                     return encoding.rem(coerceToInteger(left), coerceToInteger(right));
@@ -1046,8 +1046,8 @@ class CExpressionEncoder implements ExpressionEncoder {
   }
   
   private int sizeofType(Type t) {
-    if(Preferences.ENCODING_FIX.equals(
-        Preferences.get(Preferences.OPTION_EXPR_ENCODING))) {
+    if(Preferences.MEM_ENCODING_FIX.equals(
+        Preferences.get(Preferences.OPTION_MEM_ENCODING))) {
       return (int) cAnalyzer.getSize(t);
     }
     
@@ -1094,8 +1094,8 @@ class CExpressionEncoder implements ExpressionEncoder {
   }
   
   private int getOffset(StructOrUnionT t, String name) {
-    if(Preferences.ENCODING_FIX.equals(
-        Preferences.get(Preferences.OPTION_EXPR_ENCODING))){
+    if(Preferences.MEM_ENCODING_FIX.equals(
+        Preferences.get(Preferences.OPTION_MEM_ENCODING))){
       return (int) cAnalyzer.getOffset(t.toStructOrUnion(), name);
     }
     
