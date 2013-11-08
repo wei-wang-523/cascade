@@ -9,22 +9,21 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import edu.nyu.cascade.prover.ArrayExpression;
-import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TheoremProverException;
-import edu.nyu.cascade.prover.type.BitVectorType;
+import edu.nyu.cascade.prover.type.Type;
 
 public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	
 	private LinearHeapEncoding heapEncoding;
-	private BitVectorType addrType, valueType;
+	private Type addrType, valueType;
 	
 	private SoundLinearMemLayoutEncoding(LinearHeapEncoding heapEncoding) {
 		this.heapEncoding = heapEncoding;
-		addrType = heapEncoding.getAddressType().asBitVectorType();
-		valueType = heapEncoding.getValueType().asBitVectorType();
+		addrType = heapEncoding.getAddressType();
+		valueType = heapEncoding.getValueType();
 	}
 	
 	protected static SoundLinearMemLayoutEncoding create(LinearHeapEncoding heapEncoding) {
@@ -33,6 +32,10 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	
 	private ExpressionManager getExpressionManager() {
 		return heapEncoding.getExpressionManager();
+	}
+	
+	private ExpressionEncoding getExpressionEncoding() {
+		return heapEncoding.getExpressionEncoding();
 	}
 
 	@Override
@@ -45,6 +48,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
     Iterable<Expression> heapRegions = varSets.getHeapRegions();
 		
 		ExpressionManager exprManager = getExpressionManager();
+		ExpressionEncoding exprEncoding = getExpressionEncoding();
 		
 		try {
 			
@@ -62,8 +66,9 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 				Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
 	      for (Expression region : stackRegions) {
 	      	Expression regionSize = sizeArr.index(region);
-	        BitVectorExpression regionBound = exprManager.plus(addrType
-	            .getSize(), region, regionSize);
+//	        BitVectorExpression regionBound = exprManager.plus(addrType
+//	            .getSize(), region, regionSize);
+	        Expression regionBound = exprEncoding.plus(region, regionSize);
 	        
 	        /* The upper bound of the stack region won't overflow.
 	         * The size of the stack region will be larger than zero (won't be zero).
@@ -84,8 +89,10 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	         */
 	        for (Expression region2 : stackRegions) {
 	          if (!region.equals(region2)) {
-	            BitVectorExpression regionBound2 = exprManager.plus(addrType
-	                .getSize(), region2, sizeArr.index(region2));
+//	            BitVectorExpression regionBound2 = exprManager.plus(addrType
+//	                .getSize(), region2, sizeArr.index(region2));
+	          	Expression regionBound2 = exprEncoding.plus(
+	          			region2, sizeArr.index(region2));
 	            
 	            builder.add(
 	                exprManager.or(
@@ -98,8 +105,9 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	      /* Disjoint of the heap region or stack region/variable */
 	      for (Expression region : heapRegions) {
 	        Expression regionSize = sizeArr.index(region);
-	        BitVectorExpression regionBound = exprManager.plus(
-	        		addrType.getSize(), region, regionSize);
+//	        BitVectorExpression regionBound = exprManager.plus(
+//	        		addrType.getSize(), region, regionSize);
+	        Expression regionBound = exprEncoding.plus(region, regionSize);
 	        
 	        /* Disjoint of the heap region or stack variable */
 	        for (Expression lval : stackVars) {
@@ -120,8 +128,9 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	        for (Expression region2 : stackRegions) {
 	        	
 	        	// regionBound2 >= region2, sizeArr[region2] >= 0
-	          BitVectorExpression regionBound2 = exprManager.plus(
-	          		addrType.getSize(), region2, sizeArr.index(region2));
+//	          BitVectorExpression regionBound2 = exprManager.plus(
+//	          		addrType.getSize(), region2, sizeArr.index(region2));
+	          Expression regionBound2 = exprEncoding.plus(region2, sizeArr.index(region2));
 	          
 	          builder.add(exprManager.implies(
 	              /* heap region is non-null (and not freed before),
@@ -156,11 +165,13 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
     ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
     
     ExpressionManager exprManager = getExpressionManager();
+    ExpressionEncoding exprEncoding = getExpressionEncoding();
     
     try {
 			Expression nullPtr = heapEncoding.getNullAddress();
 			Expression sizeZro = heapEncoding.getValueZero();
-      Expression ptrBound = exprManager.plus(addrType.getSize(), ptr, size);
+//      Expression ptrBound = exprManager.plus(addrType.getSize(), ptr, size);
+			Expression ptrBound = exprEncoding.plus(ptr, size);
       
       Expression assump = exprManager.neq(ptr, nullPtr);
       
@@ -173,7 +184,8 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
       
       for(Expression region : heapRegs) {
         Expression regionSize = sizeArr.index(region);
-        Expression regionBound = exprManager.plus(addrType.getSize(), region, regionSize);
+//        Expression regionBound = exprManager.plus(addrType.getSize(), region, regionSize);
+        Expression regionBound = exprEncoding.plus(region, regionSize);
         
         /* region is not null and not freed before */
         Expression assump_local = exprManager.and( 
@@ -211,6 +223,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
     Iterable<Expression> hpRegs = varSets.getHeapRegions();
     
     ExpressionManager exprManager = getExpressionManager();
+    ExpressionEncoding exprEncoding = getExpressionEncoding();
 		
 		try {
 	    /* TODO: Check the scope of local variable, this will be unsound to take 
@@ -221,8 +234,9 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	    for(Expression region : stRegs) {
 	      Expression regionSize = sizeArr.index(region);
 	      
-	      BitVectorExpression regionBound = exprManager.plus(addrType
-	          .getSize(), region, regionSize);
+//	      BitVectorExpression regionBound = exprManager.plus(addrType
+//	          .getSize(), region, regionSize);
+	      Expression regionBound = exprEncoding.plus(region, regionSize);
 	      disjs.add(
 	          exprManager.and(
 	              exprManager.lessThanOrEqual(region, ptr),
@@ -235,8 +249,9 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	   
 	    for( Expression region : hpRegs ) {
 	      Expression regionSize = sizeArr.index(region);        
-	      BitVectorExpression regionBound = exprManager.plus(addrType.getSize(), 
-	          region, regionSize);
+//	      BitVectorExpression regionBound = exprManager.plus(addrType.getSize(), 
+//	          region, regionSize);
+	      Expression regionBound = exprEncoding.plus(region, regionSize);
 	      disjs.add(
 	          exprManager.and(
 	              region.neq(nullPtr),
@@ -265,13 +280,15 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
     Iterable<Expression> hpRegs = varSets.getHeapRegions();
     
     ExpressionManager exprManager = getExpressionManager();
+    ExpressionEncoding exprEncoding = getExpressionEncoding();
 		
 		try {
 			
 			Expression nullPtr = heapEncoding.getNullAddress();
 			Expression sizeZro = heapEncoding.getValueZero();
-      BitVectorExpression ptrBound = exprManager.plus(addrType.getSize(), 
-          ptr, size);	    
+//      BitVectorExpression ptrBound = exprManager.plus(addrType.getSize(), 
+//          ptr, size);
+			Expression ptrBound = exprEncoding.plus(ptr, size);
 	    
 			for( Expression stVar : stVars)    
         disjs.add(exprManager.and(ptr.eq(stVar), size.eq(sizeZro)));
@@ -279,8 +296,9 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
       // In any stack region
       for(Expression region : stRegs) {
         Expression regionSize = sizeArr.index(region);
-        BitVectorExpression regionBound = exprManager.plus(addrType.getSize(), 
-            region, regionSize);
+//        BitVectorExpression regionBound = exprManager.plus(addrType.getSize(), 
+//            region, regionSize);
+        Expression regionBound = exprEncoding.plus(region, regionSize);
         
         disjs.add(
             exprManager.and(
@@ -291,8 +309,9 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
       // In any heap region
       for( Expression region : hpRegs ) {
         Expression regionSize = sizeArr.index(region);
-        BitVectorExpression regionBound = exprManager.plus(addrType.getSize(),
-            region, regionSize);
+//        BitVectorExpression regionBound = exprManager.plus(addrType.getSize(),
+//            region, regionSize);
+        Expression regionBound = exprEncoding.plus(region, regionSize);
         
         disjs.add(
             exprManager.and(

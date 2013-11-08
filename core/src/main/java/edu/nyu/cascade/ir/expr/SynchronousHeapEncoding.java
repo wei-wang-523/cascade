@@ -308,6 +308,10 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 		return exprManager;
 	}
 	
+	protected ExpressionEncoding getExpressionEncoding() {
+	  return encoding;
+	}
+
 	private enum ElemType {
 	  SCALAR,
 	  POINTER,

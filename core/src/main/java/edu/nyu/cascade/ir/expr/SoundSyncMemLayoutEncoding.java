@@ -12,13 +12,12 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TheoremProverException;
-import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 
 public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	
 	private final Type ptrType, refType;
-	private final BitVectorType valueType;
+	private final Type valueType;
 	private final SynchronousHeapEncoding heapEncoding;
 	
 	private SoundSyncMemLayoutEncoding(SynchronousHeapEncoding heapEncoding) {
@@ -34,6 +33,10 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	
 	private ExpressionManager getExpressionManager() {
 		return heapEncoding.getExpressionManager();
+	}
+	
+	private ExpressionEncoding getExpressionEncoding() {
+		return heapEncoding.getExpressionEncoding();
 	}
 	
 	@Override
@@ -176,12 +179,14 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
     Iterable<Expression> hpRegs = varSets.getHeapRegions();
 		
 		ExpressionManager exprManager = getExpressionManager();
+		ExpressionEncoding exprEncoding = getExpressionEncoding();
 		
 		try {
 			Expression ptrRef = ptr.asTuple().index(0);
 			Expression ptrOff = ptr.asTuple().index(1);
 			
-			Expression boundOff = exprManager.plus(valueType.getSize(), ptrOff, size);
+//			Expression boundOff = exprManager.plus(valueType.getSize(), ptrOff, size);
+			Expression boundOff = exprEncoding.plus(ptrOff, size);
 			
 			Expression nullRef = heapEncoding.getNullAddress().getChild(0);
 			Expression sizeZro = heapEncoding.getValueZero();

@@ -6,22 +6,23 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import edu.nyu.cascade.prover.ArrayExpression;
-import edu.nyu.cascade.prover.BitVectorExpression;
+//import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TheoremProverException;
-import edu.nyu.cascade.prover.type.BitVectorType;
+//import edu.nyu.cascade.prover.type.BitVectorType;
+import edu.nyu.cascade.prover.type.Type;
 
 public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	
 	private LinearHeapEncoding heapEncoding;
-	private BitVectorType addrType, valueType;
+	private Type addrType, valueType;
 	
 	private OrderLinearMemLayoutEncoding(LinearHeapEncoding heapEncoding) {
 		this.heapEncoding = heapEncoding;
-		addrType = heapEncoding.getAddressType().asBitVectorType();
-		valueType = heapEncoding.getValueType().asBitVectorType();
+		addrType = heapEncoding.getAddressType();
+		valueType = heapEncoding.getValueType();
 	}
 	
 	protected static OrderLinearMemLayoutEncoding create(LinearHeapEncoding heapEncoding) {
@@ -30,6 +31,10 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	
 	private ExpressionManager getExpressionManager() {
 		return heapEncoding.getExpressionManager();
+	}
+	
+	private ExpressionEncoding getExpressionEncoding() {
+		return heapEncoding.getExpressionEncoding();
 	}
 
 	@Override
@@ -41,6 +46,7 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
     Iterable<Expression> stRegs = varSets.getStackRegions();
     
 		ExpressionManager exprManager = getExpressionManager();
+		ExpressionEncoding exprEncoding = getExpressionEncoding();
 		
 		try {
       /* All the stack vars are ordered */
@@ -71,8 +77,9 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
         /* The upper bound of the stack region won't overflow */
         for (Expression region : stRegs) {
           Expression regionSize = sizeArr.index(region);
-          BitVectorExpression regionBound = exprManager.plus(addrType
-              .getSize(), region, regionSize);
+//          BitVectorExpression regionBound = exprManager.plus(addrType
+//              .getSize(), region, regionSize);
+          Expression regionBound = getExpressionEncoding().plus(region, regionSize);
           
           builder.add(exprManager.greaterThan(regionBound, region));
         }
@@ -85,8 +92,9 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
         
         while (stRegsItr.hasNext()) {
           Expression stReg = stRegsItr.next();
-          Expression stRegBound = exprManager.plus(addrType.getSize(), 
-          		stReg, sizeArr.index(stReg));
+//          Expression stRegBound = exprManager.plus(addrType.getSize(), 
+//          		stReg, sizeArr.index(stReg));
+          Expression stRegBound = exprEncoding.plus(stReg, sizeArr.index(stReg));
           builder.add(exprManager.greaterThan(stackBound, stRegBound));       
           stackBound = stReg;
         }
@@ -98,8 +106,9 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
           // lastRegionBound = lastRegion != 0 ? lastRegion + Alloc[lastRegion] : 0;
           Expression heapBound = exprManager.ifThenElse(
               lastRegion.neq(nullPtr),
-              exprManager.plus(addrType.getSize(), lastRegion, 
-              		sizeArr.index(lastRegion)),
+//              exprManager.plus(addrType.getSize(), lastRegion, 
+//              		sizeArr.index(lastRegion)),
+              exprEncoding.plus(lastRegion, sizeArr.index(lastRegion)),
               nullPtr);
           
           builder.add(exprManager.greaterThan(stackBound, heapBound));
@@ -119,12 +128,17 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 		Preconditions.checkArgument(size.getType().equals(valueType));
 		
 		ExpressionManager exprManager = getExpressionManager();
+		ExpressionEncoding exprEncoding = getExpressionEncoding();
 		
 		try {
-			Expression lastRegionBound = exprManager.plus(addrType.getSize(), 
+//			Expression lastRegionBound = exprManager.plus(addrType.getSize(), 
+//	        lastRegion, sizeArr.index(lastRegion));
+			Expression lastRegionBound = exprEncoding.plus(
 	        lastRegion, sizeArr.index(lastRegion));
 			
-	    Expression ptrBound = exprManager.plus(addrType.getSize(), ptr, size);
+//	    Expression ptrBound = exprManager.plus(addrType.getSize(), ptr, size);
+	    Expression ptrBound = exprEncoding.plus(ptr, size);
+	    
 	    Expression nullPtr = heapEncoding.getNullAddress();
 	    
 	    return exprManager.implies(
@@ -157,6 +171,7 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
     Iterable<Expression> hpRegs = varSets.getHeapRegions();
     
     ExpressionManager exprManager = getExpressionManager();
+    ExpressionEncoding exprEncoding = getExpressionEncoding();
 		
 		try {
 	    /* TODO: Check the scope of local variable, this will be unsound to take 
@@ -167,8 +182,10 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	    for(Expression region : stRegs) {
 	      Expression regionSize = sizeArr.index(region);
 	      
-	      BitVectorExpression regionBound = exprManager.plus(addrType
-	          .getSize(), region, regionSize);
+//	      BitVectorExpression regionBound = exprManager.plus(addrType
+//	          .getSize(), region, regionSize);
+      Expression regionBound = exprEncoding.plus(region, regionSize);
+	      
 	      disjs.add(
 	          exprManager.and(
 	              exprManager.lessThanOrEqual(region, ptr),
@@ -181,8 +198,10 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	   
 	    for( Expression region : hpRegs ) {
 	      Expression regionSize = sizeArr.index(region);        
-	      BitVectorExpression regionBound = exprManager.plus(addrType.getSize(), 
-	          region, regionSize);
+//	      BitVectorExpression regionBound = exprManager.plus(addrType.getSize(), 
+//	          region, regionSize);
+	      Expression regionBound = exprEncoding.plus(region, regionSize);
+	      
 	      disjs.add(
 	          exprManager.and(
 	              region.neq(nullPtr),
@@ -212,13 +231,15 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
     Iterable<Expression> hpRegs = varSets.getHeapRegions();
 		
     ExpressionManager exprManager = getExpressionManager();
+    ExpressionEncoding exprEncoding = getExpressionEncoding();
     
 		try {
 			
 	    Expression nullPtr = heapEncoding.getNullAddress();
 	    Expression sizeZro = heapEncoding.getValueZero();
-      BitVectorExpression ptrBound = exprManager.plus(addrType.getSize(), 
-          ptr, size);	    
+//      BitVectorExpression ptrBound = exprManager.plus(addrType.getSize(), 
+//          ptr, size);
+	    Expression ptrBound = exprEncoding.plus(ptr, size);
 	    
 			for( Expression stVar : stVars)    
         disjs.add(exprManager.and(ptr.eq(stVar), size.eq(sizeZro)));
@@ -226,8 +247,9 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
       // In any stack region
       for(Expression region : stRegs) {
         Expression regionSize = sizeArr.index(region);
-        BitVectorExpression regionBound = exprManager.plus(addrType.getSize(), 
-            region, regionSize);
+//        BitVectorExpression regionBound = exprManager.plus(addrType.getSize(), 
+//            region, regionSize);
+        Expression regionBound = exprEncoding.plus(region, regionSize);
         
         disjs.add(
             exprManager.and(
@@ -238,8 +260,9 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
       // In any heap region
       for( Expression region : hpRegs ) {
         Expression regionSize = sizeArr.index(region);
-        BitVectorExpression regionBound = exprManager.plus(addrType.getSize(),
-            region, regionSize);
+//        BitVectorExpression regionBound = exprManager.plus(addrType.getSize(),
+//            region, regionSize);
+        Expression regionBound = exprEncoding.plus(region, regionSize);
         
         disjs.add(
             exprManager.and(
