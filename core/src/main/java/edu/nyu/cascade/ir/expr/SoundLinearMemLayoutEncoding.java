@@ -48,8 +48,8 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 		
 		try {
 			
-			Expression nullPtr = exprManager.bitVectorZero(addrType.getSize());
-			Expression sizeZro = exprManager.bitVectorZero(valueType.getSize());
+			Expression nullPtr = heapEncoding.getNullAddress();
+			Expression sizeZro = heapEncoding.getValueZero();
 	  	
 			if (!Iterables.isEmpty(stackVars))  {
 				ImmutableList<Expression> distinctPtr = new ImmutableList.Builder<Expression>()
@@ -158,8 +158,8 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
     ExpressionManager exprManager = getExpressionManager();
     
     try {
-      Expression nullPtr = exprManager.bitVectorZero(addrType.getSize());
-      Expression sizeZro = exprManager.bitVectorZero(valueType.getSize());
+			Expression nullPtr = heapEncoding.getNullAddress();
+			Expression sizeZro = heapEncoding.getValueZero();
       Expression ptrBound = exprManager.plus(addrType.getSize(), ptr, size);
       
       Expression assump = exprManager.neq(ptr, nullPtr);
@@ -230,8 +230,8 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	    }
 	    
 	    // In any heap region
-	    Expression nullPtr = exprManager.bitVectorZero(addrType.getSize());
-	    Expression sizeZro = exprManager.bitVectorZero(valueType.getSize());
+			Expression nullPtr = heapEncoding.getNullAddress();
+			Expression sizeZro = heapEncoding.getValueZero();
 	   
 	    for( Expression region : hpRegs ) {
 	      Expression regionSize = sizeArr.index(region);        
@@ -268,8 +268,8 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 		
 		try {
 			
-	    Expression nullPtr = exprManager.bitVectorZero(addrType.getSize());
-	    Expression sizeZro = exprManager.bitVectorZero(valueType.getSize());
+			Expression nullPtr = heapEncoding.getNullAddress();
+			Expression sizeZro = heapEncoding.getValueZero();
       BitVectorExpression ptrBound = exprManager.plus(addrType.getSize(), 
           ptr, size);	    
 	    
@@ -316,8 +316,8 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 		
 		ExpressionManager exprManager = getExpressionManager();
     Expression size = sizeArr.index(ptr);
-    Expression nullPtr = exprManager.bitVectorZero(addrType.getSize());
-    Expression sizeZro = exprManager.bitVectorZero(valueType.getSize());
+		Expression nullPtr = heapEncoding.getNullAddress();
+		Expression sizeZro = heapEncoding.getValueZero();
     return exprManager.or(ptr.eq(nullPtr), exprManager.greaterThan(size, sizeZro));
 	}
 }
