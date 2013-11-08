@@ -8,7 +8,6 @@ import java.util.List;
 import com.google.common.collect.Lists;
 
 import edu.nyu.cascade.prover.ArrayExpression;
-import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -23,28 +22,34 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
       ExpressionManager exprManager) throws ExpressionFactoryException
   { 
     int cellSize = 
-        Preferences.ENCODING_FIX.equals(
-                Preferences.getString(Preferences.OPTION_EXPR_ENCODING)) ? 
+        Preferences.MEM_ENCODING_FIX.equals(
+                Preferences.getString(Preferences.OPTION_MEM_ENCODING)) ? 
                 DefaultSize
                 : Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ?
                     Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE) 
                     : DefaultSize;
 
     int offCellSize = 
-    		Preferences.ENCODING_FIX.equals(
-            Preferences.getString(Preferences.OPTION_EXPR_ENCODING)) ? 
+    		Preferences.MEM_ENCODING_FIX.equals(
+            Preferences.getString(Preferences.OPTION_MEM_ENCODING)) ? 
                 (int) (cAnalyzer.getSize(xtc.type.NumberT.U_LONG) * cellSize) 
                 : cellSize;
     
     int intCellSize = 
-    		Preferences.ENCODING_FIX.equals(
-            Preferences.getString(Preferences.OPTION_EXPR_ENCODING)) ? 
+    		Preferences.MEM_ENCODING_FIX.equals(
+            Preferences.getString(Preferences.OPTION_MEM_ENCODING)) ? 
                 (int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * cellSize) 
                 : cellSize;
     
     CellSize = cellSize;
     
-    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, intCellSize);
+    IntegerEncoding<?> integerEncoding = null;
+    if(Preferences.isSet(Preferences.OPTION_NON_OVERFLOW)) {
+    	integerEncoding = new DefaultIntegerEncoding(exprManager);
+    } else {
+    	integerEncoding = BitVectorIntegerEncoding.create(exprManager, intCellSize);
+    }
+    
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new UnimplementedArrayEncoding<ArrayExpression>();
     PointerSyncEncoding pointerEncoding = PointerSyncEncoding.create(exprManager, offCellSize);
@@ -52,7 +57,7 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
   }
   
   private PointerExpressionEncoding(
-      IntegerEncoding<BitVectorExpression> integerEncoding,
+      IntegerEncoding<?> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
       PointerSyncEncoding pointerEncoding)

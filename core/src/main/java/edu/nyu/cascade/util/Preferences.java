@@ -38,22 +38,22 @@ public class Preferences {
   private static final Map<String, Object> PROPERTIES = Maps.newHashMap();
 
   public static final String OPTION_SOUND_ALLOC = "sound";
+  public static final String OPTION_ORDER_ALLOC = "order";
   
   public static final String OPTION_COUNTER_EXAMPLE = "counter-example";
 
   public static final String OPTION_PLUGINS_DIRECTORY = "plugins";
   
   public static final String OPTION_ITERATION_TIMES = "iter-times";
-  
-  public static final String OPTION_ORDER_ALLOC = "order";
-  
-  public static final String OPTION_SIGNED_OPERATION = "signed";
+    
+  public static final String OPTION_UNSIGNED_OPERATION = "unsigned";
   
   public static final String OPTION_MEM_CELL_SIZE = "mem-cell-size";
   
   public static final String OPTION_PARTIAL_INST = "partial-inst";
-  
   public static final String OPTION_TOTAL_INST = "total-inst";
+  
+  public static final String OPTION_NON_OVERFLOW = "non-overflow";
   
   public static final String OPTION_ENCODE_FIELD_ARRAY = "field-array";
   
@@ -61,14 +61,14 @@ public class Preferences {
   
   public static final String OPTION_SEQ_PATH = "seq-path";
   
-  public static final String OPTION_EXPR_ENCODING = "expr-encoding";
+  public static final String OPTION_MEM_ENCODING = "mem-encoding";
   
   public static final String OPTION_INLINE_ANNOTATION = "inline-anno";
   
   public static final String OPTION_MEMORY_CHECK = "memory-check";
   
-  public static final String ENCODING_SYNC = "sync";
-  public static final String ENCODING_FIX = "Fix";
+  public static final String MEM_ENCODING_SYNC = "sync";
+  public static final String MEM_ENCODING_FIX = "Fix";
   
   public static void clearAll() {
     getProperties().clear();

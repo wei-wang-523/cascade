@@ -244,11 +244,12 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	
 	@Override
   public LinearHeapEncoding castToLinear() {
-	  throw new ExpressionFactoryException("Synchrnous heap encoding cannot be casted to linear.");
+		throw new ExpressionFactoryException("Synchrnous heap encoding cannot be casted to linear.");
   }
 
 	@Override
   public SynchronousHeapEncoding castToSync() {
+		Preconditions.checkArgument(isSync());
 	  return this;
   }
 

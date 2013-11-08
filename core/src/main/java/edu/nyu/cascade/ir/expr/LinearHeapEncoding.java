@@ -17,7 +17,6 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
-import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
@@ -32,16 +31,15 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	private Expression lastRegion;
 	private final LinkedHashMap<String, Expression> lastRegions;
 	
-	private final BitVectorType addrType;
-	private final BitVectorType valueType;
+	private final Type addrType;
+	private final Type valueType;
 
 	protected LinearHeapEncoding(ExpressionEncoding encoding) {
 		this.encoding = encoding;
 		exprManager = encoding.getExpressionManager();
 		
-		int cellSize = encoding.getCellSize();
-		addrType = exprManager.bitVectorType(cellSize);
-		valueType = exprManager.bitVectorType(cellSize);
+		addrType = encoding.getIntegerEncoding().getType();
+		valueType = encoding.getIntegerEncoding().getType();
 		
 		heapRegions = Maps.newLinkedHashMap();
 		stackVars = Maps.newLinkedHashMap();
@@ -77,12 +75,19 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	
 	@Override
 	public Expression getValueZero() {
-		return exprManager.bitVectorZero(valueType.getSize());
+		return encoding.zero();
 	}
 
+	/**
+	 * FIXME: Cannot just call encoding.zero() to let encoding to 
+	 * tell bit vector type or integer type.
+	 * 
+	 * Since the address type might not be same as value type,
+	 * the size in reality would be larger than value type size.
+	 */
 	@Override
 	public Expression getNullAddress() {
-		return exprManager.bitVectorZero(addrType.getSize());
+		return encoding.zero();
 	}
 	
 	/**
@@ -117,6 +122,7 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	
 	@Override
 	public LinearHeapEncoding castToLinear() {
+		Preconditions.checkArgument(isLinear());
 		return this;
 	}
 	
