@@ -1,0 +1,7 @@
+<controlFile>
+  <sourceFile name="overflow.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="2" />
+    <endPosition fileId="1" line="3" />
+  </run>
+</controlFile>
