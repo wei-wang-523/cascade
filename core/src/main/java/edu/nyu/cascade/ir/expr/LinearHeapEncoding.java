@@ -48,7 +48,7 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 		stackRegions = Maps.newLinkedHashMap();
 		
 		lastRegions = Maps.newLinkedHashMap();
-		lastRegion = exprManager.bitVectorZero(addrType.getSize());
+		lastRegion = getNullAddress();
 	}
 	
 	public static LinearHeapEncoding create(ExpressionEncoding encoding) {
@@ -156,7 +156,7 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	public ArrayExpression getConstSizeArr(ArrayType sizeArrType) {
 		Preconditions.checkArgument(sizeArrType.getIndexType().equals(addrType));
 		Preconditions.checkArgument(sizeArrType.getElementType().equals(valueType));
-		Expression sizeZro = exprManager.bitVectorZero(valueType.getSize());
+		Expression sizeZro = getValueZero();
 		return exprManager.storeAll(sizeZro, sizeArrType);
 	}
 
@@ -258,6 +258,10 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 
 	protected ExpressionManager getExpressionManager() {
 		return exprManager;
+	}
+	
+	protected ExpressionEncoding getExpressionEncoding() {
+		return encoding;
 	}
 
 	@Override
