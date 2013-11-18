@@ -6,8 +6,6 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -15,8 +13,6 @@ import xtc.parser.ParseException;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
 import edu.nyu.cascade.c.Main;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.util.TestUtils.ExitException;
@@ -192,7 +188,7 @@ public class MainTest {
 			       parserTest("--dry-run", "--seq-path"), false);
   }
   
-  private Map<Tester<File>, String[]> validOptMap() {
+/*  private Map<Tester<File>, String[]> validOptMap() {
     Map<Tester<File>, String[]> optMap = Maps.newLinkedHashMap();
     Tester<File> mem_9 = parserTest("--unsigned", "--feasibility", "--mem-cell-size", "9", "--sound", "--prover", "z3", "--theory", "Partition");
     Tester<File> mem_11 = parserTest("--unsigned", "--feasibility", "--mem-cell-size", "11", "--sound", "--prover", "z3", "--theory", "Partition");
@@ -202,16 +198,16 @@ public class MainTest {
     Tester<File> signed_mem_9 = parserTest("--feasibility", "--mem-cell-size", "9", "--sound", "--prover", "z3", "--theory", "Partition");
     Tester<File> signed_mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--sound", "--prover", "z3", "--theory", "Partition");
     
-    String[] mem_9_bnc = {/*"ex21-100.ctrl"*/};
-    String[] mem_11_bnc = {"ex2-3.ctrl", /*"ex2-1024.ctrl",*/ "ex9-3.ctrl" /*, "ex9-1024.ctrl"*/};
+    String[] mem_9_bnc = {"ex21-100.ctrl"};
+    String[] mem_11_bnc = {"ex2-3.ctrl", "ex2-1024.ctrl", "ex9-3.ctrl" , "ex9-1024.ctrl"};
     String[] mem_13_bnc = {"ex23-36.ctrl"};
-    String[] sound_bnc = {"ex5.ctrl", "ex6.ctrl", "ex7-3.ctrl", /*"ex7-200.ctrl",*/ "ex10-3.ctrl", 
-        "ex10-17.ctrl", "ex11.ctrl", "ex15.ctrl", "ex17.ctrl", "ex18-10.ctrl", /*"ex18-100.ctrl",*/ "ex31-7.ctrl",
+    String[] sound_bnc = {"ex5.ctrl", "ex6.ctrl", "ex7-3.ctrl", "ex7-200.ctrl", "ex10-3.ctrl", 
+        "ex10-17.ctrl", "ex11.ctrl", "ex15.ctrl", "ex17.ctrl", "ex18-10.ctrl", "ex18-100.ctrl", "ex31-7.ctrl",
         "ex34.ctrl", "ex40-3.ctrl", "ex49-3.ctrl", "inf6a.ctrl", "inf6b.ctrl", "inf8a.ctrl",
         "inf8b.ctrl"};
     String[] signed_bnc = {"ex14-10.ctrl"};
-    String[] signed_mem_9_bnc = {/*"ex22-50.ctrl"*/};
-    String[] signed_mem_11_bnc = {/*"ex32-1000.ctrl"*/};
+    String[] signed_mem_9_bnc = {"ex22-50.ctrl"};
+    String[] signed_mem_11_bnc = {"ex32-1000.ctrl"};
     
     optMap.put(signed, signed_bnc);
     optMap.put(signed_mem_9, signed_mem_9_bnc);
@@ -235,15 +231,15 @@ public class MainTest {
     Tester<File> fea_mem_10 = parserTest("--feasibility", "--mem-cell-size", "10", "--unsigned", "--sound", "--prover", "z3", "--theory", "Partition");
     Tester<File> fea_mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--unsigned", "--sound", "--prover", "z3", "--theory", "Partition");
     
-    String[] sgn_mem_9_bnc = {/*"ex27-200.ctrl"*/};
-    String[] sgn_mem_11_bnc = {"ex20-1.ctrl"/*, "ex20-1024.ctrl"*/};
-    String[] mem_9_bnc = {"ex41-3.ctrl"/*, "ex26-200.ctrl"*/};
+    String[] sgn_mem_9_bnc = {"ex27-200.ctrl"};
+    String[] sgn_mem_11_bnc = {"ex20-1.ctrl", "ex20-1024.ctrl"};
+    String[] mem_9_bnc = {"ex41-3.ctrl", "ex26-200.ctrl"};
     String[] sound_bnc = {"ex3-10.ctrl", "ex4-10.ctrl", "ex8.ctrl", "ex12-10.ctrl", "ex30.ctrl", 
         "ex43.ctrl", "ex46-3.ctrl", "ex47-2.ctrl", "inf1.ctrl", "inf5.ctrl"};
-    String[] sgn_bnc = {"ex13.ctrl", "ex37.ctrl", "inf2.ctrl"/*, "inf4.ctrl"*/};
+    String[] sgn_bnc = {"ex13.ctrl", "ex37.ctrl", "inf2.ctrl", "inf4.ctrl"};
     String[] fea_sgn_bnc = {"ex16-4.ctrl", "ex19-3.ctrl", "ex39-3.ctrl"};
     String[] fea_mem_10_bnc = {"ex25-3.ctrl"};
-    String[] fea_mem_11_bnc = {"ex1-3.ctrl"/*, "ex1-512.ctrl"*/};
+    String[] fea_mem_11_bnc = {"ex1-3.ctrl", "ex1-512.ctrl"};
     
     optMap.put(sgn, sgn_bnc);
     optMap.put(sound, sound_bnc);
@@ -299,7 +295,7 @@ public class MainTest {
     String[] sgn_mem_11_bnc = {"ex19-inv.ctrl", "ex20-inv.ctrl"};
     String[] mem_9_bnc = {"ex26-inv.ctrl", "ex41-inv.ctrl"};
     String[] sound_bnc = {"ex3-inv.ctrl", "ex4-inv.ctrl", "ex8-inv.ctrl", "ex12-inv.ctrl", 
-        "ex40-inv.ctrl", "ex43-inv.ctrl",  /*"ex46-inv.ctrl",*/ "ex47-inv.ctrl", "ex49-inv.ctrl"};
+        "ex40-inv.ctrl", "ex43-inv.ctrl",  "ex46-inv.ctrl", "ex47-inv.ctrl", "ex49-inv.ctrl"};
     String[] sgn_bnc = {"ex39-inv.ctrl"};
     
     
@@ -325,12 +321,12 @@ public class MainTest {
     TestUtils.checkFile(inv_valid_nec_location, invValidOptMap(), false);
     final File inv_invalid_nec_location = new File(nec_programs_location, "inv-invalid");
     TestUtils.checkFile(inv_invalid_nec_location, invInvalidOptMap(), false);
-  }
+  }*/
   
   @Test
 //  @Ignore
-  public void testNec_Benchmark() {
-  	final Tester<File> tester = parserTest("--mem-cell-size", "8", "--sound", "--prover", "cvc4", "--theory", "Flat");
+  public void testNecBenchmark() {
+  	final Tester<File> tester = parserTest("--mem-cell-size", "32", "--sound", "--prover", "z3", "--theory", "Partition");
     final File valid_nec_location = new File(nec_programs_location, "valid");
     TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, tester, false);
     final File invalid_nec_location = new File(nec_programs_location, "invalid");
