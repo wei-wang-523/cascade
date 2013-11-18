@@ -7,7 +7,6 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -19,6 +18,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.c.Main;
+import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.util.TestUtils.ExitException;
 import edu.nyu.cascade.util.TestUtils;
 import edu.nyu.cascade.util.FileUtils;
@@ -42,8 +42,10 @@ public class MainTest {
   private static final File twoLayer_programs_location = new File(programs_test_location,
       "2layer_bnc");
   
-  private static final File smtFile_dump_location = new File(mini_programs_location,
-      "dump");
+//  private static final File smtFile_dump_location = new File(mini_programs_location,
+//      "dump");
+  
+  private static final int Timeout = 20;
   
   private static final FilenameFilter cFileFilter = new FilenameFilter() {
     public boolean accept(File dir, String name) {
@@ -62,17 +64,29 @@ public class MainTest {
   };
   private void runCascade(final String... args) throws Exception {
     System.out.println("runCascade: " + Joiner.on(";").join(args));
-    TestUtils.callMayExit(new Callable<Void>() {
+    TestUtils.callMayExit(new Runnable() {
       @Override
-      public Void call() throws Exception {
+      public void run() {
         Preferences.clearAll();
         Main main = getInjector().getInstance(Main.class);
+        main.init();
+        List<String> files = main.processCommandLine(args);
         main.setOutStream(IOUtils.NULL_PRINT_STREAM);
         main.setErrStream(System.err);
-        main.run(args);
-        return null;
+        try {
+					main.run(files);
+				} catch (TheoremProverException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
       }
-    });
+    }, Timeout);
     /*
      * new Thread() {
      * 
@@ -316,9 +330,15 @@ public class MainTest {
   @Test
 //  @Ignore
   public void testNec_Benchmark() {
+  	final Tester<File> tester = parserTest("--mem-cell-size", "8", "--sound", "--prover", "cvc4", "--theory", "Flat");
     final File valid_nec_location = new File(nec_programs_location, "valid");
-    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter,
-        parserTest("--mem-cell-size", "32", "--time-limit", "1", "--order", "--prover", "z3", "--theory", "Flat"), false);
+    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, tester, false);
+    final File invalid_nec_location = new File(nec_programs_location, "invalid");
+    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, tester, false);
+    final File inv_valid_nec_location = new File(nec_programs_location, "inv-valid");
+    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, tester, false);
+    final File inv_invalid_nec_location = new File(nec_programs_location, "inv-invalid");
+    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, tester, false);
   }
   
   @Test
