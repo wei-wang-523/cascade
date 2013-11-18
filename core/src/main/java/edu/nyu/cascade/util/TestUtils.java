@@ -5,7 +5,6 @@ import java.io.FilenameFilter;
 import java.security.Permission;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.Callable;
 
 import com.google.common.base.Preconditions;
 
@@ -137,11 +136,23 @@ public class TestUtils {
     }
   };
 
-  public static <T> T callMayExit(Callable<T> callable) throws Exception {
+  public static <T> T callMayExit(final Runnable runnable, long timeout) throws Exception {
     SecurityManager defaultSecurityManager = System.getSecurityManager();
     try {
       System.setSecurityManager(noExitSecurityManager);
-      return callable.call();
+      Thread thread = new Thread(runnable);
+      
+      long startTime = System.currentTimeMillis();
+      thread.start();
+      while(thread.isAlive()) {
+      	Thread.sleep(30);
+      	if(System.currentTimeMillis() - startTime > timeout * 1000) {
+      		thread.stop();
+      		IOUtils.err().println("Timeout");
+      		break;
+      	}
+      }
+      return null;
     } finally {
       System.setSecurityManager(defaultSecurityManager);
     }

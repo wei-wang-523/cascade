@@ -67,6 +67,8 @@ public class Preferences {
   
   public static final String OPTION_MEMORY_CHECK = "memory-check";
   
+  public static final String OPTION_TIMEOUT = "timeout";
+  
   public static final String MEM_ENCODING_SYNC = "sync";
   public static final String MEM_ENCODING_FIX = "Fix";
   

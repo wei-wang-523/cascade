@@ -20,6 +20,7 @@ public class Identifiers {
   public static final String REGION_VARIABLE_NAME = "region";
   public static final String CONSTANT = "Constant";
 	public static final String FUNC = "__func__";
+	public static final String TEMP_VAR_PREFIX = "cascade_tmp";
   
   public static enum IdType {
     DEFAULT,
