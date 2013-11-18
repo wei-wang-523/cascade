@@ -136,7 +136,7 @@ public class TestUtils {
     }
   };
 
-  public static <T> T callMayExit(final Runnable runnable, long timeout) throws Exception {
+  public static <T> T callMayExit(final Runnable runnable, int timeout) throws Exception {
     SecurityManager defaultSecurityManager = System.getSecurityManager();
     try {
       System.setSecurityManager(noExitSecurityManager);
