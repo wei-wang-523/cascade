@@ -11,7 +11,13 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -86,7 +92,7 @@ public class Main {
   private static final String OPTION_DRY_RUN = "dry-run";
   private static final String OPTION_DEBUG = "debug";
   private static final String OPTION_EFFORT_LEVEL = "effort-level";
-  private static final String OPTION_TIME_LIMIT = "time-limit";
+  private static final String OPTION_SOLVER_TIMEOUT = "solver-timeout";
   private static final String OPTION_FEASIBILITY = "feasibility";
   private static final String OPTION_SMT2_FILE = "smt2-file";
   private static final String OPTION_MARK_AST = "optionMarkAST";
@@ -145,11 +151,17 @@ public class Main {
           .withType(Integer.class) //
           .withDescription("Set the size of memory model cell to N.") //
           .create()) //
-      .addOption(OptionBuilder.withLongOpt(OPTION_TIME_LIMIT) //
+      .addOption(OptionBuilder.withLongOpt(OPTION_SOLVER_TIMEOUT) //
           .hasArg() //
           .withArgName("S") //
           .withType(Integer.class) //
-          .withDescription("Set time limit for the theorem prover to S sec.") //
+          .withDescription("Set timeout for the theorem prover to S sec.") //
+          .create()) //
+      .addOption(OptionBuilder.withLongOpt(Preferences.OPTION_TIMEOUT) //
+          .hasArg() //
+          .withArgName("S") //
+          .withType(Integer.class) //
+          .withDescription("Set timeout for Cascade to S sec.") //
           .create()) //
       .addOption(OptionBuilder.withLongOpt(OPTION_FEASIBILITY) //
           .withDescription("Check path feasibility for runs.") //
@@ -230,7 +242,36 @@ public class Main {
 
   public static void main(String[] args) throws IOException, ParseException, TheoremProverException {
     Injector myInjector = createInjector(new CModule(), new CascadeModule());
-    myInjector.getInstance(Main.class).run(args);
+    final Main main = myInjector.getInstance(Main.class);
+    
+    // Initialize this tool.
+    main.init();
+    // Process the command line arguments
+    final List<String> files = main.processCommandLine(args);
+    
+    if(Preferences.isSet(Preferences.OPTION_TIMEOUT)) {
+    	final ExecutorService exec = Executors.newSingleThreadExecutor();
+    	Future<Void> future = exec.submit(new Callable<Void>() {
+        @Override
+        public Void call() throws Exception {
+          main.run(files);
+          return null;
+        }
+    	});
+    	try {
+    		future.get(Preferences.getInt(Preferences.OPTION_TIMEOUT), TimeUnit.SECONDS);
+    	} catch (TimeoutException e) {
+    		IOUtils.err().println("Timeout");
+    	} catch (InterruptedException e) {
+	      // TODO Auto-generated catch block
+	      e.printStackTrace();
+      } catch (ExecutionException e) {
+	      // TODO Auto-generated catch block
+	      e.printStackTrace();
+      } 
+    } else {
+    	main.run(files);
+    }
   }
 
   /** The runtime. */
@@ -402,8 +443,8 @@ public class Main {
     }
     
     /* Set the theorem prover "time limit" */
-    if( Preferences.isSet(OPTION_TIME_LIMIT) ) {
-      String timeLimitStr = Preferences.getString(OPTION_TIME_LIMIT);
+    if( Preferences.isSet(OPTION_SOLVER_TIMEOUT) ) {
+      String timeLimitStr = Preferences.getString(OPTION_SOLVER_TIMEOUT);
       try {
         tlimit  = Integer.parseInt(timeLimitStr);
         theoremProver.setTimeLimit(tlimit);
@@ -476,7 +517,7 @@ public class Main {
   }
 
   @SuppressWarnings("unchecked")
-  private List<String> processCommandLine(String[] args) {
+  public List<String> processCommandLine(String[] args) {
     CommandLineParser commandLineParser = new PosixParser();
     CommandLine commandLine = null;
 
@@ -524,16 +565,11 @@ public class Main {
     symbolTables.put(file, symbolTable);
   }
 
-  public void run(String[] args) throws IOException, ParseException, TheoremProverException {
+  public void run(List<String> files) throws IOException, ParseException, TheoremProverException {
     IOUtils.enableOut();
     IOUtils.enableErr();
     
     long time = System.currentTimeMillis();
-    
-    // Initialize this tool.
-    init();
-    // Process the command line arguments
-    List<String> files = processCommandLine(args);
 
     // Prepare for processing the files.
     prepare();
@@ -544,7 +580,7 @@ public class Main {
     }
 
     // Print the tool description and exit if there are no arguments.
-    if (0 == args.length || Preferences.isSet(OPTION_HELP)) { 
+    if (Preferences.isSet(OPTION_HELP)) { 
       printUsage();
       runtime.exit();
     }
@@ -639,7 +675,7 @@ public class Main {
             CExpressionEncoder encoder = CExpressionEncoder.create(encoding,
                 memoryModel, symbolTables);
 
-            RunProcessor runProcessor = null;
+            RunProcessor runProcessor;
             
             if( Preferences.isSet(Preferences.OPTION_SEQ_PATH) ) {
               runProcessor = new RunSeqProcessor(symbolTables, cfgs,
@@ -665,14 +701,13 @@ public class Main {
              */
             int i = 1;
             for (Run run : controlFile.getRuns()) {
-              IOUtils.out().println("Run #" + i + ":");
-              IOUtils.debug().incr();
-
-              boolean runIsValid = runProcessor.process(run);
-              IOUtils.out().println(runIsValid ? "Valid" : "Invalid");
-              IOUtils.err().println(runIsValid ? "Valid" : "Invalid");
-              IOUtils.debug().decr();
-              i++;
+            	IOUtils.out().println("Run #" + i++ + ":");
+            	IOUtils.debug().incr();
+            	
+            	boolean runIsValid = runProcessor.process(run);
+            	IOUtils.out().println(runIsValid ? "Valid" : "Invalid");
+            	IOUtils.err().println(runIsValid ? "Valid" : "Invalid");
+            	IOUtils.debug().decr();
             }
           } catch (RunProcessorException e) {
             failOnException(e);

@@ -485,7 +485,7 @@ class RunSeqProcessor implements RunProcessor {
           Node arg_assign = argNode.getNode(i);
           if(arg_assign.hasName("CastExpression"))  arg_assign = arg_assign.getNode(1);
           if(!arg_call.equals(arg_assign)) {
-            if(!arg_assign.getString(0).startsWith(TEMP_VAR_PREFIX)) {
+            if(!arg_assign.getString(0).startsWith(Identifiers.TEMP_VAR_PREFIX)) {
               throw new RunProcessorException("Invalid argument: " + arg_assign);
             }
             args.set(i, CExpression.create(arg_assign, symbolTable.getScope(arg_assign)));
@@ -500,7 +500,7 @@ class RunSeqProcessor implements RunProcessor {
           IRExpression arg = args.get(i);
           IRExpression arg_call = args_call.get(i);
           if(!arg_call.equals(arg)) {
-            if(!arg_call.getSourceNode().getString(0).startsWith(TEMP_VAR_PREFIX)) {
+            if(!arg_call.getSourceNode().getString(0).startsWith(Identifiers.TEMP_VAR_PREFIX)) {
               throw new RunProcessorException("Invalid argument: " + arg_call);
             }
             args.set(i, arg_call);
@@ -614,7 +614,7 @@ class RunSeqProcessor implements RunProcessor {
         if(symbolTable.lookup(resFuncName) == null)
           throw new RunProcessorException("Undeclared function: " + resFuncName);
         /* Create temporary variable node for function call node. */
-        String varName = Identifiers.uniquify(TEMP_VAR_PREFIX);
+        String varName = Identifiers.uniquify(Identifiers.TEMP_VAR_PREFIX);
         GNode varNode = GNode.create("PrimaryIdentifier", varName);
         varNode.setLocation(node.getLocation());
         xtc.type.Type funcType = CType.getType(node);
