@@ -153,4 +153,10 @@ public class TemporalMemoryModel extends AbstractMemoryModel {
 	  // TODO Auto-generated method stub
 	  return null;
   }
+
+	@Override
+	public MemoryModelType getType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

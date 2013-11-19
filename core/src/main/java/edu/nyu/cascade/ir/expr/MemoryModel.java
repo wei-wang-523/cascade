@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRVarInfo;
+import edu.nyu.cascade.ir.expr.AbstractMemoryModel.MemoryModelType;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -177,4 +178,28 @@ public interface MemoryModel {
 	 * @return
 	 */
 	Expression clearSideEffect(Expression state);
+	
+	/**
+	 * Get the memory model type
+	 * @return
+	 */
+	MemoryModelType getType();
+	
+	/**
+	 * Cast memory model to partition memory model
+	 * @return
+	 */
+	PartitionMemoryModel asPartition();
+	
+	/**
+	 * Cast memory model to flat memory model
+	 * @return
+	 */
+	FlatMemoryModel asFlat();
+	
+	/**
+	 * Cast memory model to burstall memory model
+	 * @return
+	 */
+	BurstallMemoryModel asBurstall();
 }

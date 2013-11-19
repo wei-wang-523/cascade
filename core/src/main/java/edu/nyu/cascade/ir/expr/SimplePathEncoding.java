@@ -8,17 +8,21 @@ package edu.nyu.cascade.ir.expr;
 import java.util.Iterator;
 import java.util.List;
 
+import xtc.util.SymbolTable.Scope;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
+import edu.nyu.cascade.ir.expr.AbstractMemoryModel.MemoryModelType;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 
 public class SimplePathEncoding extends AbstractPathEncoding {
@@ -314,6 +318,14 @@ private Expression getITEExpression(Iterable<? extends Expression> exprs,
 
   private TupleExpression getUpdatedPathState(Expression memoryPrime, Expression pcPrime) {
 		ExpressionManager exprManager = getExpressionManager();
+  	
+  	MemoryModel memoryModel = getMemoryModel();
+  	if(memoryModel.getType().equals(MemoryModelType.PARTITION)) {
+  		PartitionMemoryModel parMemModel = memoryModel.asPartition();
+  		Scope currScope = getExpressionEncoder().getCurrentScope();
+  		memoryPrime = parMemModel.kickout(memoryPrime, currScope);
+  	}
+  	
   	boolean isUpdated = !(
   			getPathType().asTuple().getElementTypes().get(0).equals(memoryPrime.getType()) &&
   			getPathType().asTuple().getElementTypes().get(1).equals(pcPrime.getType()));
@@ -323,6 +335,8 @@ private Expression getITEExpression(Iterable<? extends Expression> exprs,
   				memoryPrime.getType(), pcPrime.getType());
   		setPathType(pathTypePrime);
   	}
+  	
+  	IOUtils.err().println(memoryPrime.getType());
   	return exprManager.tuple(getPathType(), memoryPrime, pcPrime);
   }
 }

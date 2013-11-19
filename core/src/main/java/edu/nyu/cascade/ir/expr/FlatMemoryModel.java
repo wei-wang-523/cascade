@@ -44,6 +44,7 @@ public class FlatMemoryModel extends AbstractMemoryModel {
   private final Type addrType, valueType;
   private final ArrayType memType, sizeArrType;
   private final TupleType stateType;
+  private final MemoryModelType type;
   
   private final IRSingleHeapEncoder heapEncoder;
   
@@ -52,6 +53,8 @@ public class FlatMemoryModel extends AbstractMemoryModel {
 
   private FlatMemoryModel(ExpressionEncoding encoding, IRSingleHeapEncoder heapEncoder) {
   	super(encoding);
+  	
+    type = MemoryModelType.FLAT;
   	
     this.heapEncoder = heapEncoder;    
     valueType = heapEncoder.getValueType();
@@ -181,7 +184,7 @@ public class FlatMemoryModel extends AbstractMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
     Expression memVar = exprManager.variable(DEFAULT_MEMORY_VARIABLE_NAME, 
         memType, true);
-    Expression sizeArrVar = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, 
+    Expression sizeArrVar = exprManager.variable(DEFAULT_SIZE_VARIABLE_NAME, 
         sizeArrType, true);
     return exprManager.tuple(stateType, memVar, sizeArrVar);
   }
@@ -295,10 +298,15 @@ public class FlatMemoryModel extends AbstractMemoryModel {
   @Override
   public Expression substSizeArr(Expression expr) {
     ExpressionManager exprManager = getExpressionManager();
-    Expression initialSizeArr = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, sizeArrType, false);
+    Expression initialSizeArr = exprManager.variable(DEFAULT_SIZE_VARIABLE_NAME, sizeArrType, false);
     Expression constSizeArr = heapEncoder.getConstSizeArr(sizeArrType);
     Expression res = expr.subst(initialSizeArr, constSizeArr);
     return res;
+  }
+  
+  @Override
+  public MemoryModelType getType() {
+    return type;
   }
 	
 	private ArrayExpression getMemory(Expression state) {

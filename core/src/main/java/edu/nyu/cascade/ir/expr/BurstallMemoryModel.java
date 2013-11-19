@@ -61,6 +61,8 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   private RecordType memType, sizeArrType;
   private TupleType stateType;
   
+  private final MemoryModelType type;
+  
   private final IRPartitionHeapEncoder heapEncoder;
   
   private final Map<String, ArrayExpression> sideEffectMem;
@@ -72,6 +74,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     private BurstallMemoryModel(ExpressionEncoding encoding,
 				IRPartitionHeapEncoder heapEncoder) {
     super(encoding);
+    type = MemoryModelType.BURSTALL;
     
     this.heapEncoder = heapEncoder;    
     valueType = heapEncoder.getValueType();
@@ -84,7 +87,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
         Collections.<String>emptyList(), Collections.<Type>emptyList());
     
     sizeArrType = exprManager.recordType(
-        Identifiers.uniquify(DEFAULT_ALLOC_STATE_TYPE), 
+        Identifiers.uniquify(DEFAULT_SIZE_STATE_TYPE), 
         Collections.<String>emptyList(), Collections.<Type>emptyList());
     
     stateType = exprManager.tupleType(
@@ -228,7 +231,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
 
 	@Override
 	public ImmutableSet<BooleanExpression> getAssumptions(Expression state) {    
-    ImmutableMap<xtc.type.Type, Set<IRVar>> map = analyzer.snapshot();
+    ImmutableMap<xtc.type.Type, Set<IRVar>> map = analyzer.getSnapShot();
     
     ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
     
@@ -262,7 +265,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
     Expression memVar = exprManager.variable(DEFAULT_MEMORY_VARIABLE_NAME, 
         memType, true);
-    Expression sizeArrVar = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, 
+    Expression sizeArrVar = exprManager.variable(DEFAULT_SIZE_VARIABLE_NAME, 
         sizeArrType, true);
     return exprManager.tuple(stateType, memVar, sizeArrVar);
 	}
@@ -505,6 +508,11 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     return expr;
   }
   
+  @Override
+  public MemoryModelType getType() {
+    return type;
+  }
+  
   /**
 	 * Update memory state with side effect map
 	 * @param record
@@ -552,7 +560,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
 	  Type recordTypePrime = record.getType();
 	  if(map.size() > record.getArity()) {
 	  	String recordTypeName = mem ? Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE) :
-	  		Identifiers.uniquify(DEFAULT_ALLOC_STATE_TYPE);
+	  		Identifiers.uniquify(DEFAULT_SIZE_STATE_TYPE);
 	  	recordTypePrime = getRecordTypeFromMap(recordTypeName, map);
 	  } 
 	  return getExpressionManager().record(recordTypePrime, map.values());
@@ -648,7 +656,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
      		lvalRepArr = heapEncoder.getConstSizeArr(heapEncoder.getSizeArrType());
      		lvalRepArr = heapEncoder.updateSizeArr(lvalRepArr, lval, rval);
         map.put(lSizeArrName, lvalRepArr);
-     		String typeName = Identifiers.uniquify(DEFAULT_ALLOC_STATE_TYPE);
+     		String typeName = Identifiers.uniquify(DEFAULT_SIZE_STATE_TYPE);
      		recordType = getRecordTypeFromMap(typeName, map);
     	} else {
     		lvalRepArr = map.get(lSizeArrName);
@@ -806,7 +814,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
 	 */
   private String getSizeArrElemName(String name) {
     StringBuilder sb = new StringBuilder();
-    sb.append(ARRAY_ALLOC_PREFIX)
+    sb.append(ARRAY_SIZE_PREFIX)
     	.append(name);
   	String res = Identifiers.toValidId(sb.toString());
   	return res;

@@ -66,7 +66,8 @@ public class Steensgaard extends PreProcessor<IRVar> {
 	
 	
   private UnionFindECR uf;
-  private Map<Pair<String, Scope>, IRVarImpl> varsMap; 
+  private Map<Pair<String, Scope>, IRVarImpl> varsMap;
+  private ImmutableMap<IRVar, Set<IRVar>> snapShot;
   private SymbolTable symbolTable;
   
   private final IRVarImpl constant, nullLoc;
@@ -188,7 +189,8 @@ public class Steensgaard extends PreProcessor<IRVar> {
 
 	@Override
 	public String displaySnapShot() {
-	  ImmutableCollection<Set<IRVar>> sets = uf.snapshot().values();
+		Preconditions.checkArgument(snapShot != null);
+	  ImmutableCollection<Set<IRVar>> sets = snapShot.values();
 	  StringBuilder sb = new StringBuilder();
 	  if(sets != null) {
 	    sb.append("Snapshot of partition (size >= 1) :\n ");
@@ -220,8 +222,7 @@ public class Steensgaard extends PreProcessor<IRVar> {
 	 */
 	@Override
 	public AliasEquivClosure getEquivClass(IRVar var) {
-	  Iterable<IRVar> elements = uf.getEquivClass(((IRVarImpl) var).getECR());
-	  return AliasEquivClosure.create(var, elements);
+	  return AliasEquivClosure.create(this, var);
 	}
 
 	@Override
@@ -235,14 +236,20 @@ public class Steensgaard extends PreProcessor<IRVar> {
 	}
 
 	@Override
-	public ImmutableMap<IRVar, Set<IRVar>> snapshot() {
+	public ImmutableMap<IRVar, Set<IRVar>> getSnapShot() {
+		Preconditions.checkArgument(snapShot != null);
+		return snapShot;
+	}
+	
+	@Override
+	public void buildSnapShot() {
 	  ImmutableMap.Builder<IRVar, Set<IRVar>> builder = 
 	      new ImmutableMap.Builder<IRVar, Set<IRVar>>();
 	  for(Entry<ECR, Set<IRVar>> pair : uf.snapshot().entrySet()) {
 	    builder.put(uf.getRootInitVar(pair.getKey()),
 	        pair.getValue());
 	  }
-	  return builder.build();
+	  snapShot = builder.build();
 	}
 
 	@Override
@@ -280,7 +287,7 @@ public class Steensgaard extends PreProcessor<IRVar> {
 	public String getRepName(IRVar var) {
 		return new StringBuilder().append(var.getName())
       	.append(Identifiers.NAME_INFIX)
-      	.append(var.getScope().getName()).toString();
+      	.append(var.getScope().getQualifiedName()).toString();
 	}
 	
 	@Override
@@ -292,6 +299,18 @@ public class Steensgaard extends PreProcessor<IRVar> {
     } catch (ExecutionException e) {
       throw new CacheException(e);
     }
+	}
+	
+	public Scope getRootScope(String repName) {
+		// FIXME: requires variable name cannot has NAME_INFIX '.'
+		int index = repName.indexOf(Identifiers.NAME_INFIX);
+		String name = repName.substring(0, index);
+		String scopeName = repName.substring(index+1);
+		Scope scope = symbolTable.getScope(scopeName); // requires Qualified name
+		IRVar var = varsMap.get(Pair.of(name, scope));
+		AliasEquivClosure equivClosure = getEquivClass(var);
+		Scope res = (Scope) equivClosure.getProperty(Identifiers.SCOPE);
+		return res;
 	}
 
 	private Map<Pair<String, Scope>, IRVarImpl> parseSymbolTable(SymbolTable _symbolTable) {

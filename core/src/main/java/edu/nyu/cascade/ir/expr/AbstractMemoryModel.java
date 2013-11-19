@@ -30,12 +30,21 @@ import edu.nyu.cascade.util.Identifiers;
 public abstract class AbstractMemoryModel implements MemoryModel {
   protected static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
   protected static final String REGION_VARIABLE_NAME = "region";
-  protected static final String DEFAULT_ALLOC_VARIABLE_NAME = "size";
+  protected static final String DEFAULT_SIZE_VARIABLE_NAME = "size";
   protected static final String DEFAULT_MEMORY_STATE_TYPE = "memType";
-  protected static final String DEFAULT_ALLOC_STATE_TYPE = "sizeType";
+  protected static final String DEFAULT_SIZE_STATE_TYPE = "sizeType";
   protected static final String DEFAULT_STATE_TYPE = "stateType";
   protected static final String ARRAY_MEM_PREFIX = "mem";
-  protected static final String ARRAY_ALLOC_PREFIX = "size";
+  protected static final String ARRAY_SIZE_PREFIX = "size";
+  
+  public enum MemoryModelType {    
+    /** Assignment of values to a variable (set of variables) */ 
+    FLAT,
+    /** Allocate a region */
+    PARTITION,
+    /** Change the type of a by casting */
+    BURSTALL
+  };
   
   private final ExpressionEncoding encoding;
   
@@ -140,8 +149,8 @@ public abstract class AbstractMemoryModel implements MemoryModel {
     String typeName = null;
     if(recordStateName.startsWith(DEFAULT_MEMORY_STATE_TYPE)) {
     	typeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
-    } else if(recordStateName.startsWith(DEFAULT_ALLOC_STATE_TYPE)) {
-    	typeName = Identifiers.uniquify(DEFAULT_ALLOC_STATE_TYPE);
+    } else if(recordStateName.startsWith(DEFAULT_SIZE_STATE_TYPE)) {
+    	typeName = Identifiers.uniquify(DEFAULT_SIZE_STATE_TYPE);
     } else {
     	throw new IllegalArgumentException("Unknown record name " + recordStateName);
     }
@@ -194,6 +203,25 @@ public abstract class AbstractMemoryModel implements MemoryModel {
     }
     return exprManager.tuple(stateTypePrime, elems);
   }
+  
+  @Override
+  public PartitionMemoryModel asPartition() {
+  	Preconditions.checkArgument(this.getType().equals(MemoryModelType.PARTITION));
+  	return (PartitionMemoryModel) this;
+  }
+  
+  @Override
+  public BurstallMemoryModel asBurstall() {
+  	Preconditions.checkArgument(this.getType().equals(MemoryModelType.BURSTALL));
+  	return (BurstallMemoryModel) this;
+  }
+  
+  @Override
+  public FlatMemoryModel asFlat() {
+  	Preconditions.checkArgument(this.getType().equals(MemoryModelType.FLAT));
+  	return (FlatMemoryModel) this;
+  }
+  
   
   /**
    * Get a record type from <code>map</code> that mapping from element name

@@ -6,8 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+
 import xtc.tree.GNode;
 import xtc.tree.Node;
+import xtc.util.SymbolTable.Scope;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -15,6 +17,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import edu.nyu.cascade.c.CSymbolTableScope;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IREquivClosure;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
@@ -55,6 +58,8 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   private RecordType memType, sizeArrType;
   private TupleType stateType;
   
+  private final MemoryModelType type;
+  
   private final IRPartitionHeapEncoder heapEncoder;
   
   private final Map<String, ArrayExpression> sideEffectMem;
@@ -63,9 +68,12 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   
   private Steensgaard analyzer = null;
   
+  private final Map<String, String> nameMap;
+  
   private PartitionMemoryModel(ExpressionEncoding encoding,
   		IRPartitionHeapEncoder heapEncoder) {
     super(encoding);
+    type = MemoryModelType.PARTITION;
     
     this.heapEncoder = heapEncoder;    
     valueType = heapEncoder.getValueType();
@@ -78,7 +86,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
         Collections.<String>emptyList(), Collections.<Type>emptyList());
     
     sizeArrType = exprManager.recordType(
-        Identifiers.uniquify(DEFAULT_ALLOC_STATE_TYPE), 
+        Identifiers.uniquify(DEFAULT_SIZE_STATE_TYPE), 
         Collections.<String>emptyList(), Collections.<Type>emptyList());
     
     stateType = exprManager.tupleType(
@@ -87,6 +95,8 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     sideEffectMem = Maps.newLinkedHashMap();
     sideEffectMemClosure = Maps.newLinkedHashMap();
     sideEffectSizeClosure = Maps.newLinkedHashMap();
+    
+    nameMap = Maps.newLinkedHashMap();
   }
   
   @Override
@@ -230,7 +240,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   @Override
   public ImmutableSet<BooleanExpression> getAssumptions(Expression state) {
     
-    ImmutableMap<IRVar, Set<IRVar>> map = analyzer.snapshot();
+    ImmutableMap<IRVar, Set<IRVar>> map = analyzer.getSnapShot();
     
     ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
     
@@ -259,7 +269,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
     Expression memVar = exprManager.variable(DEFAULT_MEMORY_VARIABLE_NAME, 
         memType, true);
-    Expression sizeArrVar = exprManager.variable(DEFAULT_ALLOC_VARIABLE_NAME, 
+    Expression sizeArrVar = exprManager.variable(DEFAULT_SIZE_VARIABLE_NAME, 
         sizeArrType, true);
     return exprManager.tuple(stateType, memVar, sizeArrVar);
   }
@@ -418,7 +428,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   public void setPreProcessor(PreProcessor<?> analyzer) {
   	Preconditions.checkArgument(analyzer instanceof Steensgaard);
     this.analyzer = (Steensgaard) analyzer;
-    IOUtils.debug().pln(analyzer.displaySnapShot());
+    IOUtils.err().println(analyzer.displaySnapShot());
   }
   
   @Override
@@ -491,7 +501,76 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     return expr;
   }
   
+  @Override
+  public MemoryModelType getType() {
+  	return type;
+  }
+  
   /**
+   * Kick out the type element out of scope
+   * @param memoryPrime
+   * @param pcPrime
+   * @return
+   */
+  protected Expression kickout(Expression state, Scope currentScope) {
+  	ExpressionManager exprManager = getExpressionManager();
+  	boolean shrinked = false;
+  	
+  	Expression memState = state.asTuple().getChild(0);
+		Expression memStatePrime = memState;
+  	
+		{ /** Kick out the memory state */
+			Map<String, ArrayExpression> elemMap = getRecordElems(memState);
+			int preMemSize = elemMap.size();
+			for(String key : ImmutableSet.copyOf(elemMap.keySet())) {
+				String varScopeName = nameMap.get(key);
+				Scope scope = analyzer.getRootScope(varScopeName);
+				boolean nested = CSymbolTableScope.isNested(scope, currentScope);
+				boolean equal = scope.equals(currentScope);
+				if(!(nested || equal)) elemMap.remove(key);
+			}
+			
+			if(elemMap.size() < preMemSize) {
+				shrinked = true;
+				IOUtils.err().println("Memory state size is shrinked.");
+				String recordTypeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
+				RecordType recordType = getRecordTypeFromMap(recordTypeName, elemMap);
+				memStatePrime = exprManager.record(recordType, elemMap.values());
+			}
+		}
+  	
+		Expression sizeState = state.asTuple().getChild(1);
+		Expression sizeStatePrime = sizeState;
+		
+		{ /** Kickout the size state */
+			Map<String, ArrayExpression> elemMap = getRecordElems(sizeState);
+			int preSizeSize = elemMap.size();
+			if(preSizeSize > 0) {
+				int i = 0;
+			}
+			for(String key : ImmutableSet.copyOf(elemMap.keySet())) {
+				String varScopeName = nameMap.get(key);
+				Scope scope = analyzer.getRootScope(varScopeName);
+				boolean nested = CSymbolTableScope.isNested(scope, currentScope);
+				boolean equal = scope.equals(currentScope);
+				if(!(nested || equal)) elemMap.remove(key);
+			}
+			
+			if(elemMap.size() < preSizeSize) {
+				shrinked = true;
+				IOUtils.err().println("Size state size is shrinked.");
+				String recordTypeName = Identifiers.uniquify(DEFAULT_SIZE_STATE_TYPE);
+				RecordType recordType = getRecordTypeFromMap(recordTypeName, elemMap);
+				sizeStatePrime = exprManager.record(recordType, elemMap.values());
+			}
+		}
+		
+		if(!shrinked)	return state;
+		
+		return getUpdatedState(state, memStatePrime, sizeStatePrime);
+	}
+
+	/**
    * Update memory state with assignment lval := rval
    * @param record
    * @param lval
@@ -564,7 +643,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     Type recordTypePrime = record.getType();
     if(map.size() > record.getArity()) {
     	String recordTypeName = mem ? Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE) :
-    		Identifiers.uniquify(DEFAULT_ALLOC_STATE_TYPE);
+    		Identifiers.uniquify(DEFAULT_SIZE_STATE_TYPE);
     	recordTypePrime = getRecordTypeFromMap(recordTypeName, map);
     } 
     return getExpressionManager().record(recordTypePrime, map.values());
@@ -632,7 +711,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
      		lvalRepArr = heapEncoder.getConstSizeArr(heapEncoder.getSizeArrType());
      		lvalRepArr = heapEncoder.updateSizeArr(lvalRepArr, lval, rval);
         map.put(lvalRepArrName, lvalRepArr);
-     		String typeName = Identifiers.uniquify(DEFAULT_ALLOC_STATE_TYPE);
+     		String typeName = Identifiers.uniquify(DEFAULT_SIZE_STATE_TYPE);
      		recordType = getRecordTypeFromMap(typeName, map);
     	} else {
     		lvalRepArr = map.get(lvalRepArrName);
@@ -685,7 +764,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     	resMem = selectRecordElem(state.getChild(0), arrName);
     } else {
     	throw new IllegalArgumentException("Not defined " + varName);
-    }   
+    }
     return resMem;
   }
   
@@ -772,9 +851,10 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   private String getMemArrElemName(String varName) {
   	StringBuilder sb = new StringBuilder()
   		.append(ARRAY_MEM_PREFIX)
-    	.append(Identifiers.ARRAY_NAME_INFIX)
+    	.append(Identifiers.NAME_INFIX)
     	.append(varName);
   	String res = Identifiers.toValidId(sb.toString());
+  	nameMap.put(res, varName);
   	return res;
   }
   
@@ -785,10 +865,11 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
 	 */
   private String getSizeArrElemName(String varName) {
     StringBuilder sb = new StringBuilder();
-    sb.append(ARRAY_ALLOC_PREFIX)
-    	.append(Identifiers.ARRAY_NAME_INFIX)
+    sb.append(ARRAY_SIZE_PREFIX)
+    	.append(Identifiers.NAME_INFIX)
     	.append(varName);
   	String res = Identifiers.toValidId(sb.toString());
+  	nameMap.put(res, varName);
   	return res;
   }
 }

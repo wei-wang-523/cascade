@@ -199,10 +199,16 @@ public class TypeAnalyzer extends PreProcessor<Type> {
 	  return TypeEquivClosure.create(getRepName(type), varTypeMap.get(type));
 	}
 
-	public ImmutableMap<Type, Set<IRVar>> snapshot() {
+	@Override
+	public ImmutableMap<Type, Set<IRVar>> getSnapShot() {
 	  ImmutableMap.Builder<Type, Set<IRVar>> builder = 
 	  		new ImmutableMap.Builder<Type, Set<IRVar>>().putAll(varTypeMap);
 	  return builder.build();
+	}
+	
+	@Override
+	public void buildSnapShot() {
+		// Don't bother to build snap shot for Burstall memory model
 	}
 	
 	@Override

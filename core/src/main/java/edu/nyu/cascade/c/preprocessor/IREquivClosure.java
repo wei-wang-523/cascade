@@ -7,4 +7,8 @@ public interface IREquivClosure {
 	Iterable<IRVar> getElements();
 	
 	boolean hasElements();
+
+	Object getProperty(String name);
+	
+	Object setProperty(String name, Object o);
 }

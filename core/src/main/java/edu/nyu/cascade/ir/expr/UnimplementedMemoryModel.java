@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRVarInfo;
+import edu.nyu.cascade.ir.expr.AbstractMemoryModel.MemoryModelType;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -191,4 +192,28 @@ public class UnimplementedMemoryModel implements MemoryModel {
 	  // TODO Auto-generated method stub
 	  return null;
   }
+
+	@Override
+	public MemoryModelType getType() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public PartitionMemoryModel asPartition() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public FlatMemoryModel asFlat() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public BurstallMemoryModel asBurstall() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

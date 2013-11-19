@@ -35,7 +35,7 @@ public abstract class PreProcessor<T> {
 
 	public abstract IREquivClosure getEquivClass(T arg);
 
-	public abstract ImmutableMap<T, Set<IRVar>> snapshot();
+	public abstract ImmutableMap<T, Set<IRVar>> getSnapShot();
 
 	public abstract T getPointsToElem(Node node);
 
@@ -44,4 +44,6 @@ public abstract class PreProcessor<T> {
 	public abstract String getRepName(T arg);
 
 	public abstract T getRep(Node node);
+
+	public abstract void buildSnapShot();
 }

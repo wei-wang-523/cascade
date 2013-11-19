@@ -186,9 +186,14 @@ public class TypeCastAnalyzer extends PreProcessor {
 	}
 
 	@Override
-	public ImmutableMap snapshot() {
+	public ImmutableMap getSnapShot() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	@Override
+	public void buildSnapShot() {
+	// TODO Auto-generated method stub
 	}
 
 	@Override
