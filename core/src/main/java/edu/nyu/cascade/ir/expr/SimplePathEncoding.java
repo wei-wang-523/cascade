@@ -8,6 +8,8 @@ package edu.nyu.cascade.ir.expr;
 import java.util.Iterator;
 import java.util.List;
 
+import xtc.util.SymbolTable.Scope;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -17,6 +19,7 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TupleExpression;
+import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.Identifiers;
@@ -29,6 +32,7 @@ public class SimplePathEncoding extends AbstractPathEncoding {
 
   private TupleType pathType;
   private static final String DEFAULT_PATH_STATE_NAME = "pathState";
+  private Scope previousScope = null;
   
   private SimplePathEncoding(ExpressionEncoder encoder) {
     super(encoder);
@@ -311,12 +315,31 @@ private Expression getITEExpression(Iterable<? extends Expression> exprs,
     }
     return resExpr;
   }
-  
+
   private TupleExpression getUpdatedPathState(Expression memoryPrime, Expression pcPrime) {
 		ExpressionManager exprManager = getExpressionManager();
   	boolean isUpdated = !(
   			getPathType().asTuple().getElementTypes().get(0).equals(memoryPrime.getType()) &&
   			getPathType().asTuple().getElementTypes().get(1).equals(pcPrime.getType()));
+  	
+  	Scope currScope = getExpressionEncoder().getCurrentScope();
+  	
+  	if(previousScope != null) {
+  		if(currScope.hasNested(previousScope.getName())) {
+  			if(previousScope.hasSymbols()) {
+  				Iterator<String> symbolsItr = previousScope.symbols();
+  	    	RecordType recordType = memoryPrime.getType().asTuple().getElementTypes().get(0).asRecord();
+  	    	Iterable<? extends Expression> elems = memoryPrime.asTuple().getChild(0).asRecord().getChildren();
+  	    	Iterable<String> elemNames = recordType.getElementNames();
+  				while(symbolsItr.hasNext()) {
+  					String symbol = symbolsItr.next();
+  					int i = 0;
+  				}
+  			}
+  		}
+  	}
+  	
+  	previousScope = currScope;
   	
   	if(isUpdated) {
   		Type pathTypePrime = exprManager.tupleType(Identifiers.uniquify(DEFAULT_PATH_STATE_NAME), 
