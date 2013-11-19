@@ -65,6 +65,7 @@ final class PathSeqEncoder implements PathEncoder {
     for(IRStatement stmt : path) {
     	preprocessor.analysis(stmt);
     }
+    preprocessor.buildSnapShot();
     pathEncoding.getExpressionEncoder()
     	.getMemoryModel().setPreProcessor(preprocessor);
   }

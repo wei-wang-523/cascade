@@ -77,6 +77,7 @@ final class PathMergeEncoder implements PathEncoder {
   protected void preprocessGraph(final PreProcessor<?> preprocessor, final Graph graph) {
   	Set<Path> visitedPath = Sets.newHashSet();
   	preprocessPath(preprocessor, graph, graph.getDestPath(), visitedPath);
+  	preprocessor.buildSnapShot();
   	pathEncoding.getExpressionEncoder()
   		.getMemoryModel().setPreProcessor(preprocessor);
   }
