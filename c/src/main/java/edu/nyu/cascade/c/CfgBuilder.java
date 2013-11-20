@@ -171,7 +171,7 @@ public class CfgBuilder extends Visitor {
   private Deque<Scope> scopes;
   private CAnalyzer cAnalyzer;
   private Map<String, BasicBlock> labeledBlocks;
-  private List<xtc.util.SymbolTable.Scope> nestedScopes;
+//  private List<xtc.util.SymbolTable.Scope> nestedScopes;
   
   /**
    * Whether to treat compoundStatement '{...}' as a new scope in the symbolTable;
@@ -189,7 +189,7 @@ public class CfgBuilder extends Visitor {
     alignments = Lists.newLinkedList();
     cfgs = Maps.newHashMap();
     scopes = Lists.newLinkedList();
-    nestedScopes = Lists.newArrayList();
+//    nestedScopes = Lists.newArrayList();
     compoStmtAsScope = true;
     labeledBlocks = Maps.newHashMap();
     globalStmts = Maps.newHashMap();
@@ -280,111 +280,111 @@ public class CfgBuilder extends Visitor {
     scopes.addFirst(s);
   }
   
-  private int getKeyFromScope(xtc.util.SymbolTable.Scope scope) {
-    String name = scope.getName();
-    int startIndex = name.indexOf('(');
-    int endIndex = name.indexOf(')');
-    String keyName = name.substring(startIndex+1, endIndex);
-    return Integer.valueOf(keyName);
-  }
+//  private int getKeyFromScope(xtc.util.SymbolTable.Scope scope) {
+//    String name = scope.getName();
+//    int startIndex = name.indexOf('(');
+//    int endIndex = name.indexOf(')');
+//    String keyName = name.substring(startIndex+1, endIndex);
+//    return Integer.valueOf(keyName);
+//  }
+//  
+//  private boolean lessOrEqualScopes(xtc.util.SymbolTable.Scope lScope,
+//      xtc.util.SymbolTable.Scope rScope) {
+//    int lKey = getKeyFromScope(lScope);
+//    int rKey = getKeyFromScope(rScope);
+//    return (lKey <= rKey);
+//  }
+//  
+//  private List<xtc.util.SymbolTable.Scope> 
+//  mergeSortScopes(List<xtc.util.SymbolTable.Scope> scopes) {
+//    if(scopes.size() <=1)
+//      return scopes;
+//    
+//    List<xtc.util.SymbolTable.Scope> lScopes, rScopes, resScopes;
+//    lScopes = scopes.subList(0, scopes.size()/2);
+//    rScopes = scopes.subList(scopes.size()/2, scopes.size());
+//    resScopes = Lists.newArrayList();
+//    lScopes = mergeSortScopes(lScopes);
+//    rScopes = mergeSortScopes(rScopes);
+//    while(!(lScopes.isEmpty() && rScopes.isEmpty())) {
+//      xtc.util.SymbolTable.Scope lScope, rScope;
+//      if(!(lScopes.isEmpty() || rScopes.isEmpty())) {
+//        lScope = lScopes.get(0);
+//        rScope = rScopes.get(0);
+//        if(lessOrEqualScopes(lScope, rScope)) {
+//          resScopes.add(lScope);
+//          lScopes = lScopes.subList(1, lScopes.size());
+//        } else {
+//          resScopes.add(rScope);
+//          rScopes = rScopes.subList(1, rScopes.size());
+//        }
+//      } else if(!lScopes.isEmpty()) {
+//        lScope = lScopes.get(0);
+//        resScopes.add(lScope);
+//        lScopes = lScopes.subList(1, lScopes.size()); 
+//      } else if(!rScopes.isEmpty()) {
+//        rScope = rScopes.get(0);
+//        resScopes.add(rScope);
+//        rScopes = rScopes.subList(1, rScopes.size());       
+//      }
+//    }
+//    return resScopes;
+//  }
+//
+//  /** Initialize nested scopes. For example: 
+//   * block(0){block(1)}, block(2){block(3), block(4)}, block(5). 
+//   * The initialization of nestedScopes works as follows:
+//   * {block(0), block(2), block(5)}
+//   * Get block(0)'s nested scopes {block(1)};
+//   * Get block(2)'s nested scopes {block(3), block(4)};
+//   * Insert {block(1)} after block(0), insert {block(3), block(4) after block(2)
+//   * The final nestedScopes is
+//   * {block(0), block(1), block(2), block(3), block(4), block(5)} */
+//  private List<xtc.util.SymbolTable.Scope> 
+//  initializeNestedScopes(xtc.util.SymbolTable.Scope scope) {
+//    List<xtc.util.SymbolTable.Scope> nestedScopes, resScopes;
+//    nestedScopes = Lists.newArrayList();
+//    resScopes = Lists.newArrayList();
+//    
+//    // Pick the nested scopes under 'scope'
+//    Iterator<String> scopeIter = scope.nested();
+//    while(scopeIter.hasNext())
+//      nestedScopes.add(scope.getNested(scopeIter.next()));
+//    // Sort the nested scopes
+//    nestedScopes = mergeSortScopes(nestedScopes);
+//    /*
+//     *  Recursively initialize the nested scopes under element in nestedScopes.
+//     *  Add the element and its nested scopes into resScopes.
+//     */ 
+//    for(xtc.util.SymbolTable.Scope nestedScope : nestedScopes) {
+//      resScopes.add(nestedScope);
+//      resScopes.addAll(initializeNestedScopes(nestedScope));
+//    }
+//    return resScopes;
+//  }
   
-  private boolean lessOrEqualScopes(xtc.util.SymbolTable.Scope lScope,
-      xtc.util.SymbolTable.Scope rScope) {
-    int lKey = getKeyFromScope(lScope);
-    int rKey = getKeyFromScope(rScope);
-    return (lKey <= rKey);
-  }
+//  /** Initialize the nestedScopes only if it's empty. */
+//  private void initializeNestedScopes() {
+//    if(nestedScopes.isEmpty())
+//      nestedScopes = initializeNestedScopes(symbolTable.getCurrentScope());
+//  }
   
-  private List<xtc.util.SymbolTable.Scope> 
-  mergeSortScopes(List<xtc.util.SymbolTable.Scope> scopes) {
-    if(scopes.size() <=1)
-      return scopes;
-    
-    List<xtc.util.SymbolTable.Scope> lScopes, rScopes, resScopes;
-    lScopes = scopes.subList(0, scopes.size()/2);
-    rScopes = scopes.subList(scopes.size()/2, scopes.size());
-    resScopes = Lists.newArrayList();
-    lScopes = mergeSortScopes(lScopes);
-    rScopes = mergeSortScopes(rScopes);
-    while(!(lScopes.isEmpty() && rScopes.isEmpty())) {
-      xtc.util.SymbolTable.Scope lScope, rScope;
-      if(!(lScopes.isEmpty() || rScopes.isEmpty())) {
-        lScope = lScopes.get(0);
-        rScope = rScopes.get(0);
-        if(lessOrEqualScopes(lScope, rScope)) {
-          resScopes.add(lScope);
-          lScopes = lScopes.subList(1, lScopes.size());
-        } else {
-          resScopes.add(rScope);
-          rScopes = rScopes.subList(1, rScopes.size());
-        }
-      } else if(!lScopes.isEmpty()) {
-        lScope = lScopes.get(0);
-        resScopes.add(lScope);
-        lScopes = lScopes.subList(1, lScopes.size()); 
-      } else if(!rScopes.isEmpty()) {
-        rScope = rScopes.get(0);
-        resScopes.add(rScope);
-        rScopes = rScopes.subList(1, rScopes.size());       
-      }
-    }
-    return resScopes;
-  }
-  
-  /** Initialize nested scopes. For example: 
-   * block(0){block(1)}, block(2){block(3), block(4)}, block(5). 
-   * The initialization of nestedScopes works as follows:
-   * {block(0), block(2), block(5)}
-   * Get block(0)'s nested scopes {block(1)};
-   * Get block(2)'s nested scopes {block(3), block(4)};
-   * Insert {block(1)} after block(0), insert {block(3), block(4) after block(2)
-   * The final nestedScopes is
-   * {block(0), block(1), block(2), block(3), block(4), block(5)} */
-  private List<xtc.util.SymbolTable.Scope> 
-  initializeNestedScopes(xtc.util.SymbolTable.Scope scope) {
-    List<xtc.util.SymbolTable.Scope> nestedScopes, resScopes;
-    nestedScopes = Lists.newArrayList();
-    resScopes = Lists.newArrayList();
-    
-    // Pick the nested scopes under 'scope'
-    Iterator<String> scopeIter = scope.nested();
-    while(scopeIter.hasNext())
-      nestedScopes.add(scope.getNested(scopeIter.next()));
-    // Sort the nested scopes
-    nestedScopes = mergeSortScopes(nestedScopes);
-    /*
-     *  Recursively initialize the nested scopes under element in nestedScopes.
-     *  Add the element and its nested scopes into resScopes.
-     */ 
-    for(xtc.util.SymbolTable.Scope nestedScope : nestedScopes) {
-      resScopes.add(nestedScope);
-      resScopes.addAll(initializeNestedScopes(nestedScope));
-    }
-    return resScopes;
-  }
-  
-  /** Initialize the nestedScopes only if it's empty. */
-  private void initializeNestedScopes() {
-    if(nestedScopes.isEmpty())
-      nestedScopes = initializeNestedScopes(symbolTable.getCurrentScope());
-  }
-  
-  /** SymbolTable enters a nested scope. */
-  private void enterScope() {
-    // For node without property 'scope' attached.
-    symbolTable.setScope(nestedScopes.remove(0));
-  }
+//  /** SymbolTable enters a nested scope. */
+//  private void enterScope() {
+//    // For node without property 'scope' attached.
+//    symbolTable.setScope(nestedScopes.remove(0));
+//  }
   
   /** SymbolTable enters a nested scope. */
   private void enterScope(GNode node) {
     // For node is FunctionDefinition node or ForStatement node with 'scope' property
     symbolTable.enterScope(node);
-    initializeNestedScopes();
-    /* Remove the scope in nested scopes is only valid for forLoop, not for FunctionDefinition
-     * Because, Function's scope is root scope, not recorded in nestedScopes
-     */
-    if(!(nestedScopes.isEmpty() || node.hasName("FunctionDefinition")))
-      nestedScopes.remove(0);
+//    initializeNestedScopes();
+//    /* Remove the scope in nested scopes is only valid for forLoop, not for FunctionDefinition
+//     * Because, Function's scope is root scope, not recorded in nestedScopes
+//     */
+//    if(!(nestedScopes.isEmpty() || node.hasName("FunctionDefinition")))
+//      nestedScopes.remove(0);
   }
   
   /** SymbolTable exit a nested scope. */
@@ -888,7 +888,11 @@ public class CfgBuilder extends Visitor {
         dispatch((Node) o);
       }
     } else {
-      enterScope(); 
+    	assert(symbolTable.hasScope(node));
+    	enterScope(node);
+//    	} else {
+//    		enterScope(); 
+//    	}
       for (Object o : node) {
         dispatch((Node) o);
       }
