@@ -302,7 +302,7 @@ public class Steensgaard extends PreProcessor<IRVar> {
 	}
 	
 	public Scope getRootScope(String repName) {
-		// FIXME: requires variable name cannot has NAME_INFIX '.'
+		// FIXME: variable name cannot has NAME_INFIX '.'
 		int index = repName.indexOf(Identifiers.NAME_INFIX);
 		String name = repName.substring(0, index);
 		String scopeName = repName.substring(index+1);
@@ -483,6 +483,7 @@ public class Steensgaard extends PreProcessor<IRVar> {
 	  		throw new ExpressionFactoryException("Inconsistent info for " + name + '@' + scopeName);
 	  	}
 	  	var = addVariable(name, type_, scope_);
+	  	buildSnapShot(); // add bound variable, update snapshot
 	  	symbolTable.setScope(origScope);
 	  }
 	    

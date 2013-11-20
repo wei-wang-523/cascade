@@ -72,6 +72,7 @@ public class AliasEquivClosure implements IREquivClosure {
 	
 	public static AliasEquivClosure create(Steensgaard preprocessor, IRVar repVar) {
 		Preconditions.checkArgument(preprocessor.getSnapShot() != null);
+		Preconditions.checkArgument(preprocessor.getSnapShot().containsKey(repVar));
 		try {
 			if(cache.get(preprocessor).containsKey(repVar)) {
 				return cache.get(preprocessor).get(repVar);

@@ -321,9 +321,11 @@ private Expression getITEExpression(Iterable<? extends Expression> exprs,
   	
   	MemoryModel memoryModel = getMemoryModel();
   	if(memoryModel.getType().equals(MemoryModelType.PARTITION)) {
-  		PartitionMemoryModel parMemModel = memoryModel.asPartition();
   		Scope currScope = getExpressionEncoder().getCurrentScope();
-  		memoryPrime = parMemModel.kickout(memoryPrime, currScope);
+  		if(currScope != null) { // current scope might be null if statement is havoc statement
+    		PartitionMemoryModel parMemModel = memoryModel.asPartition();
+    		memoryPrime = parMemModel.kickout(memoryPrime, currScope);
+  		}
   	}
   	
   	boolean isUpdated = !(

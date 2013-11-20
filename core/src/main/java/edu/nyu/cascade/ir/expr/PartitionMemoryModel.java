@@ -428,7 +428,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   public void setPreProcessor(PreProcessor<?> analyzer) {
   	Preconditions.checkArgument(analyzer instanceof Steensgaard);
     this.analyzer = (Steensgaard) analyzer;
-    IOUtils.err().println(analyzer.displaySnapShot());
+    IOUtils.debug().pln(analyzer.displaySnapShot());
   }
   
   @Override
@@ -513,6 +513,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
    * @return
    */
   protected Expression kickout(Expression state, Scope currentScope) {
+  	Preconditions.checkArgument(currentScope != null);
   	ExpressionManager exprManager = getExpressionManager();
   	boolean shrinked = false;
   	
@@ -545,9 +546,6 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
 		{ /** Kickout the size state */
 			Map<String, ArrayExpression> elemMap = getRecordElems(sizeState);
 			int preSizeSize = elemMap.size();
-			if(preSizeSize > 0) {
-				int i = 0;
-			}
 			for(String key : ImmutableSet.copyOf(elemMap.keySet())) {
 				String varScopeName = nameMap.get(key);
 				Scope scope = analyzer.getRootScope(varScopeName);
