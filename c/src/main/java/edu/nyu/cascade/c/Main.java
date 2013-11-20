@@ -754,10 +754,8 @@ public class Main {
       }
     }
     time = System.currentTimeMillis() - time;
-    IOUtils.out()
-    .println(
-        "Cascade took time: "
-            + time/1000.0 + "s");
+    IOUtils.out().println("Cascade took time: " + time/1000.0 + "s");
+    IOUtils.err().println("Cascade took time: " + time/1000.0 + "s");
   }
 
   public void setErrStream(PrintStream err) {
