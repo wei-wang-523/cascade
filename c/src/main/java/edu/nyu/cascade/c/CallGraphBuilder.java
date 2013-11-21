@@ -9,8 +9,6 @@ import xtc.tree.Node;
 import xtc.tree.Visitor;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
 
 import edu.nyu.cascade.ir.IRCallGraph;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
@@ -99,20 +97,14 @@ public class CallGraphBuilder extends Visitor {
     
     final String funcFile = funcDeclareLoc.file;
     final int lineNum = funcDeclareLoc.line;
-    Node bestNode = Iterables.find(cfgs.keySet(), new Predicate<Node>(){
-			@Override
-			public boolean apply(Node node) {
-				Location loc = node.getLocation();
-				return funcFile.equals(loc.file) && (lineNum - loc.line == 0);
-			}
-    	
-    });
-    
-    if(bestNode == null) {
-      /* FIXME: continue find in the parent scope or stays at root scope initially? */
-      IOUtils.debug().pln("Cannot find the function declaration node for " + info.getName());
+    for(Node node : cfgs.keySet()) {
+    	Location loc = node.getLocation();
+    	if(funcFile.equals(loc.file) && (lineNum == loc.line))
+    		return node;
     }
-    return bestNode;
+    
+    IOUtils.debug().pln("Cannot find the function declaration node for " + info.getName());
+    return null;
   }
   
   @Override

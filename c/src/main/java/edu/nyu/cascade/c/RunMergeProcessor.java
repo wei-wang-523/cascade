@@ -45,12 +45,22 @@ class RunMergeProcessor implements RunProcessor {
     this.cAnalyzer = cAnalyzer;
     this.builder = builder;
     this.callGraphs = callGraphs;
+    this.functions = Maps.newHashMap();
     pathEncoder = PathMergeEncoder.create(SimplePathEncoding.create(exprEncoder));
+    for(Node node : cfgs.keySet()) {
+    	if(node.hasName("FunctionDefinition")) {
+    		GNode declarator = node.getGeneric(2);
+    		GNode identifier = CAnalyzer.getDeclaredId(declarator);
+    		String functionName = identifier.getString(0);
+    		functions.put(functionName, node);
+    	}
+    }
   }
   
   private final Map<File, CSymbolTable> symbolTables;
   private final Map<Node, IRControlFlowGraph> cfgs;
   private final Map<File, IRCallGraph> callGraphs;
+  private final Map<String, Node> functions;
   private final CAnalyzer cAnalyzer;
   private final PathMergeEncoder pathEncoder;
   private final PreProcessor.Builder<?> builder;
@@ -1141,26 +1151,23 @@ class RunMergeProcessor implements RunProcessor {
     }
   }
   
-  private boolean hasFunctionCall(IRStatement stmt) throws RunProcessorException {
-    File file = stmt.getLocation().getFile();
-    CSymbolTable symbolTable = symbolTables.get(file);
-    return hasFunctionCall(symbolTable, stmt.getSourceNode());
+  private boolean hasFunctionCall(IRStatement stmt) {
+    return hasFunctionCall(stmt.getSourceNode());
   }
   
-  private boolean hasFunctionCall(CSymbolTable symbolTable, Node srcNode) 
-      throws RunProcessorException {
+  private boolean hasFunctionCall(Node srcNode) {
     if(srcNode.hasName("FunctionCall")) {
       String funcName = srcNode.getNode(0).getString(0);
-      /* Do not touch the reserved functions */
-      if(ReservedFunction.Functions.contains(funcName))  return false;
-      Node funcNode = findFuncDeclareNode(symbolTable, funcName);
-      return (funcNode != null);
+      if(!(ReservedFunction.Functions.contains(funcName) 
+      		|| functions.containsKey(funcName))) {
+      	throw new IllegalArgumentException("Unknown function " + funcName);
+      }
+      return functions.containsKey(funcName);
     }
-    for(int i=0; i<srcNode.size(); i++) {
-      Object arg = srcNode.get(i);
-      if(arg instanceof Node)
-        if(hasFunctionCall(symbolTable, (Node) arg))
-          return true;
+    
+    for(Object arg : srcNode) {
+    	if(arg instanceof Node 
+    			&& hasFunctionCall((Node) arg))	return true;
     }
     return false;
   }
@@ -1311,13 +1318,13 @@ class RunMergeProcessor implements RunProcessor {
         int currIndex = lastIndex;
         while(currIndex >= 0) {
           IRStatement stmt = tmpPath.getStmt(currIndex);
-          if(stmt.getType().equals(StatementType.CALL) && 
-              findFuncDeclareNode(stmt) != null)
-            break;
-          else if(hasFunctionCall(stmt))
-            break;
-          else
-            currIndex--;
+//          if(stmt.getType().equals(StatementType.CALL) && 
+//              findFuncDeclareNode(stmt) != null)
+//            break;
+//          else if(hasFunctionCall(stmt))
+//            break;
+          if(hasFunctionCall(stmt)) break;
+          else	currIndex--;
         }
 
         int splitIndex = currIndex + 1;
