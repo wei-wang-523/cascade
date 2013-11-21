@@ -4,7 +4,6 @@ import static edu.nyu.cascade.util.IOUtils.debug;
 import static edu.nyu.cascade.util.IOUtils.debugC;
 import static edu.nyu.cascade.util.IOUtils.debugEnabled;
 
-import java.io.File;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
@@ -22,7 +21,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import edu.nyu.cascade.control.Run;
 import edu.nyu.cascade.ir.IRBooleanExpression;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.IRStatement;
@@ -72,23 +70,6 @@ public class CfgBuilder extends Visitor {
   public static Map<Node, IRControlFlowGraph> getCfgs(SymbolTable symbolTable, CAnalyzer cAnalyzer,
       Node ast) {
     return (Map<Node, IRControlFlowGraph>) new CfgBuilder(symbolTable, cAnalyzer).dispatch(ast);
-  }
-  
-  /**
-   * Store the global statements for each file. Each declared function node in 
-   * a file has its CFG. Various functions may share global statements as 
-   * #define. This structure is to store the global statements.
-   */
-  private static Map<File, List<IRStatement>> globalStmts;
-  
-  /**
-   * Pick the global statements of one file.
-   * @param run
-   * @return a list of statements, empty if none.
-   */
-  public static List<IRStatement> getGlobalStmts(Run run) {
-    File file = run.getStartPosition().getFile();
-    return globalStmts.get(file);
   }
 
   /**
@@ -144,13 +125,10 @@ public class CfgBuilder extends Visitor {
   }
 
   private static final String TYPE = CType.TYPE;
-  private static final String TEST_VAR_PREFIX = "condition";
-  private static final String STRING_VAR_PREFIX = "string";
-  private static final String MALLOC_VAR_PREFIX = "malloc";
   
   private final SymbolTable symbolTable;
   private BasicBlock currentBlock;
-  private List<Statement> postStatements, appendStatements;
+  private List<Statement> postStatements, appendStatements, globalStatements;
   private Deque<Integer> alignments;  // for pretty-printing
 
   /**
@@ -166,11 +144,11 @@ public class CfgBuilder extends Visitor {
    * visitor returns.
    */
   private int expressionDepth;
-  private Map<Node, ControlFlowGraph> cfgs;
+  private final Map<Node, ControlFlowGraph> cfgs;
   private ControlFlowGraph currentCfg;
-  private Deque<Scope> scopes;
-  private CAnalyzer cAnalyzer;
-  private Map<String, BasicBlock> labeledBlocks;
+  private final Deque<Scope> scopes;
+  private final CAnalyzer cAnalyzer;
+  private final Map<String, BasicBlock> labeledBlocks;
 //  private List<xtc.util.SymbolTable.Scope> nestedScopes;
   
   /**
@@ -192,7 +170,7 @@ public class CfgBuilder extends Visitor {
 //    nestedScopes = Lists.newArrayList();
     compoStmtAsScope = true;
     labeledBlocks = Maps.newHashMap();
-    globalStmts = Maps.newHashMap();
+    globalStatements = Lists.newArrayList();
   }
 
   /** Align the debug output with the last seen tab stop. */
@@ -229,6 +207,13 @@ public class CfgBuilder extends Visitor {
     if (expressionDepth == 0) {
       flushPostStatements();
     }
+  }
+  
+  /**
+   * Add a global statement.
+   */
+  private void addGlobalStatement(Statement stmt) {
+  	globalStatements.add(stmt);
   }
 
   /** Append the post-statements accumulated to the current block. */
@@ -394,16 +379,10 @@ public class CfgBuilder extends Visitor {
   
   /** Choose the way to add statement, globally or locally. */
   private void addStatementGlobalOrLocal(Statement stmt) {
-    if(this.currentCfg != null) 
+    if(currentCfg != null) 
       addStatement(stmt);
-    else {
-      File file = stmt.getLocation().getFile();
-      if(!globalStmts.containsKey(file)) {
-        globalStmts.put(file, Lists.newArrayList((IRStatement) stmt));
-      } else {
-        globalStmts.get(file).add(stmt);
-      }
-    }
+    else
+    	addGlobalStatement(stmt);
   }
 
   /** Find the smallest enclosing non-case scope. Used to resolve continue
@@ -506,7 +485,7 @@ public class CfgBuilder extends Visitor {
   }
 
   private Node defineTestVarNode(Node test) {
-    String varName = Identifiers.uniquify(TEST_VAR_PREFIX);
+    String varName = Identifiers.uniquify(Identifiers.TEST_VAR_PREFIX);
     GNode varNode = GNode.create("PrimaryIdentifier", varName);
     varNode.setLocation(test.getLocation());
     Type type = BooleanT.TYPE;
@@ -517,7 +496,7 @@ public class CfgBuilder extends Visitor {
   }
   
   private Node defineMallocVarNode(Node malloc) {
-    String varName = Identifiers.uniquify(MALLOC_VAR_PREFIX);
+    String varName = Identifiers.uniquify(Identifiers.MALLOC_VAR_PREFIX);
     GNode varNode = GNode.create("PrimaryIdentifier", varName);
     varNode.setLocation(malloc.getLocation());
     Type mallocType = lookupType(malloc);
@@ -527,7 +506,7 @@ public class CfgBuilder extends Visitor {
   }
 
   private Node defineStringVarNode(Node string) {
-    String varName = Identifiers.uniquify(STRING_VAR_PREFIX);
+    String varName = Identifiers.uniquify(Identifiers.STRING_VAR_PREFIX);
     GNode varNode = GNode.create("PrimaryIdentifier", varName);
     varNode.setLocation(string.getLocation());
     Type type = lookupType(string);
@@ -1906,6 +1885,16 @@ public class CfgBuilder extends Visitor {
     for (Object o : n) {
       dispatch((Node) o);
     }
+    
+    /* build global cfg for global statements */
+    currentCfg = new ControlFlowGraph(n, Identifiers.GLOBAL_CFG, symbolTable
+        .getCurrentScope());
+    currentBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+    currentBlock.addStatements(globalStatements);
+    currentCfg.addEdge(currentCfg.getEntry(), currentBlock);
+    currentCfg.addEdge(currentBlock, currentCfg.getExit());
+    
+    cfgs.put(n, currentCfg);
     return cfgs;
   }
 

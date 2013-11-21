@@ -57,8 +57,20 @@ class RunMergeProcessor implements RunProcessor {
       Graph graph = processRun(run.getStartPosition(), run.getEndPosition(), 
           run.getWayPoints());
       
-      Path globalPath = Path.createSingleton(CfgBuilder.getGlobalStmts(run));
-      if(globalPath != null)    graph.appendPrePath(globalPath);
+      IRControlFlowGraph globalCfg = null;
+      for (Node node : cfgs.keySet()) {
+        Location loc = node.getLocation();
+        if(loc.line == 0) {
+        	globalCfg = cfgs.get(node); break;
+        }
+      }
+      
+      if(globalCfg != null) {
+      	Graph globalGraph = processRun(globalCfg.getEntry().getStartLocation(),
+      			globalCfg.getExit().getEndLocation(), null);
+	      graph.appendPreGraph(globalGraph);
+      }
+      
       graph.simplify();
       
       File file = run.getStartPosition().getFile();

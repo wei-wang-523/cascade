@@ -54,10 +54,22 @@ class RunSeqProcessor implements RunProcessor {
   @Override
   public boolean process(Run run) throws RunProcessorException {
     try {
-      List<IRStatement> globalPath = CfgBuilder.getGlobalStmts(run);
       List<IRStatement> path = processRun(run.getStartPosition(), 
           run.getEndPosition(), run.getWayPoints());
-      if(globalPath != null)    path.addAll(0, globalPath);
+
+      IRControlFlowGraph globalCfg = null;
+      for (Node node : cfgs.keySet()) {
+        Location loc = node.getLocation();
+        if(loc.line == 0) {
+        	globalCfg = cfgs.get(node); break;
+        }
+      }
+      
+      if(globalCfg != null) {
+      	List<IRStatement> globalStmts = processRun(globalCfg.getEntry().getStartLocation(),
+      			globalCfg.getExit().getEndLocation(), null);
+      	path.addAll(0, globalStmts);
+      }
       
       if (IOUtils.debugEnabled()) {
         IOUtils.debug().pln("Complete path for run...");
