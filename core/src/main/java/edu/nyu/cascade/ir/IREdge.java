@@ -4,8 +4,7 @@ import xtc.tree.Node;
 import xtc.tree.Printer;
 
 public interface IREdge<Block extends IRBasicBlock> {
-    void format(Printer printer);
-  
+	void format(Printer printer);
   
 	/**
 	 * Get the guard expressions (may be <code>null</code>).
@@ -28,5 +27,5 @@ public interface IREdge<Block extends IRBasicBlock> {
 	Block getTarget();
 
 	/** Get the AST node associated with the edge's guard, if any. */
-    Node getSourceNode();
+	Node getSourceNode();
 }
