@@ -22,6 +22,10 @@ public class Identifiers {
 	public static final String FUNC = "__func__";
 	public static final String TEMP_VAR_PREFIX = "cascade_tmp";
 	public static final String SCOPE = "scope";
+  public static final String TEST_VAR_PREFIX = "condition";
+  public static final String STRING_VAR_PREFIX = "string";
+  public static final String MALLOC_VAR_PREFIX = "malloc";
+  public static final String GLOBAL_CFG = "globalCfg";
   
   public static enum IdType {
     DEFAULT,
