@@ -23,7 +23,7 @@ public interface IRCallGraphNode {
   String getName();
   
   /**
-   * Return the information of the function
+   * Return the scope of the function
    */
-  IRVarInfo getFunctionInfo();
+  String getScopeName();
 }

@@ -338,7 +338,7 @@ private Expression getITEExpression(Iterable<? extends Expression> exprs,
   		setPathType(pathTypePrime);
   	}
   	
-  	IOUtils.err().println(memoryPrime.getType());
+//  	IOUtils.err().println(memoryPrime.getType());
   	return exprManager.tuple(getPathType(), memoryPrime, pcPrime);
   }
 }

@@ -1,11 +1,14 @@
 package edu.nyu.cascade.ir.impl;
 
-import java.io.File;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+
 import xtc.tree.Node;
 import xtc.tree.Printer;
+
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -15,13 +18,15 @@ import edu.nyu.cascade.ir.IRCallGraph;
 public class CallGraph implements IRCallGraph {
   private final Set<CallGraphNode> nodes;
   private final Map<CallGraphNode, Set<CallEdge>> incoming, outgoing;
-  private final File file;
 
-  public CallGraph(File file) {
-  	this.file = file;
+  private CallGraph() {
     nodes = Sets.newHashSet();
     incoming = Maps.newHashMap();
     outgoing = Maps.newHashMap();
+  }
+  
+  public static CallGraph create() {
+  	return new CallGraph();
   }
 
   public void addCallEdge(CallGraphNode source, Node call,
@@ -64,7 +69,7 @@ public class CallGraph implements IRCallGraph {
   
   public void format(Printer printer) {
     printer
-        .p("Call graph for: " + file.getName())
+        .p("Call graph: ")
         .incr();
 
     for (CallGraphNode node : getNodes()) {
@@ -99,6 +104,54 @@ public class CallGraph implements IRCallGraph {
     assert (outgoing.get(node) != null);
     return Collections.unmodifiableSet(outgoing.get(node));
   }
+  
+  @Override
+  public IRCallGraphNode getCallee(IRCallGraphNode funcNode, final Node node) {
+  	assert (outgoing.get(funcNode) != null);
+  	Iterable<CallEdge> outgoingEdges = outgoing.get(funcNode);
+  	return Iterables.find(outgoingEdges, new Predicate<CallEdge>(){
+			@Override
+			public boolean apply(CallEdge edge) {
+				return edge.getCallNode().equals(node);
+			}  		
+  	}).getTarget();
+  }
+  
+  @Override
+  public IRCallGraphNode getCaller(IRCallGraphNode funcNode, final Node node) {
+  	assert (incoming.get(funcNode) != null);
+  	Iterable<CallEdge> incomingEdges = incoming.get(funcNode);
+  	return Iterables.find(incomingEdges, new Predicate<CallEdge>(){
+			@Override
+			public boolean apply(CallEdge edge) {
+				return edge.getCallNode().equals(node);
+			}  		
+  	}).getSource();
+  }
+  
+  @Override
+  public boolean hasCaller(IRCallGraphNode funcNode, final Node node) {
+  	assert (incoming.get(funcNode) != null);
+  	Iterable<CallEdge> incomingEdges = incoming.get(funcNode);
+  	return Iterables.any(incomingEdges, new Predicate<CallEdge>(){
+			@Override
+			public boolean apply(CallEdge edge) {
+				return edge.getCallNode().equals(node);
+			}  		
+  	});
+  }
+  
+  @Override
+  public boolean hasCallee(IRCallGraphNode funcNode, final Node node) {
+  	assert (outgoing.get(funcNode) != null);
+  	Iterable<CallEdge> outgoingEdges = outgoing.get(funcNode);
+  	return Iterables.any(outgoingEdges, new Predicate<CallEdge>(){
+			@Override
+			public boolean apply(CallEdge edge) {
+				return edge.getCallNode().equals(node);
+			}  		
+  	});
+  }
 
   @Override
   public Set<CallGraphNode> getPredecessors(IRCallGraphNode node) {
@@ -109,15 +162,4 @@ public class CallGraph implements IRCallGraph {
   public Set<CallGraphNode> getSuccessors(IRCallGraphNode node) {
     return CallEdge.getTargets(getOutgoingEdges(node));
   }
-  
-  @Override
-  public String toString() {
-    return file.getName();
-  }
-
-	@Override
-  public File getFile() {
-	  return file;
-  }
-
 }

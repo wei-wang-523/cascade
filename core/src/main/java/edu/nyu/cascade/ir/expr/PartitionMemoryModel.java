@@ -533,7 +533,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
 			
 			if(elemMap.size() < preMemSize) {
 				shrinked = true;
-				IOUtils.err().println("Memory state size is shrinked.");
+//				IOUtils.err().println("Memory state size is shrinked.");
 				String recordTypeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
 				RecordType recordType = getRecordTypeFromMap(recordTypeName, elemMap);
 				memStatePrime = exprManager.record(recordType, elemMap.values());
@@ -556,7 +556,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
 			
 			if(elemMap.size() < preSizeSize) {
 				shrinked = true;
-				IOUtils.err().println("Size state size is shrinked.");
+//				IOUtils.err().println("Size state size is shrinked.");
 				String recordTypeName = Identifiers.uniquify(DEFAULT_SIZE_STATE_TYPE);
 				RecordType recordType = getRecordTypeFromMap(recordTypeName, elemMap);
 				sizeStatePrime = exprManager.record(recordType, elemMap.values());

@@ -1,33 +1,57 @@
 package edu.nyu.cascade.ir.impl;
 
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
+import xtc.tree.GNode;
 import xtc.tree.Node;
 import xtc.tree.Printer;
 
+import com.google.common.base.Preconditions;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
+import edu.nyu.cascade.c.CAnalyzer;
+import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.ir.IRCallGraphNode;
-import edu.nyu.cascade.ir.IRVarInfo;
+import edu.nyu.cascade.util.CacheException;
 
 public class CallGraphNode implements IRCallGraphNode {
-
-  public static CallGraphNode create(IRVarInfo info) {
-    return new CallGraphNode(info);
-  }
+	
+  private static final LoadingCache<Node, CallGraphNode> cache = CacheBuilder
+      .newBuilder().build(new CacheLoader<Node, CallGraphNode>(){
+        public CallGraphNode load(Node key) {
+          return new CallGraphNode(key);
+        }
+      });
   
-  private final IRVarInfo info;
+	public static CallGraphNode create(Node declNode) {
+		try {
+			return cache.get(declNode);
+		} catch (ExecutionException e) {
+			throw new CacheException(e);
+		}
+	}
+  
+	private final String funcName;
+  private final Node declNode;
   private final Set<IRCallGraphNode> calledFunctions;
   
-  private CallGraphNode(IRVarInfo info) {
-  	this.info = info;
+  private CallGraphNode(Node declNode) {
+  	Preconditions.checkArgument(declNode.hasName("FunctionDefinition"));
   	this.calledFunctions = Sets.newHashSet();
+  	this.declNode = declNode;
+    final GNode declarator = declNode.getGeneric(2);
+    final GNode identifier = CAnalyzer.getDeclaredId(declarator);
+    this.funcName = identifier.getString(0);
   }
 
   @Override
   public String toString() {
-    return info.toString();
+    return getName();
   }
 
   void format(Printer printer) {
@@ -46,18 +70,27 @@ public class CallGraphNode implements IRCallGraphNode {
   }
 
 	@Override
-  public Node getFuncDeclareNode() {
-	  return info.getDeclarationNode();
-  }
-
-	@Override
   public String getName() {
-	  return info.getName();
+	  return funcName;
   }
-
+	
 	@Override
-  public IRVarInfo getFunctionInfo() {
-	  return info;
-  }
-
+	public Node getFuncDeclareNode() {
+		return declNode;
+	}
+	
+	@Override
+	public String getScopeName() {
+		return CType.getScopeName(declNode);
+	}
+	
+	@Override
+	public boolean equals(Object node) {
+		if(!(node instanceof CallGraphNode)) return false;
+		CallGraphNode graphNode = (CallGraphNode) node;
+		if(this == graphNode) return true;
+		if(funcName != graphNode.funcName) return false;
+		if(!declNode.equals(graphNode.declNode)) return false;
+		return true;
+	}
 }

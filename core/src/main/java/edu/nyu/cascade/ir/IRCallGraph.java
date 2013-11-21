@@ -1,8 +1,8 @@
 package edu.nyu.cascade.ir;
 
-import java.io.File;
 import java.util.Set;
 
+import xtc.tree.Node;
 import xtc.tree.Printer;
 
 /**
@@ -29,22 +29,27 @@ public interface IRCallGraph {
    * 
    * @return the list of incoming edges.
    */
-  Set<? extends IRCallEdge<IRCallGraphNode>> getIncomingEdges(IRCallGraphNode node);
+  Set<? extends IRCallEdge<? extends IRCallGraphNode>> getIncomingEdges(IRCallGraphNode node);
 
   /**
    * Get the list of outgoing edges.
    * 
    * @return the list of outgoing edges.
    */
-  Set<? extends IRCallEdge<IRCallGraphNode>> getOutgoingEdges(IRCallGraphNode node);
+  Set<? extends IRCallEdge<? extends IRCallGraphNode>> getOutgoingEdges(IRCallGraphNode node);
 
   /** Pretty-print the Call Graph to the given <code>Printer</code>. */
   void format(Printer printer);
 
-  /**
-   * Get the source file of the Call Graph
-   * 
-   * @return the source file
-   */
-  File getFile();
+  /** Get callee function node */
+	IRCallGraphNode getCallee(IRCallGraphNode funcNode, Node node);
+	
+  /** Get caller function node */
+	IRCallGraphNode getCaller(IRCallGraphNode funcNode, Node node);
+
+	/** Decide if has caller function */
+	boolean hasCallee(IRCallGraphNode funcNode, Node node);
+	
+	/** Decide if has caller function */
+	boolean hasCaller(IRCallGraphNode funcNode, Node node);
 }
