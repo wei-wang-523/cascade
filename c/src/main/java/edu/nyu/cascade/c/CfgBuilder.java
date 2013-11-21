@@ -126,12 +126,23 @@ public class CfgBuilder extends Visitor {
 
   private static final String TYPE = CType.TYPE;
   
-  private final SymbolTable symbolTable;
   private BasicBlock currentBlock;
   private List<Statement> postStatements, appendStatements, globalStatements;
   private Deque<Integer> alignments;  // for pretty-printing
 
-  /**
+  //  private List<xtc.util.SymbolTable.Scope> nestedScopes;
+	
+	/**
+	 * Whether to treat compoundStatement '{...}' as a new scope in the symbolTable;
+	 * it's thanks to the functionDefinition and forStatement -- these two kinds of
+	 * nodes have the 'scope' property, and we call enterScope(node) for these nodes.
+	 * E.g. for(int i=0; i<10; i++) {...}, if to call enterScope() in the compound 
+	 * statement inside the loop body {...}, the initializedDeclarator 'int i=0' will
+	 * cause error, since the symbolTable under current scope doesn't include it.
+	 */
+	private boolean compoStmtAsScope;
+
+	/**
    * Greater than 0 if the visitor is currently inside an expression, as opposed
    * to a statement. Allows us to distinguish between "statement expressions"
    * that embedded in larger expressions, so we can properly order effects.
@@ -144,23 +155,15 @@ public class CfgBuilder extends Visitor {
    * visitor returns.
    */
   private int expressionDepth;
-  private final Map<Node, ControlFlowGraph> cfgs;
   private ControlFlowGraph currentCfg;
+
+	private final SymbolTable symbolTable;
+	private final Map<Node, ControlFlowGraph> cfgs;
   private final Deque<Scope> scopes;
   private final CAnalyzer cAnalyzer;
   private final Map<String, BasicBlock> labeledBlocks;
 //  private List<xtc.util.SymbolTable.Scope> nestedScopes;
   
-  /**
-   * Whether to treat compoundStatement '{...}' as a new scope in the symbolTable;
-   * it's thanks to the functionDefinition and forStatement -- these two kinds of
-   * nodes have the 'scope' property, and we call enterScope(node) for these nodes.
-   * E.g. for(int i=0; i<10; i++) {...}, if to call enterScope() in the compound 
-   * statement inside the loop body {...}, the initializedDeclarator 'int i=0' will
-   * cause error, since the symbolTable under current scope doesn't include it.
-   */
-  private boolean compoStmtAsScope;
-
   private CfgBuilder(SymbolTable symbolTable, CAnalyzer cAnalyzer) {
     this.symbolTable = symbolTable;
     this.cAnalyzer = cAnalyzer;
