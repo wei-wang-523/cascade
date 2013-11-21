@@ -44,6 +44,7 @@ import edu.nyu.cascade.control.ControlFileException;
 import edu.nyu.cascade.control.Run;
 import edu.nyu.cascade.control.TheoryId;
 import edu.nyu.cascade.datatypes.CompressedDomainNamesEncoding;
+import edu.nyu.cascade.ir.IRCallGraph;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.SymbolTableFactory;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
@@ -286,6 +287,7 @@ public class Main {
   private CAnalyzer cAnalyzer;
 
   private Map<Node, IRControlFlowGraph> cfgs;
+  private Map<File, IRCallGraph> callGraphs;
   private int effortLevel = 0;
   private int tlimit = 0;
 
@@ -300,6 +302,7 @@ public class Main {
     asts = Maps.newHashMap();
     symbolTables = Maps.newHashMap();
     cfgs = Maps.newHashMap();
+    callGraphs = Maps.newHashMap();
   }
 
   private void failOnError(String msg) {
@@ -561,7 +564,9 @@ public class Main {
     xtc.util.SymbolTable xtcSymbolTable = cAnalyzer.analyze(ast);
     CSymbolTable symbolTable = CSymbolTable.create(symbolTableFactory,
         xtcSymbolTable);
-    cfgs.putAll(CfgBuilder.getCfgs(symbolTable, cAnalyzer, ast));
+    Map<Node, IRControlFlowGraph> currCfgs = CfgBuilder.getCfgs(symbolTable, cAnalyzer, ast);
+    cfgs.putAll(currCfgs);
+    callGraphs.put(file, CallGraphBuilder.getCallGraph(symbolTable, currCfgs, ast));
     symbolTables.put(file, symbolTable);
   }
 
@@ -676,12 +681,12 @@ public class Main {
                 memoryModel, symbolTables);
 
             RunProcessor runProcessor;
-            
+          	
             if( Preferences.isSet(Preferences.OPTION_SEQ_PATH) ) {
-              runProcessor = new RunSeqProcessor(symbolTables, cfgs,
+              runProcessor = new RunSeqProcessor(symbolTables, cfgs, callGraphs,
                     cAnalyzer, encoder, builder);
             } else {
-              runProcessor = new RunMergeProcessor(symbolTables, cfgs,
+              runProcessor = new RunMergeProcessor(symbolTables, cfgs, callGraphs,
                 cAnalyzer, encoder, builder);
             }
             

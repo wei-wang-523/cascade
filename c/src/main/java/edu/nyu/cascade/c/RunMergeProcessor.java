@@ -34,18 +34,23 @@ import edu.nyu.cascade.util.*;
 class RunMergeProcessor implements RunProcessor {
   
   public RunMergeProcessor(Map<File, CSymbolTable> symbolTables,
-      Map<Node, IRControlFlowGraph> cfgs, CAnalyzer cAnalyzer,
-      CExpressionEncoder exprEncoder, PreProcessor.Builder<?> builder)
+      Map<Node, IRControlFlowGraph> cfgs, 
+      Map<File, IRCallGraph> callGraphs,
+      CAnalyzer cAnalyzer,
+      CExpressionEncoder exprEncoder, 
+      PreProcessor.Builder<?> builder)
       throws RunProcessorException {
     this.symbolTables = symbolTables;
     this.cfgs = cfgs;
     this.cAnalyzer = cAnalyzer;
     this.builder = builder;
+    this.callGraphs = callGraphs;
     pathEncoder = PathMergeEncoder.create(SimplePathEncoding.create(exprEncoder));
   }
   
   private final Map<File, CSymbolTable> symbolTables;
   private final Map<Node, IRControlFlowGraph> cfgs;
+  private final Map<File, IRCallGraph> callGraphs;
   private final CAnalyzer cAnalyzer;
   private final PathMergeEncoder pathEncoder;
   private final PreProcessor.Builder<?> builder;

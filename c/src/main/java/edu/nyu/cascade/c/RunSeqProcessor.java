@@ -34,19 +34,20 @@ import edu.nyu.cascade.util.*;
 class RunSeqProcessor implements RunProcessor {
   
   public RunSeqProcessor(Map<File, CSymbolTable> symbolTables,
-      Map<Node, IRControlFlowGraph> cfgs, CAnalyzer cAnalyzer,
+      Map<Node, IRControlFlowGraph> cfgs, Map<File, IRCallGraph> callGraphs, CAnalyzer cAnalyzer,
       CExpressionEncoder exprEncoder, Builder<?> builder)
       throws RunProcessorException {
     this.symbolTables = symbolTables;
     this.cfgs = cfgs;
     this.cAnalyzer = cAnalyzer;
-//    this.pathEncoder = PathSeqEncoder.create(DynamicPathEncoding.create(exprEncoder));
     this.pathEncoder = PathSeqEncoder.create(SimplePathEncoding.create(exprEncoder));
     this.builder = builder;
+    this.callGraphs = callGraphs;
   }
   
   private final Map<File, CSymbolTable> symbolTables;
   private final Map<Node, IRControlFlowGraph> cfgs;
+  private final Map<File, IRCallGraph> callGraphs;
   private final CAnalyzer cAnalyzer;
   private final PathSeqEncoder pathEncoder;
   private final PreProcessor.Builder<?> builder;
