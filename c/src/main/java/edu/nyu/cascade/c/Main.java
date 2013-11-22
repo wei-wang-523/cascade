@@ -651,6 +651,7 @@ public class Main {
             ExpressionEncoding encoding;
             MemoryModel memoryModel;
             PreProcessor.Builder<?> builder = null;
+            CScopeAnalyzer.Builder scopeBuilder = null;
             
             if(Preferences.isSet(Preferences.OPTION_THEORY)) {
               // TODO: ugly way to append prefix of qname of theory
@@ -664,6 +665,7 @@ public class Main {
               encoding = theory.getEncoding();
               memoryModel = theory.getMemoryModel();
               builder = theory.getPreprocessorBuilder();
+              scopeBuilder = theory.getScopeAnalyzerBuilder();
             } else {           
               // TODO: Fix bit-vector sizes to agree with encoding              
               encoding = PointerExpressionEncoding.create(theoremProver
@@ -687,7 +689,7 @@ public class Main {
                     cAnalyzer, encoder, builder);
             } else {
               runProcessor = new RunMergeProcessor(symbolTables, cfgs, callGraphs,
-                cAnalyzer, encoder, builder);
+                cAnalyzer, encoder, builder, scopeBuilder);
             }
             
             if( Preferences.isSet(OPTION_FEASIBILITY)) {

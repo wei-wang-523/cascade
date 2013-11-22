@@ -1,5 +1,6 @@
 package edu.nyu.cascade.c.theory.reach;
 
+import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.Theory;
 import edu.nyu.cascade.c.preprocessor.PreProcessor.Builder;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
@@ -41,4 +42,10 @@ public class LISBQReachTheory implements Theory {
 	  // TODO Auto-generated method stub
 	  return null;
   }
+
+	@Override
+	public CScopeAnalyzer.Builder getScopeAnalyzerBuilder() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

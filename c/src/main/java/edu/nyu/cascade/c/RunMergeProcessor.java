@@ -38,14 +38,18 @@ class RunMergeProcessor implements RunProcessor {
       Map<File, IRCallGraph> callGraphs,
       CAnalyzer cAnalyzer,
       CExpressionEncoder exprEncoder, 
-      PreProcessor.Builder<?> builder)
+      PreProcessor.Builder<?> builder, 
+      CScopeAnalyzer.Builder scopeAnalyzerBuilder)
       throws RunProcessorException {
     this.symbolTables = symbolTables;
     this.cfgs = cfgs;
     this.cAnalyzer = cAnalyzer;
     this.builder = builder;
+    this.scopeAnalyzerBuilder = scopeAnalyzerBuilder;
+    this.callGraphs = callGraphs;
+    this.pathEncoder = PathMergeEncoder.create(SimplePathEncoding.create(exprEncoder));    
+    
     this.functions = Maps.newHashMap();
-    pathEncoder = PathMergeEncoder.create(SimplePathEncoding.create(exprEncoder));
     for(IRCallGraph graph : callGraphs.values()) {
     	for(IRCallGraphNode callNode : graph.getNodes()) {
     		functions.put(callNode.getName(), callNode.getFuncDefinitionNode());
@@ -54,11 +58,13 @@ class RunMergeProcessor implements RunProcessor {
   }
   
   private final Map<File, CSymbolTable> symbolTables;
+  private final Map<File, IRCallGraph> callGraphs;
   private final Map<Node, IRControlFlowGraph> cfgs;
   private final Map<String, Node> functions;
   private final CAnalyzer cAnalyzer;
   private final PathMergeEncoder pathEncoder;
   private final PreProcessor.Builder<?> builder;
+  private final CScopeAnalyzer.Builder scopeAnalyzerBuilder;
   
   @Override
   public boolean process(Run run) throws RunProcessorException {
@@ -84,11 +90,19 @@ class RunMergeProcessor implements RunProcessor {
       graph.simplify();
       
       File file = run.getStartPosition().getFile();
+      CSymbolTable symbolTable = symbolTables.get(file);
       
       if(builder != null) {
-        CSymbolTable symbolTable = symbolTables.get(file);
         PreProcessor<?> preprocessor = builder.setSymbolTable(symbolTable).build();
         preprocessGraph(preprocessor, graph);
+      }
+      
+      if(scopeAnalyzerBuilder != null) {
+      	CScopeAnalyzer scopeAnalyzer = scopeAnalyzerBuilder
+      			.setSymbolTable(symbolTable)
+      			.setCallGraph(callGraphs.get(file)).build();
+      	pathEncoder.getExpressionEncoder()
+      			.getMemoryModel().setScopeAnalyzer(scopeAnalyzer);
       }
       
       pathEncoder.encodeGraph(graph);

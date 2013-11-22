@@ -1,5 +1,6 @@
 package edu.nyu.cascade.c.theory;
 
+import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.Theory;
 import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeAnalyzer;
 import edu.nyu.cascade.ir.expr.BurstallMemoryModel;
@@ -63,5 +64,11 @@ public class BurstallTheory implements Theory {
   public MemoryModel getMemoryModel() {
     return memoryModel;
   }
+
+	@Override
+	public CScopeAnalyzer.Builder getScopeAnalyzerBuilder() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
 }
