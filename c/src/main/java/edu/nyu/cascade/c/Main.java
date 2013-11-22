@@ -566,7 +566,7 @@ public class Main {
         xtcSymbolTable);
     Map<Node, IRControlFlowGraph> currCfgs = CfgBuilder.getCfgs(symbolTable, cAnalyzer, ast);
     cfgs.putAll(currCfgs);
-    callGraphs.put(file, CallGraphBuilder.getCallGraph(symbolTable, currCfgs, ast));
+    callGraphs.put(file, CallGraphBuilder.getCallGraph(symbolTable, ast));
     symbolTables.put(file, symbolTable);
   }
 
