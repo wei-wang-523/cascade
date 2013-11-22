@@ -4,6 +4,7 @@ import xtc.tree.Node;
 
 import com.google.common.collect.ImmutableSet;
 
+import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.expr.AbstractMemoryModel.MemoryModelType;
@@ -128,8 +129,14 @@ public interface MemoryModel {
   
   /**
    * set pointer alias map for partition memory model
+   * set type analyzer for burstall memory model
    */
   void setPreProcessor(PreProcessor<?> analyzer);
+  
+  /**
+   * set scope analyzer for partition memory model
+   */
+  void setScopeAnalyzer(CScopeAnalyzer analyzer);
 
   /**
    * valid free operation

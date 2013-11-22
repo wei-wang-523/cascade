@@ -4,6 +4,7 @@ import xtc.tree.Node;
 
 import com.google.common.base.Preconditions;
 
+import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.expr.AbstractMemoryModel;
@@ -158,5 +159,10 @@ public class TemporalMemoryModel extends AbstractMemoryModel {
 	public MemoryModelType getType() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public void setScopeAnalyzer(CScopeAnalyzer analyzer) {
+		// TODO Auto-generated method stub		
 	}
 }

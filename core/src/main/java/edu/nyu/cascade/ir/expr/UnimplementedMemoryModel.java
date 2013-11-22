@@ -4,6 +4,7 @@ import xtc.tree.Node;
 
 import com.google.common.collect.ImmutableSet;
 
+import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.expr.AbstractMemoryModel.MemoryModelType;
@@ -215,5 +216,10 @@ public class UnimplementedMemoryModel implements MemoryModel {
 	public BurstallMemoryModel asBurstall() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public void setScopeAnalyzer(CScopeAnalyzer analyzer) {
+		// TODO Auto-generated method stub	
 	}
 }

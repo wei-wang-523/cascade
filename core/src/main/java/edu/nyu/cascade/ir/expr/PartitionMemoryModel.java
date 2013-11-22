@@ -17,7 +17,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import edu.nyu.cascade.c.CSymbolTableScope;
+import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IREquivClosure;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
@@ -67,6 +67,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   private final Map<String, ExpressionClosure> sideEffectSizeClosure;
   
   private Steensgaard analyzer = null;
+  private CScopeAnalyzer scopeAnalyzer = null;
   
   private final Map<String, String> nameMap;
   
@@ -506,6 +507,11 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   	return type;
   }
   
+	@Override
+	public void setScopeAnalyzer(CScopeAnalyzer analyzer) {
+		scopeAnalyzer = analyzer;
+	}
+  
   /**
    * Kick out the type element out of scope
    * @param memoryPrime
@@ -526,9 +532,17 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
 			for(String key : ImmutableSet.copyOf(elemMap.keySet())) {
 				String varScopeName = nameMap.get(key);
 				Scope scope = analyzer.getRootScope(varScopeName);
-				boolean nested = CSymbolTableScope.isNested(scope, currentScope);
-				boolean equal = scope.equals(currentScope);
-				if(!(nested || equal)) elemMap.remove(key);
+				
+				if(scope.equals(currentScope))  
+					continue;
+				
+				if(CScopeAnalyzer.isNested(scope, currentScope))  
+					continue;
+				
+				if(scopeAnalyzer.isCalled(scope, currentScope)) 
+					continue;
+				
+				elemMap.remove(key);
 			}
 			
 			if(elemMap.size() < preMemSize) {
@@ -549,9 +563,17 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
 			for(String key : ImmutableSet.copyOf(elemMap.keySet())) {
 				String varScopeName = nameMap.get(key);
 				Scope scope = analyzer.getRootScope(varScopeName);
-				boolean nested = CSymbolTableScope.isNested(scope, currentScope);
-				boolean equal = scope.equals(currentScope);
-				if(!(nested || equal)) elemMap.remove(key);
+				
+				if(scope.equals(currentScope))  
+					continue;
+				
+				if(CScopeAnalyzer.isNested(scope, currentScope))  
+					continue;
+				
+				if(scopeAnalyzer.isCalled(scope, currentScope)) 
+					continue;
+				
+				elemMap.remove(key);
 			}
 			
 			if(elemMap.size() < preSizeSize) {

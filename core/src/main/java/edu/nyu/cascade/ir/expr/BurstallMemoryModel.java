@@ -18,6 +18,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IREquivClosure;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
@@ -512,6 +513,11 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   public MemoryModelType getType() {
     return type;
   }
+  
+	@Override
+	public void setScopeAnalyzer(CScopeAnalyzer analyzer) {
+		throw new UnsupportedOperationException("No scope analyzer is needed for flat memory model");
+	}
   
   /**
 	 * Update memory state with side effect map

@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutionException;
 import xtc.tree.Node;
 import xtc.tree.Printer;
 
+import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -117,12 +118,13 @@ public class CallGraphNode implements IRCallGraphNode {
 	
 	@Override
 	public boolean isDeclared() {
-		return defNode != null;
+		return declNode != null;
 	}
 	
 	@Override
 	public String getScopeName() {
-		return CType.getScopeName(declNode);
+		Preconditions.checkArgument(isDefined());
+		return CType.getScopeName(defNode);
 	}
 	
 	@Override

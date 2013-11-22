@@ -8,6 +8,7 @@ import xtc.tree.Node;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
+import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRVarInfo;
@@ -329,4 +330,9 @@ public class FlatMemoryModel extends AbstractMemoryModel {
   public void setPreProcessor(PreProcessor<?> analyzer) {
 		throw new UnsupportedOperationException("No pre processor is needed for flat memory model");
   }
+
+	@Override
+	public void setScopeAnalyzer(CScopeAnalyzer analyzer) {
+		throw new UnsupportedOperationException("No scope analyzer is needed for flat memory model");
+	}
 }

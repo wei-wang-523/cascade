@@ -14,7 +14,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Maps;
 
-import edu.nyu.cascade.c.CSymbolTableScope;
+import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.c.preprocessor.IREquivClosure;
 import edu.nyu.cascade.util.CacheException;
@@ -52,9 +52,9 @@ public class AliasEquivClosure implements IREquivClosure {
 			} else {
 				Scope elemScope = elem.getScope();
 				if(elemScope.equals(rootScope)) continue;
-				if(CSymbolTableScope.isNested(rootScope, elemScope)) continue;
+				if(CScopeAnalyzer.isNested(rootScope, elemScope)) continue;
 				
-				if(CSymbolTableScope.isNested(elemScope, rootScope)) {
+				if(CScopeAnalyzer.isNested(elemScope, rootScope)) {
 					// Repleace rootScope with high level scope
 					rootScope = elemScope; continue;
 				}
