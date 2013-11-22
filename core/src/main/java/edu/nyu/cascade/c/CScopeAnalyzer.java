@@ -1,13 +1,16 @@
 package edu.nyu.cascade.c;
 
+import java.util.Map;
+
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.ir.IRCallEdge;
 import edu.nyu.cascade.ir.IRCallGraph;
 import edu.nyu.cascade.ir.IRCallGraphNode;
 import edu.nyu.cascade.ir.SymbolTable;
-import edu.nyu.cascade.util.Pair;
+import xtc.tree.Node;
 import xtc.util.SymbolTable.Scope;
 
 public final class CScopeAnalyzer {
@@ -55,28 +58,32 @@ public final class CScopeAnalyzer {
 		return name_b.startsWith(name_a);
 	}
 	
-	private final ImmutableSet<Pair<Scope, Scope>> callScopes;
+	private final ImmutableMap<Scope, Map<Node, Scope>> callScopeMaps;
 	private final SymbolTable symbolTable;
 	
 	private CScopeAnalyzer(IRCallGraph callGraph, SymbolTable _symbolTable) {
 		symbolTable = _symbolTable;
-		ImmutableSet.Builder<Pair<Scope, Scope>> builder = 
-				new ImmutableSet.Builder<Pair<Scope,Scope>>();
+		ImmutableMap.Builder<Scope, Map<Node, Scope>> builder = 
+				new ImmutableMap.Builder<Scope, Map<Node, Scope>>();
 		
 		/* Build all function call scope pair */
 		for(IRCallGraphNode callNode : callGraph.getNodes()) {
 			Scope destScope = symbolTable.getScope(callNode.getScopeName());
 			if(callNode.isDefined()) {
+				Map<Node, Scope> calleeMap = Maps.newHashMap();
+				
 				for(IRCallEdge<? extends IRCallGraphNode> edge 
 						: callGraph.getIncomingEdges(callNode)) {
 					IRCallGraphNode callerNode = edge.getSource();
 					Scope srcScope = symbolTable.getScope(callerNode.getScopeName());
-					builder.add(Pair.of(srcScope, destScope));
+					calleeMap.put(edge.getCallNode(), srcScope);
 				}
+				
+				builder.put(destScope, calleeMap);
 			}
 		}
 		
-		callScopes = builder.build();
+		callScopeMaps = builder.build();
 	}
 	
 	/**
@@ -86,9 +93,16 @@ public final class CScopeAnalyzer {
 	 * @param scope_b
 	 * @return
 	 */
-	public boolean isCalled(Scope scope_a, Scope scope_b) {
-		Preconditions.checkArgument(callScopes != null);
-		if(callScopes.isEmpty())	return false;
-		return callScopes.contains(Pair.of(scope_a, scope_b));
+	public boolean isCalled(Node callNode, Scope scope_a, Scope scope_b) {
+		Preconditions.checkArgument(callScopeMaps != null);
+		if(callScopeMaps.isEmpty())	return false;
+		
+		Map<Node, Scope> calleeMap = callScopeMaps.get(scope_b);
+		Scope callerScope = calleeMap.get(callNode);
+		
+		if(callerScope.equals(scope_a)) return true;
+		
+		boolean nested = isNested(scope_a, callerScope);
+		return nested;
 	}
 }
