@@ -1,22 +1,17 @@
 package edu.nyu.cascade.c;
 
-import java.util.Map;
-
 import xtc.tree.GNode;
 import xtc.tree.LineMarker;
-import xtc.tree.Location;
 import xtc.tree.Node;
 import xtc.tree.Visitor;
 
 import com.google.common.base.Preconditions;
 
 import edu.nyu.cascade.ir.IRCallGraph;
-import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.ir.impl.CallGraph;
 import edu.nyu.cascade.ir.impl.CallGraphNode;
-import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.ReservedFunction;
 
@@ -45,9 +40,8 @@ public class CallGraphBuilder extends Visitor {
    *          node.
    * @return A <code>Map</code> from declaration nodes to Call Graph.
    */
-  public static IRCallGraph getCallGraph(SymbolTable symbolTable, 
-  		Map<Node, IRControlFlowGraph> cfgs, Node ast) {
-    return (IRCallGraph) new CallGraphBuilder(symbolTable, cfgs).dispatch(ast);
+  public static IRCallGraph getCallGraph(SymbolTable symbolTable, Node ast) {
+    return (IRCallGraph) new CallGraphBuilder(symbolTable).dispatch(ast);
   }
 	
 	/**
@@ -64,14 +58,11 @@ public class CallGraphBuilder extends Visitor {
 	private boolean compoStmtAsScope;
 
 	private final SymbolTable symbolTable;
-	private final Map<Node, IRControlFlowGraph> cfgs;
 	private CallGraph callGraph;
 	private CallGraphNode currentFuncNode;
   
-  private CallGraphBuilder(SymbolTable symbolTable, 
-  		Map<Node, IRControlFlowGraph> cfgs) {
+  private CallGraphBuilder(SymbolTable symbolTable) {
     this.symbolTable = symbolTable;
-    this.cfgs = cfgs;
     compoStmtAsScope = true;
   }
   
@@ -84,27 +75,6 @@ public class CallGraphBuilder extends Visitor {
   /** SymbolTable exit a nested scope. */
   private void exitScope() {
     symbolTable.setScope(symbolTable.getCurrentScope().getParent());
-  }
-  
-  /**
-   * Find function declare node
-   * @param info
-   * @return the function declare node
-   */
-  private Node findFuncDeclareNode (IRVarInfo info) {
-  	Preconditions.checkArgument(info != null);
-    Location funcDeclareLoc = info.getDeclarationNode().getLocation();
-    
-    final String funcFile = funcDeclareLoc.file;
-    final int lineNum = funcDeclareLoc.line;
-    for(Node node : cfgs.keySet()) {
-    	Location loc = node.getLocation();
-    	if(funcFile.equals(loc.file) && (lineNum == loc.line))
-    		return node;
-    }
-    
-    IOUtils.debug().pln("Cannot find the function declaration node for " + info.getName());
-    return null;
   }
   
   @Override
@@ -227,8 +197,7 @@ public class CallGraphBuilder extends Visitor {
     String funcName = funNode.getString(0);
     if(!ReservedFunction.Functions.contains(funcName)) {
     	IRVarInfo varInfo = symbolTable.lookup(funcName);
-    	Node funcDeclNode = findFuncDeclareNode(varInfo);
-    	CallGraphNode callerNode = CallGraphNode.create(funcDeclNode);
+    	CallGraphNode callerNode = CallGraphNode.getCallGraphNode(varInfo);
     	callGraph.addCallEdge(currentFuncNode, node, callerNode);
     }
   }
@@ -247,7 +216,10 @@ public class CallGraphBuilder extends Visitor {
      */
 
     final GNode declarator = node.getGeneric(2);
-    currentFuncNode = CallGraphNode.create(node);
+    final GNode identifier = CAnalyzer.getDeclaredId(declarator);
+    final String funcName = identifier.getString(0);
+    final IRVarInfo info = symbolTable.lookup(funcName);
+    currentFuncNode = CallGraphNode.createDefinition(info, node);
     
     GNode parameters = CAnalyzer.getFunctionDeclarator(declarator).getGeneric(1);
     if( parameters != null ) {
@@ -275,7 +247,15 @@ public class CallGraphBuilder extends Visitor {
     exitScope();
   }
 
-  public void visitGotoStatement(GNode node) {
+  /* Do-nothing implementation to make errors from header files go away. */
+	public void visitFunctionDeclarator(GNode node) {
+		final GNode identifier = CAnalyzer.getDeclaredId(node);
+	  final String funcName = identifier.getString(0);
+	  final IRVarInfo info = symbolTable.lookup(funcName);
+	  CallGraphNode.createDeclaration(info, node);
+	}
+
+	public void visitGotoStatement(GNode node) {
     Node labelNode = node.getNode(1);
     dispatch(labelNode);
   }
@@ -482,11 +462,6 @@ public class CallGraphBuilder extends Visitor {
   	//TODO: something
   }
 
-  /* Do-nothing implementation to make errors from header files go away. */
-  public void visitFunctionDeclarator(GNode node) {
-    //TODO: something
-  }
-  
   public void visitSpecifierQualifierList(GNode node) {
     //TODO: something
   }  
