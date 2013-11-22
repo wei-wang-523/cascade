@@ -44,22 +44,17 @@ class RunMergeProcessor implements RunProcessor {
     this.cfgs = cfgs;
     this.cAnalyzer = cAnalyzer;
     this.builder = builder;
-    this.callGraphs = callGraphs;
     this.functions = Maps.newHashMap();
     pathEncoder = PathMergeEncoder.create(SimplePathEncoding.create(exprEncoder));
-    for(Node node : cfgs.keySet()) {
-    	if(node.hasName("FunctionDefinition")) {
-    		GNode declarator = node.getGeneric(2);
-    		GNode identifier = CAnalyzer.getDeclaredId(declarator);
-    		String functionName = identifier.getString(0);
-    		functions.put(functionName, node);
+    for(IRCallGraph graph : callGraphs.values()) {
+    	for(IRCallGraphNode callNode : graph.getNodes()) {
+    		functions.put(callNode.getName(), callNode.getFuncDefinitionNode());
     	}
     }
   }
   
   private final Map<File, CSymbolTable> symbolTables;
   private final Map<Node, IRControlFlowGraph> cfgs;
-  private final Map<File, IRCallGraph> callGraphs;
   private final Map<String, Node> functions;
   private final CAnalyzer cAnalyzer;
   private final PathMergeEncoder pathEncoder;
@@ -362,8 +357,7 @@ class RunMergeProcessor implements RunProcessor {
 
     if (pathMap == null) {
       /* The two blocks aren't connected! */
-      IOUtils.err().println("No path found.");
-      throw new RunProcessorException("Invalid run");
+      throw new RunProcessorException("No path found. Invalid run");
     }
 
     /* Build predecessor map based on path map */
@@ -582,50 +576,67 @@ class RunMergeProcessor implements RunProcessor {
     IOUtils.debug().pln("CFG for position: " + cfg).flush();
     return cfg;
   }
-
-  /** Find the CFG for function call Statement. */
-  private IRControlFlowGraph getCFGForStatement(IRStatement stmt) 
-      throws RunProcessorException {
-    Node bestNode = findFuncDeclareNode(stmt);
-    IRControlFlowGraph cfg = cfgs.get(bestNode);
-    return cfg;
+  
+  /**
+   * Get the function declare Node for the function call statement <code>stmt</code>
+   * @param stmt
+   * @return the function definition node, <code>null</code> if the function is not defined
+   * @throws RunProcessorException
+   */
+  private Node findFuncDefinitionNode (IRStatement stmt) throws RunProcessorException {
+    Preconditions.checkArgument(isDefinedFuncCall(stmt));
+    String funcName = stmt.getOperand(0).toString();
+    return functions.get(funcName);
   }
   
-  /** Get the function declare Node for the function call statement. */
-  private Node findFuncDeclareNode (IRStatement stmt) throws RunProcessorException {
-    Preconditions.checkArgument(stmt.getType().equals(StatementType.CALL));
-    String funcName = stmt.getOperand(0).toString();    
-    File file = stmt.getLocation().getFile();
-    CSymbolTable symbolTable = symbolTables.get(file);
-    return findFuncDeclareNode(symbolTable, funcName);
-  }
-  
-  private Node findFuncDeclareNode (CSymbolTable symbolTable, String funcName) 
-      throws RunProcessorException {
-    IRVarInfo info = symbolTable.lookup(funcName);
-    if(info == null)    return null; // For undeclared function.
-    Location funcDeclareLoc = info.getDeclarationNode().getLocation();
-    
-    String funcFile = funcDeclareLoc.file;
-    int lineNum = funcDeclareLoc.line;
-    Node bestNode = null;    
-    for (Node node : cfgs.keySet()) {
-      Location loc = node.getLocation();
-      if (funcFile.equals(loc.file)) {
-        int diff = lineNum - loc.line;
-        if (diff == 0) {
-          bestNode = node;
-          break;
-        }
+  /** Decide the function declare Node for the function call statement. */
+  private boolean isDeclaredFuncCall (IRStatement stmt) {
+    if(stmt.getType().equals(StatementType.CALL)) {
+      String funcName = stmt.getOperand(0).toString();    
+      if(functions.containsKey(funcName)) {
+      	return true;
       }
     }
-    
-    if(bestNode == null) {
-      /* FIXME: continue find in the parent scope or stays at root scope initially? */
-      IOUtils.debug().pln("Cannot find the function declaration node for " + funcName);
-    }
-    return bestNode;
+    return false;
   }
+  
+  /** Decide the function define Node for the function call statement. */
+  private boolean isDefinedFuncCall (IRStatement stmt) throws RunProcessorException {
+    if(stmt.getType().equals(StatementType.CALL)) {
+      String funcName = stmt.getOperand(0).toString();    
+      if(functions.containsKey(funcName)) {
+      	return functions.get(funcName) != null;
+      }
+    }
+    return false;
+  }
+  
+//  private Node findFuncDeclareNode (CSymbolTable symbolTable, String funcName) 
+//      throws RunProcessorException {
+//    IRVarInfo info = symbolTable.lookup(funcName);
+//    if(info == null)    return null; // For undeclared function.
+//    Location funcDeclareLoc = info.getDeclarationNode().getLocation();
+//    
+//    String funcFile = funcDeclareLoc.file;
+//    int lineNum = funcDeclareLoc.line;
+//    Node bestNode = null;    
+//    for (Node node : cfgs.keySet()) {
+//      Location loc = node.getLocation();
+//      if (funcFile.equals(loc.file)) {
+//        int diff = lineNum - loc.line;
+//        if (diff == 0) {
+//          bestNode = node;
+//          break;
+//        }
+//      }
+//    }
+//    
+//    if(bestNode == null) {
+//      /* FIXME: continue find in the parent scope or stays at root scope initially? */
+//      IOUtils.debug().pln("Cannot find the function declaration node for " + funcName);
+//    }
+//    return bestNode;
+//  }
   
   /** 
    * Collect a list Statement from function body, func is the function
@@ -639,18 +650,18 @@ class RunMergeProcessor implements RunProcessor {
   
   private Graph collectStmtFromFunction(IRStatement stmt, CallPoint func) 
       throws RunProcessorException {
-    Graph graph = null;
-    IRControlFlowGraph funcCfg = getCFGForStatement(stmt);
-    if(funcCfg == null) {
-      System.err.println("Cannot find cfg for statement: " + stmt);
-    } else {     
-      IRLocation funcStart = funcCfg.getEntry().getStartLocation();
-      IRLocation funcEnd = funcCfg.getExit().getEndLocation();
-      List<Position> wayPoints = null;
-      if(func != null) wayPoints = func.getWayPoint();
-      graph = processRun(funcStart, funcEnd, wayPoints);
-    }
-    return graph;
+  	Preconditions.checkArgument(isDefinedFuncCall(stmt));
+    Node bestNode = findFuncDefinitionNode(stmt);
+    
+    if(!cfgs.containsKey(bestNode))
+    	throw new IllegalArgumentException("Cannot find cfg of " + stmt);
+    
+    IRControlFlowGraph funcCfg = cfgs.get(bestNode); 
+    IRLocation funcStart = funcCfg.getEntry().getStartLocation();
+    IRLocation funcEnd = funcCfg.getExit().getEndLocation();
+    List<Position> wayPoints = null;
+    if(func != null) wayPoints = func.getWayPoint();
+    return processRun(funcStart, funcEnd, wayPoints);
   }
   
   /** 
@@ -664,36 +675,41 @@ class RunMergeProcessor implements RunProcessor {
     return assignArgToParam(symbolTable, null, stmt); 
   }
   
+  /**
+   * Get the argument passing statements of function call.
+   * @param symbolTable
+   * @param repStmt
+   * @param rmvStmt
+   * @return the argument passing statements, <code>null</code>
+   * if the function is not defined or without parameters
+   * @throws RunProcessorException
+   */
   private List<IRStatement> assignArgToParam(CSymbolTable symbolTable, 
   		IRStatement repStmt, IRStatement rmvStmt) 
       throws RunProcessorException {
-    Preconditions.checkArgument(rmvStmt.getType().equals(StatementType.CALL));
-      
-    Node defNode = findFuncDeclareNode(rmvStmt);    
-    List<IRStatement> assignments = Lists.newArrayList();
-    
-    if(defNode == null)     return assignments;
+    Preconditions.checkArgument(isDefinedFuncCall(rmvStmt));
+    Node defNode = findFuncDefinitionNode(rmvStmt);
     
     /* Pick the new scope for the function declaration */
     Scope paramScope = symbolTable.getScope(defNode);
     
+    /* Find the parameter declare node */
     Node paramDeclare = null;
     
     for(Object o : defNode.getNode(2)) {
-      if(o != null) {
-        if("FunctionDeclarator".equals(((Node) o).getName())) {
+      if(o != null && o instanceof Node && 
+      		((Node) o).hasName("FunctionDeclarator")) {
           o = ((Node) o).get(1);
-        }
       }
-      if(o != null) {
-        if("ParameterTypeList".equals(((Node) o).getName())) {
-          paramDeclare = ((Node) o).getNode(0);
-          break;
-        }
+      
+      if(o != null && o instanceof Node && 
+      		((Node) o).hasName("ParameterTypeList")) {
+      	paramDeclare = ((Node) o).getNode(0);
+      	break;
       }
     }
     
-    if(paramDeclare == null)    return assignments;
+    if(paramDeclare == null)    return null;
     
     /* Pick all arguments */
     List<IRExpression> args = Lists.newArrayList(rmvStmt.getOperands());
@@ -742,15 +758,18 @@ class RunMergeProcessor implements RunProcessor {
     if(paramDeclare.size() != args.size()) {
       throw new RunProcessorException("#arg does not match with #param.");
     }
+    
+    List<IRStatement> assignments = Lists.newArrayList();
+    
     /* Generate assign statement one by one */
     for(int i=0; i < paramDeclare.size(); i++) {
       Node paramNode = paramDeclare.getNode(i);
       paramNode = paramNode.getNode(1);
       /* Pointer parameter declaration */
-      if("PointerDeclarator".equals(paramNode.getName()))
+      if(paramNode.hasName("PointerDeclarator"))
         paramNode = paramNode.getNode(1);
       
-      assert("SimpleDeclarator".equals(paramNode.getName()));
+      assert(paramNode.hasName("SimpleDeclarator"));
       IRExpressionImpl param = CExpression.create(paramNode, paramScope);
       IRExpressionImpl arg = (IRExpressionImpl) args.get(i);
       Node argNode = arg.getSourceNode();
@@ -781,8 +800,14 @@ class RunMergeProcessor implements RunProcessor {
   private Graph getGraphForAssignCallStmt(CSymbolTable symbolTable, 
   		IRStatement lhsStmt, IRStatement rhsStmt, CallPoint func) 
       throws RunProcessorException {
-    List<IRStatement> paramPassStmts = assignArgToParam(symbolTable, lhsStmt, rhsStmt);
+    
+    if(!isDefinedFuncCall(rhsStmt))	{
+    	IOUtils.err().println("Function call " + rhsStmt + " is only declared but not yet implemented.");
+    	return Graph.createSingleton(Path.createSingleton(lhsStmt));
+    }
+    
     Graph funcGraph = collectStmtFromFunction(rhsStmt, func);
+    List<IRStatement> paramPassStmts = assignArgToParam(symbolTable, lhsStmt, rhsStmt);
     funcGraph.appendPrePath(Path.createSingleton(paramPassStmts));
     
     /* replace all the return statements. */
@@ -802,10 +827,17 @@ class RunMergeProcessor implements RunProcessor {
     
   private Graph getGraphForCallStmt(CSymbolTable symbolTable, IRStatement stmt, CallPoint func) throws RunProcessorException {
     Preconditions.checkArgument(stmt.getType().equals(StatementType.CALL));
-    List<IRStatement> funcPath = assignArgToParam(symbolTable, stmt);
+    
+    if(!isDefinedFuncCall(stmt))	{
+    	IOUtils.err().println("Function call " + stmt + " is only declared but not yet implemented.");
+    	return Graph.createSingleton(Path.createSingleton(stmt));
+    }
+    
     Graph funcGraph = null;
     if(func != null)    funcGraph = collectStmtFromFunction(stmt, func);
     else                funcGraph = collectStmtFromFunction(stmt);
+    
+    List<IRStatement> funcPath = assignArgToParam(symbolTable, stmt);
     funcGraph.appendPrePath(Path.createSingleton(funcPath));
     return funcGraph;
   }
@@ -849,7 +881,7 @@ class RunMergeProcessor implements RunProcessor {
      * build pairs by replace function call to cascade_tmp if such function call
      * node hasn't been replaced before
      */
-    if(!funcNodeReplaceMap.containsKey(resNode) && "FunctionCall".equals(resNode.getName())) {
+    if(!funcNodeReplaceMap.containsKey(resNode) && resNode.hasName("FunctionCall")) {
       String resFuncName = resNode.getNode(0).getString(0);
       if(!ReservedFunction.Functions.contains(resFuncName)) {
         if(symbolTable.lookup(resFuncName) == null)
@@ -923,17 +955,16 @@ class RunMergeProcessor implements RunProcessor {
       }
     }
 
-    List<IRStatement> assignStmts = null;
+    /* No parameter passing in this function call. */
+    if(pairs.isEmpty()) return null;
     
-    if(!pairs.isEmpty())    
-      assignStmts = Lists.newArrayList();
+    List<IRStatement> assignStmts = Lists.newArrayList();
     
     for(Map.Entry<Node, Node> pair : pairs.entrySet()) {
       Node keyNode = pair.getKey();
       Node valNode = pair.getValue();
       /* For f(a) = cascade_tmp_x, add assign statement cascade_tmp_x := f(a) */
-      if(!("FunctionCall".equals(keyNode.getName()) && 
-          "PrimaryIdentifier".equals(valNode.getName())))   continue;
+      if(!(keyNode.hasName("FunctionCall") && valNode.hasName("PrimaryIdentifier")))   continue;
       Scope scope = symbolTable.getScope(valNode);
       CExpression keyExpr = CExpression.create(keyNode, scope);
       CExpression valExpr = CExpression.create(valNode, scope);
@@ -943,44 +974,44 @@ class RunMergeProcessor implements RunProcessor {
       assignStmts.add(assignStmt);
     }
     
-    if(!pairs.isEmpty()) {
-      IRStatement replaceStmt = null;
-      Node replaceNode = null;
-      
-      if(!stmt.getType().equals(StatementType.CALL)) {
-        List<Node> argRepNodes = Lists.newArrayList();
-        for(IRExpression argExpr : argExprsRep)   argRepNodes.add(argExpr.getSourceNode());
-        replaceNode = substituteNode(stmt.getSourceNode(), Iterables.toArray(argRepNodes, Node.class));
-      } else {
-        Node srcNode = stmt.getSourceNode();
-        List<Object> argRepNodes = Lists.newArrayList();
-        for(IRExpression argExpr : argExprsRep)   argRepNodes.add(argExpr.getSourceNode());
-        Node funcNode = (Node) argRepNodes.remove(0);
-        Node exprListNode = createNodeWithArgList(srcNode.getNode(1), argRepNodes);
-        replaceNode = substituteNode(stmt.getSourceNode(), funcNode, exprListNode);
-      }
-      cAnalyzer.analyze(replaceNode, symbolTable.getOriginalSymbolTable());
-      
-      switch(stmt.getType()) {
-      case ASSIGN:
-        replaceStmt = Statement.assign(replaceNode, 
-            (IRExpressionImpl) argExprsRep.get(0), (IRExpressionImpl) argExprsRep.get(1));
-        break;
-      case ASSERT:
-        replaceStmt = Statement.assertStmt(replaceNode, argExprsRep.get(0)); break;
-      case ASSUME:
-      case AWAIT:
-        replaceStmt = Statement.assumeStmt(replaceNode, argExprsRep.get(0)); break;
-      case RETURN:
-        replaceStmt = Statement.returnStmt(replaceNode, argExprsRep.get(0)); break;
-      case CALL:
-        replaceStmt = Statement.functionCall(replaceNode, 
-            argExprsRep.get(0), argExprsRep.subList(1, argExprsRep.size())); break;
-      default:
-        throw new RunProcessorException("Invalid stmt type: " + stmt);
-      }
-      assignStmts.add(replaceStmt);
+    IRStatement replaceStmt = null;
+    Node replaceNode = null;
+    
+    if(!stmt.getType().equals(StatementType.CALL)) {
+    	List<Node> argRepNodes = Lists.newArrayList();
+    	for(IRExpression argExpr : argExprsRep)   argRepNodes.add(argExpr.getSourceNode());
+    	replaceNode = substituteNode(stmt.getSourceNode(), Iterables.toArray(argRepNodes, Node.class));
+    } else {
+    	Node srcNode = stmt.getSourceNode();
+    	List<Object> argRepNodes = Lists.newArrayList();
+    	for(IRExpression argExpr : argExprsRep)
+    		argRepNodes.add(argExpr.getSourceNode());
+    	Node funcNode = (Node) argRepNodes.remove(0);
+    	Node exprListNode = createNodeWithArgList(srcNode.getNode(1), argRepNodes);
+    	replaceNode = substituteNode(stmt.getSourceNode(), funcNode, exprListNode);
     }
+    
+    cAnalyzer.analyze(replaceNode, symbolTable.getOriginalSymbolTable());
+      
+    switch(stmt.getType()) {
+    case ASSIGN:
+      replaceStmt = Statement.assign(replaceNode, 
+          (IRExpressionImpl) argExprsRep.get(0), (IRExpressionImpl) argExprsRep.get(1));
+      break;
+    case ASSERT:
+      replaceStmt = Statement.assertStmt(replaceNode, argExprsRep.get(0)); break;
+    case ASSUME:
+    case AWAIT:
+      replaceStmt = Statement.assumeStmt(replaceNode, argExprsRep.get(0)); break;
+    case RETURN:
+      replaceStmt = Statement.returnStmt(replaceNode, argExprsRep.get(0)); break;
+    case CALL:
+      replaceStmt = Statement.functionCall(replaceNode, 
+          argExprsRep.get(0), argExprsRep.subList(1, argExprsRep.size())); break;
+    default:
+      throw new RunProcessorException("Invalid stmt type: " + stmt);
+    }
+    assignStmts.add(replaceStmt);
     return assignStmts;
   }
  
@@ -1046,7 +1077,9 @@ class RunMergeProcessor implements RunProcessor {
       }
     }
     
-    if(graph == null)   throw new RunProcessorException("Invalid graph.");
+    if(graph == null)  
+    	throw new IllegalArgumentException("Cannot build graph.");
+    
     graph.appendPostPath(Path.createSingleton(pathRep.get(lastIndex)));
     return graph;
   }
@@ -1074,14 +1107,7 @@ class RunMergeProcessor implements RunProcessor {
       if(Iterables.any(currPath.getStmts(), new Predicate<IRStatement>(){
         @Override
         public boolean apply(IRStatement stmt) {
-          boolean res = false;
-          try {
-            res = stmt.getType().equals(StatementType.CALL) && 
-                findFuncDeclareNode(stmt) != null;
-          } catch (RunProcessorException e) {
-            IOUtils.err().println(e.getStackTrace());
-          }
-          return res;
+          return isDeclaredFuncCall(stmt);
         }})) {
         funcPathMap.put(currPath, null);
       }
@@ -1151,59 +1177,66 @@ class RunMergeProcessor implements RunProcessor {
     }
   }
   
-  private boolean hasFunctionCall(IRStatement stmt) {
-    return hasFunctionCall(stmt.getSourceNode());
+  private boolean hasNestedFuncCall(IRStatement stmt) {
+  	Predicate<Object> hasFuncCall = new Predicate<Object>(){
+  		@Override
+  		public boolean apply(Object o) {
+  			if(o instanceof Node) {
+  				Node node = (Node) o;
+  				if(node.hasName("FunctionCall")) {
+  					String funcName = node.getNode(0).getString(0);
+  					if(functions.containsKey(funcName))	return true;
+  				}
+  			}
+  			return false;
+  		}
+  	};
+    return containsAny(stmt.getSourceNode(), hasFuncCall);
   }
   
-  private boolean hasFunctionCall(Node srcNode) {
-    if(srcNode.hasName("FunctionCall")) {
-      String funcName = srcNode.getNode(0).getString(0);
-      if(!(ReservedFunction.Functions.contains(funcName) 
-      		|| functions.containsKey(funcName))) {
-      	throw new IllegalArgumentException("Unknown function " + funcName);
-      }
-      return functions.containsKey(funcName);
-    }
+  private boolean containsAny(Object src, Predicate<Object> predicate) {
+  	if(predicate.apply(src))	return true;
     
-    for(Object arg : srcNode) {
-    	if(arg instanceof Node 
-    			&& hasFunctionCall((Node) arg))	return true;
-    }
+  	if(src instanceof Node) {
+  		Node srcNode = (Node) src;	
+  		for(Object arg : srcNode) {
+  			if(containsAny(arg, predicate)) return true;
+  		}
+  	}
+  	
     return false;
-  }
-  
-/** 
-   private Graph functionInlineGraph(CSymbolTable symbolTable, final Graph graph, Path destPath,
-      Map<Path, Graph> pathGraphMap) throws RunProcessorException {
-    Preconditions.checkArgument(graph != null);
-    
-    Graph destGraph = functionInlinePath(symbolTable, destPath);
-    
-    if(destGraph == null)    
-      throw new RunProcessorException("Invalid graph for path: " + destPath);
-    
-    Map<Path, Set<Path>> map = graph.getPredecessorMap();    
-    if(map.containsKey(destPath)) {
-      Set<Path> prePaths = map.get(destPath);  
-      List<Graph> preGraphs = Lists.newArrayList();
-      for(Path prePath : prePaths) {
-        Graph preGraph = pathGraphMap.containsKey(prePath) ? 
-            pathGraphMap.get(prePath) : 
-              functionInlineGraph(symbolTable, graph, prePath, pathGraphMap);
-        preGraphs.add(preGraph);
-      }
-      destGraph.appendAllPreGraph(preGraphs);
-    }
-    pathGraphMap.put(destPath, destGraph);
-    return destGraph;
-  }
-  
-  private Graph functionInlineGraph(CSymbolTable symbolTable, Graph graph) 
-      throws RunProcessorException {
-    Map<Path, Graph> pathGraphMap = Maps.newHashMap();
-    return functionInlineGraph(symbolTable, graph, graph.getDestPath(), pathGraphMap);
-  }
-  */
+  } 
+ 
+//   private Graph functionInlineGraph(CSymbolTable symbolTable, final Graph graph, Path destPath,
+//      Map<Path, Graph> pathGraphMap) throws RunProcessorException {
+//    Preconditions.checkArgument(graph != null);
+//    
+//    Graph destGraph = functionInlinePath(symbolTable, destPath);
+//    
+//    if(destGraph == null)    
+//      throw new RunProcessorException("Invalid graph for path: " + destPath);
+//    
+//    Map<Path, Set<Path>> map = graph.getPredecessorMap();    
+//    if(map.containsKey(destPath)) {
+//      Set<Path> prePaths = map.get(destPath);  
+//      List<Graph> preGraphs = Lists.newArrayList();
+//      for(Path prePath : prePaths) {
+//        Graph preGraph = pathGraphMap.containsKey(prePath) ? 
+//            pathGraphMap.get(prePath) : 
+//              functionInlineGraph(symbolTable, graph, prePath, pathGraphMap);
+//        preGraphs.add(preGraph);
+//      }
+//      destGraph.appendAllPreGraph(preGraphs);
+//    }
+//    pathGraphMap.put(destPath, destGraph);
+//    return destGraph;
+//  }
+//  
+//  private Graph functionInlineGraph(CSymbolTable symbolTable, Graph graph) 
+//      throws RunProcessorException {
+//    Map<Path, Graph> pathGraphMap = Maps.newHashMap();
+//    return functionInlineGraph(symbolTable, graph, graph.getDestPath(), pathGraphMap);
+//  }
   
   private CallPoint findCallPointForStmt(IRStatement stmt, List<CallPoint> callPoints) {
     Preconditions.checkArgument(stmt.getType().equals(StatementType.CALL));
@@ -1236,14 +1269,13 @@ class RunMergeProcessor implements RunProcessor {
       int lastIndex = tmpPath.getStmts().size()-1;
       IRStatement last_stmt = tmpPath.getLastStmt();
       
-      /* function call statement f(x) with declared function */
-      if(last_stmt.getType().equals(StatementType.CALL) && 
-          findFuncDeclareNode(last_stmt) != null) {
-        
+      /* function call statement f(x) with defined function */
+      if(isDeclaredFuncCall(last_stmt)) {
         IRStatement funcCallStmt = last_stmt;
         int splitIndex = lastIndex;
         
         List<IRStatement> stmtRep = pickFuncCallFromStmt(last_stmt, symbolTable);
+        
         /* special case function with function as argument f(g(x), 1) */
         if(stmtRep != null && !stmtRep.isEmpty()) { 
           splitIndex = lastIndex - stmtRep.size() + 1;
@@ -1275,7 +1307,7 @@ class RunMergeProcessor implements RunProcessor {
       }
       
       /* assign statement with function call as rhs y = f(x) */
-      else if(hasFunctionCall(last_stmt)) {
+      else if(hasNestedFuncCall(last_stmt)) {
         List<IRStatement> stmtRep = pickFuncCallFromStmt(last_stmt, symbolTable);
         int splitIndex = lastIndex;
         int stmtRepSize = stmtRep.size();
@@ -1318,12 +1350,7 @@ class RunMergeProcessor implements RunProcessor {
         int currIndex = lastIndex;
         while(currIndex >= 0) {
           IRStatement stmt = tmpPath.getStmt(currIndex);
-//          if(stmt.getType().equals(StatementType.CALL) && 
-//              findFuncDeclareNode(stmt) != null)
-//            break;
-//          else if(hasFunctionCall(stmt))
-//            break;
-          if(hasFunctionCall(stmt)) break;
+          if(hasNestedFuncCall(stmt)) break;
           else	currIndex--;
         }
 
