@@ -68,8 +68,8 @@ public final class CScopeAnalyzer {
 		
 		/* Build all function call scope pair */
 		for(IRCallGraphNode callNode : callGraph.getNodes()) {
-			Scope destScope = symbolTable.getScope(callNode.getScopeName());
 			if(callNode.isDefined()) {
+				Scope destScope = symbolTable.getScope(callNode.getScopeName());
 				Map<Node, Scope> calleeMap = Maps.newHashMap();
 				
 				for(IRCallEdge<? extends IRCallGraphNode> edge 

@@ -318,14 +318,14 @@ private Expression getITEExpression(Iterable<? extends Expression> exprs,
   private TupleExpression getUpdatedPathState(Expression memoryPrime, Expression pcPrime) {
 		ExpressionManager exprManager = getExpressionManager();
   	
-  	MemoryModel memoryModel = getMemoryModel();
-  	if(memoryModel.getType().equals(MemoryModelType.PARTITION)) {
-  		Scope currScope = getExpressionEncoder().getCurrentScope();
-  		if(currScope != null) { // current scope might be null if statement is havoc statement
-    		PartitionMemoryModel parMemModel = memoryModel.asPartition();
-    		memoryPrime = parMemModel.kickout(memoryPrime, currScope);
-  		}
-  	}
+//  	MemoryModel memoryModel = getMemoryModel();
+//  	if(memoryModel.getType().equals(MemoryModelType.PARTITION)) {
+//  		Scope currScope = getExpressionEncoder().getCurrentScope();
+//  		if(currScope != null) { // current scope might be null if statement is havoc statement
+//    		PartitionMemoryModel parMemModel = memoryModel.asPartition();
+//    		memoryPrime = parMemModel.kickout(memoryPrime, currScope);
+//  		}
+//  	}
   	
   	boolean isUpdated = !(
   			getPathType().asTuple().getElementTypes().get(0).equals(memoryPrime.getType()) &&

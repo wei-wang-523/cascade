@@ -512,83 +512,83 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
 		scopeAnalyzer = analyzer;
 	}
   
-  /**
-   * Kick out the type element out of scope
-   * @param memoryPrime
-   * @param pcPrime
-   * @return
-   */
-  protected Expression kickout(Expression state, Scope currentScope) {
-  	Preconditions.checkArgument(currentScope != null);
-  	ExpressionManager exprManager = getExpressionManager();
-  	boolean shrinked = false;
-  	
-  	Expression memState = state.asTuple().getChild(0);
-		Expression memStatePrime = memState;
-  	
-		{ /** Kick out the memory state */
-			Map<String, ArrayExpression> elemMap = getRecordElems(memState);
-			int preMemSize = elemMap.size();
-			for(String key : ImmutableSet.copyOf(elemMap.keySet())) {
-				String varScopeName = nameMap.get(key);
-				Scope scope = analyzer.getRootScope(varScopeName);
-				
-				if(scope.equals(currentScope))  
-					continue;
-				
-				if(CScopeAnalyzer.isNested(scope, currentScope))  
-					continue;
-				
-				if(scopeAnalyzer.isCalled(scope, currentScope)) 
-					continue;
-				
-				elemMap.remove(key);
-			}
-			
-			if(elemMap.size() < preMemSize) {
-				shrinked = true;
-//				IOUtils.err().println("Memory state size is shrinked.");
-				String recordTypeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
-				RecordType recordType = getRecordTypeFromMap(recordTypeName, elemMap);
-				memStatePrime = exprManager.record(recordType, elemMap.values());
-			}
-		}
-  	
-		Expression sizeState = state.asTuple().getChild(1);
-		Expression sizeStatePrime = sizeState;
-		
-		{ /** Kickout the size state */
-			Map<String, ArrayExpression> elemMap = getRecordElems(sizeState);
-			int preSizeSize = elemMap.size();
-			for(String key : ImmutableSet.copyOf(elemMap.keySet())) {
-				String varScopeName = nameMap.get(key);
-				Scope scope = analyzer.getRootScope(varScopeName);
-				
-				if(scope.equals(currentScope))  
-					continue;
-				
-				if(CScopeAnalyzer.isNested(scope, currentScope))  
-					continue;
-				
-				if(scopeAnalyzer.isCalled(scope, currentScope)) 
-					continue;
-				
-				elemMap.remove(key);
-			}
-			
-			if(elemMap.size() < preSizeSize) {
-				shrinked = true;
-//				IOUtils.err().println("Size state size is shrinked.");
-				String recordTypeName = Identifiers.uniquify(DEFAULT_SIZE_STATE_TYPE);
-				RecordType recordType = getRecordTypeFromMap(recordTypeName, elemMap);
-				sizeStatePrime = exprManager.record(recordType, elemMap.values());
-			}
-		}
-		
-		if(!shrinked)	return state;
-		
-		return getUpdatedState(state, memStatePrime, sizeStatePrime);
-	}
+//  /**
+//   * Kick out the type element out of scope
+//   * @param memoryPrime
+//   * @param pcPrime
+//   * @return
+//   */
+//  protected Expression kickout(Expression state, Scope currentScope) {
+//  	Preconditions.checkArgument(currentScope != null);
+//  	ExpressionManager exprManager = getExpressionManager();
+//  	boolean shrinked = false;
+//  	
+//  	Expression memState = state.asTuple().getChild(0);
+//		Expression memStatePrime = memState;
+//  	
+//		{ /** Kick out the memory state */
+//			Map<String, ArrayExpression> elemMap = getRecordElems(memState);
+//			int preMemSize = elemMap.size();
+//			for(String key : ImmutableSet.copyOf(elemMap.keySet())) {
+//				String varScopeName = nameMap.get(key);
+//				Scope scope = analyzer.getRootScope(varScopeName);
+//				
+//				if(scope.equals(currentScope))  
+//					continue;
+//				
+//				if(CScopeAnalyzer.isNested(scope, currentScope))  
+//					continue;
+//				
+//				if(scopeAnalyzer.isCalled(scope, currentScope)) 
+//					continue;
+//				
+//				elemMap.remove(key);
+//			}
+//			
+//			if(elemMap.size() < preMemSize) {
+//				shrinked = true;
+////				IOUtils.err().println("Memory state size is shrinked.");
+//				String recordTypeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
+//				RecordType recordType = getRecordTypeFromMap(recordTypeName, elemMap);
+//				memStatePrime = exprManager.record(recordType, elemMap.values());
+//			}
+//		}
+//  	
+//		Expression sizeState = state.asTuple().getChild(1);
+//		Expression sizeStatePrime = sizeState;
+//		
+//		{ /** Kickout the size state */
+//			Map<String, ArrayExpression> elemMap = getRecordElems(sizeState);
+//			int preSizeSize = elemMap.size();
+//			for(String key : ImmutableSet.copyOf(elemMap.keySet())) {
+//				String varScopeName = nameMap.get(key);
+//				Scope scope = analyzer.getRootScope(varScopeName);
+//				
+//				if(scope.equals(currentScope))  
+//					continue;
+//				
+//				if(CScopeAnalyzer.isNested(scope, currentScope))  
+//					continue;
+//				
+//				if(scopeAnalyzer.isCalled(scope, currentScope)) 
+//					continue;
+//				
+//				elemMap.remove(key);
+//			}
+//			
+//			if(elemMap.size() < preSizeSize) {
+//				shrinked = true;
+////				IOUtils.err().println("Size state size is shrinked.");
+//				String recordTypeName = Identifiers.uniquify(DEFAULT_SIZE_STATE_TYPE);
+//				RecordType recordType = getRecordTypeFromMap(recordTypeName, elemMap);
+//				sizeStatePrime = exprManager.record(recordType, elemMap.values());
+//			}
+//		}
+//		
+//		if(!shrinked)	return state;
+//		
+//		return getUpdatedState(state, memStatePrime, sizeStatePrime);
+//	}
 
 	/**
    * Update memory state with assignment lval := rval
