@@ -136,6 +136,7 @@ public class CallGraphNode implements IRCallGraphNode {
 	public boolean equals(Object node) {
 		if(!(node instanceof CallGraphNode)) return false;
 		CallGraphNode graphNode = (CallGraphNode) node;
-		return signature.equals(graphNode.signature);
+    return (graphNode != null 
+    		&& signature.equals(graphNode.signature));
 	}
 }

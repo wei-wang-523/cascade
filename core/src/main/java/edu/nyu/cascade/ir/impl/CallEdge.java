@@ -6,7 +6,6 @@ import java.util.Set;
 import xtc.tree.Node;
 import xtc.tree.Printer;
 
-import com.google.common.base.Objects;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.ir.IRCallEdge;
@@ -33,7 +32,7 @@ public class CallEdge implements IRCallEdge<CallGraphNode> {
     }
     CallEdge edge = (CallEdge) o;
     return (edge != null && source.equals(edge.source)
-            && target.equals(edge.target) && Objects.equal(call, edge.call));
+            && target.equals(edge.target) && (call == edge.call));
   }
 
   @Override
