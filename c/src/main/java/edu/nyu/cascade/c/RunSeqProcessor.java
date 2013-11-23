@@ -11,12 +11,12 @@ import xtc.type.*;
 import xtc.util.SymbolTable.Scope;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 
 import edu.nyu.cascade.c.CAnalyzer;
 import edu.nyu.cascade.c.CSpecParser;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
-import edu.nyu.cascade.c.preprocessor.PreProcessor.Builder;
 import edu.nyu.cascade.control.*;
 import edu.nyu.cascade.control.jaxb.InsertionType;
 import edu.nyu.cascade.control.jaxb.Position.Command;
@@ -33,24 +33,38 @@ import edu.nyu.cascade.util.*;
  */
 class RunSeqProcessor implements RunProcessor {
   
-  public RunSeqProcessor(Map<File, CSymbolTable> symbolTables,
-      Map<Node, IRControlFlowGraph> cfgs, Map<File, IRCallGraph> callGraphs, CAnalyzer cAnalyzer,
-      CExpressionEncoder exprEncoder, Builder<?> builder)
+  public RunSeqProcessor(
+  		Map<File, CSymbolTable> symbolTables,
+      Map<Node, IRControlFlowGraph> cfgs, 
+      Map<File, IRCallGraph> callGraphs, 
+      CAnalyzer cAnalyzer,
+      CExpressionEncoder exprEncoder, 
+      PreProcessor.Builder<?> builder, 
+      CScopeAnalyzer.Builder scopeAnalyzerBuilder)
       throws RunProcessorException {
     this.symbolTables = symbolTables;
     this.cfgs = cfgs;
     this.cAnalyzer = cAnalyzer;
     this.pathEncoder = PathSeqEncoder.create(SimplePathEncoding.create(exprEncoder));
     this.builder = builder;
+    this.scopeAnalyzerBuilder = scopeAnalyzerBuilder;
     this.callGraphs = callGraphs;
+    this.functions = Maps.newHashMap();
+    for(IRCallGraph graph : callGraphs.values()) {
+    	for(IRCallGraphNode callNode : graph.getNodes()) {
+    		functions.put(callNode.getName(), callNode.getFuncDefinitionNode());
+    	}
+    }
   }
   
   private final Map<File, CSymbolTable> symbolTables;
   private final Map<Node, IRControlFlowGraph> cfgs;
   private final Map<File, IRCallGraph> callGraphs;
+  private final Map<String, Node> functions;
   private final CAnalyzer cAnalyzer;
   private final PathSeqEncoder pathEncoder;
   private final PreProcessor.Builder<?> builder;
+  private final CScopeAnalyzer.Builder scopeAnalyzerBuilder;
 
   @Override
   public boolean process(Run run) throws RunProcessorException {
@@ -83,11 +97,20 @@ class RunSeqProcessor implements RunProcessor {
       }
       
       File file = run.getStartPosition().getFile();
-
+      CSymbolTable symbolTable = symbolTables.get(file);
+      
+      
       if(builder != null) {
-        CSymbolTable symbolTable = symbolTables.get(file);
         PreProcessor<?> preprocessor = builder.setSymbolTable(symbolTable).build();
         pathEncoder.preprocessPath(preprocessor, path);
+      }
+      
+      if(scopeAnalyzerBuilder != null) {
+      	CScopeAnalyzer scopeAnalyzer = scopeAnalyzerBuilder
+      			.setSymbolTable(symbolTable)
+      			.setCallGraph(callGraphs.get(file)).build();
+      	pathEncoder.getExpressionEncoder()
+      			.getMemoryModel().setScopeAnalyzer(scopeAnalyzer);
       }
       
       pathEncoder.encodePath(path);
@@ -346,72 +369,39 @@ class RunSeqProcessor implements RunProcessor {
     IOUtils.debug().pln("CFG for position: " + cfg).flush();
     return cfg;
   }
-
-  /** Find the CFG for function call Statement. */
-  private IRControlFlowGraph getCFGForStatement(IRStatement stmt) 
-      throws RunProcessorException {
-    Node bestNode = findFuncDeclareNode(stmt);
-    IRControlFlowGraph cfg = cfgs.get(bestNode);
-    return cfg;
+  
+  /**
+   * Get the function declare Node for the function call statement <code>stmt</code>
+   * @param stmt
+   * @return the function definition node, <code>null</code> if the function is not defined
+   * @throws RunProcessorException
+   */
+  private Node findFuncDefinitionNode (IRStatement stmt) throws RunProcessorException {
+    Preconditions.checkArgument(isDefinedFuncCall(stmt));
+    String funcName = stmt.getOperand(0).toString();
+    return functions.get(funcName);
   }
   
-  /** Get the function declare Node for the function call statement. */
-  private Node findFuncDeclareNode (IRStatement stmt) throws RunProcessorException {
-    String name = stmt.getOperand(0).toString();
-    
-    File file = stmt.getLocation().getFile();
-    CSymbolTable symbolTable = symbolTables.get(file);
-
-    IRVarInfo info = symbolTable.lookup(name);
-    if(info == null)    return null; // For undeclared function.
-    Location funcDeclareLoc = info.getDeclarationNode().getLocation();
-    
-    String funcFile = funcDeclareLoc.file;
-    int lineNum = funcDeclareLoc.line;
-    Node bestNode = null;    
-    for (Node node : cfgs.keySet()) {
-      Location loc = node.getLocation();
-      if (funcFile.equals(loc.file)) {
-        int diff = lineNum - loc.line;
-        if (diff == 0) {
-          bestNode = node;
-          break;
-        }
+  /** Decide the function declare Node for the function call statement. */
+  private boolean isDeclaredFuncCall (IRStatement stmt) {
+    if(stmt.getType().equals(StatementType.CALL)) {
+      String funcName = stmt.getOperand(0).toString();    
+      if(functions.containsKey(funcName)) {
+      	return true;
       }
     }
-    
-    if(bestNode == null) {
-      /* FIXME: continue find in the parent scope or stays at root scope initially? */
-      IOUtils.debug().pln("Cannot find the function declaration node for " + stmt);
-    }
-    return bestNode;
+    return false;
   }
   
-  private Node findFuncDeclareNode (CSymbolTable symbolTable, String funcName) 
-      throws RunProcessorException {
-    IRVarInfo info = symbolTable.lookup(funcName);
-    if(info == null)    return null; /* For undeclared function. */
-    Location funcDeclareLoc = info.getDeclarationNode().getLocation();
-    
-    String funcFile = funcDeclareLoc.file;
-    int lineNum = funcDeclareLoc.line;
-    Node bestNode = null;    
-    for (Node node : cfgs.keySet()) {
-      Location loc = node.getLocation();
-      if (funcFile.equals(loc.file)) {
-        int diff = lineNum - loc.line;
-        if (diff == 0) {
-          bestNode = node;
-          break;
-        }
+  /** Decide the function define Node for the function call statement. */
+  private boolean isDefinedFuncCall (IRStatement stmt) throws RunProcessorException {
+    if(stmt.getType().equals(StatementType.CALL)) {
+      String funcName = stmt.getOperand(0).toString();    
+      if(functions.containsKey(funcName)) {
+      	return functions.get(funcName) != null;
       }
     }
-    
-    if(bestNode == null) {
-      /* FIXME: continue find in the parent scope or stays at root scope initially? */
-      IOUtils.debug().pln("Cannot find the function declaration node for " + funcName);
-    }
-    return bestNode;
+    return false;
   }
   
   /** 
@@ -426,18 +416,18 @@ class RunSeqProcessor implements RunProcessor {
   
   private List<IRStatement> collectStmtFromFunction(IRStatement stmt, CallPoint func) 
       throws RunProcessorException {
-    List<IRStatement> path = Lists.newArrayList();
-    IRControlFlowGraph funcCfg = getCFGForStatement(stmt);
-    if(funcCfg == null) {
-      System.err.println("Cannot find cfg for statement: " + stmt);
-    } else {     
-      IRLocation funcStart = funcCfg.getEntry().getStartLocation();
-      IRLocation funcEnd = funcCfg.getExit().getEndLocation();
-      List<Position> waypoints = null;
-      if(func != null) waypoints = func.getWayPoint();
-      path.addAll(processRun(funcStart, funcEnd, waypoints));
-    }
-    return path;
+  	Preconditions.checkArgument(isDefinedFuncCall(stmt));
+    Node bestNode = findFuncDefinitionNode(stmt);
+    
+    if(!cfgs.containsKey(bestNode))
+    	throw new IllegalArgumentException("Cannot find cfg of " + stmt);
+    
+    IRControlFlowGraph funcCfg = cfgs.get(bestNode); 
+    IRLocation funcStart = funcCfg.getEntry().getStartLocation();
+    IRLocation funcEnd = funcCfg.getExit().getEndLocation();
+    List<Position> waypoints = null;
+    if(func != null) waypoints = func.getWayPoint();
+    return processRun(funcStart, funcEnd, waypoints);
   }
   
   /** 
@@ -454,36 +444,32 @@ class RunSeqProcessor implements RunProcessor {
     return assignArgToParam(symbolTable, null, stmt); 
   }
   
-  private List<IRStatement> assignArgToParam(CSymbolTable symbolTable, IRStatement repStmt, IRStatement rmvStmt) 
+  private List<IRStatement> assignArgToParam(CSymbolTable symbolTable, 
+  		IRStatement repStmt, IRStatement rmvStmt) 
       throws RunProcessorException {
-    if(!rmvStmt.getType().equals(StatementType.CALL)) {
-      throw new RunProcessorException("Invalid statement type: " + rmvStmt);
-    }
-      
-    Node defNode = findFuncDeclareNode(rmvStmt);
-    List<IRStatement> assignments = Lists.newArrayList();
+    Preconditions.checkArgument(isDefinedFuncCall(rmvStmt));
+    Node defNode = findFuncDefinitionNode(rmvStmt);
     
-    if(defNode == null)     return assignments;
-    
+    /* Pick the new scope for the function declaration */
     Scope paramScope = symbolTable.getScope(defNode);
     
+    /* Find the parameter declare node */
     Node paramDeclare = null;
     
     for(Object o : defNode.getNode(2)) {
-      if(o != null) {
-        if("FunctionDeclarator".equals(((Node) o).getName())) {
+      if(o != null && o instanceof Node && 
+      		((Node) o).hasName("FunctionDeclarator")) {
           o = ((Node) o).get(1);
-        }
       }
-      if(o != null) {
-        if("ParameterTypeList".equals(((Node) o).getName())) {
-          paramDeclare = ((Node) o).getNode(0);
-          break;
-        }
+      
+      if(o != null && o instanceof Node && 
+      		((Node) o).hasName("ParameterTypeList")) {
+      	paramDeclare = ((Node) o).getNode(0);
+      	break;
       }
     }
     
-    if(paramDeclare == null)    return assignments;
+    if(paramDeclare == null)    return null;
     
     /* Pick all arguments */
     List<IRExpression> args = Lists.newArrayList(rmvStmt.getOperands());
@@ -507,7 +493,7 @@ class RunSeqProcessor implements RunProcessor {
         break;
       }
       case CALL: {
-        List<IRExpression> args_call = Lists.newArrayList(repStmt.getOperands());
+        List<IRExpression> args_call = Lists.newArrayList(((Statement) repStmt).getOperands());
         args_call = args_call.subList(1, args_call.size());
         for(int i=0; i<args.size(); i++) {
           IRExpression arg = args.get(i);
@@ -532,15 +518,18 @@ class RunSeqProcessor implements RunProcessor {
     if(paramDeclare.size() != args.size()) {
       throw new RunProcessorException("#arg does not match with #param.");
     }
-    // Generate assign statement one by one
+    
+    List<IRStatement> assignments = Lists.newArrayList();
+    
+    /* Generate assign statement one by one */
     for(int i=0; i < paramDeclare.size(); i++) {
       Node paramNode = paramDeclare.getNode(i);
       paramNode = paramNode.getNode(1);
-      // Pointer parameter declaration
-      if("PointerDeclarator".equals(paramNode.getName()))
+      /* Pointer parameter declaration */
+      if(paramNode.hasName("PointerDeclarator"))
         paramNode = paramNode.getNode(1);
       
-      assert("SimpleDeclarator".equals(paramNode.getName()));
+      assert(paramNode.hasName("SimpleDeclarator"));
       IRExpressionImpl param = CExpression.create(paramNode, paramScope);
       IRExpressionImpl arg = (IRExpressionImpl) args.get(i);
       Node argNode = arg.getSourceNode();
@@ -549,13 +538,12 @@ class RunSeqProcessor implements RunProcessor {
       	Statement havoc = Statement.havoc(argNode, param);
       	assignments.add(havoc);
       } else {
-        GNode assignNode = GNode.create("AssignmentExpression", 
-        		paramNode, "=", argNode);
+        Node assignNode = GNode.create("AssignmentExpression", paramNode, "=", argNode);
         assignNode.setLocation(paramNode.getLocation());
         /* FIXME: assign node has root scope, it is inappropriate with attach with
          * argNode (with caller scope), or paramNode (with callee scope).
          */
-        cAnalyzer.analyze(assignNode);
+        cAnalyzer.analyze(assignNode);     
         Statement assign = Statement.assign(assignNode, param, arg);
         assignments.add(assign);
       }
@@ -574,12 +562,23 @@ class RunSeqProcessor implements RunProcessor {
   }
   
   private List<IRStatement> getStmtForCall(CSymbolTable symbolTable, IRStatement stmt, CallPoint func) throws RunProcessorException {
-    if(!stmt.getType().equals(StatementType.CALL)) {
-      throw new RunProcessorException("Invalid statement type: " + stmt);
+    if(!isDefinedFuncCall(stmt))	{
+    	IOUtils.err().println("Function call " + stmt + " is only declared but not yet implemented.");
+    	return Lists.newArrayList(stmt);
     }
+    
+    List<IRStatement> funcStmts = null;
+    if(func != null)    
+    	funcStmts = collectStmtFromFunction(stmt, func);
+    else                
+    	funcStmts = collectStmtFromFunction(stmt);
+    
     List<IRStatement> func_path = assignArgToParam(symbolTable, stmt);
-    if(func != null)    func_path.addAll(collectStmtFromFunction(stmt, func));
-    else                func_path.addAll(collectStmtFromFunction(stmt));
+    
+    if(func_path == null) return funcStmts;
+    
+    func_path.addAll(funcStmts);
+    
     return func_path;
   }
     
@@ -621,7 +620,7 @@ class RunSeqProcessor implements RunProcessor {
     /* build pairs by replace function call to cascade_tmp_x if such function call
      * node hasn't been replaced before
      */
-    if(!funcNodeReplaceMap.containsKey(resNode) && "FunctionCall".equals(resNode.getName())) {
+    if(!funcNodeReplaceMap.containsKey(resNode) && resNode.hasName("FunctionCall")) {
       String resFuncName = resNode.getNode(0).getString(0);
       if(!ReservedFunction.Functions.contains(resFuncName)) {
         if(symbolTable.lookup(resFuncName) == null)
@@ -661,8 +660,7 @@ class RunSeqProcessor implements RunProcessor {
   private List<IRStatement> pickFuncCallFromStmt(IRStatement stmt, CSymbolTable symbolTable) 
       throws RunProcessorException {  
     List<IRStatement> assignStmts = Lists.newArrayList();
-    if(stmt.equals(null)) 
-      return assignStmts;
+    if(stmt == null)	return assignStmts;
     ImmutableList<IRExpression> argExprs = stmt.getOperands();
     List<IRExpression> argExprsRep = Lists.newArrayList();
     LinkedHashMap<Node, Node> pairs = Maps.newLinkedHashMap();
@@ -696,8 +694,9 @@ class RunSeqProcessor implements RunProcessor {
       Node keyNode = pair.getKey();
       Node valNode = pair.getValue();
       /* For f(a) = cascade_tmp_x, add assign statement cascade_tmp_x := f(a) */
-      if(!("FunctionCall".equals(keyNode.getName()) && 
-          "PrimaryIdentifier".equals(valNode.getName())))   continue;
+      if(!(keyNode.hasName("FunctionCall") && 
+      		valNode.hasName("PrimaryIdentifier")))   continue;
+      
       Scope scope = symbolTable.getScope(valNode);
       CExpression keyExpr = CExpression.create(keyNode, scope);
       CExpression valExpr = CExpression.create(valNode, scope);
@@ -762,29 +761,35 @@ class RunSeqProcessor implements RunProcessor {
     return null;
   }
   
-  private boolean hasFunctionCall(IRStatement stmt) throws RunProcessorException {
-    File file = stmt.getLocation().getFile();
-    CSymbolTable symbolTable = symbolTables.get(file);
-    return hasFunctionCall(symbolTable, stmt.getSourceNode());
+  private boolean hasNestedFuncCall(IRStatement stmt) {
+  	Predicate<Object> hasFuncCall = new Predicate<Object>(){
+  		@Override
+  		public boolean apply(Object o) {
+  			if(o instanceof Node) {
+  				Node node = (Node) o;
+  				if(node.hasName("FunctionCall")) {
+  					String funcName = node.getNode(0).getString(0);
+  					if(functions.containsKey(funcName))	return true;
+  				}
+  			}
+  			return false;
+  		}
+  	};
+    return containsAny(stmt.getSourceNode(), hasFuncCall);
   }
   
-  private boolean hasFunctionCall(CSymbolTable symbolTable, Node srcNode) 
-      throws RunProcessorException {
-    if(srcNode.hasName("FunctionCall")) {
-      String funcName = srcNode.getNode(0).getString(0);
-      /* Do not touch the reserved functions */
-      if(ReservedFunction.Functions.contains(funcName))  return false;
-      Node funcNode = findFuncDeclareNode(symbolTable, funcName);
-      return (funcNode != null);
-    }
-    for(int i=0; i<srcNode.size(); i++) {
-      Object arg = srcNode.get(i);
-      if(arg instanceof Node)
-        if(hasFunctionCall(symbolTable, (Node) arg))
-          return true;
-    }
+  private boolean containsAny(Object src, Predicate<Object> predicate) {
+  	if(predicate.apply(src))	return true;
+    
+  	if(src instanceof Node) {
+  		Node srcNode = (Node) src;	
+  		for(Object arg : srcNode) {
+  			if(containsAny(arg, predicate)) return true;
+  		}
+  	}
+  	
     return false;
-  }
+  } 
   
   /** Replace the last return statement as assign statement. */
   private IRStatement replaceReturnStmt(CSymbolTable symbolTable, IRStatement returnStmt, IRStatement assignStmt) {
@@ -806,11 +811,18 @@ class RunSeqProcessor implements RunProcessor {
    * 2) statements collected from the function body.
    * 3) return statement
    */
-  private List<IRStatement> getStmtForAssignCallStmt(CSymbolTable symbolTable, IRStatement lhsStmt, IRStatement rhsStmt, CallPoint func) 
+  private List<IRStatement> getStmtForAssignCallStmt(CSymbolTable symbolTable, 
+  		IRStatement lhsStmt, IRStatement rhsStmt, CallPoint func) 
       throws RunProcessorException {
-    List<IRStatement> paramPassStmts = assignArgToParam(symbolTable, lhsStmt, rhsStmt);
+  	
+    if(!isDefinedFuncCall(rhsStmt))	{
+    	IOUtils.err().println("Function call " + rhsStmt + " is only declared but not yet implemented.");
+    	return Lists.newArrayList(rhsStmt);
+    }
+  	
     List<IRStatement> funcStmts = collectStmtFromFunction(rhsStmt, func);
-    funcStmts.addAll(0, paramPassStmts);
+    List<IRStatement> paramPassStmts = assignArgToParam(symbolTable, lhsStmt, rhsStmt);
+    if(paramPassStmts != null)	funcStmts.addAll(0, paramPassStmts);
     
     /* replace all the return statements. */
     IRStatement lastStmt = funcStmts.get(funcStmts.size()-1);
@@ -821,12 +833,14 @@ class RunSeqProcessor implements RunProcessor {
     return funcStmts;
   }
   
-  private List<IRStatement> getStmtForAllAssignCallStmt(CSymbolTable symbolTable, List<IRStatement> pathRep, List<IRStatement> pathRmv) 
+  private List<IRStatement> getStmtForAllAssignCallStmt(CSymbolTable symbolTable, 
+  		List<IRStatement> pathRep, List<IRStatement> pathRmv) 
       throws RunProcessorException {
     return getStmtForAllAssignCallStmt(symbolTable, pathRep, pathRmv, null);
   }
   
-  private List<IRStatement> getStmtForAllAssignCallStmt(CSymbolTable symbolTable, List<IRStatement> pathRep, List<IRStatement> pathRmv, 
+  private List<IRStatement> getStmtForAllAssignCallStmt(CSymbolTable symbolTable, 
+  		List<IRStatement> pathRep, List<IRStatement> pathRmv, 
       Iterable<CallPoint> funcs) throws RunProcessorException {
     Preconditions.checkArgument(pathRep.size() <= pathRmv.size());
     
@@ -900,8 +914,7 @@ class RunSeqProcessor implements RunProcessor {
       IRStatement last_stmt = path.get(lastIndex);
             
       /* function call statement f(x) with declared function */
-      if(last_stmt.getType().equals(StatementType.CALL) && 
-          findFuncDeclareNode(last_stmt) != null) {
+      if(isDeclaredFuncCall(last_stmt)) {
         
         IRStatement funcCallStmt = last_stmt;
         int splitIndex = lastIndex;
@@ -933,7 +946,7 @@ class RunSeqProcessor implements RunProcessor {
       }
       
       /* assign statement with function call as rhs y = f(x) */
-      else if(hasFunctionCall(last_stmt)) {
+      else if(hasNestedFuncCall(last_stmt)) {
         List<IRStatement> stmtRep = pickFuncCallFromStmt(last_stmt, symbolTable);
         int splitIndex = lastIndex;
         int stmtRepSize = stmtRep.size();
@@ -969,13 +982,8 @@ class RunSeqProcessor implements RunProcessor {
         int currIndex = lastIndex;
         while(currIndex >= 0) {
           IRStatement stmt = path.get(currIndex);
-          if(stmt.getType().equals(StatementType.CALL) && 
-              findFuncDeclareNode(stmt) != null)
-            break;
-          else if(hasFunctionCall(stmt))
-            break;
-          else
-            currIndex--;
+          if(hasNestedFuncCall(stmt)) break;
+          else	currIndex--;
         }
 
         int splitIndex = currIndex + 1;

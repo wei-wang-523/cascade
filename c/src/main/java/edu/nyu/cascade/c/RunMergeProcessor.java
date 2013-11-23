@@ -33,7 +33,8 @@ import edu.nyu.cascade.util.*;
  */
 class RunMergeProcessor implements RunProcessor {
   
-  public RunMergeProcessor(Map<File, CSymbolTable> symbolTables,
+  public RunMergeProcessor(
+  		Map<File, CSymbolTable> symbolTables,
       Map<Node, IRControlFlowGraph> cfgs, 
       Map<File, IRCallGraph> callGraphs,
       CAnalyzer cAnalyzer,
