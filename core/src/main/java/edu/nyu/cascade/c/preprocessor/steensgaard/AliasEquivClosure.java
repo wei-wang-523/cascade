@@ -41,10 +41,10 @@ public class AliasEquivClosure implements IREquivClosure {
 		this.repVar = repVar;
 		this.elements = elements;
 		this.properties = Maps.newLinkedHashMap();
-		properties.put(Identifiers.SCOPE, getRootScope(elements));
+		properties.put(Identifiers.SCOPE, getHighestScope(elements));
 	}
 	
-	private Scope getRootScope(Iterable<IRVar> elements) {
+	private Scope getHighestScope(Iterable<IRVar> elements) {
 		Scope rootScope = null;
 		for(IRVar elem : elements) {
 			if(rootScope == null) { 
@@ -52,10 +52,10 @@ public class AliasEquivClosure implements IREquivClosure {
 			} else {
 				Scope elemScope = elem.getScope();
 				if(elemScope.equals(rootScope)) continue;
-				if(CScopeAnalyzer.isNested(rootScope, elemScope)) continue;
+				if(CScopeAnalyzer.isNestedOrEqual(rootScope, elemScope)) continue;
 				
 				if(CScopeAnalyzer.isNested(elemScope, rootScope)) {
-					// Repleace rootScope with high level scope
+					// Replace rootScope with high level scope
 					rootScope = elemScope; continue;
 				}
 				

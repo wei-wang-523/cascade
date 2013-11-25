@@ -4,6 +4,7 @@ import java.util.Map;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.ir.IRCallEdge;
@@ -41,17 +42,32 @@ public final class CScopeAnalyzer {
 	}
 	
 	/**
-	 * Check is <code>scope_a</code> is the parent or grandparent scope of
+	 * Check is <code>scope_a</code> is the (both direct and indirect) parent
 	 * <code>scope_b</code>
 	 * @param scope_a
 	 * @param scope_b
 	 * @return
 	 */
 	public static boolean isNested(Scope scope_a, Scope scope_b) {
-		if(scope_a.isRoot()) {
-			if (scope_b.isRoot()) return false;
-			return true;
-		}
+		if(scope_a.equals(scope_b))	return false;
+		
+		if(scope_a.isRoot()) return true;
+		
+		String name_a = scope_a.getQualifiedName();
+		String name_b = scope_b.getQualifiedName();
+		return name_b.startsWith(name_a);
+	}
+	
+	/**
+	 * Check is <code>scope_a</code> is either (both direct and indirect) parent
+	 * <code>scope_b</code>, or <code>scope_a</code> is same as <code>scope_b
+	 * </code>
+	 * @param scope_a
+	 * @param scope_b
+	 * @return
+	 */
+	public static boolean isNestedOrEqual(Scope scope_a, Scope scope_b) {
+		if(scope_a.equals(scope_b))	return true;
 		
 		String name_a = scope_a.getQualifiedName();
 		String name_b = scope_b.getQualifiedName();
@@ -69,7 +85,6 @@ public final class CScopeAnalyzer {
 		/* Build all function call scope pair */
 		for(IRCallGraphNode callNode : callGraph.getNodes()) {
 			if(callNode.isDefined()) {
-				Scope destScope = symbolTable.getScope(callNode.getScopeName());
 				Map<Node, Scope> calleeMap = Maps.newHashMap();
 				
 				for(IRCallEdge<? extends IRCallGraphNode> edge 
@@ -79,6 +94,7 @@ public final class CScopeAnalyzer {
 					calleeMap.put(edge.getCallNode(), srcScope);
 				}
 				
+				Scope destScope = symbolTable.getScope(callNode.getScopeName());
 				builder.put(destScope, calleeMap);
 			}
 		}
@@ -88,7 +104,8 @@ public final class CScopeAnalyzer {
 	
 	/**
 	 * Check is <code>scope_a</code> is the caller scope or the parent scope
-	 * of the caller scope of <code>scope_b</code>
+	 * of the caller scope of <code>scope_b</code> with call node <code>
+	 * callNode</code>
 	 * @param scope_a
 	 * @param scope_b
 	 * @return
@@ -102,7 +119,60 @@ public final class CScopeAnalyzer {
 		
 		if(callerScope.equals(scope_a)) return true;
 		
-		boolean nested = isNested(scope_a, callerScope);
-		return nested;
+		return isNestedOrEqual(scope_a, callerScope);
+	}
+	
+	/**
+	 * Check is <code>scope_a</code> is the caller scope or the parent scope
+	 * of the caller scope of <code>scope_b</code>
+	 * @param scope_a
+	 * @param scope_b
+	 * @return
+	 */
+	public boolean isCalled(Scope scope_a, Scope scope_b) {
+		Preconditions.checkArgument(callScopeMaps != null);
+		if(callScopeMaps.isEmpty())	return false;
+		if(!callScopeMaps.containsKey(scope_b)) return false;
+		Map<Node, Scope> calleeMap = callScopeMaps.get(scope_b);
+		Iterable<Scope> callees = calleeMap.values();
+		return Iterables.contains(callees, scope_a);
+	}
+	
+	/**
+	 * Get the parent scope of <code>preScope</code> that
+	 * is the neighbor of <code>currScope</code>.
+	 * 
+	 * If <code>currScope</code> is the caller of <code>preScope
+	 * </code>, return the root function scope of <code>
+	 * preScope</code>, which is the function called at <code>
+	 * currScope</code>.
+	 * 
+	 * If <code>currScope</code> is under the same parent (might be
+	 * indirect) scope as <code>preScope</code>, return the 
+	 * scope that is one level lower of the same parent scope;
+	 * 
+	 * If <code>currScope</code> is the parent of <code>preScope
+	 * </code>, return scope that is one level lower of the 
+	 * <code>currScope</code>;
+	 * 
+	 * @param preScope
+	 * @param currScope
+	 * @return
+	 */
+	public static Scope findNeighbor(Scope preScope, Scope currScope) {
+		Preconditions.checkArgument(!isNestedOrEqual(preScope, currScope));
+		if(isNested(currScope, preScope)) {
+			Scope resScope = preScope;
+			while(!resScope.getParent().equals(currScope)) {
+				resScope = resScope.getParent();
+			}
+			return resScope;
+		} else {
+			Scope resScope = preScope;
+			while(!(isNested(resScope.getParent(), currScope))) {
+				resScope = resScope.getParent();
+			}
+			return resScope;
+		}
 	}
 }
