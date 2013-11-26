@@ -825,6 +825,10 @@ class RunMergeProcessor implements RunProcessor {
     List<IRStatement> paramPassStmts = assignArgToParam(symbolTable, lhsStmt, rhsStmt);
     funcGraph.appendPrePath(Path.createSingleton(paramPassStmts));
     
+    /* add the call statement */
+    Path srcPath = Path.createSingleton(rhsStmt);
+    funcGraph.appendPrePath(srcPath);
+    
     /* replace all the return statements. */
     funcGraph.replaceReturnStmt(lhsStmt);
     
@@ -854,6 +858,11 @@ class RunMergeProcessor implements RunProcessor {
     
     List<IRStatement> funcPath = assignArgToParam(symbolTable, stmt);
     funcGraph.appendPrePath(Path.createSingleton(funcPath));
+    
+    /* add the call statement */
+    Path srcPath = Path.createSingleton(stmt);
+    funcGraph.appendPrePath(srcPath);
+    
     return funcGraph;
   }
   
