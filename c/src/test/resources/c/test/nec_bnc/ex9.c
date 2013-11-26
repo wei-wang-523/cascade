@@ -21,7 +21,7 @@ int test(){
 
 int main(){
 
-   // n = __NONDET__();
+   n = __NONDET__();
    
    if (n <= 0 || n >= 1024){
       n=5;
@@ -37,5 +37,4 @@ int main(){
    return 1;
 }
 
-// LOC24: comment n = __NONDET__();
 // LOC26: 1024 is out of the bound of integer with size 8 bytes.

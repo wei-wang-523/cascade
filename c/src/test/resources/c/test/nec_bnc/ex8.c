@@ -2,7 +2,7 @@
 int main(){
 	
   int * a;
-  int k; // int k = __NONDET__();
+  int k = __NONDET__();
   int i;
   if ( k <= 0 ) return -1;
   
@@ -16,5 +16,4 @@ int main(){
   
 }
 
-// LOC5: ignore __NONDET__();
 // LOC19: move "return 1" to the next line for CfgBuilder to analyze.

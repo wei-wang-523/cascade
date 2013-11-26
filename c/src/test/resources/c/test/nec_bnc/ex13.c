@@ -1,14 +1,11 @@
 
 int main(){
    int a[32];
-	int x; // = __NONDET__();
+   int x = __NONDET__();
 
    a[x%32] = 1;
    
 }
-
-// LOC4: comment __NONDET__()
-// use --signed option for negative possibility
 
 /* 
    Benchmark ex13.c comment 

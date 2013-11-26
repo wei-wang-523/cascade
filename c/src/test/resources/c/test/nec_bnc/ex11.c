@@ -21,6 +21,4 @@ int main(){
    
 }
 
-// LOC9: replace __NONDET__() to integer variable i
-
 /* cannot decide termination in while-loop. */

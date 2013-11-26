@@ -32,6 +32,3 @@ int main(){
 
    return 1;
 }
-
-// LOC21: __NONDET__(), we just do not give any value to n.
-// LOC23: --mem-cell-size 11
