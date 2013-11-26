@@ -169,4 +169,10 @@ public class PredicatePathEncoding extends
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("noop");
   }
+
+  @Override
+  public Expression call(Expression path, String func, ExpressionClosure... lval) {
+  	// TODO Auto-generated method stub
+  	throw new UnsupportedOperationException("call");
+  }
 }

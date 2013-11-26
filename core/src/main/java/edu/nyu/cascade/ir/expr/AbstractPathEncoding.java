@@ -77,6 +77,16 @@ public abstract class AbstractPathEncoding implements
   }
   
   @Override
+  public Expression call(Expression pre, String func, IRExpression ... operands) {
+    ExpressionEncoder encoder = getExpressionEncoder();
+    ExpressionClosure[] operandClosures = new ExpressionClosure[operands.length];
+    for(int i = 0; i < operandClosures.length; i++) {
+    	operandClosures[i] = operands[i].toExpression(encoder);
+    }
+    return call(pre, func, operandClosures);
+  }
+  
+  @Override
   public ValidityResult<?> checkAssertion(Expression path, ExpressionClosure bool)
       throws PathFactoryException {
     ExpressionEncoding exprEncoding = getExpressionEncoding();

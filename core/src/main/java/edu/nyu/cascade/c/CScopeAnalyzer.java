@@ -2,6 +2,7 @@ package edu.nyu.cascade.c;
 
 import java.util.Map;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -123,8 +124,16 @@ public final class CScopeAnalyzer {
 	}
 	
 	/**
-	 * Check is <code>scope_a</code> is the caller scope or the parent scope
-	 * of the caller scope of <code>scope_b</code>
+	 * Check is <code>scope_a</code> is the scope of call node
+	 * of the caller scope of <code>scope_b</code>.
+	 * 
+	 * For example, test(&n), it would be broken into two statements
+	 * test(&n); n_test = &n; ...
+	 * 
+	 * <code>scope_a</code> is the scope of <code>&n</code>, which is
+	 * the scope of <code>test(&n)</code> and is always the caller 
+	 * node's scope
+	 * 
 	 * @param scope_a
 	 * @param scope_b
 	 * @return
@@ -132,10 +141,24 @@ public final class CScopeAnalyzer {
 	public boolean isCalled(Scope scope_a, Scope scope_b) {
 		Preconditions.checkArgument(callScopeMaps != null);
 		if(callScopeMaps.isEmpty())	return false;
+		
+		/* Find the function root scope of scope_b */
+		while(!scope_b.getParent().isRoot()) scope_b = scope_b.getParent();
+		
 		if(!callScopeMaps.containsKey(scope_b)) return false;
+		
 		Map<Node, Scope> calleeMap = callScopeMaps.get(scope_b);
-		Iterable<Scope> callees = calleeMap.values();
-		return Iterables.contains(callees, scope_a);
+//		Iterable<Scope> callees = calleeMap.values();
+//		return Iterables.contains(callees, scope_a);
+		Iterable<Node> calleeNodes = calleeMap.keySet();
+		final SymbolTable _symbolTable = symbolTable;
+		Iterable<Scope> calleeScopes = Iterables.transform(calleeNodes, new Function<Node, Scope>(){
+			@Override
+			public Scope apply(Node node) {
+				return _symbolTable.getScope(node);
+			}
+		});
+		return Iterables.contains(calleeScopes, scope_a);
 	}
 	
 	/**

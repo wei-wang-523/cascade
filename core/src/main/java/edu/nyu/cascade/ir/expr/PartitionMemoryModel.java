@@ -547,12 +547,12 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
 			
 			if(elemMap.size() < preMemSize) {
 				shrinked = true;
-				IOUtils.err().println("Memory state size is shrinked.");
-				IOUtils.err().println("Orginal memory: " + memState.getType());
+				IOUtils.debug().pln("Memory state size is shrinked.");
+				IOUtils.debug().pln("Orginal memory: " + memState.getType());
 				String recordTypeName = Identifiers.uniquify(DEFAULT_MEMORY_STATE_TYPE);
 				RecordType recordType = getRecordTypeFromMap(recordTypeName, elemMap);
 				memStatePrime = exprManager.record(recordType, elemMap.values());
-				IOUtils.err().println("Shrinked memory: " + memStatePrime.getType());
+				IOUtils.debug().pln("Shrinked memory: " + memStatePrime.getType());
 			}
 		}
   	
@@ -571,12 +571,12 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
 			
 			if(elemMap.size() < preSizeSize) {
 				shrinked = true;
-				IOUtils.err().println("Size state size is shrinked.");
-				IOUtils.err().println("Orginal size: " + sizeState.getType());
+				IOUtils.debug().pln("Size state size is shrinked.");
+				IOUtils.debug().pln("Orginal size: " + sizeState.getType());
 				String recordTypeName = Identifiers.uniquify(DEFAULT_SIZE_STATE_TYPE);
 				RecordType recordType = getRecordTypeFromMap(recordTypeName, elemMap);
 				sizeStatePrime = exprManager.record(recordType, elemMap.values());
-				IOUtils.err().println("Shrintked size: " + sizeStatePrime.getType());
+				IOUtils.debug().pln("Shrinked size: " + sizeStatePrime.getType());
 			}
 		}
 		

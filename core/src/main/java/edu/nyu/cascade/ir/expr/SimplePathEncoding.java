@@ -258,6 +258,14 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   }
 
   @Override
+	public Expression call(Expression pre, String func, ExpressionClosure... operands) {
+  	Expression mem = pre.getChild(0);
+  	Expression pc = pre.getChild(1);
+    
+    return getUpdatedPathState(pre, mem, pc);
+	}
+
+	@Override
   protected BooleanExpression assertionToBoolean(Expression pre,
       ExpressionClosure bool) {
     Preconditions.checkArgument( bool.getInputType().equals( 

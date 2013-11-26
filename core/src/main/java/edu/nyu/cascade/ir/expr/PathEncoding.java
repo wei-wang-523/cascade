@@ -21,16 +21,14 @@ public interface PathEncoding    {
    */
   ExpressionManager getExpressionManager();
 
-  Expression noop(Iterable<? extends Expression> prefixes, 
-      Iterable<? extends Expression> preGuards);
-  
+  Expression noop(Iterable<? extends Expression> prefixes, Iterable<? extends Expression> preGuards);
   
   Expression assume(Expression pre, ExpressionClosure bool);
   Expression assume(Expression pre, IRExpression expr);
   
   /**
-   * Add assumptions about memory safe. If option --sound-alloc either 
-   * --order-alloc is enabled, memory is assumed to be safe, which means there
+   * Add assumptions about memory safe. If option --sound either 
+   * --order is enabled, memory is assumed to be safe, which means there
    * is no alias or regions overlapping issue. Otherwise, just returns true.
    * @param pre
    * @param bool
@@ -62,6 +60,9 @@ public interface PathEncoding    {
   Expression havoc(Expression pre, IRExpression lval);
   Expression havoc(Expression pre, ExpressionClosure lval);
 
+	Expression call(Expression pre, String func, IRExpression ... operands);
+	Expression call(Expression pre, String func, ExpressionClosure ... operands);
+  
   Expression emptyPath();
   Expression noop(Expression expr);
   

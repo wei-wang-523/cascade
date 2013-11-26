@@ -275,12 +275,21 @@ public class Statement implements IRStatement {
     case CAST:
     case SKIP:
       return factory.noop(prefix);
-      
+    /* CALL statement is used to analyze scope-sensitive partition memory
+     * model. It is useful to indicate the exact scope of caller node;
+     * and particularly useful in the function call without parameter.
+     * 
+     * Sample code:
+     *   if(...) {
+     *      ... // last statement before test()
+     *   }
+     *   test();
+     */
+    case CALL:
+    	return factory.call(prefix, getOperand(0).toString(), 
+    			getOperands().subList(1, operands.size()).toArray(new IRExpression[operands.size()-1]));
     default:
-      IOUtils.debug().pln( getType() == CALL ? 
-          "Statement.getPostCondition: Igonring statement type: " 
-              + getType() + ", with undeclared function " 
-              + getOperand(0).toString()    :
+      IOUtils.debug().pln(
           "Statement.getPostCondition: Ignoring statement type: "
               + getType());
       return factory.noop(prefix);

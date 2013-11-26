@@ -250,4 +250,10 @@ public class LambdaPathEncoding extends AbstractPathEncoding {
     // TODO Auto-generated method stub
     throw new UnsupportedOperationException("noop");
   }
+
+	@Override
+  public Expression call(Expression pre, String func, ExpressionClosure... operands) {
+	  // TODO Auto-generated method stub
+		throw new UnsupportedOperationException("call");
+  }
 }
