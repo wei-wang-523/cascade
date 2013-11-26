@@ -573,6 +573,9 @@ class RunSeqProcessor implements RunProcessor {
     else                
     	funcStmts = collectStmtFromFunction(stmt);
     
+    /* add the call statement */
+    funcStmts.add(0, stmt); 
+    
     List<IRStatement> func_path = assignArgToParam(symbolTable, stmt);
     
     if(func_path == null) return funcStmts;
@@ -822,6 +825,10 @@ class RunSeqProcessor implements RunProcessor {
   	
     List<IRStatement> funcStmts = collectStmtFromFunction(rhsStmt, func);
     List<IRStatement> paramPassStmts = assignArgToParam(symbolTable, lhsStmt, rhsStmt);
+
+    /* add the call statement */
+    funcStmts.add(0, rhsStmt);
+    
     if(paramPassStmts != null)	funcStmts.addAll(0, paramPassStmts);
     
     /* replace all the return statements. */
