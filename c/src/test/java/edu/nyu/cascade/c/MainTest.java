@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.Callable;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -14,7 +16,6 @@ import xtc.parser.ParseException;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import edu.nyu.cascade.c.Main;
-import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.util.TestUtils.ExitException;
 import edu.nyu.cascade.util.TestUtils;
 import edu.nyu.cascade.util.FileUtils;
@@ -60,6 +61,20 @@ public class MainTest {
   };
   private void runCascade(final String... args) throws Exception {
     System.out.println("runCascade: " + Joiner.on(";").join(args));
+    TestUtils.callMayExit(new Callable<Void>() {
+      @Override
+      public Void call() throws Exception {
+        Preferences.clearAll();
+        Main main = getInjector().getInstance(Main.class);
+        main.init();
+        List<String> files = main.processCommandLine(args);
+        main.setOutStream(IOUtils.NULL_PRINT_STREAM);
+        main.setErrStream(System.err);
+        main.run(files);
+        return null;
+      }
+    });
+    
     TestUtils.callMayExit(new Runnable() {
       @Override
       public void run() {
@@ -71,18 +86,14 @@ public class MainTest {
         main.setErrStream(System.err);
         try {
 					main.run(files);
-				} catch (TheoremProverException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
 				} catch (ParseException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+					throw new AssertionError(e);
+				} catch (Throwable e) {
+          throw new RuntimeException(e);
+        }
       }
     }, Timeout);
+    
     /*
      * new Thread() {
      * 
@@ -181,11 +192,11 @@ public class MainTest {
       TestUtils.checkDirectory(programs_location, ctrlFileFilter,
 			       parserTest("--dry-run"), false);
       TestUtils.checkDirectory(programs_location, ctrlFileFilter,
-			       parserTest("--dry-run", "--seq-path"), false);
+			       parserTest("--dry-run", "--seq"), false);
       TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
 			       parserTest("--dry-run"), false);
       TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
-			       parserTest("--dry-run", "--seq-path"), false);
+			       parserTest("--dry-run", "--seq"), false);
   }
   
 /*  private Map<Tester<File>, String[]> validOptMap() {
