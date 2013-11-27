@@ -5,7 +5,6 @@ import static edu.nyu.cascade.prover.Expression.Kind.RECORD;
 import static edu.nyu.cascade.prover.Expression.Kind.RECORD_UPDATE;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.DatatypeSort;
@@ -28,7 +27,7 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
 
   static RecordExpressionImpl create(ExpressionManagerImpl exprManager, Type type,
       Iterable<? extends Expression> elements) {
-    Preconditions.checkArgument(!Iterables.isEmpty(elements));
+//    Preconditions.checkArgument(!Iterables.isEmpty(elements));
     return new RecordExpressionImpl(exprManager, type, elements);
   }
 

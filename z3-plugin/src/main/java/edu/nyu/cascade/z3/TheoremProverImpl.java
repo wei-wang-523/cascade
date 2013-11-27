@@ -305,7 +305,7 @@ public class TheoremProverImpl implements TheoremProver {
       Status z3QueryResult = getSolver().Check();
       time = System.currentTimeMillis() - time;
       z3_time += time;
-      IOUtils.err().println("Z3 took time: " + z3_time/1000.0 + "s");
+      IOUtils.debug().pln("Z3 took time: " + z3_time/1000.0 + "s");
       IOUtils.debug().pln(z3QueryResult.toString());
       ValidityResult.Type resultType = convertZ3QueryResult(z3QueryResult);
 
