@@ -5,6 +5,7 @@ import java.io.FilenameFilter;
 import java.security.Permission;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.Callable;
 
 import com.google.common.base.Preconditions;
 
@@ -136,6 +137,20 @@ public class TestUtils {
     }
   };
 
+  public static <T> T callMayExit(Callable<T> callable) throws Exception {
+    SecurityManager defaultSecurityManager = System.getSecurityManager();
+    try {
+      System.setSecurityManager(noExitSecurityManager);
+      return callable.call();
+    } finally {
+      System.setSecurityManager(defaultSecurityManager);
+    }
+    /*
+     * FutureTask<T> task = new FutureTask<T>(callable); task.run(); return
+     * task.get();
+     */
+  }
+  
   public static <T> T callMayExit(final Runnable runnable, int timeout) throws Exception {
     SecurityManager defaultSecurityManager = System.getSecurityManager();
     try {
@@ -143,7 +158,7 @@ public class TestUtils {
       Thread thread = new Thread(runnable);
       
       long startTime = System.currentTimeMillis();
-      thread.start();
+      thread.run();
       while(thread.isAlive()) {
       	Thread.sleep(30);
       	if(System.currentTimeMillis() - startTime > timeout * 1000) {
@@ -156,9 +171,5 @@ public class TestUtils {
     } finally {
       System.setSecurityManager(defaultSecurityManager);
     }
-    /*
-     * FutureTask<T> task = new FutureTask<T>(callable); task.run(); return
-     * task.get();
-     */}
-
+  }
 }
