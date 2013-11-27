@@ -1037,7 +1037,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     // IOUtils.debug().flush();
 
     if ( e.getKind() == edu.nyu.acsys.CVC4.Kind.PLUS ) {
-      return (ExpressionImpl) plus((List) toExpressionList(e.getChildren()));
+      return (ExpressionImpl) plus((List<ExpressionImpl>) toExpressionList(e.getChildren()));
     } else if ( e.getKind() == edu.nyu.acsys.CVC4.Kind.MINUS ) {
       return (ExpressionImpl) minus(
           (ExpressionImpl) toExpression(e.getChild(0)),
@@ -1065,17 +1065,17 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       /* ExprMut opExpr = e.getOpExpr(); */
       Expr opExpr = e.getOperator();
       return (ExpressionImpl) applyExpr((ExpressionImpl) toExpression(opExpr), 
-          (List) toExpressionList(e.getChildren()));
+          (List<ExpressionImpl>) toExpressionList(e.getChildren()));
     } else if( e.getKind() == edu.nyu.acsys.CVC4.Kind.BITVECTOR_PLUS ) {
       BitVectorType type = BitVectorTypeImpl.valueOf(this,
           (TypeImpl) toType(e.getType()));
       return BitVectorExpressionImpl.mkPlus(this, type.getSize(),
-          (List) toExpressionList(e.getChildren()));
+          (List<ExpressionImpl>) toExpressionList(e.getChildren()));
     } else if (e.getKind() == edu.nyu.acsys.CVC4.Kind.BITVECTOR_MULT) { 
       BitVectorType type = BitVectorTypeImpl.valueOf(this,
           (TypeImpl) toType(e.getType()));
       return BitVectorExpressionImpl.mkMult(this, type.getSize(),
-          (List) toExpressionList(e.getChildren())); 
+          (List<ExpressionImpl>) toExpressionList(e.getChildren())); 
     } else if( e.getKind() == edu.nyu.acsys.CVC4.Kind.BITVECTOR_EXTRACT ) {
       Preconditions.checkArgument(e.getNumChildren() == 2);
       int high = (int) e.getChild(0).getConstBitVectorExtract().getHigh();
