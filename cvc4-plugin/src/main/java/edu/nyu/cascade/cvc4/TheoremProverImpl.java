@@ -246,9 +246,8 @@ public class TheoremProverImpl implements TheoremProver {
     }
   }
   
-  @SuppressWarnings("unchecked")
   @Override
-  public SatResult checkSat(Expression expr) {
+  public SatResult<?> checkSat(Expression expr) {
     Preconditions.checkArgument(expr.isBoolean());
     try {      
       /* getCvc4ExprManager().push(); */
@@ -272,7 +271,7 @@ public class TheoremProverImpl implements TheoremProver {
       IOUtils.debug().pln(cvc4SatResult.toString()).flush();
       SatResult.Type resultType = convertCvc4SatResult(cvc4SatResult);
 
-      SatResult res;
+      SatResult<?> res;
       if (SatResult.Type.UNSAT.equals(resultType)) {
         res = SatResult.unsat(expr);
       } else if (SatResult.Type.SAT.equals(resultType)){        
@@ -353,7 +352,7 @@ public class TheoremProverImpl implements TheoremProver {
       IOUtils.debug().pln(cvc4QueryResult.toString());
       ValidityResult.Type resultType = convertCvc4QueryResult(cvc4QueryResult);
 
-      ValidityResult res;
+      ValidityResult<?> res;
       if (ValidityResult.Type.VALID.equals(resultType)) {
         res = ValidityResult.valid(expr);
       } else if (ValidityResult.Type.INVALID.equals(resultType)){        
@@ -467,7 +466,7 @@ public class TheoremProverImpl implements TheoremProver {
        * FIXME: default loading library "cvc4" with linked error
        * to find edu.nyu.acsys.CVC4.CVC4JNI.new_ExprManager__SWIG_0()
        */
-      System.loadLibrary("cvc4java");
+      System.loadLibrary("cvc4jni");
 
       Options opts = new Options();
       opts.parseOptions(2, new String[] { "cascade", "--output-lang=cvc4" });
