@@ -324,7 +324,7 @@ public class MainTest {
   }*/
   
   @Test
-//  @Ignore
+  @Ignore
   public void testNecBenchmark() {
   	final Tester<File> tester = parserTest("--mem-cell-size", "32", "--sound", "--prover", "z3", "--theory", "Partition");
     final File valid_nec_location = new File(nec_programs_location, "valid");
@@ -341,7 +341,7 @@ public class MainTest {
   public void testMiniBenchmark() {
 //  	smtFile_dump_location.mkdir();
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
-        parserTest("--feasibility", "-inline-anno", "--order", "--prover", "z3", "--theory", "Flat"), false);
+        parserTest("--feasibility", "-inline-anno", "--order", "--prover", "z3", "--theory", "Partition", "--mem-cell-size", "32"), false);
   }
   
   @Test
