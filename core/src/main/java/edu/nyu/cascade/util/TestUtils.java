@@ -151,14 +151,14 @@ public class TestUtils {
      */
   }
   
-  public static <T> T callMayExit(final Runnable runnable, int timeout) throws Exception {
+  public static <T> T callWithTimeout(final Runnable runnable, int timeout) throws Exception {
     SecurityManager defaultSecurityManager = System.getSecurityManager();
     try {
       System.setSecurityManager(noExitSecurityManager);
       Thread thread = new Thread(runnable);
       
       long startTime = System.currentTimeMillis();
-      thread.run();
+      thread.start();
       while(thread.isAlive()) {
       	Thread.sleep(30);
       	if(System.currentTimeMillis() - startTime > timeout * 1000) {
