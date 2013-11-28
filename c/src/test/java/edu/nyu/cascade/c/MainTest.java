@@ -365,7 +365,7 @@ public class MainTest {
   }*/
   
   @Test
-//  @Ignore
+  @Ignore
   public void testNecBenchmark() {
   	final Tester<File> tester = parserTestWithTimeout("--mem-cell-size", "32", "--sound", "--prover", "z3", "--theory", "Partition");
     final File valid_nec_location = new File(nec_programs_location, "valid");
