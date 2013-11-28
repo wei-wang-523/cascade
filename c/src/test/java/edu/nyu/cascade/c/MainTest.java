@@ -15,7 +15,9 @@ import xtc.parser.ParseException;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
+
 import edu.nyu.cascade.c.Main;
+import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.util.TestUtils.ExitException;
 import edu.nyu.cascade.util.TestUtils;
 import edu.nyu.cascade.util.FileUtils;
@@ -54,11 +56,13 @@ public class MainTest {
       return name.endsWith(".ctrl");
     }
   };
+  
   private static final FilenameFilter propFileFilter = new FilenameFilter() {
     public boolean accept(File dir, String name) {
       return name.endsWith(".properties");
     }
   };
+  
   private void runCascade(final String... args) throws Exception {
     System.out.println("runCascade: " + Joiner.on(";").join(args));
     TestUtils.callMayExit(new Callable<Void>() {
@@ -75,25 +79,6 @@ public class MainTest {
       }
     });
     
-    TestUtils.callMayExit(new Runnable() {
-      @Override
-      public void run() {
-        Preferences.clearAll();
-        Main main = getInjector().getInstance(Main.class);
-        main.init();
-        List<String> files = main.processCommandLine(args);
-        main.setOutStream(IOUtils.NULL_PRINT_STREAM);
-        main.setErrStream(System.err);
-        try {
-					main.run(files);
-				} catch (ParseException e) {
-					throw new AssertionError(e);
-				} catch (Throwable e) {
-          throw new RuntimeException(e);
-        }
-      }
-    }, Timeout);
-    
     /*
      * new Thread() {
      * 
@@ -104,6 +89,33 @@ public class MainTest {
      * 
      * }.start();
      */}
+  
+  private void runCascadeWithTimeout(final String... args) throws Exception {
+    System.out.println("runCascade with timeout " + Timeout + "s: " + Joiner.on(";").join(args));
+    TestUtils.callWithTimeout(new Runnable() {
+      @Override
+      public void run() {
+        Preferences.clearAll();
+        Main main = getInjector().getInstance(Main.class);
+        main.init();
+        List<String> files = main.processCommandLine(args);
+        main.setOutStream(IOUtils.NULL_PRINT_STREAM);
+        main.setErrStream(System.err);
+        try {
+					main.run(files);
+				} catch (TheoremProverException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+      }
+    }, Timeout);
+  }
 
   private TestUtils.Tester<File> parserTest(final String... args) {
     return new TestUtils.Tester<File>() {
@@ -118,6 +130,24 @@ public class MainTest {
           runCascade(argList.toArray(new String[0]));
         } catch (ParseException e) {
           throw new AssertionError(e);
+        } catch (Throwable e) {
+          throw new RuntimeException(e);
+        }
+      }
+    };
+  }
+  
+  private TestUtils.Tester<File> parserTestWithTimeout(final String... args) {
+    return new TestUtils.Tester<File>() {
+      @Override
+      public void runTest(File f) {
+        try {
+          List<String> argList = Lists.newArrayList(args);
+          argList.add(f.toString());
+//          argList.add("--smt2-file");
+//          File dumpFile = new File(smtFile_dump_location, f.getName().replaceFirst("ctrl", "cvc"));
+//          argList.add(dumpFile.getAbsolutePath());
+          runCascadeWithTimeout(argList.toArray(new String[0]));
         } catch (Throwable e) {
           throw new RuntimeException(e);
         }
@@ -335,9 +365,9 @@ public class MainTest {
   }*/
   
   @Test
-  @Ignore
+//  @Ignore
   public void testNecBenchmark() {
-  	final Tester<File> tester = parserTest("--mem-cell-size", "32", "--sound", "--prover", "z3", "--theory", "Partition");
+  	final Tester<File> tester = parserTestWithTimeout("--mem-cell-size", "32", "--sound", "--prover", "z3", "--theory", "Partition");
     final File valid_nec_location = new File(nec_programs_location, "valid");
     TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, tester, false);
     final File invalid_nec_location = new File(nec_programs_location, "invalid");
@@ -352,7 +382,7 @@ public class MainTest {
   public void testMiniBenchmark() {
 //  	smtFile_dump_location.mkdir();
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
-        parserTest("--feasibility", "-inline-anno", "--order", "--prover", "z3", "--theory", "Partition", "--mem-cell-size", "32"), false);
+        parserTest("--feasibility", "-inline-anno", "--sound", "--prover", "z3", "--theory", "Partition", "--mem-cell-size", "32"), false);
   }
   
   @Test
