@@ -215,7 +215,7 @@ public class ExpressionImpl implements Expression {
         exprManager, Kind.TYPE_STUB, new NullaryConstructionStrategy() {
           @Override
           public Expr apply(ExprManager em) {
-            return em.mkConst(name);
+            return em.mkConst(new edu.nyu.acsys.CVC4.CVC4String(name));
           }
         });
     InductiveTypeImpl t = InductiveTypeImpl.stub(exprManager, name);

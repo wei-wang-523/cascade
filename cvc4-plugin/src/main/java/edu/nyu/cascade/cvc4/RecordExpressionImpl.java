@@ -37,7 +37,7 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
         new UnaryConstructionStrategy() {
           @Override
           public Expr apply(ExprManager em, Expr record) {
-            Expr index = em.mkConst(field);
+            Expr index = em.mkConst(new edu.nyu.acsys.CVC4.CVC4String(field));
             return em.mkExpr(edu.nyu.acsys.CVC4.Kind.RECORD_SELECT, record, index);
           }
         }, record);
@@ -54,7 +54,7 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
         new BinaryConstructionStrategy() {
           @Override
           public Expr apply(ExprManager em, Expr record, Expr val) {
-            Expr index = em.mkConst(field);
+            Expr index = em.mkConst(new edu.nyu.acsys.CVC4.CVC4String(field));
             return em.mkExpr(
                 edu.nyu.acsys.CVC4.Kind.RECORD_UPDATE, record, index, val);
           }
@@ -69,12 +69,13 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
   }
 
   private RecordExpressionImpl(ExpressionManagerImpl exprManager,
-      Type type, Iterable<? extends Expression> elements) {
+      final Type type, Iterable<? extends Expression> elements) {
     super(exprManager, RECORD, new NaryConstructionStrategy() {
       @Override
       public Expr apply(ExprManager em, List<Expr> args)
           throws Exception {
         vectorExpr argsExpr = new vectorExpr();
+        argsExpr.add(em.mkConst(new edu.nyu.acsys.CVC4.RecordType(((TypeImpl)type).getCVC4Type()).getRecord()));
         for(Expr arg : args)    argsExpr.add(arg);
         return em.mkExpr(edu.nyu.acsys.CVC4.Kind.RECORD, argsExpr);
       }
