@@ -246,14 +246,20 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
     
     Set<String> memMapKeySet = getRecordElems(state.getChild(0)).keySet();
+    Set<String> sizeMapKeySet = getRecordElems(state.getChild(1)).keySet();
     Map<String, ArrayExpression> sizeMap = getRecordElems(state.getChild(1));
     
     for(IRVar repVar : map.keySet()) {
     	String repVarName = analyzer.getRepName(repVar);
     	String repVarMemArrName = getMemArrElemName(repVarName);
+    	String repVarSizeArrName = getSizeArrElemName(repVarName);
     	
-    	/* If the repVar is not referred in the execution paths */
-    	if(!memMapKeySet.contains(repVarMemArrName)) continue;
+    	/* If the repVar is not referred in the execution paths, either in memory
+    	 * or size state, since declare array or structure statements are not effect
+    	 * memory not size.
+    	 */
+    	if(!(memMapKeySet.contains(repVarMemArrName) || 
+    			sizeMapKeySet.contains(repVarSizeArrName)))	continue;
     	
     	/* Categorize vars into stVar, stReg, and hpReg */
     	IREquivClosure equivAliasVars = analyzer.getEquivClass(repVar);    	
