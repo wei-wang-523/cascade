@@ -17,6 +17,8 @@ public interface IRHeapEncoding {
 	Type getAddressType();
 	
 	Type getValueType();
+	
+	Type getSizeType();
 
 	Type getArrayElemType(xtc.type.Type type);
 

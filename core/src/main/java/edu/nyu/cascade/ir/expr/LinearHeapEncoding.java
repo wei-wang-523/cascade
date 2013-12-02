@@ -78,6 +78,11 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	}
 	
 	@Override
+	public Type getSizeType() {
+		return sizeType;
+	}
+	
+	@Override
 	public Expression getValueZero() {
 		return encoding.zero();
 //		return formatter.getValueZero(type);

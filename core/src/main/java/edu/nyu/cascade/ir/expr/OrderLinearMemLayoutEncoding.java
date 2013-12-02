@@ -17,12 +17,13 @@ import edu.nyu.cascade.prover.type.Type;
 public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	
 	private LinearHeapEncoding heapEncoding;
-	private Type addrType, valueType;
+	private Type addrType, valueType, sizeType;
 	
 	private OrderLinearMemLayoutEncoding(LinearHeapEncoding heapEncoding) {
 		this.heapEncoding = heapEncoding;
 		addrType = heapEncoding.getAddressType();
 		valueType = heapEncoding.getValueType();
+		sizeType = heapEncoding.getSizeType();
 	}
 	
 	protected static OrderLinearMemLayoutEncoding create(LinearHeapEncoding heapEncoding) {
@@ -123,9 +124,9 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	@Override
   public BooleanExpression validMalloc(ArrayExpression sizeArr, Expression lastRegion, Expression ptr, Expression size) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(addrType));
-		Preconditions.checkArgument(size.getType().equals(valueType));
+		Preconditions.checkArgument(size.getType().equals(sizeType));
 		
 		ExpressionManager exprManager = getExpressionManager();
 		ExpressionEncoding exprEncoding = getExpressionEncoding();
@@ -160,7 +161,7 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	public ImmutableSet<BooleanExpression> validMemAccess(
 			MemoryVarSets varSets, ArrayExpression sizeArr, Expression ptr) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(addrType));
 		
 		ImmutableSet.Builder<BooleanExpression> disjs =
@@ -219,9 +220,9 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	public ImmutableSet<BooleanExpression> validMemAccess(
 			MemoryVarSets varSets, ArrayExpression sizeArr, Expression ptr, Expression size) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(addrType));
-		Preconditions.checkArgument(size.getType().equals(valueType));
+		Preconditions.checkArgument(size.getType().equals(sizeType));
 		
 		ImmutableSet.Builder<BooleanExpression> disjs = 
 				new ImmutableSet.Builder<BooleanExpression>();
@@ -281,7 +282,7 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	@Override
 	public BooleanExpression validFree(ArrayExpression sizeArr, Expression ptr) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(addrType));
     Expression size = sizeArr.index(ptr);
     ExpressionManager exprManager = getExpressionManager();

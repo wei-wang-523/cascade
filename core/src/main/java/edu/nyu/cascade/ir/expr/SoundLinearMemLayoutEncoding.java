@@ -18,12 +18,13 @@ import edu.nyu.cascade.prover.type.Type;
 public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	
 	private LinearHeapEncoding heapEncoding;
-	private Type addrType, valueType;
+	private Type addrType, valueType, sizeType;
 	
 	private SoundLinearMemLayoutEncoding(LinearHeapEncoding heapEncoding) {
 		this.heapEncoding = heapEncoding;
 		addrType = heapEncoding.getAddressType();
 		valueType = heapEncoding.getValueType();
+		sizeType = heapEncoding.getSizeType();
 	}
 	
 	protected static SoundLinearMemLayoutEncoding create(LinearHeapEncoding heapEncoding) {
@@ -158,9 +159,9 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
   public BooleanExpression validMalloc(Iterable<Expression> heapVars,
       ArrayExpression sizeArr, Expression ptr, Expression size) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(addrType));
-		Preconditions.checkArgument(size.getType().equals(valueType));
+		Preconditions.checkArgument(size.getType().equals(sizeType));
 		
     ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
     
@@ -212,7 +213,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	public ImmutableSet<BooleanExpression> validMemAccess(
 			MemoryVarSets varSets, ArrayExpression sizeArr, Expression ptr) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(addrType));
 		
 		ImmutableSet.Builder<BooleanExpression> disjs =
@@ -269,9 +270,9 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	public ImmutableSet<BooleanExpression> validMemAccess(
 			MemoryVarSets varSets, ArrayExpression sizeArr, Expression ptr, Expression size) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(addrType));
-		Preconditions.checkArgument(size.getType().equals(valueType));
+		Preconditions.checkArgument(size.getType().equals(sizeType));
 		
 		ImmutableSet.Builder<BooleanExpression> disjs = 
 				new ImmutableSet.Builder<BooleanExpression>();
@@ -330,7 +331,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	@Override
 	public BooleanExpression validFree(ArrayExpression sizeArr, Expression ptr) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(addrType));
 		
 		ExpressionManager exprManager = getExpressionManager();

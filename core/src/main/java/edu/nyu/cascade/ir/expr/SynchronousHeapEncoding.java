@@ -395,4 +395,9 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	  
 	  throw new IllegalArgumentException("Invalid type " + rval.getType() + " to " + cellType);
 	}
+
+	@Override
+	public Type getSizeType() {
+		return getValueType();
+	}
 }
