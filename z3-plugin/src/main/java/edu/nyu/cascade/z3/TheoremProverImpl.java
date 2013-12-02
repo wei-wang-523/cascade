@@ -16,13 +16,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Params;
 import com.microsoft.z3.Solver;
 import com.microsoft.z3.Status;
-import com.microsoft.z3.Symbol;
 import com.microsoft.z3.Z3Exception;
 import com.microsoft.z3.Expr;
 
@@ -169,7 +167,7 @@ public class TheoremProverImpl implements TheoremProver {
       throws TheoremProverException, Z3Exception {
     settings = cfg;
     initializePreferences(settings);
-    z3Context = new Context(settings);
+    z3Context = new Context();
     solver = z3Context.MkSolver();
     exprManager = null;
     assumptions = Lists.newArrayList();
@@ -217,9 +215,8 @@ public class TheoremProverImpl implements TheoremProver {
     }
   }
   
-  @SuppressWarnings("unchecked")
   @Override
-  public SatResult checkSat(Expression expr) {
+  public SatResult<?> checkSat(Expression expr) {
     Preconditions.checkArgument(expr.isBoolean());
     try {
       getSolver().Push();
@@ -245,7 +242,7 @@ public class TheoremProverImpl implements TheoremProver {
       IOUtils.debug().pln(z3SatResult.toString()).flush();
       SatResult.Type resultType = convertZ3SatResult(z3SatResult);
 
-      SatResult res;
+      SatResult<?> res;
       if (SatResult.Type.UNSAT.equals(resultType)) {
         res = SatResult.unsat(expr);
       } else if (SatResult.Type.SAT.equals(resultType)){        
@@ -309,7 +306,7 @@ public class TheoremProverImpl implements TheoremProver {
       IOUtils.debug().pln(z3QueryResult.toString());
       ValidityResult.Type resultType = convertZ3QueryResult(z3QueryResult);
 
-      ValidityResult res;
+      ValidityResult<?> res;
       if (ValidityResult.Type.VALID.equals(resultType)) {
         res = ValidityResult.valid(expr);
       } else if (ValidityResult.Type.INVALID.equals(resultType)){        
@@ -387,7 +384,7 @@ public class TheoremProverImpl implements TheoremProver {
   public Context getZ3Context() throws Z3Exception {
     if(z3Context == null) {
       System.loadLibrary("z3java");
-      z3Context = new Context();
+    	z3Context = new Context();
     }
     return z3Context;
   }
@@ -405,9 +402,17 @@ public class TheoremProverImpl implements TheoremProver {
         if(settings != null) {
           Params p = ctx.MkParams();
           for(Entry<String, String> pair : settings.entrySet()) {
-            Symbol key = ctx.MkSymbol(pair.getKey());
-            Symbol val = ctx.MkSymbol(pair.getValue());
-            p.Add(key, val);
+            String key = pair.getKey();
+            String value = pair.getValue();
+            if(value.matches("-?\\d+(\\.\\d+)?")) { // is number
+            	int num = Integer.valueOf(value);
+            	p.Add(key, num);
+            } else if(value.equals("true") || value.equals("false")) {
+            	boolean bool = Boolean.valueOf(value);
+            	p.Add(key, bool);
+            } else {
+            	p.Add(key, ctx.MkSymbol(value));
+            }
           }
           solver.setParameters(p);
         }
@@ -453,7 +458,7 @@ public class TheoremProverImpl implements TheoremProver {
 
   public void setTimeLimit(int second) {
     try {
-      getSettings().put("timeout", Long.toString(second * 1000));
+      getSettings().put("soft_timeout", Integer.toString(second));
     } catch (Exception e) {
       throw new TheoremProverException(e);
     }
