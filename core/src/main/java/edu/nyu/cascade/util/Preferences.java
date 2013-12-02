@@ -45,32 +45,54 @@ public class Preferences {
   public static final String OPTION_PLUGINS_DIRECTORY = "plugins";
   
   public static final String OPTION_ITERATION_TIMES = "iter-times";
-    
+  
+  /** Enable unsigned arithmetic operations */
   public static final String OPTION_UNSIGNED_OPERATION = "unsigned";
   
+  /** Set the size of each memory cell, default value is 8 */
   public static final String OPTION_MEM_CELL_SIZE = "mem-cell-size";
   
+  /** Enable multiple cells encoding of various data type in the real C, 
+   * which is byte-unit and default cell size is 8.
+   * 
+   * It is impossible to set both <code>OPTION_MEM_CELL_SIZE</code> and 
+   * <code>OPTION_MEM_MULTICELL</code>.
+   */
+  public static final String OPTION_MULTI_CELL = "multi-cell";
+  
+  /** Used for encoding reacheability theory of linked data structures */
+  public static final String OPTION_ENCODE_FIELD_ARRAY = "field-array";
   public static final String OPTION_PARTIAL_INST = "partial-inst";
   public static final String OPTION_TOTAL_INST = "total-inst";
   
+  /** Enable integer encoding without overflow, default is fixed-size 
+   * bit-vector encoding.
+   */
   public static final String OPTION_NON_OVERFLOW = "non-overflow";
   
-  public static final String OPTION_ENCODE_FIELD_ARRAY = "field-array";
-  
+  /** Theory of memory model: flat, Burstall and partition */
   public static final String OPTION_THEORY = "theory";
   
+  /** Sequential path encoding, default is merge path encoding*/
   public static final String OPTION_SEQ_PATH = "seq";
   
-  public static final String OPTION_MEM_ENCODING = "mem-encoding";
   
+  /** Enable in-line annotation, such as <code>ASSERT</code>, <code>
+   * ASSUME</code>, <code>INVARIANT</code>
+   */
   public static final String OPTION_INLINE_ANNOTATION = "inline-anno";
   
+  /** Check memory safety assertions, including safe memory access */
   public static final String OPTION_MEMORY_CHECK = "memory-check";
   
+  /** Set the timeout of cascade */
   public static final String OPTION_TIMEOUT = "timeout";
   
+  
+  /** Set the memory encoding: synchronous and linear */
+  public static final String OPTION_MEM_ENCODING = "mem-encoding";
   public static final String MEM_ENCODING_SYNC = "sync";
-  public static final String MEM_ENCODING_FIX = "Fix";
+  public static final String MEM_ENCODING_LINEAR = "linear";
   
   public static void clearAll() {
     getProperties().clear();

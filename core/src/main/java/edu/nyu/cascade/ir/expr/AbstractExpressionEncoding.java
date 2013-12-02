@@ -881,7 +881,7 @@ public abstract class AbstractExpressionEncoding
       }
     }
       
-    if(Preferences.MEM_ENCODING_FIX.equals(encoding)) {
+    if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) {
     	if(CellKind.SCALAR.equals(targetKind) && targetKind.equals(srcKind)) {
         int srcSize = src.getType().asBitVectorType().getSize();
         int targetSize = (int) (getCAnalyzer().getSize(targetType) * getCellSize());
@@ -895,9 +895,8 @@ public abstract class AbstractExpressionEncoding
   }
   
   @Override
-  public Expression castConstant(int value, xtc.type.Type targetType) {    
-    String encoding = Preferences.getString(Preferences.OPTION_MEM_ENCODING);
-    if(Preferences.MEM_ENCODING_FIX.equals(encoding)) {
+  public Expression castConstant(int value, xtc.type.Type targetType) {
+    if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) {
       int size = (int) (getCAnalyzer().getSize(targetType) * getCellSize());
       return getExpressionManager().bitVectorConstant(value, size);
     }

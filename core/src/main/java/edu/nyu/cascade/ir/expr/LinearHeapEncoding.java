@@ -9,7 +9,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.c.CType;
-import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
@@ -26,6 +25,7 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	
 	private final ExpressionManager exprManager;
 	private final ExpressionEncoding encoding;
+	private final IRDataFormatter formatter;
 	private final LinkedHashMap<Pair<String, String>, Expression> heapRegions, stackVars, stackRegions;
 	
 	private Expression lastRegion;
@@ -33,13 +33,16 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	
 	private final Type addrType;
 	private final Type valueType;
+	private final Type sizeType;
 
-	protected LinearHeapEncoding(ExpressionEncoding encoding) {
+	protected LinearHeapEncoding(ExpressionEncoding encoding, IRDataFormatter formatter) {
 		this.encoding = encoding;
+		this.formatter = formatter;
 		exprManager = encoding.getExpressionManager();
 		
-		addrType = encoding.getIntegerEncoding().getType();
-		valueType = encoding.getIntegerEncoding().getType();
+		addrType = formatter.getAddressType();
+		valueType = formatter.getValueType();
+		sizeType = formatter.getIntegerType();
 		
 		heapRegions = Maps.newLinkedHashMap();
 		stackVars = Maps.newLinkedHashMap();
@@ -49,8 +52,9 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 		lastRegion = getNullAddress();
 	}
 	
-	public static LinearHeapEncoding create(ExpressionEncoding encoding) {
-		return new LinearHeapEncoding(encoding);
+	public static LinearHeapEncoding create(ExpressionEncoding encoding, 
+			IRDataFormatter formatter) {
+		return new LinearHeapEncoding(encoding, formatter);
 	}
 	
 	@Override
@@ -60,7 +64,7 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 
 	@Override
 	public ArrayType getSizeArrType() {
-		return exprManager.arrayType(addrType, valueType);
+		return exprManager.arrayType(addrType, sizeType);
 	}
 
 	@Override
@@ -76,6 +80,7 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	@Override
 	public Expression getValueZero() {
 		return encoding.zero();
+//		return formatter.getValueZero(type);
 	}
 
 	/**
@@ -87,7 +92,7 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	 */
 	@Override
 	public Expression getNullAddress() {
-		return encoding.zero();
+		return formatter.getNullAddress();
 	}
 	
 	/**
@@ -137,31 +142,31 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 		Preconditions.checkArgument(memArr.getType().getIndexType().equals(addrType));
 		Preconditions.checkArgument(memArr.getType().getElementType().equals(valueType));
 		Preconditions.checkArgument(lval.getType().equals(addrType));
-		Preconditions.checkArgument(rval.getType().equals(valueType));
-		return memArr.update(lval, rval);
+		Preconditions.checkArgument(isModuloValueType(rval.getType()));
+		return formatter.updateMemoryArray(memArr, lval, rval);
 	}
 	
 	@Override
 	public Expression indexMemArr(ArrayExpression memArr, Expression lval) {
 		Preconditions.checkArgument(memArr.getType().getIndexType().equals(addrType));
 		Preconditions.checkArgument(lval.getType().equals(addrType));
-		return memArr.index(lval);
+		return formatter.indexMemoryArray(memArr, lval);
 	}
 	
 	@Override
 	public ArrayExpression updateSizeArr(ArrayExpression sizeArr, Expression lval,
 	    Expression rval) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
 		Preconditions.checkArgument(lval.getType().equals(addrType));
-		Preconditions.checkArgument(rval.getType().equals(valueType));
+		Preconditions.checkArgument(rval.getType().equals(sizeType));
 		return sizeArr.update(lval, rval);
 	}
 
 	@Override
 	public ArrayExpression getConstSizeArr(ArrayType sizeArrType) {
 		Preconditions.checkArgument(sizeArrType.getIndexType().equals(addrType));
-		Preconditions.checkArgument(sizeArrType.getElementType().equals(valueType));
+		Preconditions.checkArgument(sizeArrType.getElementType().equals(sizeType));
 		Expression sizeZro = getValueZero();
 		return exprManager.storeAll(sizeZro, sizeArrType);
 	}
@@ -215,13 +220,7 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	
 	@Override
 	public Expression getUnknownValue(xtc.type.Type type) {
-    CellKind kind = CType.getCellKind(type);
-    switch(kind) {
-    case POINTER:	return encoding.getIntegerEncoding().unknown(addrType);
-    case SCALAR:  
-    case BOOL:    return encoding.getIntegerEncoding().unknown(valueType);
-    default: throw new IllegalArgumentException("Invalid kind " + kind);
-    }
+		return formatter.getUnknownValue(type);
 	}
 	
 	@Override
@@ -272,12 +271,12 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 
 	@Override
   public Expression addressOf(Expression expr) {
-		Preconditions.checkArgument(expr.getNode() != null);
-    CellKind kind = CType.getCellKind(CType.getType(expr.getNode()));
-    switch(kind) {
-    case STRUCTORUNION: 
-    case ARRAY:   return expr;
-    default:      return expr.getChild(1);
-    }
+		return formatter.addressOf(expr);
   }
+	
+	private boolean isModuloValueType(Type exprType) {
+		int size = valueType.asBitVectorType().getSize();
+		int exprTypeSize = exprType.asBitVectorType().getSize();
+		return exprTypeSize % size == 0;
+	}
 }

@@ -42,7 +42,7 @@ public class FlatMemoryModel extends AbstractMemoryModel {
     return new FlatMemoryModel(encoding, heapEncoder);
   }
 
-  private final Type addrType, valueType;
+  private final Type addrType;
   private final ArrayType memType, sizeArrType;
   private final TupleType stateType;
   private final MemoryModelType type;
@@ -57,8 +57,7 @@ public class FlatMemoryModel extends AbstractMemoryModel {
   	
     type = MemoryModelType.FLAT;
   	
-    this.heapEncoder = heapEncoder;    
-    valueType = heapEncoder.getValueType();
+    this.heapEncoder = heapEncoder;
     addrType = heapEncoder.getAddressType();
     
     ExpressionManager exprManager = getExpressionManager();
@@ -72,7 +71,6 @@ public class FlatMemoryModel extends AbstractMemoryModel {
   @Override
   public TupleExpression alloc(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
     
     String regionName = Identifiers.uniquify(REGION_VARIABLE_NAME);
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
@@ -90,7 +88,6 @@ public class FlatMemoryModel extends AbstractMemoryModel {
   @Override 
   public TupleExpression declareArray(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
     
     ArrayExpression sizeArr = heapEncoder.updateSizeArr(state.getChild(1).asArray(), ptr, size);
     return getUpdatedState(state, state.getChild(0), sizeArr);
@@ -99,7 +96,6 @@ public class FlatMemoryModel extends AbstractMemoryModel {
   @Override 
   public TupleExpression declareStruct(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
     
     ArrayExpression sizeArr = heapEncoder.updateSizeArr(state.getChild(1).asArray(), ptr, size);
     return getUpdatedState(state, state.getChild(0), sizeArr);
@@ -121,8 +117,6 @@ public class FlatMemoryModel extends AbstractMemoryModel {
       Expression lval,
       Expression rval) {
     Preconditions.checkArgument(lval.getType().equals( addrType ));
-    Preconditions.checkArgument(rval.getType().equals( valueType )
-    		|| rval.getType().equals( addrType ));
     
     Expression memory = heapEncoder.updateMemArr(state.getChild(0).asArray(), lval, rval);
     return getUpdatedState(state, memory, state.getChild(1));
@@ -154,7 +148,6 @@ public class FlatMemoryModel extends AbstractMemoryModel {
   @Override
   public BooleanExpression allocated(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
     
     String regionName = Identifiers.uniquify(REGION_VARIABLE_NAME);
     GNode regionNode = GNode.create("PrimaryIdentifier", regionName);
@@ -274,7 +267,6 @@ public class FlatMemoryModel extends AbstractMemoryModel {
   @Override
   public BooleanExpression valid(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
     
     Collection<BooleanExpression> res = heapEncoder
     		.validMemAccess(state.getChild(1).asArray(), ptr, size);
@@ -284,7 +276,6 @@ public class FlatMemoryModel extends AbstractMemoryModel {
   @Override
   public BooleanExpression valid_malloc(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
     
     BooleanExpression res = heapEncoder.validMalloc(state.getChild(1).asArray(), ptr, size);
     return res;
