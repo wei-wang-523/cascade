@@ -54,6 +54,11 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
   public Type getValueType() {
 		return heapEncoding.getValueType();
   }
+	
+	@Override
+	public Type getSizeType() {
+		return heapEncoding.getSizeType();
+	}
 
 	@Override
   public Expression freshAddress(String varName, IRVarInfo info,

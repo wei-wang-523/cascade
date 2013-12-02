@@ -19,6 +19,8 @@ public interface IRPartitionHeapEncoder {
 	Type getAddressType();
 	
 	Type getValueType();
+	
+	Type getSizeType();
 
 	Expression freshAddress(String varName, IRVarInfo info, xtc.type.Type type);
 	

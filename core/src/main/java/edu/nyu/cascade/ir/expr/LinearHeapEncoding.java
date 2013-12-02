@@ -108,16 +108,7 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	 */
 	@Override
 	public Type getArrayElemType(xtc.type.Type type) {
-	  Type resType = null;
-	  switch(CType.getCellKind(type)) {
-	  case SCALAR :
-	  case BOOL :     resType = valueType; break;
-	  case ARRAY : 
-	  case POINTER :  
-	  case STRUCTORUNION : resType = addrType; break;
-	  default:    throw new IllegalArgumentException("Unsupported type " + type);
-	  }
-	  return resType;
+		return formatter.getArrayElemType(type);
 	}
 
 	@Override

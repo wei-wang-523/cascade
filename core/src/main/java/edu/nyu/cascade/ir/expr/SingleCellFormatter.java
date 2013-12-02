@@ -78,4 +78,16 @@ public class SingleCellFormatter implements IRDataFormatter {
     default:      return expr.getChild(1);
     }
 	}
+
+	@Override
+	public Type getArrayElemType(xtc.type.Type type) {
+	  switch(CType.getCellKind(type)) {
+	  case SCALAR :
+	  case BOOL :     return getValueType();
+	  case ARRAY : 
+	  case POINTER :  
+	  case STRUCTORUNION : return getAddressType();
+	  default:    throw new IllegalArgumentException("Unsupported type " + type);
+	  }
+	}
 }

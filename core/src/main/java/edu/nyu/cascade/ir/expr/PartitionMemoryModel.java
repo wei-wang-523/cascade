@@ -54,7 +54,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     return new PartitionMemoryModel(encoding, heapEncoder);
   }
   
-  private final Type addrType, valueType;
+  private final Type addrType, valueType, sizeType;
   private RecordType memType, sizeArrType;
   private TupleType stateType;
   
@@ -79,6 +79,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     this.heapEncoder = heapEncoder;    
     valueType = heapEncoder.getValueType();
     addrType = heapEncoder.getAddressType();
+    sizeType = heapEncoder.getSizeType();
     
     ExpressionManager exprManager = getExpressionManager();
     
@@ -103,7 +104,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   @Override
   public TupleExpression alloc(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
+    Preconditions.checkArgument(size.getType().equals( sizeType ));
     
     IRVar regionVar = analyzer.getAllocateElem(ptr.getNode());
     
@@ -123,7 +124,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   @Override 
   public TupleExpression declareArray(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
+    Preconditions.checkArgument(size.getType().equals( sizeType ));
 
     RecordExpression sizeArr = updateSizeState(state.getChild(1), ptr, size);
     TupleExpression statePrime = getUpdatedState(state, state.getChild(0), sizeArr);
@@ -134,7 +135,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   @Override 
   public TupleExpression declareStruct(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
+    Preconditions.checkArgument(size.getType().equals( sizeType ));
     
     RecordExpression sizeArr = updateSizeState(state.getChild(1), ptr, size);
     TupleExpression statePrime = getUpdatedState(state, state.getChild(0), sizeArr);
@@ -158,8 +159,6 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
       Expression lval,
       Expression rval) {
     Preconditions.checkArgument(lval.getType().equals( addrType ));
-    Preconditions.checkArgument(rval.getType().equals( valueType )
-    		|| rval.getType().equals( addrType ));
     
     RecordExpression memory = updateMemoryState(state.getChild(0), lval, rval);
     return getUpdatedState(state, memory, state.getChild(1));
@@ -196,7 +195,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   @Override
   public BooleanExpression allocated(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
+    Preconditions.checkArgument(size.getType().equals( sizeType ));
     
     IRVar regionVar = analyzer.getAllocateElem(ptr.getNode());
     
@@ -458,7 +457,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   @Override
   public BooleanExpression valid(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
+    Preconditions.checkArgument(size.getType().equals( sizeType ));
 
     /* Find related heap regions and alloc array */
     IRVar ptr2RepVar = analyzer.getPointsToElem(ptr.getNode());
@@ -476,7 +475,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   @Override
   public BooleanExpression valid_malloc(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
+    Preconditions.checkArgument(size.getType().equals( sizeType ));
     
     /* Find related heap regions and alloc array */
     IRVar pRepVar = analyzer.getPointsToElem(ptr.getNode());

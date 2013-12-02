@@ -7,7 +7,6 @@ import xtc.type.IntegerT;
 import xtc.type.PointerT;
 import xtc.type.VoidT;
 import edu.nyu.cascade.c.CType;
-import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -105,12 +104,11 @@ public class MultiCellFormatter implements IRDataFormatter {
 	
 	@Override
   public Expression addressOf(Expression expr) {
-		Preconditions.checkArgument(expr.getNode() != null);
-    CellKind kind = CType.getCellKind(CType.getType(expr.getNode()));
-    switch(kind) {
-    case STRUCTORUNION: 
-    case ARRAY:   return expr;
-    default:      return expr.getChild(1);
-    }
+		throw new UnsupportedOperationException("Multi-cell encoding doesn't support addressOf operation");
+	}
+	
+	@Override
+	public Type getArrayElemType(xtc.type.Type type) {
+		return getValueType();
 	}
 }

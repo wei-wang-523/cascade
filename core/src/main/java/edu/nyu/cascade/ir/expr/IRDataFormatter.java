@@ -20,6 +20,8 @@ public interface IRDataFormatter {
 	
 	Type getIntegerType();
 	
+	Type getArrayElemType(xtc.type.Type type);
+	
 	Expression getNullAddress();
 	
 	Expression getValueZero(xtc.type.Type type);
