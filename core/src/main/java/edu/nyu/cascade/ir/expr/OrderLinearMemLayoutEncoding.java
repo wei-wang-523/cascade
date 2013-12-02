@@ -17,6 +17,7 @@ import edu.nyu.cascade.prover.type.Type;
 public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	
 	private LinearHeapEncoding heapEncoding;
+	@SuppressWarnings("unused")
 	private Type addrType, valueType, sizeType;
 	
 	private OrderLinearMemLayoutEncoding(LinearHeapEncoding heapEncoding) {
@@ -73,7 +74,7 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
       	
       } else {
     		assert sizeArr.getType().getIndexType().equals(addrType);
-    		assert sizeArr.getType().getElementType().equals(valueType);
+    		assert sizeArr.getType().getElementType().equals(sizeType);
     		
         /* The upper bound of the stack region won't overflow */
         for (Expression region : stRegs) {

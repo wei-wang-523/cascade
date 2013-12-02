@@ -868,7 +868,7 @@ public abstract class AbstractExpressionEncoding
   
   @Override
   public Expression castExpression(Expression src, Type targetType) {
-    if(!Preferences.isSet(Preferences.OPTION_MEM_ENCODING)) return src;
+//    if(!Preferences.isSet(Preferences.OPTION_MEM_ENCODING)) return src;
     
     String encoding = Preferences.getString(Preferences.OPTION_MEM_ENCODING);
     CellKind srcKind = CType.getCellKind(CType.getType(src.getNode()));
@@ -882,14 +882,15 @@ public abstract class AbstractExpressionEncoding
     }
       
     if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) {
-    	if(CellKind.SCALAR.equals(targetKind) && targetKind.equals(srcKind)) {
+//    	if(CellKind.SCALAR.equals(targetKind) && targetKind.equals(srcKind)) {
         int srcSize = src.getType().asBitVectorType().getSize();
         int targetSize = (int) (getCAnalyzer().getSize(targetType) * getCellSize());
-        if(srcSize < targetSize)
+        if(srcSize == targetSize)	return src;
+        else if(srcSize < targetSize)
           return src.asBitVector().zeroExtend(targetSize);
         else
           return src.asBitVector().extract(targetSize-1, 0);
-      }
+//      }
     }
     return src;
   }

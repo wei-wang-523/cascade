@@ -51,7 +51,9 @@ public class MultiCellFormatter implements IRDataFormatter {
 
 	@Override
 	public Expression getValueZero(xtc.type.Type type) {
-		return encoding.zero();
+		int size = (int) cAnalyzer.getSize(CType.getType(type));
+		int cellSize = encoding.getCellSize();
+		return exprManager.bitVectorZero(size * cellSize);
 	}
 
 	@Override

@@ -54,7 +54,8 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
     return new PartitionMemoryModel(encoding, heapEncoder);
   }
   
-  private final Type addrType, valueType, sizeType;
+  @SuppressWarnings("unused")
+	private final Type addrType, valueType, sizeType;
   private RecordType memType, sizeArrType;
   private TupleType stateType;
   

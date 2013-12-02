@@ -18,6 +18,7 @@ import edu.nyu.cascade.prover.type.Type;
 public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	
 	private LinearHeapEncoding heapEncoding;
+	@SuppressWarnings("unused")
 	private Type addrType, valueType, sizeType;
 	
 	private SoundLinearMemLayoutEncoding(LinearHeapEncoding heapEncoding) {
@@ -64,7 +65,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	  	
 			if(sizeArr != null) {
 				Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
-				Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
+				Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
 	      for (Expression region : stackRegions) {
 	      	Expression regionSize = sizeArr.index(region);
 //	        BitVectorExpression regionBound = exprManager.plus(addrType
