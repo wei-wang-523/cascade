@@ -617,8 +617,7 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitTypedefName(GNode node) 
         throws ExpressionFactoryException {
-      if(Preferences.MEM_ENCODING_FIX.equals(
-          Preferences.get(Preferences.OPTION_MEM_ENCODING))) {
+      if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) {
         return ((Expression) dispatch(node.getNode(0))).setNode(node);
       } else {
         Type type = lookupType(node);
@@ -1046,8 +1045,7 @@ class CExpressionEncoder implements ExpressionEncoder {
   }
   
   private int sizeofType(Type t) {
-    if(Preferences.MEM_ENCODING_FIX.equals(
-        Preferences.get(Preferences.OPTION_MEM_ENCODING))) {
+    if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) {
       return (int) cAnalyzer.getSize(t);
     }
     
@@ -1094,8 +1092,7 @@ class CExpressionEncoder implements ExpressionEncoder {
   }
   
   private int getOffset(StructOrUnionT t, String name) {
-    if(Preferences.MEM_ENCODING_FIX.equals(
-        Preferences.get(Preferences.OPTION_MEM_ENCODING))){
+    if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)){
       return (int) cAnalyzer.getOffset(t.toStructOrUnion(), name);
     }
     

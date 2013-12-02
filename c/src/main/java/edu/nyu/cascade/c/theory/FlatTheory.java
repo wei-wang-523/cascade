@@ -5,15 +5,18 @@ import edu.nyu.cascade.c.Theory;
 import edu.nyu.cascade.c.preprocessor.PreProcessor.Builder;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.FlatMemoryModel;
+import edu.nyu.cascade.ir.expr.IRDataFormatter;
 import edu.nyu.cascade.ir.expr.IRHeapEncoding;
 import edu.nyu.cascade.ir.expr.IROrderMemLayoutEncoding;
 import edu.nyu.cascade.ir.expr.IRSingleHeapEncoder;
 import edu.nyu.cascade.ir.expr.IRSoundMemLayoutEncoding;
 import edu.nyu.cascade.ir.expr.LinearHeapEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
+import edu.nyu.cascade.ir.expr.MultiCellFormatter;
 import edu.nyu.cascade.ir.expr.OrderMemLayoutEncodingFactory;
 import edu.nyu.cascade.ir.expr.PartitionHeapEncoder;
 import edu.nyu.cascade.ir.expr.PointerExpressionEncoding;
+import edu.nyu.cascade.ir.expr.SingleCellFormatter;
 import edu.nyu.cascade.ir.expr.SingleHeapEncoderAdapter;
 import edu.nyu.cascade.ir.expr.SoundMemLayoutEncodingFactory;
 import edu.nyu.cascade.ir.expr.SynchronousHeapEncoding;
@@ -29,8 +32,12 @@ public class FlatTheory implements Theory {
     encoding = PointerExpressionEncoding.create(exprManager);
     PartitionHeapEncoder parHeapEncoder = null;
     
+    IRDataFormatter formatter = Preferences.isSet(Preferences.OPTION_MULTI_CELL) ?
+    		MultiCellFormatter.create(encoding)
+    		: SingleCellFormatter.create(encoding);
+    
     if(Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
-    	IRHeapEncoding heapEncoding = LinearHeapEncoding.create(encoding);
+    	IRHeapEncoding heapEncoding = LinearHeapEncoding.create(encoding, formatter);
     	IROrderMemLayoutEncoding memLayout = OrderMemLayoutEncodingFactory
     			.create(heapEncoding);
     	parHeapEncoder = PartitionHeapEncoder
@@ -41,7 +48,7 @@ public class FlatTheory implements Theory {
     	if(Preferences.MEM_ENCODING_SYNC.equals(exprEncoding)) {
     		heapEncoding = SynchronousHeapEncoding.create(encoding);
     	} else {
-    		heapEncoding = LinearHeapEncoding.create(encoding);
+    		heapEncoding = LinearHeapEncoding.create(encoding, formatter);
     	}
     	IRSoundMemLayoutEncoding memLayout = SoundMemLayoutEncodingFactory
     			.create(heapEncoding);
