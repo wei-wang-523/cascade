@@ -188,9 +188,10 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
 
     public Expression visitAddressExpression(GNode node) {
-      Expression content = (Expression) dispatch(node.getNode(0));
-      Expression address = getMemoryModel().addressOf(content); 
-      return address.setNode(node);
+//      Expression content = (Expression) dispatch(node.getNode(0));
+//      Expression address = getMemoryModel().addressOf(content);
+      Expression address_ = (Expression) lvalVisitor.dispatch(node.getNode(0));
+      return address_.setNode(node);
     }
 
     public Expression visitAssignmentExpression(GNode node)
