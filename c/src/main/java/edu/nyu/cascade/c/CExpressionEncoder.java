@@ -724,14 +724,14 @@ class CExpressionEncoder implements ExpressionEncoder {
 		      Expression base = (Expression) dispatch(node);
 		      Type ptoType = type.toPointer().getType();
 		      Expression factor = encoding.integerConstant(sizeofType(ptoType));
-		      idx = encoding.times(idx, factor);
-		      return encoding.plus(base, idx);
+		      Expression newIdx = encoding.times(idx, factor);
+		      return encoding.plus(base, newIdx);
 		    } else {
 		      Expression base = (Expression) lvalVisitor.dispatch(node);
 		      Type cellType = type.toArray().getType();
 		      Expression factor = encoding.integerConstant(sizeofType(cellType));
-		      idx = encoding.times(idx, factor);
-		      return encoding.plus(base, idx);
+		      Expression newIdx = encoding.times(idx, factor);
+		      return encoding.plus(base, newIdx);
 		    }
 		  }
 		  
@@ -739,9 +739,14 @@ class CExpressionEncoder implements ExpressionEncoder {
 		    Node nestedBaseNode = node.getNode(0);
 		    Node nestedIdxNode = node.getNode(1);
 		    Expression nestIdx = (Expression) dispatch(nestedIdxNode);
-		    Expression factor = encoding.integerConstant((int)((ArrayT) type).getLength());
-		    Expression newIdx = encoding.plus(encoding.times(nestIdx, factor), idx);
-		    return getSubscriptExpression(nestedBaseNode, newIdx);    
+//		    Expression factor = encoding.integerConstant((int)((ArrayT) type).getLength());
+//		    Expression newIdx = encoding.plus(encoding.times(nestIdx, factor), idx);
+//		    return getSubscriptExpression(nestedBaseNode, newIdx);
+		    Expression nestIdxWithType = getSubscriptExpression(nestedBaseNode, nestIdx);
+		    Type cellType = type.toArray().getType();
+	    	Expression factor = encoding.integerConstant(sizeofType(cellType));
+	    	Expression idxWithType = encoding.times(idx, factor);
+	    	return encoding.plus(idxWithType, nestIdxWithType);
 		  } else {
 		    Expression base = (Expression) dispatch(node);
 		    Type ptoType = type.toPointer().getType();
@@ -861,14 +866,15 @@ class CExpressionEncoder implements ExpressionEncoder {
 		      Expression base = (Expression) exprVisitor.dispatch(node);
 		      Type ptoType = type.toPointer().getType();
 		      Expression factor = encoding.integerConstant(sizeofType(ptoType));
-		      idx = encoding.times(idx, factor);
-		      return encoding.plus(base, idx);
+		      Expression newIdx = encoding.times(idx, factor);
+		      assert(ptoType.isArray());
+		      return encoding.plus(base, newIdx);
 		    } else {
 		      Expression base = (Expression) dispatch(node);
 		      Type cellType = type.toArray().getType();
 		      Expression factor = encoding.integerConstant(sizeofType(cellType));
-		      idx = encoding.times(idx, factor);
-		      return encoding.plus(base, idx);
+		      Expression newIdx = encoding.times(idx, factor);
+		      return encoding.plus(base, newIdx);
 		    }
 		  }
 		  
@@ -876,9 +882,14 @@ class CExpressionEncoder implements ExpressionEncoder {
 		    Node nestedBaseNode = node.getNode(0);
 		    Node nestedIdxNode = node.getNode(1);
 		    Expression nestIdx = (Expression) exprVisitor.dispatch(nestedIdxNode);
-		    Expression factor = encoding.integerConstant((int)((ArrayT) type).getLength());
-		    Expression newIdx = encoding.plus(encoding.times(nestIdx, factor), idx);
-		    return getSubscriptExpression(nestedBaseNode, newIdx);    
+//		    Expression factor = encoding.integerConstant((int)((ArrayT) type).getLength());
+//		    Expression newIdx = encoding.plus(encoding.times(nestIdx, factor), idx);
+//		    return getSubscriptExpression(nestedBaseNode, newIdx);
+		    Expression nestIdxWithType = getSubscriptExpression(nestedBaseNode, nestIdx);
+		    Type cellType = type.toArray().getType();
+		    Expression factor = encoding.integerConstant(sizeofType(cellType));
+	    	Expression idxWithType = encoding.times(idx, factor);
+		    return encoding.plus(nestIdxWithType, idxWithType);	    
 		  } else {
 		    Expression base = (Expression) exprVisitor.dispatch(node);
 		    Type ptoType = type.toPointer().getType();
