@@ -78,8 +78,8 @@ public class SingleHeapEncoderAdapter implements IRSingleHeapEncoder{
   }
 
 	@Override
-  public Expression getValueZero() {
-	  return heapEncoding.getValueZero();
+  public Expression getSizeZero() {
+	  return heapEncoding.getSizeZero();
   }
 
 	@Override

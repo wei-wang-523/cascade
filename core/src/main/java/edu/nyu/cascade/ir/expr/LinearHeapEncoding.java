@@ -83,9 +83,8 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	}
 	
 	@Override
-	public Expression getValueZero() {
-		return encoding.zero();
-//		return formatter.getValueZero(type);
+	public Expression getSizeZero() {
+		return exprManager.bitVectorZero(sizeType.asBitVectorType().getSize());
 	}
 
 	/**
@@ -163,7 +162,7 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	public ArrayExpression getConstSizeArr(ArrayType sizeArrType) {
 		Preconditions.checkArgument(sizeArrType.getIndexType().equals(addrType));
 		Preconditions.checkArgument(sizeArrType.getElementType().equals(sizeType));
-		Expression sizeZro = getValueZero();
+		Expression sizeZro = getSizeZero();
 		return exprManager.storeAll(sizeZro, sizeArrType);
 	}
 

@@ -105,7 +105,7 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	}
 	
 	@Override
-	public Expression getValueZero() {
+	public Expression getSizeZero() {
 	  return exprManager.bitVectorZero(valueType.getSize());
 	}
 	

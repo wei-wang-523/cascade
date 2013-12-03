@@ -94,8 +94,8 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
   }
 
 	@Override
-  public Expression getValueZero() {
-	  return heapEncoding.getValueZero();
+  public Expression getSizeZero() {
+	  return heapEncoding.getSizeZero();
   }
 
 	@Override

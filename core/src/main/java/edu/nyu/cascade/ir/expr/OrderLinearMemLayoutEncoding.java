@@ -196,7 +196,7 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	    
 	    // In any heap region
 	    Expression nullPtr = heapEncoding.getNullAddress();
-	    Expression sizeZro = heapEncoding.getValueZero();
+	    Expression sizeZro = heapEncoding.getSizeZero();
 	   
 	    for( Expression region : hpRegs ) {
 	      Expression regionSize = sizeArr.index(region);        
@@ -238,7 +238,7 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 		try {
 			
 	    Expression nullPtr = heapEncoding.getNullAddress();
-	    Expression sizeZro = heapEncoding.getValueZero();
+	    Expression sizeZro = heapEncoding.getSizeZero();
 //      BitVectorExpression ptrBound = exprManager.plus(addrType.getSize(), 
 //          ptr, size);
 	    Expression ptrBound = exprEncoding.plus(ptr, size);
@@ -288,7 +288,7 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
     Expression size = sizeArr.index(ptr);
     ExpressionManager exprManager = getExpressionManager();
     Expression nullPtr = heapEncoding.getNullAddress();
-    Expression sizeZro = heapEncoding.getValueZero();
+    Expression sizeZro = heapEncoding.getSizeZero();
     return exprManager.or(ptr.eq(nullPtr), exprManager.greaterThan(size, sizeZro));
 	}
 }

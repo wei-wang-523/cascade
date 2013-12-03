@@ -148,7 +148,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   public TupleExpression free(Expression state, Expression ptr) {
     Preconditions.checkArgument(ptr.getType().equals( addrType )); 
     
-    Expression sizeZro = heapEncoder.getValueZero();
+    Expression sizeZro = heapEncoder.getSizeZero();
     Expression sizeArr = updateSizeState(state.getChild(1), ptr, sizeZro);
     
     return getUpdatedState(state, state.getChild(0), sizeArr);

@@ -42,7 +42,7 @@ public class SingleCellFormatter implements IRDataFormatter {
 	}
 
 	@Override
-	public Expression getValueZero(xtc.type.Type type) {
+	public Expression getSizeZero(xtc.type.Type type) {
 		return encoding.zero();
 	}
 

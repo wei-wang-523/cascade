@@ -55,7 +55,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 		try {
 			
 			Expression nullPtr = heapEncoding.getNullAddress();
-			Expression sizeZro = heapEncoding.getValueZero();
+			Expression sizeZro = heapEncoding.getSizeZero();
 	  	
 			if (!Iterables.isEmpty(stackVars))  {
 				ImmutableList<Expression> distinctPtr = new ImmutableList.Builder<Expression>()
@@ -171,7 +171,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
     
     try {
 			Expression nullPtr = heapEncoding.getNullAddress();
-			Expression sizeZro = heapEncoding.getValueZero();
+			Expression sizeZro = heapEncoding.getSizeZero();
 //      Expression ptrBound = exprManager.plus(addrType.getSize(), ptr, size);
 			Expression ptrBound = exprEncoding.plus(ptr, size);
       
@@ -247,7 +247,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	    
 	    // In any heap region
 			Expression nullPtr = heapEncoding.getNullAddress();
-			Expression sizeZro = heapEncoding.getValueZero();
+			Expression sizeZro = heapEncoding.getSizeZero();
 	   
 	    for( Expression region : hpRegs ) {
 	      Expression regionSize = sizeArr.index(region);        
@@ -287,7 +287,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 		try {
 			
 			Expression nullPtr = heapEncoding.getNullAddress();
-			Expression sizeZro = heapEncoding.getValueZero();
+			Expression sizeZro = heapEncoding.getSizeZero();
 //      BitVectorExpression ptrBound = exprManager.plus(addrType.getSize(), 
 //          ptr, size);
 			Expression ptrBound = exprEncoding.plus(ptr, size);
@@ -338,7 +338,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 		ExpressionManager exprManager = getExpressionManager();
     Expression size = sizeArr.index(ptr);
 		Expression nullPtr = heapEncoding.getNullAddress();
-		Expression sizeZro = heapEncoding.getValueZero();
+		Expression sizeZro = heapEncoding.getSizeZero();
     return exprManager.or(ptr.eq(nullPtr), exprManager.greaterThan(size, sizeZro));
 	}
 }

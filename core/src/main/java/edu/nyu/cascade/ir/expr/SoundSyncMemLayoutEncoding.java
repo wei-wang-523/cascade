@@ -49,7 +49,7 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 		Expression ptrRef = ptr.asTuple().index(0);
     Expression ptrSize = sizeArr.index(ptrRef);
     Expression nullPtr = heapEncoding.getNullAddress();
-    Expression sizeZro = heapEncoding.getValueZero();
+    Expression sizeZro = heapEncoding.getSizeZero();
     
     return exprManager.or(ptr.eq(nullPtr), exprManager.greaterThan(ptrSize, sizeZro));
   }
@@ -131,7 +131,7 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 			Expression ptrRef = ptr.asTuple().index(0);
 			Expression ptrOff = ptr.asTuple().index(1);
 			Expression nullRef = heapEncoding.getNullAddress().getChild(0);
-			Expression sizeZro = heapEncoding.getValueZero();
+			Expression sizeZro = heapEncoding.getSizeZero();
 			
 	    for( Expression var : stVars) {
 	      disjs.add( /* scalar variable: size = 0; */
@@ -189,7 +189,7 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 			Expression boundOff = exprEncoding.plus(ptrOff, size);
 			
 			Expression nullRef = heapEncoding.getNullAddress().getChild(0);
-			Expression sizeZro = heapEncoding.getValueZero();
+			Expression sizeZro = heapEncoding.getSizeZero();
 			
 			// In any stack variable
 	    for( Expression var : stVars) {
@@ -239,7 +239,7 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 		try {
 			Expression nullPtr = heapEncoding.getNullAddress();
 			Expression nullRef = nullPtr.getChild(0);
-	    Expression sizeZro = heapEncoding.getValueZero();
+	    Expression sizeZro = heapEncoding.getSizeZero();
 	    
 	    Expression assump = exprManager.neq(ptr, nullPtr); // ptr != null
 	    

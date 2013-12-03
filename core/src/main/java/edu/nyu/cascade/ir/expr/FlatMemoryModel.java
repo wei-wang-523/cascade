@@ -105,7 +105,7 @@ public class FlatMemoryModel extends AbstractMemoryModel {
   public TupleExpression free(Expression state, Expression ptr) {
   	Preconditions.checkArgument(ptr.getType().equals( addrType )); 
     
-    Expression sizeZro = heapEncoder.getValueZero();
+    Expression sizeZro = heapEncoder.getSizeZero();
     Expression sizeArr = heapEncoder.updateSizeArr(state.getChild(1).asArray(), ptr, sizeZro);
     
     return getUpdatedState(state, state.getChild(0), sizeArr);

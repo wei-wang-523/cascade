@@ -31,7 +31,7 @@ public interface IRSingleHeapEncoder {
 	
 	Expression getConstSizeArr(ArrayType sizeArrType);
 	
-	Expression getValueZero();
+	Expression getSizeZero();
 	
 	Expression getUnknownValue(xtc.type.Type type);
 	
