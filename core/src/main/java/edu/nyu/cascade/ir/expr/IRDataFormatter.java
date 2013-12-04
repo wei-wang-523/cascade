@@ -18,7 +18,7 @@ public interface IRDataFormatter {
 	
 	Type getValueType();
 	
-	Type getIntegerType();
+	Type getSizeType();
 	
 	Type getArrayElemType(xtc.type.Type type);
 	

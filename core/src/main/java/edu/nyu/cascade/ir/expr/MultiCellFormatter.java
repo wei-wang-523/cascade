@@ -91,7 +91,7 @@ public class MultiCellFormatter implements IRDataFormatter {
 	}
 
 	@Override
-  public Type getIntegerType() {
+  public Type getSizeType() {
 		int size = (int) cAnalyzer.getSize(IntegerT.INT);
 		int cellSize = encoding.getCellSize();
 	  return exprManager.bitVectorType(size * cellSize);

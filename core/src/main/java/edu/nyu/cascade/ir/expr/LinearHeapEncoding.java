@@ -42,7 +42,7 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 		
 		addrType = formatter.getAddressType();
 		valueType = formatter.getValueType();
-		sizeType = formatter.getIntegerType();
+		sizeType = formatter.getSizeType();
 		
 		heapRegions = Maps.newLinkedHashMap();
 		stackVars = Maps.newLinkedHashMap();

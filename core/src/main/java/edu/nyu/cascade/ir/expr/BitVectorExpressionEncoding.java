@@ -12,25 +12,14 @@ import edu.nyu.cascade.util.Preferences;
 public class BitVectorExpressionEncoding
     extends
     AbstractExpressionEncoding {
-
-  private static int CellSize;	
 	
   public static BitVectorExpressionEncoding create(
       ExpressionManager exprManager) throws ExpressionFactoryException
   {
-    int cellSize = 
-    		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ?
-    				DefaultSize
-    				: Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ?
-    						Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE) 
-    						: DefaultSize;
-
     int intCellSize = 
     		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
-    				(int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * cellSize) 
-    				: cellSize;
-    
-    CellSize = intCellSize;
+    				(int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * CellSize) 
+    				: CellSize;
     
     IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, intCellSize);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
@@ -46,10 +35,5 @@ public class BitVectorExpressionEncoding
       PointerEncoding<TupleExpression> tupleEncoding)
   {
     super(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
-  }
-  
-  @Override
-  public int getCellSize() {
-    return CellSize;
   }
 }

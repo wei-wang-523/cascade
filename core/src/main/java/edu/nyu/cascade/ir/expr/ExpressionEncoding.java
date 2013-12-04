@@ -641,6 +641,11 @@ public interface ExpressionEncoding {
    * Get the cell size
    */
   int getCellSize() ;
+  
+  /**
+   * Get the size of size_t
+   */
+  int getSizeTSize() ;
 
   /**
    * Cast @param src expression to @param targetType

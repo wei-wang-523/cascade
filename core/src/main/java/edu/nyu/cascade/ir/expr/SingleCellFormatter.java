@@ -64,7 +64,7 @@ public class SingleCellFormatter implements IRDataFormatter {
 	}
 	
 	@Override
-  public Type getIntegerType() {
+  public Type getSizeType() {
 	  return getValueType();
   }
 	

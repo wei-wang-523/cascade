@@ -45,6 +45,18 @@ public abstract class AbstractExpressionEncoding
   protected static final int DefaultSize = 8;
   
   protected static xtc.type.C cAnalyzer = new xtc.type.C();
+  
+  protected static final int CellSize = 
+  		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
+  				DefaultSize
+  				: Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ?
+  						Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE) 
+  						: DefaultSize;
+
+ protected static final int SizeTSize = 
+  		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
+  				(int) (cAnalyzer.getSize(xtc.type.NumberT.U_LONG) * CellSize) 
+  				: CellSize;
 
   protected final IntegerEncoding<? extends Expression> integerEncoding;
 
@@ -922,6 +934,11 @@ public abstract class AbstractExpressionEncoding
   
   @Override
   public int getCellSize() {
-    return DefaultSize;
+    return CellSize;
+  }
+  
+  @Override
+  public int getSizeTSize() {
+    return SizeTSize;
   }
 }

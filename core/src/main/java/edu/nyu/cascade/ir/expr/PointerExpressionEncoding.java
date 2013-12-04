@@ -15,30 +15,14 @@ import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.util.Preferences;
 
 public class PointerExpressionEncoding extends AbstractExpressionEncoding {
-  
-  private static int CellSize;	
 	
   public static PointerExpressionEncoding create(
       ExpressionManager exprManager) throws ExpressionFactoryException
-  { 
-    int cellSize = 
-    		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
-    				DefaultSize
-    				: Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ?
-    						Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE) 
-    						: DefaultSize;
-
-    int offCellSize = 
-    		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
-    				(int) (cAnalyzer.getSize(xtc.type.NumberT.U_LONG) * cellSize) 
-    				: cellSize;
-    
+  {     
     int intCellSize = 
     		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
-    				(int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * cellSize) 
-    				: cellSize;
-    
-    CellSize = cellSize;
+    				(int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * CellSize) 
+    				: CellSize;
     
     IntegerEncoding<?> integerEncoding = null;
     if(Preferences.isSet(Preferences.OPTION_NON_OVERFLOW)) {
@@ -49,7 +33,7 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
     
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new UnimplementedArrayEncoding<ArrayExpression>();
-    PointerSyncEncoding pointerEncoding = PointerSyncEncoding.create(exprManager, offCellSize);
+    PointerSyncEncoding pointerEncoding = PointerSyncEncoding.create(exprManager, SizeTSize);
     return new PointerExpressionEncoding(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
   }
   
@@ -208,6 +192,11 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
   @Override
   public int getCellSize() {
     return CellSize;
+  }
+  
+  @Override
+  public int getSizeTSize() {
+  	return SizeTSize;
   }
   
   public Expression update(TupleExpression expr, int index, Expression val) {

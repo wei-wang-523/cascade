@@ -3,9 +3,7 @@ package edu.nyu.cascade.ir.expr;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import edu.nyu.cascade.prover.ArrayExpression;
@@ -56,11 +54,60 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 			
 			Expression nullPtr = heapEncoding.getNullAddress();
 			Expression sizeZro = heapEncoding.getSizeZero();
-	  	
-			if (!Iterables.isEmpty(stackVars))  {
-				ImmutableList<Expression> distinctPtr = new ImmutableList.Builder<Expression>()
-            .addAll(stackVars).add(nullPtr).build();
-        builder.add(exprManager.distinct(distinctPtr));
+	
+			for(Expression var : stackVars) {
+				builder.add(var.neq(nullPtr));
+				
+				int typeSize = heapEncoding.getSizeOfVar(var);
+				assert (typeSize >= 0);
+				
+				Expression typeSizeExpr = exprManager.bitVectorConstant(
+						typeSize, sizeType.asBitVectorType().getSize());
+				Expression varBound = exprEncoding.plus(var, typeSizeExpr);
+				
+				for (Expression var2 : stackVars) {
+					if (!var.equals(var2)) {
+						int typeSize2 = heapEncoding.getSizeOfVar(var2);
+						assert (typeSize2 >= 0);
+	          	
+						Expression typeSizeExpr2 = exprManager.bitVectorConstant(
+								typeSize2, sizeType.asBitVectorType().getSize());
+						Expression varBound2 = exprEncoding.plus(var2, typeSizeExpr2);
+						
+						if(typeSize == 0 && typeSize2 == 0) {
+							builder.add(exprManager.neq(var, var2));
+						} else if(typeSize == 0 && typeSize2 > 0) {
+			        /* The upper bound of the stack var won't overflow.
+			         * The size of the stack var will be larger than zero (won't be zero).
+			         */		        
+			        builder.add(exprManager.greaterThan(varBound2, var2));
+			        
+							builder.add(exprManager.or(
+									exprManager.lessThanOrEqual(varBound2, var)),
+									exprManager.lessThan(var, var2));
+						} else if(typeSize > 0 && typeSize2 == 0) {
+			        /* The upper bound of the stack var won't overflow.
+			         * The size of the stack var will be larger than zero (won't be zero).
+			         */
+			        builder.add(exprManager.greaterThan(varBound, var));
+							
+							builder.add(exprManager.or(
+									exprManager.lessThanOrEqual(varBound, var2)),
+									exprManager.lessThan(var2, var));
+						} else {
+			        /* The upper bound of the stack var won't overflow.
+			         * The size of the stack var will be larger than zero (won't be zero).
+			         */
+			        builder.add(exprManager.greaterThan(varBound, var));
+			        builder.add(exprManager.greaterThan(varBound2, var2));
+			        
+							builder.add(
+									exprManager.or(
+											exprManager.lessThanOrEqual(varBound2, var),
+	                    exprManager.lessThanOrEqual(varBound, var2)));
+						}
+					}					
+				}
 			}
 	  	
 			if(sizeArr != null) {
@@ -80,10 +127,29 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	        
 	        /* Every stack variable doesn't falls into any stack region*/
 	        for(Expression lval : stackVars) {
-	          builder.add(
-	              exprManager.or(
-	                  exprManager.lessThan(lval, region),
+						int typeSize = heapEncoding.getSizeOfVar(lval);
+	        	assert (typeSize >= 0);
+												
+						if(typeSize == 0) {
+							builder.add(
+									exprManager.or(
+											exprManager.lessThan(lval, region),
+	                    	exprManager.lessThanOrEqual(regionBound, lval)));
+						} else {
+							Expression typeSizeExpr = exprManager.bitVectorConstant(
+									typeSize, sizeType.asBitVectorType().getSize());
+							Expression varBound = exprEncoding.plus(lval, typeSizeExpr);
+							
+			        /* The upper bound of the stack var won't overflow.
+			         * The size of the stack var will be larger than zero (won't be zero).
+			         */
+			        builder.add(exprManager.greaterThan(varBound, lval));
+							
+	            builder.add(
+	                exprManager.or(
+	                    exprManager.lessThanOrEqual(varBound, region),
 	                    exprManager.lessThanOrEqual(regionBound, lval)));
+						}
 	        }
 	        
 	        /* Every other stack region is non-overlapping. 
@@ -103,52 +169,77 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	          }
 	        }
 	      }
+			}
 	      
-	      /* Disjoint of the heap region or stack region/variable */
-	      for (Expression region : heapRegions) {
-	        Expression regionSize = sizeArr.index(region);
-//	        BitVectorExpression regionBound = exprManager.plus(
-//	        		addrType.getSize(), region, regionSize);
-	        Expression regionBound = exprEncoding.plus(region, regionSize);
-	        
-	        /* Disjoint of the heap region or stack variable */
-	        for (Expression lval : stackVars) {
+      /* Disjoint of the heap region or stack region/variable */
+      for (Expression region : heapRegions) {
+      	Expression regionSize = sizeArr.index(region);
+//        BitVectorExpression regionBound = exprManager.plus(
+//        		addrType.getSize(), region, regionSize);
+        Expression regionBound = exprEncoding.plus(region, regionSize);
+        
+        /* Disjoint of the heap region or stack variable */
+        for (Expression lval : stackVars) {
+					int typeSize = heapEncoding.getSizeOfVar(lval);
+        	assert (typeSize >= 0);
+					
+					if(typeSize == 0) {
 	          builder.add(exprManager.implies(
 	              /* heap region is non-null (and not freed before),
 	               * even freed should not be equal to lval
 	               */
-//	              exprManager.and(region.neq(nullPtr), regionSize.neq(sizeZro)),
 	          		region.neq(nullPtr),
 	          		exprManager.ifThenElse(regionSize.neq(sizeZro),
 	          				exprManager.or( 			// regionBound > region
 	          						exprManager.lessThan(lval, region),
 	          						exprManager.lessThanOrEqual(regionBound, lval)),
 	          				lval.neq(region)))); 	// regionBound == region
-	        }
-	        
-	        /* Disjoint of the heap region or stack region */
-	        for (Expression region2 : stackRegions) {
-	        	
-	        	// regionBound2 >= region2, sizeArr[region2] >= 0
-//	          BitVectorExpression regionBound2 = exprManager.plus(
-//	          		addrType.getSize(), region2, sizeArr.index(region2));
-	          Expression regionBound2 = exprEncoding.plus(region2, sizeArr.index(region2));
-	          
+					} else {
+						Expression typeSizeExpr = exprManager.bitVectorConstant(
+								typeSize, sizeType.asBitVectorType().getSize());
+						Expression varBound = exprEncoding.plus(lval, typeSizeExpr);
+						
+		        /* The upper bound of the stack var won't overflow.
+		         * The size of the stack var will be larger than zero (won't be zero).
+		         */
+		        builder.add(exprManager.greaterThan(varBound, lval));
+						
 	          builder.add(exprManager.implies(
 	              /* heap region is non-null (and not freed before),
 	               * even freed should not be equal to lval
 	               */
-//	              exprManager.and(region.neq(nullPtr), regionSize.neq(sizeZro)),
 	          		region.neq(nullPtr),
 	          		exprManager.ifThenElse(regionSize.neq(sizeZro),
 	          				exprManager.or(  		// regionBound > region
-	          						exprManager.lessThan(regionBound2, region),
-	          						exprManager.lessThanOrEqual(regionBound, region2)),
+	          						exprManager.lessThan(varBound, region),
+	          						exprManager.lessThanOrEqual(regionBound, lval)),
 	          				exprManager.or(  		// regionBound == region
-	          						exprManager.lessThan(regionBound2, region),
-	          						exprManager.lessThan(region, region2)))));
-	        }
-	      }
+	          						exprManager.lessThan(varBound, region),
+	          						exprManager.lessThan(region, lval)))));
+					}
+        }
+        
+        /* Disjoint of the heap region or stack region */
+        for (Expression region2 : stackRegions) {
+        	// regionBound2 >= region2, sizeArr[region2] >= 0
+//          BitVectorExpression regionBound2 = exprManager.plus(
+//          		addrType.getSize(), region2, sizeArr.index(region2));
+        	Expression regionBound2 = exprEncoding.plus(region2, sizeArr.index(region2));
+          
+          builder.add(exprManager.implies(
+              /* heap region is non-null (and not freed before),
+               * even freed should not be equal to lval
+               */
+//              exprManager.and(region.neq(nullPtr), regionSize.neq(sizeZro)),
+          		region.neq(nullPtr),
+          		exprManager.ifThenElse(regionSize.neq(sizeZro),
+          				exprManager.or(  		// regionBound > region
+          						exprManager.lessThan(regionBound2, region),
+          						exprManager.lessThanOrEqual(regionBound, region2)),
+          				exprManager.or(  		// regionBound == region
+          						exprManager.lessThan(regionBound2, region),
+          						exprManager.lessThan(region, region2)))));
+        }
       }
 		} catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
@@ -230,7 +321,21 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 		try {
 	    /* TODO: Check the scope of local variable, this will be unsound to take 
 	     * address of local variable out of scope */
-	    for( Expression stVar : stVars)    disjs.add(ptr.eq(stVar));
+	    for( Expression stVar : stVars) {
+	    	int typeSize = heapEncoding.getSizeOfVar(stVar);
+	    	assert (typeSize >= 0);
+	    	if(typeSize == 0) {
+	    		disjs.add(ptr.eq(stVar));
+	    	} else {
+					Expression typeSizeExpr = exprManager.bitVectorConstant(
+							typeSize, sizeType.asBitVectorType().getSize());
+					Expression varBound = exprEncoding.plus(stVar, typeSizeExpr);
+	    		disjs.add(
+	    				exprManager.and(
+		              exprManager.lessThanOrEqual(stVar, ptr),
+		              exprManager.lessThan(ptr, varBound)));
+	    	}
+	    }
 	    
 	    // In any stack region
 	    for(Expression region : stRegs) {
@@ -292,8 +397,21 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 //          ptr, size);
 			Expression ptrBound = exprEncoding.plus(ptr, size);
 	    
-			for( Expression stVar : stVars)    
-        disjs.add(exprManager.and(ptr.eq(stVar), size.eq(sizeZro)));
+	    for( Expression stVar : stVars) {
+	    	int typeSize = heapEncoding.getSizeOfVar(stVar);
+	    	assert (typeSize >= 0);
+	    	if(typeSize == 0) {
+	    		disjs.add(ptr.eq(stVar));
+	    	} else {
+					Expression typeSizeExpr = exprManager.bitVectorConstant(
+							typeSize, sizeType.asBitVectorType().getSize());
+					Expression varBound = exprEncoding.plus(stVar, typeSizeExpr);
+	    		disjs.add(
+	    				exprManager.and(
+		              exprManager.lessThanOrEqual(stVar, ptr),
+		              exprManager.lessThan(ptr, varBound)));
+	    	}
+	    }
       
       // In any stack region
       for(Expression region : stRegs) {
