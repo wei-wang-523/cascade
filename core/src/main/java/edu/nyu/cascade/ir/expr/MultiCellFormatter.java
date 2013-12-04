@@ -50,13 +50,6 @@ public class MultiCellFormatter implements IRDataFormatter {
 	}
 
 	@Override
-	public Expression getSizeZero(xtc.type.Type type) {
-		int size = (int) cAnalyzer.getSize(CType.getType(type));
-		int cellSize = encoding.getCellSize();
-		return exprManager.bitVectorZero(size * cellSize);
-	}
-
-	@Override
 	public ArrayExpression updateMemoryArray(ArrayExpression memory, Expression index,
 	    Expression value) {
 		Preconditions.checkArgument(index.getNode() != null);
@@ -84,7 +77,7 @@ public class MultiCellFormatter implements IRDataFormatter {
 			Expression offExpr = exprManager.bitVectorConstant(i, addSize);
 			Expression idxExpr = index.asBitVector().plus(addSize, offExpr);
 			Expression value = memory.index(idxExpr);
-			res = res.asBitVector().concat(value);
+			res = value.asBitVector().concat(res);
 		}
 		return res;
 	}

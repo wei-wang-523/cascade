@@ -42,11 +42,6 @@ public class SingleCellFormatter implements IRDataFormatter {
 	}
 
 	@Override
-	public Expression getSizeZero(xtc.type.Type type) {
-		return encoding.zero();
-	}
-
-	@Override
 	public ArrayExpression updateMemoryArray(ArrayExpression memory, Expression index,
 	    Expression value) {
 		return memory.update(index, value);

@@ -24,8 +24,6 @@ public interface IRDataFormatter {
 	
 	Expression getNullAddress();
 	
-	Expression getSizeZero(xtc.type.Type type);
-	
 	ArrayExpression updateMemoryArray(ArrayExpression memory, Expression index, Expression value);
 	
 	Expression indexMemoryArray(ArrayExpression memory, Expression index);
