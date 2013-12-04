@@ -1,7 +1,6 @@
 package edu.nyu.cascade.c;
 
 import static com.google.inject.Guice.createInjector;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -11,14 +10,7 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -256,26 +248,41 @@ public class Main {
     // Process the command line arguments
     final List<String> files = main.processCommandLine(args);
     
-    if(Preferences.isSet(Preferences.OPTION_TIMEOUT)) {
-    	final ExecutorService exec = Executors.newSingleThreadExecutor();
-    	Future<Void> future = exec.submit(new Callable<Void>() {
+    if(Preferences.isSet(Preferences.OPTION_TIMEOUT)) {    	
+    	Thread thread = new Thread(new Runnable() {
         @Override
-        public Void call() throws Exception {
-          main.run(files);
-          return null;
+        public void run() {
+          try {
+  					main.run(files);
+  				} catch (TheoremProverException e) {
+  					// TODO Auto-generated catch block
+  					e.printStackTrace();
+  				} catch (IOException e) {
+  					// TODO Auto-generated catch block
+  					e.printStackTrace();
+  				} catch (ParseException e) {
+  					// TODO Auto-generated catch block
+  					e.printStackTrace();
+  				}
         }
     	});
-    	try {
-    		future.get(Preferences.getInt(Preferences.OPTION_TIMEOUT), TimeUnit.SECONDS);
-    	} catch (TimeoutException e) {
-    		IOUtils.err().println("Timeout");
-    	} catch (InterruptedException e) {
-	      // TODO Auto-generated catch block
-	      e.printStackTrace();
-      } catch (ExecutionException e) {
-	      // TODO Auto-generated catch block
-	      e.printStackTrace();
-      } 
+      
+      long startTime = System.currentTimeMillis();
+      int timeout = Preferences.getInt(Preferences.OPTION_TIMEOUT);
+      try {
+        thread.start();
+        while(thread.isAlive()) {
+        	Thread.sleep(30);
+        	if(System.currentTimeMillis() - startTime > timeout * 1000) {
+        		thread.stop();
+        		IOUtils.err().println("Timeout");
+        		break;
+        	}
+        }
+      } catch (InterruptedException e) {
+     // TODO Auto-generated catch block
+				e.printStackTrace();
+      }
     } else {
     	main.run(files);
     }
