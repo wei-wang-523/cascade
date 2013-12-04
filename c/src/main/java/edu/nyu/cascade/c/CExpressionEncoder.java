@@ -867,7 +867,6 @@ class CExpressionEncoder implements ExpressionEncoder {
 		      Type ptoType = type.toPointer().getType();
 		      Expression factor = encoding.integerConstant(sizeofType(ptoType));
 		      Expression newIdx = encoding.times(idx, factor);
-		      assert(ptoType.isArray());
 		      return encoding.plus(base, newIdx);
 		    } else {
 		      Expression base = (Expression) dispatch(node);
