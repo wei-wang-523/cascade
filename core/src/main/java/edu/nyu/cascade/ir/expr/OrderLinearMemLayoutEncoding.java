@@ -203,14 +203,14 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	    /* TODO: Check the scope of local variable, this will be unsound to take 
 	     * address of local variable out of scope */
 	    for( Expression stVar : stVars) {
-	    	int typeSize = heapEncoding.getSizeOfVar(stVar);
-	    	assert (typeSize >= 0);
-	    	if(typeSize == 0) {
+	    	int stVarSize = heapEncoding.getSizeOfVar(stVar);
+	    	assert (stVarSize >= 0);
+	    	if(stVarSize == 0) {
 	    		disjs.add(ptr.eq(stVar));
 	    	} else {
-					Expression typeSizeExpr = exprManager.bitVectorConstant(
-							typeSize, sizeType.asBitVectorType().getSize());
-					Expression varBound = exprEncoding.plus(stVar, typeSizeExpr);
+					Expression stVarSizeExpr = exprManager.bitVectorConstant(
+							stVarSize, sizeType.asBitVectorType().getSize());
+					Expression varBound = exprEncoding.plus(stVar, stVarSizeExpr);
 	    		disjs.add(
 	    				exprManager.and(
 		              exprManager.lessThanOrEqual(stVar, ptr),
@@ -282,14 +282,14 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	    Expression ptrBound = exprEncoding.plus(ptr, size);
 	    
 	    for( Expression stVar : stVars) {
-	    	int typeSize = heapEncoding.getSizeOfVar(stVar);
-	    	assert (typeSize >= 0);
-	    	if(typeSize == 0) {
+	    	int stVarSize = heapEncoding.getSizeOfVar(stVar);
+	    	assert (stVarSize >= 0);
+	    	if(stVarSize == 0) {
 	    		disjs.add(ptr.eq(stVar));
 	    	} else {
-					Expression typeSizeExpr = exprManager.bitVectorConstant(
-							typeSize, sizeType.asBitVectorType().getSize());
-					Expression varBound = exprEncoding.plus(stVar, typeSizeExpr);
+					Expression stVarSizeExpr = exprManager.bitVectorConstant(
+							stVarSize, sizeType.asBitVectorType().getSize());
+					Expression varBound = exprEncoding.plus(stVar, stVarSizeExpr);
 	    		disjs.add(
 	    				exprManager.and(
 		              exprManager.lessThanOrEqual(stVar, ptr),

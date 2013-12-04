@@ -58,25 +58,25 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 			for(Expression var : stackVars) {
 				builder.add(var.neq(nullPtr));
 				
-				int typeSize = heapEncoding.getSizeOfVar(var);
-				assert (typeSize >= 0);
+				int stVarSize = heapEncoding.getSizeOfVar(var);
+				assert (stVarSize >= 0);
 				
-				Expression typeSizeExpr = exprManager.bitVectorConstant(
-						typeSize, sizeType.asBitVectorType().getSize());
-				Expression varBound = exprEncoding.plus(var, typeSizeExpr);
+				Expression stVarSizeExpr = exprManager.bitVectorConstant(
+						stVarSize, sizeType.asBitVectorType().getSize());
+				Expression varBound = exprEncoding.plus(var, stVarSizeExpr);
 				
 				for (Expression var2 : stackVars) {
 					if (!var.equals(var2)) {
-						int typeSize2 = heapEncoding.getSizeOfVar(var2);
-						assert (typeSize2 >= 0);
+						int stVarSize2 = heapEncoding.getSizeOfVar(var2);
+						assert (stVarSize2 >= 0);
 	          	
-						Expression typeSizeExpr2 = exprManager.bitVectorConstant(
-								typeSize2, sizeType.asBitVectorType().getSize());
-						Expression varBound2 = exprEncoding.plus(var2, typeSizeExpr2);
+						Expression stVarSizeExpr2 = exprManager.bitVectorConstant(
+								stVarSize2, sizeType.asBitVectorType().getSize());
+						Expression varBound2 = exprEncoding.plus(var2, stVarSizeExpr2);
 						
-						if(typeSize == 0 && typeSize2 == 0) {
+						if(stVarSize == 0 && stVarSize2 == 0) {
 							builder.add(exprManager.neq(var, var2));
-						} else if(typeSize == 0 && typeSize2 > 0) {
+						} else if(stVarSize == 0 && stVarSize2 > 0) {
 			        /* The upper bound of the stack var won't overflow.
 			         * The size of the stack var will be larger than zero (won't be zero).
 			         */		        
@@ -85,7 +85,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 							builder.add(exprManager.or(
 									exprManager.lessThanOrEqual(varBound2, var)),
 									exprManager.lessThan(var, var2));
-						} else if(typeSize > 0 && typeSize2 == 0) {
+						} else if(stVarSize > 0 && stVarSize2 == 0) {
 			        /* The upper bound of the stack var won't overflow.
 			         * The size of the stack var will be larger than zero (won't be zero).
 			         */
@@ -127,18 +127,18 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	        
 	        /* Every stack variable doesn't falls into any stack region*/
 	        for(Expression lval : stackVars) {
-						int typeSize = heapEncoding.getSizeOfVar(lval);
-	        	assert (typeSize >= 0);
+						int stVarSize = heapEncoding.getSizeOfVar(lval);
+	        	assert (stVarSize >= 0);
 												
-						if(typeSize == 0) {
+						if(stVarSize == 0) {
 							builder.add(
 									exprManager.or(
 											exprManager.lessThan(lval, region),
 	                    	exprManager.lessThanOrEqual(regionBound, lval)));
 						} else {
-							Expression typeSizeExpr = exprManager.bitVectorConstant(
-									typeSize, sizeType.asBitVectorType().getSize());
-							Expression varBound = exprEncoding.plus(lval, typeSizeExpr);
+							Expression stVarSizeExpr = exprManager.bitVectorConstant(
+									stVarSize, sizeType.asBitVectorType().getSize());
+							Expression varBound = exprEncoding.plus(lval, stVarSizeExpr);
 							
 			        /* The upper bound of the stack var won't overflow.
 			         * The size of the stack var will be larger than zero (won't be zero).
@@ -180,10 +180,10 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
         
         /* Disjoint of the heap region or stack variable */
         for (Expression lval : stackVars) {
-					int typeSize = heapEncoding.getSizeOfVar(lval);
-        	assert (typeSize >= 0);
+					int stVarSize = heapEncoding.getSizeOfVar(lval);
+        	assert (stVarSize >= 0);
 					
-					if(typeSize == 0) {
+					if(stVarSize == 0) {
 	          builder.add(exprManager.implies(
 	              /* heap region is non-null (and not freed before),
 	               * even freed should not be equal to lval
@@ -195,9 +195,9 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	          						exprManager.lessThanOrEqual(regionBound, lval)),
 	          				lval.neq(region)))); 	// regionBound == region
 					} else {
-						Expression typeSizeExpr = exprManager.bitVectorConstant(
-								typeSize, sizeType.asBitVectorType().getSize());
-						Expression varBound = exprEncoding.plus(lval, typeSizeExpr);
+						Expression stVarSizeExpr = exprManager.bitVectorConstant(
+								stVarSize, sizeType.asBitVectorType().getSize());
+						Expression varBound = exprEncoding.plus(lval, stVarSizeExpr);
 						
 		        /* The upper bound of the stack var won't overflow.
 		         * The size of the stack var will be larger than zero (won't be zero).
@@ -322,14 +322,14 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	    /* TODO: Check the scope of local variable, this will be unsound to take 
 	     * address of local variable out of scope */
 	    for( Expression stVar : stVars) {
-	    	int typeSize = heapEncoding.getSizeOfVar(stVar);
-	    	assert (typeSize >= 0);
-	    	if(typeSize == 0) {
+	    	int stVarSize = heapEncoding.getSizeOfVar(stVar);
+	    	assert (stVarSize >= 0);
+	    	if(stVarSize == 0) {
 	    		disjs.add(ptr.eq(stVar));
 	    	} else {
-					Expression typeSizeExpr = exprManager.bitVectorConstant(
-							typeSize, sizeType.asBitVectorType().getSize());
-					Expression varBound = exprEncoding.plus(stVar, typeSizeExpr);
+					Expression stVarSizeExpr = exprManager.bitVectorConstant(
+							stVarSize, sizeType.asBitVectorType().getSize());
+					Expression varBound = exprEncoding.plus(stVar, stVarSizeExpr);
 	    		disjs.add(
 	    				exprManager.and(
 		              exprManager.lessThanOrEqual(stVar, ptr),
@@ -398,14 +398,14 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 			Expression ptrBound = exprEncoding.plus(ptr, size);
 	    
 	    for( Expression stVar : stVars) {
-	    	int typeSize = heapEncoding.getSizeOfVar(stVar);
-	    	assert (typeSize >= 0);
-	    	if(typeSize == 0) {
+	    	int stVarSize = heapEncoding.getSizeOfVar(stVar);
+	    	assert (stVarSize >= 0);
+	    	if(stVarSize == 0) {
 	    		disjs.add(ptr.eq(stVar));
 	    	} else {
-					Expression typeSizeExpr = exprManager.bitVectorConstant(
-							typeSize, sizeType.asBitVectorType().getSize());
-					Expression varBound = exprEncoding.plus(stVar, typeSizeExpr);
+					Expression stVarSizeExpr = exprManager.bitVectorConstant(
+							stVarSize, sizeType.asBitVectorType().getSize());
+					Expression varBound = exprEncoding.plus(stVar, stVarSizeExpr);
 	    		disjs.add(
 	    				exprManager.and(
 		              exprManager.lessThanOrEqual(stVar, ptr),

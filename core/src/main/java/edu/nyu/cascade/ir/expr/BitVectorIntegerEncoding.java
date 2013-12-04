@@ -181,7 +181,8 @@ public class BitVectorIntegerEncoding extends
   public BooleanExpression toBoolean(BitVectorExpression expr) {
     int size = expr.getType().getSize();
     Expression zero = getExpressionManager().bitVectorConstant(0, size);
-    return expr.neq(zero);
+    assert size == getType().getSize();
+    return expr.neq(zero());
   }
 
   @Override

@@ -45,7 +45,7 @@ public class PointerSyncEncoding implements PointerEncoding<TupleExpression> {
     offType = exprManager.bitVectorType(size);
     type = exprManager.tupleType(PTR_TYPE_NAME, refType, offType);
     nullPtr = exprManager.tuple(type, exprManager.variable(NULL_PTR_NAME, refType, false),
-        exprManager.bitVectorConstant(0, offType.getSize()));
+        exprManager.bitVectorZero(offType.getSize()));
   }
   
   @Override
@@ -60,7 +60,7 @@ public class PointerSyncEncoding implements PointerEncoding<TupleExpression> {
   
   @Override
   public TupleExpression decr(TupleExpression expr) {
-    return minus(expr, getExpressionManager().bitVectorConstant(offType.getSize(), 1));
+    return minus(expr, exprManager.bitVectorOne(offType.getSize()));
   }
   
   @Override
@@ -111,7 +111,7 @@ public class PointerSyncEncoding implements PointerEncoding<TupleExpression> {
 
   @Override
   public TupleExpression incr(TupleExpression expr) {
-    return plus(expr, getExpressionManager().bitVectorConstant(offType.getSize(), 1));
+    return plus(expr, exprManager.bitVectorOne(offType.getSize()));
   }
 
   @Override
