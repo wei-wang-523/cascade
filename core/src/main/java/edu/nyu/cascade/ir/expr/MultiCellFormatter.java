@@ -98,6 +98,11 @@ public class MultiCellFormatter implements IRDataFormatter {
   }
 	
 	@Override
+	public int getSizeOfType(xtc.type.Type type) {
+		return (int) cAnalyzer.getSize(type);
+	}
+	
+	@Override
   public Expression addressOf(Expression expr) {
 		throw new UnsupportedOperationException("Multi-cell encoding doesn't support addressOf operation");
 	}

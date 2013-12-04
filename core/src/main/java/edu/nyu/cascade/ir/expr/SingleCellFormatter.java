@@ -40,6 +40,11 @@ public class SingleCellFormatter implements IRDataFormatter {
 	public Expression getNullAddress() {
 		return encoding.zero();
 	}
+	
+	@Override
+	public int getSizeOfType(xtc.type.Type type) {
+		return 1;
+	}
 
 	@Override
 	public ArrayExpression updateMemoryArray(ArrayExpression memory, Expression index,

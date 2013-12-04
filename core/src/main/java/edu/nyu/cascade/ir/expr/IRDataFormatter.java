@@ -32,4 +32,6 @@ public interface IRDataFormatter {
 
 	Expression addressOf(Expression expr);
 
+	int getSizeOfType(xtc.type.Type type);
+
 }

@@ -263,6 +263,13 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	protected ExpressionEncoding getExpressionEncoding() {
 		return encoding;
 	}
+	
+	protected int getSizeOfVar(Expression stackVar) {
+		Preconditions.checkArgument(stackVar.getNode() != null);
+		Preconditions.checkArgument(CType.getType(stackVar.getNode()) != null);
+		xtc.type.Type type = CType.getType(stackVar.getNode());
+		return formatter.getSizeOfType(type);
+	}
 
 	@Override
   public Expression addressOf(Expression expr) {
