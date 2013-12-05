@@ -71,7 +71,7 @@ public abstract class AbstractExpressionEncoding
       BooleanEncoding<? extends Expression> booleanEncoding) {
     this(integerEncoding,booleanEncoding,
     		UnimplementedArrayEncoding.<Expression>create(),
-    		UnimplementedPointerEncoding.<Expression>create());
+    		DefaultPointerEncoding.create(exprManager));
   }
   
   protected AbstractExpressionEncoding(ExpressionManager exprManager,
@@ -79,7 +79,7 @@ public abstract class AbstractExpressionEncoding
       BooleanEncoding<? extends Expression> booleanEncoding,
       ArrayEncoding<? extends Expression> arrayEncoding) {
     this(integerEncoding,booleanEncoding,arrayEncoding,
-    		UnimplementedPointerEncoding.<Expression>create());
+    		DefaultPointerEncoding.create(exprManager));
   }
   
   protected AbstractExpressionEncoding(
@@ -371,11 +371,7 @@ public abstract class AbstractExpressionEncoding
       return getIntegerEncoding();
       
     case TUPLE:
-      List<? extends IRType> typeArgsPtr = type.getTypeArguments();
-      ImmutableList<TypeEncoding<?>> encodings = new ImmutableList.Builder<TypeEncoding<?>>()
-          .add(encodingForType(typeArgsPtr.get(0)),
-              encodingForType(typeArgsPtr.get(1))).build();
-      return getPointerEncoding().getInstance(encodings);
+      return getPointerEncoding();
 		default:
 			throw new UnsupportedOperationException("type=" + type);
     }
@@ -539,6 +535,11 @@ public abstract class AbstractExpressionEncoding
   @Override
   public boolean isInteger(Expression expr) {
     return getIntegerEncoding().isEncodingFor(expr);
+  }
+  
+  @Override
+  public boolean isPointer(Expression expr) {
+  	return getPointerEncoding().isEncodingFor(expr);
   }
 
   @Override
@@ -818,12 +819,23 @@ public abstract class AbstractExpressionEncoding
 
   @Override
   public Expression plus(Expression lhs, Expression rhs) {
-    return plus_(getIntegerEncoding(), lhs, rhs);
+  	return plus_(getIntegerEncoding(), lhs, rhs);
   }
 
   private <T extends Expression> T plus_(
       IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
     Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
+    if(!lhs.getType().equals(rhs.getType())) {
+      int size = getMaxSize(lhs, rhs);
+      lhs = lhs.asBitVector().zeroExtend(size);
+      rhs = rhs.asBitVector().zeroExtend(size);
+    }
+    return ie.plus(ie.ofExpression(lhs), ie.ofExpression(rhs));
+  }
+  
+  private <T extends Expression> T plus_(
+      PointerEncoding<T> ie, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isPointer(lhs) && isInteger(rhs));
     if(!lhs.getType().equals(rhs.getType())) {
       int size = getMaxSize(lhs, rhs);
       lhs = lhs.asBitVector().zeroExtend(size);

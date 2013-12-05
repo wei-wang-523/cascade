@@ -95,7 +95,7 @@ public class MonolithicVer0MemoryModel extends AbstractMemoryModel {
     int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
     this.scalarType = exprManager.bitVectorType(size);
     
-    this.ptrType = encoding.getPointerEncoding().getType();
+    this.ptrType = encoding.getPointerEncoding().getType().asTuple();
     this.refType = ptrType.getElementTypes().get(0);
     this.offType = ptrType.getElementTypes().get(1).asBitVectorType();
     this.allocType = exprManager.arrayType(refType, offType);

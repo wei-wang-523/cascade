@@ -112,7 +112,7 @@ public class BurstallView1MemoryModel extends AbstractMemoryModel {
     int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
     scalarType = exprManager.bitVectorType(size);
     
-    ptrType = encoding.getPointerEncoding().getType();
+    ptrType = encoding.getPointerEncoding().getType().asTuple();
     refType = ptrType.getElementTypes().get(0);
     offType = ptrType.getElementTypes().get(1).asBitVectorType();
     

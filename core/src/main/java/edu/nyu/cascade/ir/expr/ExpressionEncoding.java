@@ -318,7 +318,9 @@ public interface ExpressionEncoding {
    */
   boolean isInteger(Expression e);
   
-  /**
+  boolean isPointer(Expression expr);
+
+	/**
    * Tests whether the given expression is a variable in the encoding.
    */
   boolean isVariable(Expression e);

@@ -1,27 +1,15 @@
 package edu.nyu.cascade.ir.expr;
 
 import edu.nyu.cascade.prover.ExpressionManager;
-import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.type.TupleType;
 
-public interface PointerEncoding<T extends Expression> {
-  /** An instance of the encoding, for given element types. */
-  public interface Instance<T extends Expression> extends TypeEncoding<T> {
-    TupleExpression toTupleExpression(T tuple);
-    Expression index(T tuple, int index);
-    T update(T tuple, int index, Expression elem);
-    Iterable<TypeEncoding<?>> getElementsEncoding();
-		TypeEncoding<?> getElementEncoding(int i);
-  }
-  
+public interface PointerEncoding<T extends Expression> extends TypeEncoding<T> {  
   /**
    * Returns the <code>ExpressionManager</code> object used in the underlying
    * expression encoding.
    */
   ExpressionManager getExpressionManager();
-  Instance<T> getInstance(Iterable<TypeEncoding<?>> elementsEncoding);
   Expression index(T tuple, int index);
   T update(T tuple, int index, Expression elem);
   boolean isEncodingFor(Expression x);
@@ -43,7 +31,6 @@ public interface PointerEncoding<T extends Expression> {
   BooleanExpression lessThan(T lhs, T rhs);
   BooleanExpression lessThanOrEqual(T lhs, T rhs);
 	T getNullPtr();
-	TupleType getType();
 	T unknown();
 	T freshPtr(String name, boolean fresh);
 }

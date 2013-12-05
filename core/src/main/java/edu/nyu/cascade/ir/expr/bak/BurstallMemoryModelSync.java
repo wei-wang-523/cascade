@@ -90,7 +90,7 @@ public class BurstallMemoryModelSync extends AbstractMemoryModel {
     int size = encoding.getIntegerEncoding().getType().asBitVectorType().getSize();
     this.scalarType = exprManager.bitVectorType(size);;
     
-    this.ptrType = getExpressionEncoding().getPointerEncoding().getType();
+    this.ptrType = getExpressionEncoding().getPointerEncoding().getType().asTuple();
     this.refType = ptrType.getElementTypes().get(0);
     this.offType = ptrType.getElementTypes().get(1).asBitVectorType();
     this.allocType = exprManager.arrayType(refType, offType);

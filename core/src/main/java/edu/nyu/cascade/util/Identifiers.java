@@ -26,6 +26,9 @@ public class Identifiers {
   public static final String STRING_VAR_PREFIX = "string";
   public static final String MALLOC_VAR_PREFIX = "malloc";
   public static final String GLOBAL_CFG = "globalCfg";
+  public static final String REF_TYPE_NAME = "refType";
+  public static final String NULL_PTR_NAME = "nullRef";
+  public static final String PTR_TYPE_NAME = "ptrType";
   
   public static enum IdType {
     DEFAULT,

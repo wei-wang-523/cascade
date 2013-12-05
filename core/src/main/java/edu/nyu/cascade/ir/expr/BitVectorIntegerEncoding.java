@@ -42,6 +42,11 @@ public class BitVectorIntegerEncoding extends
   }
 
   @Override
+	public BitVectorExpression incr(BitVectorExpression expr) {
+	  return expr.plus(getType().getSize(),one());
+	}
+
+	@Override
   public BooleanExpression distinct(
       Iterable<? extends BitVectorExpression> exprs) {
     return getExpressionManager().distinct(exprs);
@@ -80,11 +85,6 @@ public class BitVectorIntegerEncoding extends
   public BitVectorExpression ifThenElse(BooleanExpression b,
       BitVectorExpression thenExpr, BitVectorExpression elseExpr) {
     return b.ifThenElse(thenExpr, elseExpr).asBitVector();
-  }
-
-  @Override
-  public BitVectorExpression incr(BitVectorExpression expr) {
-    return expr.plus(getType().getSize(),one());
   }
 
   @Override
@@ -130,11 +130,6 @@ public class BitVectorIntegerEncoding extends
   @Override
   public BitVectorExpression ofBoolean(BooleanExpression b) {
     return b.ifThenElse(one(), zero()).asBitVector();
-  }
-
-  @Override
-  public BitVectorExpression one() {
-    return constant(1);
   }
 
   @Override
@@ -196,6 +191,11 @@ public class BitVectorIntegerEncoding extends
   }
 
   @Override
+	public BitVectorExpression one() {
+	  return constant(1);
+	}
+
+	@Override
   public BitVectorExpression zero() {
     return constant(0);
   }

@@ -24,7 +24,7 @@ public class BitVectorExpressionEncoding
     IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, intCellSize);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new UnimplementedArrayEncoding<ArrayExpression>();
-    PointerEncoding<TupleExpression> tupleEncoding = new UnimplementedPointerEncoding<TupleExpression>();
+    PointerEncoding<TupleExpression> tupleEncoding = new DefaultPointerEncoding(exprManager);
     return new BitVectorExpressionEncoding(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
   }
   
