@@ -152,6 +152,18 @@ public class TemporalBooleanEncoding extends
           StateProperty expr) {
     return be.forall(vars,be.ofExpression(expr.toExpression()));
   }
+  
+  @Override
+  public StateProperty exists(Iterable<? extends VariableExpression> vars,
+      StateProperty expr) {
+    return propFactory.valueOf(exists_(baseEncoding,vars,expr));
+  }
+  
+  private <T extends Expression> T exists_(BooleanEncoding<T> be,
+      Iterable<? extends VariableExpression> vars,
+          StateProperty expr) {
+    return be.exists(vars,be.ofExpression(expr.toExpression()));
+  }
 
   @Override
   public StateProperty ofExpression(Expression x) {

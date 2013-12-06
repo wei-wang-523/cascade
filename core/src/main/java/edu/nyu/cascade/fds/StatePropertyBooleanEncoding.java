@@ -106,6 +106,12 @@ implements
       StateProperty expr) {
     return expr.forall(vars);
   }
+  
+  @Override
+  public StateProperty exists(Iterable<? extends VariableExpression> vars,
+      StateProperty expr) {
+    return expr.exists(vars);
+  }
 
   @Override
   public StateProperty ofExpression(Expression x) {
