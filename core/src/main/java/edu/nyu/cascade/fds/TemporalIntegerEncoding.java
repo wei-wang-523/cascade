@@ -240,4 +240,39 @@ public class TemporalIntegerEncoding<T extends Expression> extends
 		return stateExprFactory.valueOf((Expression) baseEncoding.uminus(
         baseEncoding.ofExpression(expr.toExpression())));
 	}
+
+	@Override
+	public StateExpression lshift(StateExpression lhs, StateExpression rhs) {
+		return stateExprFactory.valueOf((Expression) baseEncoding.lshift(
+        baseEncoding.ofExpression(lhs.toExpression()), baseEncoding
+            .ofExpression(rhs.toExpression())));
+	}
+
+	@Override
+	public StateExpression rshift(StateExpression lhs, StateExpression rhs) {
+		return stateExprFactory.valueOf((Expression) baseEncoding.rshift(
+        baseEncoding.ofExpression(lhs.toExpression()), baseEncoding
+            .ofExpression(rhs.toExpression())));
+	}
+
+	@Override
+	public StateExpression rem(StateExpression lhs, StateExpression rhs) {
+		return stateExprFactory.valueOf((Expression) baseEncoding.rem(
+        baseEncoding.ofExpression(lhs.toExpression()), baseEncoding
+            .ofExpression(rhs.toExpression())));
+	}
+
+	@Override
+	public StateExpression signedRem(StateExpression lhs, StateExpression rhs) {
+		return stateExprFactory.valueOf((Expression) baseEncoding.signedRem(
+        baseEncoding.ofExpression(lhs.toExpression()), baseEncoding
+            .ofExpression(rhs.toExpression())));
+	}
+
+	@Override
+	public StateExpression signedDivide(StateExpression lhs, StateExpression rhs) {
+		return stateExprFactory.valueOf((Expression) baseEncoding.signedDivide(
+        baseEncoding.ofExpression(lhs.toExpression()), baseEncoding
+            .ofExpression(rhs.toExpression())));
+	}
 }

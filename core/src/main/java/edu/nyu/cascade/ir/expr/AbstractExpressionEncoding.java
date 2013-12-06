@@ -8,11 +8,13 @@ import xtc.type.Type;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CType.CellKind;
@@ -20,6 +22,7 @@ import edu.nyu.cascade.ir.type.IRType;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
@@ -392,6 +395,58 @@ public abstract class AbstractExpressionEncoding
     }
     return getBooleanEncoding().ofBooleanExpression( lhs.eq((Expression)rhs) );
   }
+  
+  @Override
+  public Expression exists(Expression var, Expression p) {
+    Preconditions.checkArgument(var.isVariable());
+    return exists_(getBooleanEncoding(), Lists.newArrayList(var), p);
+  }
+  
+  @Override
+  public Expression exists(Expression var1, Expression var2, Expression p) {
+    Preconditions.checkArgument(var1.isVariable());
+    Preconditions.checkArgument(var2.isVariable());
+    return exists_(getBooleanEncoding(), Lists.newArrayList(var1, var2), p);
+  }
+  
+  @Override
+  public Expression exists(Expression var1, Expression var2, Expression var3, Expression p) {
+    Preconditions.checkArgument(var1.isVariable());
+    Preconditions.checkArgument(var2.isVariable());
+    Preconditions.checkArgument(var3.isVariable());
+    return exists_(getBooleanEncoding(), Lists.newArrayList(var1, var2, var3), p);
+  }
+  
+  @Override
+  public Expression exists(Iterable<? extends Expression> vars, Expression p) {
+    Preconditions.checkArgument(Iterables.all(vars, new Predicate<Expression>(){
+			@Override
+			public boolean apply(Expression var) {
+				return var.isVariable();
+			}  	
+    }));
+    return exists_(getBooleanEncoding(), vars, p);
+  }
+  
+  private <T extends Expression> T exists_(BooleanEncoding<T> be, Iterable<? extends Expression> vars, Expression p) {
+    Preconditions.checkArgument(Iterables.all(vars, new Predicate<Expression>(){
+			@Override
+			public boolean apply(Expression var) {
+				return var.isVariable();
+			}  	
+    }));
+    Preconditions.checkArgument(isBoolean(p));
+    
+    Iterable<VariableExpression> vars_ = Iterables.transform(vars, 
+    		new Function<Expression, VariableExpression>(){
+					@Override
+					public VariableExpression apply(Expression input) {
+						return input.asVariable();
+					}
+    });
+    
+    return be.forall(vars_, be.ofExpression(p));
+  }
 
   @Override
   public Expression ff() {
@@ -401,13 +456,53 @@ public abstract class AbstractExpressionEncoding
   @Override
   public Expression forall(Expression var, Expression p) {
     Preconditions.checkArgument(var.isVariable());
-    return forall_(getBooleanEncoding(), var, p);
+    return forall_(getBooleanEncoding(), Lists.newArrayList(var), p);
   }
   
-  private <T extends Expression> T forall_(BooleanEncoding<T> be, Expression var, Expression p) {
-    Preconditions.checkArgument(isVariable(var));
+  @Override
+  public Expression forall(Expression var1, Expression var2, Expression p) {
+    Preconditions.checkArgument(var1.isVariable());
+    Preconditions.checkArgument(var2.isVariable());
+    return forall_(getBooleanEncoding(), Lists.newArrayList(var1, var2), p);
+  }
+  
+  @Override
+  public Expression forall(Expression var1, Expression var2, Expression var3, Expression p) {
+    Preconditions.checkArgument(var1.isVariable());
+    Preconditions.checkArgument(var2.isVariable());
+    Preconditions.checkArgument(var3.isVariable());
+    return forall_(getBooleanEncoding(), Lists.newArrayList(var1, var2, var3), p);
+  }
+  
+  @Override
+  public Expression forall(Iterable<? extends Expression> vars, Expression p) {
+    Preconditions.checkArgument(Iterables.all(vars, new Predicate<Expression>(){
+			@Override
+			public boolean apply(Expression var) {
+				return var.isVariable();
+			}  	
+    }));
+    return forall_(getBooleanEncoding(), vars, p);
+  }
+  
+  private <T extends Expression> T forall_(BooleanEncoding<T> be, Iterable<? extends Expression> vars, Expression p) {
+    Preconditions.checkArgument(Iterables.all(vars, new Predicate<Expression>(){
+			@Override
+			public boolean apply(Expression var) {
+				return var.isVariable();
+			}  	
+    }));
     Preconditions.checkArgument(isBoolean(p));
-    return be.forall(ImmutableList.of(var.asVariable()), be.ofExpression(p));
+    
+    Iterable<VariableExpression> vars_ = Iterables.transform(vars, 
+    		new Function<Expression, VariableExpression>(){
+					@Override
+					public VariableExpression apply(Expression input) {
+						return input.asVariable();
+					}
+    });
+    
+    return be.forall(vars_, be.ofExpression(p));
   }
   
   @Override
@@ -506,6 +601,16 @@ public abstract class AbstractExpressionEncoding
       BooleanExpression b, Expression thenExpr, Expression elseExpr) {
     return ie.ifThenElse(b, ie.ofExpression(thenExpr), ie
         .ofExpression(elseExpr));
+  }
+  
+  @Override
+  public Expression implies(Expression lhs, Expression rhs) {
+  	return implies_(getBooleanEncoding(), lhs, rhs);
+  }
+  
+  private <T extends Expression> T implies_(BooleanEncoding<T> be,
+  		Expression lhs, Expression rhs) {
+  	return be.implies(be.ofExpression(lhs), be.ofExpression(rhs));
   }
   
   @Override
@@ -819,29 +924,27 @@ public abstract class AbstractExpressionEncoding
 
   @Override
   public Expression plus(Expression lhs, Expression rhs) {
-  	return plus_(getIntegerEncoding(), lhs, rhs);
+  	if(isPointer(lhs) || isPointer(rhs))
+  		return plus_(getPointerEncoding(), getIntegerEncoding(), lhs, rhs);
+  	else
+  		return plus_(getIntegerEncoding(), lhs, rhs);
   }
 
   private <T extends Expression> T plus_(
       IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
     Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
-    if(!lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
-    }
     return ie.plus(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
   
   private <T extends Expression> T plus_(
-      PointerEncoding<T> ie, Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isPointer(lhs) && isInteger(rhs));
-    if(!lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
+      PointerEncoding<T> pe, IntegerEncoding<?> ie, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(
+    		(isPointer(lhs) && isInteger(rhs)) || (isInteger(lhs) && isPointer(rhs)));
+    if(isPointer(lhs)) {
+    	return pe.plus(pe.ofExpression(lhs), ie.ofExpression(rhs));
+    } else {
+    	return pe.plus(pe.ofExpression(rhs), ie.ofExpression(lhs));
     }
-    return ie.plus(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
 
   @Override
@@ -919,15 +1022,14 @@ public abstract class AbstractExpressionEncoding
     return src;
   }
   
-  @Override
-  public Expression castConstant(int value, xtc.type.Type targetType) {
-    if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) {
-      int size = (int) (getCAnalyzer().getSize(targetType) * getCellSize());
-      return getExpressionManager().bitVectorConstant(value, size);
-    }
-    
-    return integerConstant(value);
-  }
+//  @Override
+//  public Expression castConstant(int value, xtc.type.Type targetType) {
+//    if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) {
+//      int size = (int) (getCAnalyzer().getSize(targetType) * getCellSize());
+//      return getExpressionManager().bitVectorConstant(value, size);
+//    }   
+//    return integerConstant(value);
+//  }
   
   @Override
   public Expression variable(String name, IRType type, boolean fresh) {

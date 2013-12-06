@@ -136,4 +136,14 @@ public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
    * Return an expresion representing the negate of <code>expr</code>
    */
   T uminus(T expr);
+  
+  T lshift(T lhs, T rhs);
+  
+  T rshift(T lhs, T rhs);
+  
+  T rem(T lhs, T rhs);
+  
+  T signedRem(T lhs, T rhs);
+  
+  T signedDivide(T lhs, T rhs);
 }

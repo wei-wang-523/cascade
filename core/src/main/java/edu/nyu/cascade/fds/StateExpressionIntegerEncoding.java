@@ -66,8 +66,7 @@ public class StateExpressionIntegerEncoding extends
   @Override
   public StateProperty signedGreaterThan(StateExpression lhs,
       StateExpression rhs)  {
-    // TODO Auto-generated method stub
-    return null;
+    return lhs.asIntegerExpression().greaterThan(rhs);
   }
 
   @Override
@@ -79,8 +78,7 @@ public class StateExpressionIntegerEncoding extends
   @Override
   public StateProperty signedGreaterThanOrEqual(StateExpression lhs,
       StateExpression rhs)  {
-    // TODO Auto-generated method stub
-    return null;
+    return lhs.asIntegerExpression().greaterThanOrEqual(rhs);
   }
 
   @Override
@@ -103,8 +101,7 @@ public class StateExpressionIntegerEncoding extends
   @Override
   public BooleanExpression signedLessThan(StateExpression lhs,
       StateExpression rhs) {
-    // TODO Auto-generated method stub
-    return null;
+    return lhs.asIntegerExpression().lessThan(rhs);
   }
 
   @Override
@@ -116,8 +113,7 @@ public class StateExpressionIntegerEncoding extends
   @Override
   public BooleanExpression signedLessThanOrEqual(StateExpression lhs,
       StateExpression rhs) {
-    // TODO Auto-generated method stub
-    return null;
+    return lhs.asIntegerExpression().lessThanOrEqual(rhs);
   }
 
   @Override
@@ -221,6 +217,36 @@ public class StateExpressionIntegerEncoding extends
 	@Override
 	public StateExpression uminus(StateExpression expr) {
     return wrap(expr.asIntegerExpression().negate());
+	}
+
+	@Override
+	public StateExpression lshift(StateExpression lhs, StateExpression rhs) {
+		return wrap(lhs.asIntegerExpression().times(
+				constant(2).pow(rhs)));
+	}
+
+	@Override
+	public StateExpression rshift(StateExpression lhs, StateExpression rhs) {
+		return wrap(lhs.asIntegerExpression().divides(
+				constant(2).pow(rhs)));
+	}
+
+	@Override
+	public StateExpression rem(StateExpression lhs, StateExpression rhs) {
+		return wrap(lhs.asIntegerExpression().minus(
+				lhs.asIntegerExpression().mods(
+						rhs.asIntegerExpression()).times(
+								rhs.asIntegerExpression())));
+	}
+
+	@Override
+	public StateExpression signedRem(StateExpression lhs, StateExpression rhs) {
+		return rem(lhs, rhs);
+	}
+
+	@Override
+	public StateExpression signedDivide(StateExpression lhs, StateExpression rhs) {
+		return divide(lhs, rhs);
 	}
 
 }

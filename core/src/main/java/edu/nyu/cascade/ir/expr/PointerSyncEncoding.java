@@ -1,13 +1,11 @@
 package edu.nyu.cascade.ir.expr;
 
 import java.util.Arrays;
-import java.util.List;
-
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.base.Preconditions;
-
+import com.google.common.base.Predicate;
 import edu.nyu.cascade.prover.TupleExpression;
-import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -20,7 +18,6 @@ public class PointerSyncEncoding extends
   private static final String UNKNOWN_VARIABLE_NAME = "bv_encoding_unknown";
   
   private final Type refType;
-  @SuppressWarnings("unused")
   private final Type offType;
   private final TupleExpression nullPtr;
   private final int offsetSize;
@@ -54,7 +51,7 @@ public class PointerSyncEncoding extends
   
   @Override
   public BooleanExpression greaterThan(TupleExpression lhs, TupleExpression rhs) {
-    Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
+    Preconditions.checkArgument(isPointer(lhs) && isPointer(rhs));
     BooleanExpression cond1 = lhs.index(0).eq(rhs.index(0));
     BooleanExpression cond2 = getExpressionManager()
     		.greaterThan(lhs.index(1), rhs.index(1));
@@ -63,7 +60,7 @@ public class PointerSyncEncoding extends
   
   @Override
   public BooleanExpression greaterThanOrEqual(TupleExpression lhs, TupleExpression rhs) {
-    Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
+    Preconditions.checkArgument(isPointer(lhs) && isPointer(rhs));
     BooleanExpression cond1 = lhs.index(0).eq(rhs.index(0));
     BooleanExpression cond2 = getExpressionManager()
     		.greaterThanOrEqual(lhs.index(1), rhs.index(1));
@@ -72,7 +69,7 @@ public class PointerSyncEncoding extends
   
   @Override
   public BooleanExpression lessThan(TupleExpression lhs, TupleExpression rhs) {
-    Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
+    Preconditions.checkArgument(isPointer(lhs) && isPointer(rhs));
     BooleanExpression cond1 = lhs.index(0).eq(rhs.index(0));
     BooleanExpression cond2 = getExpressionManager()
     		.lessThan(lhs.index(1), rhs.index(1));
@@ -81,7 +78,7 @@ public class PointerSyncEncoding extends
 
   @Override
   public BooleanExpression lessThanOrEqual(TupleExpression lhs, TupleExpression rhs) {
-    Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
+    Preconditions.checkArgument(isPointer(lhs) && isPointer(rhs));
     BooleanExpression cond1 = lhs.index(0).eq(rhs.index(0));
     BooleanExpression cond2 = getExpressionManager()
     		.lessThanOrEqual(lhs.index(1), rhs.index(1));
@@ -101,20 +98,26 @@ public class PointerSyncEncoding extends
 
   @Override
   public TupleExpression minus(TupleExpression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.size() == 2 && rhs.isBitVector());
-    ExpressionManager exprManager = getExpressionManager();
-    Expression rhsRes = exprManager.minus(lhs.index(1), rhs);
-    return exprManager.tuple(getType(), lhs.index(0), rhsRes);
+    Preconditions.checkArgument(isPointer(lhs) && isOffset(rhs));
+    Expression rhsRes = offsetMinus(lhs.index(1), rhs);
+    return createPointer(lhs.index(0), rhsRes);
   }
 
   @Override
   public TupleExpression plus(TupleExpression first, Iterable<? extends Expression> rest) {
+  	Preconditions.checkArgument(isPointer(first));
+  	Preconditions.checkArgument(Iterables.all(rest, new Predicate<Expression>(){
+			@Override
+			public boolean apply(Expression input) {
+				return isOffset(input);
+			}
+  	}));
+  	
+    ImmutableList.Builder<Expression> offsetBuilder = 
+    		new ImmutableList.Builder<Expression>().add(first.index(1)).addAll(rest);   
+    Expression rhsRes = offsetPlus(offsetBuilder.build());
     Expression lhsRes = first.index(0);
-    List<BitVectorExpression> rhsList = Lists.newArrayList(first.index(1).asBitVector());
-    for(Expression arg : rest) rhsList.add(arg.asBitVector());
-    ExpressionManager exprManager = getExpressionManager();
-    Expression rhsRes = exprManager.plus(rhsList);
-    return exprManager.tuple(getType(), lhsRes, rhsRes);
+    return createPointer(lhsRes, rhsRes);
   }
   
   @Override
@@ -124,10 +127,9 @@ public class PointerSyncEncoding extends
   
   @Override
   public TupleExpression plus(TupleExpression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.size() == 2 && rhs.isBitVector());
-    ExpressionManager exprManager = getExpressionManager();
-    Expression rhsRes = exprManager.plus(lhs.index(1), rhs);
-    return exprManager.tuple(getType(), lhs.index(0), rhsRes);
+    Preconditions.checkArgument(isPointer(lhs) && isOffset(rhs));
+    Expression rhsRes = offsetPlus(lhs.index(1), rhs);
+    return createPointer(lhs.index(0), rhsRes);
   } 
   
   @Override
@@ -142,20 +144,20 @@ public class PointerSyncEncoding extends
 
   @Override
   public TupleExpression ofExpression(Expression x) {
-    Preconditions.checkArgument(x.isTuple());
+    Preconditions.checkArgument(isPointer(x));
     return x.asTuple();
   }
 
   @Override
   public Expression index(TupleExpression x, int index) {
-    Preconditions.checkArgument(x.size() == 2);
+    Preconditions.checkArgument(isPointer(x));
     Preconditions.checkArgument(index < 2 && index >= 0);
     return x.index(index);
   }
 
   @Override
   public TupleExpression update(TupleExpression x, int index, Expression val) {
-    Preconditions.checkArgument(x.size() == 2);
+    Preconditions.checkArgument(isPointer(x));
     Preconditions.checkArgument(index < 2 && index >= 0);
     Preconditions.checkArgument(val.getType().equals(
         x.getType().getElementTypes().get(index)));
@@ -164,32 +166,50 @@ public class PointerSyncEncoding extends
   
   @Override
   public BooleanExpression neq(TupleExpression lhs, TupleExpression rhs) {
-    Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
-    BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
-    BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
+    Preconditions.checkArgument(isPointer(lhs) && isPointer(rhs));
     return getExpressionManager().or(lhs.index(0)
-        .neq(rhs.index(0)), lhs_1.neq(rhs_1));
+        .neq(rhs.index(0)), lhs.index(1).neq(rhs.index(1)));
   }
   
   @Override
   public BooleanExpression eq(TupleExpression lhs, TupleExpression rhs) {
-    Preconditions.checkArgument(lhs.size() == 2 && rhs.size() == 2);
-    BitVectorExpression lhs_1 = lhs.index(1).asBitVector();
-    BitVectorExpression rhs_1 = rhs.index(1).asBitVector();
+    Preconditions.checkArgument(isPointer(lhs) && isPointer(rhs));
     return getExpressionManager().and(lhs.index(0)
-        .eq(rhs.index(0)), lhs_1.eq(rhs_1));
+        .eq(rhs.index(0)), lhs.index(1).eq(rhs.index(1)));
   }
 
 	@Override
 	public TupleExpression freshPtr(String name, boolean fresh) {
-		ExpressionManager exprManager = getExpressionManager();
-    Expression refVar = exprManager.variable(name, refType, fresh);
+    Expression refVar = getExpressionManager().variable(name, refType, fresh);
     Expression offZero = constant(0);
-    TupleExpression ptr = exprManager.tuple(getType(), refVar, offZero);
-    return ptr;
+    return createPointer(refVar, offZero);
 	}
 	
 	private Expression constant(int c) {
 		return getExpressionManager().bitVectorConstant(c, offsetSize);
+	}
+	
+	private Expression offsetPlus(Expression lhs, Expression rhs) {
+		return getExpressionManager().plus(offsetSize, lhs, rhs);
+	}
+	
+	private Expression offsetPlus(Iterable<Expression> args) {
+		return getExpressionManager().plus(offsetSize, args);
+	}
+	
+	private Expression offsetMinus(Expression lhs, Expression rhs) {
+		return getExpressionManager().bitVectorMinus(lhs, rhs);
+	}
+	
+	private TupleExpression createPointer(Expression lhs, Expression rhs) {
+		return getExpressionManager().tuple(getType(), lhs, rhs);
+	}
+	
+	private boolean isOffset(Expression offset) {
+		return offset.getType().equals(offType);
+	}
+	
+	private boolean isPointer(Expression pointer) {
+		return pointer.getType().equals(getType());
 	}
 }

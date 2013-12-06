@@ -211,26 +211,31 @@ public class BitVectorIntegerEncoding extends
     return x.getType().isBitVectorType();
   }
   
+  @Override
   public BitVectorExpression lshift(BitVectorExpression lhs,
       BitVectorExpression rhs) {
     return lhs.lshift(rhs);
   }
   
+  @Override
   public BitVectorExpression rshift(BitVectorExpression lhs,
       BitVectorExpression rhs) {
     return lhs.rshift(rhs);
   }
   
+  @Override
   public BitVectorExpression signedDivide(BitVectorExpression lhs,
       BitVectorExpression rhs) {
     return lhs.signedDivides(rhs);
   }
   
+  @Override
   public BitVectorExpression rem(BitVectorExpression lhs,
       BitVectorExpression rhs) {
     return lhs.rems(rhs);
   }
   
+  @Override
   public BitVectorExpression signedRem(BitVectorExpression lhs,
       BitVectorExpression rhs) {
     return lhs.signedRems(rhs);

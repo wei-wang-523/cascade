@@ -26,8 +26,10 @@ public interface ExpressionEncoder {
   ExpressionClosure toBoolean(Node node, Scope scope);
   ExpressionClosure toBoolean(Node node, boolean negated);
   ExpressionClosure toBoolean(Node node, boolean negated, Scope scope);
-  ExpressionClosure toInteger(Node node);
-  ExpressionClosure toInteger(Node node, Scope scope);
+//  ExpressionClosure toInteger(Node node);
+//  ExpressionClosure toInteger(Node node, Scope scope);
+  ExpressionClosure toExpression(Node node);
+  ExpressionClosure toExpression(Node node, Scope scope);
   ExpressionClosure toLval(Node node);
   ExpressionClosure toLval(Node node, Scope scope);
   

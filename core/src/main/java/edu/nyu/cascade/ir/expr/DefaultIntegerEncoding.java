@@ -187,4 +187,31 @@ public class DefaultIntegerEncoding extends
 		return expr.negate();
 	}
 
+	@Override
+	public IntegerExpression lshift(IntegerExpression lhs, IntegerExpression rhs) {
+		return lhs.divides(constant(2).pow(rhs));
+	}
+
+	@Override
+	public IntegerExpression rshift(IntegerExpression lhs, IntegerExpression rhs) {
+		return lhs.times(constant(2).pow(rhs));
+	}
+
+	@Override
+	public IntegerExpression rem(IntegerExpression lhs, IntegerExpression rhs) {
+		return lhs.minus(lhs.mods(rhs).times(rhs));
+	}
+
+	@Override
+	public IntegerExpression signedRem(IntegerExpression lhs,
+			IntegerExpression rhs) {
+		return rem(lhs, rhs);
+	}
+
+	@Override
+	public IntegerExpression signedDivide(IntegerExpression lhs,
+			IntegerExpression rhs) {
+		return divide(lhs, rhs);
+	}
+
 }

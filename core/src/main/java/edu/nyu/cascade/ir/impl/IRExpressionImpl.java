@@ -61,7 +61,8 @@ public class IRExpressionImpl implements IRExpression {
   @Override
   public  ExpressionClosure toExpression(ExpressionEncoder encoder) {
     encoder.setScope(scope);
-    return encoder.toInteger(getSourceNode(),scope);
+//    return encoder.toInteger(getSourceNode(),scope);
+    return encoder.toExpression(getSourceNode(),scope);
   }
 
   @Override

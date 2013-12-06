@@ -131,6 +131,26 @@ public interface ExpressionEncoding {
   Expression eq(Expression lhs, Expression rhs) ;
 
   /**
+   * The universal quantification ("exists") of <code>p</code> by the variable
+   * <code>var</code>.
+   * 
+   * @param var
+   *          a variable in the encoding
+   * @param p
+   *          a boolean-encoded expression
+   * @return a boolean-encoded expression
+   */
+  Expression exists(Expression var, Expression p) ;
+  
+  Expression exists(Expression var1, Expression var2, Expression body);
+  
+  Expression exists(Expression var1, Expression var2, Expression var3,
+      Expression body);
+  
+  Expression exists(Iterable<? extends Expression> vars,
+      Expression body);
+  
+  /**
    * The boolean expression <code>false</code>.
    */
   Expression ff() ;
@@ -146,6 +166,14 @@ public interface ExpressionEncoding {
    * @return a boolean-encoded expression
    */
   Expression forall(Expression var, Expression p) ;
+  
+  Expression forall(Expression var1, Expression var2, Expression body);
+  
+  Expression forall(Expression var1, Expression var2, Expression var3,
+      Expression body);
+  
+  Expression forall(Iterable<? extends Expression> vars,
+      Expression body);
 
   /**
    * An interpreted function application.
@@ -252,6 +280,18 @@ public interface ExpressionEncoding {
    */
   Expression ifThenElse(Expression bool, Expression thenExpr, Expression elseExpr);
 
+  
+  /**
+   * An boolean expression
+   * 
+   * @param assumption
+   * 					a boolean-encoded expression
+   * @param assertion
+   * 					a boolean-encoded expression
+   * @return an expression of <code>assumption.implies(assertion)</code>
+   */
+  Expression implies(Expression assumption, Expression assertion);
+  
   /**
    * A shortcut for <code>plus(e,one())</code>.
    * 
@@ -654,9 +694,9 @@ public interface ExpressionEncoding {
    */
   Expression castExpression(Expression src, Type targetType) ;
   
-  /**
-   * create a expression with constant <code>value</code>, used for
-   * tuple type expression especially.
-   */
-  Expression castConstant(int value, xtc.type.Type type);
+//  /**
+//   * create a expression with constant <code>value</code>, used for
+//   * tuple type expression especially.
+//   */
+//  Expression castConstant(int value, xtc.type.Type type);
 }
