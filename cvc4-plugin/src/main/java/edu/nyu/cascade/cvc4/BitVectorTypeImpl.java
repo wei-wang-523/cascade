@@ -1,5 +1,6 @@
 package edu.nyu.cascade.cvc4;
 
+import java.math.BigInteger;
 import java.util.concurrent.ExecutionException;
 
 import com.google.common.cache.CacheBuilder;
@@ -137,8 +138,18 @@ public class BitVectorTypeImpl extends TypeImpl implements
   }
 
   @Override
-  public BitVectorExpressionImpl constant(String rep) {
-    return BitVectorExpressionImpl.mkConstant(getExpressionManager(), rep);
+  public BitVectorExpressionImpl constant(int c) {
+    return BitVectorExpressionImpl.mkConstant(getExpressionManager(), c);
+  }
+  
+  @Override
+  public BitVectorExpressionImpl constant(long c) {
+    return BitVectorExpressionImpl.mkConstant(getExpressionManager(), c);
+  }
+  
+  @Override
+  public BitVectorExpressionImpl constant(BigInteger c) {
+    return BitVectorExpressionImpl.mkConstant(getExpressionManager(), c);
   }
 
   @Override

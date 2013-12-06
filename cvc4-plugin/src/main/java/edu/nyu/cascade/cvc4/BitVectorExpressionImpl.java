@@ -27,6 +27,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import java.math.BigInteger;
+
 import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -51,7 +53,7 @@ import edu.nyu.cascade.util.CacheException;
 
 public class BitVectorExpressionImpl extends ExpressionImpl implements
     BitVectorExpression {
-    private static final LoadingCache<ExpressionManagerImpl, LoadingCache<String, BitVectorExpressionImpl>> cache = CacheBuilder
+    private static final LoadingCache<ExpressionManagerImpl, LoadingCache<String, BitVectorExpressionImpl>> constantCache = CacheBuilder
         .newBuilder().build(
             new CacheLoader<ExpressionManagerImpl, LoadingCache<String, BitVectorExpressionImpl>>(){
               public LoadingCache<String, BitVectorExpressionImpl> load(final ExpressionManagerImpl exprManager) {
@@ -149,35 +151,62 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
 
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
       int size, int value) {
+  	Preconditions.checkArgument(size > 0);
     String binary = Integer.toBinaryString(value);
     int repSize = binary.length();
-
-    assert (repSize > 0);
-
-    if (repSize < size) {
-      /* Sign-extend the value */
+    assert repSize > 0;
+    
+    if (repSize < size) { /* Sign-extend the value */
       int prefix_length = (int) (size - repSize);
       char[] prefix = new char[prefix_length];
       Arrays.fill(prefix, value >= 0 ? '0' : '1');
       binary = String.valueOf(prefix) + binary;
-    } else if (repSize > size) {
-      /* truncate */
+    } else if (repSize > size) { /* truncate */
       binary = binary.substring((int) (repSize - size), repSize);
     }
 
     assert (binary.length() == size);
     try {
-      return cache.get(exprManager).get(binary);
+      return constantCache.get(exprManager).get(binary);
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
+    }
+  }
+  
+  static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
+      int c) {
+    try {
+    	String binaryString = Integer.toBinaryString(c);
+      return constantCache.get(exprManager).get(binaryString);
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
+    }
+  }
+  
+  static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
+      long c) {
+    try {
+    	String binaryString = Long.toBinaryString(c);
+      return constantCache.get(exprManager).get(binaryString);
     } catch (ExecutionException e) {
       throw new CacheException(e);
     }
   }
 
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
-      String binary) {
-    Preconditions.checkArgument(binary.length() > 0);
+      BigInteger c) {
     try {
-      return cache.get(exprManager).get(binary);
+    	String binaryString = c.toString(2);
+      return constantCache.get(exprManager).get(binaryString);
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
+    }
+  }
+  
+  static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
+      String rep) {
+    try {
+      return constantCache.get(exprManager).get(rep);
     } catch (ExecutionException e) {
       throw new CacheException(e);
     }

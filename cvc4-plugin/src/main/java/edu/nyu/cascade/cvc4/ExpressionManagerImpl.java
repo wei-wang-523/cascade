@@ -1,5 +1,6 @@
 package edu.nyu.cascade.cvc4;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
@@ -17,7 +18,6 @@ import edu.nyu.acsys.CVC4.ArrayStoreAll;
 import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.acsys.CVC4.vectorExpr;
 import edu.nyu.acsys.CVC4.vectorType;
-
 import edu.nyu.cascade.cvc4.InductiveTypeImpl.ConstructorImpl;
 import edu.nyu.cascade.cvc4.InductiveTypeImpl.SelectorImpl;
 import edu.nyu.cascade.fds.StateExpression;
@@ -275,6 +275,21 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   public BitVectorExpressionImpl bitVectorConstant(int n, int size) {
     return BitVectorExpressionImpl.mkConstant(this, size, n);
   }
+  
+  @Override
+  public BitVectorExpressionImpl bitVectorConstant(int n) {
+    return BitVectorExpressionImpl.mkConstant(this, n);
+  }
+  
+  @Override
+  public BitVectorExpressionImpl bitVectorConstant(long n) {
+    return BitVectorExpressionImpl.mkConstant(this, n);
+  }
+  
+  @Override
+  public BitVectorExpressionImpl bitVectorConstant(BigInteger n) {
+    return BitVectorExpressionImpl.mkConstant(this, n);
+  }
 
   @Override
   public BitVectorExpressionImpl bitVectorConstant(String rep) {
@@ -372,6 +387,16 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     return IntegerExpressionImpl.mkConstant(this, c);
   }
 
+  @Override
+  public IntegerExpressionImpl constant(long c)  {
+    return IntegerExpressionImpl.mkConstant(this, c);
+  }
+  
+  @Override
+  public IntegerExpressionImpl constant(BigInteger c)  {
+    return IntegerExpressionImpl.mkConstant(this, c);
+  }
+  
   @Override
   public InductiveExpression construct(Constructor constructor,
       Expression... args) {
