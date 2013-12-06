@@ -1,5 +1,6 @@
 package edu.nyu.cascade.c;
 
+import java.math.BigInteger;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -283,6 +284,16 @@ final class DryRunTheoremProver implements TheoremProver {
       return exprManager.constant(c);
     }
 
+    @Override
+    public IntegerExpression constant(long c) {
+      return exprManager.constant(c);
+    }
+    
+    @Override
+    public IntegerExpression constant(BigInteger c) {
+      return exprManager.constant(c);
+    }
+    
     @Override
     public InductiveExpression construct(Constructor constructor,
         Expression... args) {
@@ -1070,6 +1081,21 @@ final class DryRunTheoremProver implements TheoremProver {
         Expression... rest) {
       return exprManager.record(type, first, rest);
     }
+
+		@Override
+		public BitVectorExpression bitVectorConstant(int n) {
+			return exprManager.bitVectorConstant(n);
+		}
+
+		@Override
+		public BitVectorExpression bitVectorConstant(long n) {
+			return exprManager.bitVectorConstant(n);
+		}
+
+		@Override
+		public BitVectorExpression bitVectorConstant(BigInteger n) {
+			return exprManager.bitVectorConstant(n);
+		}
   }
 
   public class Provider implements TheoremProver.Provider {

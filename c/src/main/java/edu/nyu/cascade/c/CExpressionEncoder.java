@@ -261,7 +261,7 @@ class CExpressionEncoder implements ExpressionEncoder {
     public Expression visitCharacterConstant(GNode node)
         throws ExpressionFactoryException {
       Type type = lookupType(node);
-      int constVal = (int) type.getConstant().longValue();
+      long constVal = type.getConstant().longValue();
 //      Expression res = encoding.castConstant(constVal, type);
       Expression res = encoding.integerConstant(constVal);
       return res.setNode(node);
@@ -424,15 +424,20 @@ class CExpressionEncoder implements ExpressionEncoder {
       Type type = unwrapped(lookupType(node));     
       assert(type.isInteger());
       
-      int constVal = 0;
-      if(type.hasConstant()) {
-        // Parse string character
-        constVal = ((BigInteger) type.getConstant().getValue()).intValue();
-      } else {
-        String numStr = node.getString(0);
-        // for unsigned integer
-        if(numStr.lastIndexOf('U') >= 0) 
-          numStr = numStr.substring(0, numStr.lastIndexOf('U'));
+//      int constVal = 0;
+//      if(type.hasConstant()) {
+//        // Parse string character
+//        constVal = ((BigInteger) type.getConstant().getValue()).intValue();
+//      }
+      
+      Expression res = null;     
+      String numStr = node.getString(0);
+      switch(type.toInteger().getKind()) {
+			case U_INT: 
+				numStr = numStr.substring(0, numStr.lastIndexOf('U'));
+			case S_INT:
+			case INT: {
+				int constVal = 0;        
         if(numStr.startsWith("0x")) 
           constVal = Integer.parseInt(numStr.substring(2), 16);
         else if(numStr.startsWith("0b")) 
@@ -441,9 +446,48 @@ class CExpressionEncoder implements ExpressionEncoder {
           constVal = Integer.parseInt(numStr.substring(2), 8);
         else 
           constVal = Integer.parseInt(numStr);
+        res = encoding.integerConstant(constVal);
+				break;
+			}
+			case U_LONG: 
+				numStr = numStr.substring(0, numStr.lastIndexOf('U'));
+			case LONG: {
+				long constVal = 0;
+        if(numStr.startsWith("0x")) 
+          constVal = Long.parseLong(numStr.substring(2), 16);
+        else if(numStr.startsWith("0b")) 
+          constVal = Long.parseLong(numStr.substring(2), 2);
+        else if(numStr.startsWith("0h")) 
+          constVal = Long.parseLong(numStr.substring(2), 8);
+        else 
+          constVal = Long.parseLong(numStr);
+        res = encoding.integerConstant(constVal);
+				break;
+			}
+			case U_LONG_LONG:
+				numStr = numStr.substring(0, numStr.lastIndexOf('U'));
+			case LONG_LONG: {
+				BigInteger constVal = null;
+        if(numStr.startsWith("0x")) 
+          constVal = new BigInteger(numStr.substring(2), 16);
+        else if(numStr.startsWith("0b")) 
+          constVal = new BigInteger(numStr.substring(2), 2);
+        else if(numStr.startsWith("0h")) 
+          constVal = new BigInteger(numStr.substring(2), 8);
+        else 
+          constVal = new BigInteger(numStr);
+        res = encoding.integerConstant(constVal);
+				break;
       }
-//      Expression res = encoding.castConstant(constVal, type);
-      Expression res = encoding.integerConstant(constVal);
+			case LONG_DOUBLE:
+			case LONG_DOUBLE_COMPLEX:
+			case DOUBLE:
+			case DOUBLE_COMPLEX:
+			case FLOAT:
+			case FLOAT_COMPLEX:
+			default:
+				throw new IllegalArgumentException("Unsupported data type " + type.toInteger().getKind());
+      }        
       return res.setNode(node);
     }
 
