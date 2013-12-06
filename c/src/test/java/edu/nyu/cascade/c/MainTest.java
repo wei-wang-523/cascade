@@ -381,8 +381,15 @@ public class MainTest {
   @Test
   public void testMiniBenchmark() {
 //  	smtFile_dump_location.mkdir();
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
-        parserTest("--feasibility", "-inline-anno", "--sound", "--prover", "z3", "--theory", "Partition", "--mem-cell-size", "32"), false);
+  	final Tester<File> FlatTester = parserTestWithTimeout("--feasibility", "-inline-anno", "--sound", 
+  			"--prover", "z3", "--theory", "Flat", "--mem-cell-size", "16");
+  	final Tester<File> BurstallTester = parserTestWithTimeout("--feasibility", "-inline-anno", "--sound", 
+  			"--prover", "z3", "--theory", "Burstall", "--mem-cell-size", "16");
+  	final Tester<File> PartitionTester = parserTestWithTimeout("--feasibility", "-inline-anno", "--sound", 
+  			"--prover", "z3", "--theory", "Partition", "--mem-cell-size", "16");
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionTester, false);
   }
   
   @Test
