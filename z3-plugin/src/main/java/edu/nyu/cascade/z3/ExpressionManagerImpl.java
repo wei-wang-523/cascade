@@ -1,5 +1,6 @@
 package edu.nyu.cascade.z3;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
@@ -279,8 +280,23 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   }
 
   @Override
+  public BitVectorExpressionImpl bitVectorConstant(int c) {
+    return BitVectorExpressionImpl.mkConstant(this, c);
+  }
+  
+  @Override
+  public BitVectorExpressionImpl bitVectorConstant(long c) {
+    return BitVectorExpressionImpl.mkConstant(this, c);
+  }
+  
+  @Override
   public BitVectorExpressionImpl bitVectorConstant(String rep) {
     return BitVectorExpressionImpl.mkConstant(this, rep);
+  }
+  
+  @Override
+  public BitVectorExpressionImpl bitVectorConstant(BigInteger c) {
+    return BitVectorExpressionImpl.mkConstant(this, c);
   }
   
   @Override
@@ -371,6 +387,16 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   
   @Override
   public IntegerExpressionImpl constant(int c)  {
+    return IntegerExpressionImpl.mkConstant(this, c);
+  }
+  
+  @Override
+  public IntegerExpressionImpl constant(long c)  {
+    return IntegerExpressionImpl.mkConstant(this, c);
+  }
+  
+  @Override
+  public IntegerExpressionImpl constant(BigInteger c)  {
     return IntegerExpressionImpl.mkConstant(this, c);
   }
 

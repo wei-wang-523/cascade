@@ -225,11 +225,11 @@ public class TheoremProverImpl implements TheoremProver {
 
       Expr z3Expr = getExpressionManager().toZ3Expr(expr);
       
-      if (IOUtils.debugEnabled()) {        
+      if (IOUtils.debugEnabled()) {
         IOUtils.debug().pln(
-                            "Simplified: "
-                                + z3Expr.Simplify()
-                                    .toString()).flush();
+        		"Simplified: "
+        				+ z3Expr.Simplify()
+        				.toString()).flush();
       }
       
       debugCommand("(assert " + z3Expr.Simplify().toString() + ")");
@@ -284,11 +284,11 @@ public class TheoremProverImpl implements TheoremProver {
       final ExpressionManagerImpl exprManager = getExpressionManager();
       Expr z3Expr = exprManager.toZ3Expr(exprManager.not(expr));
       
-      if (IOUtils.debugEnabled()) {        
-        IOUtils.debug().pln(
-                            "Simplified: "
-                                + z3Expr.Simplify()
-                                    .toString()).flush();
+      if (IOUtils.debugEnabled()) {
+      	IOUtils.debug().pln(
+      			"Simplified: "
+      					+ z3Expr.Simplify()
+        					.toString()).flush();
       }      
 //      IOUtils.out().println(ManagementFactory.getRuntimeMXBean().getName());
       

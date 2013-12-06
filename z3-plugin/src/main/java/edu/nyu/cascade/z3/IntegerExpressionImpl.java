@@ -9,6 +9,7 @@ import static edu.nyu.cascade.prover.Expression.Kind.POW;
 import static edu.nyu.cascade.prover.Expression.Kind.UNARY_MINUS;
 import static edu.nyu.cascade.prover.Expression.Kind.MOD;
 
+import java.math.BigInteger;
 import java.util.concurrent.ExecutionException;
 
 import com.google.common.base.Preconditions;
@@ -31,29 +32,37 @@ import edu.nyu.cascade.util.CacheException;
 public final class IntegerExpressionImpl extends ExpressionImpl implements
     IntegerExpression {
   
-  private static final LoadingCache<ExpressionManagerImpl, LoadingCache<Integer, IntegerExpressionImpl>> constantCache = CacheBuilder
+  private static final LoadingCache<ExpressionManagerImpl, LoadingCache<BigInteger, IntegerExpressionImpl>> constantCache = CacheBuilder
       .newBuilder().build(
-          new CacheLoader<ExpressionManagerImpl, LoadingCache<Integer, IntegerExpressionImpl>>(){
-            public LoadingCache<Integer, IntegerExpressionImpl> load(final ExpressionManagerImpl exprManager) {
-              return CacheBuilder.newBuilder().build(new CacheLoader<Integer, IntegerExpressionImpl>(){
-                public IntegerExpressionImpl load(Integer value) {
+          new CacheLoader<ExpressionManagerImpl, LoadingCache<BigInteger, IntegerExpressionImpl>>(){
+            public LoadingCache<BigInteger, IntegerExpressionImpl> load(final ExpressionManagerImpl exprManager) {
+              return CacheBuilder.newBuilder().build(new CacheLoader<BigInteger, IntegerExpressionImpl>(){
+                public IntegerExpressionImpl load(BigInteger value) {
                   return new IntegerExpressionImpl(exprManager, value);
                 }
               });
             }
           });
 
-  static IntegerExpressionImpl mkConstant(ExpressionManagerImpl em, long c) {
+  static IntegerExpressionImpl mkConstant(ExpressionManagerImpl em, long value) {
     try {
-      return constantCache.get(em).get((int)c);
+      return constantCache.get(em).get(BigInteger.valueOf(value));
     } catch (ExecutionException e) {
       throw new CacheException(e);
     }
   }
   
-  static IntegerExpressionImpl mkConstant(ExpressionManagerImpl em, int c) {
+  static IntegerExpressionImpl mkConstant(ExpressionManagerImpl em, int value) {
     try {
-      return constantCache.get(em).get(c);
+      return constantCache.get(em).get(BigInteger.valueOf((long) value));
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
+    }
+  }
+  
+  static IntegerExpressionImpl mkConstant(ExpressionManagerImpl em, BigInteger value) {
+    try {
+      return constantCache.get(em).get(value);
     } catch (ExecutionException e) {
       throw new CacheException(e);
     }
@@ -218,10 +227,10 @@ public final class IntegerExpressionImpl extends ExpressionImpl implements
     super(e);
   }
 
-  private IntegerExpressionImpl(ExpressionManagerImpl em, int value) {
+  private IntegerExpressionImpl(ExpressionManagerImpl em, BigInteger value) {
     super(em, CONSTANT, em.integerType());
     try {
-      setZ3Expression(em.getTheoremProver().getZ3Context().MkInt(value));
+      setZ3Expression(em.getTheoremProver().getZ3Context().MkInt(value.toString()));
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
     }
