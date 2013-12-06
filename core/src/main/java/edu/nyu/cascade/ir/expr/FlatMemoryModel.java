@@ -117,7 +117,7 @@ public class FlatMemoryModel extends AbstractMemoryModel {
       Expression lval,
       Expression rval) {
     Preconditions.checkArgument(lval.getType().equals( addrType ));
-    
+    if(rval.isBoolean()) rval = getExpressionEncoding().castToInteger(rval);
     Expression memory = heapEncoder.updateMemArr(state.getChild(0).asArray(), lval, rval);
     return getUpdatedState(state, memory, state.getChild(1));
   }

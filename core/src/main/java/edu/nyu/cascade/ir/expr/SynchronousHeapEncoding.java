@@ -360,9 +360,6 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	private Expression castExprToCell(Expression rval, Type cellType) {
 		Preconditions.checkArgument(cellType != null);
 	  
-		// cast boolean to value type
-	  if(rval.getType().isBoolean()) rval = encoding.castToInteger(rval);
-	  
 	  if(rval.getType().equals(cellType)) return rval;
 	  
 	  ExpressionManager exprManager = getExpressionManager();
