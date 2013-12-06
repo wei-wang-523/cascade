@@ -16,8 +16,10 @@ import xtc.type.*;
 import xtc.tree.*;
 import xtc.util.SymbolTable.Scope;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ComputationException;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -33,7 +35,6 @@ import edu.nyu.cascade.ir.impl.VarInfo;
 import edu.nyu.cascade.ir.type.IRIntegerType;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.RecursionStrategies.BinaryInfixRecursionStrategy;
@@ -54,40 +55,48 @@ class CExpressionEncoder implements ExpressionEncoder {
       lvalVisitor = new LvalVisitor(this);
     }
     
-    public ExpressionClosure toBoolean(Node node) {
+    private ExpressionClosure toBoolean(Node node) {
       return toBoolean(node, false);
     }
 
-    ExpressionClosure suspend(Expression expr) {
+    private ExpressionClosure suspend(Expression expr) {
       return getMemoryModel().suspend(memory, expr);
     }
     
-    public ExpressionClosure toBoolean(Node node, boolean negated) {
+    private ExpressionClosure toBoolean(Node node, boolean negated) {
       return suspend(encodeBoolean(node,negated));
     }
 
-    public ExpressionClosure toInteger(Node node) {
-      return suspend(encodeInteger(node));
-    }
+//    private ExpressionClosure toInteger(Node node) {
+//      return suspend(encodeInteger(node));
+//    }
+    
+		private ExpressionClosure toExpression(Node node) {
+			return suspend(encodeExpression(node));
+		}
 
-    Expression encodeBoolean(Node node) {
+    private Expression encodeBoolean(Node node) {
       return encodeBoolean(node, false).setNode((GNode) node);
     }
     
-    Expression encodeBoolean(Node node, boolean negated) {
+    private Expression encodeBoolean(Node node, boolean negated) {
       Expression b = coerceToBoolean((Expression) dispatch(node));
       return negated ? encoding.not(b) : b;
     }
 
-    Expression encodeInteger(Node node) {
-      return coerceToInteger((Expression) dispatch(node)).setNode((GNode) node);
+//    private Expression encodeInteger(Node node) {
+//      return coerceToInteger((Expression) dispatch(node)).setNode((GNode) node);
+//    }
+    
+    private Expression encodeExpression(Node node) {
+      return ((Expression) dispatch(node)).setNode((GNode) node);
     }
 
-    Expression coerceToBoolean(Expression e) {      
+    private Expression coerceToBoolean(Expression e) {      
       return encoding.isBoolean(e) ? e : encoding.castToBoolean(e);
     }
     
-    Expression coerceToInteger(Expression e) {       
+    private Expression coerceToInteger(Expression e) {       
         return encoding.isInteger(e) ? e : encoding.castToInteger(e);
     }
     
@@ -110,7 +119,7 @@ class CExpressionEncoder implements ExpressionEncoder {
       Expression condition = encodeBoolean(node.getNode(0));
       Expression trueCase = (Expression) dispatch(node.getNode(1));
       Expression falseCase = (Expression) dispatch(node.getNode(2));
-      return getExpressionManager().ifThenElse(condition, trueCase, falseCase);
+      return encoding.ifThenElse(condition, trueCase, falseCase);
     }
 
     public Expression visitAdditiveExpression(GNode node)
@@ -125,35 +134,38 @@ class CExpressionEncoder implements ExpressionEncoder {
             @Override
             public Expression apply(Expression left, String additiveOperator,
                 Expression right) {
-              try {
-                Type leftType = unwrapped(lookupType(left.getNode()));
-                Type rightType = unwrapped(lookupType(right.getNode()));
-                
-                // multiplied by the size of the type of the pointer
-                if((leftType.isPointer() || leftType.isArray()) 
-                    && (rightType.isArray() || rightType.isPointer()))
+              try {                
+                if(encoding.isPointer(left) && encoding.isPointer(right))
                   throw new IllegalArgumentException("No arithmetic operation between pointers.");
                 
-                if(rightType.isPointer() || rightType.isArray()) {
-                  Expression tmp = right;
-                  right = left;
-                  left = tmp;
-                }
+                Function<Expression, Integer> getFactor = new Function<Expression, Integer>() {
+									@Override
+									public Integer apply(Expression pointer) {
+										Type type = unwrapped(lookupType(pointer.getNode()));
+										if(type.isPointer()) {
+											return sizeofType(type.toPointer().getType());
+										} else if(type.isArray()) {
+											return sizeofType(type.toArray().getType());
+										} else									
+											throw new IllegalArgumentException("Invalid type: " + type);
+									}                	
+                };
                 
-                if(leftType.isPointer()) {
-                  PointerT pointerT = leftType.toPointer();
-                  Type type = pointerT.getType();
-                  right = encoding.times(coerceToInteger(right), encoding.integerConstant(sizeofType(type)));
-                } else if(leftType.isArray()) {
-                  Type cellType = leftType;
-                  while(cellType.isArray()) cellType = unwrapped(cellType.toArray().getType());
-                  right = encoding.times(coerceToInteger(right), encoding.integerConstant(sizeofType(cellType)));
+                // multiplied by the size of the type of the pointer
+                if(encoding.isPointer(left)) {
+                	int factor = getFactor.apply(left);
+                	Expression factorExpr = encoding.integerConstant(factor);
+                  right = encoding.times(coerceToInteger(right), factorExpr);
+                } else if(encoding.isPointer(right)) {
+                	int factor = getFactor.apply(right);
+                	Expression factorExpr = encoding.integerConstant(factor);
+                  left = encoding.times(coerceToInteger(left), factorExpr);
                 }
                 
                 if ("+".equals(additiveOperator)) {
-                  return encoding.plus(coerceToInteger(left), coerceToInteger(right));
+                  return encoding.plus(left, right);
                 } else if ("-".equals(additiveOperator)) {
-                  return encoding.minus(coerceToInteger(left), coerceToInteger(right));
+                  return encoding.minus(left, right);
                 } else {
                   throw new ExpressionFactoryException("Invalid operation: " + additiveOperator);
                 }
@@ -212,9 +224,9 @@ class CExpressionEncoder implements ExpressionEncoder {
                 if ("=".equals(assignmentOperator)) {
                   return right;
                 } else if ("+=".equals(assignmentOperator)) {
-                  return encoding.plus(coerceToInteger(left), coerceToInteger(right));
+                  return encoding.plus(left, coerceToInteger(right));
                 } else if ("-=".equals(assignmentOperator)) {
-                  return encoding.minus(coerceToInteger(left), coerceToInteger(right));
+                  return encoding.minus(left, coerceToInteger(right));
                 } else {
                   throw new UnsupportedOperationException(assignmentOperator);
                 }
@@ -250,7 +262,8 @@ class CExpressionEncoder implements ExpressionEncoder {
         throws ExpressionFactoryException {
       Type type = lookupType(node);
       int constVal = (int) type.getConstant().longValue();
-      Expression res = encoding.castConstant(constVal, type);
+//      Expression res = encoding.castConstant(constVal, type);
+      Expression res = encoding.integerConstant(constVal);
       return res.setNode(node);
     }
 
@@ -263,9 +276,9 @@ class CExpressionEncoder implements ExpressionEncoder {
               try {
                 Expression b;
                 if ("==".equals(eqOp)) {
-                  b = encoding.eq(coerceToInteger(left), coerceToInteger(right));
+                  b = encoding.eq(left, right);
                 } else if ("!=".equals(eqOp)) {
-                  b = encoding.neq(coerceToInteger(left), coerceToInteger(right));
+                  b = encoding.neq(left, right);
                 } else {
                   throw new ExpressionFactoryException("Invalid operation: " + eqOp.toString());
                 }
@@ -293,61 +306,59 @@ class CExpressionEncoder implements ExpressionEncoder {
       if (funNode.hasName("PrimaryIdentifier")) {
         String name = funNode.getString(0);
         Node argList = node.getNode(1);
+        MemoryModel memModel = getMemoryModel();        
         
         if( ReservedFunction.FUN_VALID.equals(name) ) {
           Preconditions.checkArgument(argList.size() == 2 || argList.size() == 1);
           List<Expression> argExprs = (List<Expression>) dispatch(argList);
           if(argExprs.size() == 1)
-            res = getMemoryModel().valid(memory, argExprs.get(0));
+            res = memModel.valid(memory, argExprs.get(0));
           else
-            res = getMemoryModel().valid(memory, argExprs.get(0), argExprs.get(1));
+            res = memModel.valid(memory, argExprs.get(0), argExprs.get(1));
         } else if( ReservedFunction.FUN_VALID_MALLOC.equals(name)) {
           Preconditions.checkArgument(argList.size() == 2);
           List<Expression> argExprs = (List<Expression>) dispatch(argList);
-          res = getMemoryModel().valid_malloc(memory, argExprs.get(0), argExprs.get(1));
+          res = memModel.valid_malloc(memory, argExprs.get(0), argExprs.get(1));
         } else if( ReservedFunction.FUN_VALID_FREE.equals(name)) {
           Preconditions.checkArgument(argList.size() == 1);
           List<Expression> argExprs = (List<Expression>) dispatch(argList);
-          res = getMemoryModel().valid_free(memory, argExprs.get(0));
+          res = memModel.valid_free(memory, argExprs.get(0));
         } else if( ReservedFunction.FUN_ALLOCATED.equals(name) ) {
           Preconditions.checkArgument(argList.size() == 2);
           Expression argExpr0 = (Expression) lvalVisitor.dispatch(argList.getNode(0));
           Expression argExpr1 = (Expression) dispatch(argList.getNode(1));
-          res = getMemoryModel().allocated(memory, argExpr0, argExpr1);
+          res = memModel.allocated(memory, argExpr0, argExpr1);
         } else if( ReservedFunction.FUN_IMPLIES.equals(name) ) {
           Preconditions.checkArgument(argList.size() == 2);
           List<Expression> argExprs = (List<Expression>) dispatch(argList);
-          res = getExpressionManager().implies(argExprs.get(0), argExprs.get(1));
+          res = encoding.implies(argExprs.get(0), argExprs.get(1));
         } else if( ReservedFunction.FUN_FORALL.equals(name) || ReservedFunction.FUN_EXISTS.equals(name)) {
-          ExpressionManager exprManager = getExpressionManager();
           List<Expression> args = (List<Expression>) dispatch(argList);
           int lastIdx = argList.size()-1;
           Expression body = args.remove(lastIdx);
-          List<VariableExpression> argVars = Lists.newArrayList();
+          ImmutableList.Builder<Expression> argVarsBuilder = new ImmutableList.Builder<Expression>();
           for(int idx = 0; idx < lastIdx; idx++) {
             GNode argNode = argList.getGeneric(idx);
             assert(argNode.hasName("PrimaryIdentifier"));
             String argName = argNode.getString(0);
-            VariableExpression argVar = exprManager.variable(argName,
-                args.get(idx).getType(), false);
-            argVars.add(argVar);
+            Expression argVar = encoding.variable(argName, IRIntegerType.getInstance(), false);
+            argVarsBuilder.add(argVar);
           }
-          body = body.subst(args, argVars);
+          body = body.subst(args, argVarsBuilder.build());
 
           if( ReservedFunction.FUN_FORALL.equals(name) )  
-            res = exprManager.forall(argVars, body);
+            res = encoding.forall(argVarsBuilder.build(), body);
           else  
-            res = exprManager.exists(argVars, body);         
+            res = encoding.exists(argVarsBuilder.build(), body);         
         } else if( ReservedFunction.FUN_REACH.equals(name) ) {
           Preconditions.checkArgument(argList.size() == 3);
           String fieldName = argList.getNode(0).getString(0);
           Expression fromExpr = (Expression) dispatch(argList.getNode(1));
           Expression toExpr = (Expression) dispatch(argList.getNode(2));
-          MemoryModel mm = getMemoryModel();
-          if(mm instanceof ReachMemoryModel) {
-            res = ((ReachMemoryModel) mm).reach(fieldName, fromExpr, toExpr, toExpr);
+          if(memModel instanceof ReachMemoryModel) {
+            res = ((ReachMemoryModel) memModel).reach(fieldName, fromExpr, toExpr, toExpr);
           } else {
-            res = getExpressionManager().ff();         
+            res = encoding.ff();         
           }
         } else if( ReservedFunction.FUN_CREATE_ACYCLIC_LIST.equals(name) || 
             ReservedFunction.FUN_CREATE_CYCLIC_LIST.equals(name) ||
@@ -361,30 +372,29 @@ class CExpressionEncoder implements ExpressionEncoder {
           int size = sizeofType(type);
           Map<String, Integer> offMap = getOffsetMap(type);
           
-          MemoryModel mm = getMemoryModel();
-          if(mm instanceof ReachMemoryModel) {
+          if(memModel instanceof ReachMemoryModel) {
+          	ReachMemoryModel reachMemModel = ((ReachMemoryModel) memModel);
             if(ReservedFunction.FUN_CREATE_ACYCLIC_LIST.equals(name))
-              res = ((ReachMemoryModel) mm).create_list(memory,
+              res = reachMemModel.create_list(memory,
                   ptrExpr, length, size, offMap, true, true);
             else if(ReservedFunction.FUN_CREATE_CYCLIC_LIST.equals(name))
-              res = ((ReachMemoryModel) mm).create_list(memory,
+              res = reachMemModel.create_list(memory,
                   ptrExpr, length, size, offMap, false, true);
             else if(ReservedFunction.FUN_CREATE_ACYCLIC_DLIST.equals(name))
-              res = ((ReachMemoryModel) mm).create_list(memory,
+              res = reachMemModel.create_list(memory,
                   ptrExpr, length, size, offMap, true, false);
             else
-              res = ((ReachMemoryModel) mm).create_list(memory,
+              res = reachMemModel.create_list(memory,
                   ptrExpr, length, size, offMap, false, false);
           } else {
-            res = getExpressionManager().tt();
+            res = encoding.tt();
           }
         } else if( ReservedFunction.FUN_ISROOT.equals(name) ) {
           Preconditions.checkArgument(argList.size() == 2);
           String fieldname = argList.getNode(0).getString(0);
           Expression ptrExpr = (Expression) dispatch(argList.getNode(1));
-          MemoryModel mm = getMemoryModel();
-          if(mm instanceof ReachMemoryModel) {
-            res = ((ReachMemoryModel) mm).isRoot(fieldname, ptrExpr);
+          if(memModel instanceof ReachMemoryModel) {
+            res = ((ReachMemoryModel) memModel).isRoot(fieldname, ptrExpr);
           } else {
             throw new ExpressionFactoryException("Invalid memory model.");
           }
@@ -432,7 +442,8 @@ class CExpressionEncoder implements ExpressionEncoder {
         else 
           constVal = Integer.parseInt(numStr);
       }
-      Expression res = encoding.castConstant(constVal, type);
+//      Expression res = encoding.castConstant(constVal, type);
+      Expression res = encoding.integerConstant(constVal);
       return res.setNode(node);
     }
 
@@ -762,12 +773,12 @@ class CExpressionEncoder implements ExpressionEncoder {
     private final Expression memory;
     private final ExpressionVisitor exprVisitor;
     
-    LvalVisitor() {
+    private LvalVisitor() {
       this.exprVisitor = new ExpressionVisitor();
       this.memory = exprVisitor.memory;
     }
 
-    LvalVisitor(ExpressionVisitor exprVisitor) {
+    private LvalVisitor(ExpressionVisitor exprVisitor) {
       this.exprVisitor = exprVisitor;
       this.memory = exprVisitor.memory;
     }
@@ -916,8 +927,8 @@ class CExpressionEncoder implements ExpressionEncoder {
   }
 
   @Override
-  public ExpressionClosure toInteger(Node node) {
-    return new ExpressionVisitor().toInteger(node);
+  public ExpressionClosure toExpression(Node node) {
+    return new ExpressionVisitor().toExpression(node);
   }
 
   @Override
@@ -941,10 +952,10 @@ class CExpressionEncoder implements ExpressionEncoder {
   }
 
   @Override
-  public ExpressionClosure toInteger(Node node, Scope scope) {
+  public ExpressionClosure toExpression(Node node, Scope scope) {
     Scope oldScope = this.scope;
     setScope(scope);
-    ExpressionClosure closure = toInteger(node);
+    ExpressionClosure closure = toExpression(node);
     setScope(oldScope);
     return closure;
   }
