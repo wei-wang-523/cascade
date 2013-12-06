@@ -514,10 +514,20 @@ public interface ExpressionEncoding {
    * @param e
    *          an expression of integer type (i.e., e.isInteger() should return
    *          true)
-   * @return an integer -encoded expression
+   * @return an integer-encoded expression
    * */
   Expression ofInteger(Expression e);
 
+  /** 
+   * Convert a tuple expression to a pointer in the encoding.
+   * 
+   * @param e
+   *          an expression of tuple type (i.e., e.isTuple() should return
+   *          true)
+   * @return an pointer-encoded expression
+   * */
+  Expression ofPointer(Expression e);
+  
   /**
    * The integer constant 1. May be more efficient than
    * <code>integerConstant(1)</code> in some implementations.

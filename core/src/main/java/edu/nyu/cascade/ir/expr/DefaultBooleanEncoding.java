@@ -36,6 +36,12 @@ public class DefaultBooleanEncoding extends
       Iterable<? extends VariableExpression> ids, BooleanExpression expr) {
     return expr.forall(ids);
   }
+  
+  @Override
+  public BooleanExpression exists(
+      Iterable<? extends VariableExpression> ids, BooleanExpression expr) {
+    return expr.exists(ids);
+  }
 
   @Override
   public BooleanExpression iff(BooleanExpression lhs, BooleanExpression rhs) {

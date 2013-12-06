@@ -14,6 +14,7 @@ public interface BooleanEncoding<T extends Expression> extends TypeEncoding<T> {
    */
   ExpressionManager getExpressionManager();
   T forall(Iterable<? extends VariableExpression> ids, T expr);
+  T exists(Iterable<? extends VariableExpression> ids, T expr);
   T ff();
   T iff(T lhs, T rhs);
   T implies(T lhs, T rhs);

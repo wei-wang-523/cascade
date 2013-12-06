@@ -11,12 +11,7 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
 	
   public static PointerExpressionEncoding create(
       ExpressionManager exprManager) throws ExpressionFactoryException
-  {     
-    int intCellSize = 
-    		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
-    				(int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * CellSize) 
-    				: CellSize;
-    
+  {
     IntegerEncoding<?> integerEncoding = null;
     if(Preferences.isSet(Preferences.OPTION_NON_OVERFLOW)) {
     	integerEncoding = new DefaultIntegerEncoding(exprManager);

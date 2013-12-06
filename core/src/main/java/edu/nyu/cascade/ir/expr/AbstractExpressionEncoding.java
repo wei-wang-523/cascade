@@ -56,9 +56,14 @@ public abstract class AbstractExpressionEncoding
   						Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE) 
   						: DefaultSize;
 
- protected static final int SizeTSize = 
+  protected static final int SizeTSize = 
   		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
-  				(int) (cAnalyzer.getSize(xtc.type.NumberT.U_LONG) * CellSize) 
+  				(int) (cAnalyzer.getSize(xtc.type.NumberT.U_INT) * CellSize) 
+  				: CellSize;
+  				
+  protected static final int intCellSize = 
+  		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
+  				(int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * CellSize) 
   				: CellSize;
 
   protected final IntegerEncoding<? extends Expression> integerEncoding;
@@ -127,15 +132,6 @@ public abstract class AbstractExpressionEncoding
     return varBindings.get(Identifiers.fullyQualify(qName));
   }
   
-  /** {@inheritDoc}
-   * 
-   * Default implementation: encoding using <code>minus()</code> and
-   * <code>one()</code>.
-   */
-  public Expression decr(Expression expr) {
-    return minus(expr, one());
-  }
-  
   @Override
   public Expression functionCall(String name, Expression... args) {
     return functionCall(name,Lists.newArrayList(args));
@@ -174,6 +170,7 @@ public abstract class AbstractExpressionEncoding
    * Default implementation: encoding using <code>plus()</code> and
    * <code>one()</code>.
    */
+  @Override
   public Expression incr(Expression expr) {
     return plus(expr, one());
   }
@@ -209,15 +206,8 @@ public abstract class AbstractExpressionEncoding
   }
 
   @Override
-  public Expression or(Expression... disjuncts)
-      {
+  public Expression or(Expression... disjuncts) {
     return or(Arrays.asList(disjuncts));
-  }
-
-  @Override
-  public Expression plus(Expression... args)
-      {
-    return plus(Arrays.asList(args));
   }
 
   @Override
@@ -267,7 +257,32 @@ public abstract class AbstractExpressionEncoding
     return ie.bitwiseAnd(ie.ofExpression(a), ie.ofExpression(b));
   }
   
-  @Override
+  /** {@inheritDoc}
+	 * 
+	 * Default implementation: encoding using <code>minus()</code> and
+	 * <code>one()</code>.
+	 */
+	@Override
+	public Expression decr(Expression expr) {
+		Preconditions.checkArgument(isInteger(expr) || isPointer(expr));
+		if(isInteger(expr)) {
+			return decr_(getIntegerEncoding(), expr);
+		} else {
+			return decr_(getPointerEncoding(), expr);
+		}
+	}
+
+	private <T extends Expression> T decr_(IntegerEncoding<T> ie, Expression expr) {
+		Preconditions.checkArgument(isInteger(expr));
+		return ie.decr(ie.ofExpression(expr));
+	}
+	
+	private <T extends Expression> T decr_(PointerEncoding<T> pe, Expression expr) {
+		Preconditions.checkArgument(isPointer(expr));
+		return pe.decr(pe.ofExpression(expr));
+	}
+
+	@Override
   public Expression lshift(Expression a, Expression b) {
     return lshift_(getIntegerEncoding(), a, b);
   }
@@ -275,12 +290,7 @@ public abstract class AbstractExpressionEncoding
   private <T extends Expression> Expression lshift_(IntegerEncoding<T> ie, Expression a, Expression b) {
     Preconditions.checkArgument(isInteger(a));
     Preconditions.checkArgument(isInteger(b));
-    if(ie instanceof BitVectorIntegerEncoding) {
-      BitVectorIntegerEncoding bvIntEncoding = (BitVectorIntegerEncoding) ie;
-      return bvIntEncoding.lshift(bvIntEncoding.ofExpression(a), bvIntEncoding.ofExpression(b));
-    } else {
-      throw new UnsupportedOperationException("lshift_ is not supported in integer encoding.");
-    }
+    return ie.lshift(ie.ofExpression(a), ie.ofExpression(b));
   }
   
   @Override
@@ -291,12 +301,7 @@ public abstract class AbstractExpressionEncoding
   private <T extends Expression> Expression rshift_(IntegerEncoding<T> ie, Expression a, Expression b) {
     Preconditions.checkArgument(isInteger(a));
     Preconditions.checkArgument(isInteger(b));
-    if(ie instanceof BitVectorIntegerEncoding) {
-      BitVectorIntegerEncoding bvIntEncoding = (BitVectorIntegerEncoding) ie;
-      return bvIntEncoding.rshift(bvIntEncoding.ofExpression(a), bvIntEncoding.ofExpression(b));
-    } else {
-      throw new UnsupportedOperationException("lshift_ is not supported in integer encoding.");
-    }
+    return ie.rshift(ie.ofExpression(a), ie.ofExpression(b));
   }
   
   @Override
@@ -356,8 +361,8 @@ public abstract class AbstractExpressionEncoding
     }
     return ie.distinct(iTerms);
   }
-  
-  public TypeEncoding<? extends Expression> encodingForType(IRType type) {
+	
+	private TypeEncoding<? extends Expression> encodingForType(IRType type) {
     switch (type.getKind()) {
     case ARRAY:
       // TODO(cconway): Handle multi-dimensional arrays
@@ -379,24 +384,29 @@ public abstract class AbstractExpressionEncoding
 			throw new UnsupportedOperationException("type=" + type);
     }
   }
-  
-  private int getMaxSize(Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(lhs.isBitVector() && rhs.isBitVector());
-    return Math.max(lhs.asBitVector().getSize(), rhs.asBitVector().getSize());
-  }
 
   @Override
   public Expression eq(Expression lhs, Expression rhs) {
-    if(isInteger(lhs) && isInteger(rhs) && 
-        !lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
-    }
+//    if(isInteger(lhs) && isInteger(rhs) && 
+//        !lhs.getType().equals(rhs.getType())) {
+//      int size = getMaxSize(lhs, rhs);
+//      lhs = lhs.asBitVector().zeroExtend(size);
+//      rhs = rhs.asBitVector().zeroExtend(size);
+//    }
     return getBooleanEncoding().ofBooleanExpression( lhs.eq((Expression)rhs) );
   }
   
   @Override
+	public Expression ff() {
+	  return getBooleanEncoding().ff();
+	}
+
+	@Override
+	public Expression tt() {
+	  return getBooleanEncoding().tt();
+	}
+
+	@Override
   public Expression exists(Expression var, Expression p) {
     Preconditions.checkArgument(var.isVariable());
     return exists_(getBooleanEncoding(), Lists.newArrayList(var), p);
@@ -445,12 +455,7 @@ public abstract class AbstractExpressionEncoding
 					}
     });
     
-    return be.forall(vars_, be.ofExpression(p));
-  }
-
-  @Override
-  public Expression ff() {
-    return getBooleanEncoding().ff();
+    return be.exists(vars_, be.ofExpression(p));
   }
 
   @Override
@@ -526,80 +531,194 @@ public abstract class AbstractExpressionEncoding
   }
 
   @Override
+	public boolean isArray(Expression expr) {
+	  return getArrayEncoding().isEncodingFor(expr);
+	}
+
+	@Override
+	public boolean isBoolean(Expression expr) {
+	  return getBooleanEncoding().isEncodingFor(expr);
+	}
+
+	@Override
+	public boolean isInteger(Expression expr) {
+	  return getIntegerEncoding().isEncodingFor(expr);
+	}
+
+	@Override
+	public boolean isPointer(Expression expr) {
+		return getPointerEncoding().isEncodingFor(expr);
+	}
+
+	@Override
+	public boolean isVariable(Expression expr) {
+	  return expr.isVariable();
+	}
+
+	@Override
   public Expression greaterThan(Expression lhs, Expression rhs) {
-    return ofBoolean(greaterThan_(getIntegerEncoding(), lhs, rhs));
+  	if(isInteger(lhs))
+  		return ofBoolean(greaterThan_(getIntegerEncoding(), lhs, rhs));
+  	else
+  		return ofBoolean(greaterThan_(getPointerEncoding(), lhs, rhs));
   }
 
   private <T extends Expression> BooleanExpression greaterThan_(
       IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
-    if(!lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
-    }
+    Preconditions.checkArgument(isInteger(lhs));
+    Preconditions.checkArgument(isInteger(rhs));
     return ie.greaterThan(ie.ofExpression(lhs), ie.ofExpression(rhs));
+  }
+  
+  private <T extends Expression> BooleanExpression greaterThan_(
+      PointerEncoding<T> pe, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isPointer(lhs));
+    Preconditions.checkArgument(isPointer(rhs));
+    return pe.greaterThan(pe.ofExpression(lhs), pe.ofExpression(rhs));
   }
   
   @Override
   public Expression signedGreaterThan(Expression lhs, Expression rhs) {
-    return ofBoolean(signedGreaterThan_(getIntegerEncoding(), lhs, rhs));
+  	return ofBoolean(signedGreaterThan_(getIntegerEncoding(), lhs, rhs));
   }
 
   private <T extends Expression> BooleanExpression signedGreaterThan_(
       IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
-    if(!lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
-    }
+    Preconditions.checkArgument(isInteger(lhs));
+    Preconditions.checkArgument(isInteger(rhs));
     return ie.signedGreaterThan(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
 
   @Override
   public Expression greaterThanOrEqual(Expression lhs, Expression rhs) {
-    return ofBoolean(greaterThanOrEqual_(getIntegerEncoding(), lhs,
-        rhs));
+  	if(isInteger(lhs))
+  		return ofBoolean(greaterThanOrEqual_(getIntegerEncoding(), lhs, rhs));
+  	else
+  		return ofBoolean(greaterThanOrEqual_(getPointerEncoding(), lhs, rhs));
   }
 
   private <T extends Expression> BooleanExpression greaterThanOrEqual_(
       IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
-    if(!lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
-    }
+    Preconditions.checkArgument(isInteger(lhs));
+    Preconditions.checkArgument(isInteger(rhs));
     return ie.greaterThanOrEqual(ie.ofExpression(lhs), ie.ofExpression(rhs));
+  }
+  
+  private <T extends Expression> BooleanExpression greaterThanOrEqual_(
+      PointerEncoding<T> pe, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isPointer(lhs));
+    Preconditions.checkArgument(isPointer(rhs));
+    return pe.greaterThanOrEqual(pe.ofExpression(lhs), pe.ofExpression(rhs));
   }
   
   @Override
   public Expression signedGreaterThanOrEqual(Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isInteger(lhs));
+    Preconditions.checkArgument(isInteger(rhs));
     return ofBoolean(signedGreaterThanOrEqual_(getIntegerEncoding(), lhs,
         rhs));
   }
 
   private <T extends Expression> BooleanExpression signedGreaterThanOrEqual_(
       IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
-    if(!lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
-    }
+    Preconditions.checkArgument(isInteger(lhs));
+    Preconditions.checkArgument(isInteger(rhs));
     return ie.signedGreaterThanOrEqual(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
 
   @Override
+	public Expression lessThan(Expression lhs, Expression rhs) {
+  	if(isInteger(lhs))
+  		return ofBoolean(lessThan_(getIntegerEncoding(), lhs, rhs));
+  	else
+  		return ofBoolean(lessThan_(getPointerEncoding(), lhs, rhs));
+	}
+
+	private <T extends Expression> BooleanExpression lessThan_(IntegerEncoding<T> ie,
+	    Expression lhs, Expression rhs) {
+	  Preconditions.checkArgument(isInteger(lhs));
+	  Preconditions.checkArgument(isInteger(rhs));
+	  return ie.lessThan(ie.ofExpression(lhs), ie.ofExpression(rhs));
+	}
+	
+	private <T extends Expression> BooleanExpression lessThan_(PointerEncoding<T> pe,
+	    Expression lhs, Expression rhs) {
+	  Preconditions.checkArgument(isPointer(lhs));
+	  Preconditions.checkArgument(isPointer(rhs));
+	  return pe.lessThan(pe.ofExpression(lhs), pe.ofExpression(rhs));
+	}
+
+	@Override
+	public Expression signedLessThan(Expression lhs, Expression rhs) {
+	  return ofBoolean(signedLessThan_(getIntegerEncoding(), lhs, rhs));
+	}
+
+	private <T extends Expression> BooleanExpression signedLessThan_(IntegerEncoding<T> ie,
+	    Expression lhs, Expression rhs) {
+	  Preconditions.checkArgument(isInteger(lhs));
+	  Preconditions.checkArgument(isInteger(rhs));
+	  return ie.signedLessThan(ie.ofExpression(lhs), ie.ofExpression(rhs));
+	}
+
+	@Override
+	public Expression lessThanOrEqual(Expression lhs, Expression rhs) {
+  	if(isInteger(lhs))
+  		return ofBoolean(lessThanOrEqual_(getIntegerEncoding(), lhs, rhs));
+  	else
+  		return ofBoolean(lessThanOrEqual_(getPointerEncoding(), lhs, rhs));
+	}
+
+	private <T extends Expression> BooleanExpression lessThanOrEqual_(
+	    IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+		Preconditions.checkArgument(isInteger(lhs));
+	  Preconditions.checkArgument(isInteger(rhs));
+	  return ie.lessThanOrEqual(ie.ofExpression(lhs), ie.ofExpression(rhs));
+	}
+	
+	private <T extends Expression> BooleanExpression lessThanOrEqual_(
+	    PointerEncoding<T> pe, Expression lhs, Expression rhs) {
+		Preconditions.checkArgument(isPointer(lhs));
+	  Preconditions.checkArgument(isPointer(rhs));
+	  return pe.lessThanOrEqual(pe.ofExpression(lhs), pe.ofExpression(rhs));
+	}
+
+	@Override
+	public Expression signedLessThanOrEqual(Expression lhs, Expression rhs) {
+	  return ofBoolean(signedLessThanOrEqual_(getIntegerEncoding(), lhs, rhs));
+	}
+
+	private <T extends Expression> BooleanExpression signedLessThanOrEqual_(
+	    IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+		Preconditions.checkArgument(isInteger(lhs));
+	  Preconditions.checkArgument(isInteger(rhs));
+	  return ie.signedLessThanOrEqual(ie.ofExpression(lhs), ie.ofExpression(rhs));
+	}
+
+	@Override
   public Expression ifThenElse(Expression bool, Expression thenExpr, Expression elseExpr) {
-    return ifThenElse_(getIntegerEncoding(), toBoolean(getBooleanEncoding(),
+  	Preconditions.checkArgument((isInteger(thenExpr) && isInteger(elseExpr))
+  			|| (isPointer(thenExpr) && isPointer(elseExpr)));
+  	if(isInteger(thenExpr))
+  		return ifThenElse_(getIntegerEncoding(), toBoolean(getBooleanEncoding(),
         bool), thenExpr, elseExpr);
+  	else
+  		return ifThenElse_(getPointerEncoding(), toBoolean(getBooleanEncoding(),
+          bool), thenExpr, elseExpr);
   }
 
   private <T extends Expression> T ifThenElse_(IntegerEncoding<T> ie,
       BooleanExpression b, Expression thenExpr, Expression elseExpr) {
+    Preconditions.checkArgument(isInteger(thenExpr));
+    Preconditions.checkArgument(isInteger(elseExpr));
     return ie.ifThenElse(b, ie.ofExpression(thenExpr), ie
+        .ofExpression(elseExpr));
+  }
+  
+  private <T extends Expression> T ifThenElse_(PointerEncoding<T> pe,
+      BooleanExpression b, Expression thenExpr, Expression elseExpr) {
+    Preconditions.checkArgument(isPointer(thenExpr));
+    Preconditions.checkArgument(isPointer(elseExpr));
+    return pe.ifThenElse(b, pe.ofExpression(thenExpr), pe
         .ofExpression(elseExpr));
   }
   
@@ -615,121 +734,136 @@ public abstract class AbstractExpressionEncoding
   
   @Override
   public Expression indexArray(Expression array, Expression index) {
-    return (Expression) indexArray_(getArrayEncoding(),array,index);
+    return indexArray_(getArrayEncoding(),array,index);
   }
 
-  private <T extends Expression> Expression indexArray_(ArrayEncoding<T> ae, Expression array, Expression index) {
+  private <T extends Expression> Expression indexArray_(ArrayEncoding<T> ae, 
+  		Expression array, Expression index) {
     return ae.index(ae.ofExpression(array), index);
   }
 
   @Override
+	public Expression updateArray(Expression array, Expression index, Expression newValue) {
+	  return updateArray_(getArrayEncoding(),array,index,newValue);
+	}
+
+	private <T extends Expression> Expression updateArray_(ArrayEncoding<T> ae, 
+	    Expression array, Expression index, Expression newValue) {
+	  return ae.update(ae.ofExpression(array), index, newValue);
+	}
+
+	@Override
   public Expression integerConstant(int c) {
     return getIntegerEncoding().constant(c);
   }
+	
+  @Override
+	public Expression one() {
+	  return getIntegerEncoding().one();
+	}
 
-  @Override
-  public boolean isArray(Expression expr) {
-    return getArrayEncoding().isEncodingFor(expr);
-  }
+	@Override
+	public Expression zero() {
+	  return getIntegerEncoding().zero();
+	}
 
-  @Override
-  public boolean isBoolean(Expression expr) {
-    return getBooleanEncoding().isEncodingFor(expr);
-  }
+	@Override
+	public Expression plus(Expression... args) {
+	  return plus(Arrays.asList(args));
+	}
 
-  @Override
-  public boolean isInteger(Expression expr) {
-    return getIntegerEncoding().isEncodingFor(expr);
-  }
-  
-  @Override
-  public boolean isPointer(Expression expr) {
-  	return getPointerEncoding().isEncodingFor(expr);
-  }
+	@Override
+	public Expression plus(Expression lhs, Expression rhs) {
+		Preconditions.checkArgument(!(isPointer(lhs) && isPointer(rhs)));
+		if(isPointer(lhs))
+			return plus_(getPointerEncoding(), getIntegerEncoding(), lhs, rhs);
+		else if(isPointer(rhs))
+			return plus_(getPointerEncoding(), getIntegerEncoding(), rhs, lhs);
+		else
+			return plus_(getIntegerEncoding(), lhs, rhs);
+	}
 
-  @Override
-  public boolean isVariable(Expression expr) {
-    return expr.isVariable();
-  }
+	@Override
+	public Expression plus(Iterable<? extends Expression> args) {
+		Iterable<? extends Expression> pointers = Iterables.filter(args, 
+				new Predicate<Expression>(){
+			@Override
+			public boolean apply(Expression arg) {
+				return isPointer(arg);
+			}
+		});
+		
+		if(Iterables.isEmpty(pointers)) {
+			return plus_(getIntegerEncoding(),args);
+		} else {
+			if(Iterables.size(pointers) == 1) {
+				Expression pointer = Iterables.get(pointers, 0);
+				return plus_(getPointerEncoding(), getIntegerEncoding(), pointer, args);
+			} else {
+				throw new IllegalArgumentException("Unsupported operations for multiple pointers.");
+			}
+		}
+	}
 
-  @Override
-  public Expression lessThan(Expression lhs, Expression rhs) {
-    return ofBoolean(lessThan_(getIntegerEncoding(), lhs, rhs));
-  }
-  
-  @Override
-  public Expression signedLessThan(Expression lhs, Expression rhs) {
-    return ofBoolean(signedLessThan_(getIntegerEncoding(), lhs, rhs));
-  }
+	private <T extends Expression> T plus_(
+	    IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+	  Preconditions.checkArgument(isInteger(lhs));
+	  Preconditions.checkArgument(isInteger(rhs));
+	  return ie.plus(ie.ofExpression(lhs), ie.ofExpression(rhs));
+	}
 
-  private <T extends Expression> BooleanExpression lessThan_(IntegerEncoding<T> ie,
-      Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
-    if(!lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
-    }
-    return ie.lessThan(ie.ofExpression(lhs), ie.ofExpression(rhs));
-  }
-  
-  private <T extends Expression> BooleanExpression signedLessThan_(IntegerEncoding<T> ie,
-      Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
-    if(!lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
-    }
-    return ie.signedLessThan(ie.ofExpression(lhs), ie.ofExpression(rhs));
-  }
+	private <T extends Expression> T plus_(IntegerEncoding<T> ie,
+	    Iterable<? extends Expression> terms) {
+	  List<T> iTerms = Lists.newArrayList();
+	  for (Expression t : terms) {
+	    Preconditions.checkArgument(isInteger(t));
+	    iTerms.add(ie.ofExpression(t));
+	  }
+	  return ie.plus(iTerms);
+	}
 
-  @Override
-  public Expression lessThanOrEqual(Expression lhs, Expression rhs) {
-    return ofBoolean(lessThanOrEqual_(getIntegerEncoding(), lhs, rhs));
-  }
+	private <T extends Expression> T plus_(
+	    PointerEncoding<T> pe, IntegerEncoding<?> ie, Expression lhs, Expression rhs) {
+	  Preconditions.checkArgument(isPointer(lhs));
+	  Preconditions.checkArgument(isInteger(rhs));
+	  return pe.plus(pe.ofExpression(lhs), ie.ofExpression(rhs));
+	}
 
-  @Override
-  public Expression signedLessThanOrEqual(Expression lhs, Expression rhs) {
-    return ofBoolean(signedLessThanOrEqual_(getIntegerEncoding(), lhs, rhs));
-  }
-  
-  private <T extends Expression> BooleanExpression lessThanOrEqual_(
-      IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
-    if(!lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
-    }
-    return ie.lessThanOrEqual(ie.ofExpression(lhs), ie.ofExpression(rhs));
-  }
-  
-  private <T extends Expression> BooleanExpression signedLessThanOrEqual_(
-      IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
-    if(!lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
-    }
-    return ie.signedLessThanOrEqual(ie.ofExpression(lhs), ie.ofExpression(rhs));
-  }
+	private <T extends Expression> T plus_(
+	    PointerEncoding<T> pe, final IntegerEncoding<?> ie, Expression lhs, Iterable<? extends Expression> terms) {
+	  Preconditions.checkArgument(isPointer(lhs));
+	  Iterable<Expression> iTerms = Iterables.transform(terms, 
+	  		new Function<Expression, Expression>() {
+					@Override
+          public Expression apply(Expression input) {
+	          Preconditions.checkArgument(isInteger(input));
+	          return ie.ofExpression(input);
+          }
+	  });
+	  return pe.plus(pe.ofExpression(lhs), iTerms);
+	}
 
   @Override
   public Expression minus(Expression lhs, Expression rhs) {
-    return minus_(getIntegerEncoding(), lhs, rhs);
+		Preconditions.checkArgument(!(isPointer(lhs) && isPointer(rhs)));
+		if(isPointer(lhs))
+			return minus_(getPointerEncoding(), getIntegerEncoding(), lhs, rhs);
+		else
+			return minus_(getIntegerEncoding(), lhs, rhs);
   }
 
   private <T extends Expression> T minus_(
     IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
-    if(!lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
-    }
+    Preconditions.checkArgument(isInteger(lhs));
+    Preconditions.checkArgument(isInteger(rhs));
     return ie.minus(ie.ofExpression(lhs), ie.ofExpression(rhs));
+  }
+  
+  private <T extends Expression> T minus_(
+      PointerEncoding<T> pe, IntegerEncoding<?> ie, Expression lhs, Expression rhs) {
+    Preconditions.checkArgument(isPointer(lhs));
+    Preconditions.checkArgument(isInteger(rhs));
+    return pe.minus(pe.ofExpression(lhs), ie.ofExpression(rhs));
   }
   
   @Override
@@ -739,12 +873,8 @@ public abstract class AbstractExpressionEncoding
 
   private <T extends Expression> T times_(
       IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
-    if(!lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
-    }
+    Preconditions.checkArgument(isInteger(lhs));
+    Preconditions.checkArgument(isInteger(rhs));
     return ie.times(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
   
@@ -755,12 +885,8 @@ public abstract class AbstractExpressionEncoding
 
   private <T extends Expression> T divide_(
       IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
-    if(!lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
-    }
+    Preconditions.checkArgument(isInteger(lhs));
+    Preconditions.checkArgument(isInteger(rhs));
     return ie.divide(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
 
@@ -771,12 +897,8 @@ public abstract class AbstractExpressionEncoding
 
   private <T extends Expression> T mod_(
       IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
-    if(!lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
-    }
+    Preconditions.checkArgument(isInteger(lhs));
+    Preconditions.checkArgument(isInteger(rhs));
     return ie.mod(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
   
@@ -787,39 +909,32 @@ public abstract class AbstractExpressionEncoding
 
   private <T extends Expression> Expression rem_(
       IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
-    if(!lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
-    }
-    if(ie instanceof BitVectorIntegerEncoding) {
-      BitVectorIntegerEncoding bvIntEncoding = (BitVectorIntegerEncoding) ie;
-      return bvIntEncoding.rem(bvIntEncoding.ofExpression(lhs), bvIntEncoding.ofExpression(rhs));
-    } else {
-      throw new UnsupportedOperationException("rem_ is not supported in integer encoding.");
-    }
+    Preconditions.checkArgument(isInteger(lhs));
+    Preconditions.checkArgument(isInteger(rhs));
+    return ie.rem(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
   
   @Override
+	public Expression uminus(Expression expr) {
+		return uminus_(getIntegerEncoding(), expr);
+	}
+
+	private <T extends Expression> Expression uminus_(
+	    IntegerEncoding<T> ie, Expression lhs) {
+		Preconditions.checkArgument(isInteger(lhs));
+		return ie.uminus(ie.ofExpression(lhs));
+	}
+
+	@Override
   public Expression signedRem(Expression lhs, Expression rhs) {
     return signedRem_(getIntegerEncoding(), lhs, rhs);
   }
 
   private <T extends Expression> Expression signedRem_(
       IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
-    if(!lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
-    }
-    if(ie instanceof BitVectorIntegerEncoding) {
-      BitVectorIntegerEncoding bvIntEncoding = (BitVectorIntegerEncoding) ie;
-      return bvIntEncoding.signedRem(bvIntEncoding.ofExpression(lhs), bvIntEncoding.ofExpression(rhs));
-    } else {
-      throw new UnsupportedOperationException("signedRem_ is not supported in integer encoding.");
-    }
+    Preconditions.checkArgument(isInteger(lhs));
+    Preconditions.checkArgument(isInteger(rhs));
+    return ie.signedRem(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
   
   @Override
@@ -829,18 +944,9 @@ public abstract class AbstractExpressionEncoding
 
   private <T extends Expression> Expression signedDivide_(
       IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
-    if(!lhs.getType().equals(rhs.getType())) {
-      int size = getMaxSize(lhs, rhs);
-      lhs = lhs.asBitVector().zeroExtend(size);
-      rhs = rhs.asBitVector().zeroExtend(size);
-    }
-    if(ie instanceof BitVectorIntegerEncoding) {
-      BitVectorIntegerEncoding bvIntEncoding = (BitVectorIntegerEncoding) ie;
-      return bvIntEncoding.signedDivide(bvIntEncoding.ofExpression(lhs), bvIntEncoding.ofExpression(rhs));
-    } else {
-      throw new UnsupportedOperationException("signedDivide_ is not supported in integer encoding.");
-    }
+  	Preconditions.checkArgument(isInteger(lhs));
+    Preconditions.checkArgument(isInteger(rhs));
+    return ie.signedDivide(ie.ofExpression(lhs), ie.ofExpression(rhs));
   }
   
   @Override
@@ -873,7 +979,34 @@ public abstract class AbstractExpressionEncoding
     return be.not(be.ofExpression(b));
   }
 
-/*  @Override
+@Override
+	public Expression or(Expression lhs, Expression rhs) {
+	  return or_(getBooleanEncoding(),lhs,rhs);
+	}
+
+	private <T extends Expression> T or_(
+	    BooleanEncoding<T> be, Expression lhs, Expression rhs) {
+	  Preconditions.checkArgument(isBoolean(lhs));
+	  Preconditions.checkArgument(isBoolean(rhs));
+	  return be.or(be.ofExpression(lhs), be.ofExpression(rhs));
+	}
+
+	@Override
+	public Expression or(Iterable<? extends Expression> disjuncts) {
+	  return or_(getBooleanEncoding(),disjuncts);
+	}
+
+	private <T extends Expression> T or_(BooleanEncoding<T> be,
+	    Iterable<? extends Expression> disjuncts) {
+	  List<T> bDisjs = Lists.newArrayList();
+	  for (Expression d : disjuncts) {
+	    Preconditions.checkArgument(isBoolean(d));
+	    bDisjs.add(be.ofExpression(d));
+	  }
+	  return be.and(bDisjs);
+	}
+
+	/*  @Override
   public Expression ofBoolean(Expression expr) {
     return getBooleanEncoding().ofExpression(expr);
   }
@@ -889,79 +1022,13 @@ public abstract class AbstractExpressionEncoding
     Preconditions.checkArgument(x.isBoolean());
     return getBooleanEncoding().ofBooleanExpression(x.asBooleanExpression());
   }
-
-  @Override
-  public Expression one() {
-    return getIntegerEncoding().one();
-  }
-
-  @Override
-  public Expression or(Expression lhs, Expression rhs) {
-    return or_(getBooleanEncoding(),lhs,rhs);
-  }
-  
-  private <T extends Expression> T or_(
-      BooleanEncoding<T> be, Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isBoolean(lhs));
-    Preconditions.checkArgument(isBoolean(rhs));
-    return be.or(be.ofExpression(lhs), be.ofExpression(rhs));
-  }
   
   @Override
-  public Expression or(Iterable<? extends Expression> disjuncts) {
-    return or_(getBooleanEncoding(),disjuncts);
-  }
-  
-  private <T extends Expression> T or_(BooleanEncoding<T> be,
-      Iterable<? extends Expression> disjuncts) {
-    List<T> bDisjs = Lists.newArrayList();
-    for (Expression d : disjuncts) {
-      Preconditions.checkArgument(isBoolean(d));
-      bDisjs.add(be.ofExpression(d));
-    }
-    return be.and(bDisjs);
+  public Expression ofPointer(Expression x) {
+  	Preconditions.checkArgument(x.isTuple());
+  	return getPointerEncoding().ofExpression(x);
   }
 
-  @Override
-  public Expression plus(Expression lhs, Expression rhs) {
-  	if(isPointer(lhs) || isPointer(rhs))
-  		return plus_(getPointerEncoding(), getIntegerEncoding(), lhs, rhs);
-  	else
-  		return plus_(getIntegerEncoding(), lhs, rhs);
-  }
-
-  private <T extends Expression> T plus_(
-      IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(isInteger(lhs) && isInteger(rhs));
-    return ie.plus(ie.ofExpression(lhs), ie.ofExpression(rhs));
-  }
-  
-  private <T extends Expression> T plus_(
-      PointerEncoding<T> pe, IntegerEncoding<?> ie, Expression lhs, Expression rhs) {
-    Preconditions.checkArgument(
-    		(isPointer(lhs) && isInteger(rhs)) || (isInteger(lhs) && isPointer(rhs)));
-    if(isPointer(lhs)) {
-    	return pe.plus(pe.ofExpression(lhs), ie.ofExpression(rhs));
-    } else {
-    	return pe.plus(pe.ofExpression(rhs), ie.ofExpression(lhs));
-    }
-  }
-
-  @Override
-  public Expression plus(Iterable<? extends Expression> args) {
-    return plus_(getIntegerEncoding(),args);
-  }
-
-  private <T extends Expression> T plus_(IntegerEncoding<T> ie,
-      Iterable<? extends Expression> terms) {
-    List<T> iTerms = Lists.newArrayList();
-    for (Expression t : terms) {
-      Preconditions.checkArgument(isInteger(t));
-      iTerms.add(ie.ofExpression(t));
-    }
-    return ie.plus(iTerms);
-  }
-  
   @Override
   public Expression symbolicConstant(String name, IRType t, boolean fresh) {
     TypeEncoding<? extends Expression> encoding = encodingForType(t);
@@ -969,34 +1036,7 @@ public abstract class AbstractExpressionEncoding
   }
 
   @Override
-  public Expression tt() {
-    return getBooleanEncoding().tt();
-  }
-
-  @Override
-  public Expression uminus(Expression expr) {
-  	return uminus_(getIntegerEncoding(), expr);
-  }
-  
-  private <T extends Expression> Expression uminus_(
-      IntegerEncoding<T> ie, Expression lhs) {
-  	return ie.uminus(ie.ofExpression(lhs));
-  }
-  
-  @Override
-  public Expression updateArray(Expression array, Expression index, Expression newValue) {
-    return updateArray_(getArrayEncoding(),array,index,newValue);
-  }
-
-  private <T extends Expression> Expression updateArray_(ArrayEncoding<T> ae, 
-      Expression array, Expression index, Expression newValue) {
-    return ae.update(ae.ofExpression(array), index, newValue);
-  }
-  
-  @Override
-  public Expression castExpression(Expression src, Type targetType) {
-//    if(!Preferences.isSet(Preferences.OPTION_MEM_ENCODING)) return src;
-    
+  public Expression castExpression(Expression src, Type targetType) {    
     String encoding = Preferences.getString(Preferences.OPTION_MEM_ENCODING);
     CellKind srcKind = CType.getCellKind(CType.getType(src.getNode()));
     CellKind targetKind = CType.getCellKind(targetType);
@@ -1036,11 +1076,6 @@ public abstract class AbstractExpressionEncoding
     return encodingForType(type).variable(name, fresh);
   }
 
-  @Override
-  public Expression zero() {
-    return getIntegerEncoding().zero();
-  }
-  
   @Override
   public xtc.type.C getCAnalyzer() {
     return cAnalyzer;

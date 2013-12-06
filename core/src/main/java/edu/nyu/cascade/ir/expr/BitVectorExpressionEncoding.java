@@ -7,7 +7,6 @@ import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TupleExpression;
-import edu.nyu.cascade.util.Preferences;
 
 public class BitVectorExpressionEncoding
     extends
@@ -16,11 +15,6 @@ public class BitVectorExpressionEncoding
   public static BitVectorExpressionEncoding create(
       ExpressionManager exprManager) throws ExpressionFactoryException
   {
-    int intCellSize = 
-    		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
-    				(int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * CellSize) 
-    				: CellSize;
-    
     IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, intCellSize);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new UnimplementedArrayEncoding<ArrayExpression>();
