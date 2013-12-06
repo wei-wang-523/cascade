@@ -1,5 +1,7 @@
 package edu.nyu.cascade.prover.type;
 
+import java.math.BigInteger;
+
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BitVectorVariableExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -29,7 +31,11 @@ public interface BitVectorType extends Type, ComparableType {
 
   BitVectorExpression constant(int size, int val);
 
-  BitVectorExpression constant(String rep);
+  BitVectorExpression constant(int c);
+  
+  BitVectorExpression constant(long c);
+  
+  BitVectorExpression constant(BigInteger c);
 
   BitVectorExpression extract(Expression a, int i, int j);
 

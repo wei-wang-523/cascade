@@ -153,7 +153,6 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
 	    Expression lval,
 	    Expression rval) {
     Preconditions.checkArgument(lval.getType().equals( addrType ));
-    if(rval.isBoolean()) rval = getExpressionEncoding().castToInteger(rval);
     RecordExpression memory = updateMemoryState(state.getChild(0), lval, rval);
     return getUpdatedState(state, memory, state.getChild(1));
 	}

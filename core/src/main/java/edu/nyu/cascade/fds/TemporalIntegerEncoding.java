@@ -1,5 +1,6 @@
 package edu.nyu.cascade.fds;
 
+import java.math.BigInteger;
 import java.util.List;
 
 import com.google.common.collect.Lists;
@@ -40,6 +41,16 @@ public class TemporalIntegerEncoding<T extends Expression> extends
 
   @Override
   public StateExpression constant(int c) {
+    return stateExprFactory.valueOf((Expression) baseEncoding.constant(c));
+  }
+  
+  @Override
+  public StateExpression constant(long c) {
+    return stateExprFactory.valueOf((Expression) baseEncoding.constant(c));
+  }
+  
+  @Override
+  public StateExpression constant(BigInteger c) {
     return stateExprFactory.valueOf((Expression) baseEncoding.constant(c));
   }
 

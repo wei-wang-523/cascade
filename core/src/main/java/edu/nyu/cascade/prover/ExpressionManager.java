@@ -1,5 +1,6 @@
 package edu.nyu.cascade.prover;
 
+import java.math.BigInteger;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -175,6 +176,24 @@ public interface ExpressionManager {
    * <code>n mod 2<sup>size</sup></code>.
    */
   BitVectorExpression bitVectorConstant(int n, int size);
+  
+  /**
+   * Create a bit-vector constant of the integer value
+   * <code>n</code>.
+   */
+  BitVectorExpression bitVectorConstant(int n);
+  
+  /**
+   * Create a bit-vector constant of the long value
+   * <code>n</code>.
+   */
+  BitVectorExpression bitVectorConstant(long n);
+  
+  /**
+   * Create a bit-vector constant of the big integer value
+   * <code>n</code>.
+   */
+  BitVectorExpression bitVectorConstant(BigInteger n);
 
   /**
    * Create a bit-vector constant given a binary string <code>rep</code>. The
@@ -246,6 +265,24 @@ public interface ExpressionManager {
    * @return the expression representing c
    */
   IntegerExpression constant(int c);
+  
+  /**
+   * Get the integer expression representing the given constant.
+   * 
+   * @param c
+   *          the constant
+   * @return the expression representing c
+   */
+  IntegerExpression constant(long c);
+  
+  /**
+   * Get the integer expression representing the given constant.
+   * 
+   * @param c
+   *          the Big Integer constant
+   * @return the expression representing c
+   */
+  IntegerExpression constant(BigInteger c);
 
   /**
    * Create an instance of an inductive datatype, using an n-ary value

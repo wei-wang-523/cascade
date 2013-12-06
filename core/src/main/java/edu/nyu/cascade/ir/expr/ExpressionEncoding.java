@@ -1,5 +1,7 @@
 package edu.nyu.cascade.ir.expr;
 
+import java.math.BigInteger;
+
 import xtc.type.Type;
 
 import com.google.common.collect.ImmutableSet;
@@ -325,6 +327,22 @@ public interface ExpressionEncoding {
    * @return an integer-encoded expression
    */
   Expression integerConstant(int c) ;
+  
+  /** 
+   * An encoded integer constant.
+   * 
+   * @param c the long number
+   * @return an integer-encoded expression
+   */
+  Expression integerConstant(long c) ;
+  
+  /** 
+   * An encoded integer constant.
+   * 
+   * @param c the BigInteger number
+   * @return an integer-encoded expression
+   */
+  Expression integerConstant(BigInteger c) ;
   
   /**
    * A shortcut for <code>not(castToBoolean(e))</code>.

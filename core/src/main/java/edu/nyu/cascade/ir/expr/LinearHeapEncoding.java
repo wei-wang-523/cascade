@@ -137,7 +137,6 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 		Preconditions.checkArgument(memArr.getType().getIndexType().equals(addrType));
 		Preconditions.checkArgument(memArr.getType().getElementType().equals(valueType));
 		Preconditions.checkArgument(lval.getType().equals(addrType));
-		Preconditions.checkArgument(isModuloValueType(rval.getType()));
 		return formatter.updateMemoryArray(memArr, lval, rval);
 	}
 	
@@ -275,10 +274,4 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
   public Expression addressOf(Expression expr) {
 		return formatter.addressOf(expr);
   }
-	
-	private boolean isModuloValueType(Type exprType) {
-		int size = valueType.asBitVectorType().getSize();
-		int exprTypeSize = exprType.asBitVectorType().getSize();
-		return exprTypeSize % size == 0;
-	}
 }

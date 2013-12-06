@@ -53,6 +53,7 @@ public class MultiCellFormatter implements IRDataFormatter {
 	public ArrayExpression updateMemoryArray(ArrayExpression memory, Expression index,
 	    Expression value) {
 		Preconditions.checkArgument(index.getNode() != null);
+		if(value.isBoolean()) value = encoding.castToInteger(value);
 		int size = (int) cAnalyzer.getSize(CType.getType(index.getNode()));
 		int addSize = getAddressType().asBitVectorType().getSize();
 		int cellSize = encoding.getCellSize();

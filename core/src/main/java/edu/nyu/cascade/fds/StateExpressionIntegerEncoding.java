@@ -1,5 +1,6 @@
 package edu.nyu.cascade.fds;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 
 import com.google.common.base.Preconditions;
@@ -91,6 +92,16 @@ public class StateExpressionIntegerEncoding extends
   public IntegerStateExpression constant(int c) {
     return wrap(getExpressionManager().constant(c));
   }
+  
+	@Override
+	public StateExpression constant(long c) {
+		return wrap(getExpressionManager().constant(c));
+	}
+	
+	@Override
+	public StateExpression constant(BigInteger c) {
+		return wrap(getExpressionManager().constant(c));
+	}
 
   @Override
   public StateProperty lessThan(StateExpression lhs,
@@ -248,5 +259,4 @@ public class StateExpressionIntegerEncoding extends
 	public StateExpression signedDivide(StateExpression lhs, StateExpression rhs) {
 		return divide(lhs, rhs);
 	}
-
 }

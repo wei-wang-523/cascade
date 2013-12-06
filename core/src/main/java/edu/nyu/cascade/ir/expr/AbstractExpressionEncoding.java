@@ -1,5 +1,6 @@
 package edu.nyu.cascade.ir.expr;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -754,6 +755,16 @@ public abstract class AbstractExpressionEncoding
 
 	@Override
   public Expression integerConstant(int c) {
+    return getIntegerEncoding().constant(c);
+  }
+	
+	@Override
+  public Expression integerConstant(long c) {
+    return getIntegerEncoding().constant(c);
+  }
+	
+	@Override
+  public Expression integerConstant(BigInteger c) {
     return getIntegerEncoding().constant(c);
   }
 	

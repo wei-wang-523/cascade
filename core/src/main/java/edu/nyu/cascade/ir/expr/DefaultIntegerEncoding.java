@@ -1,5 +1,6 @@
 package edu.nyu.cascade.ir.expr;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 
 import com.google.common.base.Preconditions;
@@ -26,6 +27,16 @@ public class DefaultIntegerEncoding extends
 
   @Override
   public IntegerExpression constant(int c) {
+    return getExpressionManager().constant(c);
+  }
+  
+  @Override
+  public IntegerExpression constant(long c) {
+    return getExpressionManager().constant(c);
+  }
+  
+  @Override
+  public IntegerExpression constant(BigInteger c) {
     return getExpressionManager().constant(c);
   }
 

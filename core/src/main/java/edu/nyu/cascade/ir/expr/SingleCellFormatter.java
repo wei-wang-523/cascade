@@ -49,6 +49,7 @@ public class SingleCellFormatter implements IRDataFormatter {
 	@Override
 	public ArrayExpression updateMemoryArray(ArrayExpression memory, Expression index,
 	    Expression value) {
+		value = encoding.castToInteger(value);
 		return memory.update(index, value);
 	}
 

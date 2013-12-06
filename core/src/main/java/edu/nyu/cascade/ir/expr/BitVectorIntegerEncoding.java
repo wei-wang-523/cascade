@@ -1,5 +1,6 @@
 package edu.nyu.cascade.ir.expr;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 
 import com.google.common.base.Preconditions;
@@ -34,6 +35,16 @@ public class BitVectorIntegerEncoding extends
   @Override
   public BitVectorExpression constant(int c) {
     return getExpressionManager().bitVectorConstant(c, getType().getSize());
+  }
+  
+  @Override
+  public BitVectorExpression constant(long c) {
+    return getExpressionManager().bitVectorConstant(c);
+  }
+  
+  @Override
+  public BitVectorExpression constant(BigInteger c) {
+    return getExpressionManager().bitVectorConstant(c);
   }
 
   @Override

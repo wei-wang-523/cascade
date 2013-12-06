@@ -1,5 +1,7 @@
 package edu.nyu.cascade.ir.expr;
 
+import java.math.BigInteger;
+
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.VariableExpression;
@@ -14,6 +16,11 @@ public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
 
   /** Returns an integer expression representing the constant <code>c</code>. */
   T constant(int c);
+  
+  T constant(long c);
+  
+  T constant(BigInteger c);
+  
   /**
    * Returns an integer expression representing the integer <code>expr</code>
    * minus one.
