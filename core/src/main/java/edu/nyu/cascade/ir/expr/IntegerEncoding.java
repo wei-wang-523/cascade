@@ -98,8 +98,15 @@ public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
    * <code>rhs</code> for disequality.
    */
   BooleanExpression neq(T lhs, T rhs) ;
+  
   T ofBoolean(BooleanExpression b);
 
+  /**
+   * Cast expression <code>i</code> to integer expression with given <code>
+   * size</code>
+   */
+  T ofInteger(T i, int size);
+  
   /**
    * Returns an integer expression representing one.
    */

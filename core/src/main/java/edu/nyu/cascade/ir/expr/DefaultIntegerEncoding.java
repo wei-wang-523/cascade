@@ -145,6 +145,14 @@ public class DefaultIntegerEncoding extends
   public IntegerExpression ofBoolean(BooleanExpression b) {
     return ifThenElse(b, one(), zero());
   }
+  
+  @Override
+  public IntegerExpression ofInteger(IntegerExpression i, int size) {
+  	/* FIXME: default integer encoding do not support casting between
+  	 * different integer kind
+  	 */
+    return i;
+  }
 
   @Override
   public IntegerExpression ofExpression(Expression x) {

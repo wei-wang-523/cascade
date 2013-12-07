@@ -23,7 +23,7 @@ public interface PointerEncoding<T extends Expression> extends TypeEncoding<T> {
   T plus(T first, Iterable<? extends Expression> rest);
   T plus(T first, Expression... rest);
   T plus(T first, Expression rest);
-  BooleanExpression castToBoolean(T expr);
+  BooleanExpression toBoolean(T expr);
   BooleanExpression neq(T lhs, T rhs);
   BooleanExpression eq(T lhs, T rhs);
   BooleanExpression greaterThan(T lhs, T rhs);

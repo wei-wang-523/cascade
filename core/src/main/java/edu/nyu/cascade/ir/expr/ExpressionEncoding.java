@@ -97,6 +97,24 @@ public interface ExpressionEncoding {
    */
   Expression castToInteger(Expression e) ;
   
+  /**
+   * The conversion of the given expression to an integer, according to the
+   * conversion rule of the underlying encoding.
+   * 
+   * @param e an integer-encoded expression
+   * @return an integer-encoded expression with given size
+   */
+  Expression castToInteger(Expression e, int size) ;
+  
+  /**
+   * The conversion of the given expression to a pointer, according to the
+   * conversion rule of the underlying encoding.
+   * 
+   * @param e a boolean- or pointer- integer-encoded expression
+   * @return an pointer-encoded expression
+   */
+  Expression castToPointer(Expression e) ;
+  
 /*  *//**
    * The conversion of the given expression to a rational, according to the
    * conversion rule of the underlying encoding.
@@ -721,6 +739,7 @@ public interface ExpressionEncoding {
    * Cast @param src expression to @param targetType
    */
   Expression castExpression(Expression src, Type targetType) ;
+
   
 //  /**
 //   * create a expression with constant <code>value</code>, used for

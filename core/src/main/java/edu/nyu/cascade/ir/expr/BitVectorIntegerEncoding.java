@@ -142,6 +142,17 @@ public class BitVectorIntegerEncoding extends
   public BitVectorExpression ofBoolean(BooleanExpression b) {
     return b.ifThenElse(one(), zero()).asBitVector();
   }
+  
+  @Override
+  public BitVectorExpression ofInteger(BitVectorExpression bv, int size) {
+  	int srcSize = bv.getSize();
+  	if(srcSize == size)	return bv;
+  	
+  	if(srcSize < size)	
+  		return getExpressionManager().signExtend(bv, size);
+  	else
+  		return getExpressionManager().extract(bv, 0, size-1);
+  }
 
   @Override
   public BitVectorExpression plus(Iterable<? extends BitVectorExpression> args) {

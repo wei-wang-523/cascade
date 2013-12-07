@@ -54,9 +54,17 @@ public class MultiCellFormatter implements IRDataFormatter {
 	    Expression value) {
 		Preconditions.checkArgument(index.getNode() != null);
 		if(value.isBoolean()) value = encoding.castToInteger(value);
+		
+		if(getValueType().isInteger())	return memory.update(index, value);
+		
 		int size = (int) cAnalyzer.getSize(CType.getType(index.getNode()));
+		int valueSize = value.asBitVector().getSize();
+		
+		int cellSize = getValueType().asBitVectorType().getSize();
+		if(valueSize != size * cellSize) 
+			value = value.asBitVector().signExtend(size * cellSize);
+		
 		int addSize = getAddressType().asBitVectorType().getSize();
-		int cellSize = encoding.getCellSize();
 		
 		for(int i = 0; i < size; i++) {
 			Expression offExpr = exprManager.bitVectorConstant(i, addSize);

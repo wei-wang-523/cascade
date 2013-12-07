@@ -1,6 +1,7 @@
 package edu.nyu.cascade.ir.expr;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -103,20 +104,17 @@ public class DefaultPointerEncoding extends
 
   @Override
   public TupleExpression plus(TupleExpression first, Expression... rest) {
-    // TODO Auto-generated method stub
-    return null;
+    return plus(first, Lists.newArrayList(rest));
   }
 
   @Override
   public TupleExpression plus(TupleExpression first, Expression rest) {
-    // TODO Auto-generated method stub
-    return null;
+    return plus(first, Lists.newArrayList(rest));
   }
 
   @Override
-  public BooleanExpression castToBoolean(TupleExpression expr) {
-    // TODO Auto-generated method stub
-    return null;
+  public BooleanExpression toBoolean(TupleExpression expr) {
+    return neq(expr, getNullPtr());
   }
 
 	@Override

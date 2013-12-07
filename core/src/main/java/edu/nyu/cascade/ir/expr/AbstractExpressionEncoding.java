@@ -17,8 +17,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 
-import edu.nyu.cascade.c.CType;
-import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.ir.type.IRType;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -309,7 +307,19 @@ public abstract class AbstractExpressionEncoding
   public Expression castToBoolean(Expression expr) {
     return isBoolean(expr) 
         ? expr 
-        : ofBoolean(castToBoolean_(getIntegerEncoding(),expr));
+        : isInteger(expr)
+        	? ofBoolean(castToBoolean_(getIntegerEncoding(),expr))
+        			: ofBoolean(castToBoolean_(getPointerEncoding(), expr));
+  }
+  
+  private <T extends Expression> BooleanExpression castToBoolean_(IntegerEncoding<T> ie, Expression a) {
+    Preconditions.checkArgument(isInteger(a));
+    return ie.toBoolean(ie.ofExpression(a));
+  }
+  
+  private <T extends Expression> BooleanExpression castToBoolean_(PointerEncoding<T> pe, Expression a) {
+    Preconditions.checkArgument(isInteger(a));
+    return pe.toBoolean(pe.ofExpression(a));
   }
   
   @Override
@@ -320,20 +330,34 @@ public abstract class AbstractExpressionEncoding
 
   /* expr should be the type of expression created by the BooleanEncoding. */
   private <T extends Expression> BooleanExpression toBoolean_(
-      BooleanEncoding<T> booleanEncoding, Expression e) {
-    return booleanEncoding.toBoolean(booleanEncoding.ofExpression(e));
-  }
-  
-  private <T extends Expression> BooleanExpression castToBoolean_(IntegerEncoding<T> ie, Expression a) {
-    Preconditions.checkArgument(isInteger(a));
-    return ie.toBoolean(ie.ofExpression(a));
+      BooleanEncoding<T> be, Expression e) {
+    return be.toBoolean(be.ofExpression(e));
   }
   
   @Override
-  public Expression castToInteger(Expression bool) {
-    return isInteger(bool)
-        ? bool
-        : getIntegerEncoding().ofBoolean(toBoolean(getBooleanEncoding(),bool));
+  public Expression castToInteger(Expression expr) {
+  	Preconditions.checkArgument(isInteger(expr) || isBoolean(expr));
+    return isInteger(expr)
+        ? expr
+        		: getIntegerEncoding().ofBoolean(toBoolean(getBooleanEncoding(),expr));
+  }
+  
+  @Override
+  public Expression castToInteger(Expression expr, int size) {
+  	Preconditions.checkArgument(isInteger(expr));
+  	return toInteger_(getIntegerEncoding(), expr, size);
+  }
+  
+  private <T extends Expression> Expression toInteger_(
+  		IntegerEncoding<T> ie, Expression e, int size) {
+  	return ie.ofInteger(ie.ofExpression(e), size);
+  }
+  
+  @Override
+  public Expression castToPointer(Expression expr) {
+  	return isPointer(expr)
+  			? expr
+  					: getPointerEncoding().getNullPtr();
   }
   
 /*  @Override
@@ -1047,40 +1071,15 @@ public abstract class AbstractExpressionEncoding
   }
 
   @Override
-  public Expression castExpression(Expression src, Type targetType) {    
-    String encoding = Preferences.getString(Preferences.OPTION_MEM_ENCODING);
-    CellKind srcKind = CType.getCellKind(CType.getType(src.getNode()));
-    CellKind targetKind = CType.getCellKind(targetType);
-    
-    if(Preferences.MEM_ENCODING_SYNC.equals(encoding)) {
-      if(CellKind.POINTER.equals(targetKind) && CellKind.SCALAR.equals(srcKind)) {
-        assert src.isConstant();
-        return pointerEncoding.getNullPtr();
-      }
-    }
-      
-    if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) {
-//    	if(CellKind.SCALAR.equals(targetKind) && targetKind.equals(srcKind)) {
-        int srcSize = src.getType().asBitVectorType().getSize();
-        int targetSize = (int) (getCAnalyzer().getSize(targetType) * getCellSize());
-        if(srcSize == targetSize)	return src;
-        else if(srcSize < targetSize)
-          return src.asBitVector().zeroExtend(targetSize);
-        else
-          return src.asBitVector().extract(targetSize-1, 0);
-//      }
-    }
-    return src;
+  public Expression castExpression(Expression src, Type targetType) {
+  	Preconditions.checkArgument(targetType.isPointer() || targetType.isInteger());
+  	if(targetType.isPointer()) {
+  		return castToPointer(src);
+  	} else {
+  		int size = (int) getCAnalyzer().getSize(targetType);
+  		return castToInteger(src, size);
+  	}
   }
-  
-//  @Override
-//  public Expression castConstant(int value, xtc.type.Type targetType) {
-//    if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) {
-//      int size = (int) (getCAnalyzer().getSize(targetType) * getCellSize());
-//      return getExpressionManager().bitVectorConstant(value, size);
-//    }   
-//    return integerConstant(value);
-//  }
   
   @Override
   public Expression variable(String name, IRType type, boolean fresh) {

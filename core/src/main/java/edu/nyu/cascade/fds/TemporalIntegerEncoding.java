@@ -171,6 +171,12 @@ public class TemporalIntegerEncoding<T extends Expression> extends
   public StateExpression ofBoolean(BooleanExpression b) {
     return stateExprFactory.valueOf((Expression) baseEncoding.ofBoolean(b));
   }
+  
+  @Override
+  public StateExpression ofInteger(StateExpression a, int size) {
+    return stateExprFactory.valueOf((Expression) baseEncoding.ofInteger(
+    		baseEncoding.ofExpression(a), size));
+  }
 
   @Override
   public StateExpression one() {

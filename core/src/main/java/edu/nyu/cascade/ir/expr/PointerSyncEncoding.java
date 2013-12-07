@@ -133,7 +133,7 @@ public class PointerSyncEncoding extends
   } 
   
   @Override
-  public BooleanExpression castToBoolean(TupleExpression expr) {
+  public BooleanExpression toBoolean(TupleExpression expr) {
     return neq(expr, nullPtr);
   }
   

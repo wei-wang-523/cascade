@@ -259,4 +259,11 @@ public class StateExpressionIntegerEncoding extends
 	public StateExpression signedDivide(StateExpression lhs, StateExpression rhs) {
 		return divide(lhs, rhs);
 	}
+
+	@Override
+  public StateExpression ofInteger(StateExpression x, int size) {
+		Preconditions.checkArgument(x.isInteger());
+		/* FIXME: do not support conversion between types with different size */
+    return wrap(x.asIntegerExpression());
+  }
 }
