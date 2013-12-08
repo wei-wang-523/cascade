@@ -60,8 +60,7 @@ public class DefaultIntegerEncoding extends
   @Override
   public BooleanExpression signedGreaterThan(IntegerExpression lhs,
       IntegerExpression rhs) {
-    // TODO Auto-generated method stub
-    return null;
+    return greaterThan(lhs, rhs);
   }
 
   @Override
@@ -73,8 +72,7 @@ public class DefaultIntegerEncoding extends
   @Override
   public BooleanExpression signedGreaterThanOrEqual(IntegerExpression lhs,
       IntegerExpression rhs) {
-    // TODO Auto-generated method stub
-    return null;
+    return greaterThanOrEqual(lhs, rhs);
   }
 
   @Override
@@ -95,8 +93,7 @@ public class DefaultIntegerEncoding extends
   
   @Override
   public BooleanExpression signedLessThan(IntegerExpression lhs, IntegerExpression rhs) {
-    // TODO Auto-generated method stub
-    return null;
+    return lessThan(lhs, rhs);
   }
 
   @Override
@@ -107,8 +104,7 @@ public class DefaultIntegerEncoding extends
   
   @Override
   public BooleanExpression signedLessThanOrEqual(IntegerExpression lhs, IntegerExpression rhs) {
-    // TODO Auto-generated method stub
-    return null;
+    return lessThanOrEqual(lhs, rhs);
   }
 
   @Override
