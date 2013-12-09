@@ -35,12 +35,10 @@ import com.microsoft.z3.Z3Exception;
 
 import edu.nyu.cascade.fds.StateExpression;
 import edu.nyu.cascade.prover.AbstractExpressionManager;
-import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.FunctionExpression;
-import edu.nyu.cascade.prover.InductiveExpression;
 import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.TupleExpression;
@@ -89,10 +87,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   private final RationalTypeImpl rationalType;
   
   private final TheoremProverImpl theoremProver;
-//  private final BooleanConstant ff, tt;
-//  private final RationalExpression ratOne;
-//  private final RationalExpression ratZero;
-
+  
   /** Cache of previously created inductive datatypes. It's helpful
    * to have this around because datatypes are pretty much impossible
    * to reconstruct from the bottom up, e.g., in the case where a 
@@ -116,7 +111,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     rationalType = RationalTypeImpl.getInstance(this);
   }
 
-  void addToTypeCache(TypeImpl type) {
+  private void addToTypeCache(TypeImpl type) {
     try {
       Preconditions.checkArgument(!typeCache.get(this).containsKey(type.getName()));
       typeCache.get(this).put(type.getName(), type);
@@ -129,65 +124,11 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   public void addTrigger(Expression e, Expression p) {
     e.asBooleanExpression().addTrigger(p);
   }
-
-  @Override
-  public BooleanExpressionImpl and(Expression left,
-      Expression right)  {
-    return booleanType().and(left, right);
-  }
-
-  @Override
-  public BooleanExpressionImpl and(Expression first,
-      Expression... rest)  {
-    return booleanType().and(Lists.asList(first, rest));
-  }
-
-  @Override
-  public BooleanExpressionImpl and(
-      Iterable<? extends Expression> subExpressions) {
-    return booleanType().and(subExpressions);
-  }
-
-  @Override
-  public Expression applyExpr(
-      FunctionType fun, Expression arg) {
-    return fun.apply(arg);
-  }
   
-  @Override
-  public Expression applyExpr(
-      FunctionType fun, Iterable<? extends Expression> args) {
-    return fun.apply(args);
-  }
-
-  @Override
-  public Expression applyExpr(
-      FunctionType fun, Expression first, Expression... rest) {
-    return fun.apply(first, rest);
-  }
-
-  /** NOTE: CVC will not create arrays with boolean elements.
-   *  TODO: Wrap ('a,boolean) arrays as ('a -> boolean) functions? */
   @Override
   public ArrayTypeImpl arrayType(
       Type index, Type elem)  {
-//    Preconditions.checkArgument(!DomainType.BOOLEAN
-//        .equals(elem.getDomainType()));
     return ArrayTypeImpl.create(this, index, elem);
-  }
-  
-  @Override
-  public ArrayVariableImpl arrayVar(
-      String name, Type indexType, Type elementType, boolean fresh)  {
-      ArrayTypeImpl t = ArrayTypeImpl.create(this, indexType, elementType);
-      return t.variable(name,fresh);
-  }
-  
-  @Override
-  public VariableExpressionImpl arrayBoundVar(
-      String name, Type indexType, Type elementType, boolean fresh)  {
-      ArrayTypeImpl t = ArrayTypeImpl.create(this, indexType, elementType);
-      return t.boundVariable(name,fresh);
   }
 
   @Override 
@@ -199,6 +140,11 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   public ArrayTypeImpl asArrayType(
       Type type) {
     return ArrayTypeImpl.valueOf(this, importType(type));
+  }
+  
+  @Override
+  public ArrayTypeImpl asArrayType(Type indexType, Type elementType) {
+  	return ArrayTypeImpl.create(this, indexType, elementType);
   }
   
   @Override
@@ -310,68 +256,8 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   }
   
   @Override
-  public BitVectorExpression bitVectorPlus(int size,
-      Iterable<? extends Expression> args) {
-    return BitVectorExpressionImpl.mkPlus(this, size, args);
-  }
-  
-  @Override
-  public BitVectorExpression bitVectorMult(int size,
-      Iterable<? extends Expression> args) {
-    return BitVectorExpressionImpl.mkMult(this, size, args);
-  }
-  
-  @Override
   public BitVectorTypeImpl bitVectorType(int size)  {
     return BitVectorTypeImpl.create(this, size);
-  }
-  
-  @Override
-  public BitVectorExpressionImpl bitVectorZero(int size) {
-    return BitVectorExpressionImpl.mkConstant(this, size, 0);
-  }
-
-  @Override
-  public BitVectorExpressionImpl bitwiseAnd(Expression a,
-      Expression b)  {
-    return BitVectorExpressionImpl.mkAnd(this, a,b);
-  }
-  
-  @Override
-  public BitVectorExpressionImpl bitwiseNand(Expression a,
-      Expression b)  {
-    return BitVectorExpressionImpl.mkNand(this, a,b);
-  }
-  
-  @Override
-  public BitVectorExpressionImpl bitwiseNor(Expression a,
-      Expression b)  {
-    return BitVectorExpressionImpl.mkNor(this, a,b);
-  }
-  
-  @Override
-  public BitVectorExpressionImpl bitwiseNot(Expression a)
-       {
-    return BitVectorExpressionImpl.mkNot(this, a);
-  }
-  
-
-  @Override
-  public BitVectorExpressionImpl bitwiseOr(Expression a,
-      Expression b) {
-    return BitVectorExpressionImpl.mkOr(this, a, b);
-  }
-
-  @Override
-  public BitVectorExpressionImpl bitwiseXnor(Expression a,
-      Expression b)  {
-    return BitVectorExpressionImpl.mkXnor(this, a,b);
-  }
-
-  @Override
-  public BitVectorExpressionImpl bitwiseXor(Expression a,
-      Expression b)  {
-    return BitVectorExpressionImpl.mkXor(this, a,b);
   }
   
   /*
@@ -408,18 +294,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   @Override
   public IntegerExpressionImpl constant(BigInteger c)  {
     return IntegerExpressionImpl.mkConstant(this, c);
-  }
-
-  @Override
-  public InductiveExpression construct(Constructor constructor,
-      Expression... args) {
-    return constructor.apply(args);
-  }
-
-  @Override
-  public InductiveExpression construct(Constructor constructor,
-      Iterable<? extends Expression> args) {
-    return constructor.apply(args);
   }
 
   @Override
@@ -463,30 +337,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     Preconditions.checkArgument(Iterables.size(children) > 1);
     return BooleanExpressionImpl.mkDistinct(this, children);
   }
-
-  @Override
-  public BitVectorExpressionImpl divide(
-      Expression numerator, Expression denominator) {
-      return BitVectorExpressionImpl.mkDivide(this, numerator, denominator);
-  }
-  
-  @Override
-  public BitVectorExpressionImpl signedDivide(
-      Expression numerator, Expression denominator) {
-      return BitVectorExpressionImpl.mkSDivide(this, numerator, denominator);
-  }
-  
-  @Override
-  public BitVectorExpressionImpl rem(
-      Expression numerator, Expression denominator) {
-      return BitVectorExpressionImpl.mkRem(this, numerator, denominator);
-  }
-  
-  @Override
-  public BitVectorExpressionImpl signedRem(
-      Expression numerator, Expression denominator) {
-      return BitVectorExpressionImpl.mkSRem(this, numerator, denominator);
-  }
   
   @Override
   public  BooleanExpressionImpl eq(Expression left, Expression right)  {
@@ -494,91 +344,8 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   }
 
   @Override
-  public BooleanExpressionImpl exists(
-      Iterable<? extends Expression> vars,
-      Expression body, 
-      Iterable<? extends Expression> patterns,
-      Iterable<? extends Expression> noPatterns)  {
-    return booleanType().exists(vars, body, patterns, noPatterns);
-  }
-  
-  @Override
-  public BooleanExpression exists(Iterable<? extends Expression> vars,
-      Expression body) {
-    return exists(vars, body, null, null);
-  }
-
-  @Override
-  public BooleanExpression exists(Iterable<? extends Expression> vars,
-      Expression body, Iterable<? extends Expression> patterns) {
-    return exists(vars, body, patterns, null);
-  }
-
-  @Override
   public BitVectorExpressionImpl extract(Expression bv, int low, int high) {    
     return BitVectorTypeImpl.valueOf(this, bv.getType()).extract(bv, high, low);
-  }
-  
-  @Override
-  public BooleanExpressionImpl ff() {
-   return booleanType().ff();
-  }
-  
-  @Override
-  public BooleanExpressionImpl forall(
-      Iterable<? extends Expression> vars,
-      Expression body,
-      Iterable<? extends Expression> patterns,
-      Iterable<? extends Expression> noPatterns) {
-    return booleanType().forall(vars, body, patterns, noPatterns);
-  }
-
-  @Override
-  public BooleanExpression forall(Iterable<? extends Expression> vars,
-      Expression body) {
-    return forall(vars, body, null, null);
-  }
-
-  @Override
-  public BooleanExpression forall(Iterable<? extends Expression> vars,
-      Expression body, Iterable<? extends Expression> patterns) {
-    return forall(vars, body, patterns, null);
-  }
-  
-  @Override
-  public BooleanExpressionImpl rewriteRule(Iterable<? extends VariableExpression> vars,
-		  Expression guard, Expression rule) {
-    return booleanType().rewriteRule(vars, guard, rule);
-  }
-  
-  @Override
-  public BooleanExpressionImpl rrRewrite(Expression head, Expression body, Iterable<? extends Expression> triggers) {
-    return booleanType().rrRewrite(head, body, triggers);
-  }
-  
-  @Override
-  public BooleanExpressionImpl rrRewrite(Expression head, Expression body) {
-    return booleanType().rrRewrite(head, body);
-  }
-  
-  @Override
-  public BooleanExpressionImpl rrReduction(Expression head, Expression body, Iterable<? extends Expression> triggers) {
-    return booleanType().rrReduction(head, body, triggers);
-  }
-  
-  @Override
-  public BooleanExpressionImpl rrReduction(Expression head, Expression body) {
-    return booleanType().rrReduction(head, body);
-  }
-  
-  @Override
-  public BooleanExpressionImpl rrDeduction(Expression head, Expression body, Iterable<? extends Expression> triggers) {
-    return booleanType().rrDeduction(head, body, triggers);
-  }
-  
-  @Override
-  public BooleanExpressionImpl rrDeduction(Expression head, Expression body) {
-    return booleanType().rrDeduction(head, body);
   }
 
   @Override
@@ -588,20 +355,9 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   }
 
   @Override
-  public VariableExpression functionVar(String name, FunctionType func, boolean fresh)  {
-      return func.variable(name, fresh);
-  }
-
-  @Override
-  public VariableExpression functionBoundVar(String name, FunctionType func, boolean fresh)  {
-      return func.boundVariable(name, fresh);
-  }
-
-  @Override
   public ImmutableList<Option> getOptions() {
     return theoremProver.getOptions();
   }
-
     
   /**
      * Get the theorem prover that is connected to this expression manager
@@ -616,24 +372,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   public BooleanExpressionImpl hasType(Expression expr, Type type) {
     throw new UnsupportedOperationException("hasType doesn't has z3 supported API.");
     /*return BooleanExpressionImpl.mkHasType(this, expr, type);*/
-  }
-
-  @Override
-  public BooleanExpressionImpl iff(Expression left,
-      Expression right)  {
-      return booleanType().iff(left, right);
-  }
-
-  @Override
-  public  Expression ifThenElse(
-      Expression cond, Expression tt, Expression ff) {
-    return booleanType().ifThenElse(cond, tt, ff);
-  }
-  
-  @Override
-  public BooleanExpressionImpl implies(Expression left,
-      Expression right)  {
-    return booleanType().implies(left, right);
   }
   
   @Override
@@ -709,19 +447,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   }
 
   @Override
-  public Expression index(
-      Expression array, Expression index) {
-    Preconditions.checkArgument(array.isArray());
-    return array.asArray().index(index);
-  }
-
-  @Override
-  public Expression index(Expression tuple, int index) {
-    Preconditions.checkArgument(tuple.isTuple());
-    return tuple.asTuple().index(index);
-  }
-
-  @Override
   public InductiveTypeImpl inductiveType(String name) {
     return InductiveTypeImpl.stub(this, name);
   }
@@ -729,28 +454,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   @Override
   public IntegerTypeImpl integerType() {
     return integerType;
-  }
-
-  @Override
-  public IntegerVariableImpl integerVar(String name, boolean fresh)  {
-    return integerType().variable(name, fresh);  
-  }
-
-  @Override
-  public VariableExpressionImpl integerBoundVar(String name, boolean fresh) {
-    return integerType().boundVariable(name, fresh);
-  }
-  
-  @Override
-  public  FunctionExpression lambda(
-      Iterable<? extends VariableExpression> vars, Expression expr) {
-    return importExpression(expr).lambda(vars);
-  }
-
-  @Override
-  public FunctionExpression lambda(
-      VariableExpression var, Expression body) {
-    return importExpression(body).lambda(var);
   }
   
   TypeImpl lookupType(String name) {
@@ -762,106 +465,8 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   }
   
   @Override
-  public BitVectorExpressionImpl bitVectorMinus(Expression a,
-      Expression b) {
-    return BitVectorExpressionImpl.mkMinus(this, a, b);
-  }
-
-  @Override
-  public BitVectorExpressionImpl mult(int size, Expression a,
-      Expression b) {
-    return BitVectorExpressionImpl.mkMult(this, size, a, b);
-
-  }
-
-  @Override
-  public BooleanExpressionImpl not(Expression expr)  {
-    return booleanType().not(expr);
-  }
-  
-  @Override
-  public BooleanExpressionImpl or(
-      Expression... subExpressions)
-       {
-    return booleanType().or(subExpressions);
-  }
-  
-  @Override
-  public BooleanExpressionImpl or(Expression left,
-      Expression right)  {
-    return booleanType().or(left,right);
-  }
-  
-  @Override
-  public BooleanExpressionImpl or(
-      Iterable<? extends Expression> subExpressions)
-       {
-    return booleanType().or(subExpressions);
-  }
-
-  @Override
-  public BitVectorExpressionImpl plus(int size, Expression a,
-      Expression b) {
-    return BitVectorExpressionImpl.mkPlus(this, size, a, b);
-
-  }
-
-  @Override
-  public BitVectorExpressionImpl plus(int size, Expression first,
-      Expression... rest) {
-    return BitVectorExpressionImpl.mkPlus(this, size, first, rest);
-  }
-
-  @Override
-  public BitVectorExpressionImpl plus(int size,
-      Iterable<? extends Expression> args) {
-    return BitVectorExpressionImpl.mkPlus(this, size, args);
-  }
-
-  @Override
-  public IntegerExpressionImpl integerPow(Expression x, Expression n) {
-    return integerType().pow(x, n);
-  }
-  
-  @Override
-  public RationalExpressionImpl rationalPow(Expression x, Expression n) {
-    return rationalType().pow(x,n);
-  }
-
-  @Override
-  public RationalExpressionImpl rationalConstant(int numerator, int denominator)  {
-    return rationalType.constant(numerator, denominator);
-  }
-  
-  @Override
   public RationalTypeImpl rationalType() {
     return rationalType;
-  }
-
-  @Override
-  public RationalVariableImpl rationalVar(String name, boolean fresh)  {
-    return rationalType().variable(name, fresh);
-  }
-  
-  @Override
-  public VariableExpressionImpl rationalBoundVar(String name, boolean fresh)  {
-    return rationalType().boundVariable(name, fresh);
-  }
-
-  @Override
-  public RationalExpressionImpl ratOne() {
-    return rationalType.one();
-  }
-  
-  @Override
-  public RationalExpressionImpl ratZero() {
-    return rationalType.zero();
-  }
-  
-  @Override
-  public  Expression select(
-      Selector selector, Expression val) {
-    return selector.apply(val);
   }
 
   @Override
@@ -887,36 +492,8 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
 
   @Override
   public void setTriggers(Expression e,
-      Iterable<? extends Expression> triggers)
-       {
+      Iterable<? extends Expression> triggers) {
     e.asBooleanExpression().setTriggers(triggers);
-  }
- 
-  @Override
-  public BitVectorExpressionImpl signExtend(
-      Expression bv, int size)  {
-    return BitVectorExpressionImpl.mkSignExtend(this, size, bv);
-  }
-
-  @Override
-  public  Expression subst(Expression e,
-      Iterable<? extends Expression> oldExprs,
-      Iterable<? extends Expression> newExprs)
-       {
-    return importExpression(e).subst(oldExprs, newExprs);
-  }
-
-  @Override
-  public Expression succ(Expression op)  {
-    return plus(op,one());
-  }
-
-  
-  @Override
-  public BooleanExpression testConstructor(Constructor constructor,
-      Expression val) {
-    Preconditions.checkArgument(val.isInductive());
-    return val.asInductive().test(constructor);
   }
   
   BooleanExpressionImpl toBooleanExpression(Expr e) throws TheoremProverException {
@@ -956,9 +533,9 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       } else if (e.IsBool() && e.IsConst()) {
         Preconditions.checkArgument(e.NumArgs() == 0);
         if(e.equals(getTheoremProver().getZ3Context().MkTrue()))
-          return tt();
+          return BooleanExpressionImpl.valueOf(this, tt());
         else
-          return ff();
+          return BooleanExpressionImpl.valueOf(this, ff());
       } else if (e.IsQuantifier()) {
         Quantifier qtf = (Quantifier) e;
         int size = qtf.NumBound();
@@ -996,14 +573,18 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
           }
         }
         
-        if(isForall)  return forall(vars, body, triggers, noTriggers);
-        else  return exists(vars, body, triggers, noTriggers);
+        if(isForall)  
+        	return BooleanExpressionImpl.valueOf(this, 
+        			forall(vars, body, triggers, noTriggers));
+        else  
+        	return BooleanExpressionImpl.valueOf(this, 
+        			exists(vars, body, triggers, noTriggers));
         
       } else if ( e.FuncDecl().Name() != null
             /* e.getKind() == edu.nyu.acsys.Z3.Kind.LAMBDA || 
              * e.getKind() == edu.nyu.acsys.Z3.Kind.APPLY 
              */ ) {
-        return BooleanExpressionImpl.valueOf(this, (ExpressionImpl)toExpression(e));  
+        return BooleanExpressionImpl.valueOf(this, toExpression(e));  
       } else {
         throw new UnsupportedOperationException("Unexpected expression: " + e);
       }
@@ -1022,11 +603,11 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     });
   }
   
-  public Expr toZ3Expr(Expression expr)  {
+  protected Expr toZ3Expr(Expression expr)  {
     return importExpression(expr).getZ3Expression();
   }
   
-  public List<Expr> toZ3Exprs(
+  protected List<Expr> toZ3Exprs(
       Iterable<? extends Expression> subExpressions) {
     return Lists.newArrayList(Iterables.transform(subExpressions,
         new Function<Expression, Expr>() {
@@ -1036,11 +617,11 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
         }));
   }
   
-  Sort toZ3Type(Type type) {
+  protected Sort toZ3Type(Type type) {
     return importType(type).getZ3Type();
   }
   
-  ExpressionImpl toExpression(Expr e) throws TheoremProverException {
+  protected ExpressionImpl toExpression(Expr e) throws TheoremProverException {
     IOUtils.debug().indent().incr().pln(">> toExpression(" + e.toString() + ")");
     
     if(exprCache.containsKey(e))  
@@ -1155,7 +736,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     }
   }
   
-  List<? extends ExpressionImpl> toExpressionList(Expr[] vars) {
+  protected List<? extends ExpressionImpl> toExpressionList(Expr[] vars) {
     List<Expr> args = Lists.newArrayList(vars);
     return Lists.transform(args, new Function<Expr, ExpressionImpl>() {
       @Override
@@ -1222,13 +803,8 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     }
   }
   
-  FunctionDeclarator toFunctionDeclarator(FuncDecl func) {
+  protected FunctionDeclarator toFunctionDeclarator(FuncDecl func) {
     return FunctionDeclarator.create(this, func);
-  }
-  
-  @Override
-  public BooleanExpressionImpl tt() {
-    return booleanType().tt();
   }
 
   @Override
@@ -1281,23 +857,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   public TypeImpl universalType() {
     throw new UnsupportedOperationException("universalType() is not supported in Z3.");
   }
-  
-  @Override
-  public ArrayExpressionImpl update(
-      Expression array, Expression index, Expression value) {
-    return ArrayExpressionImpl.mkUpdate(this, array, index, value);
-  }
-
-  @Override
-  public TupleExpressionImpl update(Expression tuple, int i, Expression val) {
-    return TupleExpressionImpl.mkUpdate(this, tuple, i, val);
-  }
-
-  @Override
-  public BooleanExpressionImpl xor(Expression left,
-      Expression right)  {
-    return booleanType().xor(left, right);
-  }
 
   @Override
   public BitVectorExpressionImpl zeroExtend(
@@ -1344,11 +903,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   }
 
   @Override
-  public ArrayExpressionImpl storeAll(Expression expr, Type type) {
-    return ArrayExpressionImpl.mkStoreAll(this, expr, type);
-  }
-
-  @Override
   public IntegerType integerRangeType(Expression lBound, Expression uBound) {
     throw new UnsupportedOperationException("range type is not supported in z3.");
   }
@@ -1356,18 +910,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   @Override
   public RationalType rationalRangeType(Expression lBound, Expression uBound) {
     throw new UnsupportedOperationException("range type is not supported in z3.");
-  }
-
-  @Override
-  public Expression applyExpr(Expression fun,
-      Iterable<? extends Expression> args) {
-    return fun.getType().asFunction().apply(args);
-  }
-
-  @Override
-  public Expression applyExpr(Expression fun, Expression first,
-      Expression... rest) {
-    return fun.getType().asFunction().apply(first, rest);
   }
 
   @Override
@@ -1383,12 +925,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   @Override
   public RecordExpression record(Type type, Expression first, Expression... rest) {
     return RecordExpressionImpl.create(this, type, first, rest);
-  }
-
-  @Override
-  public RecordExpression update(Expression record, String fieldName,
-      Expression val) {
-    return RecordExpressionImpl.mkUpdate(this, record, fieldName, val);
   }
 
   @Override

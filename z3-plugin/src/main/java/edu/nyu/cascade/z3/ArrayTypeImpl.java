@@ -3,6 +3,7 @@ package edu.nyu.cascade.z3;
 import com.google.common.base.Preconditions;
 import com.microsoft.z3.Sort;
 
+import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.ArrayType;
@@ -97,4 +98,22 @@ public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
       return super.importExpression(expression);
     }
   }
+
+	@Override
+	public Expression index(Expression array, Expression index) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ArrayExpression update(Expression array, Expression index,
+			Expression value) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ArrayExpression storeAll(Expression expr, ArrayType type) {
+		return ArrayExpressionImpl.mkStoreAll(getExpressionManager(), expr, type);
+	}
 }

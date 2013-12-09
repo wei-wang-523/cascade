@@ -8,6 +8,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ComputationException;
 
+import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.BitVectorType;
@@ -259,4 +260,14 @@ public class BitVectorTypeImpl extends TypeImpl implements BitVectorType {
   public VariableExpressionImpl boundVariable(String name, boolean fresh) {
     return new BitVectorVariableImpl(getExpressionManager(), name, this, fresh);
   }
+
+	@Override
+	public BitVectorExpression constant(int size, long val) {
+		return BitVectorExpressionImpl.mkConstant(getExpressionManager(), size, val);
+	}
+
+	@Override
+	public BitVectorExpression constant(int size, BigInteger val) {
+		return BitVectorExpressionImpl.mkConstant(getExpressionManager(), size, val);
+	}
 }
