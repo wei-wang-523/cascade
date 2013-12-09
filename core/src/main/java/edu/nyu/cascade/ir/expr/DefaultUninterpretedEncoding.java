@@ -51,34 +51,4 @@ public class DefaultUninterpretedEncoding extends
 	  return getExpressionManager()
 	  		.variable(UNKNOWN_VARIABLE_NAME, getType(), true).asUninterpreted();
   }
-
-	@Override
-  public boolean isBooleanEncoding() {
-	  return false;
-  }
-
-	@Override
-  public BooleanEncoding<? extends Expression> asBooleanEncoding() {
-		throw new UnsupportedOperationException();
-  }
-
-	@Override
-  public boolean isIntegerEncoding() {
-	  return false;
-  }
-
-	@Override
-  public IntegerEncoding<? extends Expression> asIntegerEncoding() {
-		throw new UnsupportedOperationException();
-  }
-
-	@Override
-  public boolean isPointerEncoding() {
-	  return false;
-  }
-
-	@Override
-  public PointerEncoding<? extends Expression> asPointerEncoding() {
-		throw new UnsupportedOperationException();
-  }
 }

@@ -12,7 +12,7 @@ import edu.nyu.cascade.prover.type.Type;
  *
  */
 
-public interface IRDataFormatter {
+public interface IRBVDataFormatter {
 
 	Type getAddressType();
 	

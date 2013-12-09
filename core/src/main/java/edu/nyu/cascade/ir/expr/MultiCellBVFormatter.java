@@ -12,21 +12,21 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.type.Type;
 
-public class MultiCellFormatter implements IRDataFormatter {
+public class MultiCellBVFormatter implements IRBVDataFormatter {
 
 	private final ExpressionEncoding encoding;
 	private final ExpressionManager exprManager;
   private final C cAnalyzer;
 	
 	
-	private MultiCellFormatter(ExpressionEncoding _encoding) {
+	private MultiCellBVFormatter(ExpressionEncoding _encoding) {
 		encoding = _encoding;
 		exprManager = encoding.getExpressionManager();
 		cAnalyzer = encoding.getCAnalyzer();
 	}
 	
-	public static MultiCellFormatter create(ExpressionEncoding encoding) {
-		return new MultiCellFormatter(encoding);
+	public static MultiCellBVFormatter create(ExpressionEncoding encoding) {
+		return new MultiCellBVFormatter(encoding);
 	}
 	
 	@Override
@@ -57,18 +57,17 @@ public class MultiCellFormatter implements IRDataFormatter {
 		
 		if(getValueType().isInteger())	return memory.update(index, value);
 		
-		int size = (int) cAnalyzer.getSize(CType.getType(index.getNode()));
-		int valueSize = value.asBitVector().getSize();
-		
 		int cellSize = getValueType().asBitVectorType().getSize();
-		if(valueSize != size * cellSize) 
-			value = value.asBitVector().signExtend(size * cellSize);
+		int size = (int) cAnalyzer.getSize(CType.getType(index.getNode()));
+//		int valueSize = value.asBitVector().getSize();
+//		if(valueSize != size * cellSize) 
+//			value = value.asBitVector().signExtend(size * cellSize);
 		
-		int addSize = getAddressType().asBitVectorType().getSize();
+		int addrSize = getAddressType().asBitVectorType().getSize();
 		
 		for(int i = 0; i < size; i++) {
-			Expression offExpr = exprManager.bitVectorConstant(i, addSize);
-			Expression idxExpr = index.asBitVector().plus(addSize, offExpr);
+			Expression offExpr = exprManager.bitVectorConstant(i, addrSize);
+			Expression idxExpr = index.asBitVector().plus(addrSize, offExpr);
 			Expression valExpr = value.asBitVector().extract((i+1) * cellSize - 1, i * cellSize);
 			memory = memory.update(idxExpr, valExpr);
 		}

@@ -314,34 +314,4 @@ public class BitVectorOffsetEncoding extends
 		Preconditions.checkArgument(rhs.getType().equals(getType()));
 		return intEncoding.signedDivide(lhs, rhs);
   }
-
-	@Override
-  public boolean isBooleanEncoding() {
-	  return intEncoding.isBooleanEncoding();
-  }
-
-	@Override
-  public BooleanEncoding<? extends Expression> asBooleanEncoding() {
-	  return intEncoding.asBooleanEncoding();
-  }
-
-	@Override
-  public boolean isIntegerEncoding() {
-	  return intEncoding.isIntegerEncoding();
-  }
-
-	@Override
-  public IntegerEncoding<? extends Expression> asIntegerEncoding() {
-	  return intEncoding.asIntegerEncoding();
-  }
-
-	@Override
-  public boolean isPointerEncoding() {
-	  return intEncoding.isPointerEncoding();
-  }
-
-	@Override
-  public PointerEncoding<? extends Expression> asPointerEncoding() {
-	  return intEncoding.asPointerEncoding();
-  }  
 }

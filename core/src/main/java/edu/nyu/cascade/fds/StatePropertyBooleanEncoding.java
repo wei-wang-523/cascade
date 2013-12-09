@@ -9,8 +9,6 @@ import com.google.common.base.Preconditions;
 
 import edu.nyu.cascade.ir.expr.AbstractTypeEncoding;
 import edu.nyu.cascade.ir.expr.BooleanEncoding;
-import edu.nyu.cascade.ir.expr.IntegerEncoding;
-import edu.nyu.cascade.ir.expr.PointerEncoding;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -124,35 +122,5 @@ implements
   @Override
   public StateProperty unknown() {
     return unknown();
-  }
-
-	@Override
-  public boolean isBooleanEncoding() {
-	  return false;
-  }
-
-	@Override
-  public BooleanEncoding<? extends Expression> asBooleanEncoding() {
-		return this;
-  }
-
-	@Override
-  public boolean isIntegerEncoding() {
-	  return true;
-  }
-
-	@Override
-  public IntegerEncoding<? extends Expression> asIntegerEncoding() {
-		throw new UnsupportedOperationException();
-  }
-
-	@Override
-  public boolean isPointerEncoding() {
-	  return false;
-  }
-
-	@Override
-  public PointerEncoding<? extends Expression> asPointerEncoding() {
-	  throw new UnsupportedOperationException();
   }
 }

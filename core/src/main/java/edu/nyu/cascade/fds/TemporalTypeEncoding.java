@@ -4,9 +4,6 @@ import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.google.common.base.Preconditions;
 
-import edu.nyu.cascade.ir.expr.BooleanEncoding;
-import edu.nyu.cascade.ir.expr.IntegerEncoding;
-import edu.nyu.cascade.ir.expr.PointerEncoding;
 import edu.nyu.cascade.ir.expr.TypeEncoding;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -66,35 +63,4 @@ public class TemporalTypeEncoding<T extends Expression> implements TypeEncoding<
   public StateExpression variable(String name, boolean fresh) {
     return stateExprFactory.valueOf((Expression) baseEncoding.variable(name,fresh));
   }
-
-	@Override
-  public boolean isBooleanEncoding() {
-	  return baseEncoding.isBooleanEncoding();
-  }
-
-	@Override
-  public BooleanEncoding<? extends Expression> asBooleanEncoding() {
-	  return baseEncoding.asBooleanEncoding();
-  }
-
-	@Override
-  public boolean isIntegerEncoding() {
-	  return baseEncoding.isIntegerEncoding();
-  }
-
-	@Override
-  public IntegerEncoding<? extends Expression> asIntegerEncoding() {
-	  return baseEncoding.asIntegerEncoding();
-  }
-
-	@Override
-  public boolean isPointerEncoding() {
-	  return baseEncoding.isPointerEncoding();
-  }
-
-	@Override
-  public PointerEncoding<? extends Expression> asPointerEncoding() {
-	  return baseEncoding.asPointerEncoding();
-  }
-  
 }

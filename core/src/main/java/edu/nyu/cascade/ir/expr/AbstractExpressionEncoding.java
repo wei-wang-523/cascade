@@ -404,12 +404,6 @@ public abstract class AbstractExpressionEncoding
 
   @Override
   public Expression eq(Expression lhs, Expression rhs) {
-//    if(isInteger(lhs) && isInteger(rhs) && 
-//        !lhs.getType().equals(rhs.getType())) {
-//      int size = getMaxSize(lhs, rhs);
-//      lhs = lhs.asBitVector().zeroExtend(size);
-//      rhs = rhs.asBitVector().zeroExtend(size);
-//    }
     return getBooleanEncoding().ofBooleanExpression( lhs.eq((Expression)rhs) );
   }
   

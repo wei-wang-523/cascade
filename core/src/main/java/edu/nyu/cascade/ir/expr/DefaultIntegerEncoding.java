@@ -229,34 +229,4 @@ public class DefaultIntegerEncoding extends
 		return divide(lhs, rhs);
 	}
 
-	@Override
-  public boolean isBooleanEncoding() {
-	  return false;
-  }
-
-	@Override
-  public BooleanEncoding<? extends Expression> asBooleanEncoding() {
-		throw new UnsupportedOperationException();
-  }
-
-	@Override
-  public boolean isIntegerEncoding() {
-	  return false;
-  }
-
-	@Override
-  public IntegerEncoding<? extends Expression> asIntegerEncoding() {
-		return this;
-  }
-
-	@Override
-  public boolean isPointerEncoding() {
-	  return false;
-  }
-
-	@Override
-  public PointerEncoding<? extends Expression> asPointerEncoding() {
-		throw new UnsupportedOperationException();
-  }
-
 }

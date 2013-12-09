@@ -163,38 +163,4 @@ public class UnimplementedPointerEncoding<T extends Expression> implements Point
 	  // TODO Auto-generated method stub
 	  return null;
   }
-
-	@Override
-  public boolean isBooleanEncoding() {
-	  // TODO Auto-generated method stub
-	  return false;
-  }
-
-	@Override
-  public BooleanEncoding<? extends Expression> asBooleanEncoding() {
-		throw new UnsupportedOperationException();
-  }
-
-	@Override
-  public boolean isIntegerEncoding() {
-	  // TODO Auto-generated method stub
-	  return false;
-  }
-
-	@Override
-  public IntegerEncoding<? extends Expression> asIntegerEncoding() {
-		throw new UnsupportedOperationException();
-  }
-
-	@Override
-  public boolean isPointerEncoding() {
-	  // TODO Auto-generated method stub
-	  return false;
-  }
-
-	@Override
-  public PointerEncoding<? extends Expression> asPointerEncoding() {
-		return this;
-  }
-
 }

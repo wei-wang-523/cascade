@@ -25,7 +25,7 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	
 	private final ExpressionManager exprManager;
 	private final ExpressionEncoding encoding;
-	private final IRDataFormatter formatter;
+	private final IRBVDataFormatter formatter;
 	private final LinkedHashMap<Pair<String, String>, Expression> heapRegions, stackVars, stackRegions;
 	
 	private Expression lastRegion;
@@ -35,7 +35,7 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	private final Type valueType;
 	private final Type sizeType;
 
-	protected LinearHeapEncoding(ExpressionEncoding encoding, IRDataFormatter formatter) {
+	protected LinearHeapEncoding(ExpressionEncoding encoding, IRBVDataFormatter formatter) {
 		this.encoding = encoding;
 		this.formatter = formatter;
 		exprManager = encoding.getExpressionManager();
@@ -53,7 +53,7 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	}
 	
 	public static LinearHeapEncoding create(ExpressionEncoding encoding, 
-			IRDataFormatter formatter) {
+			IRBVDataFormatter formatter) {
 		return new LinearHeapEncoding(encoding, formatter);
 	}
 	

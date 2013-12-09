@@ -176,35 +176,5 @@ public class DefaultTupleEncoding implements TupleEncoding<TupleExpression> {
 	  public TupleExpression variable(String name, boolean fresh) {
 	    return getExpressionManager().variable(name, getType(), fresh).asTuple();
 	  }
-
-		@Override
-    public boolean isBooleanEncoding() {
-	    return false;
-    }
-
-		@Override
-    public BooleanEncoding<? extends Expression> asBooleanEncoding() {
-			throw new UnsupportedOperationException();
-    }
-
-		@Override
-    public boolean isIntegerEncoding() {
-	    return false;
-    }
-
-		@Override
-    public IntegerEncoding<? extends Expression> asIntegerEncoding() {
-			throw new UnsupportedOperationException();
-    }
-
-		@Override
-    public boolean isPointerEncoding() {
-	    return false;
-    }
-
-		@Override
-    public PointerEncoding<? extends Expression> asPointerEncoding() {
-			throw new UnsupportedOperationException();
-    }
 	}
 }

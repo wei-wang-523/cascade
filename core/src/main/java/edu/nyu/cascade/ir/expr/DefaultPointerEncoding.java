@@ -254,35 +254,4 @@ public class DefaultPointerEncoding
     Expression offZero = getOffsetEncoding().zero();
     return getExpressionManager().tuple(getType(), refVar, offZero);
   }
-
-	@Override
-  public boolean isBooleanEncoding() {
-	  return false;
-  }
-
-	@Override
-  public BooleanEncoding<? extends Expression> asBooleanEncoding() {
-		throw new UnsupportedOperationException();
-  }
-
-	@Override
-  public boolean isIntegerEncoding() {
-	  return false;
-  }
-
-	@Override
-  public IntegerEncoding<? extends Expression> asIntegerEncoding() {
-		throw new UnsupportedOperationException();
-  }
-
-	@Override
-  public boolean isPointerEncoding() {
-	  return true;
-  }
-
-	@Override
-  public PointerEncoding<? extends Expression> asPointerEncoding() {
-	  return this;
-  }
-
 }

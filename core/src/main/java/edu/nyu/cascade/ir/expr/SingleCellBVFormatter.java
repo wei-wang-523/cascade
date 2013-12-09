@@ -9,7 +9,7 @@ import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.Type;
 
-public class SingleCellFormatter implements IRDataFormatter {
+public class SingleCellBVFormatter implements IRBVDataFormatter {
 
 	private final ExpressionEncoding encoding;
 	
@@ -17,13 +17,13 @@ public class SingleCellFormatter implements IRDataFormatter {
   private final C cAnalyzer;
 	
 	
-	private SingleCellFormatter(ExpressionEncoding encoding) {
+	private SingleCellBVFormatter(ExpressionEncoding encoding) {
 		this.encoding = encoding;
 		cAnalyzer = encoding.getCAnalyzer();
 	}
 	
-	public static SingleCellFormatter create(ExpressionEncoding encoding) {
-		return new SingleCellFormatter(encoding);
+	public static SingleCellBVFormatter create(ExpressionEncoding encoding) {
+		return new SingleCellBVFormatter(encoding);
 	}
 	
 	@Override

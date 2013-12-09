@@ -192,37 +192,4 @@ class DefaultArrayInstance implements ArrayEncoding.Instance<ArrayExpression> {
   public ArrayExpression variable(String name, boolean fresh) {
     return exprManager.arrayVar(name, getIndexEncoding().getType(), getElementEncoding().getType(), fresh);
   }
-
-	@Override
-  public boolean isBooleanEncoding() {
-	  return false;
-  }
-
-	@Override
-  public BooleanEncoding<? extends Expression> asBooleanEncoding() {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public boolean isIntegerEncoding() {
-	  return false;
-  }
-
-	@Override
-  public IntegerEncoding<? extends Expression> asIntegerEncoding() {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public boolean isPointerEncoding() {
-	  return false;
-  }
-
-	@Override
-  public PointerEncoding<? extends Expression> asPointerEncoding() {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
 }

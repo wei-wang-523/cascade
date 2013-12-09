@@ -304,34 +304,4 @@ public class BitVectorIntegerEncoding extends
 	public BitVectorExpression uminus(BitVectorExpression expr) {
 		return expr.uminus();
 	}
-
-	@Override
-  public boolean isBooleanEncoding() {
-	  return false;
-  }
-
-	@Override
-  public BooleanEncoding<? extends Expression> asBooleanEncoding() {
-		throw new UnsupportedOperationException();
-  }
-
-	@Override
-  public boolean isIntegerEncoding() {
-	  return true;
-  }
-
-	@Override
-  public IntegerEncoding<? extends Expression> asIntegerEncoding() {
-	  return this;
-  }
-
-	@Override
-  public boolean isPointerEncoding() {
-	  return false;
-  }
-
-	@Override
-  public PointerEncoding<? extends Expression> asPointerEncoding() {
-		throw new UnsupportedOperationException();
-  }
 }
