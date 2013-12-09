@@ -31,6 +31,10 @@ public interface BitVectorType extends Type, ComparableType {
 
   BitVectorExpression constant(int size, int val);
 
+  BitVectorExpression constant(int size, long val);
+  
+  BitVectorExpression constant(int size, BigInteger val);
+  
   BitVectorExpression constant(int c);
   
   BitVectorExpression constant(long c);
@@ -51,5 +55,15 @@ public interface BitVectorType extends Type, ComparableType {
 
   BitVectorExpression zero(int size);
   
+  BitVectorExpression signedDivide(Expression a, Expression b);
+  
+  BitVectorExpression rem(Expression a, Expression b);
+  
+  BitVectorExpression signedRem(Expression a, Expression b);
+  
   int getSize();
+
+	BitVectorExpression signedExtend(Expression bv, int size);
+	
+	BitVectorExpression extend(Expression bv, int size);
 }

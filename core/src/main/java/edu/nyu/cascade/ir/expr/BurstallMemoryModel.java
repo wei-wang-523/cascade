@@ -617,7 +617,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     	String lMemArrName = getMemArrElemName(lTypeName);
     	if(!map.containsKey(lMemArrName)) {
     		Type valueType = heapEncoder.getArrayElemType(lType);
-    		lMemArr = exprManager.arrayVar(lMemArrName, addrType, valueType, false);
+    		lMemArr = exprManager.arrayVar(lMemArrName, addrType, valueType, false).asArray();
     	} else {
     		lMemArr = map.get(lMemArrName);
     	}
@@ -634,7 +634,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
         	if(!map.containsKey(rMemArrName)) {
         		Type valueType = heapEncoder.getArrayElemType(rType);
         		ArrayExpression rMemArr = getExpressionManager()
-        				.arrayVar(rMemArrName, addrType, valueType, false);
+        				.arrayVar(rMemArrName, addrType, valueType, false).asArray();
         		map.put(rMemArrName, rMemArr);
         	}
         }
@@ -732,7 +732,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     } else { // Fresh element
       Type valueType = heapEncoder.getArrayElemType(type);
       ArrayExpression resMem = getExpressionManager()
-    			.arrayVar(arrName, addrType, valueType, false);
+    			.arrayVar(arrName, addrType, valueType, false).asArray();
       sideEffectMem.put(arrName, resMem);
       return true;
     }
@@ -761,7 +761,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     } else { // Fresh element
       Type valueType = heapEncoder.getArrayElemType(type);
       resMem = getExpressionManager()
-    			.arrayVar(arrName, addrType, valueType, false);
+    			.arrayVar(arrName, addrType, valueType, false).asArray();
     }   
     return resMem;
   }

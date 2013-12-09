@@ -131,14 +131,15 @@ public interface ExpressionManager {
    * @return the variable
    */
 
-   ArrayVariableExpression arrayVar(
+   VariableExpression arrayVar(
       String name, Type index, Type elem, boolean fresh);
    
    VariableExpression arrayBoundVar(
        String name, Type index, Type elem, boolean fresh);
 
-   ArrayType asArrayType(
-      Type type);
+   ArrayType asArrayType(Type type);
+   
+   ArrayType asArrayType(Type indexType, Type elementType);
 
   BitVectorExpression asBitVector(Expression expression);
 
@@ -397,7 +398,7 @@ public interface ExpressionManager {
    *          the denominator of the ratio
    * @return the ratio of numerator and denominator
    */
-  BitVectorExpression divide(Expression numerator,
+  Expression divide(Expression numerator,
       Expression denominator);
 
   BitVectorExpression signedDivide(Expression numerator,
@@ -750,7 +751,7 @@ public interface ExpressionManager {
    *          TODO
    * @return the variable
    */
-  IntegerVariableExpression integerVar(String name, boolean fresh); 
+  VariableExpression integerVar(String name, boolean fresh); 
 
   VariableExpression integerBoundVar(String name, boolean fresh);
 
@@ -824,9 +825,6 @@ public interface ExpressionManager {
    * @return multiplication expression of left and right
    */
   Expression mult(Expression left, Expression right);
-
-  BitVectorExpression mult(int size, Expression a,
-      Expression b);
 
   /**
    * Given a list of integer expressions, create a new integer expression
@@ -909,11 +907,9 @@ public interface ExpressionManager {
 
   Expression plus(Expression first, Expression... rest);
 
-  BitVectorExpression plus(int size, Expression a, Expression b);
+  BitVectorExpression bitVectorPlus(int size, Expression first, Expression... rest);
 
-  BitVectorExpression plus(int size, Expression first, Expression... rest);
-
-  BitVectorExpression plus(int size, Iterable<? extends Expression> args);
+  BitVectorExpression bitVectorPlus(int size, Iterable<? extends Expression> args);
 
   /**
    * Given a list of integer expressions, create a new integer expression
@@ -926,10 +922,7 @@ public interface ExpressionManager {
    */
   Expression plus(Iterable<? extends Expression> children);
 
-  IntegerExpression integerPow(Expression x,
-      Expression n);
-
-  RationalExpression rationalPow(Expression x,
+  Expression pow(Expression x,
       Expression n);
 
   /**
@@ -973,7 +966,7 @@ public interface ExpressionManager {
    *          TODO
    * @return the variable
    */
-  RationalVariableExpression rationalVar(String name, boolean fresh);
+  VariableExpression rationalVar(String name, boolean fresh);
   
   VariableExpression rationalBoundVar(String name, boolean fresh);
 
@@ -1023,16 +1016,6 @@ public interface ExpressionManager {
   Expression subst(Expression e,
       Iterable<? extends Expression> oldExprs,
       Iterable<? extends Expression> newExprs);
-
-  /**
-   * Given an integer expression, create a new integer expression representing
-   * its successor. E.g., given x, return x+1.
-   * 
-   * @param op
-   *          the operand
-   * @return the sum of given expressions
-   */
-  Expression succ(Expression op);
 
   BooleanExpression testConstructor(Constructor constructor,
       Expression val);
@@ -1110,9 +1093,9 @@ public interface ExpressionManager {
 
   BitVectorExpression zeroExtend(Expression bv, int size);
 
-  BitVectorExpression bitVectorPlus(int size, Iterable<? extends Expression> args);
+  BitVectorExpression bitVectorPlus(int size, Expression left, Expression right);
   
-  BitVectorExpression bitVectorMult(int size, Iterable<? extends Expression> args);
+  BitVectorExpression bitVectorMult(int size, Expression left, Expression right);
 
   TupleExpression asTuple(Expression e);
   

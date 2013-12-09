@@ -190,6 +190,6 @@ class DefaultArrayInstance implements ArrayEncoding.Instance<ArrayExpression> {
 
   @Override
   public ArrayExpression variable(String name, boolean fresh) {
-    return exprManager.arrayVar(name, getIndexEncoding().getType(), getElementEncoding().getType(), fresh);
+    return exprManager.arrayVar(name, getIndexEncoding().getType(), getElementEncoding().getType(), fresh).asArray();
   }
 }
