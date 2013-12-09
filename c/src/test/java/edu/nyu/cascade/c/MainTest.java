@@ -387,9 +387,18 @@ public class MainTest {
   			"--prover", "z3", "--theory", "Burstall", "--mem-cell-size", "16");
   	final Tester<File> PartitionTester = parserTestWithTimeout("--feasibility", "-inline-anno", "--sound", 
   			"--prover", "z3", "--theory", "Partition", "--mem-cell-size", "16");
+  	final Tester<File> FlatMultiCellTester = parserTestWithTimeout("--feasibility", "-inline-anno", "--sound", 
+  			"--prover", "z3", "--theory", "Flat", "--multi-cell");
+  	final Tester<File> BurstallMultiCellTester = parserTestWithTimeout("--feasibility", "-inline-anno", "--sound", 
+  			"--prover", "z3", "--theory", "Burstall", "--multi-cell");
+  	final Tester<File> PartitionMultiCellTester = parserTestWithTimeout("--feasibility", "-inline-anno", "--sound", 
+  			"--prover", "z3", "--theory", "Partition", "--multi-cell");
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatTester, false);
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallTester, false);
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatMultiCellTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionMultiCellTester, false);
   }
   
   @Test
