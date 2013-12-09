@@ -74,6 +74,11 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
       Expression a, Expression b) {
     Preconditions.checkArgument(a.isBitVector());
     Preconditions.checkArgument(b.isBitVector());
+    if(a.asBitVector().getSize() > b.asBitVector().getSize()) {
+    	b = b.asBitVector().signExtend(a.asBitVector().getSize());
+    } else if(a.asBitVector().getSize() < b.asBitVector().getSize()) {
+    	a = a.asBitVector().signExtend(b.asBitVector().getSize());
+    }
     return new BooleanExpressionImpl(exprManager, Kind.GEQ,
         new BinaryConstructionStrategy() {
           @Override
@@ -87,6 +92,11 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
       Expression a, Expression b) {
     Preconditions.checkArgument(a.isBitVector());
     Preconditions.checkArgument(b.isBitVector());
+    if(a.asBitVector().getSize() > b.asBitVector().getSize()) {
+    	b = b.asBitVector().signExtend(a.asBitVector().getSize());
+    } else if(a.asBitVector().getSize() < b.asBitVector().getSize()) {
+    	a = a.asBitVector().signExtend(b.asBitVector().getSize());
+    }
     return new BooleanExpressionImpl(exprManager, Kind.GEQ,
         new BinaryConstructionStrategy() {
           @Override
@@ -101,6 +111,11 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
       Expression a, Expression b) {
     Preconditions.checkArgument(a.isBitVector());
     Preconditions.checkArgument(b.isBitVector());
+    if(a.asBitVector().getSize() > b.asBitVector().getSize()) {
+    	b = b.asBitVector().signExtend(a.asBitVector().getSize());
+    } else if(a.asBitVector().getSize() < b.asBitVector().getSize()) {
+    	a = a.asBitVector().signExtend(b.asBitVector().getSize());
+    }
     return new BooleanExpressionImpl(exprManager, Kind.GT,
         new BinaryConstructionStrategy() {
           @Override
@@ -114,6 +129,11 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
       Expression a, Expression b) {
     Preconditions.checkArgument(a.isBitVector());
     Preconditions.checkArgument(b.isBitVector());
+    if(a.asBitVector().getSize() > b.asBitVector().getSize()) {
+    	b = b.asBitVector().signExtend(a.asBitVector().getSize());
+    } else if(a.asBitVector().getSize() < b.asBitVector().getSize()) {
+    	a = a.asBitVector().signExtend(b.asBitVector().getSize());
+    }
     return new BooleanExpressionImpl(exprManager, Kind.GT,
         new BinaryConstructionStrategy() {
           @Override
@@ -127,6 +147,11 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
       Expression a, Expression b) {
     Preconditions.checkArgument(a.isBitVector());
     Preconditions.checkArgument(b.isBitVector());
+    if(a.asBitVector().getSize() > b.asBitVector().getSize()) {
+    	b = b.asBitVector().signExtend(a.asBitVector().getSize());
+    } else if(a.asBitVector().getSize() < b.asBitVector().getSize()) {
+    	a = a.asBitVector().signExtend(b.asBitVector().getSize());
+    }
     return new BooleanExpressionImpl(exprManager, Kind.LEQ,
         new BinaryConstructionStrategy() {
       @Override
@@ -140,6 +165,11 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
       Expression a, Expression b) {
     Preconditions.checkArgument(a.isBitVector());
     Preconditions.checkArgument(b.isBitVector());
+    if(a.asBitVector().getSize() > b.asBitVector().getSize()) {
+    	b = b.asBitVector().signExtend(a.asBitVector().getSize());
+    } else if(a.asBitVector().getSize() < b.asBitVector().getSize()) {
+    	a = a.asBitVector().signExtend(b.asBitVector().getSize());
+    }
     return new BooleanExpressionImpl(exprManager, Kind.LEQ,
         new BinaryConstructionStrategy() {
       @Override
@@ -153,6 +183,11 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
       Expression a, Expression b) {
     Preconditions.checkArgument(a.isBitVector());
     Preconditions.checkArgument(b.isBitVector());
+    if(a.asBitVector().getSize() > b.asBitVector().getSize()) {
+    	b = b.asBitVector().signExtend(a.asBitVector().getSize());
+    } else if(a.asBitVector().getSize() < b.asBitVector().getSize()) {
+    	a = a.asBitVector().signExtend(b.asBitVector().getSize());
+    }
     return new BooleanExpressionImpl(exprManager, Kind.LT,
         new BinaryConstructionStrategy() {
       @Override
@@ -164,6 +199,13 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
   
   static BooleanExpressionImpl mkBvSLt(ExpressionManagerImpl exprManager,
       Expression a, Expression b) {
+    Preconditions.checkArgument(a.isBitVector());
+    Preconditions.checkArgument(b.isBitVector());
+    if(a.asBitVector().getSize() > b.asBitVector().getSize()) {
+    	b = b.asBitVector().signExtend(a.asBitVector().getSize());
+    } else if(a.asBitVector().getSize() < b.asBitVector().getSize()) {
+    	a = a.asBitVector().signExtend(b.asBitVector().getSize());
+    }
     return new BooleanExpressionImpl(exprManager, Kind.LT,
         new BinaryConstructionStrategy() {
       @Override

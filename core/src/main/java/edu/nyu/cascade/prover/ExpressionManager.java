@@ -178,6 +178,18 @@ public interface ExpressionManager {
   BitVectorExpression bitVectorConstant(int n, int size);
   
   /**
+   * Create a bit-vector constant of given size representing the value
+   * <code>n mod 2<sup>size</sup></code>.
+   */
+  BitVectorExpression bitVectorConstant(long n, int size);
+  
+  /**
+   * Create a bit-vector constant of given size representing the value
+   * <code>n mod 2<sup>size</sup></code>.
+   */
+  BitVectorExpression bitVectorConstant(BigInteger n, int size);
+  
+  /**
    * Create a bit-vector constant of the integer value
    * <code>n</code>.
    */

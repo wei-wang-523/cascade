@@ -44,26 +44,16 @@ public abstract class AbstractExpressionEncoding
   private final BiMap<String, Expression> varBindings;
   private final Map<String, IRType> varTypes;
   
-  protected static final int DefaultSize = 8;
+  protected static final int DEFAULT_WORD_SIZE = 8;
   
   protected static xtc.type.C cAnalyzer = new xtc.type.C();
   
-  protected static final int CellSize = 
+  protected static final int WORD_SIZE = 
   		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
-  				DefaultSize
+  				DEFAULT_WORD_SIZE
   				: Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ?
   						Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE) 
-  						: DefaultSize;
-
-  protected static final int SizeTSize = 
-  		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
-  				(int) (cAnalyzer.getSize(xtc.type.NumberT.U_INT) * CellSize) 
-  				: CellSize;
-  				
-  protected static final int intCellSize = 
-  		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
-  				(int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * CellSize) 
-  				: CellSize;
+  						: DEFAULT_WORD_SIZE;
 
   protected final IntegerEncoding<? extends Expression> integerEncoding;
 
@@ -78,7 +68,7 @@ public abstract class AbstractExpressionEncoding
       BooleanEncoding<? extends Expression> booleanEncoding) {
     this(integerEncoding,booleanEncoding,
     		UnimplementedArrayEncoding.<Expression>create(),
-    		DefaultPointerEncoding.create(exprManager));
+    		new UnimplementedPointerEncoding<Expression>());
   }
   
   protected AbstractExpressionEncoding(ExpressionManager exprManager,
@@ -86,7 +76,7 @@ public abstract class AbstractExpressionEncoding
       BooleanEncoding<? extends Expression> booleanEncoding,
       ArrayEncoding<? extends Expression> arrayEncoding) {
     this(integerEncoding,booleanEncoding,arrayEncoding,
-    		DefaultPointerEncoding.create(exprManager));
+    		new UnimplementedPointerEncoding<Expression>());
   }
   
   protected AbstractExpressionEncoding(
@@ -357,7 +347,9 @@ public abstract class AbstractExpressionEncoding
   public Expression castToPointer(Expression expr) {
   	return isPointer(expr)
   			? expr
-  					: getPointerEncoding().getNullPtr();
+  					: getPointerEncoding() != null
+  						? expr
+  							:	getPointerEncoding().getNullPtr();
   }
   
 /*  @Override
@@ -1092,12 +1084,7 @@ public abstract class AbstractExpressionEncoding
   }
   
   @Override
-  public int getCellSize() {
-    return CellSize;
-  }
-  
-  @Override
-  public int getSizeTSize() {
-    return SizeTSize;
+  public int getWordSize() {
+    return WORD_SIZE;
   }
 }

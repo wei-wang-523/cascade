@@ -103,4 +103,34 @@ public class DefaultBooleanEncoding extends
   public BooleanExpression unknown() {
     return variable(UNKNOWN_VARIABLE_NAME, true);
   }
+
+	@Override
+  public boolean isBooleanEncoding() {
+	  return true;
+  }
+
+	@Override
+  public BooleanEncoding<? extends Expression> asBooleanEncoding() {
+	  return this;
+  }
+
+	@Override
+  public boolean isIntegerEncoding() {
+	  return false;
+  }
+
+	@Override
+  public IntegerEncoding<? extends Expression> asIntegerEncoding() {
+		throw new UnsupportedOperationException();
+  }
+
+	@Override
+  public boolean isPointerEncoding() {
+	  return false;
+  }
+
+	@Override
+  public PointerEncoding<? extends Expression> asPointerEncoding() {
+		throw new UnsupportedOperationException();
+  }
 }

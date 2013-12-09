@@ -44,17 +44,18 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.util.CacheException;
+import edu.nyu.cascade.util.Pair;
 
 public class BitVectorExpressionImpl extends ExpressionImpl implements
     BitVectorExpression {
-  private static final LoadingCache<ExpressionManagerImpl, LoadingCache<BigInteger, BitVectorExpressionImpl>> cache = CacheBuilder
+  private static final LoadingCache<ExpressionManagerImpl, LoadingCache<Pair<String, Integer>, BitVectorExpressionImpl>> cache = CacheBuilder
       .newBuilder().build(
-          new CacheLoader<ExpressionManagerImpl, LoadingCache<BigInteger, BitVectorExpressionImpl>>(){
-            public LoadingCache<BigInteger, BitVectorExpressionImpl> load(final ExpressionManagerImpl exprManager) {
-              return CacheBuilder.newBuilder().build(new CacheLoader<BigInteger, BitVectorExpressionImpl>(){
-                public BitVectorExpressionImpl load(BigInteger bigInteger) {
+          new CacheLoader<ExpressionManagerImpl, LoadingCache<Pair<String, Integer>, BitVectorExpressionImpl>>(){
+            public LoadingCache<Pair<String, Integer>, BitVectorExpressionImpl> load(final ExpressionManagerImpl exprManager) {
+              return CacheBuilder.newBuilder().build(new CacheLoader<Pair<String, Integer>, BitVectorExpressionImpl>(){
+                public BitVectorExpressionImpl load(Pair<String, Integer> pair) {
                   try {
-                    return new BitVectorExpressionImpl(exprManager, bigInteger, bigInteger.toString(2).length());
+                    return new BitVectorExpressionImpl(exprManager, pair.fst(), pair.snd());
                   } catch (Z3Exception e) {
                     throw new TheoremProverException(e);
                   }
@@ -145,38 +146,29 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
 
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
       int size, int value) {
+  	return mkConstant(exprManager, size, BigInteger.valueOf(value));
+  }
+  
+  static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
+      int size, long value) {
+  	return mkConstant(exprManager, size, BigInteger.valueOf(value));
+  }
+  
+  static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
+      int size, BigInteger value) {
   	Preconditions.checkArgument(size >= 0);
-    String binary = Integer.toBinaryString(value);
-    int repSize = binary.length();
-    assert (repSize > 0);
-
-    if (repSize <= size) {
-    	BitVectorExpressionImpl valueExpr = null;
-    	try {
-    		valueExpr = cache.get(exprManager).get(BigInteger.valueOf(value));
-      } catch (ExecutionException e) {
-        throw new CacheException(e);
-      }
-      if(repSize < size) { /* Sign-extend the value */
-      	return mkSignExtend(exprManager, size, valueExpr);
-      } else {
-      	return valueExpr;
-      }
-    } else { /* truncate */
-      binary = binary.substring((int) (repSize - size), repSize);
-      int valuePrime = Integer.parseInt(binary, 2);
-      try {
-        return cache.get(exprManager).get(BigInteger.valueOf(valuePrime));
-      } catch (ExecutionException e) {
-        throw new CacheException(e);
-      } 
+    try {
+      return cache.get(exprManager).get(Pair.of(value.toString(), size));
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
     }
   }
 
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
       int c) {
     try {
-      return cache.get(exprManager).get( BigInteger.valueOf((long) c));
+    	String decimalRep = Integer.toString(c);
+      return cache.get(exprManager).get(Pair.of(decimalRep, decimalRep.length()));
     } catch (ExecutionException e) {
       throw new CacheException(e);
     }
@@ -185,7 +177,8 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
       long c) {
     try {
-      return cache.get(exprManager).get(BigInteger.valueOf(c));
+    	String decimalRep = Long.toString(c);
+      return cache.get(exprManager).get(Pair.of(decimalRep, decimalRep.length()));
     } catch (ExecutionException e) {
       throw new CacheException(e);
     }
@@ -194,17 +187,17 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
       BigInteger c) {
     try {
-      return cache.get(exprManager).get(c);
+      return cache.get(exprManager).get(Pair.of(c.toString(), c.bitLength()));
     } catch (ExecutionException e) {
       throw new CacheException(e);
     }
   }
   
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
-      String rep) {
+      String binaryRep) {
     try {
-    	BigInteger c = BigInteger.valueOf(Long.parseLong(rep, 2));
-      return cache.get(exprManager).get(c);
+    	BigInteger c = BigInteger.valueOf(Long.parseLong(binaryRep, 2));
+      return cache.get(exprManager).get(Pair.of(c.toString(), binaryRep.length()));
     } catch (ExecutionException e) {
       throw new CacheException(e);
     }
@@ -705,11 +698,11 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
     super(exprManager, e);
   }
 
-  private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, final BigInteger rep, final int len) throws Z3Exception {
+  private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, final String decimalRep, final int len) throws Z3Exception {
     super(exprManager, CONSTANT, new NullaryConstructionStrategy() {
       @Override
       public Expr apply(Context ctx) throws Z3Exception {
-        return ctx.MkBV(rep.toString(), len);
+        return ctx.MkBV(decimalRep, len);
       }
     });
 

@@ -1103,9 +1103,9 @@ public class BurstallView1MemoryModel extends AbstractMemoryModel {
     ExpressionManager em = getExpressionManager();
     ExpressionEncoding encoding = getExpressionEncoding();
     String typeName = CTypeNameAnalyzer.getTypeName(type);
-    int cellSize = encoding.getCellSize();
+    int wordSize = encoding.getWordSize();
     if(!type.isStruct()) {
-      Expression offsetExpr = em.bitVectorConstant(0, cellSize);
+      Expression offsetExpr = em.bitVectorConstant(0, wordSize);
       elemOffsets.put(typeName, offsetExpr);
     } else {
       for(VariableT elem : type.toStruct().getMembers()) {
@@ -1114,7 +1114,7 @@ public class BurstallView1MemoryModel extends AbstractMemoryModel {
         String elemName = new StringBuilder().append(typeName)
             .append('.').append(elem.getName()).toString();
         elemOffsets.put(elemName, 
-            em.bitVectorConstant(offset, cellSize));
+            em.bitVectorConstant(offset, wordSize));
       }
     }
     return elemOffsets;
@@ -1131,11 +1131,11 @@ public class BurstallView1MemoryModel extends AbstractMemoryModel {
     ExpressionEncoding encoding = getExpressionEncoding();
     xtc.type.C cAnalyzer = encoding.getCAnalyzer();
     String typeName = CTypeNameAnalyzer.getTypeName(type);
-    int cellSize = encoding.getCellSize();
+    int wordSize = encoding.getWordSize();
     for(VariableT elem : type.toUnion().getMembers()) {
       String elemName = new StringBuilder().append(typeName)
           .append('.').append(elem.getName()).toString();
-      int size = (int) cAnalyzer.getSize(elem.getType()) * cellSize;
+      int size = (int) cAnalyzer.getSize(elem.getType()) * wordSize;
       elemOffsets.put(elemName, size);
     }
     return elemOffsets;

@@ -154,12 +154,56 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
   	Preconditions.checkArgument(size > 0);
     String binary = Integer.toBinaryString(value);
     int repSize = binary.length();
-    assert repSize > 0;
     
     if (repSize < size) { /* Sign-extend the value */
       int prefix_length = (int) (size - repSize);
       char[] prefix = new char[prefix_length];
       Arrays.fill(prefix, value >= 0 ? '0' : '1');
+      binary = String.valueOf(prefix) + binary;
+    } else if (repSize > size) { /* truncate */
+      binary = binary.substring((int) (repSize - size), repSize);
+    }
+
+    assert (binary.length() == size);
+    try {
+      return constantCache.get(exprManager).get(binary);
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
+    }
+  }
+  
+  static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
+      int size, long value) {
+  	Preconditions.checkArgument(size > 0);
+    String binary = Long.toBinaryString(value);
+    int repSize = binary.length();
+    
+    if (repSize < size) { /* Sign-extend the value */
+      int prefix_length = (int) (size - repSize);
+      char[] prefix = new char[prefix_length];
+      Arrays.fill(prefix, value >= 0 ? '0' : '1');
+      binary = String.valueOf(prefix) + binary;
+    } else if (repSize > size) { /* truncate */
+      binary = binary.substring((int) (repSize - size), repSize);
+    }
+
+    assert (binary.length() == size);
+    try {
+      return constantCache.get(exprManager).get(binary);
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
+    }
+  }
+  
+  static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
+      int size, BigInteger value) {
+  	Preconditions.checkArgument(size > 0);
+    int repSize = value.bitLength();
+    String binary = value.toString(2);
+    if (repSize < size) { /* Sign-extend the value */
+      int prefix_length = (int) (size - repSize);
+      char[] prefix = new char[prefix_length];
+      Arrays.fill(prefix, value.compareTo(BigInteger.ZERO) >= 0 ? '0' : '1');
       binary = String.valueOf(prefix) + binary;
     } else if (repSize > size) { /* truncate */
       binary = binary.substring((int) (repSize - size), repSize);

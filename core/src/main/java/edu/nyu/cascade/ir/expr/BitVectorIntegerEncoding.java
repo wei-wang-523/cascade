@@ -3,6 +3,9 @@ package edu.nyu.cascade.ir.expr;
 import java.math.BigInteger;
 import java.util.Arrays;
 
+import xtc.type.C;
+import xtc.type.NumberT;
+
 import com.google.common.base.Preconditions;
 
 import edu.nyu.cascade.prover.BitVectorExpression;
@@ -11,19 +14,43 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.Preferences;
 
 public class BitVectorIntegerEncoding extends
     AbstractTypeEncoding<BitVectorExpression> implements
     IntegerEncoding<BitVectorExpression> {
   private static final String UNKNOWN_VARIABLE_NAME = "bv_encoding_unknown";
   
-  public static BitVectorIntegerEncoding create(ExpressionManager exprManager, int size) {
-    BitVectorType type = exprManager.bitVectorType(size);
-    return new BitVectorIntegerEncoding(exprManager, type);
+  private final int INT_SIZE, LONG_SIZE, LONGLONG_SIZE;
+  
+  private final int WORD_SIZE;
+  
+  private final C cAnalyzer;
+  
+  public static BitVectorIntegerEncoding create(ExpressionManager exprManager, C cAnalyzer, int wordSize) {
+    BitVectorType type = exprManager.bitVectorType(wordSize);
+    return new BitVectorIntegerEncoding(exprManager, type, cAnalyzer);
   }
   
-  private BitVectorIntegerEncoding(ExpressionManager exprManager, BitVectorType type) {
+  private BitVectorIntegerEncoding(ExpressionManager exprManager, BitVectorType type, C _cAnalyzer) {
     super(exprManager, type);
+    cAnalyzer = _cAnalyzer;
+  	if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) {
+  		INT_SIZE = (int) cAnalyzer.getSize(NumberT.INT);
+  		LONG_SIZE = (int) cAnalyzer.getSize(NumberT.LONG);
+  		LONGLONG_SIZE = (int) cAnalyzer.getSize(NumberT.LONG_LONG);
+  	} else {
+  		INT_SIZE = 1; LONG_SIZE = 1; LONGLONG_SIZE = 1;
+  	}
+  	WORD_SIZE = type.getSize();
+  }
+  
+  protected C getCAnalyzer() {
+  	return cAnalyzer;
+  }
+  
+  protected int getWordSize() {
+  	return WORD_SIZE;
   }
   
   @Override
@@ -31,20 +58,29 @@ public class BitVectorIntegerEncoding extends
       BitVectorExpression b) {
     return a.and(b);
   }
-
+  
   @Override
   public BitVectorExpression constant(int c) {
-    return getExpressionManager().bitVectorConstant(c, getType().getSize());
+    return getExpressionManager().bitVectorConstant(c, INT_SIZE * WORD_SIZE);
   }
   
   @Override
   public BitVectorExpression constant(long c) {
-    return getExpressionManager().bitVectorConstant(c);
+  	return getExpressionManager().bitVectorConstant(c, LONG_SIZE * WORD_SIZE);
   }
   
   @Override
   public BitVectorExpression constant(BigInteger c) {
-    return getExpressionManager().bitVectorConstant(c);
+  	ExpressionManager exprManager = getExpressionManager();
+  	int cSize = c.bitLength();
+  	if(cSize > LONGLONG_SIZE * WORD_SIZE)
+  		throw new IllegalArgumentException("Constant is too large to be supported " + c.toString());
+  	else if(cSize > LONG_SIZE * WORD_SIZE)
+  		return exprManager.bitVectorConstant(c, LONGLONG_SIZE * WORD_SIZE);
+  	else if(cSize > INT_SIZE * WORD_SIZE)
+  		return exprManager.bitVectorConstant(c, LONG_SIZE * WORD_SIZE);
+  	else
+  		return exprManager.bitVectorConstant(c, INT_SIZE * WORD_SIZE);
   }
 
   @Override
@@ -54,7 +90,8 @@ public class BitVectorIntegerEncoding extends
 
   @Override
 	public BitVectorExpression incr(BitVectorExpression expr) {
-	  return expr.plus(getType().getSize(),one());
+  	int size = expr.getSize();
+	  return expr.plus(size, one());
 	}
 
 	@Override
@@ -149,14 +186,18 @@ public class BitVectorIntegerEncoding extends
   	if(srcSize == size)	return bv;
   	
   	if(srcSize < size)	
-  		return getExpressionManager().signExtend(bv, size);
+  		return bv.signExtend(size);
   	else
-  		return getExpressionManager().extract(bv, 0, size-1);
+  		return bv.extract(0, size-1);
   }
 
   @Override
   public BitVectorExpression plus(Iterable<? extends BitVectorExpression> args) {
-    return getExpressionManager().bitVectorPlus(getType().getSize(),args);
+  	int maxSize = 0;
+  	for(BitVectorExpression arg : args) {
+  		maxSize = Math.max(maxSize, arg.getSize());
+  	}
+    return getExpressionManager().bitVectorPlus(maxSize, args);
   }
 
   @Override
@@ -168,8 +209,6 @@ public class BitVectorIntegerEncoding extends
   public BitVectorExpression plus(BitVectorExpression lhs,
       BitVectorExpression rhs) {
     int size = Math.max(lhs.getSize(), rhs.getSize());
-    rhs = rhs.zeroExtend(size);
-    lhs = lhs.zeroExtend(size);
     return lhs.plus(size, rhs);
   }
 
@@ -177,8 +216,6 @@ public class BitVectorIntegerEncoding extends
   public BitVectorExpression times(BitVectorExpression lhs,
       BitVectorExpression rhs) {
     int size = Math.max(lhs.getSize(), rhs.getSize());
-    rhs = rhs.zeroExtend(size);
-    lhs = lhs.zeroExtend(size);
     return lhs.times(size, rhs);
   }
   
@@ -267,4 +304,34 @@ public class BitVectorIntegerEncoding extends
 	public BitVectorExpression uminus(BitVectorExpression expr) {
 		return expr.uminus();
 	}
+
+	@Override
+  public boolean isBooleanEncoding() {
+	  return false;
+  }
+
+	@Override
+  public BooleanEncoding<? extends Expression> asBooleanEncoding() {
+		throw new UnsupportedOperationException();
+  }
+
+	@Override
+  public boolean isIntegerEncoding() {
+	  return true;
+  }
+
+	@Override
+  public IntegerEncoding<? extends Expression> asIntegerEncoding() {
+	  return this;
+  }
+
+	@Override
+  public boolean isPointerEncoding() {
+	  return false;
+  }
+
+	@Override
+  public PointerEncoding<? extends Expression> asPointerEncoding() {
+		throw new UnsupportedOperationException();
+  }
 }

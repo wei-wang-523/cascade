@@ -4,7 +4,7 @@ import edu.nyu.cascade.ir.expr.AbstractExpressionEncoding;
 import edu.nyu.cascade.ir.expr.BitVectorIntegerEncoding;
 import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
 import edu.nyu.cascade.ir.expr.DefaultBooleanEncoding;
-import edu.nyu.cascade.ir.expr.DefaultPointerEncoding;
+import edu.nyu.cascade.ir.expr.UnimplementedPointerEncoding;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -24,8 +24,6 @@ public abstract class ReachEncoding extends AbstractExpressionEncoding {
   protected static final String FUN_JOIN = "join";
   protected static final String FUN_RF = "rf";
   
-  public static final int DEFAULT_WORD_SIZE = 8;
-  
   protected enum InstOpt{ // Partial quantifier instantiation option
     FIELD,
     ELEMENT,
@@ -34,10 +32,10 @@ public abstract class ReachEncoding extends AbstractExpressionEncoding {
   }
   
   public ReachEncoding(ExpressionManager exprManager) {
-    super(BitVectorIntegerEncoding.create(exprManager, DEFAULT_WORD_SIZE),
+    super(BitVectorIntegerEncoding.create(exprManager, cAnalyzer, DEFAULT_WORD_SIZE),
         new DefaultBooleanEncoding(exprManager),
         new DefaultArrayEncoding(exprManager),
-        new DefaultPointerEncoding(exprManager));
+        new UnimplementedPointerEncoding<Expression>());
   }
   
   protected InstOpt getInstOpt() {

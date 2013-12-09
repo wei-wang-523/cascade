@@ -69,5 +69,4 @@ public abstract class AbstractTypeEncoding<E extends Expression> implements Type
   public E variable(String name, boolean fresh) {
     return (E)exprManager.variable(name, type, fresh);
   }
-
 }

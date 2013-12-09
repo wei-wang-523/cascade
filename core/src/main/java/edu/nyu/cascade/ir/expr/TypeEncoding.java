@@ -83,4 +83,16 @@ public interface TypeEncoding<T extends Expression> {
    * @return an expression encoding the variable 
    */
   T variable(String name, boolean fresh);
+  
+  boolean isBooleanEncoding();
+  
+  BooleanEncoding<? extends Expression> asBooleanEncoding();
+  
+  boolean isIntegerEncoding();
+  
+  IntegerEncoding<? extends Expression> asIntegerEncoding();
+  
+  boolean isPointerEncoding();
+  
+  PointerEncoding<? extends Expression> asPointerEncoding();
 }

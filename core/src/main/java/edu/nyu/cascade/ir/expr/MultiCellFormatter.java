@@ -32,20 +32,20 @@ public class MultiCellFormatter implements IRDataFormatter {
 	@Override
 	public Type getAddressType() {
 		int size = (int) cAnalyzer.getSize(new PointerT(new VoidT()));
-		int cellSize = encoding.getCellSize();
+		int cellSize = encoding.getWordSize();
 		return exprManager.bitVectorType(size * cellSize);
 	}
 
 	@Override
 	public Type getValueType() {
-		int cellSize = encoding.getCellSize();
+		int cellSize = encoding.getWordSize();
 		return exprManager.bitVectorType(cellSize);
 	}
 
 	@Override
 	public Expression getNullAddress() {
 		int size = (int) cAnalyzer.getSize(new PointerT(new VoidT()));
-		int cellSize = encoding.getCellSize();
+		int cellSize = encoding.getWordSize();
 		return exprManager.bitVectorZero(size * cellSize);
 	}
 
@@ -94,7 +94,7 @@ public class MultiCellFormatter implements IRDataFormatter {
 	@Override
 	public Expression getUnknownValue(xtc.type.Type type) {
 		int size = (int) cAnalyzer.getSize(type);
-		int cellSize = encoding.getCellSize();
+		int cellSize = encoding.getWordSize();
 		Type valueType = exprManager.bitVectorType(size * cellSize);
 		return encoding.getIntegerEncoding().unknown(valueType);
 	}
@@ -102,7 +102,7 @@ public class MultiCellFormatter implements IRDataFormatter {
 	@Override
   public Type getSizeType() {
 		int size = (int) cAnalyzer.getSize(IntegerT.INT);
-		int cellSize = encoding.getCellSize();
+		int cellSize = encoding.getWordSize();
 	  return exprManager.bitVectorType(size * cellSize);
   }
 	

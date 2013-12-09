@@ -15,19 +15,19 @@ public class BitVectorExpressionEncoding
   public static BitVectorExpressionEncoding create(
       ExpressionManager exprManager) throws ExpressionFactoryException
   {
-    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, intCellSize);
+    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, cAnalyzer, WORD_SIZE);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new UnimplementedArrayEncoding<ArrayExpression>();
-    PointerEncoding<TupleExpression> tupleEncoding = new DefaultPointerEncoding(exprManager);
-    return new BitVectorExpressionEncoding(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
+    PointerEncoding<TupleExpression> pointerEncoding = new UnimplementedPointerEncoding<TupleExpression>();
+    return new BitVectorExpressionEncoding(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
   }
   
   private BitVectorExpressionEncoding(
       IntegerEncoding<BitVectorExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
-      PointerEncoding<TupleExpression> tupleEncoding)
+      PointerEncoding<TupleExpression> pointerEncoding)
   {
-    super(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
+    super(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
   }
 }

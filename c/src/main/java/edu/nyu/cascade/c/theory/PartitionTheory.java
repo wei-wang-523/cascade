@@ -3,12 +3,14 @@ package edu.nyu.cascade.c.theory;
 import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.Theory;
 import edu.nyu.cascade.c.preprocessor.steensgaard.Steensgaard;
+import edu.nyu.cascade.ir.expr.BitVectorExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.IRDataFormatter;
 import edu.nyu.cascade.ir.expr.IRHeapEncoding;
 import edu.nyu.cascade.ir.expr.IROrderMemLayoutEncoding;
 import edu.nyu.cascade.ir.expr.IRPartitionHeapEncoder;
 import edu.nyu.cascade.ir.expr.IRSoundMemLayoutEncoding;
+import edu.nyu.cascade.ir.expr.IntExpressionEncoding;
 import edu.nyu.cascade.ir.expr.LinearHeapEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.MultiCellFormatter;
@@ -30,27 +32,46 @@ public class PartitionTheory implements Theory {
   private final CScopeAnalyzer.Builder scopeAnalyzerBuilder;
   
   public PartitionTheory(ExpressionManager exprManager) {
-    encoding = PointerExpressionEncoding.create(exprManager);
     preprocessorBuilder = new Steensgaard.Builder();
     scopeAnalyzerBuilder = new CScopeAnalyzer.Builder();
     
-    IRDataFormatter formatter = Preferences.isSet(Preferences.OPTION_MULTI_CELL) ?
-    		MultiCellFormatter.create(encoding)
-    		: SingleCellFormatter.create(encoding);
-    
     if(Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
+    	if(Preferences.isSet(Preferences.OPTION_NON_OVERFLOW)) {
+    		encoding = IntExpressionEncoding.create(exprManager);
+    	} else {
+    		encoding = BitVectorExpressionEncoding.create(exprManager);
+    	}
+    	      
+      IRDataFormatter formatter = Preferences.isSet(Preferences.OPTION_MULTI_CELL) ?
+      		MultiCellFormatter.create(encoding)
+      		: SingleCellFormatter.create(encoding);
+    	
     	IRHeapEncoding heapEncoding = LinearHeapEncoding.create(encoding, formatter);
     	IROrderMemLayoutEncoding memLayout = OrderMemLayoutEncodingFactory
     			.create(heapEncoding);
-    	heapEncoder = PartitionHeapEncoder.createOrderEncoding(heapEncoding, memLayout);
-    } else {
+    	heapEncoder = PartitionHeapEncoder
+    			.createOrderEncoding(heapEncoding, memLayout);
+    	
+    } else { // sound alloc
     	String exprEncoding = Preferences.getString(Preferences.OPTION_MEM_ENCODING);
     	IRHeapEncoding heapEncoding = null;
     	if(Preferences.MEM_ENCODING_SYNC.equals(exprEncoding)) {
+    		encoding = PointerExpressionEncoding.create(exprManager);
     		heapEncoding = SynchronousHeapEncoding.create(encoding);
     	} else {
-    		heapEncoding = LinearHeapEncoding.create(encoding, formatter);
+    		if(Preferences.isSet(Preferences.OPTION_NON_OVERFLOW)) {
+      		encoding = IntExpressionEncoding.create(exprManager);
+      	} else {
+      		encoding = BitVectorExpressionEncoding.create(exprManager);
+      	}
+      	      
+        IRDataFormatter formatter = Preferences.isSet(Preferences.OPTION_MULTI_CELL) ?
+        		MultiCellFormatter.create(encoding)
+        		: SingleCellFormatter.create(encoding);
+      	
+        heapEncoding = LinearHeapEncoding.create(encoding, formatter);
     	}
+    	
     	IRSoundMemLayoutEncoding memLayout = SoundMemLayoutEncodingFactory
     			.create(heapEncoding);
     	heapEncoder = PartitionHeapEncoder.createSoundEncoding(heapEncoding, memLayout);

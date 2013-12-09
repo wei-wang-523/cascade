@@ -25,7 +25,6 @@ import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.IntegerExpression;
-import edu.nyu.cascade.prover.TupleExpression;
 
 public abstract class ListEncoding extends AbstractExpressionEncoding {
 
@@ -46,7 +45,7 @@ public abstract class ListEncoding extends AbstractExpressionEncoding {
       IntegerEncoding<BitVectorExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
-      PointerEncoding<TupleExpression> tupleEncoding) {
+      PointerEncoding<Expression> tupleEncoding) {
     super(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
   }
 

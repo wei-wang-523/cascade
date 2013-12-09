@@ -12,67 +12,113 @@ public class UnimplementedArrayEncoding<T extends Expression> implements ArrayEn
   
     @Override
     public T symbolicConstant(String name, boolean fresh) {
-      throw new UnsupportedOperationException();
+	  // TODO Auto-generated method stub
+	  return null;
     }
   
     @Override
     public BooleanExpression eq(T lhs, T rhs) {
-      throw new UnsupportedOperationException();
+	  // TODO Auto-generated method stub
+	  return null;
     }
   
     @Override
     public TypeEncoding<?> getElementEncoding() {
-      throw new UnsupportedOperationException();
+	  // TODO Auto-generated method stub
+	  return null;
     }
   
     @Override
     public TypeEncoding<?> getIndexEncoding() {
-      throw new UnsupportedOperationException();
+	  // TODO Auto-generated method stub
+	  return null;
     }
   
     @Override
     public Type getType() {
-      throw new UnsupportedOperationException();
+	  // TODO Auto-generated method stub
+	  return null;
     }
   
     @Override
     public Expression index(T array, Expression index) {
-      throw new UnsupportedOperationException();
+	  // TODO Auto-generated method stub
+	  return null;
     }
   
     @Override
     public boolean isEncodingFor(Expression x) {
-      throw new UnsupportedOperationException();
+	  // TODO Auto-generated method stub
+	  return false;
     }
   
     @Override
     public T ofExpression(Expression x) {
-      throw new UnsupportedOperationException();
+	  // TODO Auto-generated method stub
+	  return null;
     }
   
     @Override
     public ArrayExpression toArrayExpression(T array) {
-      throw new UnsupportedOperationException();
+	  // TODO Auto-generated method stub
+	  return null;
     }
     
     @Override
     public T update(T array, Expression index, Expression val) {
-      throw new UnsupportedOperationException();
+	  // TODO Auto-generated method stub
+	  return null;
     }
   
     @Override
     public T variable(String name, boolean fresh) {
-      throw new UnsupportedOperationException();
+	  // TODO Auto-generated method stub
+	  return null;
     }
 
     @Override
     public VariableExpression toVariable(T x) {
-      throw new UnsupportedOperationException();
+	  // TODO Auto-generated method stub
+	  return null;
     }
 
     @Override
     public ExpressionManager getExpressionManager() {
-      throw new UnsupportedOperationException();
+	  // TODO Auto-generated method stub
+	  return null;
+    }
+
+		@Override
+    public boolean isBooleanEncoding() {
+	    // TODO Auto-generated method stub
+	    return false;
+    }
+
+		@Override
+    public BooleanEncoding<? extends Expression> asBooleanEncoding() {
+			throw new UnsupportedOperationException();
+    }
+
+		@Override
+    public boolean isIntegerEncoding() {
+	    // TODO Auto-generated method stub
+	    return false;
+    }
+
+		@Override
+    public IntegerEncoding<? extends Expression> asIntegerEncoding() {
+			throw new UnsupportedOperationException();
+    }
+
+		@Override
+    public boolean isPointerEncoding() {
+	    // TODO Auto-generated method stub
+	    return false;
+    }
+
+		@Override
+    public PointerEncoding<? extends Expression> asPointerEncoding() {
+			throw new UnsupportedOperationException();
     }
   }
 
@@ -88,27 +134,32 @@ public class UnimplementedArrayEncoding<T extends Expression> implements ArrayEn
 
   @Override
   public boolean isEncodingFor(Expression x) {
-    throw new UnsupportedOperationException();
+    // TODO Auto-generated method stub
+	  return false;
   }
 
   @Override
   public T ofExpression(Expression expr) {
-    throw new UnsupportedOperationException();
+    // TODO Auto-generated method stub
+	  return null;
   }
 
   @Override
   public ExpressionManager getExpressionManager() {
-    throw new UnsupportedOperationException();
+    // TODO Auto-generated method stub
+	  return null;
   }
 
   @Override
   public Expression index(T array, Expression index) {
-    throw new UnsupportedOperationException();
+    // TODO Auto-generated method stub
+	  return null;
   }
 
   @Override
   public T update(T array, Expression index, Expression elem) {
-    throw new UnsupportedOperationException();
+    // TODO Auto-generated method stub
+	  return null;
   }
 
 }

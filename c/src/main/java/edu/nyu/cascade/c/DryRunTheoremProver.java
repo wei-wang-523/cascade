@@ -1096,6 +1096,16 @@ final class DryRunTheoremProver implements TheoremProver {
 		public BitVectorExpression bitVectorConstant(BigInteger n) {
 			return exprManager.bitVectorConstant(n);
 		}
+
+		@Override
+    public BitVectorExpression bitVectorConstant(long n, int size) {
+			return exprManager.bitVectorConstant(n, size);
+    }
+
+		@Override
+    public BitVectorExpression bitVectorConstant(BigInteger n, int size) {
+			return exprManager.bitVectorConstant(n, size);
+    }
   }
 
   public class Provider implements TheoremProver.Provider {

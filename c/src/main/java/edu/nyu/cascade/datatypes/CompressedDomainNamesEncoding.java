@@ -67,7 +67,6 @@ import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.Constructor;
 
 /*class Expression {
@@ -139,7 +138,7 @@ public abstract class CompressedDomainNamesEncoding extends AbstractExpressionEn
       IntegerEncoding<BitVectorExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
-      PointerEncoding<TupleExpression> tupleEncoding) {
+      PointerEncoding<Expression> tupleEncoding) {
     super(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
   }
 
@@ -171,6 +170,6 @@ public abstract class CompressedDomainNamesEncoding extends AbstractExpressionEn
   public abstract Set<String> getPredicates() ;
 
   abstract int getAddressSize() ;
-  abstract int getWordSize() ;
+  abstract int getValueSize() ;
 
 }

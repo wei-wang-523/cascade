@@ -278,6 +278,16 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   public BitVectorExpressionImpl bitVectorConstant(int n, int size) {
     return BitVectorExpressionImpl.mkConstant(this, size, n);
   }
+  
+  @Override
+  public BitVectorExpressionImpl bitVectorConstant(long n, int size) {
+    return BitVectorExpressionImpl.mkConstant(this, size, n);
+  }
+  
+  @Override
+  public BitVectorExpressionImpl bitVectorConstant(BigInteger n, int size) {
+    return BitVectorExpressionImpl.mkConstant(this, size, n);
+  }
 
   @Override
   public BitVectorExpressionImpl bitVectorConstant(int c) {

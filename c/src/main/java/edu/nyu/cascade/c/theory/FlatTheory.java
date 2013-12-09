@@ -3,6 +3,7 @@ package edu.nyu.cascade.c.theory;
 import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.Theory;
 import edu.nyu.cascade.c.preprocessor.PreProcessor.Builder;
+import edu.nyu.cascade.ir.expr.BitVectorExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.FlatMemoryModel;
 import edu.nyu.cascade.ir.expr.IRDataFormatter;
@@ -10,6 +11,7 @@ import edu.nyu.cascade.ir.expr.IRHeapEncoding;
 import edu.nyu.cascade.ir.expr.IROrderMemLayoutEncoding;
 import edu.nyu.cascade.ir.expr.IRSingleHeapEncoder;
 import edu.nyu.cascade.ir.expr.IRSoundMemLayoutEncoding;
+import edu.nyu.cascade.ir.expr.IntExpressionEncoding;
 import edu.nyu.cascade.ir.expr.LinearHeapEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.MultiCellFormatter;
@@ -29,26 +31,46 @@ public class FlatTheory implements Theory {
   private final MemoryModel memoryModel;
   
   public FlatTheory(ExpressionManager exprManager) {
-    encoding = PointerExpressionEncoding.create(exprManager);
-    PartitionHeapEncoder parHeapEncoder = null;
-    
-    IRDataFormatter formatter = Preferences.isSet(Preferences.OPTION_MULTI_CELL) ?
-    		MultiCellFormatter.create(encoding)
-    		: SingleCellFormatter.create(encoding);
-    
+  	
+  	PartitionHeapEncoder parHeapEncoder = null;
+  	
     if(Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
+
+    	if(Preferences.isSet(Preferences.OPTION_NON_OVERFLOW)) {
+    		encoding = IntExpressionEncoding.create(exprManager);
+    	} else {
+    		encoding = BitVectorExpressionEncoding.create(exprManager);
+    	}
+    	      
+      IRDataFormatter formatter = Preferences.isSet(Preferences.OPTION_MULTI_CELL) ?
+      		MultiCellFormatter.create(encoding)
+      		: SingleCellFormatter.create(encoding);
+    	
     	IRHeapEncoding heapEncoding = LinearHeapEncoding.create(encoding, formatter);
     	IROrderMemLayoutEncoding memLayout = OrderMemLayoutEncodingFactory
     			.create(heapEncoding);
     	parHeapEncoder = PartitionHeapEncoder
     			.createOrderEncoding(heapEncoding, memLayout);
+    	
     } else {
     	String exprEncoding = Preferences.getString(Preferences.OPTION_MEM_ENCODING);
     	IRHeapEncoding heapEncoding = null;
+    	
     	if(Preferences.MEM_ENCODING_SYNC.equals(exprEncoding)) {
+    		encoding = PointerExpressionEncoding.create(exprManager);
     		heapEncoding = SynchronousHeapEncoding.create(encoding);
     	} else {
-    		heapEncoding = LinearHeapEncoding.create(encoding, formatter);
+    		if(Preferences.isSet(Preferences.OPTION_NON_OVERFLOW)) {
+      		encoding = IntExpressionEncoding.create(exprManager);
+      	} else {
+      		encoding = BitVectorExpressionEncoding.create(exprManager);
+      	}
+      	      
+        IRDataFormatter formatter = Preferences.isSet(Preferences.OPTION_MULTI_CELL) ?
+        		MultiCellFormatter.create(encoding)
+        		: SingleCellFormatter.create(encoding);
+      	
+        heapEncoding = LinearHeapEncoding.create(encoding, formatter);
     	}
     	IRSoundMemLayoutEncoding memLayout = SoundMemLayoutEncodingFactory
     			.create(heapEncoding);

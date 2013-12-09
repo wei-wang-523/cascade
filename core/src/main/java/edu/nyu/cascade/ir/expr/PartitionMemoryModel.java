@@ -50,7 +50,6 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   public static PartitionMemoryModel create(
       ExpressionEncoding encoding, IRPartitionHeapEncoder heapEncoder)
       throws ExpressionFactoryException {
-    Preconditions.checkArgument(encoding instanceof PointerExpressionEncoding);
     return new PartitionMemoryModel(encoding, heapEncoder);
   }
   

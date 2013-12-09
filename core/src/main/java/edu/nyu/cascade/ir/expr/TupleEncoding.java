@@ -11,14 +11,15 @@ public interface TupleEncoding<T extends Expression> {
     Expression index(T tuple, int index);
     T update(T tuple, int index, Expression elem);
     Iterable<TypeEncoding<?>> getElementEncodings();
+    String getName();
   }
   /**
    * Returns the <code>ExpressionManager</code> object used in the underlying
    * expression encoding.
    */
   ExpressionManager getExpressionManager();
-  Instance<T> getInstance(Iterable<TypeEncoding<?>> elementEncodings);
-  Instance<T> getInstance(TypeEncoding<?> ... elementEncodings);
+  Instance<T> getInstance(String name, Iterable<TypeEncoding<?>> elementEncodings);
+  Instance<T> getInstance(String name, TypeEncoding<?> ... elementEncodings);
   Expression index(T tuple, int index);
   T update(T tuple, int index, Expression elem);
   boolean isEncodingFor(Expression x);

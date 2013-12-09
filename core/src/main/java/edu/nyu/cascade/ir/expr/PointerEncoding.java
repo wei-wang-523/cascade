@@ -4,16 +4,17 @@ import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 
-public interface PointerEncoding<T extends Expression> extends TypeEncoding<T> {  
+public interface PointerEncoding<T extends Expression> extends TypeEncoding<T> {
   /**
    * Returns the <code>ExpressionManager</code> object used in the underlying
    * expression encoding.
    */
   ExpressionManager getExpressionManager();
-  Expression index(T tuple, int index);
-  T update(T tuple, int index, Expression elem);
   boolean isEncodingFor(Expression x);
   T ofExpression(Expression expr);
+  
+  TypeEncoding<?> getBaseEncoding();
+  IntegerEncoding<?> getOffsetEncoding();
   
   T ifThenElse(BooleanExpression b, T thenExpr,
       T elseExpr);

@@ -22,7 +22,6 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.type.ArrayType;
-import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.Selector;
@@ -39,8 +38,8 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	private Expression lastRegion;
 	private final LinkedHashMap<String, Expression> lastRegions;
 	
-	private final Type ptrType, refType;
-	private final BitVectorType valueType, offType;
+	private final Type ptrType;
+	private final Type valueType;
 	
   private static final String MIX_TYPE_NAME = "mix";
   private static final String PTR_CONSTR_NAME = "ptr";
@@ -56,11 +55,8 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 		this.encoding = encoding;
 		exprManager = encoding.getExpressionManager();
 		
-		int cellSize = encoding.getCellSize();
 		ptrType = encoding.getPointerEncoding().getType();
-		valueType = exprManager.bitVectorType(cellSize);
-		refType = ptrType.asTuple().getElementTypes().get(0);
-		offType = ptrType.asTuple().getElementTypes().get(1).asBitVectorType();
+		valueType = encoding.getIntegerEncoding().getType();
 		
 		heapRegions = Maps.newLinkedHashMap();
 		stackVars = Maps.newLinkedHashMap();
@@ -76,8 +72,6 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
     ptrConstr = exprManager.constructor(PTR_CONSTR_NAME, ptrSel);
 
     mixType = exprManager.dataType(MIX_TYPE_NAME, scalarConstr, ptrConstr);
-		
-		assert offType.getSize() >= valueType.getSize();
 	}
 	
 	public static SynchronousHeapEncoding create(ExpressionEncoding encoding) {
@@ -86,7 +80,9 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 
 	@Override
 	public ArrayType getSizeArrType() {
-		return exprManager.arrayType(refType, valueType);
+		Type refType = ptrType.asTuple().getElementTypes().get(0);
+		Type offType = ptrType.asTuple().getElementTypes().get(1);
+		return exprManager.arrayType(refType, offType);
 	}
 	
 	@Override
@@ -106,7 +102,7 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	
 	@Override
 	public Expression getSizeZero() {
-	  return exprManager.bitVectorZero(valueType.getSize());
+	  return encoding.getPointerEncoding().getOffsetEncoding().zero();
 	}
 	
 	@Override
@@ -173,10 +169,9 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	
 	@Override
 	public ArrayExpression updateSizeArr(ArrayExpression sizeArr, Expression lval, Expression rval) {
-		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(refType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
+		Preconditions.checkArgument(sizeArr.getType().equals(getSizeArrType()));
 		Preconditions.checkArgument(lval.getType().equals(ptrType));
-		Preconditions.checkArgument(rval.getType().equals(valueType));
+		Preconditions.checkArgument(rval.getType().equals(ptrType.asTuple().getElementTypes().get(1)));
 		Expression lval_ref = lval.asTuple().index(0);
 		return sizeArr.update(lval_ref, rval);
 	}
@@ -191,9 +186,8 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 
 	@Override
 	public ArrayExpression getConstSizeArr(ArrayType sizeArrType) {
-		Preconditions.checkArgument(sizeArrType.getIndexType().equals(refType));
-		Preconditions.checkArgument(sizeArrType.getElementType().equals(valueType));
-		Expression sizeZro = exprManager.bitVectorZero(valueType.getSize());
+		Preconditions.checkArgument(sizeArrType.equals(getSizeArrType()));
+		Expression sizeZro = getSizeZero();
 		return exprManager.storeAll(sizeZro, sizeArrType);
 	}
 
@@ -265,7 +259,8 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 
 	@Override
 	public void updateLastRegion(Expression region) {
-		Preconditions.checkArgument(region.getType().equals(refType));
+		Preconditions.checkArgument(region.getType().equals(
+				ptrType.asTuple().getElementTypes().get(0)));
 		Expression nullRef = getNullAddress().getChild(0);
 		lastRegion = getExpressionManager().ifThenElse(
 				region.eq(nullRef), lastRegion, region);
@@ -274,7 +269,8 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	@Override
 	public void updateLastRegion(String name, Expression region) {
 		Preconditions.checkArgument(lastRegions.containsKey(name));
-		Preconditions.checkArgument(region.getType().equals(refType));
+		Preconditions.checkArgument(region.getType().equals(
+				ptrType.asTuple().getElementTypes().get(0)));
 		Expression lastRegion = lastRegions.get(name);
 		Expression nullRef = getNullAddress().getChild(0);
 		Expression lastRegionPrime = getExpressionManager().ifThenElse(

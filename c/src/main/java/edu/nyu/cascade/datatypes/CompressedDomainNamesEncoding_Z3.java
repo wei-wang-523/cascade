@@ -67,7 +67,6 @@ import edu.nyu.cascade.ir.expr.BitVectorIntegerEncoding;
 import edu.nyu.cascade.ir.expr.BooleanEncoding;
 import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
 import edu.nyu.cascade.ir.expr.DefaultBooleanEncoding;
-import edu.nyu.cascade.ir.expr.DefaultPointerEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.ir.expr.FlatMemoryModel;
@@ -75,6 +74,7 @@ import edu.nyu.cascade.ir.expr.IRSingleHeapEncoder;
 import edu.nyu.cascade.ir.expr.IntegerEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.PointerEncoding;
+import edu.nyu.cascade.ir.expr.UnimplementedPointerEncoding;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.ArrayVariableExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
@@ -82,7 +82,6 @@ import edu.nyu.cascade.prover.BitVectorVariableExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
-import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.VariableExpression;
@@ -176,29 +175,14 @@ public class CompressedDomainNamesEncoding_Z3 extends CompressedDomainNamesEncod
   private final boolean explicitUndefined;
 
   private boolean useFrameAxiom;
-
-  public static int DEFAULT_WORD_SIZE;
   
   public static CompressedDomainNamesEncoding_Z3 create(
       ExpressionManager expressionManager) throws ExpressionFactoryException {
-    int cellSize = 
-    		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
-    				DefaultSize
-    				: Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ?
-    						Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE) 
-    						: DefaultSize;
-
-    int intCellSize = 
-    		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
-    				(int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * cellSize) 
-    				: cellSize;
     
-    DEFAULT_WORD_SIZE = intCellSize;
-    
-    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(expressionManager, intCellSize);
+    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(expressionManager, cAnalyzer, WORD_SIZE);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(expressionManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(expressionManager);
-    PointerEncoding<TupleExpression> tupleEncoding = new DefaultPointerEncoding(expressionManager);
+    PointerEncoding<Expression> tupleEncoding = new UnimplementedPointerEncoding<Expression>();
     
     return new CompressedDomainNamesEncoding_Z3(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
     
@@ -208,7 +192,7 @@ public class CompressedDomainNamesEncoding_Z3 extends CompressedDomainNamesEncod
       IntegerEncoding<BitVectorExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
-      PointerEncoding<TupleExpression> tupleEncoding) {
+      PointerEncoding<Expression> tupleEncoding) {
     super(integerEncoding, booleanEncoding, arrayEncoding, tupleEncoding);
 
     try {
@@ -704,7 +688,7 @@ public class CompressedDomainNamesEncoding_Z3 extends CompressedDomainNamesEncod
   }
 
   int getAddressSize() { return memType.getIndexType().asBitVectorType().getSize(); }
-  int getWordSize() { return memType.getElementType().asBitVectorType().getSize(); }
+  int getValueSize() { return memType.getElementType().asBitVectorType().getSize(); }
 /*  @Override
   public ArrayType getStateType()
       {

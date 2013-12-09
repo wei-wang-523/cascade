@@ -25,7 +25,6 @@ import edu.nyu.cascade.ir.expr.BitVectorIntegerEncoding;
 import edu.nyu.cascade.ir.expr.BooleanEncoding;
 import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
 import edu.nyu.cascade.ir.expr.DefaultBooleanEncoding;
-import edu.nyu.cascade.ir.expr.DefaultPointerEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.ir.expr.FlatMemoryModel;
@@ -33,12 +32,12 @@ import edu.nyu.cascade.ir.expr.IRSingleHeapEncoder;
 import edu.nyu.cascade.ir.expr.IntegerEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.PointerEncoding;
+import edu.nyu.cascade.ir.expr.UnimplementedPointerEncoding;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
-import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.IntegerExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
@@ -47,7 +46,6 @@ import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.Selector;
-import edu.nyu.cascade.util.Preferences;
 
 public class ListEncoding_Z3 extends ListEncoding {
 
@@ -71,29 +69,13 @@ public class ListEncoding_Z3 extends ListEncoding {
   
   /** The list -> length (int) mapping */
   private final FunctionType lengthList;
-
-  public static int DEFAULT_WORD_SIZE;
   
   public static ListEncoding_Z3 create(
-      ExpressionManager exprManager) throws ExpressionFactoryException {
-    int cellSize = 
-    		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
-    				DefaultSize
-    				: Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE) ?
-    						Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE) 
-    						: DefaultSize;
-
-    int intCellSize = 
-    		Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
-    				(int) (cAnalyzer.getSize(xtc.type.NumberT.INT) * cellSize) 
-    				: cellSize;
-    
-    DEFAULT_WORD_SIZE = intCellSize;
-    
-    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, intCellSize);
+      ExpressionManager exprManager) throws ExpressionFactoryException {    
+    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, cAnalyzer, WORD_SIZE);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(exprManager);
-    PointerEncoding<TupleExpression> tupleEncoding = new DefaultPointerEncoding(exprManager);
+    PointerEncoding<Expression> tupleEncoding = new UnimplementedPointerEncoding<Expression>();
     
     return new ListEncoding_Z3(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
   }
@@ -102,7 +84,7 @@ public class ListEncoding_Z3 extends ListEncoding {
       IntegerEncoding<BitVectorExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
-      PointerEncoding<TupleExpression> tupleEncoding) {
+      PointerEncoding<Expression> tupleEncoding) {
     super(integerEncoding, booleanEncoding, arrayEncoding, tupleEncoding);
 
     try {

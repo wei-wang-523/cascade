@@ -14,15 +14,15 @@ public class IntExpressionEncoding extends AbstractExpressionEncoding {
     IntegerEncoding<IntegerExpression> integerEncoding = new DefaultIntegerEncoding(exprManager);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(exprManager);
-    PointerEncoding<TupleExpression> tupleEncoding = new DefaultPointerEncoding(exprManager);
-    return new IntExpressionEncoding(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
+    PointerEncoding<TupleExpression> pointerEncoding = new UnimplementedPointerEncoding<TupleExpression>();
+    return new IntExpressionEncoding(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
   }
 
   public IntExpressionEncoding(
       IntegerEncoding<IntegerExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
-      PointerEncoding<TupleExpression> tupleEncoding) {
-    super(integerEncoding, booleanEncoding, arrayEncoding, tupleEncoding);
+      PointerEncoding<TupleExpression> pointerEncoding) {
+    super(integerEncoding, booleanEncoding, arrayEncoding, pointerEncoding);
   }
 }

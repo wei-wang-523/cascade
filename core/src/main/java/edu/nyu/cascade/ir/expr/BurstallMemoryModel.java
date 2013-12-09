@@ -54,7 +54,6 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   public static BurstallMemoryModel create(
       ExpressionEncoding encoding, IRPartitionHeapEncoder heapEncoder)
       throws ExpressionFactoryException {
-    Preconditions.checkArgument(encoding instanceof PointerExpressionEncoding);
     return new BurstallMemoryModel(encoding, heapEncoder);
   }
 

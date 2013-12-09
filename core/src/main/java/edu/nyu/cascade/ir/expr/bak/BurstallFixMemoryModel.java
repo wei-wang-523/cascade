@@ -773,6 +773,6 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
   
   private int getSizeofType(xtc.type.Type type) {
     ExpressionEncoding encoding = getExpressionEncoding();
-    return (int) encoding.getCAnalyzer().getSize(type) * encoding.getCellSize();
+    return (int) encoding.getCAnalyzer().getSize(type) * encoding.getWordSize();
   }
 }
