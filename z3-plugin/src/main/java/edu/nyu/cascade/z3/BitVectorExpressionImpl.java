@@ -146,22 +146,20 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
 
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
       int size, int value) {
-  	return mkConstant(exprManager, size, BigInteger.valueOf(value));
+  	Preconditions.checkArgument(size >= 0);
+  	return mkConstant(exprManager, size, value);
   }
   
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
       int size, long value) {
-  	return mkConstant(exprManager, size, BigInteger.valueOf(value));
+  	Preconditions.checkArgument(size >= 0);
+  	return mkConstant(exprManager, size, value);
   }
   
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
       int size, BigInteger value) {
   	Preconditions.checkArgument(size >= 0);
-    try {
-      return cache.get(exprManager).get(Pair.of(value.toString(), size));
-    } catch (ExecutionException e) {
-      throw new CacheException(e);
-    }
+  	return mkConstant(exprManager, size, value);
   }
 
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
@@ -196,8 +194,7 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
       String binaryRep) {
     try {
-    	BigInteger c = BigInteger.valueOf(Long.parseLong(binaryRep, 2));
-      return cache.get(exprManager).get(Pair.of(c.toString(), binaryRep.length()));
+      return cache.get(exprManager).get(Pair.of(binaryRep, binaryRep.length()));
     } catch (ExecutionException e) {
       throw new CacheException(e);
     }
