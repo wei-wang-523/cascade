@@ -114,7 +114,7 @@ final class DryRunTheoremProver implements TheoremProver {
     }
 
     @Override
-    public VariableExpression arrayBoundVar(String name, Type index, Type elem,
+    public ArrayVariableExpression arrayBoundVar(String name, Type index, Type elem,
         boolean fresh) {
       return exprManager.arrayBoundVar(name, index, elem, fresh);
     }
@@ -206,12 +206,6 @@ final class DryRunTheoremProver implements TheoremProver {
     public BitVectorExpression bitVectorPlus(int size,
         Iterable<? extends Expression> args) {
       return exprManager.bitVectorPlus(size, args);
-    }
-    
-    @Override
-    public BitVectorExpression bitVectorMult(int size,
-        Iterable<? extends Expression> args) {
-      return exprManager.bitVectorMult(size, args);
     }
 
     @Override
@@ -334,7 +328,7 @@ final class DryRunTheoremProver implements TheoremProver {
     }
 
     @Override
-    public BitVectorExpression divide(Expression numerator,
+    public Expression divide(Expression numerator,
         Expression denominator) {
       return exprManager.divide(numerator, denominator);
     }
@@ -614,11 +608,6 @@ final class DryRunTheoremProver implements TheoremProver {
     }
 
     @Override
-    public BooleanExpression hasType(Expression expr, Type type) {
-      return exprManager.hasType(expr, type);
-    }
-
-    @Override
     public BooleanExpression iff(Expression left, Expression right) {
       return exprManager.iff(left, right);
     }
@@ -631,16 +620,6 @@ final class DryRunTheoremProver implements TheoremProver {
     @Override
     public BooleanExpression implies(Expression left, Expression right) {
       return exprManager.implies(left, right);
-    }
-
-    @Override
-    public Expression importExpression(Expression expression) {
-      return exprManager.importExpression(expression);
-    }
-
-    @Override
-    public Type importType(Type type) {
-      return exprManager.importType(type);
     }
 
     @Override
@@ -659,11 +638,6 @@ final class DryRunTheoremProver implements TheoremProver {
     }
 
     @Override
-    public IntegerExpression integerPow(Expression x, Expression n) {
-      return exprManager.integerPow(x, n);
-    }
-
-    @Override
     public IntegerType integerRangeType(Expression lBound, Expression uBound) {
       return exprManager.integerRangeType(lBound, uBound);
     }
@@ -679,7 +653,7 @@ final class DryRunTheoremProver implements TheoremProver {
     }
 
     @Override
-    public VariableExpression integerBoundVar(String name, boolean fresh) {
+    public IntegerVariableExpression integerBoundVar(String name, boolean fresh) {
       return exprManager.integerBoundVar(name, fresh);
     }
 
@@ -731,8 +705,8 @@ final class DryRunTheoremProver implements TheoremProver {
     }
 
     @Override
-    public BitVectorExpression mult(int size, Expression a, Expression b) {
-      return exprManager.mult(size, a, b);
+    public BitVectorExpression bitVectorMult(int size, Expression a, Expression b) {
+      return exprManager.bitVectorMult(size, a, b);
     }
 
     @Override
@@ -758,11 +732,6 @@ final class DryRunTheoremProver implements TheoremProver {
     @Override
     public BooleanExpression not(Expression expr) {
       return exprManager.not(expr);
-    }
-    
-    @Override
-    public Expression nullExpression() {
-      return exprManager.nullExpression();
     }
 
     @Override
@@ -796,23 +765,6 @@ final class DryRunTheoremProver implements TheoremProver {
     }
 
     @Override
-    public BitVectorExpression plus(int size, Expression first,
-        Expression... rest) {
-      return exprManager.plus(size, first, rest);
-    }
-
-    @Override
-    public BitVectorExpression plus(int size, Expression a, Expression b) {
-      return exprManager.plus(size, a, b);
-    }
-
-    @Override
-    public BitVectorExpression plus(int size,
-        Iterable<? extends Expression> args) {
-      return exprManager.plus(size, args);
-    }
-
-    @Override
     public Expression plus(Iterable<? extends Expression> children) {
       return exprManager.plus(children);
     }
@@ -820,11 +772,6 @@ final class DryRunTheoremProver implements TheoremProver {
     @Override
     public RationalExpression rationalConstant(int numerator, int denominator) {
       return exprManager.rationalConstant(numerator, denominator);
-    }
-
-    @Override
-    public RationalExpression rationalPow(Expression x, Expression n) {
-      return exprManager.rationalPow(x, n);
     }
 
     @Override
@@ -843,7 +790,7 @@ final class DryRunTheoremProver implements TheoremProver {
     }
     
     @Override
-    public VariableExpression rationalBoundVar(String name, boolean fresh) {
+    public RationalVariableExpression rationalBoundVar(String name, boolean fresh) {
       return exprManager.rationalBoundVar(name, fresh);
     }
 
@@ -884,8 +831,8 @@ final class DryRunTheoremProver implements TheoremProver {
     }
 
     @Override
-    public BitVectorExpression signExtend(Expression bv, int size) {
-      return exprManager.signExtend(bv, size);
+    public BitVectorExpression signedExtend(int size, Expression bv) {
+      return exprManager.signedExtend(size, bv);
     }
 
     @Override
@@ -893,11 +840,6 @@ final class DryRunTheoremProver implements TheoremProver {
         Iterable<? extends Expression> oldExprs,
         Iterable<? extends Expression> newExprs) {
       return exprManager.subst(e, oldExprs, newExprs);
-    }
-
-    @Override
-    public Expression succ(Expression op) {
-      return exprManager.succ(op);
     }
 
     @Override
@@ -932,11 +874,6 @@ final class DryRunTheoremProver implements TheoremProver {
     }
 
     @Override
-    public Type universalType() {
-      return exprManager.universalType();
-    }
-
-    @Override
     public ArrayExpression update(Expression array, Expression index,
         Expression value) {
       return exprManager.update(array, index, value);
@@ -963,8 +900,8 @@ final class DryRunTheoremProver implements TheoremProver {
     }
 
     @Override
-    public BitVectorExpression zeroExtend(Expression bv, int size) {
-      return exprManager.zeroExtend(bv, size);
+    public BitVectorExpression zeroExtend(int size, Expression bv) {
+      return exprManager.zeroExtend(size, bv);
     }
 
     @Override
@@ -1105,6 +1042,28 @@ final class DryRunTheoremProver implements TheoremProver {
 		@Override
     public BitVectorExpression bitVectorConstant(BigInteger n, int size) {
 			return exprManager.bitVectorConstant(n, size);
+    }
+
+		@Override
+    public ArrayType asArrayType(Type indexType, Type elementType) {
+	    return exprManager.asArrayType(indexType, elementType);
+    }
+
+		@Override
+    public BitVectorExpression bitVectorPlus(int size, Expression first,
+        Expression... rest) {
+	    return exprManager.bitVectorPlus(size, first, rest);
+    }
+
+		@Override
+    public Expression pow(Expression x, Expression n) {
+	    return exprManager.pow(x, n);
+    }
+
+		@Override
+    public BitVectorExpression bitVectorPlus(int size, Expression left,
+        Expression right) {
+	    return exprManager.bitVectorPlus(size, left, right);
     }
   }
 

@@ -375,7 +375,7 @@ public class CompressedDomainNamesEncoding_Z3 extends CompressedDomainNamesEncod
        * = to_string(bits,BVPLUS(32,i,0bin1),len(x)) AND rest(x) =
        * bits_to_dn(bits,BVPLUS(32,i,len(x),0bin1))
        */
-      BitVectorExpression iPlusOne = exprManager.plus(addrType.getSize(),i,
+      BitVectorExpression iPlusOne = exprManager.bitVectorPlus(addrType.getSize(),i,
           exprManager.bitVectorOne(addrType.getSize()));
       BooleanExpression bitsToLabel1 = exprManager.forall(ImmutableList
           .of(bits1_var, i_var), exprManager.implies(exprManager
@@ -388,16 +388,16 @@ public class CompressedDomainNamesEncoding_Z3 extends CompressedDomainNamesEncod
           .testConstructor(labelConstr, bitsToDn.apply(bits1, i)), exprManager
           .eq(exprManager.select(labelSel, bitsToDn.apply(
               bits1, i)), exprManager.applyExpr(toBvString, ImmutableList.of(
-              bits1, iPlusOne, exprManager.zeroExtend(exprManager
-                  .select(lenSel, bitsToDn.apply(bits1, i)), addrType
-                  .getSize())))))/* , bitsToDnPattern */);
+              bits1, iPlusOne, exprManager.zeroExtend(
+              		addrType.getSize(), 
+              		exprManager.select(lenSel, bitsToDn.apply(bits1, i)))))))/* , bitsToDnPattern */);
       BooleanExpression bitsToLabel3 = exprManager.forall(ImmutableList
           .of(bits1_var, i_var), exprManager.implies(exprManager
           .testConstructor(labelConstr, bitsToDn.apply(bits1, i)), exprManager
           .eq(exprManager.select(restSel, bitsToDn.apply(
               bits1, i)), exprManager.applyExpr(bitsToDn, bits1, exprManager
-              .plus(addrType.getSize(), iPlusOne, exprManager.select(lenSel, bitsToDn
-                  .apply(bits1, i))))))/* , bitsToDnPattern */);
+              .bitVectorPlus(addrType.getSize(), iPlusOne, 
+              		exprManager.select(lenSel, bitsToDn.apply(bits1, i))))))/* , bitsToDnPattern */);
 
       /*
        * ASSERT FORALL (bits : StringType, i : PtrType) : LET x =
@@ -448,8 +448,9 @@ public class CompressedDomainNamesEncoding_Z3 extends CompressedDomainNamesEncod
           stringDeref(bits1,j).eq(stringDeref(bits2,j)).and(
               exprManager.forall(i_var,
           exprManager.lessThanOrEqual(j, i).and(
-              exprManager.lessThan(i, exprManager.plus(addrType.getSize(), j, sizeDn
-                  .apply(bitsToDn.apply(bits1, j))))).implies(
+              exprManager.lessThan(i, exprManager.bitVectorPlus(
+              		addrType.getSize(), j, 
+              		sizeDn.apply(bitsToDn.apply(bits1, j))))).implies(
           stringDeref(bits1, i).eq(stringDeref(bits2, i))))).implies(
           bitsToDn.apply(bits1, j).eq(bitsToDn.apply(bits2, j)))
           // triggers cause a crash, for some reason
@@ -483,8 +484,9 @@ public class CompressedDomainNamesEncoding_Z3 extends CompressedDomainNamesEncod
       BooleanExpression sizeLabel = exprManager.forall(
           ImmutableList.of(x_var), exprManager.implies(exprManager
               .testConstructor(labelConstr, x), bitVectorFactory.eq(applySizeDn(x), exprManager
-              .plus(addrType.getSize(),exprManager.select(lenSel, x), exprManager
-                  .applyExpr(sizeDn, exprManager.select(restSel, x)),
+              .bitVectorPlus(addrType.getSize(),
+              		exprManager.select(lenSel, x),
+              		exprManager.applyExpr(sizeDn, exprManager.select(restSel, x)),
                   bitVectorFactory.one()))),
                   sizeDnPattern);
 

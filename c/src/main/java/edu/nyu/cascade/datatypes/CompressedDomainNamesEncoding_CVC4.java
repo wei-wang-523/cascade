@@ -371,7 +371,7 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
        * = to_string(bits,BVPLUS(32,i,0bin1),len(x)) AND rest(x) =
        * bits_to_dn(bits,BVPLUS(32,i,len(x),0bin1))
        */
-      BitVectorExpression iPlusOne = exprManager.plus(addrType.getSize(),i,
+      BitVectorExpression iPlusOne = exprManager.bitVectorPlus(addrType.getSize(),i,
           exprManager.bitVectorOne(addrType.getSize()));
       BooleanExpression bitsToLabel1 = exprManager.forall(ImmutableList
           .of(bits1, i), exprManager.implies(exprManager
@@ -385,15 +385,15 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
           .testConstructor(labelConstr, exprManager.applyExpr(bitsToDn, bits1, i)), exprManager
           .eq(exprManager.select(labelSel, exprManager.applyExpr(bitsToDn, 
               bits1, i)), exprManager.applyExpr(toBvString, ImmutableList.of(
-              bits1, iPlusOne, exprManager.zeroExtend(exprManager
-                  .select(lenSel, exprManager.applyExpr(bitsToDn, bits1, i)), addrType
-                  .getSize()))))), bitsToDnPattern);
+              bits1, iPlusOne, exprManager.zeroExtend(addrType
+							.getSize(), exprManager
+									    .select(lenSel, exprManager.applyExpr(bitsToDn, bits1, i))))))), bitsToDnPattern);
       BooleanExpression bitsToLabel3 = exprManager.forall(ImmutableList
           .of(bits1, i), exprManager.implies(exprManager
           .testConstructor(labelConstr, exprManager.applyExpr(bitsToDn, bits1, i)), exprManager
           .eq(exprManager.select(restSel, exprManager.applyExpr(bitsToDn, 
               bits1, i)), exprManager.applyExpr(bitsToDn, bits1, exprManager
-              .plus(addrType.getSize(), iPlusOne, exprManager.select(lenSel, exprManager.applyExpr(bitsToDn, 
+              .bitVectorPlus(addrType.getSize(), iPlusOne, exprManager.select(lenSel, exprManager.applyExpr(bitsToDn, 
                   bits1, i)))))), bitsToDnPattern);
 
       /*
@@ -445,7 +445,7 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
           stringDeref(bits1,j).eq(stringDeref(bits2,j)).and(
               exprManager.forall(i,
           exprManager.lessThanOrEqual(j, i).and(
-              exprManager.lessThan(i, exprManager.plus(addrType.getSize(), j, 
+              exprManager.lessThan(i, exprManager.bitVectorPlus(addrType.getSize(), j, 
                   exprManager.applyExpr(sizeDn, exprManager.applyExpr(bitsToDn, bits1, j))))).implies(
           stringDeref(bits1, i).eq(stringDeref(bits2, i))))).implies(
           exprManager.applyExpr(bitsToDn, bits1, j).eq(exprManager.applyExpr(bitsToDn, bits2, j)))
@@ -480,7 +480,7 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
       BooleanExpression sizeLabel = exprManager.forall(
           ImmutableList.of(x), exprManager.implies(exprManager
               .testConstructor(labelConstr, x), bitVectorFactory.eq(applySizeDn(x), exprManager
-              .plus(addrType.getSize(),exprManager.select(lenSel, x), exprManager
+              .bitVectorPlus(addrType.getSize(),exprManager.select(lenSel, x), exprManager
                   .applyExpr(sizeDn, exprManager.select(restSel, x)),
                   bitVectorFactory.one()))),
                   sizeDnPattern);
