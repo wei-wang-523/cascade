@@ -4,7 +4,6 @@ import static edu.nyu.cascade.prover.Expression.Kind.APPLY;
 import static edu.nyu.cascade.prover.Expression.Kind.CONSTANT;
 import static edu.nyu.cascade.prover.Expression.Kind.IF_THEN_ELSE;
 import static edu.nyu.cascade.prover.Expression.Kind.VARIABLE;
-import static edu.nyu.cascade.prover.Expression.Kind.NULL_EXPR;
 
 import xtc.tree.GNode;
 
@@ -98,17 +97,6 @@ public class ExpressionImpl implements Expression {
   
   static interface ConstantConstructionStrategy {
     Expr apply(Context ctx, String name, Sort type) throws Z3Exception;
-  }
-
-  static ExpressionImpl mkNullExpr(ExpressionManagerImpl exprManager) {
-    ExpressionImpl result = new ExpressionImpl(exprManager, NULL_EXPR,
-        new NullaryConstructionStrategy() {
-          @Override
-          public Expr apply(Context ctx) {
-            throw new TheoremProverException("Null expr is not supported in Z3");
-          }
-        });
-    return result;
   }
 
   static ExpressionImpl mkFunApply(
@@ -701,7 +689,8 @@ public class ExpressionImpl implements Expression {
 
   @Override
   public BooleanExpressionImpl eq(Expression e) {
-    return getExpressionManager().eq(this, e);
+  	ExpressionManagerImpl exprManager = getExpressionManager();
+    return exprManager.asBooleanExpression(exprManager.eq(this, e));
   }
 
   @Override

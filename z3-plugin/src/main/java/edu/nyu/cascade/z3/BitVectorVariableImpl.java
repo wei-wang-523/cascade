@@ -12,8 +12,13 @@ import edu.nyu.cascade.prover.Expression;
 public class BitVectorVariableImpl extends VariableExpressionImpl
     implements BitVectorVariableExpression {
 
-  public BitVectorVariableImpl(ExpressionManagerImpl em, String name, BitVectorTypeImpl type, boolean fresh) {
-      super(em,name,type,fresh);  
+  private BitVectorVariableImpl(ExpressionManagerImpl em, String name, BitVectorTypeImpl type, boolean fresh) {
+  	super(em,name,type,fresh);  
+  }
+  
+  protected static BitVectorVariableImpl create(ExpressionManagerImpl em, 
+  		String name, BitVectorTypeImpl type, boolean fresh) {
+  	return new BitVectorVariableImpl (em,name,type,fresh);  
   }
 
   @Override

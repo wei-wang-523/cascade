@@ -3,6 +3,7 @@ package edu.nyu.cascade.prover.type;
 import com.google.common.collect.ImmutableList;
 
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.VariableExpression;
 
 public interface FunctionType extends Type {
   Expression apply(Expression arg1, Expression... rest) ;
@@ -18,4 +19,6 @@ public interface FunctionType extends Type {
   Type getRangeType();
   
   String getName();
+  
+  VariableExpression variable(String name, boolean fresh) ;
 }

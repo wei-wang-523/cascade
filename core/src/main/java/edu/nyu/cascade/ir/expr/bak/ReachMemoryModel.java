@@ -148,8 +148,8 @@ public class ReachMemoryModel extends BitVectorMemoryModelSound {
       int fld_index = 0;
       for(String fld : fldOffMap.keySet()) {
         int offset = fldOffMap.get(fld);
-        currloc = exprManager.plus(addressType.getSize(), newRegions.get(i), 
-            (Expression) exprManager.bitVectorConstant(offset, addressType.getSize())); 
+        currloc = exprManager.bitVectorPlus(addressType.getSize(), newRegions.get(i), 
+            exprManager.bitVectorConstant(offset, addressType.getSize())); 
         flds[fld_index++] = fld;
         fldLocMap.put(fld, currloc);
       }

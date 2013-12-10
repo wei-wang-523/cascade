@@ -80,7 +80,7 @@ class FunctionExpressionImpl extends ExpressionImpl implements FunctionExpressio
     for( Expression t : vars ) {
       argTypes.add( t.getType() );
     }
-    setType( exprManager.functionType(argTypes,body.getType()) );
+    setType( FunctionTypeImpl.create(exprManager, argTypes, body.getType()) );
   }
   
   private FunctionExpressionImpl(ExpressionManagerImpl exprManager,
@@ -98,7 +98,7 @@ class FunctionExpressionImpl extends ExpressionImpl implements FunctionExpressio
     for( Expression t : vars.getChildren() ) {
       argTypes.add( t.getType() );
     }
-    setType( exprManager.functionType(argTypes,body.getType()) );
+    setType( FunctionTypeImpl.create(exprManager, argTypes, body.getType()) );
   }
 
   @Override

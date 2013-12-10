@@ -15,7 +15,6 @@ import com.google.common.collect.ImmutableList;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.FunctionVariableExpression;
 import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.VariableExpression;
@@ -310,7 +309,7 @@ public class ExpressionManagerTest {
 
   @Test
   public void testFf() {
-    BooleanExpressionImpl ff = exprManager.ff();
+    BooleanExpression ff = exprManager.ff();
     assertUnsat(ff);
     assertInvalid(ff);
   }
@@ -326,9 +325,9 @@ public class ExpressionManagerTest {
   public void testForallExpr2() {
     VariableExpression x = exprManager.integerBoundVar("x", true);
     VariableExpression y = exprManager.integerBoundVar("y", true);
-
-    FunctionVariableExpression f = exprManager.functionVar("f", intType,
-        intType, true);
+    
+    VariableExpression f = exprManager.functionVar("f", 
+    		exprManager.functionType("func", intType, intType), true);
     Expression fx = exprManager.applyExpr(f, x);
     Expression fy = exprManager.applyExpr(f, y);
 
@@ -354,11 +353,11 @@ public class ExpressionManagerTest {
 
   @Test
   public void testFunctionApplication2() {
-  VariableExpression x = exprManager.integerBoundVar("x", true);
-  VariableExpression y = exprManager.integerBoundVar("y", true);
+  	VariableExpression x = exprManager.integerBoundVar("x", true);
+  	VariableExpression y = exprManager.integerBoundVar("y", true);
 
-    FunctionVariableExpression f = exprManager
-        .functionVar("f", intType, intType, true);
+  	VariableExpression f = exprManager.functionVar("f", 
+  		exprManager.functionType("func", intType, intType), true);
     Expression fx = exprManager.applyExpr(f, x);
     Expression fy = exprManager.applyExpr(f, y);
 
@@ -382,7 +381,7 @@ public class ExpressionManagerTest {
                                                                                 // ==
                                                                                 // (-1)
 
-    IntegerVariableImpl x = exprManager.integerVar("x", true);
+    Expression x = exprManager.integerVar("x", true);
     assertValid(exprManager.eq(exprManager.plus(zero, x), x)); // 0
                                                                              // +
                                                                              // x
@@ -507,7 +506,7 @@ public class ExpressionManagerTest {
 
   @Test
   public void testTt() {
-    BooleanExpressionImpl tt = exprManager.tt();
+    BooleanExpression tt = exprManager.tt();
     assertSat(tt);
     assertValid(tt);
   }

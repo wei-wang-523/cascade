@@ -154,11 +154,6 @@ public class FunctionDeclarator extends TypeImpl
   }
 
   @Override
-  public VariableExpressionImpl variable(String name, boolean fresh) {
-    throw new UnsupportedOperationException("function variable is not supported in z3.");
-  }
-
-  @Override
   public String getName() {
     return fname;
   }
@@ -166,5 +161,10 @@ public class FunctionDeclarator extends TypeImpl
   @Override
   public VariableExpressionImpl boundVariable(String name, boolean fresh) {
     throw new UnsupportedOperationException("bound variable is not supported in z3.");
+  }
+
+	@Override
+  public VariableExpressionImpl variable(String name, boolean fresh) {
+		throw new UnsupportedOperationException("bound variable is not supported in z3.");
   }
 }

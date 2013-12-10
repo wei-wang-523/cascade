@@ -183,7 +183,7 @@ public class BitVectorMemoryModelOrder extends AbstractMemoryModel {
       for(Expression region : stackRegions) {
         Expression regionSize = alloc.asArray().index(region);
         
-        BitVectorExpression regionBound = exprManager.plus(addressType
+        BitVectorExpression regionBound = exprManager.bitVectorPlus(addressType
             .getSize(), region, regionSize);
         disjs.add(
             exprManager.and(
@@ -197,7 +197,7 @@ public class BitVectorMemoryModelOrder extends AbstractMemoryModel {
         Expression nullPtr = exprManager.bitVectorZero(addressType.getSize());
         Expression sizeZro = exprManager.bitVectorZero(cellType.getSize());
         
-        BitVectorExpression regionBound = exprManager.plus(addressType
+        BitVectorExpression regionBound = exprManager.bitVectorPlus(addressType
             .getSize(), region, regionSize);
         disjs.add(
             exprManager.and(
@@ -236,9 +236,9 @@ public class BitVectorMemoryModelOrder extends AbstractMemoryModel {
       // In any stack region
       for(Expression region : stackRegions) {
         Expression regionSize = alloc.asArray().index(region);
-        BitVectorExpression ptrBound = exprManager.plus(addressType.getSize(), 
+        BitVectorExpression ptrBound = exprManager.bitVectorPlus(addressType.getSize(), 
             ptr, size);
-        BitVectorExpression regionBound = exprManager.plus(addressType.getSize(), 
+        BitVectorExpression regionBound = exprManager.bitVectorPlus(addressType.getSize(), 
             region, regionSize);
         
         disjs.add(
@@ -250,9 +250,9 @@ public class BitVectorMemoryModelOrder extends AbstractMemoryModel {
       // In any heap region
       for( Expression region : heapRegions ) {
         Expression regionSize = alloc.asArray().index(region);
-        BitVectorExpression ptrBound = exprManager.plus(addressType.getSize(),
+        BitVectorExpression ptrBound = exprManager.bitVectorPlus(addressType.getSize(),
             ptr, size);
-        BitVectorExpression regionBound = exprManager.plus(addressType.getSize(),
+        BitVectorExpression regionBound = exprManager.bitVectorPlus(addressType.getSize(),
             region, regionSize);
         
         disjs.add(
@@ -335,7 +335,7 @@ public class BitVectorMemoryModelOrder extends AbstractMemoryModel {
 
       /* All the stack regions are not overflow */
       for(Expression region : stackRegions) {
-        Expression regionBound = exprManager.plus(addressType.getSize(), 
+        Expression regionBound = exprManager.bitVectorPlus(addressType.getSize(), 
             region, alloc.asArray().index(region));
         builder.add(exprManager.lessThan(region, regionBound));
       }
@@ -350,7 +350,7 @@ public class BitVectorMemoryModelOrder extends AbstractMemoryModel {
       while (lvalIter.hasNext()) {
         Expression lval2 = lvalIter.next();
         if(stackRegions.contains(lval2)) { // stack region variable
-          Expression lval2Bound = exprManager.plus(addressType.getSize(), 
+          Expression lval2Bound = exprManager.bitVectorPlus(addressType.getSize(), 
               lval2, alloc.asArray().index(lval2));
           builder.add(exprManager.greaterThan(lval, lval2Bound));
         } else {
@@ -366,7 +366,7 @@ public class BitVectorMemoryModelOrder extends AbstractMemoryModel {
         // lastRegionBound = lastRegion != 0 ? lastRegion + Size[lastRegion] : 0;
         Expression heapBound = exprManager.ifThenElse(
             lastRegion.neq(nullPtr),
-            exprManager.plus(addressType.getSize(), lastRegion, alloc.asArray().index(lastRegion)),
+            exprManager.bitVectorPlus(addressType.getSize(), lastRegion, alloc.asArray().index(lastRegion)),
             nullPtr);
         
         builder.add(exprManager.greaterThan(stackBound, heapBound));
@@ -396,9 +396,9 @@ public class BitVectorMemoryModelOrder extends AbstractMemoryModel {
     Expression lastRegion = state.getChild(2);
     
     Expression nullPtr = exprManager.bitVectorZero(addressType.getSize());
-    Expression locVarBound = exprManager.plus(addressType.getSize(), locVar, size);
+    Expression locVarBound = exprManager.bitVectorPlus(addressType.getSize(), locVar, size);
  
-    Expression lastRegionBound = exprManager.plus(addressType.getSize(), 
+    Expression lastRegionBound = exprManager.bitVectorPlus(addressType.getSize(), 
         lastRegion, alloc.asArray().index(lastRegion));
     
     BooleanExpression res = exprManager.implies(
@@ -550,10 +550,10 @@ public class BitVectorMemoryModelOrder extends AbstractMemoryModel {
     ExpressionManager exprManager = getExpressionManager();
     
     Expression nullPtr = exprManager.bitVectorZero(addressType.getSize());
-    Expression ptrBound = exprManager.plus(addressType.getSize(), ptr, size);
+    Expression ptrBound = exprManager.bitVectorPlus(addressType.getSize(), ptr, size);
 
     Expression lastRegion = state.getChild(2);
-    Expression lastRegionBound = exprManager.plus(addressType.getSize(), 
+    Expression lastRegionBound = exprManager.bitVectorPlus(addressType.getSize(), 
         lastRegion, alloc.asArray().index(lastRegion));
     
     BooleanExpression res = exprManager.implies(

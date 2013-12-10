@@ -8,6 +8,7 @@ public interface ArrayType extends Type {
   Type getIndexType();
   Type getElementType();
   ArrayVariableExpression variable(String name, boolean fresh) ;
+  ArrayVariableExpression boundVariable(String name, boolean fresh);
   
   Expression index(Expression array, Expression index);
   ArrayExpression update(Expression array, Expression index, Expression value);

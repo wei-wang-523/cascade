@@ -16,6 +16,8 @@ import com.microsoft.z3.Context;
 import com.microsoft.z3.Sort;
 import com.microsoft.z3.Z3Exception;
 
+import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Type;
@@ -171,5 +173,11 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
   public Type select(String fieldName) {
     int i = elementNames.indexOf(fieldName);
     return elementTypes.get(i);
+  }
+
+	@Override
+  public RecordExpression update(Expression record, String fieldName,
+      Expression value) {
+	  return RecordExpressionImpl.mkUpdate(getExpressionManager(), record, fieldName, value);
   }
 }

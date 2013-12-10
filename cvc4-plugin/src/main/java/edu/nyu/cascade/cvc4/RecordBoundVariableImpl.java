@@ -13,23 +13,19 @@ import edu.nyu.cascade.prover.type.Type;
 public final class RecordBoundVariableImpl extends BoundVariableExpressionImpl implements
     RecordVariableExpression {
   
-  static  RecordBoundVariableImpl create(
+	protected static RecordBoundVariableImpl create(
       ExpressionManagerImpl exprManager, String name, String tname, 
       List<String> elemNames, List<TypeImpl> elemTypes, boolean fresh) {
     RecordTypeImpl type = exprManager.recordType(tname, elemNames, elemTypes);
     return new RecordBoundVariableImpl(exprManager,name, type,fresh);
   }
 
-  static  RecordBoundVariableImpl create(
+  protected static RecordBoundVariableImpl create(
       ExpressionManagerImpl exprManager, String name, RecordTypeImpl type, boolean fresh) {
     return new RecordBoundVariableImpl(exprManager,name, type, fresh);
   }
 
-  private RecordBoundVariableImpl(ExpressionManagerImpl exprManager, String name, RecordTypeImpl type, boolean fresh) {
-    super(exprManager, name, type, fresh);
-  }
-  
-  static RecordBoundVariableImpl valueOf(ExpressionManagerImpl em, Expression e) {
+  protected static RecordBoundVariableImpl valueOf(ExpressionManagerImpl em, Expression e) {
     if (e instanceof RecordBoundVariableImpl && em.equals(e.getExpressionManager())) {
       return (RecordBoundVariableImpl) e;
     } else if (e instanceof BoundVariableExpressionImpl) {
@@ -40,18 +36,22 @@ public final class RecordBoundVariableImpl extends BoundVariableExpressionImpl i
     }
   }
 
-  RecordBoundVariableImpl(ExpressionManagerImpl em, String name, String tname,
+  private RecordBoundVariableImpl(ExpressionManagerImpl exprManager, String name, RecordTypeImpl type, boolean fresh) {
+	  super(exprManager, name, type, fresh);
+	}
+
+	private RecordBoundVariableImpl(ExpressionManagerImpl em, String name, String tname,
       List<String> elemNames, List<Type> elemTypes, boolean fresh) {
     super(em, name, em.recordType(tname, elemNames, elemTypes), fresh);
   }
   
-  RecordBoundVariableImpl(ExpressionManagerImpl em, String name, Type type, boolean fresh) {
+  private RecordBoundVariableImpl(ExpressionManagerImpl em, String name, Type type, boolean fresh) {
     super(em, name, type, fresh);
     Preconditions.checkArgument(type.isRecord());
   }
 
   /** Copy constructor. */
-  RecordBoundVariableImpl(ExpressionManagerImpl em, VariableExpression x) {
+  private RecordBoundVariableImpl(ExpressionManagerImpl em, VariableExpression x) {
     this(em, x.getName(), x.getType(), false);
   }
 

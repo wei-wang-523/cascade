@@ -63,7 +63,7 @@ public interface BitVectorType extends Type, ComparableType {
   
   int getSize();
 
-	BitVectorExpression signedExtend(Expression bv, int size);
+	BitVectorExpression signedExtend(int size, Expression bv);
 	
-	BitVectorExpression extend(Expression bv, int size);
+	BitVectorExpression zeroExtend(int size, Expression bv);
 }

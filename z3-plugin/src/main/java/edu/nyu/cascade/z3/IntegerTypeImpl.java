@@ -198,7 +198,7 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
   }
 
   @Override
-  public VariableExpressionImpl boundVariable(String name, boolean fresh) {
+  public IntegerVariableImpl boundVariable(String name, boolean fresh) {
     throw new UnsupportedOperationException("bound variable is not supported in z3.");
   }
 }

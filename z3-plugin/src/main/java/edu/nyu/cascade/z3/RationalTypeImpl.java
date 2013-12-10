@@ -194,7 +194,7 @@ public class RationalTypeImpl extends TypeImpl implements RationalType {
   }
 
   @Override
-  public VariableExpressionImpl boundVariable(String name, boolean fresh) {
+  public RationalVariableImpl boundVariable(String name, boolean fresh) {
     throw new UnsupportedOperationException("bound variable is not supported in z3.");
   }
 }

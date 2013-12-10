@@ -320,7 +320,7 @@ public class ExpressionManagerTest {
 
   @Test
   public void testFf() {
-    BooleanExpressionImpl ff = exprManager.ff();
+    BooleanExpressionImpl ff = exprManager.asBooleanExpression(exprManager.ff());
     assertUnsat(ff);
     assertInvalid(ff);
   }
@@ -409,7 +409,8 @@ public class ExpressionManagerTest {
                                                                                 // ==
                                                                                 // (-1)
 
-    IntegerVariableImpl x = exprManager.integerVar("x", true);
+    IntegerVariableImpl x = exprManager
+    		.asIntegerVariable(exprManager.integerVar("x", true));
     assertValid(exprManager.eq(exprManager.plus(zero, x), x)); // 0
                                                                              // +
                                                                              // x
@@ -535,7 +536,7 @@ public class ExpressionManagerTest {
 
   @Test
   public void testTt() {
-    BooleanExpressionImpl tt = exprManager.tt();
+    BooleanExpressionImpl tt = exprManager.asBooleanExpression(exprManager.tt());
     assertSat(tt);
     assertValid(tt);
   }

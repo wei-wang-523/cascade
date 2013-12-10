@@ -12,27 +12,29 @@ import edu.nyu.acsys.CVC4.Record;
 import edu.nyu.acsys.CVC4.pairStringType;
 import edu.nyu.acsys.CVC4.vectorPairStringType;
 import edu.nyu.acsys.CVC4.vectorType;
+import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Type;
 
 public final class RecordTypeImpl extends TypeImpl implements RecordType {
-  static RecordTypeImpl create(ExpressionManagerImpl em, String tname, String elemName, Type elemType) {
+	protected static RecordTypeImpl create(ExpressionManagerImpl em, String tname, String elemName, Type elemType) {
     return new RecordTypeImpl(em, tname, Lists.newArrayList(elemName), Lists.newArrayList(elemType));
   }
 
-  static RecordTypeImpl create(ExpressionManagerImpl em, String tname, Iterable<String> elemNames,
+	protected static RecordTypeImpl create(ExpressionManagerImpl em, String tname, Iterable<String> elemNames,
       Iterable<? extends Type> elemTypes) {
     return new RecordTypeImpl(em, tname, elemNames, elemTypes);
   }
   
-  static RecordTypeImpl create(ExpressionManagerImpl em, String tname) {
+	protected static RecordTypeImpl create(ExpressionManagerImpl em, String tname) {
     ImmutableList<String> elemNames = ImmutableList.of();
     ImmutableList<? extends Type> elemTypes = ImmutableList.of();
     return new RecordTypeImpl(em, tname, elemNames, elemTypes);
   }
 
-  static RecordTypeImpl valueOf(ExpressionManagerImpl em, Type t) {
+	protected static RecordTypeImpl valueOf(ExpressionManagerImpl em, Type t) {
     if (t instanceof RecordTypeImpl) {
       return (RecordTypeImpl) t;
     } else {
@@ -79,6 +81,11 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
   }
 
   @Override
+	public List<String> getElementNames() {
+	  return elementNames;
+	}
+
+	@Override
   public int size() {
     return elementTypes.size();
   }
@@ -115,7 +122,8 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
   }
 
   @Override
-  public List<String> getElementNames() {
-    return elementNames;
+  public RecordExpression update(Expression record, String fieldName,
+      Expression value) {
+	  return RecordExpressionImpl.mkUpdate(getExpressionManager(), record, fieldName, value);
   }
 }

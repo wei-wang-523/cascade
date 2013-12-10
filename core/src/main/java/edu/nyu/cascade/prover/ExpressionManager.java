@@ -131,10 +131,10 @@ public interface ExpressionManager {
    * @return the variable
    */
 
-   VariableExpression arrayVar(
+   ArrayVariableExpression arrayVar(
       String name, Type index, Type elem, boolean fresh);
    
-   VariableExpression arrayBoundVar(
+   ArrayVariableExpression arrayBoundVar(
        String name, Type index, Type elem, boolean fresh);
 
    ArrayType asArrayType(Type type);
@@ -658,11 +658,6 @@ public interface ExpressionManager {
    */
   BooleanExpression signedGreaterThan(Expression lhs,
       Expression rhs);
-
-  /** Create a new type predicate expression. The expression will be
-   * true iff. the <code>expr</code> is of type <code>type</code>.
-   */
-  BooleanExpression hasType(Expression expr, Type type);
   
   /**
    * Create a new Boolean equivalence expression
@@ -690,20 +685,6 @@ public interface ExpressionManager {
    */
   BooleanExpression implies(Expression left,
       Expression right);
-
-  /**
-   * Create an IExpression belonging to this ExpressionManager and otherwise
-   * equivalent to the given <code>expression</code>. May return the same object
-   * if <code>expression</code> belongs to this ExpressionManager.
-   */
-  Expression importExpression(Expression expression);
-
-  /**
-   * Create an IType belonging to this ExpressionManager and otherwise
-   * equivalent to the given <code>type</code>. May return the same object if
-   * <code>type</code> belongs to this ExpressionManager.
-   */
-  Type importType(Type type);
 
   /**
    * Create a new array index expression (e.g., <code>a[i]</code>) given an
@@ -751,9 +732,9 @@ public interface ExpressionManager {
    *          TODO
    * @return the variable
    */
-  VariableExpression integerVar(String name, boolean fresh); 
+  IntegerVariableExpression integerVar(String name, boolean fresh); 
 
-  VariableExpression integerBoundVar(String name, boolean fresh);
+  IntegerVariableExpression integerBoundVar(String name, boolean fresh);
 
   /**
    * Create a function expression (a lambda abstraction) with parameter var.
@@ -859,13 +840,6 @@ public interface ExpressionManager {
    * @return the or of left and right
    */
   BooleanExpression not(Expression expr);
-  
-  /**
-   * Create a null expression
-   * 
-   * @return the null expression
-   */
-  Expression nullExpression();
 
   IntegerExpression one();
 
@@ -966,9 +940,9 @@ public interface ExpressionManager {
    *          TODO
    * @return the variable
    */
-  VariableExpression rationalVar(String name, boolean fresh);
+  RationalVariableExpression rationalVar(String name, boolean fresh);
   
-  VariableExpression rationalBoundVar(String name, boolean fresh);
+  RationalVariableExpression rationalBoundVar(String name, boolean fresh);
 
   RationalExpression ratOne();
 
@@ -1006,7 +980,7 @@ public interface ExpressionManager {
   void setTriggers(Expression e,
       Iterable<? extends Expression> triggers);
 
-  BitVectorExpression signExtend(Expression bv, int size);
+  BitVectorExpression signedExtend(int size, Expression bv);
 
   /**
    * Substitute each <code>oldExpr</code> for <code>newExpr</code> in
@@ -1044,9 +1018,6 @@ public interface ExpressionManager {
   RecordType recordType(String tname);
 
   UninterpretedType uninterpretedType(String name);
-
-  /** The super-type of all value types. (Optional) */
-  Type universalType();
   
   /**
    * Create a new array update expression (e.g., <code>a[i <- e]</code>) given
@@ -1091,7 +1062,7 @@ public interface ExpressionManager {
 
   IntegerExpression zero();
 
-  BitVectorExpression zeroExtend(Expression bv, int size);
+  BitVectorExpression zeroExtend(int size, Expression bv);
 
   BitVectorExpression bitVectorPlus(int size, Expression left, Expression right);
   

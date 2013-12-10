@@ -19,19 +19,22 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   private final LinkedHashSet<VariableExpression> variableSet = Sets.newLinkedHashSet();
   
   @Override
-  public BooleanExpression and(Expression first, Expression rest) {
-  	Preconditions.checkArgument(first.isBoolean());
-  	return first.getType().asBooleanType().and(first, rest);
+  public void addTrigger(Expression e, Expression p) {
+  	Preconditions.checkArgument(e.isBoolean());
+    e.asBooleanExpression().addTrigger(p);
   }
   
+  @Override
+  public BooleanExpression and(Expression first, Expression rest) {
+  	Preconditions.checkArgument(first.isBoolean());
+  	Preconditions.checkArgument(rest.isBoolean());
+  	return booleanType().and(first, rest);
+  }
 
   @Override
   public BooleanExpression and(
       Iterable<? extends Expression> subExpressions) {
-  	Preconditions.checkArgument(Iterables.size(subExpressions) >= 1);
-  	Expression first = Iterables.get(subExpressions, 0);
-  	Preconditions.checkArgument(first.isBoolean());
-  	return first.getType().asBooleanType().and(subExpressions);
+  	return booleanType().and(subExpressions);
   }
   
   @Override
@@ -148,6 +151,16 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   	Preconditions.checkArgument(a.isBitVector());
   	Type type = a.getType();
     return type.asBitVectorType().bitwiseXor(a, b);
+  }
+  
+  @Override
+  public BooleanVariableExpression booleanVar(String name, boolean fresh)  {
+    return booleanType().variable(name, fresh);
+  }
+  
+  @Override
+  public BooleanVariableExpression booleanBoundVar(String name, boolean fresh)  {
+    return booleanType().boundVariable(name, fresh);
   }
 
   @Override
@@ -427,12 +440,12 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   }
   
   @Override
-  public VariableExpression integerVar(String name, boolean fresh)  {
+  public IntegerVariableExpression integerVar(String name, boolean fresh)  {
     return integerType().variable(name, fresh);  
   }
 
   @Override
-  public VariableExpression integerBoundVar(String name, boolean fresh) {
+  public IntegerVariableExpression integerBoundVar(String name, boolean fresh) {
     return integerType().boundVariable(name, fresh);
   }
 
@@ -685,12 +698,12 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   }
   
   @Override
-  public VariableExpression rationalVar(String name, boolean fresh)  {
+  public RationalVariableExpression rationalVar(String name, boolean fresh)  {
     return rationalType().variable(name, fresh);
   }
   
   @Override
-  public VariableExpression rationalBoundVar(String name, boolean fresh)  {
+  public RationalVariableExpression rationalBoundVar(String name, boolean fresh)  {
     return rationalType().boundVariable(name, fresh);
   }
   
@@ -716,12 +729,12 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   
   @Override
   public RationalExpression ratOne() {
-    return rationalType().one();
+    return rationalType().one().asRationalExpression();
   }
   
   @Override
   public RationalExpression ratZero() {
-    return rationalType().zero();
+    return rationalType().zero().asRationalExpression();
   }
   
   @Override
@@ -730,11 +743,17 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   }
   
   @Override
-  public BitVectorExpression signExtend(
-      Expression bv, int size)  {
+  public BitVectorExpression signedExtend(int size, Expression bv)  {
   	Preconditions.checkArgument(bv.isBitVector());
   	Type type = bv.getType();
-    return type.asBitVectorType().signedExtend(bv, size);
+    return type.asBitVectorType().signedExtend(size, bv);
+  }
+  
+  @Override
+  public BitVectorExpression zeroExtend(int size, Expression bv)  {
+  	Preconditions.checkArgument(bv.isBitVector());
+  	Type type = bv.getType();
+    return type.asBitVectorType().zeroExtend(size, bv);
   }
   
   @Override
@@ -787,9 +806,8 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   
   @Override
   public ArrayExpression storeAll(Expression expr, Type type) {  	
-  	Preconditions.checkArgument(expr.isArray());
-  	Type arrayType = expr.getType();
-    return arrayType.asArrayType().storeAll(expr, type);
+  	Preconditions.checkArgument(type.isArrayType());
+    return type.asArrayType().storeAll(expr, type.asArrayType());
   }
   
   @Override
@@ -805,16 +823,39 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   }
   
   @Override
-  public VariableExpression arrayVar(
+  public ArrayVariableExpression arrayVar(
   		String name, Type indexType, Type elementType, boolean fresh)  {
   	Type type = asArrayType(indexType, elementType);
   	return type.asArrayType().variable(name, fresh);
   }
   
   @Override
-  public VariableExpression arrayBoundVar(
+  public ArrayVariableExpression arrayBoundVar(
       String name, Type indexType, Type elementType, boolean fresh)  {
   	Type type = asArrayType(indexType, elementType);
   	return type.asArrayType().boundVariable(name, fresh);
+  }
+  
+  @Override
+  public BitVectorExpression extract(Expression bv, int low, int high) {
+  	Preconditions.checkArgument(bv.isBitVector());
+  	Type type = bv.getType();
+  	return type.asBitVectorType().extract(bv, high, low);
+  }
+  
+	@Override
+  public BooleanExpression distinct(Expression first, Expression second,
+      Expression... rest) {
+	  return booleanType().distinct(first, second, rest);
+  }
+
+	@Override
+  public BooleanExpression distinct(Iterable<? extends Expression> args) {
+		return booleanType().distinct(args);
+  }
+
+	@Override
+  public BooleanExpression eq(Expression left, Expression right) {
+		return booleanType().eq(left, right);
   }
 }

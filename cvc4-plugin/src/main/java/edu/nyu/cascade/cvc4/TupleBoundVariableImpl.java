@@ -13,46 +13,46 @@ import edu.nyu.cascade.prover.type.Type;
 public final class TupleBoundVariableImpl extends BoundVariableExpressionImpl implements
     TupleVariableExpression {
   
-  static  TupleBoundVariableImpl create(
+	protected static TupleBoundVariableImpl create(
       ExpressionManagerImpl exprManager, String name, String tname, List<TypeImpl> args, boolean fresh) {
     TupleTypeImpl type = exprManager.tupleType(tname, args);
 
     return new TupleBoundVariableImpl(exprManager,name, type,fresh);
   }
 
-  static  TupleBoundVariableImpl create(
+  protected static TupleBoundVariableImpl create(
       ExpressionManagerImpl exprManager, String name, TupleTypeImpl type, boolean fresh) {
     return new TupleBoundVariableImpl(exprManager,name, type, fresh);
   }
 
-  private TupleBoundVariableImpl(ExpressionManagerImpl exprManager, String name, TupleTypeImpl type, boolean fresh) {
+  protected static TupleBoundVariableImpl valueOf(ExpressionManagerImpl em, Expression e) {
+	  if (e instanceof TupleBoundVariableImpl && em.equals(e.getExpressionManager())) {
+	    return (TupleBoundVariableImpl) e;
+	  } else if (e instanceof BoundVariableExpressionImpl) {
+	    BoundVariableExpressionImpl e2 = (BoundVariableExpressionImpl)e;
+	    return new TupleBoundVariableImpl(em, e2);
+	  } else {
+	    throw new IllegalArgumentException("Expression type: " + e.getClass());
+	  }
+	}
+
+	private TupleBoundVariableImpl(ExpressionManagerImpl exprManager, String name, TupleTypeImpl type, boolean fresh) {
     super(exprManager, name, type, fresh);
   }
   
-  static TupleBoundVariableImpl valueOf(ExpressionManagerImpl em, Expression e) {
-    if (e instanceof TupleBoundVariableImpl && em.equals(e.getExpressionManager())) {
-      return (TupleBoundVariableImpl) e;
-    } else if (e instanceof BoundVariableExpressionImpl) {
-      BoundVariableExpressionImpl e2 = (BoundVariableExpressionImpl)e;
-      return new TupleBoundVariableImpl(em, e2);
-    } else {
-      throw new IllegalArgumentException("Expression type: " + e.getClass());
-    }
-  }
-
   /** Create a new integer variable. */
-  TupleBoundVariableImpl(ExpressionManagerImpl em, String name, String tname, List<Type> typeArgs, boolean fresh) {
+  private TupleBoundVariableImpl(ExpressionManagerImpl em, String name, String tname, List<Type> typeArgs, boolean fresh) {
     super(em, name, em.tupleType(tname, typeArgs), fresh);
   }
 
   /** Create a new variable of an integer subtype (e.g., a range type). */
-  TupleBoundVariableImpl(ExpressionManagerImpl em, String name, Type type, boolean fresh) {
+  private TupleBoundVariableImpl(ExpressionManagerImpl em, String name, Type type, boolean fresh) {
     super(em, name, type, fresh);
     Preconditions.checkArgument(type.isTuple());
   }
 
   /** Copy constructor. */
-  TupleBoundVariableImpl(ExpressionManagerImpl em, VariableExpression x) {
+  private TupleBoundVariableImpl(ExpressionManagerImpl em, VariableExpression x) {
     this(em, x.getName(), x.getType(), false);
   }
 

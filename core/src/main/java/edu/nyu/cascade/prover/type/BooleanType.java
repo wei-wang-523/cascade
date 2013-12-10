@@ -3,6 +3,7 @@ package edu.nyu.cascade.prover.type;
 import com.google.common.collect.ImmutableList;
 
 import edu.nyu.cascade.prover.BooleanExpression;
+import edu.nyu.cascade.prover.BooleanVariableExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.VariableExpression;
 
@@ -191,4 +192,55 @@ public interface BooleanType extends Type {
    * @return the xor
    */
   BooleanExpression xor(Expression a, Expression b);
+  
+  /**
+   * Return a Boolean variable with <code>name</code>
+   */
+  BooleanVariableExpression variable(String name, boolean fresh);
+  
+  /**
+   * Return a bound Boolean variable with <code>name</code> used for
+   * quantified expression
+   */
+  BooleanVariableExpression boundVariable(String name, boolean fresh);
+
+  /**
+   * Create an expression stating that all of the children are pairwise
+   * distinct. I.e., the expression created by
+   * <code>distinctExpression(args)</code>
+   * 
+   * @param args
+   *          the arguments
+   * @return a boolean expression representing the assertion that the arguments
+   *         are pairwise distinct
+   */
+	BooleanExpression distinct(Iterable<? extends Expression> args);
+
+  /**
+   * Create an expression stating that all of the children are pairwise
+   * distinct. I.e., the expression created by
+   * <code>distinctExpression(args)</code>
+   * 
+   * @param first
+   *          the first argument
+   * @param second
+   *          the second argument
+   * @param rest
+   *          the remainder of the arguments
+   * @return a boolean expression representing the assertion that the arguments
+   *         are pairwise distinct
+   */
+	BooleanExpression distinct(Expression first, Expression second,
+      Expression... rest);
+
+  /**
+   * Create a new equality expression
+   * 
+   * @param left
+   *          the left operand
+   * @param right
+   *          the right operand
+   * @return the or of left and right
+   */
+	BooleanExpression eq(Expression left, Expression right);
 }

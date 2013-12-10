@@ -1,7 +1,10 @@
 package edu.nyu.cascade.cvc4;
 
 import java.util.Arrays;
+
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -55,20 +58,17 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   }
 
   @Override
-  public BooleanExpressionImpl and(Expression a,
-      Expression b) {
+  public BooleanExpressionImpl and(Expression a, Expression b) {
     return BooleanExpressionImpl.mkAnd(getExpressionManager(),a, b);
   }
 
   @Override
-  public BooleanExpressionImpl and(
-      Expression first, Expression... rest) {
+  public BooleanExpressionImpl and(Expression first, Expression... rest) {
     return BooleanExpressionImpl.mkAnd(getExpressionManager(),Lists.asList(first, rest));
   }
 
   @Override
-  public BooleanExpressionImpl and(
-      Iterable<? extends Expression> subExpressions) {
+  public BooleanExpressionImpl and(Iterable<? extends Expression> subExpressions) {
     // TODO: Check for proper typing
     ImmutableList<? extends Expression> subList = ImmutableList
         .copyOf(subExpressions);
@@ -80,15 +80,13 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   }
 
   @Override
-  public BooleanExpressionImpl iff(Expression a,
-      Expression b) {
+  public BooleanExpressionImpl iff(Expression a, Expression b) {
     // TODO: Check for proper typing
     return BooleanExpressionImpl.mkIff(getExpressionManager(),a, b);
   }
 
   @Override
-  public BooleanExpressionImpl implies(Expression a,
-      Expression b) {
+  public BooleanExpressionImpl implies(Expression a, Expression b) {
     // Create the and expression
     return BooleanExpressionImpl.mkImplies(getExpressionManager(),a, b);
   }
@@ -99,28 +97,25 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   }
 
   @Override
-  public BooleanExpressionImpl or(Expression a,
-      Expression b) {
+  public BooleanExpressionImpl or(Expression a, Expression b) {
     return BooleanExpressionImpl.mkOr(getExpressionManager(),a, b);
   }
+  
   @Override
-  public BooleanExpressionImpl or(
-      Iterable<? extends Expression> subExpressions) {
-      if (subExpressions.iterator().hasNext()) {
-        return BooleanExpressionImpl.mkOr(getExpressionManager(),subExpressions);
-      }
-      return ff();
+  public BooleanExpressionImpl or(Iterable<? extends Expression> subExpressions) {
+  	if (subExpressions.iterator().hasNext()) {
+  		return BooleanExpressionImpl.mkOr(getExpressionManager(),subExpressions);
+  	}
+  	return ff();
   }
 
   @Override
-  public BooleanExpressionImpl or(
-      Expression... subExpressions) {
+  public BooleanExpressionImpl or(Expression... subExpressions) {
     return or(Arrays.asList(subExpressions));
   }
 
   @Override
-  public BooleanExpressionImpl xor(Expression a,
-      Expression b) {
+  public BooleanExpressionImpl xor(Expression a, Expression b) {
     return BooleanExpressionImpl.mkXor(getExpressionManager(),a,b);
   }
 
@@ -135,22 +130,19 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   }
 
   @Override
-  public BooleanExpressionImpl exists(
-      Iterable<? extends Expression> vars,
+  public BooleanExpressionImpl exists(Iterable<? extends Expression> vars,
       Expression body) {
-    return BooleanExpressionImpl.mkExists(getExpressionManager(),vars, body);
-    }
+  	return BooleanExpressionImpl.mkExists(getExpressionManager(),vars, body);
+  }
 
   @Override
-  public BooleanExpressionImpl forall(
-      Iterable<? extends Expression> vars,
+  public BooleanExpressionImpl forall(Iterable<? extends Expression> vars,
       Expression body) {
     return BooleanExpressionImpl.mkForall(getExpressionManager(),vars, body);
   }
   
   @Override
-  public BooleanExpressionImpl forall(
-      Iterable<? extends Expression> vars,
+  public BooleanExpressionImpl forall(Iterable<? extends Expression> vars,
       Expression body,
       Iterable<? extends Expression> triggers) {
     return BooleanExpressionImpl.mkForall(getExpressionManager(),vars, body, triggers);
@@ -163,7 +155,8 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   }
   
   @Override
-  public BooleanExpressionImpl rrRewrite(Expression head, Expression body, Iterable<? extends Expression> triggers) {
+  public BooleanExpressionImpl rrRewrite(Expression head, Expression body, 
+  		Iterable<? extends Expression> triggers) {
     return BooleanExpressionImpl.mkRRRewrite(getExpressionManager(), head, body, triggers);
   }
   
@@ -173,7 +166,8 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   }
   
   @Override
-  public BooleanExpressionImpl rrReduction(Expression head, Expression body, Iterable<? extends Expression> triggers) {
+  public BooleanExpressionImpl rrReduction(Expression head, Expression body, 
+  		Iterable<? extends Expression> triggers) {
     return BooleanExpressionImpl.mkRRReduction(getExpressionManager(), head, body, triggers);
   }
   
@@ -183,7 +177,8 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   }
   
   @Override
-  public BooleanExpressionImpl rrDeduction(Expression head, Expression body, Iterable<? extends Expression> triggers) {
+  public BooleanExpressionImpl rrDeduction(Expression head, Expression body, 
+  		Iterable<? extends Expression> triggers) {
     return BooleanExpressionImpl.mkRRDeduction(getExpressionManager(), head, body, triggers);
   }
   
@@ -199,26 +194,22 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   }
 
   @Override
-  public void setTriggers(Expression e,
-      Iterable<? extends Expression> triggers) {
+  public void setTriggers(Expression e, Iterable<? extends Expression> triggers) {
     BooleanExpressionImpl e2 = BooleanExpressionImpl.valueOf(getExpressionManager(),e);
     e2.setTriggers(triggers);
   }
 
   @Override
-  public ImmutableList<ImmutableList<? extends Expression>> getTriggers(
-      Expression e) {
+  public ImmutableList<ImmutableList<? extends Expression>> getTriggers(Expression e) {
     BooleanExpressionImpl e2 = BooleanExpressionImpl.valueOf(getExpressionManager(),e);
     return e2.getTriggers();
   }
 
   @Override
-  public  Expression ifThenElse(
-      Expression cond, Expression thenPart,
-      Expression elsePart) {
+  public  Expression ifThenElse(Expression cond, Expression thenPart, 
+  		Expression elsePart) {
     return ExpressionImpl.mkIte(getExpressionManager(),cond, thenPart, elsePart);
   }
-
 
   @Override
   public BooleanExpression exists(Iterable<? extends Expression> vars,
@@ -236,12 +227,28 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
     return null;
   }
 
-
   @Override
   public BooleanExpression forall(Iterable<? extends Expression> vars,
       Expression body, Iterable<? extends Expression> triggers,
       Iterable<? extends Expression> noTriggers) {
     // TODO Auto-generated method stub
     return null;
+  }
+  
+  @Override
+  public BooleanExpressionImpl distinct(Iterable<? extends Expression> children) {
+  	Preconditions.checkArgument(Iterables.size(children) > 1);
+  	return BooleanExpressionImpl.mkDistinct(getExpressionManager(), children);
+  }
+  
+  @Override
+  public  BooleanExpressionImpl distinct(
+      Expression first, Expression second, Expression... rest) {
+    return BooleanExpressionImpl.mkDistinct(getExpressionManager(), first,second,rest);
+  }
+  
+  @Override
+  public  BooleanExpressionImpl eq(Expression left, Expression right)  {
+    return BooleanExpressionImpl.mkEq(getExpressionManager(), left, right);
   }
 }

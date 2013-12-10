@@ -15,7 +15,9 @@ import com.microsoft.z3.Sort;
 import com.microsoft.z3.Symbol;
 import com.microsoft.z3.Z3Exception;
 
+import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
+import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
@@ -139,6 +141,16 @@ public final class TupleTypeImpl extends TypeImpl implements TupleType {
   @Override
   public VariableExpressionImpl boundVariable(String name, boolean fresh) {
     throw new UnsupportedOperationException("bound variable is not supported in z3.");
+  }
+
+	@Override
+  public Expression index(Expression tuple, int index) {
+	  return TupleExpressionImpl.mkTupleIndex(getExpressionManager(), tuple, index);
+  }
+
+	@Override
+  public TupleExpression update(Expression tuple, int index, Expression value) {
+		return TupleExpressionImpl.mkUpdate(getExpressionManager(), tuple, index, value);
   }
 
 }

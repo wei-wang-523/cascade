@@ -196,7 +196,7 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
   
   @Override
   public IntegerBoundVariableImpl boundVariable(String name, boolean fresh) {
-    return new IntegerBoundVariableImpl(getExpressionManager(), name, this, fresh);
+    return IntegerBoundVariableImpl.create(getExpressionManager(), name, this, fresh);
   }
 
   @Override

@@ -453,7 +453,7 @@ public class MonolithicVer0MemoryModel extends AbstractMemoryModel {
       Expression alloc = state.getChild(1);
       Expression ref_ptr = ptr.asTuple().index(0);
       Expression off_ptr = ptr.asTuple().index(1);
-      Expression off_bound = exprManager.plus(offType.getSize(), off_ptr, size);
+      Expression off_bound = exprManager.bitVectorPlus(offType.getSize(), off_ptr, size);
       Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
       Expression nullRef = getExpressionEncoding().getPointerEncoding().getNullPtr().asTuple().getChild(0);
       

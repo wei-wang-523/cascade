@@ -25,7 +25,7 @@ public final class FunctionBoundVariableImpl
 */  
   static  FunctionBoundVariableImpl create(
       ExpressionManagerImpl exprManager, String name, Iterable<? extends Type> argTypes, Type range, boolean fresh) {
-    FunctionTypeImpl type = exprManager.functionType(argTypes, range);
+    FunctionTypeImpl type = FunctionTypeImpl.create(exprManager, argTypes, range);
     return new FunctionBoundVariableImpl(exprManager, name, type,fresh);
   }
 

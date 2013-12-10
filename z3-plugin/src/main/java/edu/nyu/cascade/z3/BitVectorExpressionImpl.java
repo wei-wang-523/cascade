@@ -147,19 +147,34 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
       int size, int value) {
   	Preconditions.checkArgument(size >= 0);
-  	return mkConstant(exprManager, size, value);
+    try {
+    	String decimalRep = Integer.toString(value);
+      return cache.get(exprManager).get(Pair.of(decimalRep, size));
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
+    }
   }
   
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
       int size, long value) {
   	Preconditions.checkArgument(size >= 0);
-  	return mkConstant(exprManager, size, value);
+    try {
+    	String decimalRep = Long.toString(value);
+      return cache.get(exprManager).get(Pair.of(decimalRep, size));
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
+    }
   }
   
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
       int size, BigInteger value) {
   	Preconditions.checkArgument(size >= 0);
-  	return mkConstant(exprManager, size, value);
+    try {
+    	String decimalRep = value.toString();
+      return cache.get(exprManager).get(Pair.of(decimalRep, size));
+    } catch (ExecutionException e) {
+      throw new CacheException(e);
+    }
   }
 
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,

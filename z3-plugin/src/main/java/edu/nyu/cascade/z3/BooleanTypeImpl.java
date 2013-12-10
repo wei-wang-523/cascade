@@ -2,7 +2,9 @@ package edu.nyu.cascade.z3;
 
 import java.util.Arrays;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.microsoft.z3.Z3Exception;
 
@@ -28,7 +30,7 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   }
 
 
-  BooleanTypeImpl(ExpressionManagerImpl expressionManager) {
+  protected BooleanTypeImpl(ExpressionManagerImpl expressionManager) {
     super(expressionManager);
     try {
       setZ3Type(expressionManager.getTheoremProver().getZ3Context().MkBoolSort());
@@ -44,7 +46,7 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
 
   @Override
   public BooleanVariableImpl variable(String name, boolean fresh) {
-    return new BooleanVariableImpl(getExpressionManager(), name, fresh);
+    return BooleanVariableImpl.create(getExpressionManager(), name, fresh);
   }
 
   @Override
@@ -244,7 +246,24 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   }
 
   @Override
-  public VariableExpressionImpl boundVariable(String name, boolean fresh) {
+  public BooleanVariableImpl boundVariable(String name, boolean fresh) {
     throw new UnsupportedOperationException("bound variable is not supported in z3.");
+  }
+  
+  @Override
+  public BooleanExpressionImpl distinct(Iterable<? extends Expression> children) {
+  	Preconditions.checkArgument(Iterables.size(children) > 1);
+  	return BooleanExpressionImpl.mkDistinct(getExpressionManager(), children);
+  }
+  
+  @Override
+  public  BooleanExpressionImpl distinct(
+      Expression first, Expression second, Expression... rest) {
+    return BooleanExpressionImpl.mkDistinct(getExpressionManager(), first,second,rest);
+  }
+  
+  @Override
+  public  BooleanExpressionImpl eq(Expression left, Expression right)  {
+    return BooleanExpressionImpl.mkEq(getExpressionManager(), left, right);
   }
 }

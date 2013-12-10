@@ -248,7 +248,7 @@ public class BitVectorTypeImpl extends TypeImpl implements BitVectorType {
 
   @Override
   public BitVectorVariableImpl variable(String name, boolean fresh) {
-    return new BitVectorVariableImpl(getExpressionManager(), name, this, fresh);
+    return BitVectorVariableImpl.create(getExpressionManager(), name, this, fresh);
   }
 
   @Override
@@ -258,7 +258,7 @@ public class BitVectorTypeImpl extends TypeImpl implements BitVectorType {
 
   @Override
   public VariableExpressionImpl boundVariable(String name, boolean fresh) {
-    return new BitVectorVariableImpl(getExpressionManager(), name, this, fresh);
+    return BitVectorVariableImpl.create(getExpressionManager(), name, this, fresh);
   }
 
 	@Override
@@ -270,4 +270,29 @@ public class BitVectorTypeImpl extends TypeImpl implements BitVectorType {
 	public BitVectorExpression constant(int size, BigInteger val) {
 		return BitVectorExpressionImpl.mkConstant(getExpressionManager(), size, val);
 	}
+
+	@Override
+  public BitVectorExpression signedDivide(Expression a, Expression b) {
+	  return BitVectorExpressionImpl.mkSDivide(getExpressionManager(), a, b);
+  }
+
+	@Override
+  public BitVectorExpression rem(Expression a, Expression b) {
+	  return BitVectorExpressionImpl.mkRem(getExpressionManager(), a, b);
+  }
+
+	@Override
+  public BitVectorExpression signedRem(Expression a, Expression b) {
+		return BitVectorExpressionImpl.mkSRem(getExpressionManager(), a, b);
+  }
+
+	@Override
+  public BitVectorExpression signedExtend(int size, Expression bv) {
+	  return BitVectorExpressionImpl.mkSignExtend(getExpressionManager(), size, bv);
+  }
+
+	@Override
+  public BitVectorExpression zeroExtend(int size, Expression bv) {
+	  return BitVectorExpressionImpl.mkZeroExtend(getExpressionManager(), size, bv);
+  }
 }

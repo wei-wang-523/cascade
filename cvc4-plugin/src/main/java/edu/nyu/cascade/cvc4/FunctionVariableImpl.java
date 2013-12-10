@@ -25,7 +25,7 @@ public final class FunctionVariableImpl
 */  
   static  FunctionVariableImpl create(
       ExpressionManagerImpl exprManager, String name, Iterable<? extends Type> argTypes, Type range, boolean fresh) {
-    FunctionTypeImpl type = exprManager.functionType(argTypes, range);
+    FunctionTypeImpl type = FunctionTypeImpl.create(exprManager, argTypes, range);
     return new FunctionVariableImpl(exprManager, name, type,fresh);
   }
 

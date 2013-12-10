@@ -9,6 +9,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ComputationException;
 
 import edu.nyu.acsys.CVC4.Exception;
+import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.BitVectorType;
@@ -262,5 +263,40 @@ public class BitVectorTypeImpl extends TypeImpl implements
   @Override
   public BitVectorExpressionImpl zero(int size) {
     return constant(size,0);
+  }
+
+	@Override
+  public BitVectorExpression constant(int size, long val) {
+	  return BitVectorExpressionImpl.mkConstant(getExpressionManager(), size, val);
+  }
+
+	@Override
+  public BitVectorExpression constant(int size, BigInteger val) {
+		return BitVectorExpressionImpl.mkConstant(getExpressionManager(), size, val);
+  }
+
+	@Override
+  public BitVectorExpression signedDivide(Expression a, Expression b) {
+	  return BitVectorExpressionImpl.mkSDivide(getExpressionManager(), a, b);
+  }
+
+	@Override
+  public BitVectorExpression rem(Expression a, Expression b) {
+	  return BitVectorExpressionImpl.mkRem(getExpressionManager(), a, b);
+  }
+
+	@Override
+  public BitVectorExpression signedRem(Expression a, Expression b) {
+	  return BitVectorExpressionImpl.mkSRem(getExpressionManager(), a, b);
+  }
+
+	@Override
+  public BitVectorExpression signedExtend(int size, Expression bv) {
+	  return BitVectorExpressionImpl.mkSignExtend(getExpressionManager(), size, bv);
+  }
+
+	@Override
+  public BitVectorExpression zeroExtend(int size, Expression bv) {
+	  return BitVectorExpressionImpl.mkZeroExtend(getExpressionManager(), size, bv);
   }
 }

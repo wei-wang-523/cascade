@@ -501,7 +501,7 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
     return builder.build(expressionManager);
   }
   
-  /*
+  /**
    * Create a set of mutually recursive datatypes. NOTE: This method will throw
    * an exception if one of the datatype names is not globally unique (i.e.,
    * every datatype name must be unique).

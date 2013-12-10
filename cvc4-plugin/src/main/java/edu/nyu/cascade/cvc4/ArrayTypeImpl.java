@@ -3,6 +3,7 @@ package edu.nyu.cascade.cvc4;
 import com.google.common.base.Preconditions;
 
 import edu.nyu.acsys.CVC4.Exception;
+import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.ArrayType;
@@ -98,5 +99,21 @@ public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
     default:
       return super.importExpression(expression);
     }
+  }
+
+	@Override
+  public Expression index(Expression array, Expression index) {
+	  return ArrayExpressionImpl.mkArrayIndex(getExpressionManager(), array, index);
+  }
+
+	@Override
+  public ArrayExpression update(Expression array, Expression index,
+      Expression value) {
+	  return ArrayExpressionImpl.mkUpdate(getExpressionManager(), array, index, value);
+  }
+
+	@Override
+  public ArrayExpression storeAll(Expression expr, ArrayType arrayType) {
+	  return ArrayExpressionImpl.mkStoreAll(getExpressionManager(), expr, arrayType);
   }
 }

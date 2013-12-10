@@ -14,7 +14,8 @@ import edu.nyu.cascade.prover.type.Type;
 
 public class BoundVariableExpressionImpl extends ExpressionImpl implements
     VariableExpression {
-  static BoundVariableExpressionImpl valueOf(
+	
+	protected static BoundVariableExpressionImpl valueOf(
       ExpressionManagerImpl exprManager, Expression e) {
     if (e instanceof BoundVariableExpressionImpl) {
       return (BoundVariableExpressionImpl) e;
@@ -35,7 +36,7 @@ public class BoundVariableExpressionImpl extends ExpressionImpl implements
     }
   }
 
-  static  ExpressionImpl valueOfSkolem(
+  protected static ExpressionImpl valueOfSkolem(
       ExpressionManagerImpl exprManager, final Expr sk, Type type) {
     Preconditions.checkArgument(sk.getKind().equals(edu.nyu.acsys.CVC4.Kind.SKOLEM));
     Preconditions.checkArgument(exprManager.toType(sk.getType()).equals(type));
@@ -46,7 +47,7 @@ public class BoundVariableExpressionImpl extends ExpressionImpl implements
     return result;
   }
   
-  static ExpressionImpl valueOfVariable(
+  protected static ExpressionImpl valueOfVariable(
       ExpressionManagerImpl exprManager, final Expr expr, Type type) {
     Preconditions.checkArgument(expr.getKind().equals(edu.nyu.acsys.CVC4.Kind.VARIABLE) 
         /*|| expr.isSymbol()*/);
@@ -58,7 +59,7 @@ public class BoundVariableExpressionImpl extends ExpressionImpl implements
     return result;
   }
   
-  static BoundVariableExpressionImpl create(ExpressionManagerImpl exprManager, String name, Type type, boolean fresh) {
+  protected static BoundVariableExpressionImpl create(ExpressionManagerImpl exprManager, String name, Type type, boolean fresh) {
     return new BoundVariableExpressionImpl(exprManager, name, type, fresh);
   }
   

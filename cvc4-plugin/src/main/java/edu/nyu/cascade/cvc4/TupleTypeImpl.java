@@ -5,7 +5,9 @@ import com.google.common.collect.Lists;
 
 import edu.nyu.acsys.CVC4.Exception;
 import edu.nyu.acsys.CVC4.vectorType;
+import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
+import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.IOUtils;
@@ -95,5 +97,15 @@ public final class TupleTypeImpl extends TypeImpl implements TupleType {
   @Override
   public String getName() {
     return typeName;
+  }
+
+	@Override
+  public Expression index(Expression tuple, int index) {
+	  return TupleExpressionImpl.mkTupleIndex(getExpressionManager(), tuple, index);
+  }
+
+	@Override
+  public TupleExpression update(Expression tuple, int index, Expression value) {
+	  return TupleExpressionImpl.mkUpdate(getExpressionManager(), tuple, index, value);
   }
 }

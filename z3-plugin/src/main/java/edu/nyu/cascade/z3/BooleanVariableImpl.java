@@ -9,8 +9,13 @@ import edu.nyu.cascade.prover.Expression;
 public final class BooleanVariableImpl extends VariableExpressionImpl implements
   BooleanVariableExpression {
 
-  BooleanVariableImpl(ExpressionManagerImpl em, String name, boolean fresh) {
+  private BooleanVariableImpl(ExpressionManagerImpl em, String name, boolean fresh) {
     super(em, name, em.booleanType(), fresh);
+  }
+  
+	protected static BooleanVariableImpl create(
+      ExpressionManagerImpl em, String name, boolean fresh) {
+	  return new BooleanVariableImpl(em, name, fresh);
   }
 
   @Override

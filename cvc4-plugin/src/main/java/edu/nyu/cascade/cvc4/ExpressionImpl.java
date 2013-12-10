@@ -6,7 +6,6 @@ import static edu.nyu.cascade.prover.Expression.Kind.IF_THEN_ELSE;
 import static edu.nyu.cascade.prover.Expression.Kind.SUBST;
 import static edu.nyu.cascade.prover.Expression.Kind.VARIABLE;
 import static edu.nyu.cascade.prover.Expression.Kind.NULL_EXPR;
-
 import xtc.tree.GNode;
 
 import java.util.List;
@@ -608,19 +607,19 @@ public class ExpressionImpl implements Expression {
   @Override
   public IntegerVariableImpl asIntegerVariable() {
     Preconditions.checkState( isInteger() && isVariable() );
-      return getExpressionManager().asIntegerVariable(this);
+    return getExpressionManager().asIntegerVariable(this);
   }
 
   @Override
   public RationalExpressionImpl asRationalExpression() {
     Preconditions.checkState( isRational() );
-      return getExpressionManager().asRationalExpression(this);
+    return getExpressionManager().asRationalExpression(this);
   }
 
   @Override
   public RationalVariableImpl asRationalVariable() {
     Preconditions.checkState( isRational() && isVariable() );
-      return getExpressionManager().asRationalVariable(this);
+    return getExpressionManager().asRationalVariable(this);
   }
 
   @Override
@@ -646,7 +645,8 @@ public class ExpressionImpl implements Expression {
 
   @Override
   public BooleanExpressionImpl eq(Expression e) {
-    return getExpressionManager().eq(this, e);
+  	ExpressionManagerImpl exprManager = getExpressionManager();
+    return exprManager.asBooleanExpression(exprManager.eq(this, e));
   }
 
   @Override
@@ -983,7 +983,8 @@ public class ExpressionImpl implements Expression {
   
   public BoundVariableListExpressionImpl asBoundVariableList() {
     Preconditions.checkState(isBoundVariableList());
-    return getExpressionManager().asBoundVariableList(this);
+    return BoundVariableListExpressionImpl.valueOf(
+    		getExpressionManager(), this);
   }
 
   @Override

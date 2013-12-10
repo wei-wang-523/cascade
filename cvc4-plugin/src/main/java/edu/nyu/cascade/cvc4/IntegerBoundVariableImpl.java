@@ -11,7 +11,8 @@ import edu.nyu.cascade.prover.type.Type;
 
 public final class IntegerBoundVariableImpl extends BoundVariableExpressionImpl implements
     IntegerVariableExpression {
-  static IntegerBoundVariableImpl valueOf(ExpressionManagerImpl em, Expression e) {
+	
+  protected static IntegerBoundVariableImpl valueOf(ExpressionManagerImpl em, Expression e) {
     if (e instanceof IntegerBoundVariableImpl && em.equals(e.getExpressionManager())) {
       return (IntegerBoundVariableImpl) e;
     } else if (e instanceof BoundVariableExpressionImpl) {
@@ -21,26 +22,35 @@ public final class IntegerBoundVariableImpl extends BoundVariableExpressionImpl 
       throw new IllegalArgumentException("Expression type: " + e.getClass());
     }
   }
+  
+	protected static IntegerBoundVariableImpl create(
+      ExpressionManagerImpl em, String name, boolean fresh) {
+    return new IntegerBoundVariableImpl(em, name, fresh);
+  }
+
+  protected static IntegerBoundVariableImpl create(
+      ExpressionManagerImpl exprManager, String name, IntegerTypeImpl type, boolean fresh) {
+    return new IntegerBoundVariableImpl(exprManager, name, type, fresh);
+  }
 
   /** Create a new integer variable. */
-  IntegerBoundVariableImpl(ExpressionManagerImpl em, String name, boolean fresh) {
+  private IntegerBoundVariableImpl(ExpressionManagerImpl em, String name, boolean fresh) {
     super(em, name, em.integerType(), fresh);
   }
 
   /** Create a new variable of an integer subtype (e.g., a range type). */
-  IntegerBoundVariableImpl(ExpressionManagerImpl em, String name, Type type, boolean fresh) {
+  private IntegerBoundVariableImpl(ExpressionManagerImpl em, String name, Type type, boolean fresh) {
     super(em, name, type, fresh);
     Preconditions.checkArgument(type.isInteger());
   }
 
   /** Copy constructor. */
-  IntegerBoundVariableImpl(ExpressionManagerImpl em, VariableExpression x) {
+  private IntegerBoundVariableImpl(ExpressionManagerImpl em, VariableExpression x) {
     this(em, x.getName(), x.getType(), false);
   }
   
   @Override
   public RationalExpressionImpl castToRational() {
-//     return getType().castToRational(this);
     throw new UnsupportedOperationException();
   }
 

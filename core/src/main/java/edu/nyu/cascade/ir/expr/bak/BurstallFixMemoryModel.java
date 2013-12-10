@@ -110,7 +110,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
     
     ExpressionManager exprManager = getExpressionManager();
     
-    size = exprManager.zeroExtend(size, offType.getSize());
+    size = exprManager.zeroExtend(offType.getSize(), size);
     
     Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, refType, true);
     Expression offZero = exprManager.bitVectorZero(offType.getSize());
@@ -134,7 +134,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
     Preconditions.checkArgument(size.getType().asBitVectorType().getSize() <= offType.getSize());
     
-    size = getExpressionManager().zeroExtend(size, offType.getSize());
+    size = getExpressionManager().zeroExtend(offType.getSize(), size);
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
     Expression stackRegion = ptr.asTuple().index(0); 
@@ -150,7 +150,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(ptr.getType().equals( ptrType ));
     Preconditions.checkArgument(size.getType().asBitVectorType().getSize() <= offType.getSize());
     
-    size = getExpressionManager().zeroExtend(size, offType.getSize());
+    size = getExpressionManager().zeroExtend(offType.getSize(), size);
     
     /* Cannot use stackRegion = ptr.getChild(0), ptr.getChild(0) = m */
     Expression stackRegion = ptr.asTuple().index(0);
@@ -216,7 +216,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
     Preconditions.checkArgument(size.getType().asBitVectorType().getSize() <= offType.getSize());
     
     ExpressionManager exprManager = getExpressionManager();
-    size = exprManager.zeroExtend(size, offType.getSize());
+    size = exprManager.zeroExtend(offType.getSize(), size);
     
     List<BooleanExpression> disjs = Lists.newArrayList();
     
@@ -224,7 +224,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
       Expression alloc = state.getChild(1);
       Expression ref_ptr = ptr.asTuple().index(0);
       Expression off_ptr = ptr.asTuple().index(1);
-      Expression off_bound = exprManager.plus(offType.getSize(), off_ptr, size);
+      Expression off_bound = exprManager.bitVectorPlus(offType.getSize(), off_ptr, size);
       Expression sizeZro = exprManager.bitVectorZero(offType.getSize());
       Expression nullRef = getExpressionEncoding().getPointerEncoding().getNullPtr().getChild(0);
       
@@ -411,7 +411,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
     
     ExpressionManager exprManager = getExpressionManager();
     
-    size = exprManager.zeroExtend(size, offType.getSize());
+    size = exprManager.zeroExtend(offType.getSize(), size);
     
     Expression refVar = exprManager.variable(REGION_VARIABLE_NAME, refType, true);
     Expression offZero = exprManager.bitVectorZero(offType.getSize());
@@ -647,7 +647,7 @@ public class BurstallFixMemoryModel extends AbstractMemoryModel {
     
     ExpressionManager exprManager = getExpressionManager();
     
-    size = exprManager.zeroExtend(size, offType.getSize());
+    size = exprManager.zeroExtend(offType.getSize(), size);
     
     Expression alloc = state.getChild(1);
     
