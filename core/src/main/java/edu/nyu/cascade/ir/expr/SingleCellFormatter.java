@@ -2,28 +2,22 @@ package edu.nyu.cascade.ir.expr;
 
 import com.google.common.base.Preconditions;
 
-import xtc.type.C;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.Type;
 
-public class SingleCellBVFormatter implements IRBVDataFormatter {
+public class SingleCellFormatter implements IRDataFormatter {
 
 	private final ExpressionEncoding encoding;
 	
-	@SuppressWarnings("unused")
-  private final C cAnalyzer;
-	
-	
-	private SingleCellBVFormatter(ExpressionEncoding encoding) {
+	private SingleCellFormatter(ExpressionEncoding encoding) {
 		this.encoding = encoding;
-		cAnalyzer = encoding.getCAnalyzer();
 	}
 	
-	public static SingleCellBVFormatter create(ExpressionEncoding encoding) {
-		return new SingleCellBVFormatter(encoding);
+	public static SingleCellFormatter create(ExpressionEncoding encoding) {
+		return new SingleCellFormatter(encoding);
 	}
 	
 	@Override
@@ -62,10 +56,12 @@ public class SingleCellBVFormatter implements IRBVDataFormatter {
 		return memory.index(index);
 	}
 
+	/**
+	 * @param type is not used in single cell formatter
+	 */
 	@Override
 	public Expression getUnknownValue(xtc.type.Type type) {
-		Type valueType = encoding.getIntegerEncoding().getType();
-		return encoding.getIntegerEncoding().unknown(valueType);
+		return encoding.getIntegerEncoding().unknown(getValueType());
 	}
 	
 	@Override
