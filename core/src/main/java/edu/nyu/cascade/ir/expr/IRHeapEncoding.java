@@ -5,10 +5,15 @@ import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 
 public interface IRHeapEncoding {
+	
+	ExpressionManager getExpressionManager();
+	
+	ExpressionEncoding getExpressionEncoding();
 	
 	ArrayType getSizeArrType();
 	

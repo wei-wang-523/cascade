@@ -301,11 +301,13 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
     }
 	}
 
-	protected ExpressionManager getExpressionManager() {
+	@Override
+	public ExpressionManager getExpressionManager() {
 		return exprManager;
 	}
 	
-	protected ExpressionEncoding getExpressionEncoding() {
+	@Override
+	public ExpressionEncoding getExpressionEncoding() {
 	  return encoding;
 	}
 

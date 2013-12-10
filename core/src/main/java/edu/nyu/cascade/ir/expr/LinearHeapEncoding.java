@@ -255,11 +255,13 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 				.addStackVars(stackVars.values()).build();
 	}
 
-	protected ExpressionManager getExpressionManager() {
+	@Override
+	public ExpressionManager getExpressionManager() {
 		return exprManager;
 	}
 	
-	protected ExpressionEncoding getExpressionEncoding() {
+	@Override
+	public ExpressionEncoding getExpressionEncoding() {
 		return encoding;
 	}
 	
