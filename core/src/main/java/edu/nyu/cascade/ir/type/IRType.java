@@ -13,7 +13,7 @@ public abstract class IRType {
     LIST, 
     PROCESS, 
     RANGE,
-    TUPLE;
+    POINTER;
   }
   
   public abstract Kind getKind();

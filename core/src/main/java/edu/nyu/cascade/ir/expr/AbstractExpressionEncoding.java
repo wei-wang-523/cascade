@@ -395,7 +395,7 @@ public abstract class AbstractExpressionEncoding
     case RANGE:
       return getIntegerEncoding();
       
-    case TUPLE:
+    case POINTER:
       return getPointerEncoding();
 		default:
 			throw new UnsupportedOperationException("type=" + type);
