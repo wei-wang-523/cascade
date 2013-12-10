@@ -5,7 +5,7 @@ import edu.nyu.cascade.c.Theory;
 import edu.nyu.cascade.c.preprocessor.steensgaard.Steensgaard;
 import edu.nyu.cascade.ir.expr.BitVectorExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
-import edu.nyu.cascade.ir.expr.IRBVDataFormatter;
+import edu.nyu.cascade.ir.expr.IRDataFormatter;
 import edu.nyu.cascade.ir.expr.IRHeapEncoding;
 import edu.nyu.cascade.ir.expr.IROrderMemLayoutEncoding;
 import edu.nyu.cascade.ir.expr.IRPartitionHeapEncoder;
@@ -18,7 +18,7 @@ import edu.nyu.cascade.ir.expr.OrderMemLayoutEncodingFactory;
 import edu.nyu.cascade.ir.expr.PartitionHeapEncoder;
 import edu.nyu.cascade.ir.expr.PartitionMemoryModel;
 import edu.nyu.cascade.ir.expr.PointerExpressionEncoding;
-import edu.nyu.cascade.ir.expr.SingleCellBVFormatter;
+import edu.nyu.cascade.ir.expr.SingleCellFormatter;
 import edu.nyu.cascade.ir.expr.SoundMemLayoutEncodingFactory;
 import edu.nyu.cascade.ir.expr.SynchronousHeapEncoding;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -42,9 +42,9 @@ public class PartitionTheory implements Theory {
     		encoding = BitVectorExpressionEncoding.create(exprManager);
     	}
     	      
-      IRBVDataFormatter formatter = Preferences.isSet(Preferences.OPTION_MULTI_CELL) ?
+      IRDataFormatter formatter = Preferences.isSet(Preferences.OPTION_MULTI_CELL) ?
       		MultiCellBVFormatter.create(encoding)
-      		: SingleCellBVFormatter.create(encoding);
+      		: SingleCellFormatter.create(encoding);
     	
     	IRHeapEncoding heapEncoding = LinearHeapEncoding.create(encoding, formatter);
     	IROrderMemLayoutEncoding memLayout = OrderMemLayoutEncodingFactory
@@ -65,9 +65,9 @@ public class PartitionTheory implements Theory {
       		encoding = BitVectorExpressionEncoding.create(exprManager);
       	}
       	      
-        IRBVDataFormatter formatter = Preferences.isSet(Preferences.OPTION_MULTI_CELL) ?
+        IRDataFormatter formatter = Preferences.isSet(Preferences.OPTION_MULTI_CELL) ?
         		MultiCellBVFormatter.create(encoding)
-        		: SingleCellBVFormatter.create(encoding);
+        		: SingleCellFormatter.create(encoding);
       	
         heapEncoding = LinearHeapEncoding.create(encoding, formatter);
     	}
