@@ -304,4 +304,11 @@ public class BitVectorIntegerEncoding extends
 	public BitVectorExpression uminus(BitVectorExpression expr) {
 		return expr.uminus();
 	}
+	
+  @Override
+  public BooleanExpression eq(BitVectorExpression lhs, BitVectorExpression rhs) {
+  	if(lhs.getSize() > rhs.getSize()) rhs = rhs.signExtend(lhs.getSize());
+  	if(lhs.getSize() < rhs.getSize()) lhs = lhs.signExtend(rhs.getSize());
+    return lhs.eq((Expression)rhs);
+  }
 }
