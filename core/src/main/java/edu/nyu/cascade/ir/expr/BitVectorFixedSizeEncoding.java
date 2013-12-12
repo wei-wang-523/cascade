@@ -310,4 +310,11 @@ public class BitVectorFixedSizeEncoding extends
 		Preconditions.checkArgument(rhs.getType().equals(getType()));
 		return intEncoding.signedDivide(lhs, rhs);
   }
+	
+	@Override
+	public BooleanExpression eq(BitVectorExpression lhs, BitVectorExpression rhs) {
+		Preconditions.checkArgument(lhs.getType().equals(getType()));
+		Preconditions.checkArgument(rhs.getType().equals(getType()));
+		return intEncoding.eq(lhs, rhs);
+	}
 }
