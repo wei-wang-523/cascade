@@ -346,9 +346,7 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   public Expression castToPointer(Expression expr) {
   	return isPointer(expr)
   			? expr
-  					: getPointerEncoding() == null
-  						? expr
-  							:	getPointerEncoding().getNullPtr();
+  			:	getPointerEncoding().getNullPtr();
   }
   
 /*  @Override
@@ -911,7 +909,7 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 
   @Override
   public Expression minus(Expression lhs, Expression rhs) {
-		Preconditions.checkArgument(!(isPointer(lhs) && isPointer(rhs)));
+//		Preconditions.checkArgument(!(isPointer(lhs) && isPointer(rhs)));
 		if(isPointer(lhs))
 			return minus_(getPointerEncoding(), getIntegerEncoding(), lhs, rhs);
 		else
