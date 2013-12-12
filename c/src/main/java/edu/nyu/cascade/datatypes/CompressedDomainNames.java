@@ -12,7 +12,7 @@ import edu.nyu.cascade.ir.expr.IRSoundMemLayoutEncoding;
 import edu.nyu.cascade.ir.expr.LinearHeapEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.PartitionHeapEncoder;
-import edu.nyu.cascade.ir.expr.SingleCellFormatter;
+import edu.nyu.cascade.ir.expr.SingleCellLinearFormatter;
 import edu.nyu.cascade.ir.expr.SingleHeapEncoderAdapter;
 import edu.nyu.cascade.ir.expr.SoundMemLayoutEncodingFactory;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -32,7 +32,7 @@ public class CompressedDomainNames implements Theory {
       throw new IllegalArgumentException("Unknown theorem prover " + tpProviderName);
     
     PartitionHeapEncoder parHeapEncoder = null;
-    IRDataFormatter formatter = SingleCellFormatter.create(encoding);
+    IRDataFormatter formatter = SingleCellLinearFormatter.create(encoding);
     
     IRHeapEncoding heapEncoding = LinearHeapEncoding.create(encoding, formatter);
     IRSoundMemLayoutEncoding memLayout = SoundMemLayoutEncodingFactory

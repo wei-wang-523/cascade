@@ -51,7 +51,7 @@ import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.OrderMemLayoutEncodingFactory;
 import edu.nyu.cascade.ir.expr.PartitionHeapEncoder;
 import edu.nyu.cascade.ir.expr.PointerExpressionEncoding;
-import edu.nyu.cascade.ir.expr.SingleCellFormatter;
+import edu.nyu.cascade.ir.expr.SingleCellLinearFormatter;
 import edu.nyu.cascade.ir.expr.SingleHeapEncoderAdapter;
 import edu.nyu.cascade.prover.TheoremProver;
 import edu.nyu.cascade.prover.TheoremProverException;
@@ -683,7 +683,7 @@ public class Main {
               // TODO: Fix bit-vector sizes to agree with encoding              
               encoding = PointerExpressionEncoding.create(theoremProver
                   .getExpressionManager()); 
-              IRDataFormatter formatter = SingleCellFormatter.create(encoding);   
+              IRDataFormatter formatter = SingleCellLinearFormatter.create(encoding);   
               IRHeapEncoding heapEncoding = LinearHeapEncoding.create(encoding, formatter);
             	IROrderMemLayoutEncoding memLayout = OrderMemLayoutEncodingFactory
             			.create(heapEncoding);

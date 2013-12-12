@@ -41,7 +41,7 @@ public class IncrementExpression extends CExpression {
 
       @Override
       public ExpressionManager getExpressionManager() {
-        return interp.getExpressionManager();
+        return interp.getEncoding().getExpressionManager();
       }
     };
   }

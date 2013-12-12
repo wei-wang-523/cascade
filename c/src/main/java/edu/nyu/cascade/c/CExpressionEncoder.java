@@ -34,7 +34,6 @@ import edu.nyu.cascade.ir.expr.bak.ReachMemoryModel;
 import edu.nyu.cascade.ir.impl.VarInfo;
 import edu.nyu.cascade.ir.type.IRIntegerType;
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.RecursionStrategies.BinaryInfixRecursionStrategy;
@@ -1045,11 +1044,6 @@ class CExpressionEncoder implements ExpressionEncoder {
   @Override
   public ExpressionEncoding getEncoding() {
     return encoding;
-  }
-
-  @Override
-  public ExpressionManager getExpressionManager() {
-    return getEncoding().getExpressionManager();
   }
 
   @Override
