@@ -102,7 +102,7 @@ implements PointerEncoding<T> {
 
 	@Override
   public T getNullPtr() {
-	  return encoding.zero();
+		return encoding.zero();
   }
 
 	@Override
@@ -126,12 +126,12 @@ implements PointerEncoding<T> {
   }
 
 	@Override
-  public SyncPointerEncoding<?, ?> asSyncPointerEncoding() {
+  public SyncPointerEncoding<? extends Expression, ? extends Expression> asSyncPointerEncoding() {
 	  throw new UnsupportedOperationException();
   }
 
 	@Override
-  public LinearPointerEncoding<?> asLinearPointerEncoding() {
+  public LinearPointerEncoding<T> asLinearPointerEncoding() {
 	  return this;
   }
 }

@@ -3,48 +3,43 @@ package edu.nyu.cascade.ir.expr;
 import com.google.common.base.Preconditions;
 
 import xtc.type.C;
-import xtc.type.IntegerT;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
-import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 
-public class MultiCellLinearFormatter implements IRDataFormatter {
+public class MultiCellSyncFormatter implements IRDataFormatter {
 
 	private final ExpressionEncoding encoding;
-	private final ExpressionManager exprManager;
+	private final SyncValueType syncValueType;
   private final C cAnalyzer;
 	
-	private MultiCellLinearFormatter(ExpressionEncoding _encoding) {
+	private MultiCellSyncFormatter(ExpressionEncoding _encoding) {
 		encoding = _encoding;
-		exprManager = encoding.getExpressionManager();
+		syncValueType = SyncValueType.create(encoding, 
+				encoding.getPointerEncoding().getType(), 
+				encoding.getIntegerEncoding().getType());
 		cAnalyzer = encoding.getCAnalyzer();
 	}
 	
-	public static MultiCellLinearFormatter create(ExpressionEncoding encoding) {
-		return new MultiCellLinearFormatter(encoding);
+	public static MultiCellSyncFormatter create(ExpressionEncoding encoding) {
+		return new MultiCellSyncFormatter(encoding);
 	}
 	
 	@Override
 	public Type getAddressType() {
-//		int size = (int) cAnalyzer.getSize(new PointerT(new VoidT()));
-//		return exprManager.bitVectorType(size * getWordSize());
 		return encoding.getPointerEncoding().getType();
 	}
 
 	@Override
 	public Type getValueType() {
-//		return exprManager.bitVectorType(getWordSize());
-		return encoding.getIntegerEncoding().getType();
+		return syncValueType.getType();
 	}
 
 	@Override
-	public BitVectorType getSizeType() {
-		int size = (int) cAnalyzer.getSize(IntegerT.INT);
-		int wordSize = encoding.getWordSize();
-	  return exprManager.bitVectorType(size * wordSize);
+	public Type getSizeType() {
+		return encoding.getPointerEncoding().getType().asTuple().getElementTypes().get(1);
 	}
 
 	@Override
@@ -54,32 +49,31 @@ public class MultiCellLinearFormatter implements IRDataFormatter {
 
 	@Override
 	public Expression getNullAddress() {
-//		Type addrType = getAddressType();
-//		if(addrType.isBitVectorType())
-//			return exprManager.bitVectorZero(addrType.asBitVectorType().getSize());
-//		else
-			return encoding.getPointerEncoding().getNullPtr();
+		return encoding.getPointerEncoding().getNullPtr();
 	}
 
-  @SuppressWarnings("unchecked")
+	@SuppressWarnings("unchecked")
   @Override
 	public ArrayExpression updateMemoryArray(ArrayExpression memory, Expression index,
 	    Expression value) {
 		Preconditions.checkArgument(index.getNode() != null);
-		
+				
 		if(value.isBoolean()) value = encoding.castToInteger(value);
 		
 		int size = (int) cAnalyzer.getSize(CType.getType(index.getNode()));	
 		int wordSize = getWordSize();
 		
-    @SuppressWarnings("rawtypes")
+		@SuppressWarnings("rawtypes")
     PointerEncoding ptrEncoding = encoding.getPointerEncoding();
-    
+		
 		Expression idx = index;
+		Type cellType = memory.getType().getElementType();
+		
 		for(int i = 0; i < size; i++) {
-			if(i != 0) idx = ptrEncoding.incr(idx);
+			if(i != 0)	idx = ptrEncoding.incr(idx);
 			Expression valExpr = value.asBitVector().extract((i+1) * wordSize - 1, i * wordSize);
-			memory = memory.update(idx, valExpr);
+			Expression valuePrime = syncValueType.castExprToCell(valExpr, cellType);
+			memory = memory.update(idx, valuePrime);
 		}
 		return memory;
 	}
@@ -94,12 +88,16 @@ public class MultiCellLinearFormatter implements IRDataFormatter {
 		@SuppressWarnings("rawtypes")
     PointerEncoding ptrEncoding = encoding.getPointerEncoding();
 		
-		Expression res = memory.index(index);
+		Expression res = syncValueType.castCellToExpr(memory.index(index), 
+				CType.getType(index.getNode()));
 		Expression idx = index;
+		xtc.type.Type type = CType.getType(index.getNode());
+		
 		for(int i = 1; i < size; i++) {
 			idx = ptrEncoding.incr(idx);
 			Expression value = memory.index(idx);
-			res = value.asBitVector().concat(res);
+			Expression valuePrime = syncValueType.castCellToExpr(value, type);
+			res = valuePrime.asBitVector().concat(res);
 		}
 		return res;
 	}
@@ -108,6 +106,7 @@ public class MultiCellLinearFormatter implements IRDataFormatter {
 	public Expression getUnknownValue(xtc.type.Type type) {
 		int size = (int) cAnalyzer.getSize(type);
 		int wordSize = encoding.getWordSize();
+		ExpressionManager exprManager = encoding.getExpressionManager();
 		Type valueType = exprManager.bitVectorType(size * wordSize);
 		return encoding.getIntegerEncoding().unknown(valueType);
 	}
@@ -122,7 +121,16 @@ public class MultiCellLinearFormatter implements IRDataFormatter {
 	 */
 	@Override
 	public Type getArrayElemType(xtc.type.Type type) {
-		return getValueType();
+	  switch(CType.getCellKind(type)) {
+	  case SCALAR :
+	  case BOOL :
+	  	return getValueType();
+	  case ARRAY : 
+	  case POINTER :
+	  case STRUCTORUNION :
+	  	return getAddressType();
+	  default:    throw new IllegalArgumentException("Unsupported type " + type);
+	  }
 	}
 
 	private int getWordSize() {

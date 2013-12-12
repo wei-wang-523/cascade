@@ -25,6 +25,7 @@ import edu.nyu.cascade.util.Pair;
 public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	
 	private final ExpressionManager exprManager;
+	private final IRDataFormatter formatter;
 	private final ExpressionEncoding encoding;
 	private final LinkedHashMap<Pair<String, String>, Expression> heapRegions, stackVars, stackRegions;
 	private Expression lastRegion;
@@ -32,15 +33,14 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	
 	private final Type ptrType;
 	private final Type valueType;
-	private final SyncValueType mixType;
 	
-	private SynchronousHeapEncoding(ExpressionEncoding encoding) {
+	private SynchronousHeapEncoding(ExpressionEncoding encoding, IRDataFormatter formatter) {
 		this.encoding = encoding;
+		this.formatter = formatter;
 		exprManager = encoding.getExpressionManager();
 		
-		ptrType = encoding.getPointerEncoding().getType();
-		valueType = encoding.getIntegerEncoding().getType();
-		mixType = SyncValueType.create(encoding, ptrType, valueType);
+		ptrType = formatter.getAddressType();
+		valueType = formatter.getValueType();
 		
 		heapRegions = Maps.newLinkedHashMap();
 		stackVars = Maps.newLinkedHashMap();
@@ -50,8 +50,8 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 		lastRegions = Maps.newLinkedHashMap();
 	}
 	
-	public static SynchronousHeapEncoding create(ExpressionEncoding encoding) {
-		return new SynchronousHeapEncoding(encoding);
+	public static SynchronousHeapEncoding create(ExpressionEncoding encoding, IRDataFormatter formatter) {
+		return new SynchronousHeapEncoding(encoding, formatter);
 	}
 
 	@Override
@@ -63,7 +63,7 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	
 	@Override
 	public ArrayType getMemoryType() {
-		return exprManager.arrayType(ptrType, mixType.getType());
+		return exprManager.arrayType(ptrType, valueType);
 	}
 	
 	@Override
@@ -89,7 +89,7 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 
 	@Override
 	public Type getArrayElemType(xtc.type.Type type) {
-	  return mixType.getValueType(type);
+	  return formatter.getArrayElemType(type);
 	}
 
 	@Override
@@ -118,9 +118,9 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	public ArrayExpression updateMemArr(ArrayExpression memArr, Expression lval, Expression rval) {
 		Preconditions.checkArgument(memArr.getType().getIndexType().equals(ptrType));
 		Preconditions.checkArgument(lval.getType().equals(ptrType));
-		Type cellType = memArr.getType().getElementType();
-		Expression rvalPrime = mixType.castExprToCell(rval, cellType);
-		return memArr.update(lval, rvalPrime);
+//		Type cellType = memArr.getType().getElementType();
+//		Expression rvalPrime = mixType.castExprToCell(rval, cellType);
+		return formatter.updateMemoryArray(memArr, lval, rval);
 	}
 	
 	@Override
@@ -136,8 +136,9 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	public Expression indexMemArr(ArrayExpression memArr, Expression lval) {
 		Preconditions.checkArgument(memArr.getType().getIndexType().equals(ptrType));
 		Preconditions.checkArgument(lval.getType().equals(ptrType));
-		Expression cell = memArr.index(lval);
-		return mixType.castCellToExpr(cell, CType.getType(lval.getNode()));
+//		Expression cell = memArr.index(lval);
+//		return mixType.castCellToExpr(cell, CType.getType(lval.getNode()));
+		return formatter.indexMemoryArray(memArr, lval);
 	}
 
 	@Override
@@ -173,13 +174,14 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 
 	@Override
 	public Expression getUnknownValue(xtc.type.Type type) {
-    CellKind kind = CType.getCellKind(type);
-    switch(kind) {
-    case POINTER:	return encoding.getPointerEncoding().unknown();
-    case SCALAR:  
-    case BOOL:    return encoding.getIntegerEncoding().unknown(valueType);
-    default: throw new IllegalArgumentException("Invalid kind " + kind);
-    }
+		return formatter.getUnknownValue(type);
+//    CellKind kind = CType.getCellKind(type);
+//    switch(kind) {
+//    case POINTER:	return encoding.getPointerEncoding().unknown();
+//    case SCALAR:  
+//    case BOOL:    return encoding.getIntegerEncoding().unknown(valueType);
+//    default: throw new IllegalArgumentException("Invalid kind " + kind);
+//    }
 	}
 	
 	@Override

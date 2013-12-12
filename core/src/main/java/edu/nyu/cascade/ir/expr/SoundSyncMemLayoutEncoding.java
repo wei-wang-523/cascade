@@ -16,15 +16,14 @@ import edu.nyu.cascade.prover.type.Type;
 
 public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	
-	private final Type ptrType, refType;
-	private final Type valueType;
+	private final Type ptrType, sizeType, refType;
 	private final SynchronousHeapEncoding heapEncoding;
 	
 	private SoundSyncMemLayoutEncoding(SynchronousHeapEncoding heapEncoding) {
 		this.heapEncoding = heapEncoding;
 		ptrType = heapEncoding.getAddressType();
-		valueType = heapEncoding.getValueType();
 		refType = ptrType.asTuple().getElementTypes().get(0);
+		sizeType = ptrType.asTuple().getElementTypes().get(1);
 	}
 	
 	protected static SoundSyncMemLayoutEncoding create(SynchronousHeapEncoding heapEncoding) {
@@ -42,7 +41,7 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	@Override
   public BooleanExpression validFree(ArrayExpression sizeArr, Expression ptr) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(refType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(ptrType));
 		
 		ExpressionManager exprManager = getExpressionManager();
@@ -75,7 +74,7 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	    
 			if(sizeArr != null) {
 				Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(refType));
-				Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
+				Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
 	      
 	      /* Disjoint of the heap region or stack region/variable */
 	      for (Expression region : hpRegs) {
@@ -116,7 +115,7 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	public ImmutableSet<BooleanExpression> validMemAccess(
 			MemoryVarSets varSets, ArrayExpression sizeArr, Expression ptr) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(refType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(ptrType));
 		
 		ImmutableSet.Builder<BooleanExpression> disjs = 
@@ -168,9 +167,9 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	public ImmutableSet<BooleanExpression> validMemAccess(
 			MemoryVarSets varSets, ArrayExpression sizeArr, Expression ptr, Expression size) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(refType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(ptrType));
-		Preconditions.checkArgument(size.getType().equals(valueType));
+		Preconditions.checkArgument(size.getType().equals(sizeType));
 		
 		ImmutableSet.Builder<BooleanExpression> disjs = 
 				new ImmutableSet.Builder<BooleanExpression>();
@@ -229,9 +228,9 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	public BooleanExpression validMalloc(Iterable<Expression> heapVars,
 			ArrayExpression sizeArr, Expression ptr, Expression size) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(refType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(valueType));
+		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(ptrType));
-		Preconditions.checkArgument(size.getType().equals(valueType));
+		Preconditions.checkArgument(size.getType().equals(sizeType));
 		
 		ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
 		ExpressionManager exprManager = getExpressionManager();

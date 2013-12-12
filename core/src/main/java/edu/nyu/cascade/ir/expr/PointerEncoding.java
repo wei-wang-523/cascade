@@ -35,6 +35,6 @@ public interface PointerEncoding<T extends Expression> extends TypeEncoding<T> {
 	boolean isSyncEncoding();
 	boolean isLinearEncoding();
 	
-	SyncPointerEncoding<?, ?> asSyncPointerEncoding();
-	LinearPointerEncoding<?> asLinearPointerEncoding();
+	SyncPointerEncoding<? extends Expression, ? extends Expression> asSyncPointerEncoding();
+	LinearPointerEncoding<? extends Expression> asLinearPointerEncoding();
 }

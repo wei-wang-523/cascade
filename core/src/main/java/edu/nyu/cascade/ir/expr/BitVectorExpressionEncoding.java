@@ -5,8 +5,8 @@ package edu.nyu.cascade.ir.expr;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
+import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
-import edu.nyu.cascade.prover.TupleExpression;
 
 public class BitVectorExpressionEncoding
     extends
@@ -18,7 +18,8 @@ public class BitVectorExpressionEncoding
     IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, cAnalyzer, WORD_SIZE);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new UnimplementedArrayEncoding<ArrayExpression>();
-    PointerEncoding<TupleExpression> pointerEncoding = new UnimplementedPointerEncoding<TupleExpression>();
+    PointerEncoding<? extends Expression> pointerEncoding = LinearPointerEncoding.create(
+    		BitVectorOffsetEncoding.create(exprManager, (BitVectorIntegerEncoding) integerEncoding));
     return new BitVectorExpressionEncoding(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
   }
   
@@ -26,7 +27,7 @@ public class BitVectorExpressionEncoding
       IntegerEncoding<BitVectorExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
-      PointerEncoding<TupleExpression> pointerEncoding)
+      PointerEncoding<? extends Expression> pointerEncoding)
   {
     super(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
   }

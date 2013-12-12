@@ -4,6 +4,7 @@ package edu.nyu.cascade.ir.expr;
 
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
+import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.IntegerExpression;
 
@@ -13,7 +14,7 @@ public class IntExpressionEncoding extends AbstractExpressionEncoding {
     IntegerEncoding<IntegerExpression> integerEncoding = new DefaultIntegerEncoding(exprManager);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(exprManager);
-    PointerEncoding<?> pointerEncoding = LinearPointerEncoding.create(integerEncoding);
+    PointerEncoding<? extends Expression> pointerEncoding = LinearPointerEncoding.create(integerEncoding);
     return new IntExpressionEncoding(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
   }
 
@@ -21,7 +22,7 @@ public class IntExpressionEncoding extends AbstractExpressionEncoding {
       IntegerEncoding<IntegerExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
-      PointerEncoding<?> pointerEncoding) {
+      PointerEncoding<? extends Expression> pointerEncoding) {
     super(integerEncoding, booleanEncoding, arrayEncoding, pointerEncoding);
   }
 }

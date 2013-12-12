@@ -308,7 +308,7 @@ public abstract class AbstractExpressionEncoding
   }
   
   private <T extends Expression> BooleanExpression castToBoolean_(PointerEncoding<T> pe, Expression a) {
-    Preconditions.checkArgument(isInteger(a));
+    Preconditions.checkArgument(isPointer(a));
     return pe.toBoolean(pe.ofExpression(a));
   }
   
@@ -347,7 +347,7 @@ public abstract class AbstractExpressionEncoding
   public Expression castToPointer(Expression expr) {
   	return isPointer(expr)
   			? expr
-  					: getPointerEncoding() != null
+  					: getPointerEncoding() == null
   						? expr
   							:	getPointerEncoding().getNullPtr();
   }
@@ -795,7 +795,7 @@ public abstract class AbstractExpressionEncoding
 
 	@Override
 	public Expression plus(Expression lhs, Expression rhs) {
-		Preconditions.checkArgument(!(isPointer(lhs) && isPointer(rhs)));
+//		Preconditions.checkArgument(!(isPointer(lhs) && isPointer(rhs)));
 		if(isPointer(lhs))
 			return plus_(getPointerEncoding(), getIntegerEncoding(), lhs, rhs);
 		else if(isPointer(rhs))

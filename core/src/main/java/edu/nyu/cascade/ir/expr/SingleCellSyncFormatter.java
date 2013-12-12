@@ -8,16 +8,20 @@ import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.Type;
 
-public class SingleCellLinearFormatter implements IRDataFormatter {
+public class SingleCellSyncFormatter implements IRDataFormatter {
 
 	private final ExpressionEncoding encoding;
+	private final SyncValueType syncValueType;
 	
-	private SingleCellLinearFormatter(ExpressionEncoding encoding) {
+	private SingleCellSyncFormatter(ExpressionEncoding encoding) {
 		this.encoding = encoding;
+		syncValueType = SyncValueType.create(encoding, 
+				encoding.getPointerEncoding().getType(), 
+				encoding.getIntegerEncoding().getType());
 	}
 	
-	public static SingleCellLinearFormatter create(ExpressionEncoding encoding) {
-		return new SingleCellLinearFormatter(encoding);
+	public static SingleCellSyncFormatter create(ExpressionEncoding encoding) {
+		return new SingleCellSyncFormatter(encoding);
 	}
 	
 	@Override
@@ -27,7 +31,8 @@ public class SingleCellLinearFormatter implements IRDataFormatter {
 
 	@Override
 	public Type getValueType() {
-		return encoding.getIntegerEncoding().getType();
+		return syncValueType.getType();
+//		return encoding.getIntegerEncoding().getType();
 	}
 
 	@Override
@@ -48,12 +53,16 @@ public class SingleCellLinearFormatter implements IRDataFormatter {
 			if(getValueType().isBitVectorType())
 				value = encoding.castToInteger(value, getValueType().asBitVectorType().getSize());				
 		}
-		return memory.update(index, value);
+		Type cellType = memory.getType().getElementType();
+		Expression valuePrime = syncValueType.castExprToCell(value, cellType);
+		return memory.update(index, valuePrime);
 	}
 
 	@Override
 	public Expression indexMemoryArray(ArrayExpression memory, Expression index) {
-		return memory.index(index);
+		Expression value = memory.index(index);
+		xtc.type.Type type = CType.getType(index.getNode());
+		return syncValueType.castCellToExpr(value, type);
 	}
 
 	/**
@@ -61,12 +70,13 @@ public class SingleCellLinearFormatter implements IRDataFormatter {
 	 */
 	@Override
 	public Expression getUnknownValue(xtc.type.Type type) {
-		return encoding.getIntegerEncoding().unknown(getValueType());
+		return encoding.getIntegerEncoding().unknown(syncValueType.getValueType(type));
+//		return encoding.getIntegerEncoding().unknown(getValueType());
 	}
 	
 	@Override
   public Type getSizeType() {
-	  return getValueType();
+	  return encoding.getPointerEncoding().getType().asTuple().getElementTypes().get(1);
   }
 	
 	@Override
@@ -75,8 +85,10 @@ public class SingleCellLinearFormatter implements IRDataFormatter {
     CellKind kind = CType.getCellKind(CType.getType(expr.getNode()));
     switch(kind) {
     case STRUCTORUNION: 
-    case ARRAY:   return expr;
-    default:      return expr.getChild(1);
+    case ARRAY:   
+    	return expr;
+    default:      
+    	return expr.getChild(1);
     }
 	}
 
@@ -84,10 +96,12 @@ public class SingleCellLinearFormatter implements IRDataFormatter {
 	public Type getArrayElemType(xtc.type.Type type) {
 	  switch(CType.getCellKind(type)) {
 	  case SCALAR :
-	  case BOOL :     return getValueType();
+	  case BOOL :
+	  	return getValueType();
 	  case ARRAY : 
-	  case POINTER :  
-	  case STRUCTORUNION : return getAddressType();
+	  case POINTER :
+	  case STRUCTORUNION :
+	  	return getAddressType();
 	  default:    throw new IllegalArgumentException("Unsupported type " + type);
 	  }
 	}

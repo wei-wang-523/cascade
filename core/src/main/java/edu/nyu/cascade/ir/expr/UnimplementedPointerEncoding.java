@@ -165,13 +165,13 @@ public class UnimplementedPointerEncoding<T extends Expression> implements Point
   }
 
 	@Override
-  public SyncPointerEncoding<?, ?> asSyncPointerEncoding() {
+  public SyncPointerEncoding<? extends Expression, ? extends Expression> asSyncPointerEncoding() {
 	  // TODO Auto-generated method stub
 	  return null;
   }
 
 	@Override
-  public LinearPointerEncoding<?> asLinearPointerEncoding() {
+  public LinearPointerEncoding<? extends Expression> asLinearPointerEncoding() {
 	  // TODO Auto-generated method stub
 	  return null;
   }

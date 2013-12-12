@@ -263,12 +263,12 @@ public class SyncPointerEncoding <T extends Expression, S extends Expression>
   }
 
 	@Override
-  public LinearPointerEncoding<?> asLinearPointerEncoding() {
+  public LinearPointerEncoding<? extends Expression> asLinearPointerEncoding() {
 	  throw new UnsupportedOperationException();
   }
 	
 	@Override
-	public SyncPointerEncoding<?, ?> asSyncPointerEncoding() {
+	public SyncPointerEncoding<T, S> asSyncPointerEncoding() {
 		return this;
 	}
 }
