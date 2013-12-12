@@ -9,32 +9,32 @@ import edu.nyu.cascade.ir.expr.FlatMemoryModel;
 import edu.nyu.cascade.ir.expr.IRDataFormatter;
 import edu.nyu.cascade.ir.expr.IRHeapEncoding;
 import edu.nyu.cascade.ir.expr.IROrderMemLayoutEncoding;
+import edu.nyu.cascade.ir.expr.IRPartitionHeapEncoder;
 import edu.nyu.cascade.ir.expr.IRSingleHeapEncoder;
 import edu.nyu.cascade.ir.expr.IRSoundMemLayoutEncoding;
 import edu.nyu.cascade.ir.expr.IntExpressionEncoding;
-import edu.nyu.cascade.ir.expr.LinearHeapEncoding;
+import edu.nyu.cascade.ir.expr.HeapEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.MultiCellLinearFormatter;
 import edu.nyu.cascade.ir.expr.MultiCellSyncFormatter;
-import edu.nyu.cascade.ir.expr.OrderMemLayoutEncodingFactory;
+import edu.nyu.cascade.ir.expr.OrderLinearMemLayoutEncoding;
 import edu.nyu.cascade.ir.expr.PartitionHeapEncoder;
 import edu.nyu.cascade.ir.expr.PointerExpressionEncoding;
 import edu.nyu.cascade.ir.expr.SingleCellLinearFormatter;
 import edu.nyu.cascade.ir.expr.SingleCellSyncFormatter;
 import edu.nyu.cascade.ir.expr.SingleHeapEncoderAdapter;
-import edu.nyu.cascade.ir.expr.SoundMemLayoutEncodingFactory;
-import edu.nyu.cascade.ir.expr.SynchronousHeapEncoding;
+import edu.nyu.cascade.ir.expr.SoundLinearMemLayoutEncoding;
+import edu.nyu.cascade.ir.expr.SoundSyncMemLayoutEncoding;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.util.Preferences;
 
 public class FlatTheory implements Theory {
   private final ExpressionEncoding encoding;
-  private final IRSingleHeapEncoder heapEncoder;
   private final MemoryModel memoryModel;
   
   public FlatTheory(ExpressionManager exprManager) {
   	
-  	PartitionHeapEncoder parHeapEncoder = null;
+  	IRPartitionHeapEncoder parHeapEncoder = null;
   	
     if(Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
 
@@ -48,10 +48,10 @@ public class FlatTheory implements Theory {
     		formatter = Preferences.isSet(Preferences.OPTION_MULTI_CELL) ?
         		MultiCellLinearFormatter.create(encoding)
         		: SingleCellLinearFormatter.create(encoding);
-    	} 
+    	}
     	
-    	IRHeapEncoding heapEncoding = LinearHeapEncoding.create(encoding, formatter);
-    	IROrderMemLayoutEncoding memLayout = OrderMemLayoutEncodingFactory
+    	IRHeapEncoding heapEncoding = HeapEncoding.create(encoding, formatter);
+    	IROrderMemLayoutEncoding memLayout = OrderLinearMemLayoutEncoding
     			.create(heapEncoding);
     	parHeapEncoder = PartitionHeapEncoder
     			.createOrderEncoding(heapEncoding, memLayout);
@@ -60,13 +60,17 @@ public class FlatTheory implements Theory {
     	String exprEncoding = Preferences.getString(Preferences.OPTION_MEM_ENCODING);
     	IRHeapEncoding heapEncoding = null;
     	IRDataFormatter formatter = null;
+    	IRSoundMemLayoutEncoding memLayout = null;
     	
     	if(Preferences.MEM_ENCODING_SYNC.equals(exprEncoding)) {
     		encoding = PointerExpressionEncoding.create(exprManager);
     		formatter = Preferences.isSet(Preferences.OPTION_MULTI_CELL) ?
         		MultiCellSyncFormatter.create(encoding)
         		: SingleCellSyncFormatter.create(encoding);
-    		heapEncoding = SynchronousHeapEncoding.create(encoding, formatter);
+        
+        heapEncoding = HeapEncoding.create(encoding, formatter);
+        memLayout = SoundSyncMemLayoutEncoding.create(heapEncoding);
+        
     	} else {
     		
       	if(Preferences.isSet(Preferences.OPTION_NON_OVERFLOW)) {
@@ -79,14 +83,15 @@ public class FlatTheory implements Theory {
           		: SingleCellLinearFormatter.create(encoding);
       	}
       	
-        heapEncoding = LinearHeapEncoding.create(encoding, formatter);
+      	heapEncoding = HeapEncoding.create(encoding, formatter);
+      	memLayout = SoundLinearMemLayoutEncoding.create(heapEncoding);
     	}
-    	IRSoundMemLayoutEncoding memLayout = SoundMemLayoutEncodingFactory
-    			.create(heapEncoding);
+    	
     	parHeapEncoder = PartitionHeapEncoder
     			.createSoundEncoding(heapEncoding, memLayout);
     }
-    heapEncoder = SingleHeapEncoderAdapter.create(parHeapEncoder);
+    
+  	IRSingleHeapEncoder heapEncoder = SingleHeapEncoderAdapter.create(parHeapEncoder);
   	memoryModel = FlatMemoryModel.create(encoding, heapEncoder);	
   }
 

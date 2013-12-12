@@ -1,6 +1,7 @@
 package edu.nyu.cascade.c;
 
 import static com.google.inject.Guice.createInjector;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -11,6 +12,7 @@ import java.io.Reader;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -46,9 +48,9 @@ import edu.nyu.cascade.ir.expr.IRDataFormatter;
 import edu.nyu.cascade.ir.expr.IRHeapEncoding;
 import edu.nyu.cascade.ir.expr.IROrderMemLayoutEncoding;
 import edu.nyu.cascade.ir.expr.IRSingleHeapEncoder;
-import edu.nyu.cascade.ir.expr.LinearHeapEncoding;
+import edu.nyu.cascade.ir.expr.HeapEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
-import edu.nyu.cascade.ir.expr.OrderMemLayoutEncodingFactory;
+import edu.nyu.cascade.ir.expr.OrderLinearMemLayoutEncoding;
 import edu.nyu.cascade.ir.expr.PartitionHeapEncoder;
 import edu.nyu.cascade.ir.expr.PointerExpressionEncoding;
 import edu.nyu.cascade.ir.expr.SingleCellLinearFormatter;
@@ -684,8 +686,8 @@ public class Main {
               encoding = PointerExpressionEncoding.create(theoremProver
                   .getExpressionManager()); 
               IRDataFormatter formatter = SingleCellLinearFormatter.create(encoding);   
-              IRHeapEncoding heapEncoding = LinearHeapEncoding.create(encoding, formatter);
-            	IROrderMemLayoutEncoding memLayout = OrderMemLayoutEncodingFactory
+              IRHeapEncoding heapEncoding = HeapEncoding.create(encoding, formatter);
+              IROrderMemLayoutEncoding memLayout = OrderLinearMemLayoutEncoding
             			.create(heapEncoding);
             	PartitionHeapEncoder parHeapEncoder = PartitionHeapEncoder
             			.createOrderEncoding(heapEncoding, memLayout);

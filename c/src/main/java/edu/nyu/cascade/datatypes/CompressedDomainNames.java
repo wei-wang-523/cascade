@@ -9,12 +9,12 @@ import edu.nyu.cascade.ir.expr.IRDataFormatter;
 import edu.nyu.cascade.ir.expr.IRHeapEncoding;
 import edu.nyu.cascade.ir.expr.IRSingleHeapEncoder;
 import edu.nyu.cascade.ir.expr.IRSoundMemLayoutEncoding;
-import edu.nyu.cascade.ir.expr.LinearHeapEncoding;
+import edu.nyu.cascade.ir.expr.HeapEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.PartitionHeapEncoder;
 import edu.nyu.cascade.ir.expr.SingleCellLinearFormatter;
 import edu.nyu.cascade.ir.expr.SingleHeapEncoderAdapter;
-import edu.nyu.cascade.ir.expr.SoundMemLayoutEncodingFactory;
+import edu.nyu.cascade.ir.expr.SoundLinearMemLayoutEncoding;
 import edu.nyu.cascade.prover.ExpressionManager;
 
 public class CompressedDomainNames implements Theory {
@@ -34,8 +34,8 @@ public class CompressedDomainNames implements Theory {
     PartitionHeapEncoder parHeapEncoder = null;
     IRDataFormatter formatter = SingleCellLinearFormatter.create(encoding);
     
-    IRHeapEncoding heapEncoding = LinearHeapEncoding.create(encoding, formatter);
-    IRSoundMemLayoutEncoding memLayout = SoundMemLayoutEncodingFactory
+    IRHeapEncoding heapEncoding = HeapEncoding.create(encoding, formatter);
+    IRSoundMemLayoutEncoding memLayout = SoundLinearMemLayoutEncoding
     		.create(heapEncoding);
     parHeapEncoder = PartitionHeapEncoder
     		.createSoundEncoding(heapEncoding, memLayout);
