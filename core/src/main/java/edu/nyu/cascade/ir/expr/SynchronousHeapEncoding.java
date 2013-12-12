@@ -4,11 +4,6 @@ import java.util.LinkedHashMap;
 
 import xtc.tree.GNode;
 import xtc.tree.Node;
-import xtc.type.CastReference;
-import xtc.type.Constant;
-import xtc.type.Reference;
-import xtc.type.StructOrUnionT;
-import xtc.type.VariableT;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
@@ -22,9 +17,6 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.type.ArrayType;
-import edu.nyu.cascade.prover.type.Constructor;
-import edu.nyu.cascade.prover.type.InductiveType;
-import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
@@ -40,16 +32,7 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	
 	private final Type ptrType;
 	private final Type valueType;
-	
-  private static final String MIX_TYPE_NAME = "mix";
-  private static final String PTR_CONSTR_NAME = "ptr";
-  private static final String SCALAR_CONSTR_NAME = "scalar";
-  private static final String PTR_SELECTOR_NAME = "ptr-sel";
-  private static final String SCALAR_SELECTOR_NAME = "scalar-sel";
-  
-  private final InductiveType mixType; // The list inductive data type
-  private final Constructor ptrConstr, scalarConstr; // The constructors for cell type
-  private final Selector ptrSel, scalarSel; // The selectors for cell type
+	private final SyncValueType mixType;
 	
 	private SynchronousHeapEncoding(ExpressionEncoding encoding) {
 		this.encoding = encoding;
@@ -57,6 +40,7 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 		
 		ptrType = encoding.getPointerEncoding().getType();
 		valueType = encoding.getIntegerEncoding().getType();
+		mixType = SyncValueType.create(encoding, ptrType, valueType);
 		
 		heapRegions = Maps.newLinkedHashMap();
 		stackVars = Maps.newLinkedHashMap();
@@ -64,14 +48,6 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 		
 		lastRegion = encoding.getPointerEncoding().getNullPtr().getChild(0);
 		lastRegions = Maps.newLinkedHashMap();
-		
-    scalarSel = exprManager.selector(SCALAR_SELECTOR_NAME, valueType);
-    scalarConstr = exprManager.constructor(SCALAR_CONSTR_NAME, scalarSel);
-    
-    ptrSel = exprManager.selector(PTR_SELECTOR_NAME, ptrType);
-    ptrConstr = exprManager.constructor(PTR_CONSTR_NAME, ptrSel);
-
-    mixType = exprManager.dataType(MIX_TYPE_NAME, scalarConstr, ptrConstr);
 	}
 	
 	public static SynchronousHeapEncoding create(ExpressionEncoding encoding) {
@@ -87,7 +63,7 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	
 	@Override
 	public ArrayType getMemoryType() {
-		return exprManager.arrayType(ptrType, mixType);
+		return exprManager.arrayType(ptrType, mixType.getType());
 	}
 	
 	@Override
@@ -113,28 +89,7 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 
 	@Override
 	public Type getArrayElemType(xtc.type.Type type) {
-	  Type resType = null;
-	  switch(CType.getCellKind(type)) {
-	  case SCALAR :
-	  case BOOL :     resType = valueType; break;
-	  case ARRAY : {
-	    xtc.type.Type contentType = CType.unwrapped(type).toArray().getType();
-	    resType = getArrayElemType(contentType);
-	    break;
-	  }
-	  case POINTER :  resType = ptrType; break;
-	  case STRUCTORUNION : {
-	    ElemType elemType = ElemType.getElemType(type);
-	    switch(elemType) {
-	    case SCALAR:  resType = valueType; break;
-	    case POINTER: resType = ptrType; break;
-	    default:      resType = mixType; 
-	    }
-	    break;
-	  }
-	  default:    throw new IllegalArgumentException("Unsupported type " + type);
-	  }
-	  return resType;
+	  return mixType.getValueType(type);
 	}
 
 	@Override
@@ -164,7 +119,7 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 		Preconditions.checkArgument(memArr.getType().getIndexType().equals(ptrType));
 		Preconditions.checkArgument(lval.getType().equals(ptrType));
 		Type cellType = memArr.getType().getElementType();
-		Expression rvalPrime = castExprToCell(rval, cellType);
+		Expression rvalPrime = mixType.castExprToCell(rval, cellType);
 		return memArr.update(lval, rvalPrime);
 	}
 	
@@ -182,7 +137,7 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 		Preconditions.checkArgument(memArr.getType().getIndexType().equals(ptrType));
 		Preconditions.checkArgument(lval.getType().equals(ptrType));
 		Expression cell = memArr.index(lval);
-		return castCellToExpr(cell, CType.getType(lval.getNode()));
+		return mixType.castCellToExpr(cell, CType.getType(lval.getNode()));
 	}
 
 	@Override
@@ -310,90 +265,6 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	@Override
 	public ExpressionEncoding getExpressionEncoding() {
 	  return encoding;
-	}
-
-	private enum ElemType {
-	  SCALAR,
-	  POINTER,
-	  MIX;
-
-	  static ElemType getElemType(xtc.type.Type type) {
-		  Preconditions.checkArgument(CellKind.STRUCTORUNION.equals(CType.getCellKind(type)));
-		  StructOrUnionT su = CType.unwrapped(type).toStructOrUnion();
-		  boolean scalar = true, pointer = true;
-		  for(VariableT v : su.getMembers()) {
-		    switch(CType.getCellKind(v)) {
-		    case SCALAR :         pointer = false; break;
-		    case POINTER:         scalar = false; break;
-		    // FIXME: struct { int a[100] }, get the mix types?
-		    case ARRAY:
-		    case STRUCTORUNION:   scalar = false; pointer = false; break;
-		    default:              throw new IllegalArgumentException("Unsupported type " + v);
-		    }
-		  }
-		  assert !(pointer && scalar);
-		  if(pointer)         return  ElemType.POINTER;
-		  else if(scalar)     return  ElemType.SCALAR;
-		  else                return  ElemType.MIX;
-		}
-	}
-	
-	private Expression castCellToExpr(Expression pValCell, xtc.type.Type pType) {
-		ExpressionManager exprManager = getExpressionManager();
-		Expression resVal = pValCell;
-	  if(mixType.equals(pValCell.getType())) {
-	    CellKind kind = CType.getCellKind(CType.unwrapped(pType));
-	    switch(kind) {
-	    case SCALAR:
-	    case BOOL:
-	    	resVal = exprManager.select(scalarSel, pValCell); break;
-	    case POINTER:
-	    	resVal = exprManager.select(ptrSel, pValCell); break;
-	    default:
-	      throw new IllegalArgumentException("Invalid kind " + kind);
-	    }
-	  }
-	  return resVal;
-	}
-
-	private Expression castExprToCell(Expression rval, Type cellType) {
-		Preconditions.checkArgument(cellType != null);
-	  
-	  if(rval.getType().equals(cellType)) return rval;
-	  
-	  ExpressionManager exprManager = getExpressionManager();
-	  
-	  if(valueType.equals(rval.getType())) {
-	    if(ptrType.equals(cellType)) {
-	      xtc.type.Type type = CType.getType(rval.getNode());
-	      assert type.hasConstant() ;
-	      Constant constant =  type.getConstant();
-	      
-	      if(constant.isNumber() && constant.bigIntValue().intValue() == 0) {
-	        return getNullAddress();
-	      }
-	      
-	      if(constant.isReference()) {
-	        assert ((Reference) constant.getValue()).isCast();
-	        CastReference ref = (CastReference) constant.getValue();
-	        if(ref.getBase().isNull()) {
-	          return getNullAddress();
-	        }
-	      }
-	      
-	      return encoding.getPointerEncoding().unknown();
-	    } 
-	    
-	    if(mixType.equals(cellType)) {
-	      return exprManager.construct(scalarConstr, rval);
-	    }
-	  } else if(ptrType.equals(rval.getType())) {
-	    if(mixType.equals(cellType)) {
-	      return exprManager.construct(ptrConstr, rval);
-	    }
-	  }
-	  
-	  throw new IllegalArgumentException("Invalid type " + rval.getType() + " to " + cellType);
 	}
 
 	@Override

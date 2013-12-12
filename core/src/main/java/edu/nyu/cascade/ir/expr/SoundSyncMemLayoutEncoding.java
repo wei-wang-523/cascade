@@ -23,7 +23,7 @@ public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	private SoundSyncMemLayoutEncoding(SynchronousHeapEncoding heapEncoding) {
 		this.heapEncoding = heapEncoding;
 		ptrType = heapEncoding.getAddressType();
-		valueType = heapEncoding.getValueType().asBitVectorType();
+		valueType = heapEncoding.getValueType();
 		refType = ptrType.asTuple().getElementTypes().get(0);
 	}
 	
