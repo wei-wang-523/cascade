@@ -419,7 +419,37 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 
   @Override
   public Expression eq(Expression lhs, Expression rhs) {
-    return getBooleanEncoding().ofBooleanExpression( lhs.eq((Expression)rhs) );
+  	if(isPointer(lhs)) {
+  		return eq_(getPointerEncoding(), lhs, rhs);
+  	}
+  	if(isInteger(lhs)) {
+  		return eq_(getIntegerEncoding(), lhs, rhs);
+  	}
+  	if(isBoolean(lhs)) {
+  		return eq_(getBooleanEncoding(), lhs, rhs);
+  	}
+  	return null;
+  }
+  
+  private <T extends Expression> BooleanExpression eq_(
+  		PointerEncoding<T> pe, Expression lhs, Expression rhs) {
+  	Preconditions.checkArgument(isPointer(lhs));
+  	Preconditions.checkArgument(isPointer(rhs));
+  	return pe.eq(pe.ofExpression(lhs), pe.ofExpression(rhs));
+  }
+  
+  private <T extends Expression> BooleanExpression eq_(
+  		IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+  	Preconditions.checkArgument(isInteger(lhs));
+  	Preconditions.checkArgument(isInteger(rhs));
+  	return ie.eq(ie.ofExpression(lhs), ie.ofExpression(rhs));
+  }
+  
+  private <T extends Expression> BooleanExpression eq_(
+  		BooleanEncoding<T> be, Expression lhs, Expression rhs) {
+  	Preconditions.checkArgument(isBoolean(lhs));
+  	Preconditions.checkArgument(isBoolean(rhs));
+  	return be.eq(be.ofExpression(lhs), be.ofExpression(rhs));
   }
   
   @Override
