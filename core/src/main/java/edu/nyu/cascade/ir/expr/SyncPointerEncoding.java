@@ -11,16 +11,17 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.util.Identifiers;
 
-public class DefaultPointerEncoding 
+public class SyncPointerEncoding <T extends Expression, S extends Expression>
   extends AbstractTypeEncoding<TupleExpression>
 	implements PointerEncoding<TupleExpression> {
 
-	 private static final String UNKNOWN_VARIABLE_NAME = "ptr_encoding_unknown";
+	private static final String UNKNOWN_VARIABLE_NAME = "ptr_encoding_unknown";
 	
-	private final UninterpretedEncoding<? extends Expression> baseEncoding;
-	private final IntegerEncoding<? extends Expression> offsetEncoding;
+	private final UninterpretedEncoding<S> baseEncoding;
+	private final IntegerEncoding<T> offsetEncoding;
 	
-  private DefaultPointerEncoding(TupleEncoding.Instance<TupleExpression> tupleEncodingInstance) {
+  @SuppressWarnings("unchecked")
+  private SyncPointerEncoding(TupleEncoding.Instance<TupleExpression> tupleEncodingInstance) {
   	super(tupleEncodingInstance.getExpressionManager(), tupleEncodingInstance.getType());
 		Preconditions.checkArgument(Iterables.size(tupleEncodingInstance.getElementEncodings()) == 2);
 		
@@ -31,19 +32,20 @@ public class DefaultPointerEncoding
 		Preconditions.checkArgument(elementEncoding_0 instanceof UninterpretedEncoding);
 		Preconditions.checkArgument(elementEncoding_1 instanceof IntegerEncoding);
 		
-		baseEncoding = (UninterpretedEncoding<?>) elementEncoding_0;
-		offsetEncoding = (IntegerEncoding<?>) elementEncoding_1;
+		baseEncoding = (UninterpretedEncoding<S>) elementEncoding_0;
+		offsetEncoding = (IntegerEncoding<T>) elementEncoding_1;
 	}
   
-  public static DefaultPointerEncoding create(TupleEncoding.Instance<TupleExpression> instance) {
-  	return new DefaultPointerEncoding(instance);
+  @SuppressWarnings({ "unchecked", "rawtypes" })
+  public static SyncPointerEncoding<?, ?> create(TupleEncoding.Instance<TupleExpression> instance) {
+  	return new SyncPointerEncoding(instance);
   }
   
-  public UninterpretedEncoding<? extends Expression> getBaseEncoding() {
+  protected UninterpretedEncoding<? extends Expression> getBaseEncoding() {
   	return baseEncoding;
   }
   
-  public IntegerEncoding<? extends Expression> getOffsetEncoding() {
+  protected IntegerEncoding<T> getOffsetEncoding() {
   	return offsetEncoding;
   }
   
@@ -55,22 +57,19 @@ public class DefaultPointerEncoding
 		return expr.getType().equals(getType());
 	}
 	
-	private <T extends Expression> T minus_(
-	    IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+	private T minus_(IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
     Preconditions.checkArgument(isOffset(lhs));
     Preconditions.checkArgument(isOffset(rhs));
     return ie.minus(ie.ofExpression(lhs), ie.ofExpression(rhs));
 	}
 
-	private <T extends Expression> T plus_(
-	    IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+	private T plus_(IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
     Preconditions.checkArgument(isOffset(lhs));
     Preconditions.checkArgument(isOffset(rhs));
     return ie.plus(ie.ofExpression(lhs), ie.ofExpression(rhs));
 	}
 	
-	private <T extends Expression> T plus_(IntegerEncoding<T> ie,
-	    Iterable<? extends Expression> terms) {
+	private T plus_(IntegerEncoding<T> ie, Iterable<? extends Expression> terms) {
 	  List<T> iTerms = Lists.newArrayList();
 	  for (Expression t : terms) {
 	    Preconditions.checkArgument(isOffset(t));
@@ -79,28 +78,26 @@ public class DefaultPointerEncoding
 	  return ie.plus(iTerms);
 	}
 	
-	private <T extends Expression> BooleanExpression lessThan_(IntegerEncoding<T> ie,
-	    Expression lhs, Expression rhs) {
+	private BooleanExpression lessThan_(IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
 	  Preconditions.checkArgument(isOffset(lhs));
 	  Preconditions.checkArgument(isOffset(rhs));
 	  return ie.lessThan(ie.ofExpression(lhs), ie.ofExpression(rhs));
 	}
 	
-	private <T extends Expression> BooleanExpression lessThanOrEqual_(
-	    IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
+	private BooleanExpression lessThanOrEqual_(IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
 		Preconditions.checkArgument(isOffset(lhs));
 	  Preconditions.checkArgument(isOffset(rhs));
 	  return ie.lessThanOrEqual(ie.ofExpression(lhs), ie.ofExpression(rhs));
 	}
 	
-	private <T extends Expression> BooleanExpression greaterThan_(IntegerEncoding<T> ie,
+	private BooleanExpression greaterThan_(IntegerEncoding<T> ie,
 	    Expression lhs, Expression rhs) {
 	  Preconditions.checkArgument(isOffset(lhs));
 	  Preconditions.checkArgument(isOffset(rhs));
 	  return ie.greaterThan(ie.ofExpression(lhs), ie.ofExpression(rhs));
 	}
 	
-  private <T extends Expression> BooleanExpression greaterThanOrEqual_(
+  private BooleanExpression greaterThanOrEqual_(
   		IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
     Preconditions.checkArgument(isOffset(lhs));
     Preconditions.checkArgument(isOffset(rhs));
@@ -254,4 +251,24 @@ public class DefaultPointerEncoding
     Expression offZero = getOffsetEncoding().zero();
     return getExpressionManager().tuple(getType(), refVar, offZero);
   }
+
+	@Override
+  public boolean isSyncEncoding() {
+	  return true;
+  }
+
+	@Override
+  public boolean isLinearEncoding() {
+	  return false;
+  }
+
+	@Override
+  public LinearPointerEncoding<?> asLinearPointerEncoding() {
+	  throw new UnsupportedOperationException();
+  }
+	
+	@Override
+	public SyncPointerEncoding<?, ?> asSyncPointerEncoding() {
+		return this;
+	}
 }

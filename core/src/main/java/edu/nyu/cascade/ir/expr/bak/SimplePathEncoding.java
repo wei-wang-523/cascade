@@ -36,7 +36,7 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   
   private SimplePathEncoding(ExpressionEncoder encoder) {
     super(encoder);
-    ExpressionManager em = encoder.getExpressionManager();
+    ExpressionManager em = encoder.getEncoding().getExpressionManager();
     Type memType = encoder.getMemoryModel().getStateType();
     pathType = getExpressionManager().tupleType(Identifiers.uniquify(DEFAULT_PATH_STATE_NAME), memType, em.booleanType());
   }

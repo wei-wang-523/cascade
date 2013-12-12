@@ -8,21 +8,21 @@ import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.Type;
 
-public class SingleCellFormatter implements IRDataFormatter {
+public class SingleCellLinearFormatter implements IRDataFormatter {
 
 	private final ExpressionEncoding encoding;
 	
-	private SingleCellFormatter(ExpressionEncoding encoding) {
+	private SingleCellLinearFormatter(ExpressionEncoding encoding) {
 		this.encoding = encoding;
 	}
 	
-	public static SingleCellFormatter create(ExpressionEncoding encoding) {
-		return new SingleCellFormatter(encoding);
+	public static SingleCellLinearFormatter create(ExpressionEncoding encoding) {
+		return new SingleCellLinearFormatter(encoding);
 	}
 	
 	@Override
 	public Type getAddressType() {
-		return encoding.getIntegerEncoding().getType();
+		return encoding.getPointerEncoding().getType();
 	}
 
 	@Override

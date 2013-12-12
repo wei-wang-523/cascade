@@ -102,7 +102,8 @@ public final class SynchronousHeapEncoding implements IRHeapEncoding {
 	
 	@Override
 	public Expression getSizeZero() {
-	  return encoding.getPointerEncoding().getOffsetEncoding().zero();
+	  return encoding.getPointerEncoding()
+	  		.asSyncPointerEncoding().getOffsetEncoding().zero();
 	}
 	
 	@Override

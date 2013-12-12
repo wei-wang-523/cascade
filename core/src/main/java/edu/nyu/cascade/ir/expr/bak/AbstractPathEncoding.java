@@ -155,7 +155,7 @@ public abstract class AbstractPathEncoding implements
    */
   @Override
   public ExpressionManager getExpressionManager() {
-    return getExpressionEncoder().getExpressionManager();
+    return getExpressionEncoder().getEncoding().getExpressionManager();
   }
 
   @Override

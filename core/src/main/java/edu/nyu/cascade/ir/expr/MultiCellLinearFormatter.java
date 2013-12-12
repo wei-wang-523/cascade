@@ -4,8 +4,6 @@ import com.google.common.base.Preconditions;
 
 import xtc.type.C;
 import xtc.type.IntegerT;
-import xtc.type.PointerT;
-import xtc.type.VoidT;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -13,31 +11,33 @@ import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 
-public class MultiCellBVFormatter implements IRDataFormatter {
+public class MultiCellLinearFormatter implements IRDataFormatter {
 
 	private final ExpressionEncoding encoding;
 	private final ExpressionManager exprManager;
   private final C cAnalyzer;
 	
-	private MultiCellBVFormatter(ExpressionEncoding _encoding) {
+	private MultiCellLinearFormatter(ExpressionEncoding _encoding) {
 		encoding = _encoding;
 		exprManager = encoding.getExpressionManager();
 		cAnalyzer = encoding.getCAnalyzer();
 	}
 	
-	public static MultiCellBVFormatter create(ExpressionEncoding encoding) {
-		return new MultiCellBVFormatter(encoding);
+	public static MultiCellLinearFormatter create(ExpressionEncoding encoding) {
+		return new MultiCellLinearFormatter(encoding);
 	}
 	
 	@Override
-	public BitVectorType getAddressType() {
-		int size = (int) cAnalyzer.getSize(new PointerT(new VoidT()));
-		return exprManager.bitVectorType(size * getWordSize());
+	public Type getAddressType() {
+//		int size = (int) cAnalyzer.getSize(new PointerT(new VoidT()));
+//		return exprManager.bitVectorType(size * getWordSize());
+		return encoding.getPointerEncoding().getType();
 	}
 
 	@Override
-	public BitVectorType getValueType() {
-		return exprManager.bitVectorType(getWordSize());
+	public Type getValueType() {
+//		return exprManager.bitVectorType(getWordSize());
+		return encoding.getIntegerEncoding().getType();
 	}
 
 	@Override
@@ -65,7 +65,7 @@ public class MultiCellBVFormatter implements IRDataFormatter {
 		
 		if(value.isBoolean()) value = encoding.castToInteger(value);
 		
-		int addrSize = getAddressType().getSize();		
+		int addrSize = getAddressType().asBitVectorType().getSize();		
 		int size = (int) cAnalyzer.getSize(CType.getType(index.getNode()));	
 		int wordSize = getWordSize();
 		
@@ -82,7 +82,7 @@ public class MultiCellBVFormatter implements IRDataFormatter {
 	public Expression indexMemoryArray(ArrayExpression memory, Expression index) {
 		Preconditions.checkArgument(index.getNode() != null);
 		
-		int addSize = getAddressType().getSize();
+		int addSize = getAddressType().asBitVectorType().getSize();
 		int size = (int) cAnalyzer.getSize(CType.getType(index.getNode()));
 		
 		Expression res = memory.index(index);

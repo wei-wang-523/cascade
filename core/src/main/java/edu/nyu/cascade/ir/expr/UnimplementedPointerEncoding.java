@@ -153,13 +153,25 @@ public class UnimplementedPointerEncoding<T extends Expression> implements Point
   }
 
 	@Override
-  public TypeEncoding<?> getBaseEncoding() {
+  public boolean isSyncEncoding() {
+	  // TODO Auto-generated method stub
+	  return false;
+  }
+
+	@Override
+  public boolean isLinearEncoding() {
+	  // TODO Auto-generated method stub
+	  return false;
+  }
+
+	@Override
+  public SyncPointerEncoding<?, ?> asSyncPointerEncoding() {
 	  // TODO Auto-generated method stub
 	  return null;
   }
 
 	@Override
-  public IntegerEncoding<?> getOffsetEncoding() {
+  public LinearPointerEncoding<?> asLinearPointerEncoding() {
 	  // TODO Auto-generated method stub
 	  return null;
   }

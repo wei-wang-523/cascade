@@ -3,7 +3,6 @@ package edu.nyu.cascade.ir.expr;
 import xtc.tree.Node;
 import xtc.util.SymbolTable;
 import xtc.util.SymbolTable.Scope;
-import edu.nyu.cascade.prover.ExpressionManager;
 
 /**
  * A semantic encoder for expressions, using underlying representation Expr and
@@ -18,7 +17,6 @@ import edu.nyu.cascade.prover.ExpressionManager;
 
 public interface ExpressionEncoder {
   ExpressionEncoding getEncoding();
-  ExpressionManager getExpressionManager();
   MemoryModel getMemoryModel();
   SymbolTable.Scope getCurrentScope();
   

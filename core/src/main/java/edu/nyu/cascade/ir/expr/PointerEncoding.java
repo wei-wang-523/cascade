@@ -13,9 +13,6 @@ public interface PointerEncoding<T extends Expression> extends TypeEncoding<T> {
   boolean isEncodingFor(Expression x);
   T ofExpression(Expression expr);
   
-  TypeEncoding<?> getBaseEncoding();
-  IntegerEncoding<?> getOffsetEncoding();
-  
   T ifThenElse(BooleanExpression b, T thenExpr,
       T elseExpr);
   T incr(T expr);
@@ -34,4 +31,10 @@ public interface PointerEncoding<T extends Expression> extends TypeEncoding<T> {
 	T getNullPtr();
 	T unknown();
 	T freshPtr(String name, boolean fresh);
+	
+	boolean isSyncEncoding();
+	boolean isLinearEncoding();
+	
+	SyncPointerEncoding<?, ?> asSyncPointerEncoding();
+	LinearPointerEncoding<?> asLinearPointerEncoding();
 }

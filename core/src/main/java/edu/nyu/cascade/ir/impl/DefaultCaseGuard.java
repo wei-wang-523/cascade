@@ -76,7 +76,7 @@ public class DefaultCaseGuard implements IRBooleanExpression {
 
       @Override
       public Type getOutputType() {
-        return encoder.getExpressionManager().booleanType();
+        return encoder.getEncoding().getExpressionManager().booleanType();
       }
 
       @Override
@@ -86,7 +86,7 @@ public class DefaultCaseGuard implements IRBooleanExpression {
 
       @Override
       public ExpressionManager getExpressionManager() {
-        return encoder.getExpressionManager();
+        return encoder.getEncoding().getExpressionManager();
       }
     };
   }
