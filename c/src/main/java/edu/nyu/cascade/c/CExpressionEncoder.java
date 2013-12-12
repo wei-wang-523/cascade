@@ -65,10 +65,6 @@ class CExpressionEncoder implements ExpressionEncoder {
     private ExpressionClosure toBoolean(Node node, boolean negated) {
       return suspend(encodeBoolean(node,negated));
     }
-
-//    private ExpressionClosure toInteger(Node node) {
-//      return suspend(encodeInteger(node));
-//    }
     
 		private ExpressionClosure toExpression(Node node) {
 			return suspend(encodeExpression(node));
@@ -82,10 +78,6 @@ class CExpressionEncoder implements ExpressionEncoder {
       Expression b = coerceToBoolean((Expression) dispatch(node));
       return negated ? encoding.not(b) : b;
     }
-
-//    private Expression encodeInteger(Node node) {
-//      return coerceToInteger((Expression) dispatch(node)).setNode((GNode) node);
-//    }
     
     private Expression encodeExpression(Node node) {
       return ((Expression) dispatch(node)).setNode((GNode) node);
@@ -96,7 +88,11 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
     
     private Expression coerceToInteger(Expression e) {       
-        return encoding.isInteger(e) ? e : encoding.castToInteger(e);
+    	return encoding.isInteger(e) ? e : encoding.castToInteger(e);
+    }
+    
+    private Expression coerceToPointer(Expression e) {
+    	return encoding.isPointer(e) ? e : encoding.castToPointer(e);
     }
     
     @Override
@@ -146,7 +142,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 										} else if(type.isArray()) {
 											return sizeofType(type.toArray().getType());
 										} else									
-											throw new IllegalArgumentException("Invalid type: " + type);
+											return 1;
 									}                	
                 };
                 
@@ -734,7 +730,7 @@ class CExpressionEncoder implements ExpressionEncoder {
       int offset = getOffset(baseType.toStructOrUnion(), fieldName);
       Expression baseLoc = (Expression) lvalVisitor.dispatch(node.getNode(0));
       Expression offsetExpr = encoding.integerConstant(offset);
-      Expression resLoc = encoding.plus(baseLoc, offsetExpr);
+      Expression resLoc = encoding.plus(coerceToPointer(baseLoc), coerceToInteger(offsetExpr));
       Expression res = derefMemory(memory, resLoc.setNode(node));
       return res.setNode(node);
     }
@@ -751,7 +747,7 @@ class CExpressionEncoder implements ExpressionEncoder {
       int offset = getOffset(baseType.toStructOrUnion(), fieldName);
       Expression baseLoc = (Expression)dispatch(node.getNode(0));
       Expression offsetExpr = encoding.integerConstant(offset);
-      Expression resLoc = encoding.plus(baseLoc, offsetExpr);
+      Expression resLoc = encoding.plus(coerceToPointer(baseLoc), coerceToInteger(offsetExpr));
       Expression res = derefMemory(memory, resLoc.setNode(node));
       return res.setNode(node);
     }
@@ -766,7 +762,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 		    resExpr = lvalExpr;
 		  else
 		    resExpr = getMemoryModel().deref(memory, lvalExpr);   
-		  return resExpr.setNode(srcNode);
+		  return coerceToPointer(resExpr).setNode(srcNode);
 		}
 
 		private Expression getSubscriptExpression(Node node, Expression idx) {
@@ -877,7 +873,7 @@ class CExpressionEncoder implements ExpressionEncoder {
       Expression offsetExpr = encoding.integerConstant(offset);
       // r.balance = addr_of_r + offset(balance), not m[addr_of_r] + offset(balance)
       Expression baseLoc = (Expression) dispatch(node.getNode(0));
-      return encoding.plus(baseLoc, offsetExpr).setNode(node);
+      return encoding.plus(coerceToPointer(baseLoc), coerceToInteger(offsetExpr)).setNode(node);
     }
     
     public Expression visitFunctionCall(GNode node) throws ExpressionFactoryException {
@@ -896,7 +892,7 @@ class CExpressionEncoder implements ExpressionEncoder {
       int offset = getOffset(baseType.toStructOrUnion(), fieldName);
       Expression offsetExpr = encoding.integerConstant(offset);
       Expression baseLoc = (Expression) exprVisitor.dispatch(node.getNode(0));
-      return encoding.plus(baseLoc, offsetExpr).setNode(node);
+      return encoding.plus(coerceToPointer(baseLoc), coerceToInteger(offsetExpr)).setNode(node);
     }
 
     public Expression visitParameterDeclaration(GNode node) 
@@ -950,7 +946,15 @@ class CExpressionEncoder implements ExpressionEncoder {
 		    Expression newIdx = encoding.times(idx, factor);
 		    return encoding.plus(base, newIdx);
 		  }  
-		} 
+		}
+
+		private Expression coerceToInteger(Expression e) {       
+			return encoding.isInteger(e) ? e : encoding.castToInteger(e);
+		}
+
+		private Expression coerceToPointer(Expression e) {
+			return encoding.isPointer(e) ? e : encoding.castToPointer(e);
+		}
   }
   
   
