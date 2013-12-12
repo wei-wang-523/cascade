@@ -8,7 +8,7 @@ int * main (int x, int y){
 	
 	a = (int *) malloc( x * sizeof(int));
 	
-	if (a == 0 ) exit(1);
+	if (a == (int *) 0 ) exit(1);
 	
 	ASSERT(valid(&a[i]));
 	a[i] = 0;

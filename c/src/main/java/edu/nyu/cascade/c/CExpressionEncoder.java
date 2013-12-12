@@ -554,24 +554,24 @@ class CExpressionEncoder implements ExpressionEncoder {
                 Expression b;
                 if (">".equals(relOp)) {
                   if(!Preferences.isSet(Preferences.OPTION_UNSIGNED_OPERATION))
-                    b = encoding.signedGreaterThan(coerceToInteger(left), coerceToInteger(right));
+                    b = encoding.signedGreaterThan(left, right);
                   else
-                    b = encoding.greaterThan(coerceToInteger(left), coerceToInteger(right));
+                    b = encoding.greaterThan(left, right);
                 } else if (">=".equals(relOp)) {
                   if(!Preferences.isSet(Preferences.OPTION_UNSIGNED_OPERATION))
-                    b = encoding.signedGreaterThanOrEqual(coerceToInteger(left), coerceToInteger(right));
+                    b = encoding.signedGreaterThanOrEqual(left, right);
                   else
-                    b = encoding.greaterThanOrEqual(coerceToInteger(left), coerceToInteger(right));
+                    b = encoding.greaterThanOrEqual(left, right);
                 } else if ("<".equals(relOp)) {
                   if(!Preferences.isSet(Preferences.OPTION_UNSIGNED_OPERATION))
-                    b = encoding.signedLessThan(coerceToInteger(left), coerceToInteger(right));
+                    b = encoding.signedLessThan(left, right);
                   else
-                    b = encoding.lessThan(coerceToInteger(left), coerceToInteger(right));
+                    b = encoding.lessThan(left, right);
                 } else if ("<=".equals(relOp)) {
                   if(!Preferences.isSet(Preferences.OPTION_UNSIGNED_OPERATION))
-                    b = encoding.signedLessThanOrEqual(coerceToInteger(left), coerceToInteger(right));
+                    b = encoding.signedLessThanOrEqual(left, right);
                   else
-                    b = encoding.lessThanOrEqual(coerceToInteger(left), coerceToInteger(right));
+                    b = encoding.lessThanOrEqual(left, right);
                 } else {
                   throw new ExpressionFactoryException("Invalid operation: " + relOp);
                 }
