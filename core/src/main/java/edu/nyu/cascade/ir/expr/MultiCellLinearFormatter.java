@@ -8,6 +8,7 @@ import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 
@@ -127,5 +128,34 @@ public class MultiCellLinearFormatter implements IRDataFormatter {
 
 	private int getWordSize() {
 		return encoding.getWordSize();
+	}
+
+	@Override
+	public ArrayType getMemoryArrayType() {
+		return encoding.getExpressionManager()
+				.arrayType(getAddressType(), getValueType());
+	}
+
+	@Override
+	public ArrayType getSizeArrayType() {
+		return encoding.getExpressionManager()
+				.arrayType(getAddressType(), getSizeType());
+	}
+	
+	@Override
+	public Expression getSizeZero() {
+		return encoding.getExpressionManager()
+				.bitVectorZero(getSizeType().asBitVectorType().getSize());
+	}
+
+	@Override
+	public ArrayExpression updateSizeArray(ArrayExpression sizeArr,
+			Expression index, Expression value) {
+		return sizeArr.update(index, value);
+	}
+
+	@Override
+	public Expression indexSizeArray(ArrayExpression sizeArr, Expression index) {
+		return sizeArr.index(index);
 	}
 }

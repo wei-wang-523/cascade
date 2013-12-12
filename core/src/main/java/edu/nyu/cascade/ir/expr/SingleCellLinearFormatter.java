@@ -6,6 +6,7 @@ import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 
 public class SingleCellLinearFormatter implements IRDataFormatter {
@@ -90,5 +91,34 @@ public class SingleCellLinearFormatter implements IRDataFormatter {
 	  case STRUCTORUNION : return getAddressType();
 	  default:    throw new IllegalArgumentException("Unsupported type " + type);
 	  }
+	}
+	
+	@Override
+	public ArrayType getMemoryArrayType() {
+		return encoding.getExpressionManager()
+				.arrayType(getAddressType(), getValueType());
+	}
+
+	@Override
+	public ArrayType getSizeArrayType() {
+		return encoding.getExpressionManager()
+				.arrayType(getAddressType(), getSizeType());
+	}
+
+	@Override
+	public Expression getSizeZero() {
+		return encoding.getExpressionManager()
+				.bitVectorZero(getSizeType().asBitVectorType().getSize());
+	}
+	
+	@Override
+	public ArrayExpression updateSizeArray(ArrayExpression sizeArr,
+			Expression index, Expression value) {
+		return sizeArr.update(index, value);
+	}
+
+	@Override
+	public Expression indexSizeArray(ArrayExpression sizeArr, Expression index) {
+		return sizeArr.index(index);
 	}
 }

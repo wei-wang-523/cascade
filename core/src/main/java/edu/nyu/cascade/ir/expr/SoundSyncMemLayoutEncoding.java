@@ -17,16 +17,16 @@ import edu.nyu.cascade.prover.type.Type;
 public class SoundSyncMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	
 	private final Type ptrType, sizeType, refType;
-	private final SynchronousHeapEncoding heapEncoding;
+	private final IRHeapEncoding heapEncoding;
 	
-	private SoundSyncMemLayoutEncoding(SynchronousHeapEncoding heapEncoding) {
+	private SoundSyncMemLayoutEncoding(IRHeapEncoding heapEncoding) {
 		this.heapEncoding = heapEncoding;
 		ptrType = heapEncoding.getAddressType();
 		refType = ptrType.asTuple().getElementTypes().get(0);
 		sizeType = ptrType.asTuple().getElementTypes().get(1);
 	}
 	
-	protected static SoundSyncMemLayoutEncoding create(SynchronousHeapEncoding heapEncoding) {
+	public static SoundSyncMemLayoutEncoding create(IRHeapEncoding heapEncoding) {
 		return new SoundSyncMemLayoutEncoding(heapEncoding);
 	}
 	

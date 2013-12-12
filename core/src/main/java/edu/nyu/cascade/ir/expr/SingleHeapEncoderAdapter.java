@@ -19,14 +19,14 @@ public class SingleHeapEncoderAdapter implements IRSingleHeapEncoder{
 	private IRSoundMemLayoutEncoding soundMemEncoding;
 	private IROrderMemLayoutEncoding orderMemEncoding;
 	
-	private SingleHeapEncoderAdapter(PartitionHeapEncoder heapEncoder) {
+	private SingleHeapEncoderAdapter(IRPartitionHeapEncoder heapEncoder) {
 		heapEncoding = heapEncoder.getHeapEncoding();
 		soundMemEncoding = heapEncoder.getSoundMemEncoding();
 		orderMemEncoding = heapEncoder.getOrderMemEncoding();
 	}
 	
-	public static SingleHeapEncoderAdapter create(PartitionHeapEncoder heapEncoder) {
-		return new SingleHeapEncoderAdapter(heapEncoder);
+	public static SingleHeapEncoderAdapter create(IRPartitionHeapEncoder parHeapEncoder) {
+		return new SingleHeapEncoderAdapter(parHeapEncoder);
 	}
 	
 	@Override

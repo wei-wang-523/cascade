@@ -7,36 +7,28 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-import xtc.type.C;
-import xtc.type.NumberT;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
-import edu.nyu.cascade.util.Preferences;
 
-public class BitVectorOffsetEncoding extends
+public class BitVectorFixedSizeEncoding extends
     AbstractTypeEncoding<BitVectorExpression> implements
     IntegerEncoding<BitVectorExpression> {
 	
-	 private static final String UNKNOWN_VARIABLE_NAME = "offset_encoding_unknown";
+	private static final String UNKNOWN_VARIABLE_NAME = "bv_encoding_unknown";
 	
 	private final BitVectorIntegerEncoding intEncoding;
 	
-	public static BitVectorOffsetEncoding create(ExpressionManager exprManager,
-			BitVectorIntegerEncoding intEncoding) {
-		int offsetSize = intEncoding.getWordSize();
-  	if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) {
-  		C cAnalyzer = intEncoding.getCAnalyzer();
-  		offsetSize = (int) cAnalyzer.getSize(NumberT.U_INT) * offsetSize;
-  	}
-    BitVectorType type = exprManager.bitVectorType(offsetSize);
-    return new BitVectorOffsetEncoding(exprManager, type, intEncoding);
+	public static BitVectorFixedSizeEncoding create(ExpressionManager exprManager,
+			BitVectorIntegerEncoding intEncoding, int size) {
+    BitVectorType type = exprManager.bitVectorType(size);
+    return new BitVectorFixedSizeEncoding(exprManager, type, intEncoding);
   }
   
-  private BitVectorOffsetEncoding(ExpressionManager exprManager, BitVectorType type, 
+  private BitVectorFixedSizeEncoding(ExpressionManager exprManager, BitVectorType type, 
   		BitVectorIntegerEncoding _intEncoding) {
     super(exprManager, type);
     intEncoding = _intEncoding;
@@ -219,8 +211,12 @@ public class BitVectorOffsetEncoding extends
 	@Override
   public BitVectorExpression plus(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
+		Preconditions.checkArgument(lhs.getType().getSize() <= getType().getSize());
+		Preconditions.checkArgument(rhs.getType().getSize() <= getType().getSize());
+		if(lhs.getType().getSize() < getType().getSize())
+			lhs = lhs.signExtend(getType().getSize());
+		if(rhs.getType().getSize() < getType().getSize())
+			rhs = rhs.signExtend(getType().getSize());
 		return intEncoding.plus(lhs, rhs);
   }
 

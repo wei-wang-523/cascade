@@ -35,8 +35,7 @@ import edu.nyu.cascade.util.Preferences;
  * @param <Expression> The underlying expression encoding
  */
 
-public abstract class AbstractExpressionEncoding
-    implements ExpressionEncoding {
+public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   private final ExpressionManager exprManager;
 
 //  private static final String STATE_VARIABLE_NAME = "s";
@@ -401,6 +400,22 @@ public abstract class AbstractExpressionEncoding
 			throw new UnsupportedOperationException("type=" + type);
     }
   }
+	
+//	private TypeEncoding<? extends Expression> encodingForExpr(Expression expr) {
+//		xtc.type.Type type = CType.getType(expr.getNode());
+//		switch(CType.getCellKind(type)) {
+//		case BOOL:
+//			return getBooleanEncoding();
+//		case SCALAR:
+//			return getIntegerEncoding();
+//		case ARRAY:
+//		case POINTER:
+//		case STRUCTORUNION:
+//			return getPointerEncoding();
+//		default:
+//			throw new UnsupportedOperationException("type=" + type);
+//		}
+//	}
 
   @Override
   public Expression eq(Expression lhs, Expression rhs) {
@@ -553,7 +568,7 @@ public abstract class AbstractExpressionEncoding
 
 	@Override
 	public boolean isInteger(Expression expr) {
-	  return getIntegerEncoding().isEncodingFor(expr);
+		return getIntegerEncoding().isEncodingFor(expr);
 	}
 
 	@Override

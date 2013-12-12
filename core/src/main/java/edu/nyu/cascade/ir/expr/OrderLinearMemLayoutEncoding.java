@@ -16,18 +16,18 @@ import edu.nyu.cascade.prover.type.Type;
 
 public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	
-	private LinearHeapEncoding heapEncoding;
+	private final IRHeapEncoding heapEncoding;
 	@SuppressWarnings("unused")
-	private Type addrType, valueType, sizeType;
+	private final Type addrType, valueType, sizeType;
 	
-	private OrderLinearMemLayoutEncoding(LinearHeapEncoding heapEncoding) {
+	private OrderLinearMemLayoutEncoding(IRHeapEncoding heapEncoding) {
 		this.heapEncoding = heapEncoding;
 		addrType = heapEncoding.getAddressType();
 		valueType = heapEncoding.getValueType();
 		sizeType = heapEncoding.getSizeType();
 	}
 	
-	protected static OrderLinearMemLayoutEncoding create(LinearHeapEncoding heapEncoding) {
+	public static OrderLinearMemLayoutEncoding create(IRHeapEncoding heapEncoding) {
 		return new OrderLinearMemLayoutEncoding(heapEncoding);
 	}
 	

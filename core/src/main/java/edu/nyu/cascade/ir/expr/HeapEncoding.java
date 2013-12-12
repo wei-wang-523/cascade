@@ -21,7 +21,7 @@ import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Pair;
 
-public final class LinearHeapEncoding implements IRHeapEncoding {
+public final class HeapEncoding implements IRHeapEncoding {
 	
 	private final ExpressionManager exprManager;
 	private final ExpressionEncoding encoding;
@@ -35,7 +35,7 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	private final Type valueType;
 	private final Type sizeType;
 
-	protected LinearHeapEncoding(ExpressionEncoding encoding, IRDataFormatter formatter) {
+	protected HeapEncoding(ExpressionEncoding encoding, IRDataFormatter formatter) {
 		this.encoding = encoding;
 		this.formatter = formatter;
 		exprManager = encoding.getExpressionManager();
@@ -52,19 +52,19 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 		lastRegion = getNullAddress();
 	}
 	
-	public static LinearHeapEncoding create(ExpressionEncoding encoding, 
+	public static HeapEncoding create(ExpressionEncoding encoding, 
 			IRDataFormatter formatter) {
-		return new LinearHeapEncoding(encoding, formatter);
+		return new HeapEncoding(encoding, formatter);
 	}
 	
 	@Override
 	public ArrayType getMemoryType() {
-		return exprManager.arrayType(addrType, valueType);
+		return formatter.getMemoryArrayType();
 	}
 
 	@Override
 	public ArrayType getSizeArrType() {
-		return exprManager.arrayType(addrType, sizeType);
+		return formatter.getSizeArrayType();
 	}
 
 	@Override
@@ -109,27 +109,6 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 	public Type getArrayElemType(xtc.type.Type type) {
 		return formatter.getArrayElemType(type);
 	}
-
-	@Override
-	public boolean isLinear() {
-		return true;
-	}
-	
-	@Override
-	public boolean isSync() {
-		return false;
-	}
-	
-	@Override
-	public LinearHeapEncoding castToLinear() {
-		Preconditions.checkArgument(isLinear());
-		return this;
-	}
-	
-	@Override
-	public SynchronousHeapEncoding castToSync() {
-		throw new ExpressionFactoryException("Linear heap encoding cannot be casted to sync.");
-	}
 	
 	@Override
 	public ArrayExpression updateMemArr(ArrayExpression memArr, Expression lval,
@@ -154,7 +133,7 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
 		Preconditions.checkArgument(lval.getType().equals(addrType));
 		Preconditions.checkArgument(rval.getType().equals(sizeType));
-		return sizeArr.update(lval, rval);
+		return formatter.updateSizeArray(sizeArr, lval, rval);
 	}
 
 	@Override
@@ -265,7 +244,13 @@ public final class LinearHeapEncoding implements IRHeapEncoding {
 		return encoding;
 	}
 	
-	protected int getSizeOfVar(Expression stackVar) {
+	@Override
+	public IRDataFormatter getDataFormatter() {
+		return formatter;
+	}
+	
+	@Override
+	public int getSizeOfVar(Expression stackVar) {
 		Preconditions.checkArgument(stackVar.getNode() != null);
 		Preconditions.checkArgument(CType.getType(stackVar.getNode()) != null);
 		xtc.type.Type type = CType.getType(stackVar.getNode());

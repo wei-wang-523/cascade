@@ -2,6 +2,7 @@ package edu.nyu.cascade.ir.expr;
 
 /** An expression factory that encodes memory as an int-to-int array. */
 
+import xtc.type.NumberT;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -31,8 +32,12 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
     					Identifiers.PTR_TYPE_NAME, uninterpretedEncoding, integerEncoding));
     	} else {
     		integerEncoding = BitVectorIntegerEncoding.create(exprManager, cAnalyzer, WORD_SIZE);
-    		IntegerEncoding<?> offsetEncoding = BitVectorOffsetEncoding.create(exprManager, 
-    				(BitVectorIntegerEncoding) integerEncoding);
+    		
+        int offsetSize = Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
+        		(int) cAnalyzer.getSize(NumberT.U_INT) * WORD_SIZE : WORD_SIZE;
+    		
+    		IntegerEncoding<?> offsetEncoding = BitVectorFixedSizeEncoding.create(exprManager, 
+    				(BitVectorIntegerEncoding) integerEncoding, offsetSize);
     		pointerEncoding = SyncPointerEncoding.create(
     				new DefaultTupleEncoding(exprManager).getInstance(
     						Identifiers.PTR_TYPE_NAME, uninterpretedEncoding, offsetEncoding));

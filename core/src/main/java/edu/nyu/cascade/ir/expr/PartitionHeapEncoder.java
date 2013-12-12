@@ -181,15 +181,18 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
 		return heapEncoding.getArrayElemType(type);
 	}
 	
-	protected IRHeapEncoding getHeapEncoding() {
+	@Override
+	public IRHeapEncoding getHeapEncoding() {
 		return heapEncoding;
 	}
 
-	protected IRSoundMemLayoutEncoding getSoundMemEncoding() {
+	@Override
+	public IRSoundMemLayoutEncoding getSoundMemEncoding() {
 		return soundMemEncoding;
 	}
 
-	protected IROrderMemLayoutEncoding getOrderMemEncoding() {
+	@Override
+	public IROrderMemLayoutEncoding getOrderMemEncoding() {
 		return orderMemEncoding;
 	}
 }

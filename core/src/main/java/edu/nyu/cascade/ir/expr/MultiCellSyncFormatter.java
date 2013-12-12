@@ -7,6 +7,7 @@ import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 
 public class MultiCellSyncFormatter implements IRDataFormatter {
@@ -132,8 +133,43 @@ public class MultiCellSyncFormatter implements IRDataFormatter {
 	  default:    throw new IllegalArgumentException("Unsupported type " + type);
 	  }
 	}
+	
+	@Override
+	public ArrayType getMemoryArrayType() {
+		return encoding.getExpressionManager()
+				.arrayType(getAddressType(), getValueType());
+	}
+
+	@Override
+	public ArrayType getSizeArrayType() {
+		return encoding.getExpressionManager()
+				.arrayType(
+						getAddressType().asTuple().getElementTypes().get(0), 
+						getAddressType().asTuple().getElementTypes().get(1));
+	}
+	
+	@Override
+	public Expression getSizeZero() {
+		return encoding.getPointerEncoding()
+				.asSyncPointerEncoding().getOffsetEncoding().zero();
+	}
 
 	private int getWordSize() {
 		return encoding.getWordSize();
+	}
+
+	@Override
+	public ArrayExpression updateSizeArray(ArrayExpression sizeArr,
+			Expression index, Expression value) {
+		Preconditions.checkArgument(index.getType().equals(getAddressType()));
+		Expression indexRef = index.asTuple().getChild(0);
+		return sizeArr.update(indexRef, value);
+	}
+
+	@Override
+	public Expression indexSizeArray(ArrayExpression sizeArr, Expression index) {
+		Preconditions.checkArgument(index.getType().equals(getAddressType()));
+		Expression indexRef = index.asTuple().getChild(0);
+		return sizeArr.index(indexRef);
 	}
 }

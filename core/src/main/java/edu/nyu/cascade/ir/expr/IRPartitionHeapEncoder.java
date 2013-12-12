@@ -57,4 +57,10 @@ public interface IRPartitionHeapEncoder {
 	
 	ImmutableSet<BooleanExpression> validMemAccess(
 			IREquivClosure equivClass, ArrayExpression sizeArr, Expression ptr, Expression size);
+
+	IRSoundMemLayoutEncoding getSoundMemEncoding();
+
+	IROrderMemLayoutEncoding getOrderMemEncoding();
+
+	IRHeapEncoding getHeapEncoding();
 }

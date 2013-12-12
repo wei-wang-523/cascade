@@ -2,6 +2,7 @@ package edu.nyu.cascade.ir.expr;
 
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 
 
@@ -24,9 +25,19 @@ public interface IRDataFormatter {
 	
 	Expression getNullAddress();
 	
+	Expression getSizeZero();
+	
+	ArrayType getMemoryArrayType();
+	
+	ArrayType getSizeArrayType();
+	
 	ArrayExpression updateMemoryArray(ArrayExpression memory, Expression index, Expression value);
 	
 	Expression indexMemoryArray(ArrayExpression memory, Expression index);
+	
+	ArrayExpression updateSizeArray(ArrayExpression sizeArr, Expression index, Expression value);
+	
+	Expression indexSizeArray(ArrayExpression sizeArr, Expression index);
 	
 	Expression getUnknownValue(xtc.type.Type type);
 

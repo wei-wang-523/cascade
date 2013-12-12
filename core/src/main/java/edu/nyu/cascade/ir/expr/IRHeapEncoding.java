@@ -1,6 +1,7 @@
 package edu.nyu.cascade.ir.expr;
 
 import xtc.tree.Node;
+
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
@@ -10,61 +11,57 @@ import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 
 public interface IRHeapEncoding {
-	
-	ExpressionManager getExpressionManager();
-	
-	ExpressionEncoding getExpressionEncoding();
-	
-	ArrayType getSizeArrType();
-	
-	ArrayType getMemoryType();
 
-	Type getAddressType();
-	
-	Type getValueType();
-	
-	Type getSizeType();
+	ArrayType getMemoryType() ;
 
-	Type getArrayElemType(xtc.type.Type type);
+	ArrayType getSizeArrType() ;
 
-	Expression freshAddress(String varName, IRVarInfo info, xtc.type.Type type);
+	Type getAddressType() ;
+
+	Type getValueType() ;
 	
-	Expression freshRegion(String regionName, Node regionNode);
+	Type getSizeType() ;
 	
-	ArrayExpression updateSizeArr(ArrayExpression sizeArr, Expression lval, Expression rval);
+	Expression getSizeZero() ;
 	
-	Expression indexMemArr(ArrayExpression memArr, Expression lval);
+	Expression getNullAddress() ;
+
+	Type getArrayElemType(xtc.type.Type type) ;
 	
-	ArrayExpression updateMemArr(ArrayExpression memArr, Expression lval, Expression rval);
+	ArrayExpression updateMemArr(ArrayExpression memArr, Expression lval,
+	    Expression rval) ;
 	
-	ArrayExpression getConstSizeArr(ArrayType sizeArrType);
+	Expression indexMemArr(ArrayExpression memArr, Expression lval) ;
 	
-	Expression getSizeZero();
+	ArrayExpression updateSizeArr(ArrayExpression sizeArr, Expression lval,
+	    Expression rval) ;
+
+	ArrayExpression getConstSizeArr(ArrayType sizeArrType) ;
+
+	Expression freshAddress(String varName, IRVarInfo info, xtc.type.Type type) ;
+
+	Expression freshRegion(String regionName, Node regionNode) ;
+
+	MemoryVarSets getCategorizedVars(Iterable<IRVar> equivVars) ;
 	
-	Expression getUnknownValue(xtc.type.Type type);
+	Expression getUnknownValue(xtc.type.Type type) ;
 	
-	Expression getNullAddress();
+	Expression getLastRegion() ;
+
+  Expression getLastRegion(String name) ;
+
+	void updateLastRegion(Expression region) ;
 	
-	Expression addressOf(Expression expr);
+	void updateLastRegion(String name, Expression region) ;
 	
-	MemoryVarSets getCategorizedVars(Iterable<IRVar> iterable);
+	MemoryVarSets getMemVarSets() ;
+
+	ExpressionManager getExpressionManager() ;
 	
-	Expression getLastRegion();
+	ExpressionEncoding getExpressionEncoding() ;
 	
-	void updateLastRegion(Expression region);
+	IRDataFormatter getDataFormatter() ;
 	
-	void updateLastRegion(String name, Expression region);
-	
-	Expression getLastRegion(String name);
-	
-	MemoryVarSets getMemVarSets();
-	
-	boolean isLinear();
-	
-	boolean isSync();
-	
-	LinearHeapEncoding castToLinear();
-	
-	SynchronousHeapEncoding castToSync();
-	
+	int getSizeOfVar(Expression stackVar) ;
+  Expression addressOf(Expression expr) ;
 }

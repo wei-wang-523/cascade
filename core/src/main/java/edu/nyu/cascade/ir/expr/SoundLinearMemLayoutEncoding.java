@@ -15,18 +15,18 @@ import edu.nyu.cascade.prover.type.Type;
 
 public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	
-	private LinearHeapEncoding heapEncoding;
+	private final IRHeapEncoding heapEncoding;
 	@SuppressWarnings("unused")
-	private Type addrType, valueType, sizeType;
+	private final Type addrType, valueType, sizeType;
 	
-	private SoundLinearMemLayoutEncoding(LinearHeapEncoding heapEncoding) {
+	private SoundLinearMemLayoutEncoding(IRHeapEncoding heapEncoding) {
 		this.heapEncoding = heapEncoding;
 		addrType = heapEncoding.getAddressType();
 		valueType = heapEncoding.getValueType();
 		sizeType = heapEncoding.getSizeType();
 	}
 	
-	protected static SoundLinearMemLayoutEncoding create(LinearHeapEncoding heapEncoding) {
+	public static SoundLinearMemLayoutEncoding create(IRHeapEncoding heapEncoding) {
 		return new SoundLinearMemLayoutEncoding(heapEncoding);
 	}
 	
