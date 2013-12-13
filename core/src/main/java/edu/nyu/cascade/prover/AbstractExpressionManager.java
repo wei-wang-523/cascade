@@ -289,13 +289,13 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   @Override
   public BooleanExpression exists(Iterable<? extends Expression> vars,
       Expression body) {
-    return exists(vars, body, null, null);
+    return booleanType().exists(vars, body);
   }
 
   @Override
   public BooleanExpression exists(Iterable<? extends Expression> vars,
       Expression body, Iterable<? extends Expression> patterns) {
-    return exists(vars, body, patterns, null);
+    return booleanType().exists(vars, body, patterns);
   }
 
   @Override
@@ -367,13 +367,13 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   @Override
   public BooleanExpression forall(Iterable<? extends Expression> vars,
       Expression body) {
-    return forall(vars, body, null, null);
+    return booleanType().forall(vars, body);
   }
 
   @Override
   public BooleanExpression forall(Iterable<? extends Expression> vars,
       Expression body, Iterable<? extends Expression> patterns) {
-    return forall(vars, body, patterns, null);
+    return booleanType().forall(vars, body, patterns);
   }
 
   @Override
