@@ -9,8 +9,8 @@ int returnOne(){
 }
 
 int main(int a, int* b, int* c){
-	int flag1,flag2;
-	
+	ASSUME(allocated(b, 1));
+	int flag1,flag2;	
 	if (a > *b) {
 		int *y1 = (int *)malloc(sizeof(int));
 		y1 = &a;
