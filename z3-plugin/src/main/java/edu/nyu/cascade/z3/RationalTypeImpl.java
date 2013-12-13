@@ -5,6 +5,7 @@ import java.util.concurrent.ExecutionException;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Z3Exception;
 
 import edu.nyu.cascade.prover.Expression;
@@ -197,4 +198,11 @@ public class RationalTypeImpl extends TypeImpl implements RationalType {
   public RationalVariableImpl boundVariable(String name, boolean fresh) {
     throw new UnsupportedOperationException("bound variable is not supported in z3.");
   }
+  
+	@Override
+	protected InductiveExpressionImpl create(Expr res, Expression oldExpr,
+			Iterable<? extends ExpressionImpl> children) {
+		return InductiveExpressionImpl.create(getExpressionManager(), 
+				oldExpr.getKind(), res, oldExpr.getType(), children);
+	}
 }

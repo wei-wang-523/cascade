@@ -26,7 +26,6 @@ import static edu.nyu.cascade.prover.Expression.Kind.UNARY_MINUS;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
 import java.math.BigInteger;
 
 import com.google.common.base.Preconditions;
@@ -724,10 +723,20 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
     super(exprManager, kind, strategy, args);
   }
 
-  public BitVectorExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
+  private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
       TernaryConstructionStrategy strategy,
       Expression arg1, Expression arg2, Expression arg3) {
     super(exprManager, kind, strategy, arg1, arg2, arg3);
+  }
+  
+  private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, BitVectorType type, Iterable<? extends ExpressionImpl> children) {
+    super(exprManager, kind, expr, type);
+  }
+  
+  protected static BitVectorExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, BitVectorType type, Iterable<? extends ExpressionImpl> children) {
+  	return new BitVectorExpressionImpl(exprManager, kind, expr, type, children);
   }
 
   @Override

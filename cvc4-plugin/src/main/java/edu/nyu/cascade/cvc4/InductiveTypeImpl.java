@@ -8,6 +8,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -22,11 +23,13 @@ import edu.nyu.acsys.CVC4.DatatypeConstructor;
 import edu.nyu.acsys.CVC4.DatatypeType;
 import edu.nyu.acsys.CVC4.DatatypeUnresolvedType;
 import edu.nyu.acsys.CVC4.Exception;
+import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.acsys.CVC4.ExprManager;
 import edu.nyu.acsys.CVC4.vectorDatatype;
 import edu.nyu.acsys.CVC4.vectorDatatypeType;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.InductiveExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.Constructor;
@@ -706,4 +709,12 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
       Expression expression) {
     throw new UnsupportedOperationException();
   }
+
+	@Override
+	InductiveExpressionImpl create(Expr res, Expression e, Kind kind,
+			Iterable<ExpressionImpl> children) {
+		Preconditions.checkArgument(e.isInductive());
+		return InductiveExpressionImpl.create(getExpressionManager(), 
+				kind, res, e.getType().asInductive(), children);
+	}
 }

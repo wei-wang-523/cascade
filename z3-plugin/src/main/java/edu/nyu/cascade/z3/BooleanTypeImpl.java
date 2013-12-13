@@ -6,6 +6,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Z3Exception;
 
 import edu.nyu.cascade.prover.Expression;
@@ -266,4 +267,11 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   public  BooleanExpressionImpl eq(Expression left, Expression right)  {
     return BooleanExpressionImpl.mkEq(getExpressionManager(), left, right);
   }
+  
+	@Override
+	protected BooleanExpressionImpl create(Expr res, Expression oldExpr,
+			Iterable<? extends ExpressionImpl> children) {
+		return BooleanExpressionImpl.create(getExpressionManager(), 
+				oldExpr.getKind(), res, oldExpr.getType(), children);
+	}
 }

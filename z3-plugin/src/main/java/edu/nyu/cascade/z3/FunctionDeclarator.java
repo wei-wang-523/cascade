@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapMaker;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.FuncDecl;
 import com.microsoft.z3.Sort;
 import com.microsoft.z3.Z3Exception;
@@ -179,5 +180,11 @@ public class FunctionDeclarator extends TypeImpl
 	public Expression apply(FunctionExpression fun, Expression arg1,
 			Expression... otherArgs) {
   	throw new UnsupportedOperationException("z3 does not support it.");
+	}
+
+	@Override
+	protected ExpressionImpl create(Expr res, Expression oldExpr,
+			Iterable<? extends ExpressionImpl> children) {
+		throw new UnsupportedOperationException();
 	}
 }

@@ -5,7 +5,6 @@ import static edu.nyu.cascade.prover.Expression.Kind.ARRAY_STORE_ALL;
 import static edu.nyu.cascade.prover.Expression.Kind.ARRAY_UPDATE;
 
 import com.google.common.base.Preconditions;
-
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.ArrayExpr;
 import com.microsoft.z3.Context;
@@ -105,6 +104,20 @@ public final class ArrayExpressionImpl
     indexType = arrayType.asArrayType().getIndexType();
     elementType = arrayType.asArrayType().getElementType();
     type = exprManager.arrayType(indexType,elementType);
+  }
+  
+  private ArrayExpressionImpl(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, ArrayType type, Iterable<? extends ExpressionImpl> children) {
+  	super(em, kind, expr, type, children);
+  	this.type = type;
+  	indexType = type.getIndexType();
+  	elementType = type.getElementType();
+  }
+  
+  protected static ArrayExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
+  	Preconditions.checkArgument(type.isArrayType());
+    return new ArrayExpressionImpl(em, kind, expr, type.asArrayType(), children);
   }
 
   @Override

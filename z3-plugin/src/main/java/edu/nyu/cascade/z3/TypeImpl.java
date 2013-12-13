@@ -332,4 +332,7 @@ public abstract class TypeImpl implements Type {
   public boolean isUninterpreted() {
     return this instanceof UninterpretedType;
   }
+  
+  abstract ExpressionImpl create(Expr res, Expression oldExpr, 
+  		Iterable<? extends ExpressionImpl> children) ;
 }

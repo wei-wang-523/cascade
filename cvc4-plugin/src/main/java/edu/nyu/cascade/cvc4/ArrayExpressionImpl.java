@@ -92,6 +92,19 @@ public final class ArrayExpressionImpl
     type = exprManager.arrayType(indexType,elementType);
   }
 
+  private ArrayExpressionImpl(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, ArrayType type, Iterable<? extends ExpressionImpl> children) {
+    super(exprManager, kind, expr, type);
+    this.type = type;
+    indexType = type.getIndexType();
+    elementType = type.getElementType();
+  }
+  
+  protected static ArrayExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, ArrayType type, Iterable<? extends ExpressionImpl> children) {
+  	return new ArrayExpressionImpl(exprManager, kind, expr, type, children);
+  }
+  
   @Override
   public ArrayType getType() {
     return type;

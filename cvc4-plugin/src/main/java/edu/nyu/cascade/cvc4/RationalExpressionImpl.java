@@ -19,8 +19,8 @@ import edu.nyu.acsys.CVC4.ExprManager;
 import edu.nyu.acsys.CVC4.Rational;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.RationalExpression;
-import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.RationalType;
+import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.Type;
 
 public class RationalExpressionImpl extends ExpressionImpl implements
@@ -178,7 +178,7 @@ public class RationalExpressionImpl extends ExpressionImpl implements
     return getExpressionManager().rationalType();
   }
 
-  protected RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
+  private RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
       UnaryConstructionStrategy strategy, Expression a) {
     super(exprManager, kind, strategy, a);
   }
@@ -189,17 +189,27 @@ public class RationalExpressionImpl extends ExpressionImpl implements
     setType(exprManager.rationalType());
   }
 
-  RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
+  private RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
       BinaryConstructionStrategy strategy, Expression left,
       Expression right) {
     super(exprManager, kind, strategy, left, right);
     setType(getExpressionManager().rationalType());
   }
 
-  RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
+  private RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
       NaryConstructionStrategy strategy, Iterable<? extends Expression> args) {
     super(exprManager, kind, strategy, args);
     setType(getExpressionManager().rationalType());
+  }
+  
+  private RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, RationalType type, Iterable<? extends ExpressionImpl> children) {
+    super(exprManager, kind, expr, type);
+  }
+  
+  protected static RationalExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, RationalType type, Iterable<? extends ExpressionImpl> children) {
+  	return new RationalExpressionImpl(exprManager, kind, expr, type, children);
   }
 
   public static RationalExpressionImpl valueOf(

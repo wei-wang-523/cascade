@@ -8,8 +8,10 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import edu.nyu.acsys.CVC4.Exception;
+import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.acsys.CVC4.vectorType;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.FunctionExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.FunctionType;
@@ -123,4 +125,12 @@ public final class FunctionTypeImpl extends TypeImpl
   public Expression apply(Iterable<? extends Expression> args) {
   	throw new UnsupportedOperationException("cvc4 does not support it.");
   }
+
+	@Override
+	FunctionExpressionImpl create(Expr res, Expression e, Kind kind,
+			Iterable<ExpressionImpl> children) {
+		Preconditions.checkArgument(e.isFunction());
+		return FunctionExpressionImpl.create(getExpressionManager(), kind, 
+				res, e.getType().asFunction(), children);
+	}
 }

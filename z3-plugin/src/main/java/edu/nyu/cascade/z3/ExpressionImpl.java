@@ -195,7 +195,9 @@ public class ExpressionImpl implements Expression {
     
     try {
       Expr res = exprManager.toZ3Expr(expr).Substitute(oldArgs, newArgs);
-      return new ExpressionImpl(exprManager, expr.getKind(), res, expr.getType(), 
+//      return new ExpressionImpl(exprManager, expr.getKind(), res, expr.getType(), 
+//    		  exprManager.importExpressions(newExprs));
+      return exprManager.importType(expr.getType()).create(res, expr, 
     		  exprManager.importExpressions(newExprs));
       
       /* 

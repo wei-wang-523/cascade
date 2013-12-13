@@ -19,6 +19,7 @@ import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.Selector;
+import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.z3.InductiveTypeImpl.ConstructorImpl;
 
 public class InductiveExpressionImpl extends ExpressionImpl implements
@@ -91,6 +92,17 @@ public class InductiveExpressionImpl extends ExpressionImpl implements
         }, args);
 //  this.constructor = constructor;
     setType( constructor.getType() );
+  }
+  
+  private InductiveExpressionImpl(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, InductiveType type, Iterable<? extends ExpressionImpl> children) {
+  	super(em, kind, expr, type, children);
+  }
+  
+  protected static InductiveExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
+  	Preconditions.checkArgument(type.isInductive());
+    return new InductiveExpressionImpl(em, kind, expr, type.asInductive(), children);
   }
 
 /*  public ConstructorImpl getConstructor() {

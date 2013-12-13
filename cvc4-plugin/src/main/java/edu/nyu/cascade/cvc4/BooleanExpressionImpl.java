@@ -13,6 +13,7 @@ import edu.nyu.acsys.CVC4.ExprManager;
 import edu.nyu.acsys.CVC4.vectorExpr;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.type.BooleanType;
 import edu.nyu.cascade.prover.type.ComparableType;
 
 public class BooleanExpressionImpl extends ExpressionImpl implements
@@ -677,14 +678,14 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
     super(exprManager,b);
   }
 */
-  protected BooleanExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
+  private BooleanExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
       BinaryConstructionStrategy strategy, Expression left,
       Expression right) {
     super(exprManager, kind, strategy, left, right);
     setType(exprManager.booleanType());
   }
   
-  protected BooleanExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
+  private BooleanExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
       TernaryConstructionStrategy strategy, Expression a,
       Expression b, Expression c) {
     super(exprManager, kind, strategy, a, b, c);
@@ -748,6 +749,16 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
         });
     setType(exprManager.booleanType());
     setConstant(true);
+  }
+  
+  private BooleanExpressionImpl(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, BooleanType type, Iterable<? extends ExpressionImpl> children) {
+    super(exprManager, kind, expr, type);
+  }
+  
+  protected static BooleanExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, BooleanType type, Iterable<? extends ExpressionImpl> children) {
+  	return new BooleanExpressionImpl(exprManager, kind, expr, type, children);
   }
 
   @Override

@@ -43,6 +43,7 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.BitVectorType;
+import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.Pair;
 
@@ -720,6 +721,17 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
 
     setConstant(true);
     setType(BitVectorTypeImpl.create(exprManager, len));
+  }
+  
+  private BitVectorExpressionImpl(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, BitVectorType type, Iterable<? extends ExpressionImpl> children) {
+  	super(em, kind, expr, type, children);
+  }
+  
+  protected static BitVectorExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
+  	Preconditions.checkArgument(type.isBitVectorType());
+    return new BitVectorExpressionImpl(em, kind, expr, type.asBitVectorType(), children);
   }
   
 //  private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, final long val, final int len) {

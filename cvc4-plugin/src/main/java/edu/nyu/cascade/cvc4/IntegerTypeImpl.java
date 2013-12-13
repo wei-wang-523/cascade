@@ -2,6 +2,7 @@ package edu.nyu.cascade.cvc4;
 
 import java.util.concurrent.ExecutionException;
 
+import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -10,6 +11,7 @@ import com.google.common.collect.Lists;
 import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.util.CacheException;
 
@@ -203,4 +205,12 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
   public IntegerExpressionImpl zero() {
     return IntegerExpressionImpl.mkConstant(getExpressionManager(),0);
   }
+  
+	@Override
+	IntegerExpressionImpl create(Expr res, Expression e, Kind kind,
+			Iterable<ExpressionImpl> children) {
+		Preconditions.checkArgument(e.isInteger());
+		return IntegerExpressionImpl.create(getExpressionManager(), 
+				kind, res, e.getType().asInteger(), children);
+	}
 }

@@ -3,15 +3,18 @@ package edu.nyu.cascade.cvc4;
 import java.math.BigInteger;
 import java.util.concurrent.ExecutionException;
 
+import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ComputationException;
 
 import edu.nyu.acsys.CVC4.Exception;
+import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
+import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
@@ -299,4 +302,12 @@ public class BitVectorTypeImpl extends TypeImpl implements
   public BitVectorExpression zeroExtend(int size, Expression bv) {
 	  return BitVectorExpressionImpl.mkZeroExtend(getExpressionManager(), size, bv);
   }
+	
+	@Override
+	BitVectorExpressionImpl create(Expr res, Expression e, Kind kind,
+			Iterable<ExpressionImpl> children) {
+		Preconditions.checkArgument(e.isBitVector());
+		return BitVectorExpressionImpl.create(getExpressionManager(), kind, 
+				res, e.getType().asBitVectorType(), children);
+	}
 }

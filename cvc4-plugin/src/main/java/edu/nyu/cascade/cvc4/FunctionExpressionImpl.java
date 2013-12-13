@@ -100,6 +100,17 @@ class FunctionExpressionImpl extends ExpressionImpl implements FunctionExpressio
     }
     setType( FunctionTypeImpl.create(exprManager, argTypes, body.getType()) );
   }
+  
+  private FunctionExpressionImpl(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, FunctionType type, Iterable<? extends ExpressionImpl> children) {
+    super(exprManager, kind, expr, type);
+    this.op = getCvc4Expression().getOperator();
+  }
+  
+  protected static FunctionExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, FunctionType type, Iterable<? extends ExpressionImpl> children) {
+  	return new FunctionExpressionImpl(exprManager, kind, expr, type, children);
+  }
 
   @Override
   public Expression apply(Expression arg1, Expression... otherArgs) {

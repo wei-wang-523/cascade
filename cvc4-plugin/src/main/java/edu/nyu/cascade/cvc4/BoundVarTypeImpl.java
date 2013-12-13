@@ -1,5 +1,9 @@
 package edu.nyu.cascade.cvc4;
 
+import edu.nyu.acsys.CVC4.Expr;
+import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.Expression.Kind;
+
 public final class BoundVarTypeImpl extends TypeImpl {
   static BoundVarTypeImpl create(ExpressionManagerImpl em) {
     return new BoundVarTypeImpl(em);
@@ -29,4 +33,10 @@ public final class BoundVarTypeImpl extends TypeImpl {
   public BoundVariableExpressionImpl boundVariable(String name, boolean fresh) {
     throw new UnsupportedOperationException("No bound variable with BoundVarType");
   }
+
+	@Override
+	ExpressionImpl create(Expr res, Expression e, Kind subst,
+			Iterable<ExpressionImpl> importExpressions) {
+		throw new UnsupportedOperationException("No variable can be created via variable type");
+	}
 }

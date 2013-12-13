@@ -9,7 +9,10 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.MapMaker;
 
+import edu.nyu.acsys.CVC4.Expr;
+import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
+import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.util.CacheException;
@@ -89,7 +92,14 @@ public final class UninterpretedTypeImpl extends TypeImpl implements Uninterpret
 
   @Override
   public BoundVariableExpressionImpl boundVariable(String name, boolean fresh) {
-    // TODO Auto-generated method stub
-    return null;
+    throw new UnsupportedOperationException("bound variable is not supported in uninterpreted type.");
   }
+  
+	@Override
+	UninterpretedExpressionImpl create(Expr res, Expression e, Kind kind,
+			Iterable<ExpressionImpl> children) {
+		Preconditions.checkArgument(e.isUninterpreted());
+		return UninterpretedExpressionImpl.create(getExpressionManager(), 
+				kind, res, e.getType().asUninterpreted(), children);
+	}
 }

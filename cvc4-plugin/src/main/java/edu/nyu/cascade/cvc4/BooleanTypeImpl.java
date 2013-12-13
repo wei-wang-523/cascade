@@ -7,9 +7,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
+import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.VariableExpression;
+import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.type.BooleanType;
 
 public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
@@ -248,4 +250,12 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   public  BooleanExpressionImpl eq(Expression left, Expression right)  {
     return BooleanExpressionImpl.mkEq(getExpressionManager(), left, right);
   }
+  
+	@Override
+	BooleanExpressionImpl create(Expr res, Expression e, Kind kind,
+			Iterable<ExpressionImpl> children) {
+		Preconditions.checkArgument(e.isBitVector());
+		return BooleanExpressionImpl.create(getExpressionManager(), kind, 
+				res, e.getType().asBooleanType(), children);
+	}
 }

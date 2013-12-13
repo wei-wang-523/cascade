@@ -7,6 +7,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ComputationException;
+import com.microsoft.z3.Expr;
 
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -295,4 +296,11 @@ public class BitVectorTypeImpl extends TypeImpl implements BitVectorType {
   public BitVectorExpression zeroExtend(int size, Expression bv) {
 	  return BitVectorExpressionImpl.mkZeroExtend(getExpressionManager(), size, bv);
   }
+
+	@Override
+	protected BitVectorExpressionImpl create(Expr res, Expression oldExpr,
+			Iterable<? extends ExpressionImpl> children) {
+		return BitVectorExpressionImpl.create(getExpressionManager(), 
+				oldExpr.getKind(), res, oldExpr.getType(), children);
+	}
 }

@@ -108,6 +108,16 @@ public class InductiveExpressionImpl extends ExpressionImpl implements
 //    this.constructor = constructor;
     setType( constructor.getType() );
   }
+  
+  private InductiveExpressionImpl(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, InductiveType type, Iterable<? extends ExpressionImpl> children) {
+    super(exprManager, kind, expr, type);
+  }
+  
+  protected static InductiveExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, InductiveType type, Iterable<? extends ExpressionImpl> children) {
+  	return new InductiveExpressionImpl(exprManager, kind, expr, type, children);
+  }
 
 /*  public ConstructorImpl getConstructor() {
     return constructor;

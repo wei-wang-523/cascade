@@ -14,6 +14,7 @@ import com.microsoft.z3.Z3Exception;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.RecordExpression;
+import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Type;
 
 public final class RecordExpressionImpl extends ExpressionImpl implements
@@ -102,6 +103,17 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
 
   private RecordExpressionImpl(ExpressionImpl record) {
     super(record);
+  }
+  
+  private RecordExpressionImpl(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, RecordType type, Iterable<? extends ExpressionImpl> children) {
+  	super(em, kind, expr, type, children);
+  }
+  
+  protected static RecordExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
+  	Preconditions.checkArgument(type.isRecord());
+    return new RecordExpressionImpl(em, kind, expr, type.asRecord(), children);
   }
   
   @Override

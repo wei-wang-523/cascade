@@ -9,6 +9,7 @@ import edu.nyu.acsys.CVC4.DatatypeUnresolvedType;
 import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.acsys.CVC4.ExprManager;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.FunctionExpression;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.AddableType;
@@ -385,5 +386,7 @@ public abstract class TypeImpl implements Type {
     Preconditions.checkState(isUninterpreted());
     return (UninterpretedType)this;
   }
-  
+
+	abstract ExpressionImpl create(Expr res, Expression e, Kind subst,
+			Iterable<ExpressionImpl> importExpressions) ;
 }

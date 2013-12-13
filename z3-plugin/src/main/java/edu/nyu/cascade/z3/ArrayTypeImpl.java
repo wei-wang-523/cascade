@@ -1,6 +1,7 @@
 package edu.nyu.cascade.z3;
 
 import com.google.common.base.Preconditions;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Sort;
 
 import edu.nyu.cascade.prover.ArrayExpression;
@@ -115,5 +116,12 @@ public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 	@Override
 	public ArrayExpression storeAll(Expression expr, ArrayType type) {
 		return ArrayExpressionImpl.mkStoreAll(getExpressionManager(), expr, type);
+	}
+	
+	@Override
+	protected ArrayExpressionImpl create(Expr res, Expression oldExpr,
+			Iterable<? extends ExpressionImpl> children) {
+		return ArrayExpressionImpl.create(getExpressionManager(), 
+				oldExpr.getKind(), res, oldExpr.getType(), children);
 	}
 }

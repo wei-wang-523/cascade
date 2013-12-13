@@ -11,6 +11,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapMaker;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Sort;
 import com.microsoft.z3.Symbol;
 import com.microsoft.z3.Z3Exception;
@@ -153,4 +154,10 @@ public final class TupleTypeImpl extends TypeImpl implements TupleType {
 		return TupleExpressionImpl.mkUpdate(getExpressionManager(), tuple, index, value);
   }
 
+	@Override
+	protected TupleExpressionImpl create(Expr res, Expression oldExpr,
+			Iterable<? extends ExpressionImpl> children) {
+		return TupleExpressionImpl.create(getExpressionManager(), 
+				oldExpr.getKind(), res, oldExpr.getType(), children);
+	}
 }

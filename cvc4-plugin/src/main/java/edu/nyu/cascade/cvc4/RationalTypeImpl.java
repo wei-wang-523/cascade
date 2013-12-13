@@ -2,11 +2,14 @@ package edu.nyu.cascade.cvc4;
 
 import java.util.concurrent.ExecutionException;
 
+import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 
+import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.type.RationalType;
 import edu.nyu.cascade.util.CacheException;
 
@@ -193,4 +196,12 @@ public class RationalTypeImpl extends TypeImpl implements RationalType {
       Iterable<? extends Expression> terms) {
     return RationalExpressionImpl.mkMult(getExpressionManager(),terms);
   }
+  
+	@Override
+	RationalExpressionImpl create(Expr res, Expression e, Kind kind,
+			Iterable<ExpressionImpl> children) {
+		Preconditions.checkArgument(e.isRational());
+		return RationalExpressionImpl.create(getExpressionManager(), 
+				kind, res, e.getType().asRational(), children);
+	}
 }

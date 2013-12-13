@@ -749,4 +749,11 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
   public VariableExpressionImpl boundVariable(String name, boolean fresh) {
     return variable(name, fresh);
   }
+  
+	@Override
+	protected InductiveExpressionImpl create(Expr res, Expression oldExpr,
+			Iterable<? extends ExpressionImpl> children) {
+		return InductiveExpressionImpl.create(getExpressionManager(), 
+				oldExpr.getKind(), res, oldExpr.getType(), children);
+	}
 }

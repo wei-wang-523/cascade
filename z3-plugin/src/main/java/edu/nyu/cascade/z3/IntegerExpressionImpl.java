@@ -27,6 +27,8 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.IntegerExpression;
 import edu.nyu.cascade.prover.RationalExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
+import edu.nyu.cascade.prover.type.IntegerType;
+import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
 
 public final class IntegerExpressionImpl extends ExpressionImpl implements
@@ -255,6 +257,17 @@ public final class IntegerExpressionImpl extends ExpressionImpl implements
       UnaryConstructionStrategy strategy, Expression a) {
     super(exprManager, kind, strategy, a);
     setType(getExpressionManager().integerType());
+  }
+  
+  private IntegerExpressionImpl(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, IntegerType type, Iterable<? extends ExpressionImpl> children) {
+  	super(em, kind, expr, type, children);
+  }
+  
+  protected static IntegerExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
+  	Preconditions.checkArgument(type.isInteger());
+    return new IntegerExpressionImpl(em, kind, expr, type.asInteger(), children);
   }
 
   @Override

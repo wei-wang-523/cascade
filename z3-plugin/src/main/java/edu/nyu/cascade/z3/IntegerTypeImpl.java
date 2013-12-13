@@ -201,4 +201,11 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
   public IntegerVariableImpl boundVariable(String name, boolean fresh) {
     throw new UnsupportedOperationException("bound variable is not supported in z3.");
   }
+  
+	@Override
+	protected IntegerExpressionImpl create(Expr res, Expression oldExpr,
+			Iterable<? extends ExpressionImpl> children) {
+		return IntegerExpressionImpl.create(getExpressionManager(), 
+				oldExpr.getKind(), res, oldExpr.getType(), children);
+	}
 }

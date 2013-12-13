@@ -13,6 +13,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.MapMaker;
 import com.microsoft.z3.Constructor;
 import com.microsoft.z3.Context;
+import com.microsoft.z3.Expr;
 import com.microsoft.z3.Sort;
 import com.microsoft.z3.Z3Exception;
 
@@ -180,4 +181,11 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
       Expression value) {
 	  return RecordExpressionImpl.mkUpdate(getExpressionManager(), record, fieldName, value);
   }
+	
+	@Override
+	protected RecordExpressionImpl create(Expr res, Expression oldExpr,
+			Iterable<? extends ExpressionImpl> children) {
+		return RecordExpressionImpl.create(getExpressionManager(), 
+				oldExpr.getKind(), res, oldExpr.getType(), children);
+	}
 }

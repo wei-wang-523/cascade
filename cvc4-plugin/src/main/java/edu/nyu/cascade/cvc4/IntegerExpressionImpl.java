@@ -26,6 +26,7 @@ import edu.nyu.acsys.CVC4.Rational;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.IntegerExpression;
 import edu.nyu.cascade.prover.RationalExpression;
+import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.util.CacheException;
 
 public final class IntegerExpressionImpl extends ExpressionImpl implements
@@ -218,7 +219,7 @@ public final class IntegerExpressionImpl extends ExpressionImpl implements
   private IntegerExpressionImpl(ExpressionManagerImpl em, BigInteger value) {
     super(em, CONSTANT, em.integerType());
     ExprManager cvc4_em = em.getTheoremProver().getCvc4ExprManager();
-    setCvc4Expression(cvc4_em.mkConst(new Rational(value)));
+    setCvc4Expression(cvc4_em.mkConst(Rational.fromDecimal(value.toString())));
     setConstant(true);
   }
 
@@ -239,6 +240,16 @@ public final class IntegerExpressionImpl extends ExpressionImpl implements
       UnaryConstructionStrategy strategy, Expression a) {
     super(exprManager, kind, strategy, a);
     setType(getExpressionManager().integerType());
+  }
+  
+  private IntegerExpressionImpl(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, IntegerType type, Iterable<? extends ExpressionImpl> children) {
+    super(exprManager, kind, expr, type);
+  }
+  
+  protected static IntegerExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, IntegerType type, Iterable<? extends ExpressionImpl> children) {
+  	return new IntegerExpressionImpl(exprManager, kind, expr, type, children);
   }
 
   @Override

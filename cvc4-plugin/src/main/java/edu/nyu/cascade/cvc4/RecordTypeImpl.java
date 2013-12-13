@@ -8,6 +8,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import edu.nyu.acsys.CVC4.Exception;
+import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.acsys.CVC4.Record;
 import edu.nyu.acsys.CVC4.pairStringType;
 import edu.nyu.acsys.CVC4.vectorPairStringType;
@@ -15,6 +16,7 @@ import edu.nyu.acsys.CVC4.vectorType;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
+import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Type;
 
@@ -126,4 +128,12 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
       Expression value) {
 	  return RecordExpressionImpl.mkUpdate(getExpressionManager(), record, fieldName, value);
   }
+  
+	@Override
+	RecordExpressionImpl create(Expr res, Expression e, Kind kind,
+			Iterable<ExpressionImpl> children) {
+		Preconditions.checkArgument(e.isRecord());
+		return RecordExpressionImpl.create(getExpressionManager(), 
+				kind, res, e.getType().asRecord(), children);
+	}
 }

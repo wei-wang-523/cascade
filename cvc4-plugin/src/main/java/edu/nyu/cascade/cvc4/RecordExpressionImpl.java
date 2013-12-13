@@ -16,6 +16,7 @@ import edu.nyu.acsys.CVC4.ExprManager;
 import edu.nyu.acsys.CVC4.vectorExpr;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.RecordExpression;
+import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Type;
 
 public final class RecordExpressionImpl extends ExpressionImpl implements
@@ -90,6 +91,16 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
 
   private RecordExpressionImpl(ExpressionImpl record) {
     super(record);
+  }
+  
+  private RecordExpressionImpl(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, RecordType type, Iterable<? extends ExpressionImpl> children) {
+    super(exprManager, kind, expr, type);
+  }
+  
+  protected static RecordExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, RecordType type, Iterable<? extends ExpressionImpl> children) {
+  	return new RecordExpressionImpl(exprManager, kind, expr, type, children);
   }
   
   @Override

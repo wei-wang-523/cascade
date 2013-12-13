@@ -689,7 +689,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
         int val = ((IntNum) e).Int();
         res = IntegerExpressionImpl.mkConstant(this, val);
       } else if (e.IsBVConcat()) { 
-        Preconditions.checkArgument(e.NumArgs() == 2);
+        Preconditions.checkArgument(e.NumArgs() >= 2);
         res = rebuildExpression(Kind.BV_CONCAT, e, toExpressionList(e.Args()));
       } else if (e.IsBVExtract()) {
         Preconditions.checkArgument(e.NumArgs() == 1);

@@ -15,6 +15,7 @@ import com.microsoft.z3.Z3Exception;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.TupleExpression;
+import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 
 public final class TupleExpressionImpl extends ExpressionImpl implements
@@ -99,6 +100,17 @@ public final class TupleExpressionImpl extends ExpressionImpl implements
 
   private TupleExpressionImpl(ExpressionImpl tuple) {
     super(tuple);
+  }
+  
+  private TupleExpressionImpl(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, TupleType type, Iterable<? extends ExpressionImpl> children) {
+  	super(em, kind, expr, type, children);
+  }
+  
+  protected static TupleExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
+  	Preconditions.checkArgument(type.isTuple());
+    return new TupleExpressionImpl(em, kind, expr, type.asTuple(), children);
   }
   
   @Override

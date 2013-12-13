@@ -164,7 +164,7 @@ public class ExpressionImpl implements Expression {
   }
 
   static ExpressionImpl mkSubst(
-      ExpressionManagerImpl exprManager, Expression e,
+      final ExpressionManagerImpl exprManager, Expression e,
       Iterable<? extends Expression> oldExprs,
       Iterable<? extends Expression> newExprs) {
     Preconditions.checkArgument(Iterables.size(oldExprs) == Iterables
@@ -175,30 +175,55 @@ public class ExpressionImpl implements Expression {
       return exprManager.importExpression(e);
     }
     
-    List<Expression> subs = Lists.newArrayList();
-    subs.add(e);
-    Iterables.addAll(subs, oldExprs);
-    Iterables.addAll(subs, newExprs);
-    ExpressionImpl result = new ExpressionImpl(exprManager, SUBST,
-        new NarySubstitutionStrategy() {
-          @Override
-          public Expr apply(ExprManager em, List<Expr> args)
-              throws Exception {
-            assert (args.size() > 0);
-            Expr e = args.get(0);
-            int n = args.size() / 2;
-            assert (args.size() == 2 * n + 1);
-            vectorExpr oldExprs = new vectorExpr(n);
-            for(int i = 1; i < n+1; i++)   
-              oldExprs.add(args.get(i));
-            vectorExpr newExprs = new vectorExpr(n);
-            for(int i = n+1; i < args.size(); i++)  
-              newExprs.add(args.get(i));
-            return e.substitute(oldExprs, newExprs);
-          }
-        }, subs);
-    result.setType(e.getType());
-    return result;
+    int n = Iterables.size(oldExprs);
+    
+    Iterable<Expr> oldArgs = Iterables.transform(oldExprs, new Function<Expression, Expr>(){
+      @Override
+      public Expr apply(Expression expr) {
+        return exprManager.importExpression(expr).getCvc4Expression();
+      }
+    });
+    
+    vectorExpr oldArgVec = new vectorExpr(n);
+    for(Expr arg : oldArgs)   oldArgVec.add(arg);
+    
+    Iterable<Expr> newArgs = Iterables.transform(newExprs, new Function<Expression, Expr>(){
+      @Override
+      public Expr apply(Expression expr) {
+        return exprManager.importExpression(expr).getCvc4Expression();
+      }
+    });
+    
+    vectorExpr newArgVec = new vectorExpr(n);
+    for(Expr arg : newArgs)   newArgVec.add(arg);
+    
+    Expr res = exprManager.toCvc4Expr(e).substitute(oldArgVec, newArgVec);
+    return exprManager.importType(e.getType()).create(res, e, SUBST, exprManager.importExpressions(newExprs));
+    
+//    List<Expression> subs = Lists.newArrayList();
+//    subs.add(e);
+//    Iterables.addAll(subs, oldExprs);
+//    Iterables.addAll(subs, newExprs);
+//    ExpressionImpl result = new ExpressionImpl(exprManager, SUBST,
+//        new NarySubstitutionStrategy() {
+//          @Override
+//          public Expr apply(ExprManager em, List<Expr> args)
+//              throws Exception {
+//            assert (args.size() > 0);
+//            Expr e = args.get(0);
+//            int n = args.size() / 2;
+//            assert (args.size() == 2 * n + 1);
+//            vectorExpr oldExprs = new vectorExpr(n);
+//            for(int i = 1; i < n+1; i++)   
+//              oldExprs.add(args.get(i));
+//            vectorExpr newExprs = new vectorExpr(n);
+//            for(int i = n+1; i < args.size(); i++)  
+//              newExprs.add(args.get(i));
+//            return e.substitute(oldExprs, newExprs);
+//          }
+//        }, subs);
+//    result.setType(e.getType());
+//    return result;
   }
 
 /*  static ExpressionImpl mkTypeExpr(TypeImpl t) {
@@ -584,6 +609,12 @@ public class ExpressionImpl implements Expression {
 
     // Create the new expression
     setCvc4Expression(strategy.apply(cvc4_em, actualName, type.getCVC4Type()));
+  }
+  
+  protected ExpressionImpl(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
+    this(em, kind, expr, type);
+    initChildren(children);
   }
 
   @Override

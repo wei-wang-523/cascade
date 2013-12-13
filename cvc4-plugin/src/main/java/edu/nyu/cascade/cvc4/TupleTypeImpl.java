@@ -1,13 +1,16 @@
 package edu.nyu.cascade.cvc4;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import edu.nyu.acsys.CVC4.Exception;
+import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.acsys.CVC4.vectorType;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.TupleExpression;
+import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.IOUtils;
@@ -108,4 +111,12 @@ public final class TupleTypeImpl extends TypeImpl implements TupleType {
   public TupleExpression update(Expression tuple, int index, Expression value) {
 	  return TupleExpressionImpl.mkUpdate(getExpressionManager(), tuple, index, value);
   }
+	
+	@Override
+	TupleExpressionImpl create(Expr res, Expression e, Kind kind,
+			Iterable<ExpressionImpl> children) {
+		Preconditions.checkArgument(e.isTuple());
+		return TupleExpressionImpl.create(getExpressionManager(), 
+				kind, res, e.getType().asTuple(), children);
+	}
 }

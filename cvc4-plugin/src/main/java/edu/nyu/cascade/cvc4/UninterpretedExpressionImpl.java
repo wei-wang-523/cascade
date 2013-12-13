@@ -3,6 +3,7 @@ package edu.nyu.cascade.cvc4;
 import static edu.nyu.cascade.prover.Expression.Kind.UNINTERPRETED;
 
 import com.google.common.base.Preconditions;
+
 import edu.nyu.acsys.CVC4.Exception;
 import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.acsys.CVC4.ExprManager;
@@ -10,6 +11,7 @@ import edu.nyu.acsys.CVC4.Integer;
 import edu.nyu.acsys.CVC4.UninterpretedConstant;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.UninterpretedExpression;
+import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.prover.type.Type;
 
 public final class UninterpretedExpressionImpl extends ExpressionImpl implements
@@ -43,6 +45,16 @@ public final class UninterpretedExpressionImpl extends ExpressionImpl implements
 
   private UninterpretedExpressionImpl(ExpressionImpl tuple) {
     super(tuple);
+  }
+  
+  private UninterpretedExpressionImpl(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, UninterpretedType type, Iterable<? extends ExpressionImpl> children) {
+    super(exprManager, kind, expr, type);
+  }
+  
+  protected static UninterpretedExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, UninterpretedType type, Iterable<? extends ExpressionImpl> children) {
+  	return new UninterpretedExpressionImpl(exprManager, kind, expr, type, children);
   }
 
   @Override

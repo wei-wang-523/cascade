@@ -169,6 +169,17 @@ public class RationalExpressionImpl extends ExpressionImpl implements
     super(exprManager, kind, strategy, args);
     setType(getExpressionManager().rationalType());
   }
+  
+  private RationalExpressionImpl(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, RationalType type, Iterable<? extends ExpressionImpl> children) {
+  	super(em, kind, expr, type, children);
+  }
+  
+  protected static RationalExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
+  	Preconditions.checkArgument(type.isRational());
+    return new RationalExpressionImpl(em, kind, expr, type.asRational(), children);
+  }
 
   public static RationalExpressionImpl valueOf(
       ExpressionManagerImpl exprManager, Expression e) {

@@ -3,8 +3,10 @@ package edu.nyu.cascade.cvc4;
 import com.google.common.base.Preconditions;
 
 import edu.nyu.acsys.CVC4.Exception;
+import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
@@ -116,4 +118,12 @@ public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
   public ArrayExpression storeAll(Expression expr, ArrayType arrayType) {
 	  return ArrayExpressionImpl.mkStoreAll(getExpressionManager(), expr, arrayType);
   }
+
+	@Override
+	ArrayExpressionImpl create(Expr res, Expression e, Kind kind,
+			Iterable<ExpressionImpl> children) {
+		Preconditions.checkArgument(e.isArray());
+		return ArrayExpressionImpl.create(getExpressionManager(), kind, 
+				res, e.getType().asArrayType(), children);
+	}
 }

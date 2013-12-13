@@ -8,7 +8,9 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.MapMaker;
+import com.microsoft.z3.Expr;
 
+import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.prover.type.UninterpretedType;
@@ -92,4 +94,11 @@ public final class UninterpretedTypeImpl extends TypeImpl implements Uninterpret
   public DomainType getDomainType() {
     return DomainType.UNINTERPRETED;
   }
+  
+	@Override
+	protected UninterpretedExpressionImpl create(Expr res, Expression oldExpr,
+			Iterable<? extends ExpressionImpl> children) {
+		return UninterpretedExpressionImpl.create(getExpressionManager(), 
+				oldExpr.getKind(), res, oldExpr.getType(), children);
+	}
 }

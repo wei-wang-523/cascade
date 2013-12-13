@@ -22,7 +22,9 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.VariableExpression;
+import edu.nyu.cascade.prover.type.BooleanType;
 import edu.nyu.cascade.prover.type.ComparableType;
+import edu.nyu.cascade.prover.type.Type;
 
 public class BooleanExpressionImpl extends ExpressionImpl implements
     BooleanExpression {
@@ -627,6 +629,17 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
         });
     setType(exprManager.booleanType());
     setConstant(true);
+  }
+  
+  private BooleanExpressionImpl(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, BooleanType type, Iterable<? extends ExpressionImpl> children) {
+  	super(em, kind, expr, type, children);
+  }
+  
+  protected static BooleanExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
+      Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
+  	Preconditions.checkArgument(type.isBoolean());
+    return new BooleanExpressionImpl(em, kind, expr, type.asBooleanType(), children);
   }
 
   @Override

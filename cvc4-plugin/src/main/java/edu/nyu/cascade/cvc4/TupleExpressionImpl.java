@@ -18,6 +18,7 @@ import edu.nyu.acsys.CVC4.TupleSelect;
 import edu.nyu.acsys.CVC4.vectorExpr;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TupleExpression;
+import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 
 public final class TupleExpressionImpl extends ExpressionImpl implements
@@ -91,6 +92,16 @@ public final class TupleExpressionImpl extends ExpressionImpl implements
 
   private TupleExpressionImpl(ExpressionImpl tuple) {
     super(tuple);
+  }
+
+  private TupleExpressionImpl(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, TupleType type, Iterable<? extends ExpressionImpl> children) {
+    super(exprManager, kind, expr, type);
+  }
+  
+  protected static TupleExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
+      Expr expr, TupleType type, Iterable<? extends ExpressionImpl> children) {
+  	return new TupleExpressionImpl(exprManager, kind, expr, type, children);
   }
   
   @Override
