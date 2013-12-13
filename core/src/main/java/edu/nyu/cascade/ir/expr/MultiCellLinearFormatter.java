@@ -77,8 +77,7 @@ public class MultiCellLinearFormatter implements IRDataFormatter {
     PointerEncoding ptrEncoding = encoding.getPointerEncoding();
     
 		Expression idx = index;
-		for(int i = 0; i < size; i++) {
-			if(i != 0) idx = ptrEncoding.incr(idx);
+		for(int i = 0; i < size; i++, idx = ptrEncoding.incr(idx)) {
 			Expression valExpr = value.asBitVector().extract((i+1) * wordSize - 1, i * wordSize);
 			memory = memory.update(idx, valExpr);
 		}
@@ -95,12 +94,12 @@ public class MultiCellLinearFormatter implements IRDataFormatter {
 		@SuppressWarnings("rawtypes")
     PointerEncoding ptrEncoding = encoding.getPointerEncoding();
 		
-		Expression res = memory.index(index);
+		Expression res = null;
 		Expression idx = index;
-		for(int i = 1; i < size; i++) {
-			idx = ptrEncoding.incr(idx);
+		for(int i = 0; i < size; i++, idx = ptrEncoding.incr(idx)) {
 			Expression value = memory.index(idx);
-			res = value.asBitVector().concat(res);
+			if(res == null)	res = value;
+			else						res = value.asBitVector().concat(res);
 		}
 		return res;
 	}
