@@ -119,6 +119,9 @@ public class CType {
         	baseType = baseType.annotate().shape(baseRef);
         	String baseTypeName = parseTypeName(baseType);
         	sb.append(Identifiers.ARRAY_NAME_INFIX).append("PointerT").append(baseTypeName);
+        } else if(ref instanceof CastReference) {
+        	//FIXME: (int *) &d, type(ref) is int, type is pointer(int) 
+        	sb.append(parseTypeName(type.deannotate()));
         } else {
           sb.append(parseTypeName(ref.getType()));
         }
