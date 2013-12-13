@@ -257,6 +257,15 @@ public interface ExpressionEncoding {
   Expression greaterThan(Expression lhs, Expression rhs) ;
   
   /**
+   * A greater-than comparison between the given pointer expressions
+   * 
+   * @param lhs an pointer-encoded expression
+   * @param rhs an pointer-encoded expression
+   * @param a boolean-encoded expression
+   */
+  Expression pointerGreaterThan(Expression lhs, Expression rhs) ;
+  
+  /**
    * A greater-than comparison between the given expressions
    * 
    * @param lhs an integer-encoded expression
@@ -266,13 +275,22 @@ public interface ExpressionEncoding {
   Expression signedGreaterThan(Expression lhs, Expression rhs) ;
   
   /**
-   * A "signed greater-than or equal" comparison between the given expressions
+   * A "greater-than or equal" comparison between the given expressions
    * 
    * @param lhs an integer-encoded expression
    * @param rhs an integer-encoded expression
    * @param a boolean-encoded expression
    */
   Expression greaterThanOrEqual(Expression lhs, Expression rhs);
+  
+  /**
+   * A "greater-than or equal" comparison between the given pointer expressions
+   * 
+   * @param lhs an pointer-encoded expression
+   * @param rhs an pointer-encoded expression
+   * @param a boolean-encoded expression
+   */
+  Expression pointerGreaterThanOrEqual(Expression lhs, Expression rhs);
   
   /**
    * A "signed greater-than or equal" comparison between the given expressions
@@ -411,7 +429,16 @@ public interface ExpressionEncoding {
   Expression lessThan(Expression lhs, Expression rhs) ;
   
   /**
-   * A less-than signed comparison between the given expressions
+   * A less-than comparison between the given pointer expressions
+   * 
+   * @param lhs an pointer-encoded expression
+   * @param rhs an pointer-encoded expression
+   * @param a boolean-encoded expression
+   */
+  Expression pointerLessThan(Expression lhs, Expression rhs) ;
+  
+  /**
+   * A signed less-than comparison between the given expressions
    * 
    * @param lhs an integer-encoded expression
    * @param rhs an integer-encoded expression
@@ -427,6 +454,15 @@ public interface ExpressionEncoding {
    * @param a boolean-encoded expression
    */
   Expression lessThanOrEqual(Expression lhs, Expression rhs) ;
+  
+  /**
+   * A "less-than or equal" comparison between the given pointer expressions
+   * 
+   * @param lhs an pointer-encoded expression
+   * @param rhs an pointer-encoded expression
+   * @param a boolean-encoded expression
+   */
+  Expression pointerLessThanOrEqual(Expression lhs, Expression rhs) ;
   
   /**
    * A "signed less-than or equal" comparison between the given expressions
@@ -736,9 +772,21 @@ public interface ExpressionEncoding {
   Expression castExpression(Expression src, Type targetType) ;
 
   
-//  /**
-//   * create a expression with constant <code>value</code>, used for
-//   * tuple type expression especially.
-//   */
-//  Expression castConstant(int value, xtc.type.Type type);
+  /**
+   * The pointer addition of the given expressions. 
+   * 
+   * @param lhs an pointer-encoded expression
+   * @param rhs an integer-encoded expression
+   * @return an pointer-encoded expression
+   */
+  Expression pointerPlus(Expression lhs, Expression rhs) ;
+  
+  /**
+   * The pointer subtraction of the given expressions. 
+   * 
+   * @param lhs an pointer-encoded expression
+   * @param rhs an integer-encoded expression
+   * @return an pointer-encoded expression
+   */
+  Expression pointerMinus(Expression lhs, Expression rhs) ;
 }

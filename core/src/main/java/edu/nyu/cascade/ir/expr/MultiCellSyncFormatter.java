@@ -122,16 +122,7 @@ public class MultiCellSyncFormatter implements IRDataFormatter {
 	 */
 	@Override
 	public Type getArrayElemType(xtc.type.Type type) {
-	  switch(CType.getCellKind(type)) {
-	  case SCALAR :
-	  case BOOL :
-	  	return getValueType();
-	  case ARRAY : 
-	  case POINTER :
-	  case STRUCTORUNION :
-	  	return getAddressType();
-	  default:    throw new IllegalArgumentException("Unsupported type " + type);
-	  }
+		return syncValueType.getValueType(type);
 	}
 	
 	@Override
@@ -162,14 +153,28 @@ public class MultiCellSyncFormatter implements IRDataFormatter {
 	public ArrayExpression updateSizeArray(ArrayExpression sizeArr,
 			Expression index, Expression value) {
 		Preconditions.checkArgument(index.getType().equals(getAddressType()));
-		Expression indexRef = index.asTuple().getChild(0);
+		Preconditions.checkArgument(index.isTuple());
+		Expression indexRef = index.asTuple().index(0);
 		return sizeArr.update(indexRef, value);
 	}
 
 	@Override
 	public Expression indexSizeArray(ArrayExpression sizeArr, Expression index) {
 		Preconditions.checkArgument(index.getType().equals(getAddressType()));
-		Expression indexRef = index.asTuple().getChild(0);
+		Preconditions.checkArgument(index.isTuple());
+		Expression indexRef = index.asTuple().index(0);
 		return sizeArr.index(indexRef);
+	}
+	
+	@Override
+	public Expression getFreshPtr(String name, boolean fresh) {
+		return encoding.getPointerEncoding().freshPtr(name, fresh);
+	}
+	
+	@Override
+	public Expression getBase(Expression ptr) {
+		Preconditions.checkArgument(encoding.getPointerEncoding()
+				.asSyncPointerEncoding().getBaseEncoding().isEncodingFor(ptr.getChild(0)));
+		return ptr.getChild(0);
 	}
 }

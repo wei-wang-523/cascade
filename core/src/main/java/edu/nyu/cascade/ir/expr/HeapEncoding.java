@@ -14,7 +14,6 @@ import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.IOUtils;
@@ -114,56 +113,50 @@ public final class HeapEncoding implements IRHeapEncoding {
 	public ArrayExpression updateMemArr(ArrayExpression memArr, Expression lval,
 	    Expression rval) {
 		Preconditions.checkArgument(memArr.getType().getIndexType().equals(addrType));
-		Preconditions.checkArgument(memArr.getType().getElementType().equals(valueType));
+//		Preconditions.checkArgument(memArr.getType().getElementType().equals(valueType));
 		Preconditions.checkArgument(lval.getType().equals(addrType));
 		return formatter.updateMemoryArray(memArr, lval, rval);
 	}
 	
 	@Override
 	public Expression indexMemArr(ArrayExpression memArr, Expression lval) {
-		Preconditions.checkArgument(memArr.getType().getIndexType().equals(addrType));
-		Preconditions.checkArgument(lval.getType().equals(addrType));
 		return formatter.indexMemoryArray(memArr, lval);
 	}
 	
 	@Override
 	public ArrayExpression updateSizeArr(ArrayExpression sizeArr, Expression lval,
 	    Expression rval) {
-		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
-		Preconditions.checkArgument(lval.getType().equals(addrType));
-		Preconditions.checkArgument(rval.getType().equals(sizeType));
 		return formatter.updateSizeArray(sizeArr, lval, rval);
 	}
 
 	@Override
 	public ArrayExpression getConstSizeArr(ArrayType sizeArrType) {
-		Preconditions.checkArgument(sizeArrType.getIndexType().equals(addrType));
-		Preconditions.checkArgument(sizeArrType.getElementType().equals(sizeType));
 		Expression sizeZro = getSizeZero();
 		return exprManager.storeAll(sizeZro, sizeArrType);
 	}
 
 	@Override
 	public Expression freshAddress(String varName, IRVarInfo info, xtc.type.Type type) {
-		VariableExpression res = exprManager.variable(varName, addrType, true);
+		Expression res = formatter.getFreshPtr(varName, true);
+		Expression base = formatter.getBase(res);
 		Pair<String, String> varKey = Pair.of(info.getName(),
 				info.getScope().getQualifiedName());
 		if(type.isArray() || type.isUnion() || type.isStruct()) {
-			stackRegions.put(varKey, res);
+			stackRegions.put(varKey, base);
 		} else {
-			stackVars.put(varKey, res);
+			stackVars.put(varKey, base);
 		}
 		return res;
 	}
 
 	@Override
 	public Expression freshRegion(String regionName, Node regionNode) {
-		VariableExpression res = exprManager.variable(regionName, addrType, false);
+		Expression res = formatter.getFreshPtr(regionName, false);
 		res.setNode(GNode.cast(regionNode));
+		Expression base = formatter.getBase(res);
 		Pair<String, String> varKey = Pair.of(regionName,
 				CType.getScopeName(regionNode));
-		heapRegions.put(varKey, res);
+		heapRegions.put(varKey, base);
 		return res;
 	}
 

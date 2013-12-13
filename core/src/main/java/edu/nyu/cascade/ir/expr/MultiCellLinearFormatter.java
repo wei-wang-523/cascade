@@ -158,4 +158,14 @@ public class MultiCellLinearFormatter implements IRDataFormatter {
 	public Expression indexSizeArray(ArrayExpression sizeArr, Expression index) {
 		return sizeArr.index(index);
 	}
+	
+	@Override
+	public Expression getFreshPtr(String name, boolean fresh) {
+		return encoding.getPointerEncoding().freshPtr(name, fresh);
+	}
+	
+	@Override
+	public Expression getBase(Expression ptr) {
+		return ptr;
+	}
 }

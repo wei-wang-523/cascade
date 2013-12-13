@@ -44,5 +44,9 @@ public interface IRDataFormatter {
 	Expression addressOf(Expression expr);
 
 	int getSizeOfType(xtc.type.Type type);
+	
+	Expression getFreshPtr(String regionName, boolean fresh);
 
+	Expression getBase(Expression ptr);
+	
 }

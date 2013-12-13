@@ -56,8 +56,8 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
       throws ExpressionFactoryException {
     return new BurstallMemoryModel(encoding, heapEncoder);
   }
-
-  private final Type addrType, valueType;
+  
+  private final Type addrType, sizeType;
   private RecordType memType, sizeArrType;
   private TupleType stateType;
   
@@ -77,7 +77,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     type = MemoryModelType.BURSTALL;
     
     this.heapEncoder = heapEncoder;    
-    valueType = heapEncoder.getValueType();
+    sizeType = heapEncoder.getSizeType();
     addrType = heapEncoder.getAddressType();
     
     ExpressionManager exprManager = getExpressionManager();
@@ -101,8 +101,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   @Override
   public TupleExpression alloc(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType )); 
-    
+    Preconditions.checkArgument(size.getType().equals( sizeType ));
     IRVar regionVar = analyzer.getAllocateElem(ptr.getNode());
     
     String regionName = regionVar.getName();
@@ -121,8 +120,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   @Override 
   public TupleExpression declareArray(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
-
+    Preconditions.checkArgument(size.getType().equals( sizeType ));
     RecordExpression sizeArr = updateSizeState(state.getChild(1), ptr, size);
     return getUpdatedState(state, state.getChild(0), sizeArr);
   }
@@ -130,8 +128,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   @Override 
   public TupleExpression declareStruct(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
-
+    Preconditions.checkArgument(size.getType().equals( sizeType ));
     RecordExpression sizeArr = updateSizeState(state.getChild(1), ptr, size);
     return getUpdatedState(state, state.getChild(0), sizeArr);
   }
@@ -187,8 +184,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
 	@Override
 	public BooleanExpression allocated(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
-    
+    Preconditions.checkArgument(size.getType().equals( sizeType ));
     IRVar regionVar = analyzer.getAllocateElem(ptr.getNode());
     xtc.type.Type regionType = regionVar.getType();
     
@@ -449,8 +445,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   @Override
   public BooleanExpression valid(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
-
+    Preconditions.checkArgument(size.getType().equals( sizeType ));
     /* Find related heap regions and size array */
     xtc.type.Type ptr2Type = analyzer.getPointsToElem(ptr.getNode());
     IREquivClosure equivAliasVars = analyzer.getEquivClass(ptr2Type);
@@ -472,8 +467,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   @Override
   public BooleanExpression valid_malloc(Expression state, Expression ptr, Expression size) {
     Preconditions.checkArgument(ptr.getType().equals( addrType ));
-    Preconditions.checkArgument(size.getType().equals( valueType ));
-    
+    Preconditions.checkArgument(size.getType().equals( sizeType ));
     /* Find related heap regions and alloc array */
     xtc.type.Type ptr2Type = analyzer.getPointsToElem(ptr.getNode());   
     IREquivClosure equivAliasVars = analyzer.getEquivClass(ptr2Type);
