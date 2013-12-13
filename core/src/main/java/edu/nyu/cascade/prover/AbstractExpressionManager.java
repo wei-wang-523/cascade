@@ -813,13 +813,13 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   @Override
   public Expression applyExpr(Expression fun,
       Iterable<? extends Expression> args) {
-    return fun.getType().asFunction().apply(args);
+  	return fun.asFunctionExpression().apply(args);
   }
 
   @Override
   public Expression applyExpr(Expression fun, Expression first,
       Expression... rest) {
-    return fun.getType().asFunction().apply(first, rest);
+  	return fun.asFunctionExpression().apply(first, rest);
   }
   
   @Override

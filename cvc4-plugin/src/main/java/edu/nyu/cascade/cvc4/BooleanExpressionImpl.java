@@ -276,6 +276,38 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
     e.setBody(body.asBooleanExpression());
     return e;
   }
+  
+  static BooleanExpressionImpl mkExists(ExpressionManagerImpl exprManager,
+      Iterable<? extends Expression> vars,
+      Expression body,
+      Iterable<? extends Expression> triggers) {
+    BooleanExpressionImpl e = new BooleanExpressionImpl(exprManager, Kind.EXISTS,
+        new BinderTriggersConstructionStrategy() {
+          @Override
+          public Expr apply(ExprManager em, List<Expr> vars, Expr body, List<Expr> triggers)
+              throws Exception {
+            vectorExpr varList = new vectorExpr();
+            for(Expr var : vars) {
+              if(var.getKind() == edu.nyu.acsys.CVC4.Kind.BOUND_VARIABLE)
+                varList.add(var);
+              else
+                varList.add(em.mkBoundVar(var.toString(), var.getType()));
+            }
+            Expr boundVarList = em.mkExpr(edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
+            vectorExpr triggerList = new vectorExpr();
+            for(Expr trigger : triggers) {
+              Expr pat = em.mkExpr(edu.nyu.acsys.CVC4.Kind.INST_PATTERN, trigger);
+              triggerList.add(pat);
+            }
+            Expr triggersPattern = em.mkExpr(edu.nyu.acsys.CVC4.Kind.INST_PATTERN_LIST, triggerList);
+            return em.mkExpr(edu.nyu.acsys.CVC4.Kind.EXISTS, boundVarList, body, triggersPattern);
+          }
+        }, vars, body, triggers);
+    if(triggers != null) e.setTriggers(triggers);
+    if(vars != null) e.setBoundVars(vars);
+    e.setBody(body.asBooleanExpression());
+    return e;
+  }
 
   static BooleanExpressionImpl mkFalse(ExpressionManagerImpl exprManager) {
     BooleanExpressionImpl e = new BooleanExpressionImpl(exprManager, Kind.CONSTANT,

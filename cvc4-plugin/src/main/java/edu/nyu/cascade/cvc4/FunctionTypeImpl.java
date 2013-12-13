@@ -10,6 +10,7 @@ import com.google.common.collect.Lists;
 import edu.nyu.acsys.CVC4.Exception;
 import edu.nyu.acsys.CVC4.vectorType;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.FunctionExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.Type;
@@ -64,12 +65,15 @@ public final class FunctionTypeImpl extends TypeImpl
     return "(" + Joiner.on(",").join(argTypes) + ") -> " + rangeType.getName();
   }
   
-  public ExpressionImpl apply(Expression fun,
+  @Override
+  public ExpressionImpl apply(FunctionExpression fun,
       Iterable<? extends Expression> args) {
     return ExpressionImpl.mkFunApply(getExpressionManager(),fun,args);
   }
   
-  public ExpressionImpl apply(Expression fun, Expression arg1, Expression... otherArgs) {
+  @Override
+  public ExpressionImpl apply(FunctionExpression fun, 
+  		Expression arg1, Expression... otherArgs) {
     Preconditions.checkArgument(getArity() == otherArgs.length + 1);
     return ExpressionImpl.mkFunApply(getExpressionManager(), fun,
         Lists.asList(arg1, otherArgs));
@@ -112,13 +116,11 @@ public final class FunctionTypeImpl extends TypeImpl
 
   @Override
   public Expression apply(Expression arg1, Expression... rest) {
-    // TODO Auto-generated method stub
-    return null;
+    throw new UnsupportedOperationException("cvc4 does not support it.");
   }
 
   @Override
   public Expression apply(Iterable<? extends Expression> args) {
-    // TODO Auto-generated method stub
-    return null;
+  	throw new UnsupportedOperationException("cvc4 does not support it.");
   }
 }

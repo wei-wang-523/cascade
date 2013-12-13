@@ -3,6 +3,7 @@ package edu.nyu.cascade.prover.type;
 import com.google.common.collect.ImmutableList;
 
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.FunctionExpression;
 import edu.nyu.cascade.prover.VariableExpression;
 
 public interface FunctionType extends Type {
@@ -21,4 +22,8 @@ public interface FunctionType extends Type {
   String getName();
   
   VariableExpression variable(String name, boolean fresh) ;
+
+	Expression apply(FunctionExpression fun, Iterable<? extends Expression> args);
+
+	Expression apply(FunctionExpression fun, Expression arg1, Expression... otherArgs);
 }

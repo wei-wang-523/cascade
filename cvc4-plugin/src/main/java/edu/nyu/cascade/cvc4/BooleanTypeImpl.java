@@ -214,8 +214,7 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   @Override
   public BooleanExpression exists(Iterable<? extends Expression> vars,
       Expression body, Iterable<? extends Expression> triggers) {
-    // TODO Auto-generated method stub
-    return null;
+    return BooleanExpressionImpl.mkExists(getExpressionManager(), vars, body, triggers);
   }
 
 
@@ -223,16 +222,14 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   public BooleanExpression exists(Iterable<? extends Expression> vars,
       Expression body, Iterable<? extends Expression> triggers,
       Iterable<? extends Expression> noTriggers) {
-    // TODO Auto-generated method stub
-    return null;
+  	return exists(vars, body, triggers);
   }
 
   @Override
   public BooleanExpression forall(Iterable<? extends Expression> vars,
       Expression body, Iterable<? extends Expression> triggers,
       Iterable<? extends Expression> noTriggers) {
-    // TODO Auto-generated method stub
-    return null;
+    return forall(vars, body, triggers);
   }
   
   @Override

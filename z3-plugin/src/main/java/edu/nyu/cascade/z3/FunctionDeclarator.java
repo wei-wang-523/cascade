@@ -18,6 +18,7 @@ import com.microsoft.z3.Sort;
 import com.microsoft.z3.Z3Exception;
 
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.FunctionExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.Type;
@@ -167,4 +168,16 @@ public class FunctionDeclarator extends TypeImpl
   public VariableExpressionImpl variable(String name, boolean fresh) {
 		throw new UnsupportedOperationException("bound variable is not supported in z3.");
   }
+
+	@Override
+	public Expression apply(FunctionExpression fun,
+			Iterable<? extends Expression> args) {
+  	throw new UnsupportedOperationException("z3 does not support it.");
+	}
+
+	@Override
+	public Expression apply(FunctionExpression fun, Expression arg1,
+			Expression... otherArgs) {
+  	throw new UnsupportedOperationException("z3 does not support it.");
+	}
 }
