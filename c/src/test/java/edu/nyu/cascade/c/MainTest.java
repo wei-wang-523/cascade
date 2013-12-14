@@ -387,7 +387,13 @@ public class MainTest {
   			"--prover", "z3", "--theory", "Burstall", "--mem-cell-size", "16");
   	final Tester<File> PartitionTester = parserTestWithTimeout("--feasibility", "-inline-anno", "--sound", 
   			"--prover", "z3", "--theory", "Partition", "--mem-cell-size", "16");
-  	final Tester<File> FlatMultiCellTester = parserTestWithTimeout("--feasibility", "-inline-anno", "--sound", 
+  	final Tester<File> FlatSyncTester = parserTestWithTimeout("--feasibility", "-inline-anno", "--sound", 
+  			"--prover", "z3", "--theory", "Flat", "--mem-cell-size", "16", "--mem-encoding", "sync");
+  	final Tester<File> BurstallSyncTester = parserTestWithTimeout("--feasibility", "-inline-anno", "--sound", 
+  			"--prover", "z3", "--theory", "Burstall", "--mem-cell-size", "16", "--mem-encoding", "sync");
+  	final Tester<File> PartitionSyncTester = parserTestWithTimeout("--feasibility", "-inline-anno", "--sound", 
+  			"--prover", "z3", "--theory", "Partition", "--mem-cell-size", "16", "--mem-encoding", "sync");
+  	final Tester<File> FlatMultiCellTester = parserTest("--feasibility", "-inline-anno", "--sound", 
   			"--prover", "z3", "--theory", "Flat", "--multi-cell");
   	final Tester<File> BurstallMultiCellTester = parserTestWithTimeout("--feasibility", "-inline-anno", "--sound", 
   			"--prover", "z3", "--theory", "Burstall", "--multi-cell");
@@ -396,6 +402,9 @@ public class MainTest {
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatTester, false);
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallTester, false);
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatSyncTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallSyncTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionSyncTester, false);
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatMultiCellTester, false);
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellTester, false);
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionMultiCellTester, false);
