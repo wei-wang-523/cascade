@@ -304,114 +304,118 @@ class CExpressionEncoder implements ExpressionEncoder {
 
     public Expression visitFunctionCall(GNode node) throws ExpressionFactoryException {
       Node funNode = node.getNode(0);
-      Expression res;
-      if (funNode.hasName("PrimaryIdentifier")) {
-        String name = funNode.getString(0);
-        Node argList = node.getNode(1);
-        MemoryModel memModel = getMemoryModel();        
-        
-        if( ReservedFunction.FUN_VALID.equals(name) ) {
-          Preconditions.checkArgument(argList.size() == 2 || argList.size() == 1);
-          List<Expression> argExprs = visitExpressionList(GNode.cast(argList));
-          if(argExprs.size() == 1)
-            res = memModel.valid(memory, argExprs.get(0));
-          else
-            res = memModel.valid(memory, argExprs.get(0), argExprs.get(1));
-        } else if( ReservedFunction.FUN_VALID_MALLOC.equals(name)) {
-          Preconditions.checkArgument(argList.size() == 2);
-          List<Expression> argExprs = visitExpressionList(GNode.cast(argList));
-          res = memModel.valid_malloc(memory, argExprs.get(0), argExprs.get(1));
-        } else if( ReservedFunction.FUN_VALID_FREE.equals(name)) {
-          Preconditions.checkArgument(argList.size() == 1);
-          List<Expression> argExprs = visitExpressionList(GNode.cast(argList));
-          res = memModel.valid_free(memory, argExprs.get(0));
-        } else if( ReservedFunction.FUN_ALLOCATED.equals(name) ) {
-          Preconditions.checkArgument(argList.size() == 2);
-          Expression argExpr0 = lvalVisitor.encodeExpression(argList.getNode(0));
-          Expression argExpr1 = encodeExpression(argList.getNode(1));
-          res = memModel.allocated(memory, argExpr0, argExpr1);
-        } else if( ReservedFunction.FUN_IMPLIES.equals(name) ) {
-          Preconditions.checkArgument(argList.size() == 2);
-          List<Expression> argExprs = visitExpressionList(GNode.cast(argList));
-          res = encoding.implies(argExprs.get(0), argExprs.get(1));
-        } else if( ReservedFunction.FUN_FORALL.equals(name) || ReservedFunction.FUN_EXISTS.equals(name)) {
-          List<Expression> args = visitExpressionList(GNode.cast(argList));
-          int lastIdx = argList.size()-1;
-          Expression body = args.remove(lastIdx);
-          ImmutableList.Builder<Expression> argVarsBuilder = new ImmutableList.Builder<Expression>();
-          for(int idx = 0; idx < lastIdx; idx++) {
-            GNode argNode = argList.getGeneric(idx);
-            assert(argNode.hasName("PrimaryIdentifier"));
-            String argName = argNode.getString(0);
-            Expression argVar = encoding.variable(argName, IRIntegerType.getInstance(), false);
-            argVarsBuilder.add(argVar);
-          }
-          body = body.subst(args, argVarsBuilder.build());
+      Preconditions.checkArgument(funNode.hasName("PrimaryIdentifier"));
+      Expression res = null;
+      
+      String name = funNode.getString(0);
+      Node argList = node.getNode(1);
+      MemoryModel memModel = getMemoryModel();        
+      
+      if( ReservedFunction.FUN_VALID.equals(name) ) {
+        Preconditions.checkArgument(argList.size() == 2 || argList.size() == 1);
+        List<Expression> argExprs = visitExpressionList(GNode.cast(argList));
+        if(argExprs.size() == 1)
+          res = memModel.valid(memory, argExprs.get(0));
+        else
+          res = memModel.valid(memory, argExprs.get(0), argExprs.get(1));
+      } else if( ReservedFunction.FUN_VALID_MALLOC.equals(name)) {
+        Preconditions.checkArgument(argList.size() == 2);
+        List<Expression> argExprs = visitExpressionList(GNode.cast(argList));
+        res = memModel.valid_malloc(memory, argExprs.get(0), argExprs.get(1));
+      } else if( ReservedFunction.FUN_VALID_FREE.equals(name)) {
+        Preconditions.checkArgument(argList.size() == 1);
+        List<Expression> argExprs = visitExpressionList(GNode.cast(argList));
+        res = memModel.valid_free(memory, argExprs.get(0));
+      } else if( ReservedFunction.FUN_ALLOCATED.equals(name) ) {
+        Preconditions.checkArgument(argList.size() == 2);
+        Expression argExpr0 = lvalVisitor.encodeExpression(argList.getNode(0));
+        Expression argExpr1 = encodeExpression(argList.getNode(1));
+        res = memModel.allocated(memory, argExpr0, argExpr1);
+      } else if( ReservedFunction.FUN_IMPLIES.equals(name) ) {
+        Preconditions.checkArgument(argList.size() == 2);
+        List<Expression> argExprs = visitExpressionList(GNode.cast(argList));
+        res = encoding.implies(argExprs.get(0), argExprs.get(1));
+      } else if( ReservedFunction.FUN_FORALL.equals(name) || ReservedFunction.FUN_EXISTS.equals(name)) {
+        List<Expression> args = visitExpressionList(GNode.cast(argList));
+        int lastIdx = argList.size()-1;
+        Expression body = args.remove(lastIdx);
+        ImmutableList.Builder<Expression> argVarsBuilder = new ImmutableList.Builder<Expression>();
+        for(int idx = 0; idx < lastIdx; idx++) {
+          GNode argNode = argList.getGeneric(idx);
+          assert(argNode.hasName("PrimaryIdentifier"));
+          String argName = argNode.getString(0);
+          Expression argVar = encoding.variable(argName, IRIntegerType.getInstance(), false);
+          argVarsBuilder.add(argVar);
+        }
+        body = body.subst(args, argVarsBuilder.build());
 
-          if( ReservedFunction.FUN_FORALL.equals(name) )  
-            res = encoding.forall(argVarsBuilder.build(), body);
-          else  
-            res = encoding.exists(argVarsBuilder.build(), body);         
-        } else if( ReservedFunction.FUN_REACH.equals(name) ) {
-          Preconditions.checkArgument(argList.size() == 3);
-          String fieldName = argList.getNode(0).getString(0);
-          Expression fromExpr = encodeExpression(argList.getNode(1));
-          Expression toExpr = encodeExpression(argList.getNode(2));
-          if(memModel instanceof ReachMemoryModel) {
-            res = ((ReachMemoryModel) memModel).reach(fieldName, fromExpr, toExpr, toExpr);
-          } else {
-            res = encoding.ff();         
-          }
-        } else if( ReservedFunction.FUN_CREATE_ACYCLIC_LIST.equals(name) || 
-            ReservedFunction.FUN_CREATE_CYCLIC_LIST.equals(name) ||
-            ReservedFunction.FUN_CREATE_ACYCLIC_DLIST.equals(name) ||
-            ReservedFunction.FUN_CREATE_CYCLIC_DLIST.equals(name)) {
-          Preconditions.checkArgument(argList.size() == 2);
-          Node ptrNode = argList.getNode(0);
-          Expression ptrExpr = lvalVisitor.encodeExpression(ptrNode);
-          Expression length = encodeExpression(argList.getNode(1));
-          Type type = lookupType(ptrNode).toPointer().getType().resolve();
-          int size = sizeofType(type);
-          Map<String, Integer> offMap = getOffsetMap(type);
-          
-          if(memModel instanceof ReachMemoryModel) {
-          	ReachMemoryModel reachMemModel = ((ReachMemoryModel) memModel);
-            if(ReservedFunction.FUN_CREATE_ACYCLIC_LIST.equals(name))
-              res = reachMemModel.create_list(memory,
-                  ptrExpr, length, size, offMap, true, true);
-            else if(ReservedFunction.FUN_CREATE_CYCLIC_LIST.equals(name))
-              res = reachMemModel.create_list(memory,
-                  ptrExpr, length, size, offMap, false, true);
-            else if(ReservedFunction.FUN_CREATE_ACYCLIC_DLIST.equals(name))
-              res = reachMemModel.create_list(memory,
-                  ptrExpr, length, size, offMap, true, false);
-            else
-              res = reachMemModel.create_list(memory,
-                  ptrExpr, length, size, offMap, false, false);
-          } else {
-            res = encoding.tt();
-          }
-        } else if( ReservedFunction.FUN_ISROOT.equals(name) ) {
-          Preconditions.checkArgument(argList.size() == 2);
-          String fieldname = argList.getNode(0).getString(0);
-          Expression ptrExpr = encodeExpression(argList.getNode(1));
-          if(memModel instanceof ReachMemoryModel) {
-            res = ((ReachMemoryModel) memModel).isRoot(fieldname, ptrExpr);
-          } else {
-            throw new ExpressionFactoryException("Invalid memory model.");
-          }
+        if( ReservedFunction.FUN_FORALL.equals(name) )  
+          res = encoding.forall(argVarsBuilder.build(), body);
+        else  
+          res = encoding.exists(argVarsBuilder.build(), body);         
+      } else if( ReservedFunction.FUN_REACH.equals(name) ) {
+        Preconditions.checkArgument(argList.size() == 3);
+        String fieldName = argList.getNode(0).getString(0);
+        Expression fromExpr = encodeExpression(argList.getNode(1));
+        Expression toExpr = encodeExpression(argList.getNode(2));
+        if(memModel instanceof ReachMemoryModel) {
+          res = ((ReachMemoryModel) memModel).reach(fieldName, fromExpr, toExpr, toExpr);
         } else {
-        	List<Expression> argExprs = null;
-        	if(argList != null)
-          	argExprs = visitExpressionList(GNode.cast(argList));
-          res = encoding.functionCall(name, argExprs);
+          res = encoding.ff();         
+        }
+      } else if( ReservedFunction.FUN_CREATE_ACYCLIC_LIST.equals(name) || 
+          ReservedFunction.FUN_CREATE_CYCLIC_LIST.equals(name) ||
+          ReservedFunction.FUN_CREATE_ACYCLIC_DLIST.equals(name) ||
+          ReservedFunction.FUN_CREATE_CYCLIC_DLIST.equals(name)) {
+        Preconditions.checkArgument(argList.size() == 2);
+        Node ptrNode = argList.getNode(0);
+        Expression ptrExpr = lvalVisitor.encodeExpression(ptrNode);
+        Expression length = encodeExpression(argList.getNode(1));
+        Type type = lookupType(ptrNode).toPointer().getType().resolve();
+        int size = sizeofType(type);
+        Map<String, Integer> offMap = getOffsetMap(type);
+        
+        if(memModel instanceof ReachMemoryModel) {
+        	ReachMemoryModel reachMemModel = ((ReachMemoryModel) memModel);
+          if(ReservedFunction.FUN_CREATE_ACYCLIC_LIST.equals(name))
+            res = reachMemModel.create_list(memory,
+                ptrExpr, length, size, offMap, true, true);
+          else if(ReservedFunction.FUN_CREATE_CYCLIC_LIST.equals(name))
+            res = reachMemModel.create_list(memory,
+                ptrExpr, length, size, offMap, false, true);
+          else if(ReservedFunction.FUN_CREATE_ACYCLIC_DLIST.equals(name))
+            res = reachMemModel.create_list(memory,
+                ptrExpr, length, size, offMap, true, false);
+          else
+            res = reachMemModel.create_list(memory,
+                ptrExpr, length, size, offMap, false, false);
+        } else {
+          res = encoding.tt();
+        }
+      } else if( ReservedFunction.FUN_ISROOT.equals(name) ) {
+        Preconditions.checkArgument(argList.size() == 2);
+        String fieldname = argList.getNode(0).getString(0);
+        Expression ptrExpr = encodeExpression(argList.getNode(1));
+        if(memModel instanceof ReachMemoryModel) {
+          res = ((ReachMemoryModel) memModel).isRoot(fieldname, ptrExpr);
+        } else {
+          throw new ExpressionFactoryException("Invalid memory model.");
         }
       } else {
-        IOUtils.debug().pln(
-            "APPROX: Treating unexpected function call as unknown: "
-                + node.getName());
-        res = encoding.getIntegerEncoding().unknown();
+      	if(argList != null) visitExpressionList(GNode.cast(argList));
+      	
+        Type type = unwrapped(lookupType(node));
+        if(type.isPointer())
+        	res = encoding.getPointerEncoding().unknown();
+        else if(type.isBoolean())
+        	res = encoding.getBooleanEncoding().unknown();
+        else { // type.isInteger()
+        	int size = sizeofType(type);
+        	res = encoding.getIntegerEncoding().unknown(
+        			encoding.getExpressionManager().bitVectorType(size * encoding.getWordSize()));
+        }
       }
+
       return res.setNode(node);
     }
 
