@@ -765,6 +765,11 @@ public interface ExpressionEncoding {
    * Get the cell size
    */
   int getWordSize() ;
+  
+  /**
+   * Get the size of @param type
+   */
+  int getSizeofType(xtc.type.Type type) ;
 
   /**
    * Cast @param src expression to @param targetType

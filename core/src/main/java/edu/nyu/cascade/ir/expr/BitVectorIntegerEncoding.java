@@ -188,7 +188,7 @@ public class BitVectorIntegerEncoding extends
   	if(srcSize < size)	
   		return bv.signExtend(size);
   	else
-  		return bv.extract(0, size-1);
+  		return bv.extract(size-1, 0);
   }
 
   @Override

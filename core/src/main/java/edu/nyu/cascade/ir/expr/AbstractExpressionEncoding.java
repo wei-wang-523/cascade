@@ -5,7 +5,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import xtc.type.ArrayT;
 import xtc.type.Type;
+import xtc.type.VariableT;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -1054,9 +1056,43 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   	if(targetType.isPointer()) {
   		return castToPointer(src);
   	} else {
-  		int size = (int) getCAnalyzer().getSize(targetType);
+  		int size = getSizeofType(targetType) * WORD_SIZE;
   		return castToInteger(src, size);
   	}
+  }
+  
+  @Override
+  public int getSizeofType(Type t) {
+    if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) {
+      return (int) cAnalyzer.getSize(t);
+    }
+    
+    if (t.isInteger()) {
+      return 1;
+    } else if (t.isPointer()) {
+      return 1;
+    } else if (t.isStruct()) {
+      int res = 0;
+      for(VariableT elem : t.toStruct().getMembers()) {
+        res += getSizeofType(elem.getType());
+      }
+      return res;
+    } else if(t.isUnion()) {
+      int res = 0;
+      for(VariableT elem : t.toUnion().getMembers()) {
+        res = Math.max(res, getSizeofType(elem.getType()));
+      }
+      return res;
+    } else if(t.isArray()) {
+      ArrayT array = t.toArray();
+      return (int) (array.getLength()) * getSizeofType(array.getType());
+    } else if(t.isAlias() || t.isVariable()) {
+      return getSizeofType(t.resolve());
+    } else if(t.isAnnotated()) {
+      return getSizeofType(t.deannotate());
+    } else {
+      throw new IllegalArgumentException("Unknown type.");
+    }
   }
   
   @Override
