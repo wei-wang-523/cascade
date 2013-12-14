@@ -94,8 +94,7 @@ public class MultiCellLinearFormatter implements IRDataFormatter {
 		@SuppressWarnings("rawtypes")
     PointerEncoding ptrEncoding = encoding.getPointerEncoding();
 		
-		Expression res = null;
-		Expression idx = index;
+		Expression res = null, idx = index;
 		for(int i = 0; i < size; i++, idx = ptrEncoding.incr(idx)) {
 			Expression value = memory.index(idx);
 			if(res == null)	res = value;

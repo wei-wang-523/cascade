@@ -70,8 +70,7 @@ public class MultiCellSyncFormatter implements IRDataFormatter {
 		Expression idx = index;
 		Type cellType = memory.getType().getElementType();
 		
-		for(int i = 0; i < size; i++) {
-			if(i != 0)	idx = ptrEncoding.incr(idx);
+		for(int i = 0; i < size; i++, idx = ptrEncoding.incr(idx)) {
 			Expression valExpr = value.asBitVector().extract((i+1) * wordSize - 1, i * wordSize);
 			Expression valuePrime = syncValueType.castExprToCell(valExpr, cellType);
 			memory = memory.update(idx, valuePrime);
@@ -83,22 +82,18 @@ public class MultiCellSyncFormatter implements IRDataFormatter {
   @Override
 	public Expression indexMemoryArray(ArrayExpression memory, Expression index) {
 		Preconditions.checkArgument(index.getNode() != null);
-		
-		int size = (int) cAnalyzer.getSize(CType.getType(index.getNode()));
+		xtc.type.Type type = CType.getType(index.getNode()).resolve();
+		int size = (int) cAnalyzer.getSize(type);
 		
 		@SuppressWarnings("rawtypes")
     PointerEncoding ptrEncoding = encoding.getPointerEncoding();
 		
-		Expression res = syncValueType.castCellToExpr(memory.index(index), 
-				CType.getType(index.getNode()));
-		Expression idx = index;
-		xtc.type.Type type = CType.getType(index.getNode());
-		
-		for(int i = 1; i < size; i++) {
-			idx = ptrEncoding.incr(idx);
+		Expression idx = index, res = null;
+		for(int i = 1; i < size; i++, idx = ptrEncoding.incr(idx)) {
 			Expression value = memory.index(idx);
 			Expression valuePrime = syncValueType.castCellToExpr(value, type);
-			res = valuePrime.asBitVector().concat(res);
+			if(res == null) res = valuePrime;
+			else	res = valuePrime.asBitVector().concat(res);
 		}
 		return res;
 	}
