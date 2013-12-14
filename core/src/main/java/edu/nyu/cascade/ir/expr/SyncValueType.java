@@ -18,6 +18,13 @@ import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 
+/**
+ * Value type created for synchronous heap encoding
+ * 
+ * @author Wei
+ *
+ */
+
 public class SyncValueType {
 	
 	private final ExpressionEncoding encoding;

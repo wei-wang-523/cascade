@@ -9,6 +9,13 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 
+/**
+ * Formatter for single-cell heap encoding with synchronous pointer type
+ * 
+ * @author Wei
+ *
+ */
+
 public class SingleCellSyncFormatter implements IRDataFormatter {
 
 	private final ExpressionEncoding encoding;
@@ -71,8 +78,11 @@ public class SingleCellSyncFormatter implements IRDataFormatter {
 	 */
 	@Override
 	public Expression getUnknownValue(xtc.type.Type type) {
-		return encoding.getIntegerEncoding().unknown(syncValueType.getValueType(type));
-//		return encoding.getIntegerEncoding().unknown(getValueType());
+		xtc.type.Type resolvedType = type.resolve();
+		if(resolvedType.isArray() || resolvedType.isPointer())
+			return encoding.getPointerEncoding().unknown();
+		else
+			return encoding.getIntegerEncoding().unknown(syncValueType.getValueType(type));
 	}
 	
 	@Override

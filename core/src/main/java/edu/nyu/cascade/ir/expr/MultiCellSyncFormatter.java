@@ -10,6 +10,13 @@ import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 
+/**
+ * Unused formatter
+ * 
+ * @author Wei
+ *
+ */
+
 public class MultiCellSyncFormatter implements IRDataFormatter {
 
 	private final ExpressionEncoding encoding;
@@ -100,11 +107,16 @@ public class MultiCellSyncFormatter implements IRDataFormatter {
 
 	@Override
 	public Expression getUnknownValue(xtc.type.Type type) {
-		int size = (int) cAnalyzer.getSize(type);
-		int wordSize = encoding.getWordSize();
-		ExpressionManager exprManager = encoding.getExpressionManager();
-		Type valueType = exprManager.bitVectorType(size * wordSize);
-		return encoding.getIntegerEncoding().unknown(valueType);
+		xtc.type.Type resolvedType = type.resolve();
+		if(resolvedType.isArray() || resolvedType.isPointer())
+			return encoding.getPointerEncoding().unknown();
+		else {
+			int size = (int) cAnalyzer.getSize(type);
+			int wordSize = encoding.getWordSize();
+			ExpressionManager exprManager = encoding.getExpressionManager();
+			Type valueType = exprManager.bitVectorType(size * wordSize);
+			return encoding.getIntegerEncoding().unknown(valueType);
+		}
 	}
 
 	@Override

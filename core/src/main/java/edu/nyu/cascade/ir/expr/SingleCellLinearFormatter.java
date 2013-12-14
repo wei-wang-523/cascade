@@ -9,6 +9,13 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 
+/**
+ * Formatter for single-cell heap encoding with linear pointer type
+ * 
+ * @author Wei
+ *
+ */
+
 public class SingleCellLinearFormatter implements IRDataFormatter {
 
 	private final ExpressionEncoding encoding;

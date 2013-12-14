@@ -12,6 +12,13 @@ import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 
+/**
+ * Formatter for multi-cell heap encoding with linear pointer type
+ * 
+ * @author Wei
+ *
+ */
+
 public class MultiCellLinearFormatter implements IRDataFormatter {
 
 	private final ExpressionEncoding encoding;

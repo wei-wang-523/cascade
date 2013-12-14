@@ -856,16 +856,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
   public BooleanExpression eq(Expression lhs, Expression rhs) {
-		if(lhs.isBitVector()) {
-			assert rhs.isBitVector();
-			if(!lhs.getType().equals(rhs.getType())) {
-				BitVectorExpression lhsBV = lhs.asBitVector();
-				BitVectorExpression rhsBV = rhs.asBitVector();
-				int size = Math.max(lhsBV.getSize(), rhsBV.getSize());
-				if(lhsBV.getSize() < size) lhs = lhsBV.signExtend(size);
-				else if(rhsBV.getSize() < size) rhs = rhsBV.signExtend(size);
-			}
-		}
+		Preconditions.checkArgument(lhs.getType().equals(rhs.getType()));
 		return booleanType().eq(lhs, rhs);
   }
 }

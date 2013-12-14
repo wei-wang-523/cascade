@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 
 import edu.nyu.cascade.ir.type.IRType;
+import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -419,7 +420,29 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 
   @Override
   public Expression eq(Expression lhs, Expression rhs) {
-  	return getBooleanEncoding().ofBooleanExpression( lhs.eq((Expression)rhs) );
+  	if(lhs.getType().equals(rhs.getType()))
+  		return getBooleanEncoding().ofBooleanExpression( lhs.eq(rhs) );
+  	
+  	if(lhs.isBitVector() && rhs.isBitVector()) {
+			BitVectorExpression lhsBV = lhs.asBitVector();
+			BitVectorExpression rhsBV = rhs.asBitVector();
+			int size = Math.max(lhsBV.getSize(), rhsBV.getSize());
+			if(lhsBV.getSize() < size) lhs = lhsBV.signExtend(size);
+			else if(rhsBV.getSize() < size) rhs = rhsBV.signExtend(size);
+			return getBooleanEncoding().ofBooleanExpression( lhs.eq(rhs) );
+		}
+  	
+  	if(isPointer(lhs) && !isPointer(rhs)) {
+  		return getBooleanEncoding().ofBooleanExpression(lhs.eq(
+  				getPointerEncoding().getNullPtr()));
+  	}
+  
+  	if(!isPointer(lhs) && isPointer(rhs)) {
+  		return getBooleanEncoding().ofBooleanExpression(rhs.eq(
+  				getPointerEncoding().getNullPtr()));
+  	}
+  	
+  	throw new IllegalArgumentException("Inconsistent types: " + lhs.getType() + ", " + rhs.getType());
   }
   
   @Override
