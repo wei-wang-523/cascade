@@ -128,8 +128,8 @@ class CExpressionEncoder implements ExpressionEncoder {
     	Expression left = encodeExpression(node.getNode(0));
     	Expression right = encodeExpression(node.getNode(2));
     	
-      Type lType = unwrapped(lookupType(left.getNode()));
-      Type rType = unwrapped(lookupType(right.getNode()));
+      Type lType = lookupType(left.getNode()).resolve();
+      Type rType = lookupType(right.getNode()).resolve();
           	
     	assert !((lType.isPointer() || lType.isArray()) 
     			&& (rType.isPointer() || rType.isArray()));
@@ -137,7 +137,7 @@ class CExpressionEncoder implements ExpressionEncoder {
       Function<Expression, Integer> getFactor = new Function<Expression, Integer>() {
 				@Override
 				public Integer apply(Expression pointer) {
-					Type type = unwrapped(lookupType(pointer.getNode()));
+					Type type = lookupType(pointer.getNode()).resolve();
 					Preconditions.checkArgument(type.isPointer() || type.isArray());
 					if(type.isPointer())
 						return encoding.getSizeofType(type.toPointer().getType());
@@ -255,14 +255,14 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
 
     public Expression visitCastExpression(GNode node) {
-      Type targetType = unwrapped(lookupType(node));
+      Type targetType = lookupType(node).resolve();
       Expression src = encodeExpression(node.getNode(1));
       return encoding.castExpression(src, targetType);
     }
     
     public Expression visitCharacterConstant(GNode node)
         throws ExpressionFactoryException {
-      Type type = lookupType(node);
+      Type type = lookupType(node).resolve();
       long constVal = type.getConstant().longValue();
 //      Expression res = encoding.castConstant(constVal, type);
       return encoding.integerConstant(constVal);
@@ -410,7 +410,7 @@ class CExpressionEncoder implements ExpressionEncoder {
       } else {
       	if(argList != null) visitExpressionList(GNode.cast(argList));
       	
-        Type type = unwrapped(lookupType(node));
+        Type type = lookupType(node).resolve();
         if(type.isPointer())
         	res = encoding.getPointerEncoding().unknown();
         else if(type.isBoolean())
@@ -428,13 +428,13 @@ class CExpressionEncoder implements ExpressionEncoder {
     public Expression visitIndirectionExpression(GNode node)
         throws ExpressionFactoryException {
       Expression op = encodeExpression(node.getNode(0));
-      Type ptrToType = lookupType(node);
+      Type ptrToType = lookupType(node).resolve();
       return derefMemory(memory, op.setNode(node));
     }
 
     public Expression visitIntegerConstant(GNode node)
         throws ExpressionFactoryException {
-      Type type = unwrapped(lookupType(node));     
+      Type type = lookupType(node).resolve();     
       assert(type.isInteger());
       
 //      int constVal = 0;
@@ -559,8 +559,8 @@ class CExpressionEncoder implements ExpressionEncoder {
     	Expression left = encodeExpression(node.getNode(0));
     	Expression right = encodeExpression(node.getNode(2));
     	
-      Type lType = unwrapped(lookupType(left.getNode()));
-      Type rType = unwrapped(lookupType(right.getNode()));
+      Type lType = lookupType(left.getNode()).resolve();
+      Type rType = lookupType(right.getNode()).resolve();
       
     	Expression b;
       
@@ -781,7 +781,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 		  Expression resExpr = null;
 		  
 		  GNode srcNode = lvalExpr.getNode();
-		  Type t = unwrapped(lookupType(srcNode));
+		  Type t = lookupType(srcNode).resolve();
 		  if(t.isArray() || t.isStruct() || t.isUnion())
 		    resExpr = lvalExpr;
 		  else
@@ -790,7 +790,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 		}
 
 		private Expression getSubscriptExpression(Node node, Expression idx) {
-		  Type type = unwrapped(lookupType(node));
+		  Type type = lookupType(node).resolve();
 		  assert(type.isArray() || type.isPointer());
 		
 		  if(!(node.hasName("SubscriptExpression"))) {
@@ -944,7 +944,7 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
 
 		private Expression getSubscriptExpression(Node node, Expression idx) {
-		  Type type = unwrapped(lookupType(node));
+		  Type type = lookupType(node).resolve();
 		  assert(type.isArray() || type.isPointer());
 		
 		  if(!(node.hasName("SubscriptExpression"))) {
@@ -1174,13 +1174,13 @@ class CExpressionEncoder implements ExpressionEncoder {
     return -1;
   }
 
-  private Type unwrapped(Type type) {
-    while(type.isAnnotated() || type.isAlias() || type.isVariable()) {
-      type = type.resolve();
-      type = type.deannotate();
-    }
-    return type;
-  }
+//  private Type unwrapped(Type type) {
+//    while(type.isAnnotated() || type.isAlias() || type.isVariable()) {
+//      type = type.resolve();
+//      type = type.deannotate();
+//    }
+//    return type;
+//  }
   
   private Type lookupType(Node node) {
     if(node.hasProperty(TYPE)) {
