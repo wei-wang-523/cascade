@@ -365,7 +365,7 @@ public class MainTest {
   }*/
   
   @Test
-//  @Ignore
+  @Ignore
   public void testNecBenchmark() {
   	final Tester<File> FlatTester = parserTestWithTimeout("--sound", 
   			"--prover", "z3", "--mem-cell-size", "16", "--theory", "Flat");
@@ -393,45 +393,45 @@ public class MainTest {
     final File inv_valid_nec_location = new File(nec_programs_location, "inv-valid");
     final File inv_invalid_nec_location = new File(nec_programs_location, "inv-invalid");
     
-//    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, FlatTester, false);
-//    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, FlatTester, false);
-//    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, FlatTester, false);
-//    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, FlatTester, false);
+    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, FlatTester, false);
+    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, FlatTester, false);
+    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, FlatTester, false);
+    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, FlatTester, false);
     
-//    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, BurstallTester, false);
-//    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, BurstallTester, false);
-//    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, BurstallTester, false);
-//    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, BurstallTester, false);
+    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, BurstallTester, false);
+    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, BurstallTester, false);
+    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, BurstallTester, false);
+    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, BurstallTester, false);
     
-//    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, PartitionTester, false);
-//    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, PartitionTester, false);
-//    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, PartitionTester, false);
-//    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, PartitionTester, false);
+    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, PartitionTester, false);
+    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, PartitionTester, false);
+    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, PartitionTester, false);
+    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, PartitionTester, false);
     
-//    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, FlatSyncTester, false);
-//    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, FlatSyncTester, false);
-//    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, FlatSyncTester, false);
-//    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, FlatSyncTester, false);
+    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, FlatSyncTester, false);
+    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, FlatSyncTester, false);
+    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, FlatSyncTester, false);
+    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, FlatSyncTester, false);
 
-//    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, BurstallSyncTester, false);
-//    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, BurstallSyncTester, false);
-//    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, BurstallSyncTester, false);
-//    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, BurstallSyncTester, false);
+    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, BurstallSyncTester, false);
+    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, BurstallSyncTester, false);
+    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, BurstallSyncTester, false);
+    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, BurstallSyncTester, false);
    
-//    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, PartitionSyncTester, false);
-//    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, PartitionSyncTester, false);
-//    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, PartitionSyncTester, false);
-//    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, PartitionSyncTester, false); 
+    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, PartitionSyncTester, false);
+    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, PartitionSyncTester, false);
+    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, PartitionSyncTester, false);
+    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, PartitionSyncTester, false); 
    
-//    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, FlatMultiCellTester, false);
-//    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, FlatMultiCellTester, false);
-//    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, FlatMultiCellTester, false);
-//    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, FlatMultiCellTester, false);
+    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, FlatMultiCellTester, false);
+    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, FlatMultiCellTester, false);
+    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, FlatMultiCellTester, false);
+    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, FlatMultiCellTester, false);
     
-//    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, BurstallMultiCellTester, false);
-//    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, BurstallMultiCellTester, false);
-//    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, BurstallMultiCellTester, false);
-//    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, BurstallMultiCellTester, false);
+    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, BurstallMultiCellTester, false);
+    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, BurstallMultiCellTester, false);
+    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, BurstallMultiCellTester, false);
+    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, BurstallMultiCellTester, false);
     
     TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, PartitionMultiCellTester, false);
     TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, PartitionMultiCellTester, false);
