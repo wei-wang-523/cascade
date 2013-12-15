@@ -32,6 +32,7 @@ public class MultiCellSyncFormatter implements IRDataFormatter {
 	}
 	
 	public static MultiCellSyncFormatter create(ExpressionEncoding encoding) {
+		Preconditions.checkArgument(encoding.getIntegerEncoding().getType().isBitVectorType());
 		return new MultiCellSyncFormatter(encoding);
 	}
 	
@@ -65,24 +66,30 @@ public class MultiCellSyncFormatter implements IRDataFormatter {
 	public ArrayExpression updateMemoryArray(ArrayExpression memory, Expression index,
 	    Expression value) {
 		Preconditions.checkArgument(index.getNode() != null);
-		Preconditions.checkArgument(value.isBitVector());
 		if(value.isBoolean()) value = encoding.castToInteger(value);
 		
-		int size = (int) cAnalyzer.getSize(CType.getType(index.getNode()));	
-		int wordSize = getWordSize();
-		
-		@SuppressWarnings("rawtypes")
-    PointerEncoding ptrEncoding = encoding.getPointerEncoding();
-		
-		Expression idx = index;
+		xtc.type.Type type = CType.getType(index.getNode()).resolve();
 		Type cellType = memory.getType().getElementType();
-
-		for(int i = 0; i < size; i++, idx = ptrEncoding.incr(idx)) {
-			Expression valExpr = value.asBitVector().extract((i+1) * wordSize - 1, i * wordSize);
-			Expression valuePrime = syncValueType.castExprToCell(valExpr, cellType);
-			memory = memory.update(idx, valuePrime);
+		
+		if(type.isPointer() || type.isArray()) {
+			Expression valuePrime = syncValueType.castExprToCell(value, cellType);
+			memory = memory.update(index, valuePrime);
+			return memory;
+		} else {
+			int size = (int) cAnalyzer.getSize(type);	
+			int wordSize = getWordSize();
+			
+			@SuppressWarnings("rawtypes")
+			PointerEncoding ptrEncoding = encoding.getPointerEncoding();
+			
+			Expression idx = index;
+			for(int i = 0; i < size; i++, idx = ptrEncoding.incr(idx)) {
+				Expression valExpr = value.asBitVector().extract((i+1) * wordSize - 1, i * wordSize);
+				Expression valuePrime = syncValueType.castExprToCell(valExpr, cellType);
+				memory = memory.update(idx, valuePrime);
+			}
+			return memory;
 		}
-		return memory;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -90,28 +97,35 @@ public class MultiCellSyncFormatter implements IRDataFormatter {
 	public Expression indexMemoryArray(ArrayExpression memory, Expression index) {
 		Preconditions.checkArgument(index.getNode() != null);
 		xtc.type.Type type = CType.getType(index.getNode()).resolve();
-		int size = (int) cAnalyzer.getSize(type);
 		
-		@SuppressWarnings("rawtypes")
-    PointerEncoding ptrEncoding = encoding.getPointerEncoding();
-		
-		Expression idx = index, res = null;
-		for(int i = 0; i < size; i++, idx = ptrEncoding.incr(idx)) {
-			Expression value = memory.index(idx);
+		if(type.isArray() || type.isPointer()) {
+			Expression value = memory.index(index);
 			Expression valuePrime = syncValueType.castCellToExpr(value, type);
-			if(res == null) res = valuePrime;
-			else	res = valuePrime.asBitVector().concat(res);
+			return valuePrime;
+		} else {	
+			int size = (int) cAnalyzer.getSize(type);
+			
+			@SuppressWarnings("rawtypes")
+			PointerEncoding ptrEncoding = encoding.getPointerEncoding();
+		
+			Expression idx = index, res = null;
+			for(int i = 0; i < size; i++, idx = ptrEncoding.incr(idx)) {
+				Expression value = memory.index(idx);
+				Expression valuePrime = syncValueType.castCellToExpr(value, type);
+				if(res == null) res = valuePrime;
+				else	res = valuePrime.asBitVector().concat(res);
+			}
+			return res;
 		}
-		return res;
 	}
 
 	@Override
 	public Expression getUnknownValue(xtc.type.Type type) {
 		xtc.type.Type resolvedType = type.resolve();
-		if(resolvedType.isArray() || resolvedType.isPointer())
+		if(resolvedType.isArray() || resolvedType.isPointer()) {
 			return encoding.getPointerEncoding().unknown();
-		else {
-			int size = (int) cAnalyzer.getSize(type);
+		} else {
+			int size = (int) cAnalyzer.getSize(resolvedType);
 			int wordSize = encoding.getWordSize();
 			ExpressionManager exprManager = encoding.getExpressionManager();
 			Type valueType = exprManager.bitVectorType(size * wordSize);
