@@ -7,7 +7,7 @@ typedef struct data
 int main( )
 {
    Data* data = (Data*)malloc(sizeof(Data));
-	 Data c1[20];
+   Data c1[20];
    data->i = 10;
    data->c[0] = 'c';
    (c1[2]).c[0] = 'd';
