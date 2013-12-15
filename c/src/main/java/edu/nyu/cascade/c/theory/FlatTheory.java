@@ -1,7 +1,5 @@
 package edu.nyu.cascade.c.theory;
 
-import com.google.common.base.Preconditions;
-
 import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.Theory;
 import edu.nyu.cascade.c.preprocessor.PreProcessor.Builder;
@@ -18,6 +16,7 @@ import edu.nyu.cascade.ir.expr.IntExpressionEncoding;
 import edu.nyu.cascade.ir.expr.HeapEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.MultiCellLinearFormatter;
+import edu.nyu.cascade.ir.expr.MultiCellSyncFormatter;
 import edu.nyu.cascade.ir.expr.OrderLinearMemLayoutEncoding;
 import edu.nyu.cascade.ir.expr.PartitionHeapEncoder;
 import edu.nyu.cascade.ir.expr.PointerExpressionEncoding;
@@ -64,9 +63,10 @@ public class FlatTheory implements Theory {
     	IRSoundMemLayoutEncoding memLayout = null;
     	
     	if(Preferences.MEM_ENCODING_SYNC.equals(exprEncoding)) {
-    		Preconditions.checkArgument(!Preferences.isSet(Preferences.OPTION_MULTI_CELL));
     		encoding = PointerExpressionEncoding.create(exprManager);
-    		formatter = SingleCellSyncFormatter.create(encoding);
+    		formatter = Preferences.isSet(Preferences.OPTION_MULTI_CELL) ?
+        		MultiCellSyncFormatter.create(encoding)
+        		: SingleCellSyncFormatter.create(encoding);
         heapEncoding = HeapEncoding.create(encoding, formatter);
         memLayout = SoundSyncMemLayoutEncoding.create(heapEncoding);
         
