@@ -231,7 +231,7 @@ public class Steensgaard extends PreProcessor<IRVar> {
     String nodeScopeName = CType.getScopeName(node);
     String refName = CType.getReferenceName(nodeType);
     
-    IRVar var = loadRepVar(refName, nodeScopeName, nodeType);
+    IRVarImpl var = loadRepVar(refName, nodeScopeName, nodeType);
     return getPointsToVar(var);
 	}
 
@@ -457,7 +457,7 @@ public class Steensgaard extends PreProcessor<IRVar> {
 	  }
 	}
 	
-	private IRVar loadRepVar(String name, String scopeName, Type type) {
+	private IRVarImpl loadRepVar(String name, String scopeName, Type type) {
 		if(Identifiers.CONSTANT.equals(name))	
 			return constant;
 		
@@ -499,14 +499,16 @@ public class Steensgaard extends PreProcessor<IRVar> {
 //	  	assert resType.isUnion() || resType.isStruct() || resType.isArray();
 	  	return res;
 	  } else {
-		  IRVar resPrime = res;
-		  while(num > 0) {
+	  	int iter = num;
+	  	IRVarImpl resPrime = res;
+		  while(iter > 0) {
 		  	resPrime = getPointsToVar(resPrime); 
-		  	num--;
+		  	if(resPrime == null) break;
+		  	iter--;
 		  }  
 		    
 		  if(resPrime == null) {
-		  	IOUtils.debug().pln(type.getShape() + " is uninialized.");
+		  	IOUtils.err().println(type.getShape() + " is uninialized.");
 		  	return nullLoc;
 		  }
 		  
@@ -514,8 +516,9 @@ public class Steensgaard extends PreProcessor<IRVar> {
 	  }
 	}
 
-	private IRVar getPointsToVar(IRVar var) {    
-	  ECR ecr = ((IRVarImpl) var).getECR();
+	private IRVarImpl getPointsToVar(IRVarImpl var) {
+		Preconditions.checkArgument(var != null);
+	  ECR ecr = var.getECR();
 	  ValueType type = uf.getType(ecr);
 	  assert(ValueTypeKind.LOCATION.equals(type.getKind()));
 	  /* For array, structure or union, just return the root ECR's 
