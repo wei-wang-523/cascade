@@ -5,6 +5,7 @@ import java.util.Arrays;
 
 import com.google.common.base.Preconditions;
 
+import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -229,4 +230,8 @@ public class DefaultIntegerEncoding extends
 		return divide(lhs, rhs);
 	}
 
+  @Override
+  public IntegerExpression variable(String name, Type type, boolean fresh) {
+  	return variable(name, fresh);
+  }
 }

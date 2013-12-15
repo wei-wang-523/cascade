@@ -292,4 +292,9 @@ public class TemporalIntegerEncoding<T extends Expression> extends
         baseEncoding.ofExpression(lhs.toExpression()), baseEncoding
             .ofExpression(rhs.toExpression())));
 	}
+
+	@Override
+  public StateExpression variable(String name, Type type, boolean fresh) {
+	  return stateExprFactory.valueOf((Expression) baseEncoding.variable(name, fresh));
+  }
 }

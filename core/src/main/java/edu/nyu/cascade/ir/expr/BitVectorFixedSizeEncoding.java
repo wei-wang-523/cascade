@@ -317,4 +317,10 @@ public class BitVectorFixedSizeEncoding extends
 		Preconditions.checkArgument(rhs.getType().equals(getType()));
 		return intEncoding.eq(lhs, rhs);
 	}
+	
+  @Override
+  public BitVectorExpression variable(String name, Type type, boolean fresh) {
+  	Preconditions.checkArgument(type.isBitVectorType());
+  	return type.asBitVectorType().variable(name, fresh);
+  }
 }

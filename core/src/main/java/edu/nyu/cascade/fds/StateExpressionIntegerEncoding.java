@@ -266,4 +266,9 @@ public class StateExpressionIntegerEncoding extends
 		/* FIXME: do not support conversion between types with different size */
     return wrap(x.asIntegerExpression());
   }
+
+	@Override
+  public StateExpression variable(String name, Type type, boolean fresh) {
+	  return wrap(super.variable(name, fresh));
+  }
 }

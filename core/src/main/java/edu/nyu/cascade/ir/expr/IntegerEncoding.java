@@ -80,22 +80,25 @@ public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
   BooleanExpression lessThanOrEqual(T lhs, T rhs);
 
   /**
-   * Returns a boolean expression comparing signed integers <code>lhs</code> and
+   * @return a boolean expression comparing signed integers <code>lhs</code> and
    * <code>rhs</code>.
    */
   BooleanExpression signedLessThanOrEqual(T lhs, T rhs);
   
   /**
-   * Returns an integer expression representing subtraction of the two integer
+   * @return an integer expression representing subtraction of the two integer
    * arguments.
    */
   T minus(T lhs, T rhs);
 
+  /**
+   * @return an expression representing negation of <code>arg</code>
+   */
   T negate(T arg);
 
   /**
-   * Returns a boolean expression comparing integers <code>lhs</code> and
-   * <code>rhs</code> for disequality.
+   * @return a boolean expression comparing integers <code>lhs</code> and
+   * <code>rhs</code> for inequality.
    */
   BooleanExpression neq(T lhs, T rhs) ;
   
@@ -111,18 +114,24 @@ public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
    * Returns an integer expression representing one.
    */
   T one() ;
-  
+
+  /**
+   * @return an integer expression representing <code>\sigma(args)</code>.
+   */
   T plus(Iterable<? extends T> args) ;
 
+  /**
+   * @return an integer expression representing <code>\sigma(args)</code>.
+   */
   T plus(T... args) ;
 
   /**
-   * Returns an integer expression representing the sum of the two integer arguments.
+   * @return an integer expression representing <code>lhs + rhs</code>.
    */
   T plus(T lhs, T rhs) ;
   
   /**
-   * Returns an integer expression representing the product of the two integer arguments.
+   * @return an integer expression representing <code>lhs * rhs</code>
    */
   T times(T lhs, T rhs) ;
   
@@ -136,28 +145,60 @@ public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
    */
   T mod(T lhs, T rhs);
 
+  /**
+   * @return cast <code>expr</code> to boolean expression
+   */
   BooleanExpression toBoolean(T expr);
+  
+  /**
+   * @return cast <code>expr</code> to variable expression
+   */
   VariableExpression toVariable(T expr);
   
+  /**
+   * @return an unknown expression
+   */
   T unknown();
+  
+  /**
+   * @return an unknown expression with given <code>type</code>
+   */
   T unknown(Type type);
+  
   /**
    * Returns an integer expression representing zero.
    */
   T zero() ;
   
   /**
-   * Return an expresion representing the negate of <code>expr</code>
+   * Return an expression representing <code>-expr</code>
    */
   T uminus(T expr);
   
+  /**
+   * @return an expression representing <code>lhs << rhs</code>
+   */
   T lshift(T lhs, T rhs);
   
+  /**
+   * @return an expression representing <code>lhs >> rhs</code>
+   */
   T rshift(T lhs, T rhs);
   
+  /**
+   * @return an expression representing <code>lhs % rhs</code>
+   */
   T rem(T lhs, T rhs);
   
+  /**
+   * @return an expression representing signed integers <code>lhs % rhs</code>
+   */
   T signedRem(T lhs, T rhs);
   
+  /**
+   * @return an expression representing signed integers <code>lhs / rhs</code>
+   */
   T signedDivide(T lhs, T rhs);
+  
+  T variable(String name, Type type, boolean fresh);
 }

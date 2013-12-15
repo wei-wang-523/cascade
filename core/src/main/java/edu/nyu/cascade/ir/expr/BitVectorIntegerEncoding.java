@@ -311,4 +311,10 @@ public class BitVectorIntegerEncoding extends
   	if(lhs.getSize() < rhs.getSize()) lhs = lhs.signExtend(rhs.getSize());
     return lhs.eq((Expression)rhs);
   }
+  
+  @Override
+  public BitVectorExpression variable(String name, Type type, boolean fresh) {
+  	Preconditions.checkArgument(type.isBitVectorType());
+  	return type.asBitVectorType().variable(name, fresh);
+  }
 }
