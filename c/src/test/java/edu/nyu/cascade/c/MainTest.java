@@ -365,17 +365,78 @@ public class MainTest {
   }*/
   
   @Test
-  @Ignore
+//  @Ignore
   public void testNecBenchmark() {
-  	final Tester<File> tester = parserTestWithTimeout("--mem-cell-size", "32", "--sound", "--prover", "z3", "--theory", "Partition");
-    final File valid_nec_location = new File(nec_programs_location, "valid");
-    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, tester, false);
+  	final Tester<File> FlatTester = parserTestWithTimeout("--sound", 
+  			"--prover", "z3", "--mem-cell-size", "16", "--theory", "Flat");
+  	final Tester<File> BurstallTester = parserTestWithTimeout("--sound", 
+  			"--prover", "z3", "--mem-cell-size", "16", "--theory", "Burstall");
+  	final Tester<File> PartitionTester = parserTestWithTimeout("--sound", 
+  			"--prover", "z3", "--mem-cell-size", "16", "--theory", "Partition");
+  	
+  	final Tester<File> FlatSyncTester = parserTestWithTimeout("--sound", 
+  			"--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync", "--theory", "Flat");
+  	final Tester<File> BurstallSyncTester = parserTestWithTimeout("--sound", 
+  			"--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync", "--theory", "Burstall");
+  	final Tester<File> PartitionSyncTester = parserTestWithTimeout("--sound", 
+  			"--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync", "--theory", "Partition");
+  	
+  	final Tester<File> FlatMultiCellTester = parserTestWithTimeout("--sound", "--dry-run",
+  			"--prover", "z3", "--multi-cell", "--theory", "Flat");
+  	final Tester<File> BurstallMultiCellTester = parserTestWithTimeout("--sound", "--dry-run",
+  			"--prover", "z3", "--multi-cell", "--theory", "Burstall");
+  	final Tester<File> PartitionMultiCellTester = parserTestWithTimeout("--sound", "--dry-run",
+  			"--prover", "z3", "--multi-cell", "--theory", "Partition");
+    
+  	final File valid_nec_location = new File(nec_programs_location, "valid");
     final File invalid_nec_location = new File(nec_programs_location, "invalid");
-    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, tester, false);
     final File inv_valid_nec_location = new File(nec_programs_location, "inv-valid");
-    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, tester, false);
     final File inv_invalid_nec_location = new File(nec_programs_location, "inv-invalid");
-    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, tester, false);
+    
+//    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, FlatTester, false);
+//    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, FlatTester, false);
+//    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, FlatTester, false);
+//    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, FlatTester, false);
+    
+//    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, BurstallTester, false);
+//    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, BurstallTester, false);
+//    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, BurstallTester, false);
+//    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, BurstallTester, false);
+    
+//    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, PartitionTester, false);
+//    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, PartitionTester, false);
+//    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, PartitionTester, false);
+//    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, PartitionTester, false);
+    
+//    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, FlatSyncTester, false);
+//    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, FlatSyncTester, false);
+//    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, FlatSyncTester, false);
+//    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, FlatSyncTester, false);
+
+//    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, BurstallSyncTester, false);
+//    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, BurstallSyncTester, false);
+//    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, BurstallSyncTester, false);
+//    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, BurstallSyncTester, false);
+   
+//    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, PartitionSyncTester, false);
+//    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, PartitionSyncTester, false);
+//    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, PartitionSyncTester, false);
+//    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, PartitionSyncTester, false); 
+   
+//    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, FlatMultiCellTester, false);
+//    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, FlatMultiCellTester, false);
+//    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, FlatMultiCellTester, false);
+//    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, FlatMultiCellTester, false);
+    
+//    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, BurstallMultiCellTester, false);
+//    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, BurstallMultiCellTester, false);
+//    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, BurstallMultiCellTester, false);
+//    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, BurstallMultiCellTester, false);
+    
+    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, PartitionMultiCellTester, false);
+    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, PartitionMultiCellTester, false);
+    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, PartitionMultiCellTester, false);
+    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, PartitionMultiCellTester, false);
   }
   
   @Test
@@ -393,7 +454,7 @@ public class MainTest {
   			"--prover", "z3", "--theory", "Burstall", "--mem-cell-size", "16", "--mem-encoding", "sync");
   	final Tester<File> PartitionSyncTester = parserTestWithTimeout("--feasibility", "-inline-anno", "--sound", 
   			"--prover", "z3", "--theory", "Partition", "--mem-cell-size", "16", "--mem-encoding", "sync");
-  	final Tester<File> FlatMultiCellTester = parserTest("--feasibility", "-inline-anno", "--sound", 
+  	final Tester<File> FlatMultiCellTester = parserTestWithTimeout("--feasibility", "-inline-anno", "--sound", 
   			"--prover", "z3", "--theory", "Flat", "--multi-cell");
   	final Tester<File> BurstallMultiCellTester = parserTestWithTimeout("--feasibility", "-inline-anno", "--sound", 
   			"--prover", "z3", "--theory", "Burstall", "--multi-cell");

@@ -131,7 +131,8 @@ class CExpressionEncoder implements ExpressionEncoder {
       Type lType = unwrapped(lookupType(left.getNode()));
       Type rType = unwrapped(lookupType(right.getNode()));
           	
-    	assert !(lType.isPointer() && rType.isPointer());
+    	assert !((lType.isPointer() || lType.isArray()) 
+    			&& (rType.isPointer() || rType.isArray()));
     	
       Function<Expression, Integer> getFactor = new Function<Expression, Integer>() {
 				@Override
@@ -148,7 +149,7 @@ class CExpressionEncoder implements ExpressionEncoder {
       Expression res = null;
       
       // multiplied by the size of the type of the pointer
-      if(lType.isPointer()) {
+      if(lType.isPointer() || lType.isArray()) {
       	int factor = getFactor.apply(left);
       	Expression factorExpr = encoding.integerConstant(factor);
         right = encoding.times(coerceToInteger(right), factorExpr);
@@ -159,7 +160,7 @@ class CExpressionEncoder implements ExpressionEncoder {
         } else {
           throw new ExpressionFactoryException("Invalid operation: " + op);
         }
-      } else if(rType.isPointer()) {
+      } else if(rType.isPointer() || rType.isArray()) {
       	int factor = getFactor.apply(right);
       	Expression factorExpr = encoding.integerConstant(factor);
         left = encoding.times(coerceToInteger(left), factorExpr);
@@ -341,8 +342,16 @@ class CExpressionEncoder implements ExpressionEncoder {
           GNode argNode = argList.getGeneric(idx);
           assert(argNode.hasName("PrimaryIdentifier"));
           String argName = argNode.getString(0);
-          Expression argVar = encoding.variable(argName, IRIntegerType.getInstance(), false);
-          argVarsBuilder.add(argVar);
+          Type type = lookupType(argNode).resolve();
+          if(type.isPointer()) {
+          	argVarsBuilder.add(encoding.getPointerEncoding().variable(argName, true));
+          } else if(type.isInteger()) {
+          	int size = encoding.getSizeofType(type);
+          	argVarsBuilder.add(encoding.getIntegerEncoding().variable(argName, 
+          			encoding.getExpressionManager().bitVectorType(size * encoding.getWordSize()), true));
+          } else if(type.isBoolean()) {
+          	argVarsBuilder.add(encoding.getBooleanEncoding().variable(argName, true));
+          }
         }
         body = body.subst(args, argVarsBuilder.build());
 
