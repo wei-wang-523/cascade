@@ -11,7 +11,7 @@ import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 
 /**
- * Unused formatter
+ * Formatter for multi-cell heap encoding with synchronous pointer type
  * 
  * @author Wei
  *
