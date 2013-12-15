@@ -114,8 +114,9 @@ public class SingleCellLinearFormatter implements IRDataFormatter {
 
 	@Override
 	public Expression getSizeZero() {
-		return encoding.getExpressionManager()
-				.bitVectorZero(getSizeType().asBitVectorType().getSize());
+		return encoding.getIntegerEncoding().zero();
+//		return encoding.getExpressionManager()
+//				.bitVectorZero(getSizeType().asBitVectorType().getSize());
 	}
 	
 	@Override

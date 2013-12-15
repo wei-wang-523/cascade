@@ -57,9 +57,10 @@ public class SingleCellSyncFormatter implements IRDataFormatter {
 	public ArrayExpression updateMemoryArray(ArrayExpression memory, Expression index,
 	    Expression value) {
 		if(value.isBoolean()) value = encoding.castToInteger(value);
-		if(!value.getType().equals(getValueType())) {
-			if(getValueType().isBitVectorType())
-				value = encoding.castToInteger(value, getValueType().asBitVectorType().getSize());				
+		Type valueType = getValueType();
+		if(!value.getType().equals(valueType)) {
+			if(valueType.isBitVectorType())
+				value = encoding.castToInteger(value, valueType.asBitVectorType().getSize());				
 		}
 		Type cellType = memory.getType().getElementType();
 		Expression valuePrime = syncValueType.castExprToCell(value, cellType);

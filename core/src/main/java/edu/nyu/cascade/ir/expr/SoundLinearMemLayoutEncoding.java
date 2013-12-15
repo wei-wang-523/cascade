@@ -61,8 +61,10 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 				int stVarSize = heapEncoding.getSizeOfVar(var);
 				assert (stVarSize >= 0);
 				
-				Expression stVarSizeExpr = exprManager.bitVectorConstant(
-						stVarSize, sizeType.asBitVectorType().getSize());
+//				Expression stVarSizeExpr = exprManager.bitVectorConstant(
+//						stVarSize, sizeType.asBitVectorType().getSize());
+				Expression stVarSizeExpr = exprEncoding.getIntegerEncoding()
+						.constant(stVarSize);
 				Expression varBound = exprEncoding.plus(var, stVarSizeExpr);
 				
 				for (Expression var2 : stackVars) {
@@ -70,8 +72,10 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 						int stVarSize2 = heapEncoding.getSizeOfVar(var2);
 						assert (stVarSize2 >= 0);
 	          	
-						Expression stVarSizeExpr2 = exprManager.bitVectorConstant(
-								stVarSize2, sizeType.asBitVectorType().getSize());
+//						Expression stVarSizeExpr2 = exprManager.bitVectorConstant(
+//								stVarSize2, sizeType.asBitVectorType().getSize());
+						Expression stVarSizeExpr2 = exprEncoding
+								.getIntegerEncoding().constant(stVarSize);
 						Expression varBound2 = exprEncoding.plus(var2, stVarSizeExpr2);
 						
 						if(stVarSize == 0 && stVarSize2 == 0) {
@@ -136,8 +140,10 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 											exprManager.lessThan(lval, region),
 	                    	exprManager.lessThanOrEqual(regionBound, lval)));
 						} else {
-							Expression stVarSizeExpr = exprManager.bitVectorConstant(
-									stVarSize, sizeType.asBitVectorType().getSize());
+//							Expression stVarSizeExpr = exprManager.bitVectorConstant(
+//									stVarSize, sizeType.asBitVectorType().getSize());
+							Expression stVarSizeExpr = exprEncoding.getIntegerEncoding()
+									.constant(stVarSize);
 							Expression varBound = exprEncoding.plus(lval, stVarSizeExpr);
 							
 			        /* The upper bound of the stack var won't overflow.
@@ -195,8 +201,10 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	          						exprManager.lessThanOrEqual(regionBound, lval)),
 	          				lval.neq(region)))); 	// regionBound == region
 					} else {
-						Expression stVarSizeExpr = exprManager.bitVectorConstant(
-								stVarSize, sizeType.asBitVectorType().getSize());
+//						Expression stVarSizeExpr = exprManager.bitVectorConstant(
+//								stVarSize, sizeType.asBitVectorType().getSize());
+						Expression stVarSizeExpr = exprEncoding.getIntegerEncoding()
+								.constant(stVarSize);
 						Expression varBound = exprEncoding.plus(lval, stVarSizeExpr);
 						
 		        /* The upper bound of the stack var won't overflow.
@@ -327,8 +335,10 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	    	if(stVarSize == 0) {
 	    		disjs.add(ptr.eq(stVar));
 	    	} else {
-					Expression stVarSizeExpr = exprManager.bitVectorConstant(
-							stVarSize, sizeType.asBitVectorType().getSize());
+//					Expression stVarSizeExpr = exprManager.bitVectorConstant(
+//							stVarSize, sizeType.asBitVectorType().getSize());
+					Expression stVarSizeExpr = exprEncoding.getIntegerEncoding()
+							.constant(stVarSize);
 					Expression varBound = exprEncoding.plus(stVar, stVarSizeExpr);
 	    		disjs.add(
 	    				exprManager.and(
@@ -403,8 +413,10 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	    	if(stVarSize == 0) {
 	    		disjs.add(ptr.eq(stVar));
 	    	} else {
-					Expression stVarSizeExpr = exprManager.bitVectorConstant(
-							stVarSize, sizeType.asBitVectorType().getSize());
+//					Expression stVarSizeExpr = exprManager.bitVectorConstant(
+//							stVarSize, sizeType.asBitVectorType().getSize());
+					Expression stVarSizeExpr = exprEncoding.getIntegerEncoding()
+							.constant(stVarSize);
 					Expression varBound = exprEncoding.plus(stVar, stVarSizeExpr);
 	    		disjs.add(
 	    				exprManager.and(

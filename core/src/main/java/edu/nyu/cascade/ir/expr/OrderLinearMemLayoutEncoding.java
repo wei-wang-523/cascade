@@ -57,9 +57,11 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
       for (Expression stVar : stVars) {
       	int stVarSize = heapEncoding.getSizeOfVar(stVar);
       	if(stVarSize > 0) {
-      		Expression stVarSizeExpr = exprManager.bitVectorConstant(
-      				stVarSize, sizeType.asBitVectorType().getSize());
-      		Expression stVarBound = getExpressionEncoding().plus(stVar, stVarSizeExpr);
+//      		Expression stVarSizeExpr = exprManager.bitVectorConstant(
+//      				stVarSize, sizeType.asBitVectorType().getSize());
+  				Expression stVarSizeExpr = exprEncoding.getIntegerEncoding()
+  						.constant(stVarSize);
+      		Expression stVarBound = exprEncoding.plus(stVar, stVarSizeExpr);
       		builder.add(exprManager.greaterThan(stVarBound, stVar));
       	}
       }
@@ -81,8 +83,10 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
         	builder.add(exprManager.greaterThan(stackBound, stVal2));   
         	stackBound = stVal2;
         } else {
-        	Expression stValSizeExpr2 = exprManager.bitVectorConstant(
-      				stValSize2, sizeType.asBitVectorType().getSize());      	
+//        	Expression stValSizeExpr2 = exprManager.bitVectorConstant(
+//      				stValSize2, sizeType.asBitVectorType().getSize());  
+  				Expression stValSizeExpr2 = exprEncoding.getIntegerEncoding()
+  						.constant(stValSize2);
         	Expression stValBound = exprEncoding.plus(stVal2, stValSizeExpr2);
         	builder.add(exprManager.greaterThan(stackBound, stValBound));       
         	stackBound = stVal2;
@@ -105,7 +109,7 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
           Expression regionSize = sizeArr.index(region);
 //          BitVectorExpression regionBound = exprManager.plus(addrType
 //              .getSize(), region, regionSize);
-          Expression regionBound = getExpressionEncoding().plus(region, regionSize);
+          Expression regionBound = exprEncoding.plus(region, regionSize);
           
           builder.add(exprManager.greaterThan(regionBound, region));
         }
@@ -208,8 +212,10 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	    	if(stVarSize == 0) {
 	    		disjs.add(ptr.eq(stVar));
 	    	} else {
-					Expression stVarSizeExpr = exprManager.bitVectorConstant(
-							stVarSize, sizeType.asBitVectorType().getSize());
+//					Expression stVarSizeExpr = exprManager.bitVectorConstant(
+//							stVarSize, sizeType.asBitVectorType().getSize());
+  				Expression stVarSizeExpr = exprEncoding.getIntegerEncoding()
+  						.constant(stVarSize);
 					Expression varBound = exprEncoding.plus(stVar, stVarSizeExpr);
 	    		disjs.add(
 	    				exprManager.and(
@@ -287,8 +293,10 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	    	if(stVarSize == 0) {
 	    		disjs.add(ptr.eq(stVar));
 	    	} else {
-					Expression stVarSizeExpr = exprManager.bitVectorConstant(
-							stVarSize, sizeType.asBitVectorType().getSize());
+//					Expression stVarSizeExpr = exprManager.bitVectorConstant(
+//							stVarSize, sizeType.asBitVectorType().getSize());
+  				Expression stVarSizeExpr = exprEncoding.getIntegerEncoding()
+  						.constant(stVarSize);
 					Expression varBound = exprEncoding.plus(stVar, stVarSizeExpr);
 	    		disjs.add(
 	    				exprManager.and(

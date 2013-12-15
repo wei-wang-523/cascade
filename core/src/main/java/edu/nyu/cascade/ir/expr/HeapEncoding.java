@@ -83,7 +83,7 @@ public final class HeapEncoding implements IRHeapEncoding {
 	
 	@Override
 	public Expression getSizeZero() {
-		return exprManager.bitVectorZero(sizeType.asBitVectorType().getSize());
+		return formatter.getSizeZero();
 	}
 
 	/**
