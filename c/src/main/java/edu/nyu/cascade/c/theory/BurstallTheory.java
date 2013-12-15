@@ -14,6 +14,7 @@ import edu.nyu.cascade.ir.expr.IRSoundMemLayoutEncoding;
 import edu.nyu.cascade.ir.expr.IntExpressionEncoding;
 import edu.nyu.cascade.ir.expr.HeapEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
+import edu.nyu.cascade.ir.expr.MultiCellLinearBurstallSimpleFormatter;
 import edu.nyu.cascade.ir.expr.MultiCellLinearFormatter;
 import edu.nyu.cascade.ir.expr.MultiCellSyncFormatter;
 import edu.nyu.cascade.ir.expr.OrderLinearMemLayoutEncoding;
@@ -78,8 +79,10 @@ public class BurstallTheory implements Theory {
       	} else {
       		encoding = BitVectorExpressionEncoding.create(exprManager);
       		formatter = Preferences.isSet(Preferences.OPTION_MULTI_CELL) ?
-          		MultiCellLinearFormatter.create(encoding)
-          		: SingleCellLinearFormatter.create(encoding);
+      				Preferences.isSet(Preferences.OPTION_BURSTALL_MULTI_CELL_SIMP) ?
+      						MultiCellLinearBurstallSimpleFormatter.create(encoding)
+      						: MultiCellLinearFormatter.create(encoding)
+      						: SingleCellLinearFormatter.create(encoding);
       	}
       	
       	heapEncoding = HeapEncoding.create(encoding, formatter);

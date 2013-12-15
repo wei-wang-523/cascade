@@ -182,7 +182,11 @@ public class Main {
               .create()) //
       .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_NON_OVERFLOW) //
-              .withDescription("Do not check overflow (use integer incoding).") //
+              .withDescription("No overflow checking (use integer incoding).") //
+              .create()) //
+      .addOption(
+          OptionBuilder.withLongOpt(Preferences.OPTION_BURSTALL_MULTI_CELL_SIMP) //
+              .withDescription("Simplified burstall multi-cell encoding.") //
               .create()) //
       .addOption(OptionBuilder.withLongOpt(Preferences.OPTION_UNSIGNED_OPERATION)
               .withDescription("Enable unsigned numeric operations.")
