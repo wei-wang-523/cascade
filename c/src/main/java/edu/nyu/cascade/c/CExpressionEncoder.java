@@ -262,7 +262,7 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitCharacterConstant(GNode node)
         throws ExpressionFactoryException {
-      Type type = lookupType(node).resolve();
+      Type type = lookupType(node);
       long constVal = type.getConstant().longValue();
 //      Expression res = encoding.castConstant(constVal, type);
       return encoding.integerConstant(constVal);
