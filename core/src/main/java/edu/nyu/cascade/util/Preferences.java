@@ -88,6 +88,8 @@ public class Preferences {
   /** Set the timeout of cascade */
   public static final String OPTION_TIMEOUT = "timeout";
   
+  /** Set the fixed version of Burstall multi cell */
+  public static final String OPTION_BURSTALL_MULTI_CELL_SIMP = "simp";
   
   /** Set the memory encoding: synchronous and linear */
   public static final String OPTION_MEM_ENCODING = "mem-encoding";
