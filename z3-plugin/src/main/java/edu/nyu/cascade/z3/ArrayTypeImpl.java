@@ -102,15 +102,18 @@ public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 
 	@Override
 	public Expression index(Expression array, Expression index) {
-		// TODO Auto-generated method stub
-		return null;
+		Preconditions.checkArgument(array.isArray());
+		Preconditions.checkArgument(index.getType().equals(array.asArray().getIndexType()));
+		return ArrayExpressionImpl.mkArrayIndex(getExpressionManager(), array, index);
 	}
 
 	@Override
 	public ArrayExpression update(Expression array, Expression index,
 			Expression value) {
-		// TODO Auto-generated method stub
-		return null;
+		Preconditions.checkArgument(array.isArray());
+		Preconditions.checkArgument(index.getType().equals(array.asArray().getIndexType()));
+		Preconditions.checkArgument(value.getType().equals(array.asArray().getElementType()));
+		return ArrayExpressionImpl.mkUpdate(getExpressionManager(), array, index, value);
 	}
 
 	@Override

@@ -254,7 +254,7 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
 	@Override
 	BooleanExpressionImpl create(Expr res, Expression e, Kind kind,
 			Iterable<ExpressionImpl> children) {
-		Preconditions.checkArgument(e.isBitVector());
+		Preconditions.checkArgument(e.isBoolean());
 		return BooleanExpressionImpl.create(getExpressionManager(), kind, 
 				res, e.getType().asBooleanType(), children);
 	}

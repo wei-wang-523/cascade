@@ -504,9 +504,9 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
           for(Expr arg : args) {
             int argSize = ((BitVecExpr) arg).SortSize();
             if ( argSize < size ) {
-                arg = ctx.MkZeroExt(size, (BitVecExpr) arg);
+            	arg = ctx.MkZeroExt((size-argSize), (BitVecExpr) arg);
             } else if ( argSize > size ) {
-                    arg = ctx.MkExtract(size-1, 0, (BitVecExpr) arg);
+            	arg = ctx.MkExtract(size-1, 0, (BitVecExpr) arg);
             }
             if (result == null) {
               result = arg;
