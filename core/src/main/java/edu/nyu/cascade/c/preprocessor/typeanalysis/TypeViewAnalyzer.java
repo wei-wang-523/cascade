@@ -20,10 +20,27 @@ import edu.nyu.cascade.c.preprocessor.IREquivClosure;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.ir.IRStatement;
+import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.util.CacheException;
 
-@SuppressWarnings("rawtypes")
-public class TypeCastAnalyzer extends PreProcessor {
+public class TypeViewAnalyzer extends PreProcessor<Type> {
+	
+  public static final class Builder extends PreProcessor.Builder<Type> {
+  	SymbolTable symbolTable;
+
+  	public Builder() {}
+  	
+		@Override
+    public Builder setSymbolTable(SymbolTable _symbolTable) {
+			symbolTable = _symbolTable;
+	    return this;
+    }
+
+		@Override
+    public TypeViewAnalyzer build() {
+	    return TypeViewAnalyzer.create(symbolTable);
+    }
+  }
   
   private final LoadingCache<Reference, Boolean> cache = CacheBuilder
       .newBuilder().build(new CacheLoader<Reference, Boolean>(){
@@ -33,13 +50,15 @@ public class TypeCastAnalyzer extends PreProcessor {
       });
   
   private Set<Reference> hasViewSet;
+  private TypeAnalyzer typeAnalyzer;
   
-  private TypeCastAnalyzer() {
+  private TypeViewAnalyzer(SymbolTable _symbolTable) {
     hasViewSet = Sets.newHashSet();
+    typeAnalyzer = TypeAnalyzer.create(_symbolTable);
   }
   
-  public static TypeCastAnalyzer create() {
-    return new TypeCastAnalyzer();
+  public static TypeViewAnalyzer create(SymbolTable _symbolTable) {
+    return new TypeViewAnalyzer(_symbolTable);
   }
   
   /**
@@ -131,6 +150,7 @@ public class TypeCastAnalyzer extends PreProcessor {
   @Override
   public String displaySnapShot() {
     StringBuilder sb = new StringBuilder();
+    sb.append(typeAnalyzer.displaySnapShot());
     sb.append("HasView set contains: { ");
     for(Reference ref : hasViewSet) {
       sb.append(ref).append(' ');
@@ -139,7 +159,9 @@ public class TypeCastAnalyzer extends PreProcessor {
     return sb.toString();
   }
   
+  @Override
   public void analysis(IRStatement stmt) {
+  	typeAnalyzer.analysis(stmt);
     switch (stmt.getType()) {
     case CAST: {
       Node type = stmt.getOperand(0).getSourceNode();
@@ -180,43 +202,37 @@ public class TypeCastAnalyzer extends PreProcessor {
 	}
 
 	@Override
-	public IREquivClosure getEquivClass(Object var) {
-		// TODO Auto-generated method stub
-		return null;
+	public IREquivClosure getEquivClass(Type type) {
+		return typeAnalyzer.getEquivClass(type);
 	}
 
 	@Override
-	public ImmutableMap getSnapShot() {
-		// TODO Auto-generated method stub
-		return null;
+	public ImmutableMap<Type, Set<IRVar>> getSnapShot() {
+		return typeAnalyzer.getSnapShot();
 	}
 	
 	@Override
 	public void buildSnapShot() {
-	// TODO Auto-generated method stub
+		// Don't bother to build snap shot for Burstall memory model
 	}
 
 	@Override
 	public IRVar getAllocateElem(Node node) {
-		// TODO Auto-generated method stub
-		return null;
+		return typeAnalyzer.getAllocateElem(node);
 	}
 
 	@Override
-	public Object getPointsToElem(Node node) {
-		// TODO Auto-generated method stub
-		return null;
+	public Type getPointsToElem(Node node) {
+		return typeAnalyzer.getPointsToElem(node);
 	}
 
 	@Override
-	public String getRepName(Object arg) {
-		// TODO Auto-generated method stub
-		return null;
+	public String getRepName(Type arg) {
+		return typeAnalyzer.getRepName(arg);
 	}
 
 	@Override
-	public Object getRep(Node node) {
-		// TODO Auto-generated method stub
-		return null;
+	public Type getRep(Node node) {
+		return typeAnalyzer.getRep(node);
 	}
 }

@@ -18,7 +18,7 @@ import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.CTypeNameAnalyzer;
 import edu.nyu.cascade.c.CType.CellKind;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
-import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeCastAnalyzer;
+import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeViewAnalyzer;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.expr.bak.AbstractMemoryModel;
 import edu.nyu.cascade.ir.expr.ExpressionClosure;
@@ -88,7 +88,7 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
   private final Map<String, ArrayExpression> currentMemElems;
   private final Map<String, ArrayExpression> viewVars;
   
-  private TypeCastAnalyzer analyzer = null;
+  private TypeViewAnalyzer analyzer = null;
   private ArrayExpression currentAlloc = null;
   private Expression prevDerefState = null;
   private ExpressionClosure currentState = null;
@@ -717,8 +717,8 @@ public class BurstallView2MemoryModel extends AbstractMemoryModel {
 
 	@Override
 	public void setPreProcessor(PreProcessor<?> analyzer) {
-		Preconditions.checkArgument(analyzer instanceof TypeCastAnalyzer);
-	  this.analyzer = (TypeCastAnalyzer) analyzer;
+		Preconditions.checkArgument(analyzer instanceof TypeViewAnalyzer);
+	  this.analyzer = (TypeViewAnalyzer) analyzer;
 	  IOUtils.debug().pln(analyzer.displaySnapShot());
 	}
 	

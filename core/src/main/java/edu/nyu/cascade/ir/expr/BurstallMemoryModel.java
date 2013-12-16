@@ -23,7 +23,6 @@ import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IREquivClosure;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.c.preprocessor.IRVar;
-import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeAnalyzer;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -69,7 +68,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
   private final Map<String, ExpressionClosure> sideEffectMemClosure;
   private final Map<String, ExpressionClosure> sideEffectSizeClosure;
   
-  private TypeAnalyzer analyzer = null;
+  private PreProcessor<xtc.type.Type> analyzer = null;
 
     private BurstallMemoryModel(ExpressionEncoding encoding,
 				IRPartitionHeapEncoder heapEncoder) {
@@ -413,10 +412,10 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
     return getUpdatedState(state, memPrime, sizePrime);
   }
   
-  @Override
+  @SuppressWarnings("unchecked")
+	@Override
   public void setPreProcessor(PreProcessor<?> analyzer) {
-  	Preconditions.checkArgument(analyzer instanceof TypeAnalyzer);
-    this.analyzer = (TypeAnalyzer) analyzer;
+    this.analyzer = (PreProcessor<xtc.type.Type>) analyzer;
     IOUtils.debug().pln(analyzer.displaySnapShot());
   }
 
