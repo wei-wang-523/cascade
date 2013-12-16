@@ -46,6 +46,13 @@ import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.ReservedFunction;
 import edu.nyu.cascade.util.Triple;
 
+/**
+ * Preprocessor: type analyzer for Burstall memory model
+ * 
+ * @author Wei
+ *
+ */
+
 public class TypeAnalyzer extends PreProcessor<Type> {
 	
   public static final class Builder extends PreProcessor.Builder<Type> {
