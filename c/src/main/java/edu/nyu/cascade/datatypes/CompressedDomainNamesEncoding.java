@@ -138,8 +138,8 @@ public abstract class CompressedDomainNamesEncoding extends AbstractExpressionEn
       IntegerEncoding<BitVectorExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
-      PointerEncoding<Expression> tupleEncoding) {
-    super(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
+      PointerEncoding<? extends Expression> pointerEncoding) {
+    super(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
   }
 
   protected abstract ArrayExpression doToBvString(ArrayExpression arr,

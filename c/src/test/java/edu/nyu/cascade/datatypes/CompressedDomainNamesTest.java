@@ -32,6 +32,7 @@ public class CompressedDomainNamesTest {
       throw new IllegalArgumentException("Unknown theorem prover " + tpProviderName);
   }
   
+  @Ignore("Too slow to Run")
   @Test
   public void testAssumptions() throws TheoremProverException, ExpressionFactoryException {
     theoremProver.assume( cdn.getAssumptions() );

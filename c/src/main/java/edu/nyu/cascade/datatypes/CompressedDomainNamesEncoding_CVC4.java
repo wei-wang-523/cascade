@@ -63,6 +63,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.ir.expr.ArrayEncoding;
+import edu.nyu.cascade.ir.expr.BitVectorFixedSizeEncoding;
 import edu.nyu.cascade.ir.expr.BitVectorIntegerEncoding;
 import edu.nyu.cascade.ir.expr.BooleanEncoding;
 import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
@@ -72,9 +73,9 @@ import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.ir.expr.FlatMemoryModel;
 import edu.nyu.cascade.ir.expr.IRSingleHeapEncoder;
 import edu.nyu.cascade.ir.expr.IntegerEncoding;
+import edu.nyu.cascade.ir.expr.LinearPointerEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.PointerEncoding;
-import edu.nyu.cascade.ir.expr.UnimplementedPointerEncoding;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.ArrayVariableExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
@@ -175,9 +176,10 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
     IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, cAnalyzer, WORD_SIZE);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(exprManager);
-    PointerEncoding<Expression> tupleEncoding = new UnimplementedPointerEncoding<Expression>();
+    PointerEncoding<? extends Expression> pointerEncoding = LinearPointerEncoding.create(
+    		BitVectorFixedSizeEncoding.create(exprManager, (BitVectorIntegerEncoding) integerEncoding, WORD_SIZE));
     
-    return new CompressedDomainNamesEncoding_CVC4(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
+    return new CompressedDomainNamesEncoding_CVC4(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
     
   }
   
@@ -185,8 +187,8 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
       IntegerEncoding<BitVectorExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
-      PointerEncoding<Expression> tupleEncoding) {
-    super(integerEncoding, booleanEncoding, arrayEncoding, tupleEncoding);
+      PointerEncoding<? extends Expression> pointerEncoding) {
+    super(integerEncoding, booleanEncoding, arrayEncoding, pointerEncoding);
 
     try {
       explicitUndefined = Preferences.isSet(OPTION_EXPLICIT_UNDEFINED);

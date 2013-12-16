@@ -63,6 +63,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.ir.expr.ArrayEncoding;
+import edu.nyu.cascade.ir.expr.BitVectorFixedSizeEncoding;
 import edu.nyu.cascade.ir.expr.BitVectorIntegerEncoding;
 import edu.nyu.cascade.ir.expr.BooleanEncoding;
 import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
@@ -72,9 +73,9 @@ import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.ir.expr.FlatMemoryModel;
 import edu.nyu.cascade.ir.expr.IRSingleHeapEncoder;
 import edu.nyu.cascade.ir.expr.IntegerEncoding;
+import edu.nyu.cascade.ir.expr.LinearPointerEncoding;
 import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.PointerEncoding;
-import edu.nyu.cascade.ir.expr.UnimplementedPointerEncoding;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.ArrayVariableExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
@@ -181,19 +182,20 @@ public class CompressedDomainNamesEncoding_Z3 extends CompressedDomainNamesEncod
     
     IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(expressionManager, cAnalyzer, WORD_SIZE);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(expressionManager);
-    ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(expressionManager);
-    PointerEncoding<Expression> tupleEncoding = new UnimplementedPointerEncoding<Expression>();
+    ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(expressionManager);  	
+    PointerEncoding<? extends Expression> pointerEncoding = LinearPointerEncoding.create(
+    		BitVectorFixedSizeEncoding.create(expressionManager, (BitVectorIntegerEncoding) integerEncoding, WORD_SIZE));
     
-    return new CompressedDomainNamesEncoding_Z3(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
+    return new CompressedDomainNamesEncoding_Z3(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
     
   }
   
   public CompressedDomainNamesEncoding_Z3(
-      IntegerEncoding<BitVectorExpression> integerEncoding,
+  		IntegerEncoding<BitVectorExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
-      PointerEncoding<Expression> tupleEncoding) {
-    super(integerEncoding, booleanEncoding, arrayEncoding, tupleEncoding);
+      PointerEncoding<? extends Expression> pointerEncoding) {
+    super(integerEncoding, booleanEncoding, arrayEncoding, pointerEncoding);
 
     try {
       explicitUndefined = Preferences.isSet(OPTION_EXPLICIT_UNDEFINED);
