@@ -19,6 +19,7 @@ import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IREquivClosure;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.c.preprocessor.IRVar;
+import edu.nyu.cascade.c.preprocessor.steensgaard.Steensgaard;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.util.CacheException;
@@ -51,10 +52,12 @@ public class TypeViewAnalyzer extends PreProcessor<Type> {
   
   private Set<Reference> hasViewSet;
   private TypeAnalyzer typeAnalyzer;
+  private Steensgaard ptrAnalyzer;
   
   private TypeViewAnalyzer(SymbolTable _symbolTable) {
     hasViewSet = Sets.newHashSet();
     typeAnalyzer = TypeAnalyzer.create(_symbolTable);
+    ptrAnalyzer = Steensgaard.create(_symbolTable);
   }
   
   public static TypeViewAnalyzer create(SymbolTable _symbolTable) {
@@ -88,8 +91,9 @@ public class TypeViewAnalyzer extends PreProcessor<Type> {
     Type type = CType.getType(opNode);
     if(type.resolve().isUnion() && type.hasShape()) {
       Reference ref = type.getShape();
-      Reference add_ref = new AddressOfReference(ref);
-      hasViewSet.add(add_ref);
+//      Reference add_ref = new AddressOfReference(ref);
+//      hasViewSet.add(add_ref);
+      hasViewSet.add(ref);
     }
   }
   
@@ -151,6 +155,7 @@ public class TypeViewAnalyzer extends PreProcessor<Type> {
   public String displaySnapShot() {
     StringBuilder sb = new StringBuilder();
     sb.append(typeAnalyzer.displaySnapShot());
+    sb.append(ptrAnalyzer.displaySnapShot());
     sb.append("HasView set contains: { ");
     for(Reference ref : hasViewSet) {
       sb.append(ref).append(' ');
@@ -162,6 +167,7 @@ public class TypeViewAnalyzer extends PreProcessor<Type> {
   @Override
   public void analysis(IRStatement stmt) {
   	typeAnalyzer.analysis(stmt);
+  	ptrAnalyzer.analysis(stmt);
     switch (stmt.getType()) {
     case CAST: {
       Node type = stmt.getOperand(0).getSourceNode();
@@ -214,6 +220,8 @@ public class TypeViewAnalyzer extends PreProcessor<Type> {
 	@Override
 	public void buildSnapShot() {
 		// Don't bother to build snap shot for Burstall memory model
+		typeAnalyzer.buildSnapShot();
+		ptrAnalyzer.buildSnapShot();
 	}
 
 	@Override

@@ -433,7 +433,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
   public void setPreProcessor(PreProcessor<?> analyzer) {
   	Preconditions.checkArgument(analyzer instanceof Steensgaard);
     this.analyzer = (Steensgaard) analyzer;
-    IOUtils.debug().pln(analyzer.displaySnapShot());
+    IOUtils.out().println(analyzer.displaySnapShot());
   }
   
   @Override
