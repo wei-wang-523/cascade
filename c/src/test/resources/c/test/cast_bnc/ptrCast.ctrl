@@ -2,6 +2,6 @@
   <sourceFile name="ptrCast.c" id="1" />
   <run>
     <startPosition fileId="1" line="1" />
-    <endPosition fileId="1" line="7" />
+    <endPosition fileId="1" line="10" />
   </run>
 </controlFile>
