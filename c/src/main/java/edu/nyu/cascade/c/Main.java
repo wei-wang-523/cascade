@@ -246,6 +246,9 @@ public class Main {
               .create());
 
   public static void main(String[] args) throws IOException, ParseException, TheoremProverException {
+    IOUtils.enableOut();
+    IOUtils.enableErr();
+
     Injector myInjector = createInjector(new CModule(), new CascadeModule());
     final Main main = myInjector.getInstance(Main.class);
     
@@ -590,8 +593,6 @@ public class Main {
   }
 
   public void run(List<String> files) throws IOException, ParseException, TheoremProverException {
-    IOUtils.enableOut();
-    IOUtils.enableErr();
     
     long time = System.currentTimeMillis();
 
