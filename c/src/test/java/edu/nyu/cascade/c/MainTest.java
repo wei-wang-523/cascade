@@ -38,8 +38,6 @@ public class MainTest {
       "mini_bnc");
   private static final File nec_programs_location = new File(programs_test_location,
       "nec_bnc");
-  private static final File twoLayer_programs_location = new File(programs_test_location,
-      "2layer_bnc");
   
 //  private static final File smtFile_dump_location = new File(mini_programs_location,
 //      "dump");
