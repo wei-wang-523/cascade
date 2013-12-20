@@ -365,7 +365,7 @@ public class MainTest {
   }*/
   
   @Test
-//  @Ignore
+  @Ignore("Too slow to run")
   public void testNecBenchmark() {
   	final Tester<File> FlatTester = parserTestWithTimeout("--sound", 
   			"--prover", "z3", "--mem-cell-size", "16", "--theory", "Flat", "--non-overflow");
@@ -485,6 +485,49 @@ public class MainTest {
   			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
   			"--theory", "Partition");
   	
+  	final Tester<File> FlatOrderTester = parserTestWithTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16",
+  			"--theory", "Flat");
+  	final Tester<File> BurstallOrderTester = parserTestWithTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16",
+  			"--theory", "Burstall");
+  	final Tester<File> PartitionOrderTester = parserTestWithTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16",
+  			"--theory", "Partition");
+  	
+  	final Tester<File> FlatSyncOrderTester = parserTestWithTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
+  			"--theory", "Flat");
+  	final Tester<File> BurstallSyncOrderTester = parserTestWithTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
+  			"--theory", "Burstall");
+  	final Tester<File> PartitionSyncOrderTester = parserTestWithTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
+  			"--theory", "Partition");
+  	
+  	final Tester<File> FlatMultiCellOrderTester = parserTestWithTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", 
+  			"--theory", "Flat");
+  	final Tester<File> BurstallMultiCellOrderTester = parserTestWithTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell",
+  			"--theory", "Burstall");
+  	final Tester<File> BurstallMultiCellOrderSimpTester = parserTestWithTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", "--simp", 
+  			"--theory", "Burstall");
+  	final Tester<File> PartitionMultiCellOrderTester = parserTestWithTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell",
+  			"--theory", "Partition");
+  	
+  	final Tester<File> FlatMultiCellSyncOrderTester = parserTestWithTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
+  			"--theory", "Flat");
+  	final Tester<File> BurstallMultiCellSyncOrderTester = parserTestWithTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
+  			"--theory", "Burstall");
+  	final Tester<File> PartitionMultiCellSyncOrderTester = parserTestWithTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
+  			"--theory", "Partition");
+  	
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatTester, false);
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallTester, false);
     TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionTester, false);
@@ -502,13 +545,24 @@ public class MainTest {
 //    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatMultiCellSyncTester, false);
 //    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellSyncTester, false);
 //    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionMultiCellSyncTester, false);
-  }
-  
-  @Test
-  @Ignore("Too slow to run")
-  public void test2LayerBenchmark() {
-    TestUtils.checkDirectory(twoLayer_programs_location, ctrlFileFilter,
-        parserTest("--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--theory", "Partition"), false);
+  	
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatOrderTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallOrderTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionOrderTester, false);
+    
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatSyncOrderTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallSyncOrderTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionSyncOrderTester, false);
+//    
+//    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatMultiCellOrderTester, false);
+//    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellOrderTester, false);
+//    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionMultiCellOrderTester, false);
+
+//    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellSimpOrderTester, false);
+  	
+//    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatMultiCellSyncOrderTester, false);
+//    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellSyncOrderTester, false);
+//    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionMultiCellSyncOrderTester, false);
   }
 
   /** FIXME: This is really a test for tp-tp */
