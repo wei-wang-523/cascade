@@ -1594,7 +1594,9 @@ class RunMergeProcessor implements RunProcessor {
     
     graph = functionInlineGraph(symbolTable, graph, builder.build());
     
-    assert(graph.isValid());
+    if(!graph.isValid()) {
+    	throw new RunProcessorException("Invalid graph");
+    }
     
     symbolTable.setScope(oldScope);
     

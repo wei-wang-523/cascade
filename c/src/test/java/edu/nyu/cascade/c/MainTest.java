@@ -363,7 +363,6 @@ public class MainTest {
   }*/
   
   @Test
-  @Ignore("Too slow to run")
   public void testNecBenchmark() {
   	final Tester<File> FlatTester = parserTestWithTimeout("--sound", 
   			"--prover", "z3", "--mem-cell-size", "16", "--theory", "Flat", "--non-overflow");
@@ -390,6 +389,13 @@ public class MainTest {
     final File invalid_nec_location = new File(nec_programs_location, "invalid");
     final File inv_valid_nec_location = new File(nec_programs_location, "inv-valid");
     final File inv_invalid_nec_location = new File(nec_programs_location, "inv-invalid");
+    
+    final Tester<File> dryRunTester = parserTest("--dry-run");
+    
+    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, dryRunTester, false);
+    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, dryRunTester, false);
+    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, dryRunTester, false);
+    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, dryRunTester, false);
     
 //    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, FlatTester, false);
 //    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, FlatTester, false);
