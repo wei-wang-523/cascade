@@ -44,32 +44,33 @@ public class AliasEquivClosure implements IREquivClosure {
 		properties.put(Identifiers.SCOPE, getHighestScope(elements));
 	}
 	
-	private Scope getHighestScope(Iterable<IRVar> elements) {
-		Scope rootScope = null;
-		for(IRVar elem : elements) {
-			if(rootScope == null) { 
-				rootScope = elem.getScope();
-			} else {
-				Scope elemScope = elem.getScope();
-				if(elemScope.equals(rootScope)) continue;
-				if(CScopeAnalyzer.isNestedOrEqual(rootScope, elemScope)) continue;
-				
-				if(CScopeAnalyzer.isNested(elemScope, rootScope)) {
-					// Replace rootScope with high level scope
-					rootScope = elemScope; continue;
-				}
-				
-				assert(elemScope.getParent().equals(rootScope.getParent()));
-				rootScope = rootScope.getParent();
-			}
+    private Scope getHighestScope(Iterable<IRVar> elements) {
+	Scope rootScope = null;
+	for(IRVar elem : elements) {
+	    if(rootScope == null) { 
+		rootScope = elem.getScope();
+	    } else {
+		Scope elemScope = elem.getScope();
+		if(elemScope.equals(rootScope)) continue;
+		if(CScopeAnalyzer.isNestedOrEqual(rootScope, elemScope)) continue;
+		
+		if(CScopeAnalyzer.isNested(elemScope, rootScope)) {
+		    // Replace rootScope with high level scope
+		    rootScope = elemScope; continue;
 		}
 		
-		if(rootScope == null) {
-			throw new IllegalArgumentException("Root scope is null");
+		while(!CScopeAnalyzer.isNestedOrEqual(rootScope, elemScope)) {
+		    rootScope = rootScope.getParent();
 		}
-		return rootScope;
+	    }
 	}
 	
+	if(rootScope == null) {
+	    throw new IllegalArgumentException("Root scope is null");
+	}
+	return rootScope;
+    }
+
 	public static AliasEquivClosure create(Steensgaard preprocessor, IRVar repVar) {
 		Preconditions.checkArgument(preprocessor.getSnapShot() != null);
 		Preconditions.checkArgument(preprocessor.getSnapShot().containsKey(repVar));
