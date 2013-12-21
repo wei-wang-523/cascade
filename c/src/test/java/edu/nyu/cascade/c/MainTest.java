@@ -390,7 +390,7 @@ public class MainTest {
     final File inv_valid_nec_location = new File(nec_programs_location, "inv-valid");
     final File inv_invalid_nec_location = new File(nec_programs_location, "inv-invalid");
     
-    final Tester<File> dryRunTester = parserTest("--dry-run");
+    final Tester<File> dryRunTester = parserTestWithTimeout("--dry-run");
     
     TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, dryRunTester, false);
     TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, dryRunTester, false);
