@@ -48,6 +48,10 @@ final class Path {
     return new Path(stmts, srcBlock, destBlock);
   }
   
+  static Path createWithBlock(IRBasicBlock block) {
+  	return create(block.getStatements(), block, block);
+  }
+  
   private Path(List<? extends IRStatement> stmts, IRBasicBlock srcBlock, IRBasicBlock destBlock) {
     this.destBlock = destBlock;
     this.srcBlock = srcBlock;

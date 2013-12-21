@@ -386,7 +386,7 @@ class RunMergeProcessor implements RunProcessor {
       /* build path for block */
       Path path = blockPathMap.get(block);
       if(path == null) {
-        path = Path.create(block.getStatements(), block, block);
+        path = Path.createWithBlock(block);
         blockPathMap.put(block, path);
       }
       
@@ -396,7 +396,7 @@ class RunMergeProcessor implements RunProcessor {
         IRBasicBlock srcBlock = edge.getSource();
         Path srcPath = blockPathMap.get(srcBlock);
         if(srcPath == null) {
-          srcPath = Path.create(srcBlock.getStatements(), srcBlock, srcBlock);
+          srcPath = Path.createWithBlock(srcBlock);
           blockPathMap.put(srcBlock, srcPath);
         }
         
@@ -440,7 +440,7 @@ class RunMergeProcessor implements RunProcessor {
     if(predecessorMap.isEmpty()) { // start == target and start.type != LOOP
       if(start != target || (start == target && start.getType().equals(IRBasicBlock.Type.LOOP))) 
         throw new RunProcessorException("Failure to build graph from " + start + " to " + target);
-      graph = Graph.createSingleton(Path.create(start.getStatements(), start, start));
+      graph = Graph.createSingleton(Path.createWithBlock(start));
     } else {
       graph = Graph.create(predecessorMap, blockPathMap.get(start), blockPathMap.get(target));
     }

@@ -156,7 +156,7 @@ public final class Graph {
   
   void addInvariantPath(Path prePath, Path postPath) {
     if(prePath == null || postPath == null)    return;
-    assert(srcPath == destPath);
+    assert(srcPath.isCopyOf(destPath));
     Set<Path> preDestPaths = predecessorMap.remove(destPath);
     predecessorMap.put(postPath, preDestPaths);
     predecessorMap.put(srcPath, Sets.newHashSet(prePath));
