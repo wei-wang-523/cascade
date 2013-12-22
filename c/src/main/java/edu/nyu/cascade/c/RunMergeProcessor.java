@@ -931,10 +931,10 @@ class RunMergeProcessor implements RunProcessor {
         symbolTable.define(varName, varInfo);
         
         if(node.equals(resNode)) {
-          funcNodeReplaceMap.put(node, (Node)varNode); // f(a) : cascade_tmp_x
+          funcNodeReplaceMap.put(node, varNode); // f(a) : cascade_tmp_x
         } else {
           funcNodeReplaceMap.put(node, resNode); // g(f(a)) : g(cascade_tmp_x1)
-          funcNodeReplaceMap.put(resNode, (Node)varNode); // g(cascade_tmp_x1) : cascade_tmp_x2
+          funcNodeReplaceMap.put(resNode, varNode); // g(cascade_tmp_x1) : cascade_tmp_x2
         }
       } else {
         if(!node.equals(resNode))  funcNodeReplaceMap.put(node, resNode);
@@ -1593,7 +1593,7 @@ class RunMergeProcessor implements RunProcessor {
     }
     
     graph = functionInlineGraph(symbolTable, graph, builder.build());
-    
+//    graph.simplify();
     if(!graph.isValid()) {
     	throw new RunProcessorException("Invalid graph");
     }

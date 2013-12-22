@@ -262,7 +262,7 @@ public class Main {
         @Override
         public void run() {
           try {
-  					main.run(files);
+          	main.run(files);
   				} catch (TheoremProverException e) {
   					// TODO Auto-generated catch block
   					e.printStackTrace();
@@ -333,7 +333,7 @@ public class Main {
   }
   
   private void failOnException(Throwable e) {
-    e.printStackTrace(IOUtils.err());
+  	IOUtils.err().println(e.getMessage());
     IOUtils.err().flush();
     runtime.exit();
   }

@@ -244,7 +244,9 @@ public final class Graph {
     while(!queue.isEmpty()) {
       Path currPath = queue.poll();
       if(currPath.isEmpty()) {
-        for(Path prePath : predecessorMap.get(currPath)) {
+    	Set<Path> prePaths =  predecessorMap.get(currPath);
+    	if(prePaths == null)	continue;
+        for(Path prePath : prePaths) {
           queue.add(prePath);
           Set<Path> succPaths = null;
           if(successorMap.containsKey(prePath))
@@ -260,7 +262,9 @@ public final class Graph {
           IRStatement assignResult = replaceReturnStmt(lastStmt, assignStmt);
           Path newPath = Path.createSingleton(assignResult);
           predecessorMap.put(newPath, Sets.newHashSet(currPath));
-          for(Path succPath : successorMap.get(currPath)) {
+          Set<Path> succPaths = successorMap.get(currPath);
+          if(succPaths == null)	continue;
+          for(Path succPath : succPaths) {
             Set<Path> prePaths = predecessorMap.get(succPath);
             prePaths.remove(currPath);
             prePaths.add(newPath);
