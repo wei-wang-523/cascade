@@ -230,7 +230,9 @@ class RunMergeProcessor implements RunProcessor {
     boolean loop = start.equals(target); /* && start.getType().equals(IRBasicBlock.Type.LOOP);*/
     if(loop) {
       queue.remove();
-      assert(queue.isEmpty());
+      if(!queue.isEmpty()) {
+      	throw new RunProcessorException("Invalid bread first search.");
+      }
       for (IREdge<?> ve : cfg.getIncomingEdges(target)) {
         List<IREdge<?>> path = Lists.newArrayList();
         path.add(ve);
@@ -817,11 +819,13 @@ class RunMergeProcessor implements RunProcessor {
       throws RunProcessorException {
     
     if(!isDefinedFuncCall(rhsStmt))	{
-    	IOUtils.err().println("Function call " + rhsStmt + " is only declared but not yet implemented.");
+    	IOUtils.debug().pln("Function call " + rhsStmt + " is only declared but not yet implemented.");
     	return Graph.createSingleton(Path.createSingleton(lhsStmt));
     }
     
     Graph funcGraph = collectStmtFromFunction(rhsStmt, func);
+    
+    /* add the assign argument to parameter statement */
     List<IRStatement> paramPassStmts = assignArgToParam(symbolTable, lhsStmt, rhsStmt);
     funcGraph.appendPrePath(Path.createSingleton(paramPassStmts));
     
@@ -848,7 +852,7 @@ class RunMergeProcessor implements RunProcessor {
     Preconditions.checkArgument(stmt.getType().equals(StatementType.CALL));
     
     if(!isDefinedFuncCall(stmt))	{
-    	IOUtils.err().println("Function call " + stmt + " is only declared but not yet implemented.");
+    	IOUtils.debug().pln("Function call " + stmt + " is only declared but not yet implemented.");
     	return Graph.createSingleton(Path.createSingleton(stmt));
     }
     
@@ -927,7 +931,9 @@ class RunMergeProcessor implements RunProcessor {
         IRVarInfo varInfo = new VarInfo(symbolTable.getCurrentScope(),
         		varName, IRIntegerType.getInstance(), varNode);
         
-        assert !symbolTable.isDefined(varName);
+        if(symbolTable.isDefined(varName)) {
+        	throw new RunProcessorException(varName + " is defined in symbol table.");
+        }
         symbolTable.define(varName, varInfo);
         
         if(node.equals(resNode)) {
@@ -1071,8 +1077,10 @@ class RunMergeProcessor implements RunProcessor {
       CallPoint func = null;
       if(funcs_copy != null) {
         Node funcNode = stmtRmv.getSourceNode();
-        assert(funcNode.hasName("FunctionCall") 
-            && funcNode.getNode(0).hasName("PrimaryIdentifier"));
+        if(!(funcNode.hasName("FunctionCall") 
+            && funcNode.getNode(0).hasName("PrimaryIdentifier"))) {
+        	throw new RunProcessorException("Invalid node " + funcNode);
+        }
         String funcName = funcNode.getNode(0).getString(0);
         Iterator<CallPoint> itr = funcs_copy.iterator();
         while(itr.hasNext()) {
@@ -1143,12 +1151,15 @@ class RunMergeProcessor implements RunProcessor {
     /* No function call, no change */
     if(funcPathMap.size() == 0) return graph;
     
+    // FIXME: how about the call pos and function call statement do not match order?
     Iterator<Position> callPosItr = null;
     if(callPos != null) {
       callPosItr = Lists.reverse(callPos).iterator();
     }
     
-    /* Call function inlining for each path with function call */
+    /** Call function in-line for each path with function call, 
+     * and collect each pair in funcPathMap.
+     */
     for(Path keyPath : funcPathMap.keySet()) {
       Graph funcGraph = null;
       if(callPosItr != null && callPosItr.hasNext()) {
@@ -1186,18 +1197,17 @@ class RunMergeProcessor implements RunProcessor {
     for(Path keyPath : funcPathMap.keySet())
       predecessorMap.putAll(funcPathMap.get(keyPath).getPredecessorMap());
     
-    if(!(graph.getSrcPath() == graph.getDestPath())) {
+    if(graph.isLoop()) {
+    	Path srcPath = funcPathMap.containsKey(graph.getSrcPath()) ? 
+          funcPathMap.get(graph.getSrcPath()).getSrcPath() : graph.getSrcPath();
+      return Graph.create(predecessorMap, srcPath, srcPath);
+    } else {
       Path srcPath = funcPathMap.containsKey(graph.getSrcPath()) ? 
           funcPathMap.get(graph.getSrcPath()).getSrcPath() : graph.getSrcPath();
       Path destPath = funcPathMap.containsKey(graph.getDestPath()) ? 
           funcPathMap.get(graph.getDestPath()).getDestPath() : graph.getDestPath();
       
       return Graph.create(predecessorMap, srcPath, destPath);
-    } else {
-      Path destPath = funcPathMap.containsKey(graph.getDestPath()) ? 
-          funcPathMap.get(graph.getDestPath()).getDestPath() : graph.getDestPath();
-          
-      return Graph.create(predecessorMap, destPath, destPath);
     }
   }
   
@@ -1424,7 +1434,10 @@ class RunMergeProcessor implements RunProcessor {
       CExpression argExpr = CExpression.create(spec,symbolTable.getCurrentScope());
       IOUtils.debug().pln(argExpr.toString()).flush();
       
-      assert(position.getLoops().size() == 1); 
+      if(position.getLoops().size() != 1) {
+      	throw new RunProcessorException("position " + position + " has more than one loop.");
+      }
+      
       /* Pick all statements from the loop body */
       Graph loopGraph = processRun(position, position, 
           position.getLoops().iterator().next().getWayPoint());
@@ -1528,7 +1541,20 @@ class RunMergeProcessor implements RunProcessor {
         Pair<? extends IRBasicBlock, ? extends IRBasicBlock> pair = 
             getTargetBlock(cfg, block, pos);
         IRBasicBlock target = pair.fst();
-        Graph wayGraph = buildPathGraphToBlock(cfg, block, target);
+        
+        Graph wayGraph = null;
+        if(block != target) {
+        	wayGraph = buildPathGraphToBlock(cfg, block, target);
+        } else {
+        	/* FIXME: if source block and target block are same, 
+        	 * if there's loop in cfg between them, call buildPathGraphToBlock
+        	 * would get the graph between them, otherwise, would build an
+        	 * empty graph. We want to avoid it by just creating a single 
+        	 * graph with a single block.
+        	 */
+        	wayGraph = Graph.createSingleton(Path.createWithBlock(block));
+        }
+        
         block = pair.snd();
             
         Scope currScope = symbolTable.getCurrentScope();
@@ -1591,7 +1617,10 @@ class RunMergeProcessor implements RunProcessor {
           builder.add(waypoint);
       }
     }
-    
+//    graph.simplify();
+    if(!graph.isValid()) {
+    	throw new RunProcessorException("Invalid graph");
+    }
     graph = functionInlineGraph(symbolTable, graph, builder.build());
 //    graph.simplify();
     if(!graph.isValid()) {
@@ -1641,7 +1670,8 @@ class RunMergeProcessor implements RunProcessor {
     return newNode;
   }
   
-  private void preprocessGraph(final PreProcessor<?> preprocessor, final Graph graph) {
+  private void preprocessGraph(final PreProcessor<?> preprocessor, final Graph graph) 
+  		throws RunProcessorException {
   	pathEncoder.preprocessGraph(preprocessor, graph);
   }
   

@@ -44,6 +44,7 @@ public final class Graph {
   
   static Graph create(Map<Path, Set<Path>> map, 
       Path srcPath, Path destPath) {
+  	Preconditions.checkArgument(isValid(destPath, srcPath, map));
     return new Graph(map, srcPath, destPath);
   }
   
@@ -92,14 +93,18 @@ public final class Graph {
     return currPath.getLastStmt();
   }
   
-  void appendPreGraph(Graph preGraph) { 
+  void appendPreGraph(Graph preGraph) throws RunProcessorException { 
     if(preGraph == null)    return;
+    Preconditions.checkArgument(!isConnected(preGraph));
+    Preconditions.checkArgument(preGraph.isValid());
     Map<Path, Set<Path>> preMap = preGraph.predecessorMap;
     Path preDestPath = preGraph.destPath;
   
     predecessorMap.putAll(preMap);
     if(preDestPath != srcPath) {
       Set<Path> predecessorPaths = Sets.newHashSet(preDestPath);
+    	if(predecessorMap.containsKey(srcPath)) // loop in graph
+    		predecessorPaths.addAll(predecessorMap.get(srcPath));
       predecessorMap.put(srcPath, predecessorPaths);
       srcPath = preGraph.srcPath;
     } else {
@@ -109,14 +114,19 @@ public final class Graph {
   
   void appendAllPreGraph(Iterable<Graph> preGraphs) throws RunProcessorException { 
     Preconditions.checkArgument(preGraphs != null && !Iterables.isEmpty(preGraphs));
+    Preconditions.checkArgument(Iterables.all(preGraphs, new Predicate<Graph>(){
+    	@Override
+    	public boolean apply(Graph graph) {
+    		return !isConnected(graph) && graph.isValid();
+    	}
+    }));
     final Path preSrcPath = Iterables.get(preGraphs, 0).srcPath;
-    boolean sameSrcPath = Iterables.all(preGraphs, new Predicate<Graph>(){
+    Preconditions.checkArgument(Iterables.all(preGraphs, new Predicate<Graph>(){
       @Override
       public boolean apply(Graph graph) {
         return graph.srcPath==preSrcPath;
       }
-    });
-    if(!sameSrcPath)   throw new RunProcessorException("Invalid graph");
+    }));
     
     for(Graph preGraph : preGraphs) {
       for(Entry<Path, Set<Path>> entry: preGraph.predecessorMap.entrySet()) {
@@ -139,14 +149,18 @@ public final class Graph {
     srcPath = preSrcPath;
   }
   
-  void appendPostGraph(Graph postGraph) {  
+  void appendPostGraph(Graph postGraph) throws RunProcessorException {
     if(postGraph == null)   return;
+  	Preconditions.checkArgument(postGraph.isValid());
+    Preconditions.checkArgument(!isConnected(postGraph));
     Map<Path, Set<Path>> postMap = postGraph.predecessorMap;
     Path postSrcPath = postGraph.srcPath;
     
     predecessorMap.putAll(postMap);
     if(postSrcPath != destPath) {
-      Set<Path> predecessorPaths = Sets.newHashSet(destPath);
+    	Set<Path> predecessorPaths = Sets.newHashSet(destPath);
+    	if(predecessorMap.containsKey(postSrcPath)) // loop in postGraph
+    		predecessorPaths.addAll(predecessorMap.get(postSrcPath));
       predecessorMap.put(postSrcPath, predecessorPaths); 
       destPath = postGraph.destPath;
     } else {
@@ -154,7 +168,8 @@ public final class Graph {
     }
   }
   
-  void addInvariantPath(Path prePath, Path postPath) {
+  void addInvariantPath(Path prePath, Path postPath) throws RunProcessorException {
+  	Preconditions.checkArgument(isValid());
     if(prePath == null || postPath == null)    return;
     assert(srcPath.isCopyOf(destPath));
     Set<Path> preDestPaths = predecessorMap.remove(destPath);
@@ -164,7 +179,8 @@ public final class Graph {
     destPath = postPath;
   }
   
-  void insertBefore(Path destPath, Path insertPath) {
+  void insertBefore(Path destPath, Path insertPath) 
+  		throws RunProcessorException {
     Preconditions.checkArgument(destPath != null);
     if(insertPath == null)  return;
     Set<Path> prePaths = predecessorMap.remove(destPath);
@@ -177,16 +193,51 @@ public final class Graph {
     }
   }
   
-  void appendPrePath(Path path) {
+  void appendPrePath(Path path) throws RunProcessorException {
+  	Preconditions.checkArgument(isValid());
     if(path == null)    return;
-    predecessorMap.put(srcPath, Sets.newHashSet(path));
-    srcPath = path;
+    if( isLoop() )	{ // loop
+    	Set<Path> preSrcPath = predecessorMap.remove(srcPath);
+    	predecessorMap.put(path, preSrcPath);
+    	predecessorMap.put(srcPath, Sets.newHashSet(path));
+    } else {
+    	Preconditions.checkArgument(!predecessorMap.containsKey(srcPath));
+      predecessorMap.put(srcPath, Sets.newHashSet(path));
+      srcPath = path;
+    }
   }
   
-  void appendPostPath(Path path) {
+  void appendPostPath(Path path) throws RunProcessorException {
     if(path == null)    return;
-    predecessorMap.put(path, Sets.newHashSet(destPath));
-    destPath = path;
+    Preconditions.checkArgument(isValid());
+    if( isLoop() )	{ // loop
+    	Set<Path> keySet = predecessorMap.keySet();
+    	for(Path keyPath : keySet) {
+    		Set<Path> prePaths = predecessorMap.get(keyPath);
+    		if(prePaths.contains(destPath)) {
+    			prePaths.remove(destPath);
+    			prePaths.add(path);
+    			predecessorMap.put(keyPath, prePaths);
+    		}
+    	}
+      predecessorMap.put(path, Sets.newHashSet(destPath));
+    } else {
+      predecessorMap.put(path, Sets.newHashSet(destPath));
+      destPath = path;
+    }
+  }
+  
+  boolean isLoop() {
+  	return srcPath == destPath && !predecessorMap.isEmpty();
+  }
+  
+  private boolean isConnected(Graph graph) {
+  	Set<Path> keyPaths1 = predecessorMap.keySet();
+  	Set<Path> keyPaths2 = graph.predecessorMap.keySet();
+  	for(Path keyPath1 : keyPaths1) {
+  		if(keyPaths2.contains(keyPath1)) return true;
+  	}
+  	return false;
   }
   
   private boolean hasReturnStmt(Path path) {
@@ -244,8 +295,8 @@ public final class Graph {
     while(!queue.isEmpty()) {
       Path currPath = queue.poll();
       if(currPath.isEmpty()) {
-    	Set<Path> prePaths =  predecessorMap.get(currPath);
-    	if(prePaths == null)	continue;
+      	Set<Path> prePaths =  predecessorMap.get(currPath);
+      	if(prePaths == null)	continue;
         for(Path prePath : prePaths) {
           queue.add(prePath);
           Set<Path> succPaths = null;
@@ -262,6 +313,8 @@ public final class Graph {
           IRStatement assignResult = replaceReturnStmt(lastStmt, assignStmt);
           Path newPath = Path.createSingleton(assignResult);
           predecessorMap.put(newPath, Sets.newHashSet(currPath));
+//          if(currPath == destPath)	
+//          	destPath = newPath;
           Set<Path> succPaths = successorMap.get(currPath);
           if(succPaths == null)	continue;
           for(Path succPath : succPaths) {
@@ -422,20 +475,73 @@ public final class Graph {
   }
   
   boolean isValid() {
+  	if(predecessorMap.isEmpty()) {
+  		if(destPath == srcPath) return true;
+  		return false;
+  	}
+  	
     Map<Path, Set<Path>> map = Maps.newLinkedHashMap(predecessorMap);
     Queue<Path> queue = Lists.newLinkedList();
+    Set<Path> visited = Sets.newHashSet();
     queue.add(destPath);
+    visited.add(destPath);
     
     while(!queue.isEmpty()) {
       Path path = queue.poll();
       Set<Path> prePaths = map.remove(path);
       if(prePaths == null) continue;
       for(Path prePath : prePaths) {
-        if(!queue.contains(prePath))
+        if(!visited.contains(prePath)) {
           queue.add(prePath);
+          visited.add(prePath);
+        }
       }
     }
     
-    return map.isEmpty();
+    return map.isEmpty() && visited.contains(srcPath);
+  }
+  
+  boolean containsLoop() {
+  	List<Path> stack = Lists.newArrayList();
+   	Set<Path> visited = Sets.newHashSet();
+   	stack.add(destPath);
+  	while(!stack.isEmpty()) {
+  		Path path = stack.remove(0);
+  		if(!visited.contains(path)) {
+  			visited.add(path);
+  			Set<Path> prePaths = predecessorMap.get(path);
+  			if(prePaths != null) stack.addAll(prePaths);
+  		} else {
+  			return true;
+  		}
+  	}
+  	return false;
+  }
+  
+  static boolean isValid(Path _destPath, Path _srcPath, Map<Path, Set<Path>> _predecessorMap) {
+  	if(_predecessorMap.isEmpty()) {
+  		if(_destPath == _srcPath) return true;
+  		return false;
+  	}
+  	
+    Map<Path, Set<Path>> map = Maps.newLinkedHashMap(_predecessorMap);
+    Queue<Path> queue = Lists.newLinkedList();
+    Set<Path> visited = Sets.newHashSet();
+    queue.add(_destPath);
+    visited.add(_destPath);
+    
+    while(!queue.isEmpty()) {
+      Path path = queue.poll();
+      Set<Path> prePaths = map.remove(path);
+      if(prePaths == null) continue;
+      for(Path prePath : prePaths) {
+        if(!queue.contains(prePath)) {
+          queue.add(prePath);
+          visited.addAll(prePaths);
+        }
+      }
+    }
+    
+    return map.isEmpty() && visited.contains(_srcPath);
   }
 }

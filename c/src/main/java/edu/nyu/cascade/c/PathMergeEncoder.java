@@ -1,12 +1,11 @@
 package edu.nyu.cascade.c;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -20,6 +19,7 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.SatResult;
 import edu.nyu.cascade.prover.ValidityResult;
 import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.Preferences;
 
 /**
@@ -31,7 +31,6 @@ import edu.nyu.cascade.util.Preferences;
 final class PathMergeEncoder implements PathEncoder {
   private PathEncoding pathEncoding;
   private boolean runIsValid, runIsFeasible, checkFeasibility;
-  private boolean succeed;
   
   PathMergeEncoder(PathEncoding pathEncoding) {
     this.pathEncoding = pathEncoding;
@@ -69,12 +68,14 @@ final class PathMergeEncoder implements PathEncoder {
     checkFeasibility = b;
   }
   
-  protected Expression encodeGraph(final Graph graph) throws PathFactoryException {
+  protected void encodeGraph(final Graph graph) throws PathFactoryException, RunProcessorException {
+  	Preconditions.checkArgument(graph.isValid());
     Map<Path, Expression> pathExprMap = Maps.newHashMap();
-    return encodePath(graph, graph.getDestPath(), pathExprMap);
+    encodePath(graph, graph.getDestPath(), pathExprMap);
   }
   
   protected void preprocessGraph(final PreProcessor<?> preprocessor, final Graph graph) {
+  	Preconditions.checkArgument(graph.isValid());
   	Set<Path> visitedPath = Sets.newHashSet();
   	preprocessPath(preprocessor, graph, graph.getDestPath(), visitedPath);
   	preprocessor.buildSnapShot();
@@ -139,82 +140,102 @@ final class PathMergeEncoder implements PathEncoder {
   
   /**
    * Encode current path with a collection of pre-conditions;
-   * return null, if encoding of one pre-path failed
+   * 
+	 * @return a pair of pre-condition and whether the checking 
+	 * of prover is succeeded or not.
    */
-  private Expression encodePathWithPreConds(Path currPath, final Iterable<Expression> preConds,
+  
+  private Pair<Expression, Boolean> encodePathWithPreConds(Path currPath, final Iterable<Expression> preConds,
       final Iterable<Expression> preGuards) throws PathFactoryException {
-    Preconditions.checkArgument(preConds != null && !Iterables.isEmpty(preConds));
-    Preconditions.checkArgument(preGuards == null ||
-        Iterables.size(preGuards) == Iterables.size(preConds));
+    Preconditions.checkArgument(!Iterables.isEmpty(preConds));
+    Preconditions.checkArgument(Iterables.size(preGuards) == Iterables.size(preConds));
     
-    Expression preCond = null;
-    
-    int size = Iterables.size(preConds);
-    if(size == 1) {
-      preCond = Iterables.get(preConds, 0);
-    } else {
-      /* more than one preConds and preGuards, merge it before encode statement */
-      preCond = pathEncoding.noop(preConds, preGuards);      
-    }
-
+    Expression preCond = pathEncoding.noop(preConds, preGuards); 
+    return encodePathWithPreCond(currPath, preCond);
+  }
+  
+  /**
+   * Encode current path with a collection of pre-conditions
+   * 
+   * @return a pair of pre-condition and whether the checking 
+   * of prover is succeeded or not.
+   */
+  private Pair<Expression, Boolean> encodePathWithPreCond(Path currPath, Expression preCond) 
+  		throws PathFactoryException {
+  	if(currPath.isEmpty()) return Pair.of(preCond, true);
+  	
+  	Expression preCondition = preCond;
+  	boolean succeed = false;
     for(IRStatement stmt : currPath.getStmts()) {
-      preCond = encodeStatement(stmt, preCond);
+    	preCondition = encodeStatement(stmt, preCondition);
       
       /* This stmt is conditional control flow graph guard */
       if(stmt.getPreLabels().contains(COND_ASSUME_LABEL))
-        currPath.addGuard(preCond.asTuple().getChild(1));
+        currPath.addGuard(preCondition.asTuple().getChild(1));
       
-      succeed = checkPreCondition(preCond, stmt);
+      succeed = checkPreCondition(preCondition, stmt);
       if(!succeed) {
         if (runIsValid() && !runIsFeasible())
           IOUtils.err().println("WARNING: path assumptions are unsatisfiable");
-        return null;
+        return Pair.of(null, succeed);
       }
     }
     
-    return preCond;
+    return Pair.of(preCondition, succeed);
   }
   
   /** 
-   * Encode currPath within graph, return preCondition; 
-   * return null, if encoding of one pre-path failed
+   * Encode currPath within graph, return preCondition.
+   * 
+   * @return a pair of pre-condition and whether the checking 
+   * of prover is succeeded or not.
    */
-  private Expression encodePath(final Graph graph, Path currPath, Map<Path, Expression> pathExprMap) 
+  private Pair<Expression, Boolean> encodePath(final Graph graph, Path currPath, Map<Path, Expression> pathExprMap) 
       throws PathFactoryException {
     if(pathExprMap.containsKey(currPath))   
-      return pathExprMap.get(currPath);
+    	return Pair.of(pathExprMap.get(currPath), true);
     
-    List<Expression> preConds = null, preGuards = null;
     Map<Path, Set<Path>> map = graph.getPredecessorMap();  
-    if(map == null)
-      preConds = Lists.newArrayList(pathEncoding.emptyPath());
-    else {    
+    if(map == null || !map.containsKey(currPath)) {
+      Expression preCond = pathEncoding.emptyPath();
+      Pair<Expression, Boolean> resPair = encodePathWithPreCond(currPath, preCond);
+      if(resPair.snd()) pathExprMap.put(currPath, resPair.fst());
+      return resPair;
+    } else {
       Set<Path> prePaths = map.get(currPath);
-      if(prePaths == null) {
-        preConds = Lists.newArrayList(pathEncoding.emptyPath());
-      } else {
-        /* Collect the preconditions of pre-paths */
-        preConds = Lists.newArrayList();
-        for(Path prePath : prePaths) {
-          Expression preCond = encodePath(graph, prePath, pathExprMap);
-          if(preCond == null)  return null;
-          preConds.add(preCond);
-          if(prePath.hasGuard()) {
-            Expression guard = pathEncoding.getExpressionManager().and(prePath.getGuards());
-            if(preGuards == null) 
-              preGuards = Lists.newArrayList(guard);
-            else
-              preGuards.add(guard);
-          }
-        }
-        if(preGuards != null && !preGuards.isEmpty()) {
-          currPath.addGuard(pathEncoding.getExpressionManager().or(preGuards));
+      /* Collect the preconditions of pre-paths */
+      ImmutableList.Builder<Expression> preCondsBuilder = new ImmutableList.Builder<Expression>();
+      ImmutableList.Builder<Expression> preGuardsBuilder = new ImmutableList.Builder<Expression>();
+      for(Path prePath : prePaths) {
+        Pair<Expression, Boolean> resPair = encodePath(graph, prePath, pathExprMap);
+        
+        /* If the check is failed, stop encoding, just return */
+        if(!resPair.snd())	return resPair;
+        
+        preCondsBuilder.add(resPair.fst());
+        if(prePath.hasGuard()) {
+          Expression guard = pathEncoding.getExpressionManager().and(prePath.getGuards());
+          preGuardsBuilder.add(guard);
         }
       }
+      
+      ImmutableList<Expression> preGuards = preGuardsBuilder.build();
+      ImmutableList<Expression> preConds = preCondsBuilder.build();
+      
+      Pair<Expression, Boolean> resPair = null;
+      if(!preGuards.isEmpty()) {
+        currPath.addGuard(pathEncoding.getExpressionManager().or(preGuards));
+        resPair = encodePathWithPreConds(currPath, preConds, preGuards);
+      } else {
+      	if(preConds.size() != 1)
+      		throw new PathFactoryException("Unmatched number of pre-conditions and pre-guards");
+      	Expression preCond = preConds.get(0);
+      	resPair = encodePathWithPreCond(currPath, preCond);
+      }
+      
+      if(resPair.snd())	pathExprMap.put(currPath, resPair.fst());
+      return resPair;
     }
-    Expression pathExpr = encodePathWithPreConds(currPath, preConds, preGuards);
-    pathExprMap.put(currPath, pathExpr);
-    return pathExpr;
   }
   
   private void preprocessPath(PreProcessor<?> preprocessor, final Graph graph, final Path path,  Set<Path> visitedPath) {

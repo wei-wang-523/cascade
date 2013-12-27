@@ -48,6 +48,12 @@ final class Path {
     return new Path(stmts, srcBlock, destBlock);
   }
   
+  /**
+   * May generate two paths for same block, if called twice. It
+   * is used to avoid loop in CFG
+   * @param block
+   * @return
+   */
   static Path createWithBlock(IRBasicBlock block) {
   	return create(block.getStatements(), block, block);
   }
