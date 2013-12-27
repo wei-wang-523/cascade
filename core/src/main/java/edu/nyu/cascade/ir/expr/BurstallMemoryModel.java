@@ -416,7 +416,7 @@ public class BurstallMemoryModel extends AbstractMemoryModel {
 	@Override
   public void setPreProcessor(PreProcessor<?> analyzer) {
     this.analyzer = (PreProcessor<xtc.type.Type>) analyzer;
-    IOUtils.err().println(analyzer.displaySnapShot());
+    IOUtils.debug().pln(analyzer.displaySnapShot());
   }
 
   @Override

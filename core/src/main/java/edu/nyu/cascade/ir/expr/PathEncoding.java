@@ -21,7 +21,8 @@ public interface PathEncoding    {
    */
   ExpressionManager getExpressionManager();
 
-  Expression noop(Iterable<? extends Expression> prefixes, Iterable<? extends Expression> preGuards);
+  Expression noop(Expression expr);
+	Expression noop(Iterable<? extends Expression> prefixes, Iterable<? extends Expression> preGuards);
   
   Expression assume(Expression pre, ExpressionClosure bool);
   Expression assume(Expression pre, IRExpression expr);
@@ -64,8 +65,6 @@ public interface PathEncoding    {
 	Expression call(Expression pre, String func, ExpressionClosure ... operands);
   
   Expression emptyPath();
-  Expression noop(Expression expr);
-  
   ValidityResult<?> checkAssertion(Expression prefix, ExpressionClosure p) throws PathFactoryException;
 
   SatResult<?> checkPath(Expression prefix) throws PathFactoryException;

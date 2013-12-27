@@ -508,7 +508,7 @@ public class Steensgaard extends PreProcessor<IRVar> {
 		  }  
 		    
 		  if(resPrime == null) {
-		  	IOUtils.err().println(type.getShape() + " is uninialized.");
+		  	IOUtils.debug().pln(type.getShape() + " is uninialized.");
 		  	return nullLoc;
 		  }
 		  
