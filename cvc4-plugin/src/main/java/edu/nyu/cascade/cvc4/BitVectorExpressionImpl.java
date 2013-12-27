@@ -514,7 +514,7 @@ public class BitVectorExpressionImpl extends ExpressionImpl implements
             @Override
             public Expr apply(ExprManager em, Expr arg) {
               Expr sizeExpr = em.mkConst(new BitVectorSize(size));
-              return em.mkExpr(edu.nyu.acsys.CVC4.Kind.BITVECTOR_SIGN_EXTEND,
+              return em.mkExpr(edu.nyu.acsys.CVC4.Kind.BITVECTOR_ZERO_EXTEND,
                   sizeExpr, arg);
             }
           }, arg);
