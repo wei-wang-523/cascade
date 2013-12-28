@@ -11,7 +11,13 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -257,41 +263,67 @@ public class Main {
     // Process the command line arguments
     final List<String> files = main.processCommandLine(args);
     
-    if(Preferences.isSet(Preferences.OPTION_TIMEOUT)) {    	
-    	Thread thread = new Thread(new Runnable() {
-        @Override
-        public void run() {
-          try {
-          	main.run(files);
-  				} catch (TheoremProverException e) {
-  					// TODO Auto-generated catch block
-  					e.printStackTrace();
-  				} catch (IOException e) {
-  					// TODO Auto-generated catch block
-  					e.printStackTrace();
-  				} catch (ParseException e) {
-  					// TODO Auto-generated catch block
-  					e.printStackTrace();
-  				}
+    if(Preferences.isSet(Preferences.OPTION_TIMEOUT)) {
+    	ExecutorService executor = Executors.newSingleThreadExecutor();
+    	Future<Void> future = executor.submit(new Callable<Void>() {
+				@Override
+        public Void call() throws Exception {
+					main.run(files);
+					return null;
         }
     	});
-      
-      long startTime = System.currentTimeMillis();
-      int timeout = Preferences.getInt(Preferences.OPTION_TIMEOUT);
-      try {
-        thread.start();
-        while(thread.isAlive()) {
-        	Thread.sleep(30);
-        	if(System.currentTimeMillis() - startTime > timeout * 1000) {
-        		thread.stop();
-        		IOUtils.err().println("Timeout");
-        		break;
-        	}
-        }
-      } catch (InterruptedException e) {
-     // TODO Auto-generated catch block
-				e.printStackTrace();
+    	
+    	try {
+    		long timeout = Preferences.getInt(Preferences.OPTION_TIMEOUT);
+    		future.get(timeout, TimeUnit.SECONDS);
+    	} catch(TimeoutException e) {
+    		future.cancel(true);
+    		IOUtils.err().println("Timeout");
+    		System.exit(0);
+    	} catch (InterruptedException e) {
+	      // TODO Auto-generated catch block
+	      e.printStackTrace();
+      } catch (ExecutionException e) {
+	      // TODO Auto-generated catch block
+	      e.printStackTrace();
+      } finally {   	
+      	executor.shutdown();
       }
+    	
+//    	Thread thread = new Thread(new Runnable() {
+//        @Override
+//        public void run() {
+//          try {
+//          	main.run(files);
+//  				} catch (TheoremProverException e) {
+//  					// TODO Auto-generated catch block
+//  					e.printStackTrace();
+//  				} catch (IOException e) {
+//  					// TODO Auto-generated catch block
+//  					e.printStackTrace();
+//  				} catch (ParseException e) {
+//  					// TODO Auto-generated catch block
+//  					e.printStackTrace();
+//  				}
+//        }
+//    	});
+//      
+//      long startTime = System.currentTimeMillis();
+//      int timeout = Preferences.getInt(Preferences.OPTION_TIMEOUT);
+//      try {
+//        thread.start();
+//        while(thread.isAlive()) {
+//        	Thread.sleep(30);
+//        	if(System.currentTimeMillis() - startTime > timeout * 1000) {
+//        		IOUtils.err().println("Timeout");
+//        		System.exit(0);
+//        		break;
+//        	}
+//        }
+//      } catch (InterruptedException e) {
+//     // TODO Auto-generated catch block
+//				e.printStackTrace();
+//      }
     } else {
     	main.run(files);
     }
