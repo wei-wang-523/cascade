@@ -364,6 +364,136 @@ public class MainTest {
   }*/
   
   @Test
+  public void testMiniBenchmark() {
+  	final Tester<File> FlatTester = parserTest(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16",
+  			"--theory", "Flat");
+  	final Tester<File> BurstallTester = parserTest(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16",
+  			"--theory", "Burstall");
+  	final Tester<File> PartitionTester = parserTest(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16",
+  			"--theory", "Partition");
+  	
+  	final Tester<File> FlatSyncTester = parserTest(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
+  			"--theory", "Flat");
+  	final Tester<File> BurstallSyncTester = parserTest(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
+  			"--theory", "Burstall");
+  	final Tester<File> PartitionSyncTester = parserTest(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
+  			"--theory", "Partition");
+  	
+  	final Tester<File> FlatOrderTester = parserTest(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16",
+  			"--theory", "Flat");
+  	final Tester<File> BurstallOrderTester = parserTest(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16",
+  			"--theory", "Burstall");
+  	final Tester<File> PartitionOrderTester = parserTest(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16",
+  			"--theory", "Partition");
+  	
+  	final Tester<File> FlatSyncOrderTester = parserTest(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
+  			"--theory", "Flat");
+  	final Tester<File> BurstallSyncOrderTester = parserTest(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
+  			"--theory", "Burstall");
+  	final Tester<File> PartitionSyncOrderTester = parserTest(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
+  			"--theory", "Partition");
+  	
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionTester, false);
+    
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatSyncTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallSyncTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionSyncTester, false);
+  	
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatOrderTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallOrderTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionOrderTester, false);
+    
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatSyncOrderTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallSyncOrderTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionSyncOrderTester, false);
+  }
+  
+  @Test
+  @Ignore("It takes too long")
+  public void testMiniBenchmarkMultiCell() {
+  	final Tester<File> FlatMultiCellTester = parserTest(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", 
+  			"--theory", "Flat");
+  	final Tester<File> BurstallMultiCellTester = parserTest(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell",
+  			"--theory", "Burstall");
+  	final Tester<File> PartitionMultiCellTester = parserTest(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell",
+  			"--theory", "Partition");
+  	
+  	final Tester<File> FlatMultiCellSyncTester = parserTest(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
+  			"--theory", "Flat");
+  	final Tester<File> BurstallMultiCellSyncTester = parserTest(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
+  			"--theory", "Burstall");
+  	final Tester<File> PartitionMultiCellSyncTester = parserTest(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
+  			"--theory", "Partition");
+  	
+  	
+  	final Tester<File> FlatMultiCellOrderTester = parserTest(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", 
+  			"--theory", "Flat");
+  	final Tester<File> BurstallMultiCellOrderTester = parserTest(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell",
+  			"--theory", "Burstall");
+  	final Tester<File> PartitionMultiCellOrderTester = parserTest(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell",
+  			"--theory", "Partition");
+  	
+  	final Tester<File> FlatMultiCellSyncOrderTester = parserTest(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
+  			"--theory", "Flat");
+  	final Tester<File> BurstallMultiCellSyncOrderTester = parserTest(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
+  			"--theory", "Burstall");
+  	final Tester<File> PartitionMultiCellSyncOrderTester = parserTest(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
+  			"--theory", "Partition");
+  	
+  	final Tester<File> BurstallMultiCellSimpTester = parserTest(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", "--simp", 
+  			"--theory", "Burstall");
+  	final Tester<File> BurstallMultiCellOrderSimpTester = parserTest(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", "--simp", 
+  			"--theory", "Burstall");
+  	
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellSimpTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellOrderSimpTester, false);
+    
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatMultiCellTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionMultiCellTester, false);
+    
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatMultiCellSyncTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellSyncTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionMultiCellSyncTester, false);
+    
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatMultiCellOrderTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellOrderTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionMultiCellOrderTester, false);
+  	
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatMultiCellSyncOrderTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellSyncOrderTester, false);
+    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionMultiCellSyncOrderTester, false);
+  }
+
+	@Test
   @Ignore("It takes too long")
   public void testNecBenchmark() {
   	final Tester<File> FlatTester = parserTestWithTimeout("--sound", 
@@ -439,6 +569,7 @@ public class MainTest {
   }
   
   @Test
+//  @Ignore("It takes too long.")
   public void testNecBenchmarkDry() {
   	final File valid_nec_location = new File(nec_programs_location, "valid");
     final File invalid_nec_location = new File(nec_programs_location, "invalid");
@@ -468,133 +599,6 @@ public class MainTest {
     TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, PartitionSoundTester, false);
   }
   
-  @Test
-  @Ignore("It takes too long")
-  public void testMiniBenchmark() {
-//  	smtFile_dump_location.mkdir();
-  	final Tester<File> FlatTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16",
-  			"--theory", "Flat");
-  	final Tester<File> BurstallTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16",
-  			"--theory", "Burstall");
-  	final Tester<File> PartitionTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16",
-  			"--theory", "Partition");
-  	
-  	final Tester<File> FlatSyncTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
-  			"--theory", "Flat");
-  	final Tester<File> BurstallSyncTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
-  			"--theory", "Burstall");
-  	final Tester<File> PartitionSyncTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
-  			"--theory", "Partition");
-  	
-  	final Tester<File> FlatMultiCellTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", 
-  			"--theory", "Flat");
-  	final Tester<File> BurstallMultiCellTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell",
-  			"--theory", "Burstall");
-  	final Tester<File> BurstallMultiCellSimpTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", "--simp", 
-  			"--theory", "Burstall");
-  	final Tester<File> PartitionMultiCellTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell",
-  			"--theory", "Partition");
-  	
-  	final Tester<File> FlatMultiCellSyncTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
-  			"--theory", "Flat");
-  	final Tester<File> BurstallMultiCellSyncTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
-  			"--theory", "Burstall");
-  	final Tester<File> PartitionMultiCellSyncTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
-  			"--theory", "Partition");
-  	
-  	final Tester<File> FlatOrderTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16",
-  			"--theory", "Flat");
-  	final Tester<File> BurstallOrderTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16",
-  			"--theory", "Burstall");
-  	final Tester<File> PartitionOrderTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16",
-  			"--theory", "Partition");
-  	
-  	final Tester<File> FlatSyncOrderTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
-  			"--theory", "Flat");
-  	final Tester<File> BurstallSyncOrderTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
-  			"--theory", "Burstall");
-  	final Tester<File> PartitionSyncOrderTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
-  			"--theory", "Partition");
-  	
-  	final Tester<File> FlatMultiCellOrderTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", 
-  			"--theory", "Flat");
-  	final Tester<File> BurstallMultiCellOrderTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell",
-  			"--theory", "Burstall");
-  	final Tester<File> BurstallMultiCellOrderSimpTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", "--simp", 
-  			"--theory", "Burstall");
-  	final Tester<File> PartitionMultiCellOrderTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell",
-  			"--theory", "Partition");
-  	
-  	final Tester<File> FlatMultiCellSyncOrderTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
-  			"--theory", "Flat");
-  	final Tester<File> BurstallMultiCellSyncOrderTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
-  			"--theory", "Burstall");
-  	final Tester<File> PartitionMultiCellSyncOrderTester = parserTestWithTimeout(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
-  			"--theory", "Partition");
-  	
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionTester, false);
-    
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatSyncTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallSyncTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionSyncTester, false);
-    
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatMultiCellTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionMultiCellTester, false);
-
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellSimpTester, false);
-  	
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatMultiCellSyncTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellSyncTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionMultiCellSyncTester, false);
-  	
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatOrderTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallOrderTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionOrderTester, false);
-    
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatSyncOrderTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallSyncOrderTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionSyncOrderTester, false);
-    
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatMultiCellOrderTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellOrderTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionMultiCellOrderTester, false);
-
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellOrderSimpTester, false);
-  	
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatMultiCellSyncOrderTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellSyncOrderTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionMultiCellSyncOrderTester, false);
-  }
-
   /** FIXME: This is really a test for tp-tp */
   @Test
   public void testLogTp() {
