@@ -569,7 +569,7 @@ public class MainTest {
   }
   
   @Test
-//  @Ignore("It takes too long.")
+  @Ignore("It takes too long.")
   public void testNecBenchmarkDry() {
   	final File valid_nec_location = new File(nec_programs_location, "valid");
     final File invalid_nec_location = new File(nec_programs_location, "invalid");
