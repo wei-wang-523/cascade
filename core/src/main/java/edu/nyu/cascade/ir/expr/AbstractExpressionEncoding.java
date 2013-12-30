@@ -900,7 +900,6 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   private <T extends Expression> T pointerMinus_(
       PointerEncoding<T> pe, IntegerEncoding<?> ie, Expression lhs, Expression rhs) {
     Preconditions.checkArgument(isPointer(lhs));
-    Preconditions.checkArgument(isInteger(rhs));
     return pe.minus(pe.ofExpression(lhs), ie.ofExpression(rhs));
   }
   

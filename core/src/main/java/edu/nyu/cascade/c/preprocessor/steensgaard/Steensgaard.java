@@ -301,6 +301,12 @@ public class Steensgaard extends PreProcessor<IRVar> {
     }
 	}
 	
+	/**
+	 * Get the out-most scope of all the variables inside 
+	 * the partition with the <code>repName</code> 
+	 * @param repName
+	 * @return the out-most scope
+	 */
 	public Scope getRootScope(String repName) {
 		// FIXME: variable name cannot has NAME_INFIX '.'
 		int index = repName.indexOf(Identifiers.NAME_INFIX);
