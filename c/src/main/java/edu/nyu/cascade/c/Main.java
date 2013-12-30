@@ -30,9 +30,12 @@ import org.apache.commons.cli.PosixParser;
 import xtc.parser.ParseException;
 import xtc.parser.Result;
 import xtc.tree.Node;
+import xtc.tree.VisitingException;
+import xtc.tree.VisitorException;
 import xtc.util.Runtime;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
@@ -444,8 +447,7 @@ public class Main {
       } catch (InterruptedException e) {
         throw new AssertionError("Unexpected interrupt");
       } catch (ExecutionException e) {
-        Throwable cause = e.getCause();
-        throw new ParseException("Preprocessor failed: " + cause.getMessage());
+        throw new ParseException("Preprocessor failed: " + e.getMessage());
       }
 
       cppProcess.cleanup();
@@ -455,7 +457,12 @@ public class Main {
     return (Node) parser.value(result);
   }
 
-  public void prepare() {
+  private void prepare() {
+  	Preconditions.checkArgument(asts.isEmpty());
+  	Preconditions.checkArgument(cfgs.isEmpty());
+  	Preconditions.checkArgument(cAnalyzer == null);
+  	Preconditions.checkArgument(cfgs.isEmpty());
+  	Preconditions.checkArgument(symbolTables.isEmpty());
     runtime.initDefaultValues();
     runtime.setValue(OPTION_INTERNAL_PEDANTIC,
         Preferences.isSet(OPTION_PEDANTIC));
@@ -617,7 +624,7 @@ public class Main {
     
     xtc.util.SymbolTable xtcSymbolTable = cAnalyzer.analyze(ast);
     CSymbolTable symbolTable = CSymbolTable.create(symbolTableFactory,
-        xtcSymbolTable);
+    		xtcSymbolTable);
     Map<Node, IRControlFlowGraph> currCfgs = CfgBuilder.getCfgs(symbolTable, cAnalyzer, ast);
     cfgs.putAll(currCfgs);
     callGraphs.put(file, CallGraphBuilder.getCallGraph(symbolTable, ast));

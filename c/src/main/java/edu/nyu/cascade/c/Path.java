@@ -88,24 +88,28 @@ final class Path {
   }
   
   IRStatement getStmt(int index) {
-    Preconditions.checkArgument(index >= 0 && index < stmts.size());
+  	Preconditions.checkNotNull(stmts);
+    Preconditions.checkElementIndex(index, stmts.size());
     return stmts.get(index);
   }
   
   IRStatement getLastStmt() {
-    Preconditions.checkArgument(stmts != null && !stmts.isEmpty());
+    Preconditions.checkNotNull(stmts);
+    Preconditions.checkArgument(!stmts.isEmpty());
     return stmts.get(stmts.size()-1);
   }
   
   boolean replaceStmt(int index, IRStatement stmt) {
-    Preconditions.checkArgument(index >= 0 && index < stmts.size());
+  	Preconditions.checkNotNull(stmts);
+    Preconditions.checkElementIndex(index, stmts.size());
     stmts.remove(index);
     stmts.add(index, stmt);
     return true;
   }
   
   IRBasicBlock getBlock(int index) {
-    Preconditions.checkArgument(index >= 0 && index <= stmts.size());
+  	Preconditions.checkNotNull(stmts);
+    Preconditions.checkElementIndex(index, stmts.size());
     if(!hasBlocks())    return null;    
     if(index == 0)      return srcBlock;
     
@@ -116,7 +120,8 @@ final class Path {
   }
   
   List<Path> split(int index) {
-    Preconditions.checkArgument(index >= 0 && index <= stmts.size());
+  	Preconditions.checkNotNull(stmts);
+    Preconditions.checkElementIndex(index, stmts.size());
     List<Path> resPaths = Lists.newArrayList();
     IRBasicBlock splitBlock = null;
     if(index == 0) {

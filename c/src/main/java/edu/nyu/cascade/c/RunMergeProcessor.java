@@ -954,7 +954,7 @@ class RunMergeProcessor implements RunProcessor {
   /** Flatten function call statement if it has function call nested inside. */
   private List<IRStatement> pickFuncCallFromStmt(IRStatement stmt, CSymbolTable symbolTable) 
       throws RunProcessorException {  
-    Preconditions.checkArgument(stmt != null);
+    Preconditions.checkNotNull(stmt);
     
     ImmutableList<IRExpression> argExprs = stmt.getOperands();
     List<IRExpression> argExprsRep = Lists.newArrayList();
@@ -1293,7 +1293,7 @@ class RunMergeProcessor implements RunProcessor {
   
   private Graph functionInlinePath(CSymbolTable symbolTable, Path path, 
       Iterator<Position> callPosItr) throws RunProcessorException {
-    Preconditions.checkArgument(path != null);
+    Preconditions.checkNotNull(path);
     
     Graph resGraph = null;
     Path tmpPath = path;
@@ -1472,7 +1472,7 @@ class RunMergeProcessor implements RunProcessor {
   
   private ImmutableList<Position> loopPointsUnroll(IRControlFlowGraph cfg, List<Position> wayPoints) 
       throws RunProcessorException {
-    Preconditions.checkArgument(wayPoints != null);
+    Preconditions.checkNotNull(wayPoints);
     ImmutableList.Builder<Position> wpBuilder = 
     		new ImmutableList.Builder<Position>();
     for(Position pos : wayPoints) {

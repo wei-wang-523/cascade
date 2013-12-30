@@ -113,7 +113,8 @@ public final class Graph {
   }
   
   void appendAllPreGraph(Iterable<Graph> preGraphs) throws RunProcessorException { 
-    Preconditions.checkArgument(preGraphs != null && !Iterables.isEmpty(preGraphs));
+    Preconditions.checkNotNull(preGraphs);
+    Preconditions.checkArgument(!Iterables.isEmpty(preGraphs));
     Preconditions.checkArgument(Iterables.all(preGraphs, new Predicate<Graph>(){
     	@Override
     	public boolean apply(Graph graph) {

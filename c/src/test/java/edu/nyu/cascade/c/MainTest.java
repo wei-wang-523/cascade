@@ -13,11 +13,15 @@ import org.junit.Test;
 
 import xtc.parser.ParseException;
 
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
 import edu.nyu.cascade.c.Main;
 import edu.nyu.cascade.prover.TheoremProverException;
+import edu.nyu.cascade.util.TestTimeoutUtils;
+import edu.nyu.cascade.util.TestTimeoutUtils.TaskBuilder;
 import edu.nyu.cascade.util.TestUtils.ExitException;
 import edu.nyu.cascade.util.TestUtils;
 import edu.nyu.cascade.util.FileUtils;
@@ -115,7 +119,7 @@ public class MainTest {
       }
     }, Timeout);
   }
-
+  
   private TestUtils.Tester<File> parserTest(final String... args) {
     return new TestUtils.Tester<File>() {
       @Override
@@ -152,6 +156,35 @@ public class MainTest {
         }
       }
     };
+  }
+  
+  private Void runCascadeTimeout(final String... args) 
+  		throws IOException, ParseException, TheoremProverException {
+  	System.out.println("runCascade: " + Joiner.on(";").join(args));
+    Preferences.clearAll();
+    Main main = getInjector().getInstance(Main.class);
+    main.init();
+    List<String> files = main.processCommandLine(args);
+    IOUtils.enableErr();
+    main.run(files);
+    return null;
+	}
+
+	private TaskBuilder<File> parserTestTimeout(final String... args) {
+    return new TaskBuilder<File>().setFunction(new Function<File, Void>() {
+			@Override
+      public Void apply(File file) {
+				Preconditions.checkNotNull(file);
+				List<String> argList = Lists.newArrayList(args);
+				argList.add(file.toString());
+        try {
+	        runCascadeTimeout(argList.toArray(new String[0]));
+        } catch (Exception e) {
+	        IOUtils.err().println(e.getMessage());
+        }
+        return null;
+      }
+    });
   }
 
   /**
@@ -597,6 +630,28 @@ public class MainTest {
     TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, PartitionSoundTester, false);
     TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, PartitionSoundTester, false);
     TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, PartitionSoundTester, false);
+  }
+  
+  
+  @Test
+  @Ignore
+  public void testNecBenchmarkDryTimeout() {
+  	final File valid_nec_location = new File(nec_programs_location, "valid");
+    final File invalid_nec_location = new File(nec_programs_location, "invalid");
+    final File inv_valid_nec_location = new File(nec_programs_location, "inv-valid");
+    final File inv_invalid_nec_location = new File(nec_programs_location, "inv-invalid");
+    
+  	final TaskBuilder<File> FlatSoundTester = parserTestTimeout("--sound", "--dry-run", 
+  			"--prover", "z3", "--mem-cell-size", "16", "--theory", "Flat");
+    
+  	final TestTimeoutUtils.Scheduler scheduler = new TestTimeoutUtils.Scheduler(Timeout);
+  	
+    TestTimeoutUtils.checkDirectory(scheduler, valid_nec_location, ctrlFileFilter, FlatSoundTester);
+    TestTimeoutUtils.checkDirectory(scheduler, invalid_nec_location, ctrlFileFilter, FlatSoundTester);
+    TestTimeoutUtils.checkDirectory(scheduler, inv_valid_nec_location, ctrlFileFilter, FlatSoundTester);
+    TestTimeoutUtils.checkDirectory(scheduler, inv_invalid_nec_location, ctrlFileFilter, FlatSoundTester);
+    
+    scheduler.run();
   }
   
   /** FIXME: This is really a test for tp-tp */

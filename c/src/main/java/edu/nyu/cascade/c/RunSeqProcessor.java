@@ -128,7 +128,7 @@ class RunSeqProcessor implements RunProcessor {
   /** Incorporate the command for the given position into the given path. */
   private List<IRStatement> processPosition(Position position, CSymbolTable symbolTable) 
       throws RunProcessorException {
-    Preconditions.checkArgument(position != null);
+    Preconditions.checkNotNull(position);
     List<IRStatement> path = Lists.newArrayList();
     List<Command> cmds = position.getCommands();
     for(Command cmd : cmds) {
@@ -904,7 +904,7 @@ class RunSeqProcessor implements RunProcessor {
    */
   private List<IRStatement> functionInline(CSymbolTable symbolTable, List<IRStatement> path, 
       List<Position> callPos) throws RunProcessorException {
-    Preconditions.checkArgument(path != null);
+    Preconditions.checkNotNull(path);
     IOUtils.debug().pln("Checking path...");
     List<IRStatement> resPath = Lists.newArrayList();
     
@@ -1066,7 +1066,7 @@ class RunSeqProcessor implements RunProcessor {
   
   private List<Position> loopPointsUnroll(IRControlFlowGraph cfg, List<Position> wayPoints) 
       throws RunProcessorException {
-    Preconditions.checkArgument(wayPoints != null);
+    Preconditions.checkNotNull(wayPoints);
     List<Position> resWaypoints = Lists.newArrayList();
     for(Position pos : wayPoints) {
       if(pos.hasLoop()) {
