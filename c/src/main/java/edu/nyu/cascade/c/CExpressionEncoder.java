@@ -130,9 +130,6 @@ class CExpressionEncoder implements ExpressionEncoder {
     	
       Type lType = lookupType(left.getNode()).resolve();
       Type rType = lookupType(right.getNode()).resolve();
-          	
-    	assert !((lType.isPointer() || lType.isArray()) 
-    			&& (rType.isPointer() || rType.isArray()));
     	
       Function<Expression, Integer> getFactor = new Function<Expression, Integer>() {
 				@Override
