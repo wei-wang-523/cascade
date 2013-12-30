@@ -42,7 +42,7 @@ public final class ValueType {
   }
   
   protected int getOperandSize() {
-    Preconditions.checkArgument(operands != null);
+    Preconditions.checkNotNull(operands);
     return operands.size();
   }
   

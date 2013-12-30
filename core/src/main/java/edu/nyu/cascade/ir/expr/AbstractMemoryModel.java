@@ -169,7 +169,8 @@ public abstract class AbstractMemoryModel implements MemoryModel {
   
   @Override
   public final TupleExpression getUpdatedState(Expression state, Iterable<Expression> elems) {
-  	Preconditions.checkArgument(state != null && state.isTuple());
+  	Preconditions.checkNotNull(state);
+  	Preconditions.checkArgument(state.isTuple());
     
     Function<Expression, Type> func = new Function<Expression, Type>(){
     	@Override
@@ -233,7 +234,7 @@ public abstract class AbstractMemoryModel implements MemoryModel {
    */
 	protected final RecordType getRecordTypeFromMap(String typeName, 
 			final Map<String, ArrayExpression> map) {
-		Preconditions.checkArgument(map != null);
+		Preconditions.checkNotNull(map);
 	  Iterable<Type> elemTypes = Iterables.transform(map.values(), 
 	      new Function<Expression, Type>(){
 	    @Override

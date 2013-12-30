@@ -112,7 +112,7 @@ public final class CScopeAnalyzer {
 	 * @return
 	 */
 	public boolean isCalled(Node callNode, Scope scope_a, Scope scope_b) {
-		Preconditions.checkArgument(callScopeMaps != null);
+		Preconditions.checkNotNull(callScopeMaps);
 		if(callScopeMaps.isEmpty())	return false;
 		
 		Map<Node, Scope> calleeMap = callScopeMaps.get(scope_b);
@@ -139,7 +139,7 @@ public final class CScopeAnalyzer {
 	 * @return
 	 */
 	public boolean isCalled(Scope scope_a, Scope scope_b) {
-		Preconditions.checkArgument(callScopeMaps != null);
+		Preconditions.checkNotNull(callScopeMaps);
 		if(callScopeMaps.isEmpty())	return false;
 		
 		/* Find the function root scope of scope_b */

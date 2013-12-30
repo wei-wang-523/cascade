@@ -28,7 +28,7 @@ public class CType {
   }
   
   public static CellKind getCellKind(xtc.type.Type type) {
-    Preconditions.checkArgument(type != null);
+  	Preconditions.checkNotNull(type);
     type = unwrapped(type);
     if(type.isBoolean())        return CellKind.BOOL;
     else if(type.isInteger())   return CellKind.SCALAR;
@@ -55,7 +55,7 @@ public class CType {
   }
   
   private static String getReferenceName(Reference ref) {
-    Preconditions.checkArgument(ref != null);
+  	Preconditions.checkNotNull(ref);
     if(ref.isStatic()) {
       return ((StaticReference) ref).getName();
     } else if(ref.isDynamic()) {
@@ -85,7 +85,7 @@ public class CType {
   }
   
   public static String parseTypeName(xtc.type.Type type) {
-    Preconditions.checkArgument(type != null);     
+  	Preconditions.checkNotNull(type);
     StringBuffer sb =  new StringBuffer();
     if(type.isBoolean()) {
       sb.append(Identifiers.ARRAY_NAME_INFIX).append("BoolT");

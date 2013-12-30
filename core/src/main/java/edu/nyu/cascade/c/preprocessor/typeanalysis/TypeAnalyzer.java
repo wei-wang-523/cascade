@@ -377,7 +377,7 @@ public class TypeAnalyzer extends PreProcessor<Type> {
 	}
 
 	private static String loadTypeName(Type type) {
-	    Preconditions.checkArgument(type != null);
+	    Preconditions.checkNotNull(type);
 	/*    if(type.hasConstant() && type.getConstant().isReference()) {
 	      Reference ref = type.getConstant().refValue();
 	      if(ref.getType().isBoolean())

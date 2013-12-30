@@ -93,7 +93,7 @@ public class SingleCellSyncFormatter implements IRDataFormatter {
 	
 	@Override
   public Expression addressOf(Expression expr) {
-		Preconditions.checkArgument(expr.getNode() != null);
+		Preconditions.checkNotNull(expr.getNode());
     CellKind kind = CType.getCellKind(CType.getType(expr.getNode()));
     switch(kind) {
     case STRUCTORUNION: 

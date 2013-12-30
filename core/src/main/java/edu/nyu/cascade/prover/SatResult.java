@@ -20,7 +20,7 @@ public class SatResult<T> extends QueryResult<SatResult.Type> {
   public static <T> SatResult<T> valueOf(Type result,
       Expression phi,
       Iterable<? extends BooleanExpression> assumptions,
-      Iterable<? extends BooleanExpression> counterExample) {
+      Iterable<? extends Expression> counterExample) {
     Preconditions.checkArgument(!Type.UNSAT.equals(result));
     return new SatResult<T>(result, phi, assumptions,
         ImmutableList.copyOf(counterExample));
@@ -41,7 +41,7 @@ public class SatResult<T> extends QueryResult<SatResult.Type> {
 
   private SatResult(Type result, Expression phi,
       Iterable<? extends BooleanExpression> assumptions,
-      ImmutableList<? extends BooleanExpression> counterExample) {
+      ImmutableList<? extends Expression> counterExample) {
     super(result, phi, assumptions, counterExample);
   }
 

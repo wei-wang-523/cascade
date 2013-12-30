@@ -75,7 +75,7 @@ public class UnionFind<E> implements Serializable {
 
     @Override
     public boolean equals(Object obj) {
-      Preconditions.checkArgument(obj != null);
+      Preconditions.checkNotNull(obj);
       if (obj instanceof Partition) {
         Partition other = (Partition) obj;
         return findRoot() == other.findRoot();

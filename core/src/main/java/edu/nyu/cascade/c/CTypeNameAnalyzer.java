@@ -32,7 +32,7 @@ public class CTypeNameAnalyzer {
       });
   
   public static String getTypeName(xtc.type.Type type) {
-    Preconditions.checkArgument(type != null);
+    Preconditions.checkNotNull(type);
     if(type.hasConstant() && type.getConstant().isReference()) {
       Reference ref = type.getConstant().refValue();
       if(ref.getType().isBoolean())

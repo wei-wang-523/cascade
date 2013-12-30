@@ -9,10 +9,10 @@ import com.google.common.collect.Maps;
 import edu.nyu.cascade.util.Pair;
 
 public final class IRArrayType<T extends IRType> extends IRType {
-  private static final Map<Pair<? extends IRRangeType, ? extends IRType>, IRArrayType<? extends IRType>> singletonMap = Maps.newHashMap();
+  private static final Map<Pair<? extends IRRangeType<?>, ? extends IRType>, IRArrayType<? extends IRType>> singletonMap = Maps.newHashMap();
   
   @SuppressWarnings("unchecked")
-  public static <T extends IRType> IRArrayType<T> getInstance(IRRangeType range, T type) {
+  public static <T extends IRType> IRArrayType<T> getInstance(IRRangeType<?> range, T type) {
     IRArrayType<T> arrayType = (IRArrayType<T>) singletonMap.get(Pair.of(range, type));
     if(arrayType != null)
       return arrayType;
@@ -28,18 +28,18 @@ public final class IRArrayType<T extends IRType> extends IRType {
     if( args.size() != 2 || !(args.get(0) instanceof IRRangeType)) {
       throw new IllegalArgumentException("IRArrayType.valueOf: " + t);
     }
-    return getInstance((IRRangeType)args.get(0),args.get(1));
+    return getInstance((IRRangeType<?>)args.get(0),args.get(1));
   }
   
-  private final IRRangeType indexType;
+  private final IRRangeType<?> indexType;
   private final T elementType;
   
-  private IRArrayType(IRRangeType indexType, T rangeType) {
+  private IRArrayType(IRRangeType<?> indexType, T rangeType) {
     this.indexType = indexType;
     this.elementType = rangeType;
   }
 
-  public IRRangeType getIndexType() {
+  public IRRangeType<?> getIndexType() {
     return indexType;
   }
 

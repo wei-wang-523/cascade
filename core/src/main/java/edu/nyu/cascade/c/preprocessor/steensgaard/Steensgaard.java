@@ -189,7 +189,7 @@ public class Steensgaard extends PreProcessor<IRVar> {
 
 	@Override
 	public String displaySnapShot() {
-		Preconditions.checkArgument(snapShot != null);
+		Preconditions.checkNotNull(snapShot);
 	  ImmutableCollection<Set<IRVar>> sets = snapShot.values();
 	  StringBuilder sb = new StringBuilder();
 	  if(sets != null) {
@@ -237,7 +237,7 @@ public class Steensgaard extends PreProcessor<IRVar> {
 
 	@Override
 	public ImmutableMap<IRVar, Set<IRVar>> getSnapShot() {
-		Preconditions.checkArgument(snapShot != null);
+		Preconditions.checkNotNull(snapShot);
 		return snapShot;
 	}
 	
@@ -517,7 +517,7 @@ public class Steensgaard extends PreProcessor<IRVar> {
 	}
 
 	private IRVarImpl getPointsToVar(IRVarImpl var) {
-		Preconditions.checkArgument(var != null);
+		Preconditions.checkNotNull(var);
 	  ECR ecr = var.getECR();
 	  ValueType type = uf.getType(ecr);
 	  assert(ValueTypeKind.LOCATION.equals(type.getKind()));

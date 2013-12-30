@@ -15,7 +15,7 @@ public class ValidityResult<T> extends QueryResult<ValidityResult.Type> {
   public static <T> ValidityResult<T> valueOf(Type result,
       Expression phi,
       Iterable<? extends BooleanExpression> assumptions,
-      Iterable<? extends BooleanExpression> counterExample) {
+      Iterable<? extends Expression> counterExample) {
     Preconditions.checkArgument(!Type.VALID.equals(result));
     return new ValidityResult<T>(result, phi, assumptions, counterExample);
   }
@@ -34,7 +34,7 @@ public class ValidityResult<T> extends QueryResult<ValidityResult.Type> {
 
   private ValidityResult(Type result, Expression phi,
       Iterable<? extends BooleanExpression> assumptions,
-      Iterable<? extends BooleanExpression> counterExample) {
+      Iterable<? extends Expression> counterExample) {
     super(result, phi, assumptions, counterExample);
   }
   

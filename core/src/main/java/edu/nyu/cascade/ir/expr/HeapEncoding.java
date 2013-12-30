@@ -244,9 +244,9 @@ public final class HeapEncoding implements IRHeapEncoding {
 	
 	@Override
 	public int getSizeOfVar(Expression stackVar) {
-		Preconditions.checkArgument(stackVar.getNode() != null);
-		Preconditions.checkArgument(CType.getType(stackVar.getNode()) != null);
+		Preconditions.checkNotNull(stackVar.getNode());
 		xtc.type.Type type = CType.getType(stackVar.getNode());
+		Preconditions.checkNotNull(type);
 		return formatter.getSizeOfType(type);
 	}
 

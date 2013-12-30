@@ -86,7 +86,7 @@ public class SyncValueType {
 	}
 	
 	protected Expression castExprToCell(Expression expr, Type cellType) {
-		Preconditions.checkArgument(cellType != null);
+		Preconditions.checkNotNull(cellType);
 		ExpressionManager exprManager = encoding.getExpressionManager();
 		
 	  if(expr.getType().equals(cellType)) return expr;

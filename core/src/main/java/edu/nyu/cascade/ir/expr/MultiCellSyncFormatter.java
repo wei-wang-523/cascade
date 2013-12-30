@@ -65,7 +65,7 @@ public class MultiCellSyncFormatter implements IRDataFormatter {
   @Override
 	public ArrayExpression updateMemoryArray(ArrayExpression memory, Expression index,
 	    Expression value) {
-		Preconditions.checkArgument(index.getNode() != null);
+		Preconditions.checkNotNull(index.getNode());
 		if(value.isBoolean()) value = encoding.castToInteger(value);
 		
 		xtc.type.Type type = CType.getType(index.getNode()).resolve();
@@ -95,7 +95,7 @@ public class MultiCellSyncFormatter implements IRDataFormatter {
 	@SuppressWarnings("unchecked")
   @Override
 	public Expression indexMemoryArray(ArrayExpression memory, Expression index) {
-		Preconditions.checkArgument(index.getNode() != null);
+		Preconditions.checkNotNull(index.getNode());
 		xtc.type.Type type = CType.getType(index.getNode()).resolve();
 		
 		if(type.isArray() || type.isPointer()) {

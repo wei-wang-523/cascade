@@ -205,7 +205,7 @@ public class CCounter extends Visitor {
 
   /** Visit the specified translation unit node. */
   public void visitTranslationUnit(GNode n) {
-    Iterator iter = n.iterator();
+    Iterator<?> iter = n.iterator();
     while (iter.hasNext()) {
       isTopLevel  = true;
       dispatch((Node)iter.next());
@@ -227,7 +227,7 @@ public class CCounter extends Visitor {
 
   /** Visit the specified declaration list node. */
   public void visitDeclarationList(GNode n) {
-    Iterator iter = n.iterator();
+    Iterator<?> iter = n.iterator();
     while (iter.hasNext()) {
       dispatch((Node)iter.next());
     }
@@ -268,7 +268,7 @@ public class CCounter extends Visitor {
   public void visitCompoundStatement(GNode n) {
     countCompoundStmt++;
 
-    Iterator iter = n.iterator();
+    Iterator<?> iter = n.iterator();
     while (iter.hasNext()) {
       dispatch((Node)iter.next());
     }

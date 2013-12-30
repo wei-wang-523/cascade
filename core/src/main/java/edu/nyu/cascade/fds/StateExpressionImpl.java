@@ -326,7 +326,7 @@ public class StateExpressionImpl implements StateExpression {
 
   @Override
   public StateExpression unprime() {
-    Preconditions.checkArgument(unprimedVersion != null);
+  	Preconditions.checkNotNull(unprimedVersion);
     return unprimedVersion;
   }
 

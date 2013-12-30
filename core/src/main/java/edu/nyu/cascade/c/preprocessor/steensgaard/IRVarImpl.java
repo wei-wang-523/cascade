@@ -21,7 +21,8 @@ public class IRVarImpl implements IRVar {
   }
   
   protected static IRVarImpl create(String _name, Type _type, Scope _scope) {
-  	Preconditions.checkArgument(_type != null && _scope != null);
+  	Preconditions.checkNotNull(_type);
+  	Preconditions.checkNotNull(_scope);
     return new IRVarImpl(_name, _type, _scope);
   }
   

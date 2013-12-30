@@ -171,7 +171,7 @@ public class StateVariableImpl extends StateExpressionImpl implements StateVaria
   
   @Override
   public StateVariableImpl unprime() {
-    Preconditions.checkArgument(unprimedVersion != null);
+    Preconditions.checkNotNull(unprimedVersion);
     return unprimedVersion;
   }
 }

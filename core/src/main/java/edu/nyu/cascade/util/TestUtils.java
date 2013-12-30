@@ -79,7 +79,7 @@ public class TestUtils {
   public static void checkFile(File dir, Map<Tester<File>, String[]> optMap, 
       boolean shouldFail) {
     // Get all test files
-    Preconditions.checkArgument(optMap != null);
+    Preconditions.checkNotNull(optMap);
     for (Entry<Tester<File>, String[]> optFiles : optMap.entrySet()) {
       Tester<File> tester = optFiles.getKey();
       for(String test : optFiles.getValue()) {

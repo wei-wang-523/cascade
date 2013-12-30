@@ -170,7 +170,6 @@ public class FairDiscreteSystemImpl implements FairDiscreteSystem {
     this.variables = ImmutableSet.copyOf(vars);
   }*/
 
-  @SuppressWarnings("unchecked")
   @Override
   public SatResult<?> checkSat(StateProperty p) {
     BooleanExpression bool = sideConditions().implies(p).toBooleanExpression();
@@ -181,11 +180,10 @@ public class FairDiscreteSystemImpl implements FairDiscreteSystem {
       return res;
     } else {
       return SatResult.valueOf(res.getType(), res.getFormula(), res
-          .getAssumptions(), (List) stripInternalVars(res.getSatisfyingAssertions()));
+          .getAssumptions(), stripInternalVars(res.getSatisfyingAssertions()));
     }
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public ValidityResult<?> checkValidity(StateProperty p) {
     IOUtils.debug().pln("FDS.checkValidity: " + p);
@@ -197,7 +195,7 @@ public class FairDiscreteSystemImpl implements FairDiscreteSystem {
       return res;
     } else {
       return ValidityResult.valueOf(res.getType(), res.getFormula(), res
-          .getAssumptions(), (List) stripInternalVars(res.getCounterExample()));
+          .getAssumptions(), stripInternalVars(res.getCounterExample()));
     }
   }
 
@@ -341,19 +339,16 @@ public class FairDiscreteSystemImpl implements FairDiscreteSystem {
     return relevantChildren;
   }
 
-  @SuppressWarnings("unchecked")
-  private
-  Expression relevantize(Expression ibe) {
+  private Expression relevantize(Expression ibe) {
     List<? extends Expression> children = ibe.getChildren();
-    List<Expression> relevantChildren = relevantize((List<Expression>) children);
+    List<Expression> relevantChildren = relevantize(children);
 
     switch (ibe.getKind()) {
     case AND:
       if (relevantChildren.isEmpty()) {
         return null;
       } else {
-        return (Expression) ibe.getExpressionManager().and(
-            (List) relevantChildren);
+        return (Expression) ibe.getExpressionManager().and(relevantChildren);
       }
 
     case CONSTANT:
@@ -441,7 +436,7 @@ public class FairDiscreteSystemImpl implements FairDiscreteSystem {
 //        IExpression child1 = relevantChildren.get(0);
 //        IExpression child2 = relevantChildren.get(1);
         return (Expression) ibe.getExpressionManager().plus(
-            (Iterable) relevantChildren);
+        		relevantChildren);
 //            (IExpression) child1, (IExpression) child2);
       }
 

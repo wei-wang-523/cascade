@@ -72,7 +72,7 @@ public class AliasEquivClosure implements IREquivClosure {
     }
 
 	public static AliasEquivClosure create(Steensgaard preprocessor, IRVar repVar) {
-		Preconditions.checkArgument(preprocessor.getSnapShot() != null);
+		Preconditions.checkNotNull(preprocessor.getSnapShot());
 		Preconditions.checkArgument(preprocessor.getSnapShot().containsKey(repVar));
 		try {
 			if(cache.get(preprocessor).containsKey(repVar)) {
@@ -109,13 +109,13 @@ public class AliasEquivClosure implements IREquivClosure {
 	
 	@Override
 	public Object getProperty(String name) {
-		Preconditions.checkArgument(properties != null);
+		Preconditions.checkNotNull(properties);
 		return properties.get(name);
 	}	
 	
 	@Override
 	public Object setProperty(String name, Object o) {
-		Preconditions.checkArgument(properties != null);
+		Preconditions.checkNotNull(properties);
 		return properties.put(name, o);
 	}
 }

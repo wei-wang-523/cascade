@@ -523,7 +523,7 @@ public class PartitionMemoryModel extends AbstractMemoryModel {
    * @return
    */
   protected Expression kickout(Expression state, Scope preScope, Scope currentScope) {
-  	Preconditions.checkArgument(currentScope != null);
+  	Preconditions.checkNotNull(currentScope);
   	ExpressionManager exprManager = getExpressionManager();
   	boolean shrinked = false;
   	

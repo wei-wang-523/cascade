@@ -73,7 +73,7 @@ public class MultiCellLinearFormatter implements IRDataFormatter {
   @Override
 	public ArrayExpression updateMemoryArray(ArrayExpression memory, Expression index,
 	    Expression value) {
-		Preconditions.checkArgument(index.getNode() != null);
+  	Preconditions.checkNotNull(index.getNode());
 		
 		if(value.isBoolean()) value = encoding.castToInteger(value);
 		
@@ -94,7 +94,7 @@ public class MultiCellLinearFormatter implements IRDataFormatter {
 	@SuppressWarnings("unchecked")
   @Override
 	public Expression indexMemoryArray(ArrayExpression memory, Expression index) {
-		Preconditions.checkArgument(index.getNode() != null);
+		Preconditions.checkNotNull(index.getNode());
 		
 		int size = (int) cAnalyzer.getSize(CType.getType(index.getNode()));
 		

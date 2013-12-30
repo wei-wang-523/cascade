@@ -5,7 +5,6 @@ import java.util.Arrays;
 
 import com.google.common.base.Preconditions;
 
-import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;

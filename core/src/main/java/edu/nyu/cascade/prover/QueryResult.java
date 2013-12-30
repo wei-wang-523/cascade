@@ -1,7 +1,10 @@
 package edu.nyu.cascade.prover;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 abstract class QueryResult<R> {
   private final ImmutableList<BooleanExpression> assumptions;
@@ -21,7 +24,7 @@ abstract class QueryResult<R> {
 
   protected QueryResult(R result, Expression query,
       Iterable<? extends BooleanExpression> assumptions,
-      Iterable<? extends BooleanExpression> certificate) {
+      Iterable<? extends Expression> certificate) {
     this(result, query, assumptions, certificate, null);
   }
   
@@ -33,16 +36,28 @@ abstract class QueryResult<R> {
   
   protected QueryResult(R result, Expression query,
       Iterable<? extends BooleanExpression> assumptions,
-      Iterable<? extends BooleanExpression> certificate,
+      Iterable<? extends Expression> certificate,
       String unknownReason) {
     Preconditions.checkNotNull(result);
     Preconditions.checkNotNull(query);
     Preconditions.checkNotNull(assumptions);
     Preconditions.checkNotNull(certificate);
+    Preconditions.checkArgument(Iterables.all(certificate, new Predicate<Expression>() {
+			@Override
+      public boolean apply(Expression input) {
+	      return input.isBoolean();
+      }
+    }));
     this.result = result;
     this.query = query;
     this.assumptions = ImmutableList.copyOf(assumptions);
-    this.certificate = ImmutableList.copyOf(certificate);
+    this.certificate = ImmutableList.copyOf(Iterables.transform(certificate, 
+    		new Function<Expression, BooleanExpression>(){
+					@Override
+          public BooleanExpression apply(Expression input) {
+	          return input.asBooleanExpression();
+          }
+    }));
     this.unknown_reason = unknownReason;
   }
 

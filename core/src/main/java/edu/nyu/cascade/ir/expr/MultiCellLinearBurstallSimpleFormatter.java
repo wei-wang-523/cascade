@@ -71,7 +71,7 @@ public class MultiCellLinearBurstallSimpleFormatter implements IRDataFormatter {
   @Override
 	public ArrayExpression updateMemoryArray(ArrayExpression memory, Expression index,
 	    Expression value) {
-		Preconditions.checkArgument(index.getNode() != null);
+		Preconditions.checkNotNull(index.getNode());
 		
 		if(value.isBoolean()) value = encoding.castToInteger(value);
 		

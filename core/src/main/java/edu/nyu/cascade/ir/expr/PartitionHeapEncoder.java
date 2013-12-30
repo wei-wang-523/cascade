@@ -30,13 +30,13 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
 	
 	public static PartitionHeapEncoder createSoundEncoding(IRHeapEncoding heapEncoding,
 			IRSoundMemLayoutEncoding soundMemEncoding) {
-		Preconditions.checkArgument(soundMemEncoding != null);
+		Preconditions.checkNotNull(soundMemEncoding);
 		return new PartitionHeapEncoder(heapEncoding, soundMemEncoding, null);
 	}
 	
 	public static PartitionHeapEncoder createOrderEncoding(IRHeapEncoding heapEncoding,
 			IROrderMemLayoutEncoding orderMemEncoding) {
-		Preconditions.checkArgument(orderMemEncoding != null);
+		Preconditions.checkNotNull(orderMemEncoding);
 		return new PartitionHeapEncoder(heapEncoding, null, orderMemEncoding);
 	}
 

@@ -8,19 +8,19 @@ public final class IRProcessType extends IRType {
     return unparameterized;
   }
   
-  public static IRProcessType create(String parameter, IRRangeType parameterType) {
+  public static IRProcessType create(String parameter, IRRangeType<?> parameterType) {
     return new IRProcessType(parameter, parameterType);
   }
   
   private final String parameter;
-  private final IRRangeType parameterType;
+  private final IRRangeType<?> parameterType;
 
   private IRProcessType() {
     this.parameter = null;
     this.parameterType = null;
   }
   
-  private IRProcessType(String parameter, IRRangeType parameterType) {
+  private IRProcessType(String parameter, IRRangeType<?> parameterType) {
     this.parameter = parameter;
     this.parameterType = parameterType;
   }
@@ -34,7 +34,7 @@ public final class IRProcessType extends IRType {
     return parameter;
   }
 
-  public IRRangeType getParameterType() {
+  public IRRangeType<?> getParameterType() {
     return parameterType;
   }
 

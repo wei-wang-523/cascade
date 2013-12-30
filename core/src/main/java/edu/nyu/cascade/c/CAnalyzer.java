@@ -2921,6 +2921,8 @@ public class CAnalyzer extends Visitor {
               case FUNCTION:
                 type = c().qualify(new PointerT(type.resolve()), type);
                 break;
+							default:
+								break;
               }
 
               // Annotate the type.
@@ -3514,7 +3516,7 @@ public class CAnalyzer extends Visitor {
   }
 
   /** Visit the specified expression list. */
-  public List visitExpressionList(GNode n) {
+  public List<Type> visitExpressionList(GNode n) {
     // Create a list of expression types and return it.
     final List<Type> result = new ArrayList<Type>(n.size());
     for (Object o : n) result.add((Type)dispatch((Node)o));
@@ -6103,6 +6105,8 @@ public class CAnalyzer extends Visitor {
           case FUNCTION:
             type = c().qualify(new PointerT(type.resolve()), type);
             break;
+					default:
+						break;
           }
           
           // Annotate the type.
