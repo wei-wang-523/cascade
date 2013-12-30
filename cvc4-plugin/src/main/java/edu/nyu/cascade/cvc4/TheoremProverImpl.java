@@ -256,19 +256,17 @@ public class TheoremProverImpl implements TheoremProver {
       addAssumptions();
 
       Expr cvc4Expr = getExpressionManager().toCvc4Expr(expr);
-      Expr cvc4ExprSimp = getSmtEngine().simplify(cvc4Expr);      
 
-      if (IOUtils.debugEnabled()) {        
+      if (IOUtils.debugEnabled()) {
         IOUtils.debug().pln(
                             "Simplified: "
-                                + cvc4ExprSimp
+                                + getSmtEngine().simplify(cvc4Expr)
                                     .toString()).flush();
+	debugCommand("CHECKSAT " + cvc4Expr.toString());
+	tpFileCommand("CHECKSAT " + cvc4Expr.toString());
       }
-
-      debugCommand("CHECKSAT " + cvc4ExprSimp.toString());
-      tpFileCommand("CHECKSAT " + cvc4ExprSimp.toString());
       
-      Result cvc4SatResult = getSmtEngine().checkSat(cvc4ExprSimp);
+      Result cvc4SatResult = getSmtEngine().checkSat(cvc4Expr);
       IOUtils.debug().pln(cvc4SatResult.toString()).flush();
       SatResult.Type resultType = convertCvc4SatResult(cvc4SatResult);
 
@@ -337,20 +335,18 @@ public class TheoremProverImpl implements TheoremProver {
 
       final ExpressionManagerImpl exprManager = getExpressionManager();
       Expr cvc4Expr = exprManager.toCvc4Expr(expr);
-      Expr cvc4ExprSimp = getSmtEngine().simplify(cvc4Expr);      
 
       if (IOUtils.debugEnabled()) {  
         IOUtils.debug().pln(
                             "Simplified: "
-                                + cvc4ExprSimp
+                                + getSmtEngine().simplify(cvc4Expr)
                                     .toString()).flush();
+        debugCommand("QUERY " + cvc4Expr.toString());
+	tpFileCommand("QUERY " + cvc4Expr.toString());
       }
-
-      debugCommand("QUERY " + cvc4ExprSimp.toString());
-      tpFileCommand("QUERY " + cvc4ExprSimp.toString());
       
 //      IOUtils.out().println(ManagementFactory.getRuntimeMXBean().getName());
-      Result cvc4QueryResult = getSmtEngine().query(cvc4ExprSimp);
+      Result cvc4QueryResult = getSmtEngine().query(cvc4Expr);
       IOUtils.debug().pln(cvc4QueryResult.toString());
       ValidityResult.Type resultType = convertCvc4QueryResult(cvc4QueryResult);
 
