@@ -106,6 +106,8 @@ public class MultiCellLinearBurstallSimpleFormatter implements IRDataFormatter {
 	 */
 	@Override
 	public Type getArrayElemType(xtc.type.Type type) {
+		if(type.resolve().isArray())	
+			type = type.resolve().toArray().getType();
 		int size = (int) encoding.getCAnalyzer().getSize(type);
 		int wordSize = encoding.getWordSize();
 		return encoding.getExpressionManager().bitVectorType(wordSize * size);
