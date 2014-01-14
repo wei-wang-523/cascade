@@ -30,8 +30,6 @@ import org.apache.commons.cli.PosixParser;
 import xtc.parser.ParseException;
 import xtc.parser.Result;
 import xtc.tree.Node;
-import xtc.tree.VisitingException;
-import xtc.tree.VisitorException;
 import xtc.util.Runtime;
 
 import com.google.common.base.Joiner;
@@ -276,13 +274,19 @@ public class Main {
         }
     	});
     	
+    	long timeout = Preferences.getInt(Preferences.OPTION_TIMEOUT);
     	try {
-    		long timeout = Preferences.getInt(Preferences.OPTION_TIMEOUT);
     		future.get(timeout, TimeUnit.SECONDS);
     	} catch(TimeoutException e) {
     		future.cancel(true);
+    		
     		IOUtils.err().println("Timeout");
-    		System.exit(0);
+        IOUtils.err().println("Cascade took time: " + timeout + "s");
+    		
+    		IOUtils.out().println("Timeout");
+    		IOUtils.out().println("Cascade took time: " + timeout + "s");
+    		
+        System.exit(0);
     	} catch (InterruptedException e) {
 	      // TODO Auto-generated catch block
 	      e.printStackTrace();
