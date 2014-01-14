@@ -33,7 +33,7 @@ public class SelectExpressionImpl extends ExpressionImpl {
         DatatypeType dtt = new DatatypeType(type);
         Datatype dt = dtt.getDatatype();
         long constructorIndex = Datatype.indexOf(dt.getConstructor(selector.getConstructor().getName()));
-        DatatypeConstructor dtc = dt.getConstructor(constructorIndex);
+        DatatypeConstructor dtc = dt.get(constructorIndex);
         return em.mkExpr(edu.nyu.acsys.CVC4.Kind.APPLY_SELECTOR, 
             dtc.getSelector(selector.getName()), arg);
     	/* return em.datatypeSelExpr(selector.getName(), arg); */

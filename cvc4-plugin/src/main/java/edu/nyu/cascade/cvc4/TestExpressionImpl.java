@@ -33,7 +33,7 @@ public class TestExpressionImpl extends BooleanExpressionImpl {
         DatatypeType dtt = new DatatypeType(type);
         Datatype dt = dtt.getDatatype();
         long constructorIndex = Datatype.indexOf(dt.getConstructor(constructor.getName()));
-        DatatypeConstructor dtc = dt.getConstructor(constructorIndex);
+        DatatypeConstructor dtc = dt.get(constructorIndex);
         return em.mkExpr(edu.nyu.acsys.CVC4.Kind.APPLY_TESTER,
             dtc.getTester(), arg);
         /*return em.datatypeTestExpr(constructor.getName(), arg);*/
