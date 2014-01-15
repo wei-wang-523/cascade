@@ -17,5 +17,3 @@ int * main (int x, int y){
 	return a;
 	
 }
-
-/* a[y] is also valid address in cascade.  */
