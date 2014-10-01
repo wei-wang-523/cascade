@@ -15,7 +15,7 @@
     <repository>
       <id>cascade-public-repo</id>
       <name>Cascade Public Repository</name>
-      <url>http://cs.nyu.edu/acsys/cascade/repository/</url>
+      <url>http://cs.nyu.edu/acsys/cascade-repository/</url>
     </repository>
   </repositories>
 
@@ -96,7 +96,6 @@
               <goal>test</goal>
             </goals>
             <configuration>
-<!--              <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm> -->
               <fork>always</fork>
             </configuration>
           </execution>
@@ -106,31 +105,9 @@
             <LD_LIBRARY_PATH>${cvc4.libdir}:${cvc4.jni.libdir}</LD_LIBRARY_PATH>
             <DYLD_LIBRARY_PATH>${cvc4.libdir}:${cvc4.jni.libdir}</DYLD_LIBRARY_PATH>
           </environmentVariables>
-          <!-- <systemProperties> -->
-          <!--   <property> -->
-          <!--     <name>java.library.path</name> -->
-          <!--     <value>${cvc4.libdir}</value> -->
-          <!--   </property> -->
-          <!-- </systemProperties> -->
-<!--          <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm> -->
           <fork>always</fork>
         </configuration>
       </plugin>
     </plugins>
   </build>
-  <profiles>
-    <profile>
-      <id>tools-builds-cvc4</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <cvc4.version>1.0</cvc4.version>
-        <cvc4.basedir>${user.home}/Workspace/target/cvc4</cvc4.basedir>
-        <cvc4.libdir>${cvc4.basedir}/lib</cvc4.libdir>
-        <cvc4.jni.libdir>${cvc4.libdir}/jni</cvc4.jni.libdir>
-        <cvc4.jar>${cvc4.basedir}/share/java/CVC4.jar</cvc4.jar>
-      </properties>
-    </profile>
-  </profiles>
 </project>
