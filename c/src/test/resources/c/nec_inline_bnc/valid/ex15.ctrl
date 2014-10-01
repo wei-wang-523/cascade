@@ -1,0 +1,7 @@
+<controlFile>
+  <sourceFile name="../ex15.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="14" />
+    <endPosition fileId="1" line="32" />
+  </run>
+</controlFile>

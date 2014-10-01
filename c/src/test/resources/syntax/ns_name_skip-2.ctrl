@@ -1,17 +1,13 @@
 <controlFile>
-  <sourceFile name="ns_name_skip.c" id="1" /> 
+  <sourceFile name="ns_name_skip.c" id="1" />
   <run>
-    <startPosition fileId="1" line="7" />
+    <startPosition fileId="1" line="6" />
     <wayPoint fileId="1" line="13" />
     <wayPoint fileId="1" line="17" />
     <endPosition fileId="1" line="31">
       <command>
-        <cascadeFunction>  cascade_check
-        </cascadeFunction>
-        <argument><![CDATA[ 
-                            1
-          ]]>
-        </argument>
+        <cascadeFunction>  cascade_check </cascadeFunction>
+        <argument>1</argument>
       </command>
     </endPosition>
   </run>

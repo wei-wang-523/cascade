@@ -1,34 +1,28 @@
 <controlFile>
-  <sourceFile name="ftpd-inlined.c" id="1" /> 
+  <sourceFile name="ftpd-inlined.c" id="1" />
   <run>
-    <startPosition fileId="1" line="3">
+    <startPosition fileId="1" line="3" />
+    <wayPoint fileId="1" line="6" insert="after">
       <command>
         <cascadeFunction>cascade_assume</cascadeFunction>
         <argument><![CDATA[
-	allocated(resolved, 2)
-	]]>
-	</argument>
-      </command>
-    </startPosition>
-    <wayPoint fileId="1" line="5">
-      <command>
-        <cascadeFunction>cascade_assume</cascadeFunction>
-        <argument><![CDATA[
-        (resolved[0] == '\0' || resolved[1] == '\0') &&
-        (wbuf[0] == '\0' || wbuf[1] == '\0')
+          (resolved[0] == '\0' || resolved[1] == '\0') &&
+          (wbuf[0] == '\0' || wbuf[1] == '\0')
         ]]>
         </argument>
       </command>
     </wayPoint>
     <wayPoint fileId="1" line="11" />
-    <wayPoint fileId="1" line="18" />
-    <wayPoint fileId="1" line="21" />
+    <wayPoint fileId="1" line="17" >
+      <loop iterTimes="1" />
+    </wayPoint>
+    <wayPoint fileId="1" line="20" >
+      <loop iterTimes="1" />
+    </wayPoint>
     <endPosition fileId="1" line="25">
       <command>
         <cascadeFunction>cascade_check</cascadeFunction>
-        <argument><![CDATA[
-          valid(resolved)
-        ]]></argument>
+        <argument>valid(resolved)</argument>
       </command>
     </endPosition>
   </run>

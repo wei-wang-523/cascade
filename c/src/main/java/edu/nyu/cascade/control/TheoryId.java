@@ -12,12 +12,12 @@ public class TheoryId {
     return new TheoryId(theory.getQname());
   }
   
-  public edu.nyu.cascade.c.Theory getInstance(ExpressionManager exprManager) 
+  public edu.nyu.cascade.c.theory.Theory getInstance(ExpressionManager exprManager) 
   throws ControlFileException {
     try {
       Class<?> theoryClass = Class.forName(qname);
       Constructor<?> theoryConstr = theoryClass.getConstructor(ExpressionManager.class);
-      return (edu.nyu.cascade.c.Theory) theoryConstr.newInstance(exprManager);
+      return (edu.nyu.cascade.c.theory.Theory) theoryConstr.newInstance(exprManager);
     } catch (ClassNotFoundException e) {
       throw new ControlFileException(e);
     } catch (SecurityException e) {

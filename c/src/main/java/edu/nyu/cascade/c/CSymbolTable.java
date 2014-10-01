@@ -1,5 +1,6 @@
 package edu.nyu.cascade.c;
 
+import java.io.File;
 import java.util.Iterator;
 
 import com.google.common.base.Preconditions;
@@ -13,8 +14,7 @@ import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.ir.SymbolTableFactory;
-import edu.nyu.cascade.ir.impl.VarInfo;
-import edu.nyu.cascade.ir.type.IRIntegerType;
+import edu.nyu.cascade.ir.impl.VarInfoFactory;
 import edu.nyu.cascade.util.IOUtils;
 
 /**
@@ -40,15 +40,15 @@ public class CSymbolTable implements SymbolTable {
   }
 */  
   /** Copy the bindings from the given symbol table into a new symbol table. */
-  public static CSymbolTable create(SymbolTableFactory factory, xtc.util.SymbolTable xtcSymbolTable) {
+  public static CSymbolTable create(File file, SymbolTableFactory factory, xtc.util.SymbolTable xtcSymbolTable) {
     Scope rootScope = xtcSymbolTable.root();
     xtc.util.SymbolTable newXtcSymbolTable = new xtc.util.SymbolTable(rootScope.getName());
     xtcSymbolTable.setScope(rootScope);
-    copyScope(xtcSymbolTable, newXtcSymbolTable);
+    copyScope(file, xtcSymbolTable, newXtcSymbolTable);
     return new CSymbolTable(factory.create(newXtcSymbolTable), xtcSymbolTable);
   }
 
-  private static void copyScope(xtc.util.SymbolTable xtcSymbolTable, xtc.util.SymbolTable newXtcSymbolTable) {
+  private static void copyScope(File file, xtc.util.SymbolTable xtcSymbolTable, xtc.util.SymbolTable newXtcSymbolTable) {
     Scope scope = xtcSymbolTable.current();
     String scopeName = scope.getName();
     Preconditions.checkArgument(scopeName.equals(newXtcSymbolTable.current().getName()));
@@ -63,13 +63,14 @@ public class CSymbolTable implements SymbolTable {
       Object binding = scope.lookupLocally(name);
       assert( binding != null );
       IOUtils.debug().pln("Symbol: '" + name + "'" + " binding: " + binding);
-      /* FIXME: Making everything integer, unconditionally. */
       /* FIXME: Using binding as Node as a non-null placeholder. Will binding
        * always be a Node???
        */
-      IRVarInfo varInfo = new VarInfo(scope, name,
-          IRIntegerType.getInstance(), (Node)binding);
-      newXtcSymbolTable.current().define(name, varInfo);
+      assert( binding instanceof Type);
+      Scope newScope = newXtcSymbolTable.current();
+      IRVarInfo varInfo = VarInfoFactory.createVarInfoWithType(
+      		newScope.getQualifiedName(), name, (Type)binding);
+      newScope.define(name, varInfo);
     }
     
     /* Recursively descend through nested scopes. */
@@ -79,9 +80,47 @@ public class CSymbolTable implements SymbolTable {
       assert( nested != null );
       xtcSymbolTable.enter(nested.getName());    
       newXtcSymbolTable.enter(nested.getName());
-      copyScope(xtcSymbolTable, newXtcSymbolTable);
+      copyScope(file, xtcSymbolTable, newXtcSymbolTable);
       xtcSymbolTable.exit();
       newXtcSymbolTable.exit();
+    }
+    
+  }
+  
+  /**
+   * Used for function-inline, nest the function scope <code>scope</code> under current calling scope
+   * of <code>xtcSymbolTable</code>
+   * @param file
+   * @param scope
+   * @param xtcSymbolTable
+   */
+  public static void copyFunctionScope(Scope scope, CSymbolTable symbolTable) {
+    String scopeName = scope.getName();
+    Preconditions.checkArgument(scopeName.equals(symbolTable.getCurrentScope().getName()));
+    
+    IOUtils.debug().pln("Visiting scope: '" + scopeName + "'");
+    
+    
+    /* Rip all the symbols in the scope. */
+    Iterator<String> symbolIter = scope.symbols();
+    while( symbolIter.hasNext() ) {
+      String name = symbolIter.next();
+      IRVarInfo varInfo = (IRVarInfo) scope.lookupLocally(name);
+      assert( varInfo != null );
+      IOUtils.debug().pln("Symbol: '" + name + "'" + " binding: " + varInfo);
+      Scope newScope = symbolTable.getCurrentScope();
+      IRVarInfo varInfoPrime = VarInfoFactory.cloneVarInfoToScope(varInfo, newScope);
+      newScope.define(name, varInfoPrime);
+    }
+    
+    /* Recursively descend through nested scopes. */
+    Iterator<String> scopeIter = scope.nested();
+    while( scopeIter.hasNext() ) {
+      Scope nested = scope.getNested(scopeIter.next() );
+      assert( nested != null ); 
+      symbolTable.enter(nested.getName());
+      copyFunctionScope(nested, symbolTable);
+      symbolTable.exit();
     }
     
   }
@@ -142,6 +181,7 @@ public class CSymbolTable implements SymbolTable {
     return symbolTable.getCurrentScope();
   }
 
+  @Override
   public xtc.util.SymbolTable getOriginalSymbolTable() {
     return originalSymbolTable;
   }
@@ -259,5 +299,17 @@ public class CSymbolTable implements SymbolTable {
   @Override
   public Type lookupType(String name) {
     return (Type) originalSymbolTable.current().lookup(name);
+  }
+
+  @Override
+	public void enter(String name) {
+		symbolTable.enter(name);
+    originalSymbolTable.enter(name);
+  }
+  
+  @Override
+  public void exit() {
+  	symbolTable.setScope(getCurrentScope().getParent());
+  	originalSymbolTable.exit();
   }
 }

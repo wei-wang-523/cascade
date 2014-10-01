@@ -1,0 +1,25 @@
+<controlFile>
+  <sourceFile name="../ex1.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="11" />
+    <wayPoint fileId="1" line="16" >
+      <loop>
+        <invariant><![CDATA[
+          i>=0 && i<=(1<<9) && j==2*i && q == B + i &&
+          implies(i>0, B[i-1] == A[j-2] + A[j-1])
+        ]]>
+        </invariant>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="19" >
+      <command>
+        <cascadeFunction> cascade_check
+        </cascadeFunction>
+        <argument><![CDATA[
+          valid(&(q[-1]))
+        ]]>
+        </argument>
+      </command>
+    </endPosition>
+  </run>
+</controlFile>

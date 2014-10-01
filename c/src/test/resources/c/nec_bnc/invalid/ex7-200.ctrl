@@ -1,0 +1,19 @@
+<controlFile>
+  <sourceFile name="../ex7.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="2" />
+    <wayPoint fileId="1" line="13" >
+      <loop iterTimes="200" />
+    </wayPoint>
+    <wayPoint fileId="1" line="17" >
+      <command>
+        <cascadeFunction> cascade_check </cascadeFunction>
+        <argument><![CDATA[
+          forall(idx, implies(idx >=0 && idx < y, valid(&a[idx]) && a[idx] == 0))
+        ]]>
+        </argument>
+      </command>
+    </wayPoint>
+    <endPosition fileId="1" line="18" />
+  </run>
+</controlFile>

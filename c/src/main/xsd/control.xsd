@@ -83,10 +83,12 @@
 
   <xsd:complexType name="callPoint">
     <xsd:sequence>
+	  <xsd:element maxOccurs="1" minOccurs="0" name="startPosition" type="position" />
       <xsd:element maxOccurs="unbounded" minOccurs="0" name="wayPoint" type="position" />
+      <xsd:element maxOccurs="1" minOccurs="0" name="endPosition" type="position" />
     </xsd:sequence>
     <xsd:attribute name="funcName" type="xsd:string" />
-    <xsd:attribute name="funcId" type="xsd:positiveInteger" default="1" />
+    <xsd:attribute name="column" type="xsd:positiveInteger" />
   </xsd:complexType>
 
   <xsd:complexType name="loopPoint">

@@ -1,0 +1,12 @@
+<controlFile>
+  <sourceFile name="../inf8.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="2" />
+    <wayPoint fileId="1" line="6" />
+    <wayPoint fileId="1" line="12" />
+    <wayPoint fileId="1" line="30" />
+    <wayPoint fileId="1" line="34" />
+    <wayPoint fileId="1" line="35" />
+    <endPosition fileId="1" line="36" />
+  </run>
+</controlFile>

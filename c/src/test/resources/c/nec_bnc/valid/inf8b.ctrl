@@ -1,0 +1,36 @@
+<controlFile>
+  <sourceFile name="../inf8.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="2" />
+    <wayPoint fileId="1" line="6" /> <!-- c = 0 || b = 0, triag = 1 -->
+    <wayPoint fileId="1" line="18" /> <!-- c != 0, b = 0, id = 0, ltriag = 1, utriag = 0-->
+    <wayPoint fileId="1" line="30" >
+      <command>
+        <cascadeFunction>cascade_check</cascadeFunction>
+        <argument><![CDATA[
+          id || ltriag || utriag
+        ]]>
+        </argument>
+      </command>
+    </wayPoint>
+    <wayPoint fileId="1" line="32" >
+      <command>
+        <cascadeFunction>cascade_check</cascadeFunction>
+        <argument><![CDATA[
+          !(triag && utriag == ltriag)
+        ]]>
+        </argument>
+      </command>
+    </wayPoint>
+    <wayPoint fileId="1" line="35" >
+      <command>
+        <cascadeFunction>cascade_check</cascadeFunction>
+        <argument><![CDATA[
+          unknown > 0 || triag > 0
+        ]]>
+        </argument>
+      </command>
+    </wayPoint>
+    <endPosition fileId="1" line="36" />
+  </run>
+</controlFile>

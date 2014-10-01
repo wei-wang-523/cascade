@@ -1,26 +1,25 @@
 <!-- This is wrong, because swap doesn't work in x and y are aliased -->
 <controlFile>
-  <sourceFile name="swap-inline.c" id="1" /> 
-  <run>
-    <startPosition fileId="1" line="1">
-          <command>
-        <cascadeFunction>  cascade_assume
-        </cascadeFunction>
-        <argument><![CDATA[
-            x != y && (int)x < (int)y && (int)x < (int)&y
-            ]]>
-        </argument>
-      </command>
-      </startPosition>
-    <endPosition fileId="1" line="7">
-      <command>
-        <cascadeFunction>  cascade_check
-        </cascadeFunction>
-        <argument><![CDATA[
-          old_x==*y && old_y==*x
-          ]]>
-        </argument>
-      </command>
-    </endPosition>
-  </run>
+    <sourceFile name="swap-inline.c" id="1" />
+    <run>
+        <startPosition fileId="1" line="1" />
+        <wayPoint fileId="1" line="2">
+            <command>
+                <cascadeFunction>  cascade_assume </cascadeFunction>
+                <argument><![CDATA[
+                    x != y && (int)x < (int)y && (int)x < (int)&y
+                ]]>
+                </argument>
+            </command>
+        </wayPoint>
+        <endPosition fileId="1" line="7">
+            <command>
+                <cascadeFunction>  cascade_check </cascadeFunction>
+                <argument><![CDATA[
+                    old_x==*y && old_y==*x
+                ]]>
+                </argument>
+            </command>
+        </endPosition>
+    </run>
 </controlFile>

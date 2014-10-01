@@ -1,0 +1,27 @@
+<controlFile>
+  <sourceFile name="ex25Simp.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="13" />
+    <wayPoint fileId="1" line="15" >
+      <loop>
+        <invariant><![CDATA[
+          y >= 0 && y <= 100
+        ]]>
+        </invariant>
+        <wayPoint fileId="1" line="16" >
+          <function funcName="foo" >
+            <wayPoint fileId="1" line="8" >
+              <loop>
+                <invariant><![CDATA[
+                  0 <= i && i <= x && valid(&a[i])
+                ]]>
+                </invariant>
+              </loop>
+            </wayPoint>
+          </function>
+        </wayPoint>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="18" />
+  </run>
+</controlFile>

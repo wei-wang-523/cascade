@@ -29,39 +29,34 @@ import org.apache.commons.cli.PosixParser;
 
 import xtc.parser.ParseException;
 import xtc.parser.Result;
+import xtc.tree.GNode;
 import xtc.tree.Node;
 import xtc.util.Runtime;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Table;
+import com.google.common.collect.Table.Cell;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 
-import edu.nyu.cascade.c.preprocessor.PreProcessor;
+import edu.nyu.cascade.c.mode.AbstractMode;
+import edu.nyu.cascade.c.mode.Mode;
+import edu.nyu.cascade.c.theory.Theory;
 import edu.nyu.cascade.control.ControlFile;
 import edu.nyu.cascade.control.ControlFileException;
 import edu.nyu.cascade.control.Run;
 import edu.nyu.cascade.control.TheoryId;
 import edu.nyu.cascade.datatypes.CompressedDomainNamesEncoding;
-import edu.nyu.cascade.ir.IRCallGraph;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.SymbolTableFactory;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
-import edu.nyu.cascade.ir.expr.FlatMemoryModel;
-import edu.nyu.cascade.ir.expr.IRDataFormatter;
-import edu.nyu.cascade.ir.expr.IRHeapEncoding;
-import edu.nyu.cascade.ir.expr.IROrderMemLayoutEncoding;
-import edu.nyu.cascade.ir.expr.IRSingleHeapEncoder;
-import edu.nyu.cascade.ir.expr.HeapEncoding;
-import edu.nyu.cascade.ir.expr.MemoryModel;
-import edu.nyu.cascade.ir.expr.OrderLinearMemLayoutEncoding;
-import edu.nyu.cascade.ir.expr.PartitionHeapEncoder;
-import edu.nyu.cascade.ir.expr.PointerExpressionEncoding;
-import edu.nyu.cascade.ir.expr.SingleCellLinearFormatter;
-import edu.nyu.cascade.ir.expr.SingleHeapEncoderAdapter;
 import edu.nyu.cascade.prover.TheoremProver;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.TheoremProverFactory;
@@ -95,6 +90,7 @@ public class Main {
   private static final String OPTION_PARSE_ONLY = "parse-only";
   private static final String OPTION_DRY_RUN = "dry-run";
   private static final String OPTION_DEBUG = "debug";
+  private static final String OPTION_STATS = "stats";
   private static final String OPTION_EFFORT_LEVEL = "effort-level";
   private static final String OPTION_SOLVER_TIMEOUT = "solver-timeout";
   private static final String OPTION_FEASIBILITY = "feasibility";
@@ -102,6 +98,7 @@ public class Main {
   private static final String OPTION_MARK_AST = "optionMarkAST";
   private static final String OPTION_PEDANTIC = "pedantic";
   private static final String OPTION_INTERNAL_PEDANTIC = "optionPedantic";
+  private static final String OPTION_REACHABILITY = "reachability";  
 
   @SuppressWarnings("static-access")
   private static final Options options = new Options() //
@@ -114,6 +111,17 @@ public class Main {
           .withArgName("FILE") //
           .withType(File.class) //
           .withDescription("Specify a user properties file").create()) //
+      .addOption(OptionBuilder.withLongOpt(OPTION_REACHABILITY) //
+          .hasArg() //
+          .withArgName("LABEL") //
+          .withType(String.class) //
+          .withDescription("Enable reachability of a LABEL") //
+          .create("r")) //
+      .addOption(OptionBuilder.withLongOpt(Preferences.OPTION_INCREMENTAL) //
+          .withDescription("Run reachability checking incrementally until"
+          		+ "reach the iteration bound specified via "
+          		+ Preferences.OPTION_ITERATION_TIMES) //
+          .create("i")) //    
       .addOption(OptionBuilder.withLongOpt(OPTION_NO_THREADS) //
           .withDescription("Run all sub-processes in a single thread") //
           .create()) //
@@ -126,7 +134,7 @@ public class Main {
       .addOption(
           OptionBuilder.withLongOpt(OPTION_DRY_RUN) //
           .withDescription(
-              "Do a dry run (no theorem prover calls)") //
+          		"Do a dry run (no theorem prover calls)") //
               .create()) //
       .addOption(OptionBuilder.withLongOpt(OPTION_PEDANTIC) //
           .withDescription("Enforce strict C99 compliance.") //
@@ -134,15 +142,18 @@ public class Main {
       .addOption(OptionBuilder.withLongOpt(OPTION_DEBUG) //
           .withDescription("Run in debug mode.") //
           .create("D")) //
+      .addOption(OptionBuilder.withLongOpt(OPTION_STATS) //
+          .withDescription("Enable statistics.") //
+          .create("ST")) //          
       .addOption(OptionBuilder.withLongOpt(Preferences.OPTION_COUNTER_EXAMPLE) //
           .withDescription("Enable counter example.") //
-          .create()) //
+          .create("cex")) //
       .addOption(OptionBuilder.withLongOpt(OPTION_SMT2_FILE) //
           .withDescription("Dump theorem prover input file into log FILE") //
           .hasArg() //
           .withArgName("FILE") //
           .withType(File.class) //
-          .create()) //
+          .create())
       .addOption(OptionBuilder.withLongOpt(OPTION_EFFORT_LEVEL) //
           .hasArg() //
           .withArgName("N") //
@@ -154,7 +165,13 @@ public class Main {
           .withArgName("N") //
           .withType(Integer.class) //
           .withDescription("Set the size of memory model cell to N.") //
-          .create()) //
+          .create("m")) //
+      .addOption(OptionBuilder.withLongOpt(Preferences.OPTION_FUNC_INLINE) //
+          .hasArg() //
+          .withArgName("N") //
+          .withType(Integer.class) //
+          .withDescription("Set effort level for the function inline to N.") //
+          .create()) //          
       .addOption(OptionBuilder.withLongOpt(OPTION_SOLVER_TIMEOUT) //
           .hasArg() //
           .withArgName("S") //
@@ -166,7 +183,7 @@ public class Main {
           .withArgName("S") //
           .withType(Integer.class) //
           .withDescription("Set timeout for Cascade to S sec.") //
-          .create()) //
+          .create("T")) //
       .addOption(OptionBuilder.withLongOpt(OPTION_FEASIBILITY) //
           .withDescription("Check path feasibility for runs.") //
           .create()) //
@@ -192,28 +209,18 @@ public class Main {
               .withDescription("No overflow checking (use integer incoding).") //
               .create()) //
       .addOption(
-          OptionBuilder.withLongOpt(Preferences.OPTION_BURSTALL_MULTI_CELL_SIMP) //
-              .withDescription("Simplified burstall multi-cell encoding.") //
-              .create()) //
-      .addOption(OptionBuilder.withLongOpt(Preferences.OPTION_UNSIGNED_OPERATION)
-              .withDescription("Enable unsigned numeric operations.")
+          OptionBuilder.withLongOpt(Preferences.OPTION_VARI_CELL) //
+              .withDescription("Enable the various size of cell based on type information (for burstall-related model only).") //
               .create()) //
       .addOption(
-          OptionBuilder.withLongOpt(Preferences.OPTION_PARTIAL_INST) //
-              .withDescription("Enable partial instantiation.") //
-              .hasArg() //
-              .withArgName("fld: field; elt: element; fld-of-elt: field of element") //
-              .withType(String.class)
-              .create()) //
-      .addOption(
-          OptionBuilder.withLongOpt(Preferences.OPTION_THEORY) //
-              .withDescription("Use a particular theory: Flat(default), Burstall, Partition") //
+          OptionBuilder.withLongOpt(Preferences.OPTION_MODE) //
+              .withDescription("Use a particular mode: Flat(default), Burstall, Partition") //
               .hasArg() //
               .withType(String.class)
               .create()) //
       .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_MEM_ENCODING) //
-              .withDescription("Use either encoding: linear(default), synchronous, or linearFix") //
+              .withDescription("Use either encoding: linear(default), sync") //
               .hasArg() //
               .withType(String.class)
               .create()) //          
@@ -230,12 +237,14 @@ public class Main {
               .withDescription("Eable annotation inlined in code.") //
               .create()) //
       .addOption(
-          OptionBuilder.withLongOpt(Preferences.OPTION_TOTAL_INST) //
-              .withDescription("Enable total instantiation.") //
-              .create()) //
-      .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_MULTI_CELL) //
               .withDescription("Enable multi-cell datatype formatter.") //
+              .create()) //
+      .addOption(
+          OptionBuilder.withLongOpt(Preferences.OPTION_PATH_BASED) //
+              .withDescription("Enable loop merge path processing, which"
+              		+ " keep the iteration times for every loop rather than"
+              		+ " split and connect loop for unrolling.") //
               .create()) //
       .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_PLUGINS_DIRECTORY) //
@@ -250,8 +259,24 @@ public class Main {
               .hasArg()
               .withArgName("N")
               .withType(Integer.class)
-              .create());
-
+              .create())
+      .addOption(
+          OptionBuilder.withLongOpt(Preferences.OPTION_LAMBDA) //
+              .withDescription("Enable lambda encoding.") //
+              .create())
+      .addOption(
+          OptionBuilder.withLongOpt(Preferences.OPTION_HOARE) //
+              .withDescription("Enable hoare encoding (treate stack variables without &(..) op as pure logic variable .") //
+              .create())              
+      .addOption(
+          OptionBuilder.withLongOpt(Preferences.OPTION_FIELD_SENSITIVE) //
+              .withDescription("Enable field sensitive pointer analysis.") //
+              .create("fs"))
+      .addOption(
+          OptionBuilder.withLongOpt(Preferences.OPTION_CONTEXT_SENSITIVE) //
+              .withDescription("Enable context sensitive pointer analysis.") //
+              .create("cs"));
+  
   public static void main(String[] args) throws IOException, ParseException, TheoremProverException {
     IOUtils.enableOut();
     IOUtils.enableErr();
@@ -264,75 +289,41 @@ public class Main {
     // Process the command line arguments
     final List<String> files = main.processCommandLine(args);
     
-    if(Preferences.isSet(Preferences.OPTION_TIMEOUT)) {
-    	ExecutorService executor = Executors.newSingleThreadExecutor();
-    	Future<Void> future = executor.submit(new Callable<Void>() {
-				@Override
-        public Void call() throws Exception {
-					main.run(files);
-					return null;
-        }
-    	});
-    	
-    	long timeout = Preferences.getInt(Preferences.OPTION_TIMEOUT);
-    	try {
-    		future.get(timeout, TimeUnit.SECONDS);
-    	} catch(TimeoutException e) {
-    		future.cancel(true);
-    		
-    		IOUtils.err().println("Timeout");
-        IOUtils.err().println("Cascade took time: " + timeout + "s");
-    		
-    		IOUtils.out().println("Timeout");
-    		IOUtils.out().println("Cascade took time: " + timeout + "s");
-    		
-        System.exit(0);
-    	} catch (InterruptedException e) {
-	      // TODO Auto-generated catch block
-	      e.printStackTrace();
-      } catch (ExecutionException e) {
-	      // TODO Auto-generated catch block
-	      e.printStackTrace();
-      } finally {   	
-      	executor.shutdown();
+    if(!Preferences.isSet(Preferences.OPTION_TIMEOUT)) {
+    	main.run(files); 
+    	return;
+    }
+    
+  	ExecutorService executor = Executors.newSingleThreadExecutor();
+  	Future<Void> future = executor.submit(new Callable<Void>() {
+			@Override
+      public Void call() throws Exception {
+				main.run(files);
+				return null;
       }
-    	
-//    	Thread thread = new Thread(new Runnable() {
-//        @Override
-//        public void run() {
-//          try {
-//          	main.run(files);
-//  				} catch (TheoremProverException e) {
-//  					// TODO Auto-generated catch block
-//  					e.printStackTrace();
-//  				} catch (IOException e) {
-//  					// TODO Auto-generated catch block
-//  					e.printStackTrace();
-//  				} catch (ParseException e) {
-//  					// TODO Auto-generated catch block
-//  					e.printStackTrace();
-//  				}
-//        }
-//    	});
-//      
-//      long startTime = System.currentTimeMillis();
-//      int timeout = Preferences.getInt(Preferences.OPTION_TIMEOUT);
-//      try {
-//        thread.start();
-//        while(thread.isAlive()) {
-//        	Thread.sleep(30);
-//        	if(System.currentTimeMillis() - startTime > timeout * 1000) {
-//        		IOUtils.err().println("Timeout");
-//        		System.exit(0);
-//        		break;
-//        	}
-//        }
-//      } catch (InterruptedException e) {
-//     // TODO Auto-generated catch block
-//				e.printStackTrace();
-//      }
-    } else {
-    	main.run(files);
+  	});
+  	
+  	long timeout = Preferences.getInt(Preferences.OPTION_TIMEOUT);
+  	try {
+  		future.get(timeout, TimeUnit.SECONDS);
+  	} catch(TimeoutException e) {
+  		future.cancel(true);
+  		
+  		IOUtils.err().println("Timeout");
+      IOUtils.err().println("Cascade took time: " + timeout + "s");
+  		
+  		IOUtils.out().println("Timeout");
+  		IOUtils.out().println("Cascade took time: " + timeout + "s");
+  		
+      System.exit(0);
+  	} catch (InterruptedException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    } catch (ExecutionException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    } finally {   	
+    	executor.shutdown();
     }
   }
 
@@ -348,22 +339,19 @@ public class Main {
   private CAnalyzer cAnalyzer;
 
   private Map<Node, IRControlFlowGraph> cfgs;
-  private Map<File, IRCallGraph> callGraphs;
   private int effortLevel = 0;
-  private int tlimit = 0;
 
   @Inject
-  public Main(SymbolTableFactory symbolTableFactory) {
+  private Main(SymbolTableFactory symbolTableFactory) {
     this.symbolTableFactory = symbolTableFactory;
     
     runtime = new Runtime();
     runtime.setConsole(IOUtils.outPrinter());
     runtime.setErrConsole(IOUtils.errPrinter());
-    
+
     asts = Maps.newHashMap();
     symbolTables = Maps.newHashMap();
     cfgs = Maps.newHashMap();
-    callGraphs = Maps.newHashMap();
   }
 
   private void failOnError(String msg) {
@@ -420,6 +408,14 @@ public class Main {
     Reader in = new FileReader(file);
     CParser parser = null;
     Result result = null;
+    
+    /* .i file is a preprocessed file, no need to further preprocessing */
+    if(FileUtils.isISourceFile(file)) {
+      parser = new CParser(in, file.toString(), (int) file.length());
+      result = parser.pTranslationUnit(0);
+      /* Everything's OK, return the parse result. */
+      return (Node) parser.value(result);
+    }
 
     // if (runtime.test(OPTION_NO_THREADS)) {
     if (Preferences.isSet(OPTION_NO_THREADS)) {
@@ -434,7 +430,6 @@ public class Main {
     } else {
       PipedInputProcess cppProcess = startPreprocessorThread(in, file);
       Reader cpp_stdout = cppProcess.getOutputAsReader();
-
       parser = new CParser(cpp_stdout, file.toString());
       result = parser.pTranslationUnit(0);
 
@@ -465,7 +460,6 @@ public class Main {
   	Preconditions.checkArgument(asts.isEmpty());
   	Preconditions.checkArgument(cfgs.isEmpty());
   	Preconditions.checkArgument(cAnalyzer == null);
-  	Preconditions.checkArgument(cfgs.isEmpty());
   	Preconditions.checkArgument(symbolTables.isEmpty());
     runtime.initDefaultValues();
     runtime.setValue(OPTION_INTERNAL_PEDANTIC,
@@ -474,6 +468,11 @@ public class Main {
     if (Preferences.isSet(OPTION_DEBUG)) {
       IOUtils.enableDebug();
       IOUtils.setDebugStream(IOUtils.out());
+    }
+    
+    if (Preferences.isSet(OPTION_STATS)) {
+    	IOUtils.enableStats();
+    	IOUtils.setStatsStream(IOUtils.err());
     }
     
     if (Preferences.isSet(OPTION_SMT2_FILE)) {
@@ -514,10 +513,9 @@ public class Main {
     if( Preferences.isSet(OPTION_SOLVER_TIMEOUT) ) {
       String timeLimitStr = Preferences.getString(OPTION_SOLVER_TIMEOUT);
       try {
-        tlimit  = Integer.parseInt(timeLimitStr);
+        int tlimit  = Integer.parseInt(timeLimitStr);
         theoremProver.setTimeLimit(tlimit);
       } catch( NumberFormatException e ) {
-        IOUtils.err().println("Invalid time level: " + timeLimitStr + "s.");
         failOnException(e);
       } catch (TheoremProverException e) {
         failOnException(e);
@@ -529,6 +527,12 @@ public class Main {
       theoremProver.setPreferences();
     } catch (TheoremProverException e) {
       failOnException(e);
+    }
+    
+    /* Set the byte-based or value-based encoding */
+    if(Preferences.isSet(Preferences.OPTION_MULTI_CELL) || 
+    		Preferences.isSet(Preferences.OPTION_VARI_CELL)) {
+    	Preferences.set(Preferences.OPTION_BYTE_BASED);
     }
     
     cAnalyzer = new CAnalyzer(runtime);
@@ -583,6 +587,87 @@ public class Main {
     IOUtils.out()
         .println(getVersion());
   }
+  
+  private void printMenu() {
+    StringBuilder menuBuilder = new StringBuilder().append("Menu: {");
+    
+    if(Preferences.isSet(Preferences.OPTION_TIMEOUT)) {
+    	menuBuilder.append(Preferences.OPTION_TIMEOUT).append(':')
+    		.append(Preferences.getInt(Preferences.OPTION_TIMEOUT)).append(',');
+    }
+    
+    menuBuilder.append(Preferences.OPTION_MODE).append(':');
+    if(Preferences.isSet(Preferences.OPTION_MODE)) {
+    	menuBuilder.append(Preferences.getString(Preferences.OPTION_MODE)).append(',');
+    } else {
+    	menuBuilder.append("Flat ");
+    }
+
+    if(Preferences.isSet(Preferences.OPTION_HOARE)) {
+    	menuBuilder.append(Preferences.OPTION_HOARE).append(',');
+    }
+    
+    if(Preferences.isSet(Preferences.OPTION_FIELD_SENSITIVE)) {
+    	menuBuilder.append(Preferences.OPTION_FIELD_SENSITIVE).append(',');
+    }
+    
+    if(Preferences.isSet(Preferences.OPTION_CONTEXT_SENSITIVE)) {
+    	menuBuilder.append(Preferences.OPTION_CONTEXT_SENSITIVE).append(',');
+    }
+    
+    if(Preferences.isSet(Preferences.OPTION_LAMBDA)) {
+    	menuBuilder.append(Preferences.OPTION_LAMBDA).append(',');
+    }
+    
+    menuBuilder.append(Preferences.OPTION_MEM_ENCODING).append(":");
+    if(Preferences.isSet(Preferences.OPTION_MEM_ENCODING)) {
+    	menuBuilder.append(Preferences.getString(Preferences.OPTION_MEM_ENCODING)).append(',');
+    } else {
+    	menuBuilder.append(Preferences.MEM_ENCODING_LINEAR).append(',');
+    }
+    
+    if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) {
+    	menuBuilder.append(Preferences.OPTION_MULTI_CELL).append(',');
+    }
+    
+    if(Preferences.isSet(Preferences.OPTION_VARI_CELL)) {
+    	menuBuilder.append(Preferences.OPTION_VARI_CELL).append(',');
+    }
+    
+    if(Preferences.isSet(Preferences.OPTION_SOUND_ALLOC)) {
+    	menuBuilder.append(Preferences.OPTION_SOUND_ALLOC).append(',');
+    }
+    
+    if(Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
+    	menuBuilder.append(Preferences.OPTION_ORDER_ALLOC).append(',');
+    }
+    
+    if(Preferences.isSet(Preferences.OPTION_SEQ_PATH)) {
+    	menuBuilder.append(Preferences.OPTION_SEQ_PATH).append(',');
+    }
+    
+    if(Preferences.isSet(Preferences.OPTION_PATH_BASED)) {
+    	menuBuilder.append(Preferences.OPTION_PATH_BASED).append(',');
+    }
+    
+    if(Preferences.isSet(Preferences.OPTION_FUNC_INLINE)) {
+    	menuBuilder.append(Preferences.OPTION_FUNC_INLINE).append(':').append(
+    			Preferences.getInt(Preferences.OPTION_FUNC_INLINE)).append(',');
+    }
+    
+    if(Preferences.isSet(Preferences.OPTION_ITERATION_TIMES)) {
+    	menuBuilder.append(Preferences.OPTION_ITERATION_TIMES).append(':').append(
+    			Preferences.getInt(Preferences.OPTION_ITERATION_TIMES)).append(',');
+    }
+    
+    if(Preferences.isSet(Preferences.OPTION_INCREMENTAL)) {
+    	menuBuilder.append(Preferences.OPTION_INCREMENTAL).append(',');
+    }
+    
+    menuBuilder.append(theoremProver.getProviderName()).append("}\n");
+    
+    IOUtils.out().println(menuBuilder.toString());
+  }
 
   @SuppressWarnings("unchecked")
   public List<String> processCommandLine(String[] args) {
@@ -627,17 +712,23 @@ public class Main {
         .flush();
     
     xtc.util.SymbolTable xtcSymbolTable = cAnalyzer.analyze(ast);
-    CSymbolTable symbolTable = CSymbolTable.create(symbolTableFactory,
+    CSymbolTable symbolTable = CSymbolTable.create(file, symbolTableFactory,
     		xtcSymbolTable);
     Map<Node, IRControlFlowGraph> currCfgs = CfgBuilder.getCfgs(symbolTable, cAnalyzer, ast);
     cfgs.putAll(currCfgs);
-    callGraphs.put(file, CallGraphBuilder.getCallGraph(symbolTable, ast));
-    symbolTables.put(file, symbolTable);
+    
+    for(Node node : currCfgs.keySet()) {
+    	/* node may has .c file as source file with lineMarker */
+    	String fileName = node.getLocation().file;
+    	File currFile = new File(fileName);
+    	symbolTables.put(currFile, symbolTable);
+    }
   }
 
   public void run(List<String> files) throws IOException, ParseException, TheoremProverException {
     
-    long time = System.currentTimeMillis();
+    Stopwatch timer = Stopwatch.createUnstarted();
+  	timer.start();
 
     // Prepare for processing the files.
     prepare();
@@ -673,36 +764,94 @@ public class Main {
           failOnError("Cannot open file: " + file);
         }
 
-        if (FileUtils.isCSourceFile(file)
-            && !Preferences.isSet(OPTION_PARSEC)) {
-          IOUtils.err()
+        if (FileUtils.isCSourceFile(file) || FileUtils.isISourceFile(file)) {
+          IOUtils.out()
               .println(
                   "Input appears to be a C source file: " + file.toString());
-          IOUtils.err()
-              .println(
-                  "Parsing as C (using " + OPTION_PARSEC + " is recommended).");
-          Preferences.set(OPTION_PARSEC);
+          
+        	assert(Preferences.isSet(OPTION_PARSEC) || Preferences.isSet(OPTION_REACHABILITY));
+        	
+        	Preferences.set(OPTION_NO_THREADS); // threads will cause broken pipe in parse source file
+          try {
+          	
+          	if (Preferences.isSet(OPTION_PARSEC)) {
+          		Node ast = parseSourceFile(file);
+          		processSourceFile(file, ast);
+            
+            } else {
+              Node ast = parseSourceFile(file);
+              processSourceFile(file, ast);
+              
+              printMenu();
+              
+              Mode mode = AbstractMode.getMode(theoremProver.getExpressionManager());
+              
+              RunProcessor<?> runProcessor;
+            	
+              if( Preferences.isSet(Preferences.OPTION_SEQ_PATH) ) {
+              	runProcessor = new RunSeqProcessor(mode, symbolTables, cfgs, cAnalyzer);
+              } else if( Preferences.isSet(Preferences.OPTION_PATH_BASED)) {
+              	runProcessor = RunPathBasedProcessor.create(mode, symbolTables, cfgs, cAnalyzer);
+              } else {
+              	runProcessor = RunMergeProcessor.create(mode, symbolTables, cfgs, cAnalyzer);
+              }
+              
+              String label = Preferences.getString(OPTION_REACHABILITY);
+              
+              Node mainNode = Iterables.find(cfgs.keySet(), 
+              		new Predicate<Node>(){
+    								@Override
+                    public boolean apply(Node node) {
+    									if(node.hasName("FunctionDefinition")) {
+    								  	/* Analyze current function definition */
+    								    final GNode declarator = node.getGeneric(2);
+    								    final GNode identifier = CAnalyzer.getDeclaredId(declarator);
+    								    final String functionName = identifier.getString(0);
+      	                return "main".equals(functionName);
+    									}
+    									return false;
+                    }
+              });
+              IRControlFlowGraph mainCfg = cfgs.get(mainNode);
+              
+            	IOUtils.debug().incr();
+            	
+            	if(Preferences.isSet(Preferences.OPTION_INCREMENTAL)) {
+            		Table<Integer, Integer, Boolean> runIsReachIncrementalTable = 
+            				runProcessor.processReachabilityIncremental(mainCfg, label);
+            		for(Cell<Integer, Integer, Boolean> entry : runIsReachIncrementalTable.cellSet()) {
+            			boolean runIsReachable = entry.getValue();
+            			StringBuilder sb = new StringBuilder().append('{')
+            					.append(entry.getRowKey())
+            					.append(':')
+            					.append(entry.getColumnKey())
+            					.append("} ")
+            					.append(runIsReachable ? "UNSAFE" : "SAFE");
+            			
+            			IOUtils.out().println(sb.toString());
+            		}
+            		
+            	} else {
+                boolean runIsReachable = runProcessor.processReachability(mainCfg, label);
+              	IOUtils.out().println(runIsReachable? "UNSAFE" : "SAFE");
+              	IOUtils.err().println(runIsReachable ? "UNSAFE" : "SAFE");
+            	}
+            	IOUtils.debug().decr();
+            }
+          } catch (RunProcessorException e) {
+            failOnException(e);
+          } catch (ExpressionFactoryException e) {
+            failOnException(e);
+          }
         }
 
-        if (Preferences.isSet(OPTION_PARSEC)) {
-          Node ast = parseSourceFile(file);
-          processSourceFile(file, ast);
-        } else {
+        else {
           try {
             ControlFile controlFile = ControlFile.fromXml(file);
             ImmutableList<File> sourceFiles = controlFile.getSourceFiles();
-            for (File sourceFile : sourceFiles) {
-              Node ast = parseSourceFile(sourceFile);
-              processSourceFile(sourceFile, ast);
-            }
-
-            // final ITheoremProver theoremProver =
-            // exprManager.getTheoremProver();
-
-            if (Preferences.isSet(OPTION_PARSE_ONLY)) {
-              return;
-            }
-
+            
+            printMenu();
+            
             /*
              * ImmutableList.Builder<ITheory> listBuilder =
              * ImmutableList.builder(); for( TheoryId id :
@@ -711,65 +860,41 @@ public class Main {
              * listBuilder.build();
              */
             TheoryId theoryId = controlFile.getTheoryId();
-            ExpressionEncoding encoding;
-            MemoryModel memoryModel;
-            PreProcessor.Builder<?> builder = null;
-            CScopeAnalyzer.Builder scopeAnalyzerBuilder = null;
-            
-            if(Preferences.isSet(Preferences.OPTION_THEORY)) {
-              // TODO: ugly way to append prefix of qname of theory
-              StringBuffer sb = new StringBuffer().append("edu.nyu.cascade.c.theory.");
-              sb.append(Preferences.getString(Preferences.OPTION_THEORY)).append("Theory");
-              theoryId = new TheoryId(sb.toString());
-            }
             
             if (theoryId != null) {
-              Theory theory = theoryId.getInstance(theoremProver.getExpressionManager());
-              encoding = theory.getEncoding();
-              memoryModel = theory.getMemoryModel();
-              builder = theory.getPreprocessorBuilder();
-              scopeAnalyzerBuilder = theory.getScopeAnalyzerBuilder();
-            } else {           
-              // TODO: Fix bit-vector sizes to agree with encoding              
-              encoding = PointerExpressionEncoding.create(theoremProver
-                  .getExpressionManager()); 
-              IRDataFormatter formatter = SingleCellLinearFormatter.create(encoding);   
-              IRHeapEncoding heapEncoding = HeapEncoding.create(encoding, formatter);
-              IROrderMemLayoutEncoding memLayout = OrderLinearMemLayoutEncoding
-            			.create(heapEncoding);
-            	PartitionHeapEncoder parHeapEncoder = PartitionHeapEncoder
-            			.createOrderEncoding(heapEncoding, memLayout);
-            	IRSingleHeapEncoder heapEncoder = SingleHeapEncoderAdapter.create(parHeapEncoder);
-            	memoryModel = FlatMemoryModel.create(encoding, heapEncoder);
+            	Theory theory = theoryId.getInstance(theoremProver.getExpressionManager());
+            	ExpressionEncoding encoding = theory.getEncoding();
+            	theoremProver.assume(encoding.getAssumptions());
             }
             
-            CExpressionEncoder encoder = CExpressionEncoder.create(encoding,
-                memoryModel, symbolTables);
+            for (File sourceFile : sourceFiles) {
+              Node ast = parseSourceFile(sourceFile);
+              processSourceFile(sourceFile, ast);
+            }
 
-            RunProcessor runProcessor;
+            if (Preferences.isSet(OPTION_PARSE_ONLY)) {
+              return;
+            }
+            
+            Mode mode = AbstractMode.getMode(theoremProver.getExpressionManager());
+            
+            RunProcessor<?> runProcessor;
           	
             if( Preferences.isSet(Preferences.OPTION_SEQ_PATH) ) {
-              runProcessor = new RunSeqProcessor(symbolTables, cfgs, callGraphs,
-              		cAnalyzer, encoder, builder, scopeAnalyzerBuilder);
+            	runProcessor = new RunSeqProcessor(mode, 
+            			symbolTables, cfgs, cAnalyzer);
+            } else if( Preferences.isSet(Preferences.OPTION_PATH_BASED)) {
+            	runProcessor = RunPathBasedProcessor.create(mode, 
+            			symbolTables, cfgs, cAnalyzer);
             } else {
-            	runProcessor = new RunMergeProcessor(symbolTables, cfgs, callGraphs,
-            			cAnalyzer, encoder, builder, scopeAnalyzerBuilder);
+            	runProcessor = RunMergeProcessor.create(mode, 
+            			symbolTables, cfgs, cAnalyzer);
             }
             
             if( Preferences.isSet(OPTION_FEASIBILITY)) {
               runProcessor.enableFeasibilityChecking();
             }
-            /*
-             * public boolean handle(IBooleanExpression vc) { IOUtils.debug()
-             * .pln("VC=" + vc) .flush(); QueryResult result =
-             * theoremProver.isValid(vc); IOUtils.debug() .pln("VC is " +
-             * result) .flush(); boolean isValid =
-             * QueryResult.VALID.equals(result); if (!isValid) { if
-             * (IOUtils.debugEnabled()) { List<IBooleanExpression>
-             * counterExample = theoremProver.getCounterExample();
-             * IOUtils.debug() .pln(counterExample.toString()) .flush(); } }
-             * runIsValid &= isValid; return isValid; }
-             */
+            
             int i = 1;
             for (Run run : controlFile.getRuns()) {
             	IOUtils.out().println("Run #" + i++ + ":");
@@ -824,9 +949,12 @@ public class Main {
         }
       }
     }
-    time = System.currentTimeMillis() - time;
-    IOUtils.out().println("Cascade took time: " + time/1000.0 + "s");
-    IOUtils.err().println("Cascade took time: " + time/1000.0 + "s");
+    
+    Stopwatch timerStop = timer.stop();
+    double elapsedTime = timerStop.elapsed(TimeUnit.MILLISECONDS)/1000.0;
+    IOUtils.out().println("Cascade took time: " + elapsedTime + "s");
+    IOUtils.stats().pln("Cascade took time: " + elapsedTime + "s");
+    IOUtils.err().println("Cascade took time: " + elapsedTime + "s");
   }
 
   public void setErrStream(PrintStream err) {
@@ -836,6 +964,11 @@ public class Main {
 
   public void setOutStream(PrintStream out) {
     IOUtils.setOutStream(out);
+    runtime.setConsole(IOUtils.outPrinter());
+  }
+  
+  public void setStatsStream(PrintStream out) {
+    IOUtils.setStatsStream(out);
     runtime.setConsole(IOUtils.outPrinter());
   }
   

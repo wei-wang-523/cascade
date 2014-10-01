@@ -1,0 +1,14 @@
+int a[100];
+
+int main(){
+	int hi=0, lo=99;
+	
+	while ( hi < lo){
+		ASSERT(valid(&a[hi]) && valid(&a[lo]));
+		if (a[hi] < a[lo]){
+			hi = (hi+lo)/2;
+		} else {
+			lo = (hi+lo)/2;
+		}
+	}
+}

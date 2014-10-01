@@ -1,0 +1,19 @@
+<controlFile>
+  <sourceFile name="ex43Simp2.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="25" />
+    <wayPoint fileId="1" line="30" >
+      <loop iterTimes="1" >
+        <wayPoint fileId="1" line="34" >
+          <loop>
+            <invariant><![CDATA[
+              0<=i && i < 3
+            ]]>
+            </invariant>
+          </loop>
+        </wayPoint>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="43" />
+  </run>
+</controlFile>

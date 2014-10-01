@@ -1,0 +1,34 @@
+<controlFile>
+  <sourceFile name="ex25Simp.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="13" />
+    <wayPoint fileId="1" line="15" >
+      <loop iterTimes = "1" >
+        <wayPoint fileId="1" line="16" >
+          <function funcName="foo" >
+            <wayPoint fileId="1" line="6" />
+          </function>
+        </wayPoint>
+      </loop>
+      <loop iterTimes = "1" >
+        <wayPoint fileId="1" line="16" >
+          <function funcName="foo" >
+            <wayPoint fileId="1" line="8" >
+              <loop iterTimes="1" />
+            </wayPoint>
+          </function>
+        </wayPoint>
+      </loop>
+      <loop iterTimes = "1" >
+        <wayPoint fileId="1" line="16" >
+          <function funcName="foo" >
+            <wayPoint fileId="1" line="8" >
+              <loop iterTimes="2" />
+            </wayPoint>
+          </function>
+        </wayPoint>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="18" />
+  </run>
+</controlFile>

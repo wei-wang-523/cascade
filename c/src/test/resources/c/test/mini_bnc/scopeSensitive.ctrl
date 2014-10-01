@@ -1,7 +1,0 @@
-<controlFile>
-  <sourceFile name="scopeSensitive.c" id="1" />
-  <run>
-    <startPosition fileId="1" line="17" />
-    <endPosition fileId="1" line="32" />
-  </run>
-</controlFile>

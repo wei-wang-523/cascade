@@ -2,13 +2,14 @@ package edu.nyu.cascade.c;
 
 import java.util.List;
 
+import com.google.common.base.Stopwatch;
+
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRStatement;
-import edu.nyu.cascade.ir.expr.ExpressionClosure;
-import edu.nyu.cascade.ir.expr.ExpressionEncoder;
-import edu.nyu.cascade.ir.expr.PathEncoding;
 import edu.nyu.cascade.ir.expr.PathFactoryException;
-import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.ir.path.PathEncoding;
+import edu.nyu.cascade.ir.state.StateExpression;
+import edu.nyu.cascade.ir.state.StateExpressionClosure;
 import edu.nyu.cascade.prover.SatResult;
 import edu.nyu.cascade.prover.ValidityResult;
 import edu.nyu.cascade.util.IOUtils;
@@ -19,11 +20,12 @@ import edu.nyu.cascade.util.Preferences;
  * for validity. Also optionally checks the path for feasibility (e.g., the path
  * (x := 0; assume x > 0; assert false) is invalid but infeasible).
  */
-final class PathSeqEncoder implements PathEncoder {
+final class PathSeqEncoder implements PathEncoder<List<IRStatement>> {
   private PathEncoding pathEncoding;  // the encoding to use for the path
-  private Expression path;  // the expression representing the encoded path 
+  private StateExpression path;  // the expression representing the encoded path 
   private boolean runIsValid, runIsFeasible, checkFeasibility;
-
+  private final Stopwatch timer = Stopwatch.createUnstarted();
+  
   PathSeqEncoder(PathEncoding pathEncoding) {
     this.pathEncoding = pathEncoding;
     checkFeasibility = false;
@@ -33,15 +35,10 @@ final class PathSeqEncoder implements PathEncoder {
   static PathSeqEncoder create(PathEncoding encoding) {
     return new PathSeqEncoder(encoding);
   }
-
-  @Override
-  public ExpressionEncoder getExpressionEncoder() {
-    return pathEncoding.getExpressionEncoder();
-  }
   
   @Override
   public void reset() {
-    path = pathEncoding.emptyPath();
+    path = pathEncoding.emptyState();
     runIsValid = true;
     runIsFeasible = true;
   }
@@ -60,25 +57,45 @@ final class PathSeqEncoder implements PathEncoder {
   public void setFeasibilityChecking(boolean b) {
     checkFeasibility = b;
   }
-
-  protected void preprocessPath(PreProcessor<?> preprocessor, List<IRStatement> path) {
-    for(IRStatement stmt : path) {
-    	preprocessor.analysis(stmt);
-    }
-    preprocessor.buildSnapShot();
-    pathEncoding.getExpressionEncoder()
-    	.getMemoryModel().setPreProcessor(preprocessor);
+  
+  @Override
+  public boolean runIsReachable() {
+  	throw new UnsupportedOperationException();
   }
   
-  protected void encodePath(List<IRStatement> path) throws PathFactoryException {
+
+  @Override
+  public void encode(PreProcessor<?> preprocessor, List<IRStatement> path)
+      throws PathFactoryException {
+  	if(preprocessor != null) {
+  		timer.start();
+      for(IRStatement stmt : path) preprocessor.analysis(stmt);
+	    IOUtils.stats().pln("Preprocessing took time: " + timer.stop());
+	    CScopeAnalyzer.reset();
+  	}
+  	
   	for (IRStatement stmt : path) {
   		IOUtils.out().println(stmt.getLocation() + " " + stmt); 
   		if (!encodeStatement(stmt))
   			break;
   	}
+  	
+  	CScopeAnalyzer.reset();
   }
 
-/**
+  @Override
+  public void checkReach(PreProcessor<?> preprocessor, List<IRStatement> path,
+      String label) throws PathFactoryException {
+  	throw new UnsupportedOperationException();
+  }
+
+  @Override
+	public void checkReachIncremental(PreProcessor<?> preprocessor, List<IRStatement> graph, 
+			String label) throws PathFactoryException {
+  	throw new UnsupportedOperationException();
+	}
+
+	/**
    * Encode the given statement as an extension of the current path.
    * 
    * @param stmt
@@ -94,7 +111,8 @@ final class PathSeqEncoder implements PathEncoder {
     if(IOUtils.debugEnabled())
       IOUtils.debug().pln("Post-condition: " + path).flush();
     
-    ExpressionClosure pre = stmt.getPreCondition(pathEncoding.getExpressionEncoder());
+    StateExpressionClosure pre = stmt
+    		.getPreCondition(pathEncoding.getExpressionEncoder());
     
     if (pre != null) {
       /* If the statement has a precondition, we have to check it before continuing with 
@@ -112,7 +130,7 @@ final class PathSeqEncoder implements PathEncoder {
             if(result.getCounterExample().isEmpty())
               IOUtils.out().println("\nCounter-example:\n" + result.getUnknown_reason());
             else
-              IOUtils.out().println("\nCounter-example:\n" + result.getCounterExample());
+              IOUtils.out().println("\nCounter-example:\n" + result.getCounterExampleToString());
         } else { // result.isUnknown()
           IOUtils.out().println("Unkown: " + result.getUnknown_reason());
         }

@@ -1,0 +1,15 @@
+<controlFile>
+  <sourceFile name="duplicateHavoc.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="1" />
+    <wayPoint fileId="1" line="4" >
+      <loop>
+        <invariant><![CDATA[
+          sum == (i-1) * i / 2 && i >= 0 && i <= 11
+        ]]>
+        </invariant>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="9" />
+  </run>
+</controlFile>

@@ -36,23 +36,33 @@ public class MainTest {
       .absoluteResourcePath("c");
   private static final File bad_programs_location = new File(programs_location,
       "bad");
-  private static final File programs_test_location = new File(programs_c_location,
-      "test");
-  private static final File mini_programs_location = new File(programs_test_location,
+  private static final File mini_programs_location = new File(programs_c_location,
       "mini_bnc");
-  private static final File nec_programs_location = new File(programs_test_location,
+  private static final File nec_programs_location = new File(programs_c_location,
       "nec_bnc");
+  private static final File nec_inline_programs_location = new File(programs_c_location,
+      "nec_inline_bnc");
+  
+  private static final File sv_programs_location = new File(System.getProperty("user.dir"),
+      "../../benchmarks/sv_bnc/memsafety");
   
 //  private static final File smtFile_dump_location = new File(mini_programs_location,
 //      "dump");
   
-  private static final int Timeout = 10;
+  private static final int Timeout = 20;
   
   private static final FilenameFilter cFileFilter = new FilenameFilter() {
     public boolean accept(File dir, String name) {
       return name.endsWith(".c");
     }
   };
+  
+  private static final FilenameFilter iFileFilter = new FilenameFilter() {
+    public boolean accept(File dir, String name) {
+      return name.endsWith(".i");
+    }
+  };
+  
   private static final FilenameFilter ctrlFileFilter = new FilenameFilter() {
     public boolean accept(File dir, String name) {
       return name.endsWith(".ctrl");
@@ -76,6 +86,7 @@ public class MainTest {
         List<String> files = main.processCommandLine(args);
         main.setOutStream(IOUtils.NULL_PRINT_STREAM);
         main.setErrStream(System.err);
+        main.setStatsStream(System.err);
         main.run(files);
         return null;
       }
@@ -92,19 +103,19 @@ public class MainTest {
      * }.start();
      */}
   
-  private void runCascadeWithTimeout(final String... args) throws Exception {
+  private void runCascadeTO(final String... args) throws Exception {
     System.out.println("runCascade with timeout " + Timeout + "s: " + Joiner.on(";").join(args));
     TestUtils.callWithTimeout(new Runnable() {
       @Override
       public void run() {
         Preferences.clearAll();
-        Main main = getInjector().getInstance(Main.class);
-        main.init();
-        List<String> files = main.processCommandLine(args);
-        IOUtils.enableErr();
-//        main.setErrStream(IOUtils.NULL_PRINT_STREAM);
-//        main.setErrStream(System.err);
         try {
+          Main main = getInjector().getInstance(Main.class);
+          main.init();
+          List<String> files = main.processCommandLine(args);
+          main.setOutStream(IOUtils.NULL_PRINT_STREAM);
+          main.setErrStream(System.err);
+        	IOUtils.enableErr();
 					main.run(files);
 				} catch (TheoremProverException e) {
 					// TODO Auto-generated catch block
@@ -119,6 +130,17 @@ public class MainTest {
       }
     }, Timeout);
   }
+  
+  private Void runCascadeTOTask(final String... args) 
+  		throws IOException, ParseException, TheoremProverException {
+  	System.out.println("runCascade: " + Joiner.on(";").join(args));
+    Preferences.clearAll();
+    Main main = getInjector().getInstance(Main.class);
+    main.init();
+    List<String> files = main.processCommandLine(args);
+    main.run(files);
+    return null;
+	}
   
   private TestUtils.Tester<File> parserTest(final String... args) {
     return new TestUtils.Tester<File>() {
@@ -140,37 +162,22 @@ public class MainTest {
     };
   }
   
-  private TestUtils.Tester<File> parserTestWithTimeout(final String... args) {
+  private TestUtils.Tester<File> parserTestTimeout(final String... args) {
     return new TestUtils.Tester<File>() {
       @Override
       public void runTest(File f) {
         try {
           List<String> argList = Lists.newArrayList(args);
           argList.add(f.toString());
-//          argList.add("--smt2-file");
-//          File dumpFile = new File(smtFile_dump_location, f.getName().replaceFirst("ctrl", "cvc"));
-//          argList.add(dumpFile.getAbsolutePath());
-          runCascadeWithTimeout(argList.toArray(new String[0]));
+          runCascadeTO(argList.toArray(new String[0]));
         } catch (Throwable e) {
           throw new RuntimeException(e);
         }
       }
     };
   }
-  
-  private Void runCascadeTimeout(final String... args) 
-  		throws IOException, ParseException, TheoremProverException {
-  	System.out.println("runCascade: " + Joiner.on(";").join(args));
-    Preferences.clearAll();
-    Main main = getInjector().getInstance(Main.class);
-    main.init();
-    List<String> files = main.processCommandLine(args);
-    IOUtils.enableErr();
-    main.run(files);
-    return null;
-	}
 
-	private TaskBuilder<File> parserTestTimeout(final String... args) {
+	private TaskBuilder<File> parserTestTimeoutTask(final String... args) {
     return new TaskBuilder<File>().setFunction(new Function<File, Void>() {
 			@Override
       public Void apply(File file) {
@@ -178,9 +185,9 @@ public class MainTest {
 				List<String> argList = Lists.newArrayList(args);
 				argList.add(file.toString());
         try {
-	        runCascadeTimeout(argList.toArray(new String[0]));
+	        runCascadeTOTask(argList.toArray(new String[0]));
         } catch (Exception e) {
-	        IOUtils.err().println(e.getMessage());
+	        IOUtils.err().println("[WARNING] " + e.getMessage());
         }
         return null;
       }
@@ -216,7 +223,7 @@ public class MainTest {
   @Test
   public void testPrograms() {
     TestUtils.checkDirectory(programs_location, cFileFilter,
-        parserTest("--parsec"), false);
+    		parserTest("--parsec"), false);
   }
 
   @Test
@@ -228,437 +235,983 @@ public class MainTest {
   @Test
   public void testBadPrograms() {
     TestUtils.checkDirectory(bad_programs_location, cFileFilter,
-        parserTest("--parsec"), true);
+    		parserTest("--parsec"), true);
   }
 
   @Test
   public void testBadProgramsNoThreads() {
-    TestUtils.checkDirectory(bad_programs_location, cFileFilter, parserTest(
-        "--parsec", "--no-threads"), true);
+    TestUtils.checkDirectory(bad_programs_location, cFileFilter, 
+    		parserTest("--parsec", "--no-threads"), true);
   }
 
   @Test
   public void testProperties() {
     TestUtils.checkDirectory(bad_programs_location, propFileFilter,
-        parserTest("--prop"), true);
+    		parserTest("--prop"), true);
   }
 
   @Test
   public void testControlFiles() {
     TestUtils.checkDirectory(programs_location, ctrlFileFilter,
-        parserTest("--parse-only"), false);
+    		parserTest("--parse-only"), false);
   }
   
   @Test
   public void testDryRun() {
-      TestUtils.checkDirectory(programs_location, ctrlFileFilter,
-			       parserTest("--dry-run", "--prover", "z3"), false);
-      TestUtils.checkDirectory(programs_location, ctrlFileFilter,
-			       parserTest("--dry-run", "--seq", "--prover", "z3"), false);
-      TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
-			       parserTest("--dry-run", "--prover", "z3"), false);
-      TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter,
-			       parserTest("--dry-run", "--seq", "--prover", "z3"), false);
-  }
-  
-/*  private Map<Tester<File>, String[]> validOptMap() {
-    Map<Tester<File>, String[]> optMap = Maps.newLinkedHashMap();
-    Tester<File> mem_9 = parserTest("--unsigned", "--feasibility", "--mem-cell-size", "9", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> mem_11 = parserTest("--unsigned", "--feasibility", "--mem-cell-size", "11", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> mem_13 = parserTest("--unsigned", "--feasibility", "--mem-cell-size", "13", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sound = parserTest("--unsigned", "--feasibility", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> signed = parserTest("--feasibility", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> signed_mem_9 = parserTest("--feasibility", "--mem-cell-size", "9", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> signed_mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--sound", "--prover", "z3", "--theory", "Partition");
-    
-    String[] mem_9_bnc = {"ex21-100.ctrl"};
-    String[] mem_11_bnc = {"ex2-3.ctrl", "ex2-1024.ctrl", "ex9-3.ctrl" , "ex9-1024.ctrl"};
-    String[] mem_13_bnc = {"ex23-36.ctrl"};
-    String[] sound_bnc = {"ex5.ctrl", "ex6.ctrl", "ex7-3.ctrl", "ex7-200.ctrl", "ex10-3.ctrl", 
-        "ex10-17.ctrl", "ex11.ctrl", "ex15.ctrl", "ex17.ctrl", "ex18-10.ctrl", "ex18-100.ctrl", "ex31-7.ctrl",
-        "ex34.ctrl", "ex40-3.ctrl", "ex49-3.ctrl", "inf6a.ctrl", "inf6b.ctrl", "inf8a.ctrl",
-        "inf8b.ctrl"};
-    String[] signed_bnc = {"ex14-10.ctrl"};
-    String[] signed_mem_9_bnc = {"ex22-50.ctrl"};
-    String[] signed_mem_11_bnc = {"ex32-1000.ctrl"};
-    
-    optMap.put(signed, signed_bnc);
-    optMap.put(signed_mem_9, signed_mem_9_bnc);
-    optMap.put(signed_mem_11, signed_mem_11_bnc);
-    optMap.put(sound, sound_bnc);
-    optMap.put(mem_9, mem_9_bnc);
-    optMap.put(mem_13, mem_13_bnc);
-    optMap.put(mem_11, mem_11_bnc);
-    
-    return optMap;
-  }
-  
-  private Map<Tester<File>, String[]> invalidOptMap() {
-    Map<Tester<File>, String[]> optMap = Maps.newLinkedHashMap();
-    Tester<File> sgn_mem_9 = parserTest("--mem-cell-size", "9", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sgn_mem_11 = parserTest("--mem-cell-size", "11", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> mem_9 = parserTest("--mem-cell-size", "9", "--sound", "--unsigned", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sound = parserTest("--sound", "--unsigned", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sgn = parserTest("--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> fea_sgn = parserTest("--feasibility", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> fea_mem_10 = parserTest("--feasibility", "--mem-cell-size", "10", "--unsigned", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> fea_mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--unsigned", "--sound", "--prover", "z3", "--theory", "Partition");
-    
-    String[] sgn_mem_9_bnc = {"ex27-200.ctrl"};
-    String[] sgn_mem_11_bnc = {"ex20-1.ctrl", "ex20-1024.ctrl"};
-    String[] mem_9_bnc = {"ex41-3.ctrl", "ex26-200.ctrl"};
-    String[] sound_bnc = {"ex3-10.ctrl", "ex4-10.ctrl", "ex8.ctrl", "ex12-10.ctrl", "ex30.ctrl", 
-        "ex43.ctrl", "ex46-3.ctrl", "ex47-2.ctrl", "inf1.ctrl", "inf5.ctrl"};
-    String[] sgn_bnc = {"ex13.ctrl", "ex37.ctrl", "inf2.ctrl", "inf4.ctrl"};
-    String[] fea_sgn_bnc = {"ex16-4.ctrl", "ex19-3.ctrl", "ex39-3.ctrl"};
-    String[] fea_mem_10_bnc = {"ex25-3.ctrl"};
-    String[] fea_mem_11_bnc = {"ex1-3.ctrl", "ex1-512.ctrl"};
-    
-    optMap.put(sgn, sgn_bnc);
-    optMap.put(sound, sound_bnc);
-    optMap.put(mem_9, mem_9_bnc);
-    optMap.put(sgn_mem_9, sgn_mem_9_bnc);
-    optMap.put(sgn_mem_11, sgn_mem_11_bnc);
-    optMap.put(fea_sgn, fea_sgn_bnc);
-    optMap.put(fea_mem_10, fea_mem_10_bnc);
-    optMap.put(fea_mem_11, fea_mem_11_bnc);
-    
-    return optMap;
-  }
-  
-  private Map<Tester<File>, String[]> invValidOptMap() {
-    Map<Tester<File>, String[]> optMap = Maps.newLinkedHashMap();
-    Tester<File> mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--unsigned", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> mem_9 = parserTest("--feasibility", "--mem-cell-size", "9", "--unsigned", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> mem_13 = parserTest("--feasibility", "--mem-cell-size", "13", "--unsigned", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sound = parserTest("--feasibility", "--unsigned", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sgn = parserTest("--feasibility", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sgn_mem_11 = parserTest("--feasibility", "--mem-cell-size", "11", "--sound", "--prover", "z3", "--theory", "Partition");
-    
-    String[] mem_11_bnc = {"ex1-inv.ctrl", "ex2-inv.ctrl", "ex9-inv.ctrl"};
-    String[] mem_9_bnc = {"ex21-inv.ctrl"};
-    String[] mem_13_bnc = {"ex23-inv.ctrl"};
-    String[] sound_bnc = {"ex7-inv.ctrl", "ex10-inv.ctrl", "ex17-inv.ctrl", "ex18-inv.ctrl", "ex31-inv.ctrl"};
-    String[] sgn_bnc = {"ex14-inv.ctrl"};
-    String[] sgn_mem_11_bnc = {"ex32-inv.ctrl"};
-    
-    optMap.put(sgn, sgn_bnc);
-    optMap.put(sound, sound_bnc);
-    optMap.put(mem_13, mem_13_bnc);
-    optMap.put(mem_11, mem_11_bnc);
-    optMap.put(sgn_mem_11, sgn_mem_11_bnc);
-    optMap.put(mem_9, mem_9_bnc);
-    
-    return optMap;
-  }
-  
-  private Map<Tester<File>, String[]> invInvalidOptMap() {
-    Map<Tester<File>, String[]> optMap = Maps.newLinkedHashMap();
-    Tester<File> sgn_mem_11 = parserTest("--mem-cell-size", "11", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> mem_9 = parserTest("--unsigned", "--mem-cell-size", "9", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sound = parserTest("--unsigned", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sgn = parserTest("--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> fea_sgn = parserTest("--feasibility", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> fea_mem_10 = parserTest("--unsigned", "--feasibility", "--mem-cell-size", "10", "--sound", "--prover", "z3", "--theory", "Partition");
-    Tester<File> sgn_mem_9 = parserTest("--mem-cell-size", "9", "--sound", "--prover", "z3", "--theory", "Partition");
-    
-    String[] fea_sgn_bnc = {"ex16-inv.ctrl"};
-    String[] sgn_mem_9_bnc = {"ex22-inv.ctrl", "ex27-inv.ctrl"};
-    String[] fea_mem_10_bnc = {"ex25-inv.ctrl"};
-    String[] sgn_mem_11_bnc = {"ex19-inv.ctrl", "ex20-inv.ctrl"};
-    String[] mem_9_bnc = {"ex26-inv.ctrl", "ex41-inv.ctrl"};
-    String[] sound_bnc = {"ex3-inv.ctrl", "ex4-inv.ctrl", "ex8-inv.ctrl", "ex12-inv.ctrl", 
-        "ex40-inv.ctrl", "ex43-inv.ctrl",  "ex46-inv.ctrl", "ex47-inv.ctrl", "ex49-inv.ctrl"};
-    String[] sgn_bnc = {"ex39-inv.ctrl"};
-    
-    
-    optMap.put(sound, sound_bnc);
-    optMap.put(sgn, sgn_bnc);
-    optMap.put(mem_9, mem_9_bnc);
-    optMap.put(sgn_mem_9, sgn_mem_9_bnc);
-    optMap.put(sgn_mem_11, sgn_mem_11_bnc);
-    optMap.put(fea_sgn, fea_sgn_bnc);
-    optMap.put(fea_mem_10, fea_mem_10_bnc);
-    
-    return optMap;
+  	TestUtils.checkDirectory(programs_location, ctrlFileFilter,
+  			parserTest("--dry-run", "--prover", "z3"), false);
+  	TestUtils.checkDirectory(programs_location, ctrlFileFilter,
+  			parserTest("--dry-run", "--seq", "--prover", "z3"), false);
+  	
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
+  			parserTest("--dry-run", "--prover", "z3"), false);
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
+  			parserTest("--dry-run", "--prover", "z3", "--mode", "Partition"), false);
+  	
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
+  			parserTest("--dry-run", "--prover", "z3", "--lambda"), false);
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
+  			parserTest("--dry-run", "--prover", "z3", "--mode", "Partition", "--lambda"), false);
+  	
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
+  			parserTest("--dry-run", "--prover", "z3", "--multi-cell"), false);
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
+  			parserTest("--dry-run", "--prover", "z3", "--multi-cell", "--mode", "Partition"), false);
+  	
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
+  			parserTest("--dry-run", "--prover", "z3", "--multi-cell", "--lambda"), false);
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
+  			parserTest("--dry-run", "--prover", "z3", "--multi-cell", "--mode", "Partition", "--lambda"), false);
+  	
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
+  			parserTest("--dry-run", "--prover", "z3", "--mode", "Partition", 
+  					"-fs", "--vari-cell"), false);
+  	
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
+  			parserTest("--dry-run", "--path-based", "--prover", "z3"), false);
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
+  			parserTest("--dry-run", "--path-based", "--prover", "z3", "--mode", "Partition"), false);
+  	
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
+  			parserTest("--dry-run", "--path-based", "--prover", "z3", "--lambda"), false);
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
+  			parserTest("--dry-run", "--path-based", "--prover", "z3", "--mode", "Partition", "--lambda"), false);
+  	
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
+  			parserTest("--dry-run", "--seq", "--prover", "z3"), false);
   }
   
   @Test
   @Ignore
-  public void testNecBenchmark() {
-    final File valid_nec_location = new File(nec_programs_location, "valid");
-    TestUtils.checkFile(valid_nec_location, validOptMap(), false);
-    final File invalid_nec_location = new File(nec_programs_location, "invalid");
-    TestUtils.checkFile(invalid_nec_location, invalidOptMap(), false);
-    final File inv_valid_nec_location = new File(nec_programs_location, "inv-valid");
-    TestUtils.checkFile(inv_valid_nec_location, invValidOptMap(), false);
-    final File inv_invalid_nec_location = new File(nec_programs_location, "inv-invalid");
-    TestUtils.checkFile(inv_invalid_nec_location, invInvalidOptMap(), false);
-  }*/
-  
-  @Test
-  public void testMiniBenchmark() {
-  	final Tester<File> FlatTester = parserTest(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16",
-  			"--theory", "Flat");
-  	final Tester<File> BurstallTester = parserTest(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16",
-  			"--theory", "Burstall");
-  	final Tester<File> PartitionTester = parserTest(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16",
-  			"--theory", "Partition");
-  	
-  	final Tester<File> FlatSyncTester = parserTest(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
-  			"--theory", "Flat");
-  	final Tester<File> BurstallSyncTester = parserTest(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
-  			"--theory", "Burstall");
-  	final Tester<File> PartitionSyncTester = parserTest(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
-  			"--theory", "Partition");
-  	
-  	final Tester<File> FlatOrderTester = parserTest(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16",
-  			"--theory", "Flat");
-  	final Tester<File> BurstallOrderTester = parserTest(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16",
-  			"--theory", "Burstall");
-  	final Tester<File> PartitionOrderTester = parserTest(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16",
-  			"--theory", "Partition");
-  	
-  	final Tester<File> FlatSyncOrderTester = parserTest(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
-  			"--theory", "Flat");
-  	final Tester<File> BurstallSyncOrderTester = parserTest(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
-  			"--theory", "Burstall");
-  	final Tester<File> PartitionSyncOrderTester = parserTest(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync",
-  			"--theory", "Partition");
-  	
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionTester, false);
-    
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatSyncTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallSyncTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionSyncTester, false);
-  	
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatOrderTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallOrderTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionOrderTester, false);
-    
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatSyncOrderTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallSyncOrderTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionSyncOrderTester, false);
+  public void testReachability() {
+  	TestUtils.checkDirectoryRec(sv_programs_location, iFileFilter, 
+  			parserTestTimeout("-r", "ERROR", "--prover", "z3", "--mode", "Partition", "--multi-cell",
+  					"--iter-times", "1", "--function-inline", "2", "--incremental"), false);
   }
   
   @Test
-  @Ignore("It takes too long")
-  public void testMiniBenchmarkMultiCell() {
-  	final Tester<File> FlatMultiCellTester = parserTest(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", 
-  			"--theory", "Flat");
-  	final Tester<File> BurstallMultiCellTester = parserTest(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell",
-  			"--theory", "Burstall");
-  	final Tester<File> PartitionMultiCellTester = parserTest(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell",
-  			"--theory", "Partition");
+  @Ignore
+  public void testMiniBenchmarkWithFlat() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mode", "Flat");  	
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mode", "Flat",
+  			"--mem-encoding", "sync");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mode", "Flat");
   	
-  	final Tester<File> FlatMultiCellSyncTester = parserTest(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
-  			"--theory", "Flat");
-  	final Tester<File> BurstallMultiCellSyncTester = parserTest(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
-  			"--theory", "Burstall");
-  	final Tester<File> PartitionMultiCellSyncTester = parserTest(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
-  			"--theory", "Partition");
-  	
-  	
-  	final Tester<File> FlatMultiCellOrderTester = parserTest(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", 
-  			"--theory", "Flat");
-  	final Tester<File> BurstallMultiCellOrderTester = parserTest(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell",
-  			"--theory", "Burstall");
-  	final Tester<File> PartitionMultiCellOrderTester = parserTest(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell",
-  			"--theory", "Partition");
-  	
-  	final Tester<File> FlatMultiCellSyncOrderTester = parserTest(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
-  			"--theory", "Flat");
-  	final Tester<File> BurstallMultiCellSyncOrderTester = parserTest(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
-  			"--theory", "Burstall");
-  	final Tester<File> PartitionMultiCellSyncOrderTester = parserTest(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
-  			"--theory", "Partition");
-  	
-  	final Tester<File> BurstallMultiCellSimpTester = parserTest(
-  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", "--simp", 
-  			"--theory", "Burstall");
-  	final Tester<File> BurstallMultiCellOrderSimpTester = parserTest(
-  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", "--simp", 
-  			"--theory", "Burstall");
-  	
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellSimpTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellOrderSimpTester, false);
-    
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatMultiCellTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionMultiCellTester, false);
-    
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatMultiCellSyncTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellSyncTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionMultiCellSyncTester, false);
-    
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatMultiCellOrderTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellOrderTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionMultiCellOrderTester, false);
-  	
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, FlatMultiCellSyncOrderTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, BurstallMultiCellSyncOrderTester, false);
-    TestUtils.checkDirectory(mini_programs_location, ctrlFileFilter, PartitionMultiCellSyncOrderTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
   }
+  
+  @Test
+  @Ignore
+	public void testMiniBenchmarkWithBurstall() {
+		final Tester<File> SoundTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mode", "Burstall");  	
+		final Tester<File> SyncTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mode", "Burstall",
+				"--mem-encoding", "sync");  	
+		final Tester<File> OrderTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mode", "Burstall");
+		
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+	}
 
 	@Test
-  @Ignore("It takes too long")
-  public void testNecBenchmark() {
-  	final Tester<File> FlatTester = parserTestWithTimeout("--sound", 
-  			"--prover", "z3", "--mem-cell-size", "16", "--theory", "Flat");
-  	final Tester<File> BurstallTester = parserTestWithTimeout("--sound", 
-  			"--prover", "z3", "--mem-cell-size", "16", "--theory", "Burstall");
-  	final Tester<File> PartitionTester = parserTestWithTimeout("--sound", 
-  			"--prover", "z3", "--mem-cell-size", "16", "--theory", "Partition");
-  	
-  	final Tester<File> FlatSyncTester = parserTestWithTimeout("--sound", 
-  			"--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync", "--theory", "Flat");
-  	final Tester<File> BurstallSyncTester = parserTestWithTimeout("--sound", 
-  			"--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync", "--theory", "Burstall");
-  	final Tester<File> PartitionSyncTester = parserTestWithTimeout("--sound", 
-  			"--prover", "z3", "--mem-cell-size", "16", "--mem-encoding", "sync", "--theory", "Partition");
-  	
-  	final Tester<File> FlatMultiCellTester = parserTestWithTimeout("--sound", "--dry-run",
-  			"--prover", "z3", "--multi-cell", "--theory", "Flat");
-  	final Tester<File> BurstallMultiCellTester = parserTestWithTimeout("--sound", "--dry-run",
-  			"--prover", "z3", "--multi-cell", "--theory", "Burstall");
-  	final Tester<File> PartitionMultiCellTester = parserTestWithTimeout("--sound", "--dry-run",
-  			"--prover", "z3", "--multi-cell", "--theory", "Partition");
-  	
-  	final File valid_nec_location = new File(nec_programs_location, "valid");
-    final File invalid_nec_location = new File(nec_programs_location, "invalid");
-    final File inv_valid_nec_location = new File(nec_programs_location, "inv-valid");
-    final File inv_invalid_nec_location = new File(nec_programs_location, "inv-invalid");
-    
-    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, FlatTester, false);
-    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, FlatTester, false);
-    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, FlatTester, false);
-    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, FlatTester, false);
-    
-    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, BurstallTester, false);
-    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, BurstallTester, false);
-    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, BurstallTester, false);
-    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, BurstallTester, false);
-    
-    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, PartitionTester, false);
-    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, PartitionTester, false);
-    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, PartitionTester, false);
-    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, PartitionTester, false);
-    
-    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, FlatSyncTester, false);
-    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, FlatSyncTester, false);
-    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, FlatSyncTester, false);
-    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, FlatSyncTester, false);
+	@Ignore
+	public void testMiniBenchmarkWithPartition() {
+		final Tester<File> SoundTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mode", "Partition");
+		final Tester<File> SyncTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mode", "Partition",
+				"--mem-encoding", "sync");
+		final Tester<File> OrderTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mode", "Partition");
+		
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+	}
+	
+	@Test
+  @Ignore
+	public void testMiniBenchmarkWithFSPartition() {
+		final Tester<File> SoundTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--sound", "--prover", "z3", 
+				"--mode", "Partition", "--fs");
+		final Tester<File> SyncTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--sound", "--prover", "z3", 
+				"--mode", "Partition", "--fs",
+				"--mem-encoding", "sync");
+		final Tester<File> OrderTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--order", "--prover", "z3", 
+				"--mode", "Partition", "--fs");
+		
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+	}
+	
+	@Test
+  @Ignore
+	public void testMiniBenchmarkWithFSCSPartition() {
+		final Tester<File> SoundTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--sound", "--prover", "z3", 
+				"--mode", "Partition", "--fs", "--cs");
+		final Tester<File> SyncTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--sound", "--prover", "z3", 
+				"--mode", "Partition", "--fs", "--cs",
+				"--mem-encoding", "sync");
+		final Tester<File> OrderTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--order", "--prover", "z3", 
+				"--mode", "Partition", "--fs", "--cs");
+		
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+	}
 
-    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, BurstallSyncTester, false);
-    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, BurstallSyncTester, false);
-    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, BurstallSyncTester, false);
-    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, BurstallSyncTester, false);
-   
-    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, PartitionSyncTester, false);
-    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, PartitionSyncTester, false);
-    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, PartitionSyncTester, false);
-    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, PartitionSyncTester, false); 
-   
-    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, FlatMultiCellTester, false);
-    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, FlatMultiCellTester, false);
-    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, FlatMultiCellTester, false);
-    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, FlatMultiCellTester, false);
-    
-    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, BurstallMultiCellTester, false);
-    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, BurstallMultiCellTester, false);
-    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, BurstallMultiCellTester, false);
-    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, BurstallMultiCellTester, false);
-    
-    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, PartitionMultiCellTester, false);
-    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, PartitionMultiCellTester, false);
-    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, PartitionMultiCellTester, false);
-    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, PartitionMultiCellTester, false);
+	@Test
+	@Ignore
+  public void testMiniBenchmarkPathBasedWithFlat() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--path-based",
+  			"--mode", "Flat");
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--path-based",
+  			"--mem-encoding", "sync", 
+  			"--mode", "Flat");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--path-based",
+  			"--mode", "Flat");
+  	
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+  }
+  
+  @Test
+  @Ignore
+  public void testMiniBenchmarkPathBasedWithLambdaFlat() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--path-based",
+  			"--mode", "Flat", "--lambda");
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--path-based",
+  			"--mem-encoding", "sync", 
+  			"--mode", "Flat", "--lambda");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--path-based",
+  			"--mode", "Flat", "--lambda");
+  	
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+  }
+  
+  @Test
+  @Ignore
+  public void testMiniBenchmarkPathBasedWithLambdaBurstall() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--path-based",
+  			"--mode", "Burstall", "--lambda");
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--path-based",
+  			"--mem-encoding", "sync", 
+  			"--mode", "Burstall", "--lambda");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--path-based",
+  			"--mode", "Burstall", "--lambda");
+  	
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+  }
+  
+  @Test
+  @Ignore
+  public void testMiniBenchmarkPathBasedWithLambdaPartition() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--path-based",
+  			"--mode", "Partition", "--lambda");
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--path-based",
+  			"--mem-encoding", "sync", 
+  			"--mode", "Partition", "--lambda");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--path-based",
+  			"--mode", "Partition", "--lambda");
+  	
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+  }
+  
+  @Test
+  @Ignore
+  public void testMiniBenchmarkPathBasedWithLambdaFSPartition() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--path-based",
+  			"--mode", "Partition", "--fs", "--lambda");
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--path-based",
+  			"--mem-encoding", "sync", 
+  			"--mode", "Partition", "--fs", "--lambda");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--path-based",
+  			"--mode", "Partition", "--fs", "--lambda");
+  	
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+  }
+  
+  @Test
+  @Ignore
+  public void testMiniBenchmarkPathBasedWithLambdaFSCSPartition() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--path-based",
+  			"--mode", "Partition", "--fs", "--cs", "--lambda");
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--path-based",
+  			"--mem-encoding", "sync", 
+  			"--mode", "Partition", "--fs", "--cs", "--lambda");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--path-based",
+  			"--mode", "Partition", "--fs", "--cs", "--lambda");
+  	
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+  }
+  
+  @Test
+  @Ignore
+	public void testMiniBenchmarkWithLambdaFlat() {
+		final Tester<File> SoundTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mode", "Flat", "--lambda");  	
+		final Tester<File> SyncTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mode", "Flat", "--lambda",
+				"--mem-encoding", "sync");  	
+		final Tester<File> OrderTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mode", "Flat", "--lambda");
+		
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+	}
+
+	@Test
+	@Ignore
+  public void testMiniBenchmarkWithLambdaBurstall() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mode", "Burstall", "--lambda");  	
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mode", "Burstall", "--lambda",
+  			"--mem-encoding", "sync");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mode", "Burstall", "--lambda");
+  	
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+  }
+  
+  @Test
+  @Ignore
+  public void testMiniBenchmarkWithLambdaPartition() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mode", "Partition", "--lambda");  	
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--mode", "Partition", "--lambda",
+  			"--mem-encoding", "sync");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--mode", "Partition", "--lambda");
+  	
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+  }
+  
+  @Test
+  @Ignore
+  public void testMiniBenchmarkWithLambdaFSPartition() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", 
+  			"--mode", "Partition", "--fs", "--lambda");  	
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", 
+  			"--mode", "Partition", "--fs", "--lambda",
+  			"--mem-encoding", "sync");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", 
+  			"--mode", "Partition", "--fs", "--lambda");
+  	
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+  }
+  
+  @Test
+  @Ignore
+  public void testMiniBenchmarkWithLambdaFSCSPartition() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", 
+  			"--mode", "Partition", "--fs", "--cs", "--lambda");  	
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", 
+  			"--mode", "Partition", "--fs", "--cs", "--lambda",
+  			"--mem-encoding", "sync");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", 
+  			"--mode", "Partition", "--fs", "--cs", "--lambda");
+  	
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
   }
   
   @Test
   @Ignore("It takes too long.")
-  public void testNecBenchmarkDry() {
-  	final File valid_nec_location = new File(nec_programs_location, "valid");
-    final File invalid_nec_location = new File(nec_programs_location, "invalid");
-    final File inv_valid_nec_location = new File(nec_programs_location, "inv-valid");
-    final File inv_invalid_nec_location = new File(nec_programs_location, "inv-invalid");
-    
-  	final Tester<File> FlatSoundTester = parserTestWithTimeout("--sound", "--dry-run", 
-  			"--prover", "z3", "--mem-cell-size", "16", "--theory", "Flat");
-  	final Tester<File> BurstallSoundTester = parserTestWithTimeout("--sound", "--dry-run", 
-  			"--prover", "z3", "--mem-cell-size", "16", "--theory", "Burstall");
-  	final Tester<File> PartitionSoundTester = parserTestWithTimeout("--sound", "--dry-run",
-  			"--prover", "z3", "--mem-cell-size", "16", "--theory", "Partition");
-    
-    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, FlatSoundTester, false);
-    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, FlatSoundTester, false);
-    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, FlatSoundTester, false);
-    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, FlatSoundTester, false);
-    
-    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, BurstallSoundTester, false);
-    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, BurstallSoundTester, false);
-    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, BurstallSoundTester, false);
-    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, BurstallSoundTester, false);
-    
-    TestUtils.checkDirectory(valid_nec_location, ctrlFileFilter, PartitionSoundTester, false);
-    TestUtils.checkDirectory(invalid_nec_location, ctrlFileFilter, PartitionSoundTester, false);
-    TestUtils.checkDirectory(inv_valid_nec_location, ctrlFileFilter, PartitionSoundTester, false);
-    TestUtils.checkDirectory(inv_invalid_nec_location, ctrlFileFilter, PartitionSoundTester, false);
+  public void testMiniBenchmarkWithFlatMultiCell() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", 
+  			"--mode", "Flat"); 	
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", "--mem-encoding", "sync", 
+  			"--mode", "Flat");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", 
+  			"--mode", "Flat");
+  	
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
   }
   
+  @Test
+  @Ignore("It takes too long.")
+  public void testMiniBenchmarkWithBurstallMultiCell() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", 
+  			"--mode", "Burstall"); 	
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", 
+  			"--mem-encoding", "sync", 
+  			"--mode", "Burstall");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", 
+  			"--mode", "Burstall");
+  	
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+  }
+  
+  @Test
+  @Ignore("It takes too long.")
+	public void testMiniBenchmarkWithPartitionMultiCell() {
+		final Tester<File> SoundTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", 
+				"--mode", "Partition"); 	
+		final Tester<File> SyncTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--multi-cell", 
+				"--mem-encoding", "sync", 
+				"--mode", "Partition");  	
+		final Tester<File> OrderTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--multi-cell", 
+				"--mode", "Partition");
+		
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+	}
+  
+	@Test
+  @Ignore("It takes too long.")
+  public void testMiniBenchmarkWithFlatVariCell() {
+  	final Tester<File> soundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--vari-cell", 
+  			"--mode", "Flat");
+  	final Tester<File> orderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--vari-cell", 
+  			"--mode", "Flat");
+  	
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, soundTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, orderTester, false);
+  }
+
+	@Test
+  @Ignore("It takes too long.")
+  public void testMiniBenchmarkWithBurstallVariCell() {
+  	final Tester<File> soundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--vari-cell", 
+  			"--mode", "Burstall");
+  	final Tester<File> orderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--vari-cell", 
+  			"--mode", "Burstall");
+  	
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, soundTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, orderTester, false);
+  }
+	
+	@Test
+  @Ignore("It takes too long.")
+  public void testMiniBenchmarkWithPartitionVariCell() {
+  	final Tester<File> soundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--vari-cell", 
+  			"--mode", "Partition");
+  	final Tester<File> orderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--vari-cell", 
+  			"--mode", "Partition");
+  	
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, soundTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, orderTester, false);
+  }
+	
+	@Test
+  @Ignore("It takes too long.")
+  public void testMiniBenchmarkWithFSPartitionVariCell() {
+  	final Tester<File> soundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--vari-cell", 
+  			"--mode", "Partition", "--fs");
+  	final Tester<File> orderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--vari-cell", 
+  			"--mode", "Partition", "--fs");
+  	
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, soundTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, orderTester, false);
+  }
+	
+	@Test
+	@Ignore("It takes too long.")
+	public void testMiniBenchmarkWithFSCSPartitionVariCell() {
+		final Tester<File> soundTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--sound", "--prover", "z3", "--vari-cell", 
+				"--mode", "Partition", "--fs", "--cs");
+		final Tester<File> orderTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--order", "--prover", "z3", "--vari-cell", 
+				"--mode", "Partition", "--fs", "--ce");
+		
+		TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, soundTester, false);
+		TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, orderTester, false);	
+	}
+	
+  @Test
+  @Ignore
+	public void testMiniBenchmarkWithLambdaFlatMultiCell() {
+		final Tester<File> SoundTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--sound", "--multi-cell",
+				"--prover", "z3", "--mode", "Flat", "--lambda");  	
+		final Tester<File> SyncTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--sound", "--multi-cell",
+				"--prover", "z3", "--mode", "Flat", "--lambda",
+				"--mem-encoding", "sync");  	
+		final Tester<File> OrderTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--order", "--multi-cell",
+				"--prover", "z3", "--mode", "Flat", "--lambda");
+		
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+	}
+
+	@Test
+	@Ignore
+  public void testMiniBenchmarkWithLambdaBurstallMultiCell() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--multi-cell",
+  			"--prover", "z3", "--mode", "Burstall", "--lambda");  	
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--multi-cell",
+  			"--prover", "z3", "--mode", "Burstall", "--lambda",
+  			"--mem-encoding", "sync");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--multi-cell",
+  			"--prover", "z3", "--mode", "Burstall", "--lambda");
+  	
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+  }
   
   @Test
   @Ignore
-  public void testNecBenchmarkDryTimeout() {
-  	final File valid_nec_location = new File(nec_programs_location, "valid");
-    final File invalid_nec_location = new File(nec_programs_location, "invalid");
-    final File inv_valid_nec_location = new File(nec_programs_location, "inv-valid");
-    final File inv_invalid_nec_location = new File(nec_programs_location, "inv-invalid");
+  public void testMiniBenchmarkWithLambdaPartitionMultiCell() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--multi-cell",
+  			"--prover", "z3", "--mode", "Partition", "--lambda");  	
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--multi-cell",
+  			"--prover", "z3", "--mode", "Partition", "--lambda",
+  			"--mem-encoding", "sync");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--multi-cell",
+  			"--prover", "z3", "--mode", "Partition", "--lambda");
+  	
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+  }
+  
+  @Test
+  @Ignore
+  public void testMiniBenchmarkWithLambdaFSPartitionMultiCell() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--multi-cell",
+  			"--prover", "z3", "--mode", "Partition", "--fs", "--lambda");  	
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--multi-cell",
+  			"--prover", "z3", "--mode", "Partition", "--fs", "--lambda",
+  			"--mem-encoding", "sync");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--multi-cell",
+  			"--prover", "z3", "--mode", "Partition", "--fs", "--lambda");
+  	
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+  }
+  
+  @Test
+  @Ignore
+	public void testMiniBenchmarkWithLambdaFlatVariCell() {
+		final Tester<File> SoundTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--sound", "--vari-cell",
+				"--prover", "z3", "--mode", "Flat", "--lambda");  	
+		final Tester<File> SyncTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--sound", "--vari-cell",
+				"--prover", "z3", "--mode", "Flat", "--lambda",
+				"--mem-encoding", "sync");  	
+		final Tester<File> OrderTester = parserTestTimeout(
+				"--feasibility", "--inline-anno", "--order", "--vari-cell",
+				"--prover", "z3", "--mode", "Flat", "--lambda");
+		
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+	  TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+	}
+
+	@Test
+	@Ignore
+  public void testMiniBenchmarkWithLambdaBurstallVariCell() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--vari-cell",
+  			"--prover", "z3", "--mode", "Burstall", "--lambda");  	
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--vari-cell",
+  			"--prover", "z3", "--mode", "Burstall", "--lambda",
+  			"--mem-encoding", "sync");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--vari-cell",
+  			"--prover", "z3", "--mode", "Burstall", "--lambda");
+  	
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+  }
+  
+  @Test
+  @Ignore
+  public void testMiniBenchmarkWithLambdaPartitionVariCell() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--vari-cell",
+  			"--prover", "z3", "--mode", "Partition", "--lambda");  	
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--vari-cell",
+  			"--prover", "z3", "--mode", "Partition", "--lambda",
+  			"--mem-encoding", "sync");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--vari-cell",
+  			"--prover", "z3", "--mode", "Partition", "--lambda");
+  	
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+  }
+  
+  @Test
+  @Ignore
+  public void testMiniBenchmarkWithLambdaFSPartitionVariCell() {
+  	final Tester<File> SoundTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--vari-cell",
+  			"--prover", "z3", "--mode", "Partition", "--fs", "--lambda");  	
+  	final Tester<File> SyncTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--sound", "--vari-cell",
+  			"--prover", "z3", "--mode", "Partition", "--fs", "--lambda",
+  			"--mem-encoding", "sync");  	
+  	final Tester<File> OrderTester = parserTestTimeout(
+  			"--feasibility", "--inline-anno", "--order", "--vari-cell",
+  			"--prover", "z3", "--mode", "Partition", "--fs", "--lambda");
+  	
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SoundTester, false);    
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter, OrderTester, false);
+  }
+	
+	@Test
+	@Ignore("It takes too long")
+	public void testNecInlineBenchmarkWithFlat() {
+		final Tester<File> SoundTester = parserTestTimeout("--sound", "--inline-anno",
+				"--prover", "z3", 
+				"--mode", "Flat");
+		final Tester<File> SyncTester = parserTestTimeout("--sound", "--inline-anno",
+				"--prover", "z3", "--mem-encoding", "sync", 
+				"--mode", "Flat");
+		final Tester<File> OrderTester = parserTestTimeout("--order", "--inline-anno",
+				"--prover", "z3", 
+				"--mode", "Flat");
+		
+    TestUtils.checkDirectoryRec(nec_inline_programs_location, ctrlFileFilter, SoundTester, false);
+    TestUtils.checkDirectoryRec(nec_inline_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(nec_inline_programs_location, ctrlFileFilter, OrderTester, false);
+	}
+
+	@Test
+  @Ignore("It takes too long")
+  public void testNecBenchmarkWithFlat() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound",
+  			"--prover", "z3", "--mode", "Flat");
+  	final Tester<File> SyncTester = parserTestTimeout("--sound",
+  			"--prover", "z3", "--mem-encoding", "sync", "--mode", "Flat");
+  	final Tester<File> OrderTester = parserTestTimeout("--order",
+  			"--prover", "z3", "--mode", "Flat");
     
-  	final TaskBuilder<File> FlatSoundTester = parserTestTimeout("--sound", "--dry-run", 
-  			"--prover", "z3", "--mem-cell-size", "16", "--theory", "Flat");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, OrderTester, false);
+  }
+	
+	@Test
+	@Ignore("It takes too long")
+	public void testNecBenchmarkWithBurstall() {
+		final Tester<File> SoundTester = parserTestTimeout("--sound", 
+				"--prover", "z3", "--mode", "Burstall");
+		final Tester<File> SyncTester = parserTestTimeout("--sound", 
+				"--prover", "z3", "--mem-encoding", "sync", "--mode", "Burstall");
+		final Tester<File> OrderTester = parserTestTimeout("--order",
+				"--prover", "z3", "--mode", "Burstall");
+		
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, OrderTester, false);
+	}
+
+	@Test
+	@Ignore("It takes too long")
+	public void testNecBenchmarkWithPartition() {
+		final Tester<File> SoundTester = parserTestTimeout("--sound", 
+				"--prover", "z3", "--mode", "Partition");
+		final Tester<File> SyncTester = parserTestTimeout("--sound", 
+				"--prover", "z3", "--mem-encoding", "sync", "--mode", "Partition");
+		final Tester<File> OrderTester = parserTestTimeout("--order",
+				"--prover", "z3", "--mode", "Partition");
+		
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, OrderTester, false);
+	}
+	
+	@Test
+	@Ignore("It takes too long")
+	public void testNecBenchmarkWithFSPartition() {
+		final Tester<File> SoundTester = parserTestTimeout("--sound", 
+				"--prover", "z3", 
+				"--mode", "Partition", "--fs");
+		final Tester<File> SyncTester = parserTestTimeout("--sound", 
+				"--prover", "z3", "--mem-encoding", "sync", 
+				"--mode", "Partition", "--fs");
+		final Tester<File> OrderTester = parserTestTimeout("--order",
+				"--prover", "z3", 
+				"--mode", "Partition", "--fs");
+		
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, OrderTester, false);
+	}
+	
+	@Test
+	@Ignore("It takes too long")
+	public void testNecBenchmarkWithFSCSPartition() {
+		final Tester<File> SoundTester = parserTestTimeout("--sound", 
+				"--prover", "z3", 
+				"--mode", "Partition", "--fs", "--cs");
+		final Tester<File> SyncTester = parserTestTimeout("--sound", 
+				"--prover", "z3", "--mem-encoding", "sync", 
+				"--mode", "Partition", "--fs", "--cs");
+		final Tester<File> OrderTester = parserTestTimeout("--order",
+				"--prover", "z3", 
+				"--mode", "Partition", "--fs", "--cs");
+		
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SyncTester, false);
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, OrderTester, false);
+	}
+
+	@Test
+	@Ignore("It takes too long")
+  public void testNecBenchmarkPathBasedWithFlat() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound", "--path-based",
+  			"--prover", "z3", "--mode", "Flat");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+	
+	@Test
+	@Ignore("It takes too long")
+  public void testNecBenchmarkPathBasedWithLambdaFlat() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound", "--path-based",
+  			"--prover", "z3", "--mode", "Flat", "--lambda");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+	
+	@Test
+	@Ignore("It takes too long")
+  public void testNecBenchmarkPathBasedWithLambdaBurstall() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound", "--path-based",
+  			"--prover", "z3", "--mode", "Burstall", "--lambda");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+	
+	@Test
+	@Ignore("It takes too long")
+	public void testNecBenchmarkPathBasedWithLambdaPartition() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound", "--path-based",
+  			"--prover", "z3", "--mode", "Partition", "--lambda");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+	}
+	
+	@Test
+	@Ignore("It takes too long")
+	public void testNecBenchmarkPathBasedWithLambdaFSPartition() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound", "--path-based",
+  			"--prover", "z3", "--mode", "Partition", "--fs", "--lambda");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+	}
+	
+	@Test
+	@Ignore("It takes too long")
+	public void testNecBenchmarkPathBasedWithLambdaFSCSPartition() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound", "--path-based",
+  			"--prover", "z3", "--mode", "Partition", "--fs", "--cs", "--lambda");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+	}
+
+	@Test
+	@Ignore("It takes too long")
+	public void testNecBenchmarkWithLambdaFlat() {
+		final Tester<File> SoundTester = parserTestTimeout("--sound",
+				"--prover", "z3", "--mode", "Flat", "--lambda");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+	}
+	
+	@Test
+  @Ignore("It takes too long")
+  public void testNecBenchmarkWithLambdaBurstall() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound", 
+  			"--prover", "z3", "--mode", "Burstall", "--lambda");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+	
+	@Test
+  @Ignore("It takes too long")
+  public void testNecBenchmarkWithLambdaPartition() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound", 
+  			"--prover", "z3", "--mode", "Partition", "--lambda");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+	
+	@Test
+  @Ignore("It takes too long")
+  public void testNecBenchmarkWithLambdaFSPartition() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound", 
+  			"--prover", "z3", "--mode", "Partition", "--fs", "--lambda");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+	
+	@Test
+  @Ignore("It takes too long")
+  public void testNecBenchmarkWithLambdaFSCSPartition() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound", 
+  			"--prover", "z3", "--mode", "Partition", "--fs", "--cs", "--lambda");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+	
+	@Test
+  @Ignore("It takes too long")
+  public void testNecBenchmarkWithFlatMultiCell() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound",
+  			"--prover", "z3", "--multi-cell", "--mode", "Flat");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+	
+	@Test
+  @Ignore("It takes too long")
+  public void testNecBenchmarkWithBurstallMultiCell() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound",
+  			"--prover", "z3", "--multi-cell", "--mode", "Burstall");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+	
+	@Test
+	@Ignore("It takes too long")
+	public void testNecBenchmarkWithPartitionMultiCell() {
+		final Tester<File> SoundTester = parserTestTimeout("--sound",
+				"--prover", "z3", "--multi-cell", "--mode", "Partition");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+	}
+	
+	@Test
+	@Ignore("It takes too long")
+	public void testNecBenchmarkWithFSPartitionMultiCell() {
+		final Tester<File> SoundTester = parserTestTimeout("--sound",
+				"--prover", "z3", "--multi-cell", "--mode", "Partition", "--fs");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+	}
+	
+	@Test
+	@Ignore("It takes too long")
+	public void testNecBenchmarkWithFSCSPartitionMultiCell() {
+		final Tester<File> SoundTester = parserTestTimeout("--sound",
+				"--prover", "z3", "--multi-cell", "--mode", "Partition", "--fs", "--cs");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+	}
+	
+	@Test
+  @Ignore("It takes too long")
+  public void testNecBenchmarkWithFlatVariCell() {
+		final Tester<File> SoundTester = parserTestTimeout("--sound",
+				"--prover", "z3", "--vari-cell", "--mode", "Flat");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+
+	@Test
+  @Ignore("It takes too long")
+  public void testNecBenchmarkWithBurstallVariCell() {
+		final Tester<File> SoundTester = parserTestTimeout("--sound",
+				"--prover", "z3", "--vari-cell", "--mode", "Burstall");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+	
+	@Test
+  @Ignore("It takes too long")
+  public void testNecBenchmarkWithPartitionVariCell() {
+		final Tester<File> SoundTester = parserTestTimeout("--sound",
+				"--prover", "z3", "--vari-cell", "--mode", "Partition");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+	
+	@Test
+  @Ignore("It takes too long")
+  public void testNecBenchmarkWithFSPartitionVariCell() {
+		final Tester<File> SoundTester = parserTestTimeout("--sound",
+				"--prover", "z3", "--vari-cell", "--mode", "Partition", "--fs");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+	
+	@Test
+  @Ignore("It takes too long")
+  public void testNecBenchmarkWithFSCSPartitionVariCell() {
+		final Tester<File> SoundTester = parserTestTimeout("--sound",
+				"--prover", "z3", "--vari-cell", "--mode", "Partition", "--fs", "--cs");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+	
+	@Test
+	@Ignore("It takes too long")
+	public void testNecBenchmarkWithLambdaFlatVariCell() {
+		final Tester<File> SoundTester = parserTestTimeout("--sound", "--vari-cell",
+				"--prover", "z3", "--mode", "Flat", "--lambda");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+	}
+	
+	@Test
+  @Ignore("It takes too long")
+  public void testNecBenchmarkWithLambdaBurstallVariCell() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound", "--vari-cell",
+  			"--prover", "z3", "--mode", "Burstall", "--lambda");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+	
+	@Test
+  @Ignore("It takes too long")
+  public void testNecBenchmarkWithLambdaPartitionVariCell() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound", "--vari-cell",
+  			"--prover", "z3", "--mode", "Partition", "--lambda");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+	
+	@Test
+  @Ignore("It takes too long")
+  public void testNecBenchmarkWithLambdaFSPartitionVariCell() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound", "--vari-cell",
+  			"--prover", "z3", "--mode", "Partition", "--fs", "--lambda");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+	
+	@Test
+  @Ignore("It takes too long")
+  public void testNecBenchmarkWithLambdaFSCSPartitionVariCell() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound", "--vari-cell",
+  			"--prover", "z3", "--mode", "Partition", "--fs", "--cs", "--lambda");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+	
+	@Test
+  @Ignore
+  public void testNecBenchmarkDry() {
+  	final Tester<File> SoundTester = parserTestTimeout("--sound", "--dry-run",
+  			"--prover", "z3", "--mode", "Partition");
+    TestUtils.checkDirectoryRec(nec_programs_location, ctrlFileFilter, SoundTester, false);
+  }	
+  
+  @Test
+  @Ignore
+  public void testNecInlineBenchmarkDry() {    
+  	final Tester<File> SoundTester = parserTestTimeout("--sound", "--dry-run", "--inline-anno",
+  			"--prover", "z3", "--mode", "Partition");
+    TestUtils.checkDirectoryRec(nec_inline_programs_location, ctrlFileFilter, SoundTester, false);
+  }
+  
+  @Test
+  @Ignore
+  public void testNecBenchmarkDryTimeout() {    
+  	final TaskBuilder<File> SoundTester = parserTestTimeoutTask("--sound", "--dry-run", 
+  			"--prover", "z3", "--mode", "Flat");
     
   	final TestTimeoutUtils.Scheduler scheduler = new TestTimeoutUtils.Scheduler(Timeout);
-  	
-    TestTimeoutUtils.checkDirectory(scheduler, valid_nec_location, ctrlFileFilter, FlatSoundTester);
-    TestTimeoutUtils.checkDirectory(scheduler, invalid_nec_location, ctrlFileFilter, FlatSoundTester);
-    TestTimeoutUtils.checkDirectory(scheduler, inv_valid_nec_location, ctrlFileFilter, FlatSoundTester);
-    TestTimeoutUtils.checkDirectory(scheduler, inv_invalid_nec_location, ctrlFileFilter, FlatSoundTester);
-    
+    TestTimeoutUtils.checkDirectory(scheduler, nec_programs_location, ctrlFileFilter, SoundTester);
     scheduler.run();
   }
   
   /** FIXME: This is really a test for tp-tp */
   @Test
   public void testLogTp() {
-    TestUtils.checkDirectory(programs_location, ctrlFileFilter,
-        parserTest("--parse-only", "--prover", "cvc4", "--cvc4-log", "foo.cvc"), false);
+      //    TestUtils.checkDirectory(programs_location, ctrlFileFilter,
+      //        parserTestWithTimeout("--parse-only", "--prover", "cvc4", "--cvc4-log", "foo.cvc"), false);
     TestUtils.checkDirectory(programs_location, ctrlFileFilter,
         parserTest("--parse-only", "--prover", "z3", "--z3-log", "foo.cvc"), false);
   }  

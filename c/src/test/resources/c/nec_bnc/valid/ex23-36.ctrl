@@ -1,0 +1,20 @@
+<controlFile>
+  <sourceFile name="../ex23.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="4" />
+    <wayPoint fileId="1" line="11" >
+      <loop iterTimes = "36" >
+        <wayPoint fileId="1" line="12" >
+          <command>
+            <cascadeFunction>cascade_check</cascadeFunction>
+            <argument><![CDATA[
+              valid(&x[z])
+            ]]>
+            </argument>
+          </command>
+        </wayPoint>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="19" />
+  </run>
+</controlFile>

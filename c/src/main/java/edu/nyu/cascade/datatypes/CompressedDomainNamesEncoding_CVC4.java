@@ -68,23 +68,16 @@ import edu.nyu.cascade.ir.expr.BitVectorIntegerEncoding;
 import edu.nyu.cascade.ir.expr.BooleanEncoding;
 import edu.nyu.cascade.ir.expr.DefaultArrayEncoding;
 import edu.nyu.cascade.ir.expr.DefaultBooleanEncoding;
-import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
-import edu.nyu.cascade.ir.expr.FlatMemoryModel;
-import edu.nyu.cascade.ir.expr.IRSingleHeapEncoder;
 import edu.nyu.cascade.ir.expr.IntegerEncoding;
 import edu.nyu.cascade.ir.expr.LinearPointerEncoding;
-import edu.nyu.cascade.ir.expr.MemoryModel;
 import edu.nyu.cascade.ir.expr.PointerEncoding;
 import edu.nyu.cascade.prover.ArrayExpression;
-import edu.nyu.cascade.prover.ArrayVariableExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
-import edu.nyu.cascade.prover.BitVectorVariableExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TheoremProverException;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Constructor;
@@ -93,41 +86,7 @@ import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Preferences;
 
-/*class Expression {
-  public final boolean isDn;
-  public final Expression dnVal;
-  public final BitVectorExpression bvVal;
-
-  public static Expression dn(Expression dnVal) {
-    Preconditions.checkArgument(dnVal.isInductive());
-    return new Expression(true, dnVal);
-  }
-
-  public static Expression bv(Expression bvVal) {
-    Preconditions.checkArgument(bvVal.isBitVector());
-    return new Expression(false, bvVal);
-  }
-
-  @SuppressWarnings("unchecked")
-  protected Expression(boolean isDn, Expression e) {
-    this.isDn = isDn;
-    if (isDn) {
-      this.dnVal = e;
-      this.bvVal = null;
-    } else {
-      this.dnVal = null;
-      this.bvVal = e;
-    }
-  }
-}
-*/
-
 public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEncoding {
-
-  public static MemoryModel createMemoryModel(ExpressionEncoding encoding, IRSingleHeapEncoder heapEncoder) { 
-    Preconditions.checkArgument( encoding.getIntegerEncoding().getType().isBitVectorType() );
-    return FlatMemoryModel.create(encoding, heapEncoder);
-  }
   
   protected final BitVectorIntegerEncoding bitVectorFactory;
   /* The Dn inductive data type */
@@ -161,7 +120,7 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
   protected final Expression toBvString;
   
   /** The memory variable (a bit vector array) */
-  protected final ArrayVariableExpression memArray;
+  protected final ArrayExpression memArray;
 
   /** The type of the memory variable */
   protected final ArrayType memType;
@@ -171,9 +130,9 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
 
   protected boolean useFrameAxiom;
   
-  public static CompressedDomainNamesEncoding_CVC4 create(
+  static CompressedDomainNamesEncoding_CVC4 create(
       ExpressionManager exprManager) throws ExpressionFactoryException {
-    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, cAnalyzer, WORD_SIZE);
+    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, WORD_SIZE);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(exprManager);
     PointerEncoding<? extends Expression> pointerEncoding = LinearPointerEncoding.create(
@@ -183,7 +142,7 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
     
   }
   
-  public CompressedDomainNamesEncoding_CVC4(
+  private CompressedDomainNamesEncoding_CVC4(
       IntegerEncoding<BitVectorExpression> integerEncoding,
       BooleanEncoding<BooleanExpression> booleanEncoding,
       ArrayEncoding<ArrayExpression> arrayEncoding,
@@ -195,7 +154,7 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
       useFrameAxiom = Preferences.isSet(OPTION_FRAME_AXIOM);
       
       ExpressionManager exprManager = getExpressionManager();
-      BitVectorType wordType = exprManager.bitVectorType(DEFAULT_WORD_SIZE);
+      BitVectorType wordType = exprManager.bitVectorType(8);
       BitVectorType charType = exprManager.bitVectorType(8);
       BitVectorType lenType = exprManager.bitVectorType(6);
       BitVectorType offsetType = exprManager.bitVectorType(14);
@@ -205,7 +164,7 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
 
       memType = exprManager.arrayType(addrType, cellType);
       ArrayType stringType = memType;
-      memArray = memType.variable(MEM_ARRAY_NAME,true);
+      memArray = memType.variable(MEM_ARRAY_NAME, true);
 
       this.bitVectorFactory = (BitVectorIntegerEncoding) getIntegerEncoding();
 /*      this.bitVectorFactory = BitVectorExpressionEncoding.create(symbolTables,
@@ -242,31 +201,17 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
       /* Create data constraints */
       ImmutableSet.Builder<BooleanExpression> axiomSetBuilder = ImmutableSet
           .builder();
-
-/*      VariableExpression x = dn.variable("x", true);
-      ArrayVariableExpression bits1 = stringType
-          .variable("bits1",true);
-      ArrayVariableExpression bits2 = stringType
-          .variable("bits2",true);
-      BitVectorVariableExpression i = addrType.variable("i", true);
-      BitVectorVariableExpression j = addrType.variable("j", true);
-      BitVectorVariableExpression k = addrType.variable("k", true);*/
       
-      VariableExpression x = dn.boundVariable("x", true);
-      ArrayVariableExpression bits1 = (ArrayVariableExpression) stringType
-          .boundVariable("bits1",true);
-      ArrayVariableExpression bits2 = (ArrayVariableExpression) stringType
-          .boundVariable("bits2",true);
-      BitVectorVariableExpression i = (BitVectorVariableExpression) addrType
-          .boundVariable("i", true);
-      BitVectorVariableExpression j = (BitVectorVariableExpression) addrType
-          .boundVariable("j", true);
-      BitVectorVariableExpression k = (BitVectorVariableExpression) addrType
-          .boundVariable("k", true);
+      Expression x = dn.boundVar("x", true);
+      ArrayExpression bits1 = stringType.boundVar("bits1",true);
+      ArrayExpression bits2 = stringType.boundVar("bits2",true);
+      BitVectorExpression i = addrType.boundVar("i", true);
+      BitVectorExpression j = addrType.boundVar("j", true);
+      BitVectorExpression k = addrType.boundVar("k", true);
 
       /* to_string : (StringType, PtrType, PtrType) -> StringType; */
-      toBvString = exprManager
-          .functionVar("to_string", exprManager.functionType("to_string", ImmutableList.of(stringType,
+      toBvString = exprManager.functionDeclarator("to_string",
+      		exprManager.functionType(ImmutableList.of(stringType,
               addrType, addrType), stringType), true);
 
       /*
@@ -276,26 +221,30 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
        * to_string(str,base,len)[i] = IF i < len THEN str[BVPLUS(N,base,i)] ELSE
        * 0 ENDIF
        */
-      BooleanExpression toStringAxiom = exprManager.forall(ImmutableList.of(
-          bits1, i, j, k), bitVectorFactory.eq(
+      BooleanExpression toStringAxiom = exprManager.forall(
+      		ImmutableList.of(bits1, i, j, k),
+          bitVectorFactory.eq(
               doToBvString(bits1, i, j)
                   .index(k).asBitVector(),
                   bitVectorFactory.lessThan(k, j).ifThenElse(
-                  bits1.index( i.plus(addrType.getSize(), k)), 
+                  bits1.index( exprManager.bitVectorPlus(addrType.getSize(), i, k)), 
                   exprManager.bitVectorZero(addrType.getSize()))
               .asBitVector()));
-
+     
       axiomSetBuilder.add(toStringAxiom);
 
       /*
        * bits_to_dn : (StringType, PtrType) -> Dn;
        */
 
-      bitsToDn = exprManager.functionVar(FUN_INTERNAL_DN, exprManager.functionType(FUN_INTERNAL_DN,
-          ImmutableList.of(stringType,
-          addrType), dn), true);
+      bitsToDn = exprManager.functionDeclarator(FUN_INTERNAL_DN,
+      		exprManager.functionType(
+      				ImmutableList.of(stringType,
+      				addrType), dn), true);
+      
       /* sizeDn : Dn -> AddrType */
-      sizeDn = exprManager.functionVar(FUN_SIZE_DN, exprManager.functionType(FUN_SIZE_DN, dn, addrType), true);
+      sizeDn = exprManager.functionDeclarator(FUN_SIZE_DN,
+      		exprManager.functionType(dn, addrType), true);
 
       List<Expression> bitsToDnPattern = ImmutableList
           .of(exprManager.applyExpr(bitsToDn, bits1, i));
@@ -642,44 +591,13 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
     return x;
   }
 
-  // @Override
-  /*
-   * public IExpression<IInductiveType> applyFunction(String name,
-   * IExpression<?> arg) { if( FUN_DN.equals(name) ) { return
-   * exprManager.functionApplication(bitsToDn, (IExpression<ITupleType>)arg); }
-   * throw new IllegalArgumentException(name); else ( FUN_REST.equals(name) ) {
-   * return exprManager.functionApplication(bitsToDn,
-   * (IExpression<ITupleType>)arg);
-   * 
-   * } }
-   */
-
-  // @Override
-  /*
-   * public IBooleanExpression applyPredicate(String name, IExpression<?>
-   * arg1, IExpression<?> arg2) { if( FUN_DN.equals(name) ) {
-   * IExpression<IInductiveType> x = exprManager.functionApplication(bitsToDn,
-   * (IExpression<ITupleType>)arg1); IExpression<IInductiveType> y =
-   * exprManager.functionApplication(bitsToDn, (IExpression<ITupleType>)arg2); }
-   * // TODO Auto-generated method stub return null; }
-   */
-  // @Override
   public Set<String> getFunctions() {
     return functions;
   }
-
-  // @Override
+  
   public Set<String> getPredicates() {
     return predicates;
   }
-
-/*  @Override
-  public BooleanExpression allocated(Expression ptr, Expression size)
-      throws ExpressionFactoryException {
-    Preconditions.checkArgument(!ptr.isDn);
-    Preconditions.checkArgument(!size.isDn);
-    return bitVectorFactory.allocated(ptr.bvVal, size.bvVal);
-  }*/
 
   @Override
   public ImmutableSet<BooleanExpression> getAssumptions() {
@@ -688,9 +606,4 @@ public class CompressedDomainNamesEncoding_CVC4 extends CompressedDomainNamesEnc
 
   int getAddressSize() { return memType.getIndexType().asBitVectorType().getSize(); }
   int getValueSize() { return memType.getElementType().asBitVectorType().getSize(); }
-/*  @Override
-  public ArrayType getStateType()
-      {
-    return memType;
-  }*/
 }

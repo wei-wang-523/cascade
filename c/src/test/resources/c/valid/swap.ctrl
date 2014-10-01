@@ -1,16 +1,16 @@
 <controlFile>
-  <sourceFile name="swap.c" id="1" /> 
-  <run>
-    <startPosition fileId="1" line="8" />
-    <endPosition fileId="1" line="11">
-      <command>
-        <cascadeFunction>  cascade_check
-        </cascadeFunction>
-        <argument><![CDATA[
-          old_a==*b && old_b==*a
-          ]]>
-        </argument>
-      </command>
-    </endPosition>
-  </run>
+    <sourceFile name="swap.c" id="1" />
+    <run>
+        <startPosition fileId="1" line="8" />
+        <endPosition fileId="1" line="11">
+            <command>
+                <cascadeFunction>  cascade_check
+                </cascadeFunction>
+                <argument><![CDATA[
+                    old_a==*b && old_b==*a
+                ]]>
+                </argument>
+            </command>
+        </endPosition>
+    </run>
 </controlFile>

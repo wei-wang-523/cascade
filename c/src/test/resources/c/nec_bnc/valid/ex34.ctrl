@@ -1,0 +1,120 @@
+<controlFile>
+  <sourceFile name="../ex34.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="11" />
+    <wayPoint fileId="1" line="12" >
+      <function funcName="fn1" >
+        <wayPoint fileId="1" line="7" >
+          <command>
+            <cascadeFunction>cascade_assume</cascadeFunction>
+            <argument><![CDATA[
+              0 <= ret && ret < n
+            ]]>
+            </argument>
+          </command>
+        </wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="13" >
+      <function funcName="fn1" >
+        <wayPoint fileId="1" line="7" >
+          <command>
+            <cascadeFunction>cascade_assume</cascadeFunction>
+            <argument><![CDATA[
+              0 <= ret && ret < n
+            ]]>
+            </argument>
+          </command>
+        </wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="14" >
+      <function funcName="fn1" >
+        <wayPoint fileId="1" line="7" >
+          <command>
+            <cascadeFunction>cascade_assume</cascadeFunction>
+            <argument><![CDATA[
+              0 <= ret && ret < n
+            ]]>
+            </argument>
+          </command>
+        </wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="15" >
+      <function funcName="fn1" >
+        <wayPoint fileId="1" line="7" >
+          <command>
+            <cascadeFunction>cascade_assume</cascadeFunction>
+            <argument><![CDATA[
+              0 <= ret && ret < n
+            ]]>
+            </argument>
+          </command>
+        </wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="16" >
+      <function funcName="fn1" >
+        <wayPoint fileId="1" line="7" >
+          <command>
+            <cascadeFunction>cascade_assume</cascadeFunction>
+            <argument><![CDATA[
+              0 <= ret && ret < n
+            ]]>
+            </argument>
+          </command>
+        </wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="17" >
+      <function funcName="fn1" >
+        <wayPoint fileId="1" line="7" >
+          <command>
+            <cascadeFunction>cascade_assume</cascadeFunction>
+            <argument><![CDATA[
+              0 <= ret && ret < n
+            ]]>
+            </argument>
+          </command>
+        </wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="18" >
+      <function funcName="fn1" >
+        <wayPoint fileId="1" line="7" >
+          <command>
+            <cascadeFunction>cascade_assume</cascadeFunction>
+            <argument><![CDATA[
+              0 <= ret && ret < n
+            ]]>
+            </argument>
+          </command>
+        </wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="19" >
+      <function funcName="fn1" >
+        <wayPoint fileId="1" line="7" >
+          <command>
+            <cascadeFunction>cascade_assume</cascadeFunction>
+            <argument><![CDATA[
+              0 <= ret && ret < n
+            ]]>
+            </argument>
+          </command>
+        </wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="20" >
+      <command>
+        <cascadeFunction>cascade_check</cascadeFunction>
+        <argument><![CDATA[
+          i1 + i2 + i3 + i4 + i5 + i6 + i7 + i8 <= 8
+        ]]>
+        </argument>
+      </command>
+    </wayPoint>
+    <endPosition fileId="1" line="21" />
+  </run>
+</controlFile>

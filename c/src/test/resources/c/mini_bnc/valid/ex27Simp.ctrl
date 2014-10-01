@@ -1,0 +1,33 @@
+<controlFile>
+  <sourceFile name="ex27Simp.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="30" />
+    <wayPoint fileId="1" line="33" >
+      <function funcName="foo" >
+        <wayPoint fileId="1" line="15" >
+          <function funcName="check" >
+            <wayPoint fileId="1" line="4" />
+          </function>
+        </wayPoint>
+        <wayPoint fileId="1" line="18" >
+          <function funcName="check" >
+            <wayPoint fileId="1" line="4" />
+          </function>
+        </wayPoint>
+        <wayPoint fileId="1" line="21" >
+          <loop iterTimes="5" />
+        </wayPoint>
+        <wayPoint fileId="1" line="25" >
+          <command>
+            <cascadeFunction>cascade_check</cascadeFunction>
+            <argument><![CDATA[
+              valid(a+n) && valid(b+n)
+            ]]>
+            </argument>
+          </command>
+        </wayPoint>
+      </function>
+    </wayPoint>
+    <endPosition fileId="1" line="34" />
+  </run>
+</controlFile>

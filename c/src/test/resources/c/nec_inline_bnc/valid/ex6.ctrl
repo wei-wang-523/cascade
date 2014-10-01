@@ -1,0 +1,17 @@
+<controlFile>
+  <sourceFile name="../ex6.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="13" />
+    <wayPoint fileId="1" line="15" insert="after" >
+      <function funcName="foo" >
+        <wayPoint fileId="1" line="5" />
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="16" insert="after" >
+      <function funcName="foo" >
+        <wayPoint fileId="1" line="7" />
+      </function>
+    </wayPoint>
+    <endPosition fileId="1" line="18" />
+  </run>
+</controlFile>

@@ -1,19 +1,24 @@
 <controlFile>
-  <sourceFile name="ns_name_skip.c" id="1" /> 
+  <sourceFile name="ns_name_skip.c" id="1" />
   <theory qname="edu.nyu.cascade.datatypes.CompressedDomainNames" />
   <run>
-    <startPosition fileId="1" line="7" />
+    <startPosition fileId="1" line="6" />
     <wayPoint fileId="1" line="13" />
-    <wayPoint fileId="1" line="17" />
-    <endPosition fileId="1" line="20">
-      <command>
-        <cascadeFunction>  cascade_check
-        </cascadeFunction>
-        <argument><![CDATA[ 
-                            1
-          ]]>
-        </argument>
-      </command>
-    </endPosition>
+    <wayPoint fileId="1" line="16" >
+      <loop iterTimes="1" >
+        <wayPoint fileId="1" line="17" />
+        <wayPoint fileId="1" line="20">
+          <command>
+            <cascadeFunction>  cascade_check
+            </cascadeFunction>
+            <argument><![CDATA[
+              (n & 0xc0) == 0
+            ]]>
+            </argument>
+          </command>
+        </wayPoint>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="40" />
   </run>
 </controlFile>

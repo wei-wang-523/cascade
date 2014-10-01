@@ -1,10 +1,9 @@
 package edu.nyu.cascade.c;
 
-import edu.nyu.cascade.ir.expr.ExpressionEncoder;
+import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.expr.PathFactoryException;
 
-public interface PathEncoder {
-  final static String COND_ASSUME_LABEL = "COND_ASSUME";
+public interface PathEncoder<T> {
   
   boolean runIsFeasible() throws PathFactoryException;
 
@@ -14,12 +13,24 @@ public interface PathEncoder {
    */
   boolean runIsValid();
   
+  /**
+   * Returns true if the labeled block is reachable
+   */
+	boolean runIsReachable();
+  
   void setFeasibilityChecking(boolean b);
   
   /**
    * Prepare this encoder for a new path.
    */
   void reset();
-  
-  ExpressionEncoder getExpressionEncoder();
+
+	void encode(PreProcessor<?> preprocessor, T graph)
+      throws PathFactoryException;
+
+	void checkReach(PreProcessor<?> preprocessor, T graph, String label)
+      throws PathFactoryException;
+	
+	void checkReachIncremental(PreProcessor<?> preprocessor, T graph, String label)
+			throws PathFactoryException;
 }

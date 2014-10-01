@@ -1,0 +1,34 @@
+<controlFile>
+  <sourceFile name="../ex10.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="16" />
+    <wayPoint fileId="1" line="18">
+      <command>
+        <cascadeFunction> cascade_assume </cascadeFunction>
+        <argument>addr</argument>
+      </command>
+    </wayPoint>
+    <wayPoint fileId="1" line="20">
+      <command>
+        <cascadeFunction> cascade_check </cascadeFunction>
+        <argument><![CDATA[
+          valid(&(addr->len))
+        ]]></argument>
+      </command>
+    </wayPoint>
+    <wayPoint fileId="1" line="23">
+      <function funcName="f1" >
+        <wayPoint fileId="1" line="39" >
+          <loop>
+            <invariant><![CDATA[
+              i>=0 && i <= addr->len &&
+              implies(i>0 && i<=addr->len, valid(&addr->dat[i-1]))
+            ]]>
+            </invariant>
+          </loop>
+        </wayPoint>
+      </function>
+    </wayPoint>
+    <endPosition fileId="1" line="24" />
+  </run>
+</controlFile>

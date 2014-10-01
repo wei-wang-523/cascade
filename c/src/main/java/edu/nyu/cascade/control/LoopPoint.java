@@ -13,6 +13,7 @@ public class LoopPoint {
 
   static edu.nyu.cascade.control.LoopPoint valueOf(
       edu.nyu.cascade.control.jaxb.LoopPoint loopPos,
+      edu.nyu.cascade.control.jaxb.Position position, 
       Map<BigInteger, File> sourceFiles)
       throws ControlFileException {
     if(loopPos == null)
@@ -22,24 +23,32 @@ public class LoopPoint {
     List<Position> wayPoint = Lists.newArrayList();   
     for(edu.nyu.cascade.control.jaxb.Position pos : loopPos.getWayPoint())
       wayPoint.add(Position.valueOf(pos, sourceFiles));
-    return new LoopPoint(iterTimes, invariant, wayPoint);
+    
+    File file = sourceFiles.get(position.getFileId());
+    BigInteger line = position.getLine();
+    return new LoopPoint(file, line, iterTimes, invariant, wayPoint);
   }
 
+  private File file;
+  private BigInteger line;
   private int iterTimes;
   private String invariant;
   private final List<Position> wayPoint; 
   private String asString;
 
-  private LoopPoint(BigInteger iterTimes, String invariant, List<Position> wayPoint) {
+  private LoopPoint(File file, BigInteger line, 
+  		BigInteger iterTimes, String invariant, List<Position> wayPoint) {
     // Cannot be: iterTimes > 0 and invariant is not null
     Preconditions.checkArgument(!(iterTimes.intValue() > 0 && invariant != null));
+    this.file = file;
+    this.line = line;
     this.iterTimes = iterTimes.intValue();
     this.wayPoint = wayPoint;
     this.invariant = invariant;
     
     /* Build stringrep */
     StringBuilder builder = new StringBuilder();
-    builder.append("loop:" + iterTimes);
+    builder.append("loop:" + iterTimes).append(',');
     builder.append("invariant:" + invariant);
     this.asString = builder.toString();
   }
@@ -48,12 +57,24 @@ public class LoopPoint {
     return asString;
   }
   
-  public int getIterTimes() {
+  public File getFile() {
+		return file;
+	}
+
+	public BigInteger getLine() {
+		return line;
+	}
+
+	public int getIterTimes() {
     return iterTimes;
   }
   
   public String getInvariant() {
     return invariant;
+  }
+  
+  public boolean hasInvariant() {
+  	return invariant != null;
   }
   
   public List<Position> getWayPoint() {

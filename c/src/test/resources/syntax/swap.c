@@ -5,7 +5,8 @@ void swap(int* x, int* y) {
 }
 
 void driver(int*a, int*b) {
-        int old_a = *a;
-        int old_b = *b;
-        swap(a,b);
+  int old_a = *a;
+  int old_b = *b;
+  swap(a,b);
+  return;
 }

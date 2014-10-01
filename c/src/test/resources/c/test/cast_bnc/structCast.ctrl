@@ -1,7 +1,0 @@
-<controlFile>
-  <sourceFile name="structCast.c" id="1" />
-  <run>
-    <startPosition fileId="1" line="16" />
-    <endPosition fileId="1" line="27" />
-  </run>
-</controlFile>

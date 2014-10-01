@@ -38,11 +38,11 @@ public class Position extends AbstractLocation implements IRLocation  {
     
     List<CallPoint> functions = Lists.newArrayList();   
     for(edu.nyu.cascade.control.jaxb.CallPoint pos : position.getFunction())
-      functions.add(CallPoint.valueOf(pos, sourceFiles));
+      functions.add(CallPoint.valueOf(pos, position, sourceFiles));
     
     List<LoopPoint> loops = Lists.newArrayList();   
     for(edu.nyu.cascade.control.jaxb.LoopPoint pos : position.getLoop())
-      loops.add(LoopPoint.valueOf(pos, sourceFiles));
+      loops.add(LoopPoint.valueOf(pos, position, sourceFiles));
     
     return new Position(position.getCommand(), file, position.getLine(), position.getInsert(),
         functions, loops);
@@ -59,7 +59,7 @@ public class Position extends AbstractLocation implements IRLocation  {
   // string representation for toString on demand, then cache it
   private String asString;
 
-  private Position(List<Command> commands, File file, BigInteger line, InsertionType insertionType,
+  public Position(List<Command> commands, File file, BigInteger line, InsertionType insertionType,
       List<CallPoint> functions, List<LoopPoint> loops) {
     Preconditions.checkNotNull(file);
     Preconditions.checkNotNull(line);
@@ -119,6 +119,10 @@ public class Position extends AbstractLocation implements IRLocation  {
   
   public Boolean hasLoop() {
     return (!loops.isEmpty());
+  }
+  
+  public boolean hasInvariant() {
+  	return invariant != null;
   }
 
   public String getInvariant() {

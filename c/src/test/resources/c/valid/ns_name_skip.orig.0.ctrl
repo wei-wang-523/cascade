@@ -1,51 +1,51 @@
 <controlFile>
-  <sourceFile name="ns_name_skip.orig.c" id="1" /> 
-  <theory qname="edu.nyu.cascade.datatypes.CompressedDomainNames">
-    <foo>bar</foo>
-    <qux>baz</qux>
-  </theory>
-  <run>
-    <startPosition fileId="1" line="28">
-      <command>
-        <cascadeFunction>  cascade_assume
-        </cascadeFunction>
-        <argument><![CDATA[ 
-        allocated(cp,sizeDn(cp))
-        && cp == last_cp 
-        && cp == init_cp 
-//        cp + sizeDn(cp) == init_cp + sizeDn(init_cp)
-        ]]></argument>
-      </command>
-    </startPosition>  
-    <wayPoint fileId="1" line="34">
-      <command>
-        <cascadeFunction>  cascade_check
-        </cascadeFunction>
-        <argument><![CDATA[ 
-        is_label(last_cp)
-        ]]></argument>
-      </command>
-    </wayPoint>
-    <wayPoint fileId="1" line="37">
-      <command>
-        <cascadeFunction>  cascade_check
-        </cascadeFunction>
-        <argument><![CDATA[
-        rest(last_cp) == Dn(cp)
-//        && last_cp + sizeDn(last_cp) == cp + sizeDn(cp)
-        ]]></argument>
-      </command>
-    </wayPoint>
-    <endPosition fileId="1" line="37" insert="after">
-      <command>
-        <cascadeFunction>  cascade_check
-        </cascadeFunction>
-        <argument><![CDATA[
-        last_cp == cp && // end_of_dn == cp + sizeDn(cp)
-        cp + sizeDn(cp) == init_cp + sizeDn(init_cp)
-        ]]></argument>
-      </command>
-    </endPosition>
-
-  </run>
+    <sourceFile name="ns_name_skip.orig.c" id="1" />
+    <theory qname="edu.nyu.cascade.datatypes.CompressedDomainNames">
+        <foo>bar</foo>
+        <qux>baz</qux>
+    </theory>
+    <run>
+        <startPosition fileId="1" line="28">
+            <command>
+                <cascadeFunction>  cascade_assume
+                </cascadeFunction>
+                <argument><![CDATA[
+                    allocated(cp,sizeDn(cp))
+                    && cp == last_cp
+                    && cp == init_cp
+                    // cp + sizeDn(cp) == init_cp + sizeDn(init_cp)
+                ]]></argument>
+            </command>
+        </startPosition>
+        <wayPoint fileId="1" line="34">
+            <command>
+                <cascadeFunction>  cascade_check
+                </cascadeFunction>
+                <argument><![CDATA[
+                    is_label(last_cp)
+                ]]></argument>
+            </command>
+        </wayPoint>
+        <wayPoint fileId="1" line="37">
+            <command>
+                <cascadeFunction>  cascade_check
+                </cascadeFunction>
+                <argument><![CDATA[
+                    rest(last_cp) == Dn(cp)
+                    // && last_cp + sizeDn(last_cp) == cp + sizeDn(cp)
+                ]]></argument>
+            </command>
+        </wayPoint>
+        <endPosition fileId="1" line="37" insert="after">
+            <command>
+                <cascadeFunction>  cascade_check
+                </cascadeFunction>
+                <argument><![CDATA[
+                    last_cp == cp && // end_of_dn == cp + sizeDn(cp)
+                    cp + sizeDn(cp) == init_cp + sizeDn(init_cp)
+                ]]></argument>
+            </command>
+        </endPosition>
+        
+    </run>
 </controlFile>

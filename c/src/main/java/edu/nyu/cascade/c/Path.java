@@ -1,170 +1,393 @@
 package edu.nyu.cascade.c;
 
+import java.math.BigInteger;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.Stack;
+import java.util.concurrent.ExecutionException;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.ir.IRBasicBlock;
+import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.IRLocation;
 import edu.nyu.cascade.ir.IRStatement;
-import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.ir.IRStatement.StatementType;
+import edu.nyu.cascade.util.CacheException;
+import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Identifiers;
 
-final class Path {
-  private final IRBasicBlock srcBlock;
-  private final List<IRStatement> stmts;
-  private final IRBasicBlock destBlock;
-  private Stack<Expression> guards = null;
+final class Path implements Comparable<Path>{
+  private final static LoadingCache<IRBasicBlock, Path> cache = CacheBuilder
+      .newBuilder().build(new CacheLoader<IRBasicBlock, Path>(){
+        public Path load(IRBasicBlock block) {
+          return createForFreshBlock(block);
+        }
+      });
+	
+  private static String EDGE = "Edge";
+  private static String ASSERT = "Assert";
+  private static String FUNC = "Func";
+  private static String LOOPENTRY = "LoopEntry";
+  private static String LOOPENTER = "LoopEnter";
+  private static String LOOPBACK = "LoopBack";
+  private static String INVPRECOND = "InvPreCond";
+  private static String INVPOSTCOND = "InvPostCond";
+  private static String FUNCENT = "FuncEnt";
+  private static String FUNCRET = "FuncRet";
+  private static String LOOP = "Loop";
+	
+	private static BigInteger nextId = BigInteger.ZERO;
+	
+	private int iterTimes = 0;
+	private final int size;
+	private final BigInteger id;
+  private final ImmutableList<IRStatement> statements;
+  private final String asString;
+  private final Collection<String> labels = Sets.newHashSet();
+  private IRLocation startLoc, endLoc;
   
-  static Path createSingleton(List<? extends IRStatement> stmts) {
-    if(stmts == null || stmts.isEmpty()) return null;
-    return create(stmts, null, null);
+  static Path create(Collection<? extends IRStatement> stmts) {
+  	Preconditions.checkNotNull(stmts);
+  	Path path = new Path(stmts);
+  	if(stmts.size() == 1 
+  			&& stmts.iterator().next().getType().equals(StatementType.ASSERT))
+  		path.labelAssert();
+  	return path;
   }
   
-  IRBasicBlock getSrcBlock() {
-		return srcBlock;
+  static Path create(Iterable<? extends IRStatement> stmts) {
+	  return create(Lists.newArrayList(stmts));
 	}
-
-	List<IRStatement> getStmts() {
-		return stmts;
-	}
-
-	IRBasicBlock getDestBlock() {
-		return destBlock;
-	}
-
-	Stack<Expression> getGuards() {
-		return guards;
-	}
-
-	static Path createSingleton(IRStatement stmt) {
-    List<IRStatement> stmts = Lists.newArrayList(stmt);
-    return create(stmts, null, null);
-  }
   
-  static Path create(List<? extends IRStatement> stmts, IRBasicBlock srcBlock, 
-      IRBasicBlock destBlock) {
-    return new Path(stmts, srcBlock, destBlock);
-  }
+  static Path create(IRStatement stmt) {
+	  return create(Collections.singletonList(stmt));
+	}
+
+	/**
+	 * Return a path for <code>block</code>. For the same
+	 * block, always return the same path.
+	 * @param block
+	 * @return
+	 */
+	static Path createForBlock(IRBasicBlock block) {
+	  try {
+	    Path path = cache.get(block);
+	  	if(!block.getPreLabels().isEmpty())
+	  		path.labels.addAll(block.getPreLabels());
+	  	return path;
+	  } catch (ExecutionException e) {
+	    throw new CacheException(e);
+	  }
+	}
+	
+	static Path createForFreshBlock(IRBasicBlock srcBlock) {
+		List<? extends IRStatement> stmts = srcBlock.getStatements();
+		Path path = Path.create(stmts);
+		path.startLoc = srcBlock.getStartLocation();
+		path.endLoc = srcBlock.getEndLocation();
+		path.labels.addAll(srcBlock.getPreLabels());
+		
+		switch(srcBlock.getType()) {
+		case LOOP: {
+			path.labelLoop();
+			return path;
+		}
+		
+		case FUNC_ENT: {
+	  	if(stmts.size() == 1) {
+	  		IRStatement stmt = stmts.get(0);
+	  		if(stmt.getType().equals(StatementType.FUNC_ENT)) {
+	  			path.labelFuncEnt();
+		  	  return path;
+	  		}
+	  	}
+		}
+		case FUNC_EXIT: {
+	  	if(stmts.size() == 1) {
+	  		IRStatement stmt = stmts.get(0);
+	  		if(stmt.getType().equals(StatementType.FUNC_EXIT)) {
+	  			path.labelFuncRet();
+	  			return path;
+	  		}
+	  	}
+		}
+		default: {
+	  	if(stmts.size() == 1) {
+	  		IRStatement stmt = stmts.get(0);
+	  		if(stmt.hasProperty(Identifiers.STMTFUNCASSIGN) ||
+	  				stmt.hasProperty(Identifiers.STMTFUNC)) {
+	  			path.labelFuncPath();
+	  			return path;
+	  		}
+	  		
+	  		if(stmt.getType().equals(StatementType.ASSERT)) {
+	  			path.labelAssert();
+	  			return path;
+	  		}
+	  	}
+	  	
+	  	return path;
+		}
+		}
+	}
+
+	/**
+	 * Merge <code>path1</code> and <code>path2</code> as path1 : path2
+	 */
+	static Path mergePath(Path path1, Path path2) {
+	  Collection<IRStatement> mergeStmts = Lists.newArrayList(path1.getStmts());
+	  mergeStmts.addAll(path2.getStmts());
+	  return create(mergeStmts);
+	}
+	
+	static void copyProperties(Path from, Path to) {
+	  to.labels.addAll(from.labels);
+	  to.iterTimes = from.iterTimes;
+	}
+
+	private Path(Collection<? extends IRStatement> stmts) {
+		Preconditions.checkNotNull(stmts);
+	  statements = ImmutableList.copyOf(stmts); 
+	  id = nextId;
+	  nextId = nextId.add(BigInteger.ONE);
+	  size = stmts.size();
+	  if(!stmts.isEmpty()) {
+		  startLoc = statements.get(0).getLocation();
+		  endLoc = statements.get(size-1).getLocation();
+	  }
+	  
+	  StringBuilder sb = new StringBuilder();
+		sb.append("Path ").append(id).append(": \n");
+		for(int i = 0; i < statements.size(); i++) {
+			IRStatement stmt = statements.get(i);
+			sb.append(stmt.getLocation()).append(" ").append(stmt);
+			if(i+1 < statements.size()) sb.append("\n");
+		}
+		
+	  asString = sb.toString();
+	}
+
+	@Override
+	public int compareTo(Path b) {
+		return id.compareTo(b.id);
+	}
+
+	@Override
+	public String toString() {
+	  StringBuilder sb = new StringBuilder();
+	  if(!labels.isEmpty()) {
+	  	sb.append("(label: ").append(labels).append(")");
+	  }
+	  
+	  if(startLoc != null && endLoc != null)	{
+	  	sb.append("(").append(startLoc.getLine())
+	  		.append(":").append(endLoc.getLine())
+	  		.append(')');
+	  }
+	  
+	  sb.append(asString);
+	  return sb.toString();
+	}
+
+	@Override
+	public Path clone() {
+	  Path copy = Path.create(statements);
+	  copy.startLoc = startLoc;
+	  copy.endLoc = endLoc;
+	  copy.labels.addAll(labels);
+	  copy.iterTimes = iterTimes;
+	  return copy;
+	}
+
+	Collection<IRStatement> getStmts() {
+		return statements;
+	}
+	
+	IRLocation getStartLoc() {
+		return startLoc;
+	}
+	
+	IRLocation getEndLoc() {
+		return endLoc;
+	}
   
   /**
-   * May generate two paths for same block, if called twice. It
-   * is used to avoid loop in CFG
-   * @param block
+   * Return <code>true</code> if path has no statements
    * @return
    */
-  static Path createWithBlock(IRBasicBlock block) {
-  	return create(block.getStatements(), block, block);
-  }
-  
-  private Path(List<? extends IRStatement> stmts, IRBasicBlock srcBlock, IRBasicBlock destBlock) {
-    this.destBlock = destBlock;
-    this.srcBlock = srcBlock;
-    this.stmts = Lists.newArrayList(stmts);
-  }
-  
-  void addGuard(Expression guard) {
-    Preconditions.checkArgument(guard.isBoolean());
-    if(guards == null)  guards = new Stack<Expression>();
-    guards.push(guard);
-  }
-  
-  void setGuards(Stack<Expression> guards) {
-    Preconditions.checkArgument(this.guards == null);
-    this.guards = guards;
-  }
-  
-  boolean hasGuard() {
-    return guards != null && !guards.isEmpty();
-  }
-  
   boolean isEmpty() {
-    return stmts.isEmpty();
+    return statements.isEmpty();
   }
   
-  boolean hasBlocks() {
-    return srcBlock != null || destBlock != null;
+  boolean hasLabel() {
+  	return !labels.isEmpty();
+  }
+  
+  boolean isLoopPath() {
+  	return labels.contains(LOOP);
+  }
+  
+  boolean isEdgePath() {
+  	return labels.contains(EDGE);
+  }
+  
+  boolean isAssertPath() {
+  	return labels.contains(ASSERT);
+  }
+  
+  boolean isLoopEntry() {
+  	return labels.contains(LOOPENTRY);
+  }
+  
+  boolean isLoopEnter() {
+  	return labels.contains(LOOPENTER);
+  }
+  
+  boolean isLoopBack() {
+  	return labels.contains(LOOPBACK);
+  }
+  
+  boolean isFuncPath() {
+  	return labels.contains(FUNC);
+  }
+  
+  boolean isFuncEnt() {
+  	return labels.contains(FUNCENT);
+  }
+  
+  boolean isFuncRet() {
+  	return labels.contains(FUNCRET);
+  }
+  
+  boolean isInvPreCond() {
+  	return labels.contains(INVPRECOND);
+  }
+  
+  boolean isInvPostCond() {
+  	return labels.contains(INVPOSTCOND);
+  }
+  
+  void labelEdgePath() {
+  	labels.add(EDGE);
+  }
+  
+  void labelLoopEntry(int iterTimes) {
+		labels.add(LOOPENTRY);
+		this.iterTimes = iterTimes;
+	}
+
+  void labelLoopEnter() {
+  	labels.add(LOOPENTER);
+  }
+  
+  void labelLoopBack() {
+  	labels.add(LOOPBACK);
+  }
+  
+  void labelInvPreCond() {
+  	labels.add(INVPRECOND);
+  }
+  
+  void labelInvPostCond() {
+  	labels.add(INVPOSTCOND);
+  }
+  
+  boolean hasLabel(String label) {
+	  return labels.contains(label);
+  }
+  
+  int getSize() {
+  	return size;
   }
   
   IRStatement getStmt(int index) {
-  	Preconditions.checkNotNull(stmts);
-    Preconditions.checkElementIndex(index, stmts.size());
-    return stmts.get(index);
+  	Preconditions.checkElementIndex(index, size);
+  	return statements.get(index);
   }
   
-  IRStatement getLastStmt() {
-    Preconditions.checkNotNull(stmts);
-    Preconditions.checkArgument(!stmts.isEmpty());
-    return stmts.get(stmts.size()-1);
+  int getIterTimes() {
+  	return iterTimes;
   }
   
-  boolean replaceStmt(int index, IRStatement stmt) {
-  	Preconditions.checkNotNull(stmts);
-    Preconditions.checkElementIndex(index, stmts.size());
-    stmts.remove(index);
-    stmts.add(index, stmt);
-    return true;
+  String stmtsToString() {
+	  StringBuilder sb = new StringBuilder();
+	  sb.append(asString);
+	  if(!labels.isEmpty()) {
+	  	sb.append(" (label: ").append(labels).append(")");
+	  }
+		return sb.toString();
+	}
+	
+  /** 
+   * Split <code>path</code> into multiple paths, in order to filter out the path 
+   * satisfies the <code>predicate</code>, and label it via <code>labelFunc</code>
+   */ 
+  List<Path> isolateKeyStatement(IRControlFlowGraph cfg,
+  		Predicate<IRStatement> predicate) {
+  	
+  	/* The labels might be inv-pre and inv-post, which are no longer
+  	 * useful. Ignore them and thus do not tag them to the sub-paths. 
+  	 */
+  	
+  	if(hasLabel()) IOUtils.err().println("Isolated path has label: " + labels);
+  	
+  	List<IRStatement> stmts = Lists.newArrayList(statements);
+  	List<Integer> indices = Lists.newArrayListWithExpectedSize(size);
+  	
+  	for(int i = 0; i < size; i++) {
+  		if(predicate.apply(stmts.get(i))) indices.add(i);
+  	}
+  	
+  	assert(!indices.isEmpty());
+  	
+  	int subPathSize = indices.size() * 2 + 1;
+  	List<Path> subPaths = Lists.newArrayListWithExpectedSize(subPathSize);
+  	
+  	int preIndex = 0;
+  	for(int index : indices) {
+  		if(preIndex < index) { // add pre-path
+  			Path tmpPath = Path.create(stmts.subList(preIndex, index));
+  			subPaths.add(tmpPath);
+  		}
+  		
+  		Path targetPath = Path.create(stmts.get(index));
+  		subPaths.add(targetPath);  // add target path
+  		preIndex = index+1;
+  	}
+  	
+  	if(preIndex < size) {
+  		Path lastPath = Path.create(stmts.subList(preIndex, size));
+  		subPaths.add(lastPath); // add last-path
+  	}
+  	
+  	return subPaths;
   }
-  
-  IRBasicBlock getBlock(int index) {
-  	Preconditions.checkNotNull(stmts);
-    Preconditions.checkElementIndex(index, stmts.size());
-    if(!hasBlocks())    return null;    
-    if(index == 0)      return srcBlock;
-    
-    IRLocation pos = stmts.get(index).getLocation();
-    if(srcBlock != null && pos.isWithin(srcBlock))      return srcBlock;
-    if(destBlock != null && pos.isWithin(destBlock))    return destBlock;
-    return getBlock(index-1);
-  }
-  
-  List<Path> split(int index) {
-  	Preconditions.checkNotNull(stmts);
-    Preconditions.checkElementIndex(index, stmts.size());
-    List<Path> resPaths = Lists.newArrayList();
-    IRBasicBlock splitBlock = null;
-    if(index == 0) {
-      resPaths.add(null);
-      resPaths.add(this);
-    } else if(index == stmts.size()){
-      resPaths.add(this);
-      resPaths.add(null);
-    } else {
-      splitBlock = getBlock(index);
-      Path path_1 = Path.create(stmts.subList(0, index), srcBlock, splitBlock);
-      Path path_2 = Path.create(stmts.subList(index, stmts.size()), splitBlock, destBlock);
-      resPaths.add(path_1);
-      resPaths.add(path_2);
-    }
-    return resPaths;
-  }
-  
-  static Path mergePath(Path path1, Path path2) {
-    IRBasicBlock srcBlockPrime = path1.srcBlock;
-    IRBasicBlock destBlockPrime = path2.destBlock;
-    List<IRStatement> stmtsPrime = Lists.newArrayList(path1.stmts);
-    stmtsPrime.addAll(path2.stmts);
-    Path resPath = Path.create(stmtsPrime, srcBlockPrime, destBlockPrime);
-    return resPath;
-  }
-  
-  @Override
-  public String toString() {
-    String srcId = srcBlock == null ? "null" : srcBlock.getId().toString();
-    String destId = destBlock == null ? "null" : destBlock.getId().toString();
-    StringBuilder sb = new StringBuilder().append('(').append(srcId)
-        .append(": ").append(destId).append(')').append(stmts);
-    return sb.toString();
-  }
-  
-  boolean isCopyOf(Object other) {
-    if(other == null)   return false;
-    if(!(other instanceof Path)) return false;
-    if(other == this) return true;
-    Path otherPath = (Path) other;
-    return srcBlock.equals(otherPath.srcBlock) && 
-      destBlock.equals(otherPath.destBlock) && 
-      stmts.equals(otherPath.stmts);
-  }
+
+	private void labelAssert() {
+		labels.add(ASSERT);
+	}
+
+	private void labelLoop() {
+		labels.add(LOOP);
+	}
+
+	private void labelFuncPath() {
+		labels.add(FUNC);
+	}
+
+	private void labelFuncEnt() {
+		labels.add(FUNCENT);
+	}
+
+	private void labelFuncRet() {
+		labels.add(FUNCRET);
+	}
 }

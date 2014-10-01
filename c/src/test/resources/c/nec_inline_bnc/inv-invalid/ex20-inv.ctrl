@@ -1,0 +1,15 @@
+<controlFile>
+  <sourceFile name="../ex20.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="3" />
+    <wayPoint fileId="1" line="15" >
+      <loop>
+        <invariant><![CDATA[
+          i >= 0 && i <= n+1
+        ]]>
+        </invariant>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="28" />
+  </run>
+</controlFile>

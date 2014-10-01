@@ -1,7 +1,0 @@
-<controlFile>
-  <sourceFile name="allocated.c" id="1" />
-  <run>
-    <startPosition fileId="1" line="10" />
-    <endPosition fileId="1" line="22" />
-  </run>
-</controlFile>

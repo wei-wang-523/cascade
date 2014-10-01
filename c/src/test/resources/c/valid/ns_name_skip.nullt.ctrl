@@ -1,25 +1,25 @@
 <!-- -->
 <controlFile>
-  <sourceFile name="ns_name_skip.c" id="1" /> 
-  <theory qname="edu.nyu.cascade.datatypes.CompressedDomainNames" />
-  <run>
-    <startPosition fileId="1" line="7">
-      <command>
-        <cascadeFunction>  cascade_assume
-        </cascadeFunction>
-        <argument><![CDATA[ 
-          *cp == 0
-        ]]></argument>
-      </command>        
-      </startPosition>
-    <endPosition fileId="1" line="7">
-      <command>
-        <cascadeFunction>  cascade_check
-        </cascadeFunction>
-        <argument><![CDATA[ 
-          is_nullt(cp)
-        ]]></argument>
-      </command>
-    </endPosition>
-  </run>
+    <sourceFile name="ns_name_skip.c" id="1" />
+    <theory qname="edu.nyu.cascade.datatypes.CompressedDomainNames" />
+    <run>
+        <startPosition fileId="1" line="7">
+            <command>
+                <cascadeFunction>  cascade_assume
+                </cascadeFunction>
+                <argument><![CDATA[
+                    *cp == 0
+                ]]></argument>
+            </command>
+        </startPosition>
+        <endPosition fileId="1" line="7">
+            <command>
+                <cascadeFunction>  cascade_check
+                </cascadeFunction>
+                <argument><![CDATA[
+                    is_nullt(cp)
+                ]]></argument>
+            </command>
+        </endPosition>
+    </run>
 </controlFile>

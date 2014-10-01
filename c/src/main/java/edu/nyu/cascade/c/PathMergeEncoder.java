@@ -1,26 +1,34 @@
 package edu.nyu.cascade.c;
 
+import java.util.Collection;
+import java.util.Deque;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
+import com.google.common.base.Stopwatch;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.LinkedHashMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Queues;
+import com.google.common.collect.Table;
 
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRStatement;
-import edu.nyu.cascade.ir.expr.ExpressionClosure;
-import edu.nyu.cascade.ir.expr.ExpressionEncoder;
-import edu.nyu.cascade.ir.expr.PathEncoding;
 import edu.nyu.cascade.ir.expr.PathFactoryException;
-import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.ir.path.PathEncoding;
+import edu.nyu.cascade.ir.state.StateExpression;
+import edu.nyu.cascade.ir.state.StateExpressionClosure;
 import edu.nyu.cascade.prover.SatResult;
 import edu.nyu.cascade.prover.ValidityResult;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.Preferences;
+import edu.nyu.cascade.util.Triple;
 
 /**
  * Encodes a program path as a verification condition and checks the condition
@@ -28,12 +36,15 @@ import edu.nyu.cascade.util.Preferences;
  * (x := 0; assume x > 0; assert false) is invalid but infeasible).
  */
 
-final class PathMergeEncoder implements PathEncoder {
-  private PathEncoding pathEncoding;
-  private boolean runIsValid, runIsFeasible, checkFeasibility;
+class PathMergeEncoder implements PathEncoder<PathGraph> {
+  private final PathEncoding pathEncoding;
+  private final Stopwatch timer;
+  private boolean runIsValid, runIsFeasible, runIsReachable, checkFeasibility;
+  private Multimap<Path, Path> loopExitMap, loopEnterMap, loopInitMap, loopBackMap;
   
-  PathMergeEncoder(PathEncoding pathEncoding) {
+  private PathMergeEncoder(PathEncoding pathEncoding) {
     this.pathEncoding = pathEncoding;
+    this.timer = Stopwatch.createUnstarted();
     checkFeasibility = false;
     reset();
   }
@@ -41,21 +52,22 @@ final class PathMergeEncoder implements PathEncoder {
   static PathMergeEncoder create(PathEncoding encoding) {
     return new PathMergeEncoder(encoding);
   }
-
-  @Override
-  public ExpressionEncoder getExpressionEncoder() {
-    return pathEncoding.getExpressionEncoder();
-  }
   
   @Override
   public void reset() {
     runIsValid = true;
     runIsFeasible = true;
+    runIsReachable = false;
   }
   
   @Override
-  public boolean runIsFeasible() throws PathFactoryException {
+  public boolean runIsFeasible() {
     return runIsFeasible;
+  }
+  
+  @Override
+  public boolean runIsReachable() {
+  	return runIsReachable;
   }
   
   @Override
@@ -68,22 +80,704 @@ final class PathMergeEncoder implements PathEncoder {
     checkFeasibility = b;
   }
   
-  protected void encodeGraph(final Graph graph) throws PathFactoryException, RunProcessorException {
+  @Override
+  public void encode(PreProcessor<?> preprocessor, PathGraph graph) 
+  		throws PathFactoryException {
   	Preconditions.checkArgument(graph.isValid());
-    Map<Path, Expression> pathExprMap = Maps.newHashMap();
-    encodePath(graph, graph.getDestPath(), pathExprMap);
+  	
+		/* label the exit paths and entry paths for every loop entry */
+		List<Multimap<Path, Path>> loopRoadMap = PathGraph.getLoopInfo(graph);
+		loopInitMap = loopRoadMap.get(0);
+		loopEnterMap = loopRoadMap.get(1);
+	  loopBackMap = loopRoadMap.get(2);
+		loopExitMap = loopRoadMap.get(3);
+		
+		/* Initialize the iteration times map */
+		ImmutableMap<Path, Integer> iterTimesMap = PathGraph.initIterTimesMap(graph);
+		
+  	/* Pre-processing for mode Partition and Burstall */
+		if(preprocessor != null) {
+			timer.start();
+			preprocessDFS(preprocessor, graph, iterTimesMap);
+	    IOUtils.stats().pln("Preprocessing took time: " + timer.stop());
+	    CScopeAnalyzer.reset();
+		}
+  	
+		timer.start();
+		statePropagateDFS(graph, iterTimesMap);
+  	IOUtils.stats().pln("Encoding took time " + timer.stop());
+  	
+		CScopeAnalyzer.reset();
   }
   
-  protected void preprocessGraph(final PreProcessor<?> preprocessor, final Graph graph) {
+  @Override
+  public void checkReach(PreProcessor<?> preprocessor, 
+  		PathGraph graph, 
+  		String label) throws PathFactoryException {
   	Preconditions.checkArgument(graph.isValid());
-  	Set<Path> visitedPath = Sets.newHashSet();
-  	preprocessPath(preprocessor, graph, graph.getDestPath(), visitedPath);
-  	preprocessor.buildSnapShot();
-  	pathEncoding.getExpressionEncoder()
-  		.getMemoryModel().setPreProcessor(preprocessor);
+  	
+		/* label the exit paths and entry paths for every loop entry */
+		List<Multimap<Path, Path>> loopRoadMap = PathGraph.getLoopInfo(graph);
+		loopInitMap = loopRoadMap.get(0);
+		loopEnterMap = loopRoadMap.get(1);
+	  loopBackMap = loopRoadMap.get(2);
+		loopExitMap = loopRoadMap.get(3);
+		
+		/* Initialize the iteration times map */
+		ImmutableMap<Path, Integer> iterTimesMap = PathGraph.initIterTimesMap(graph);
+		
+  	/* Pre-processing for mode Partition and Burstall */
+		if(preprocessor != null) {
+			timer.start();
+			preprocessDFS(preprocessor, graph, iterTimesMap);
+	    IOUtils.stats().pln("Preprocessing took time: " + timer.stop());
+	    CScopeAnalyzer.reset();
+		}
+		
+		timer.start();
+		checkReachDFS(graph, label, iterTimesMap);
+  	IOUtils.stats().pln("Encoding took time " + timer.stop());
+		
+		CScopeAnalyzer.reset();
   }
+  
+	@Override
+	public void checkReachIncremental(PreProcessor<?> preprocessor, 
+	    PathGraph graph, 
+	    String label) throws PathFactoryException {
+		Preferences.isSet(Preferences.OPTION_ITERATION_TIMES);
+		Preferences.isSet(Preferences.OPTION_INCREMENTAL);
+				
+		/* label the exit paths and entry paths for every loop entry */
+		List<Multimap<Path, Path>> loopRoadMap = PathGraph.getLoopInfo(graph);
+		loopInitMap = loopRoadMap.get(0);
+		loopEnterMap = loopRoadMap.get(1);
+	  loopBackMap = loopRoadMap.get(2);
+		loopExitMap = loopRoadMap.get(3);
+		
+		CScopeAnalyzer.reset();
+		
+		/* Initialize the iteration times map */
+		ImmutableMap<Path, Integer> iterTimesMap = PathGraph.initIterTimesMap(graph);
+		
+	 	/* Pre-processing for mode Partition and Burstall */
+		if(preprocessor != null) {
+			timer.start();
+			preprocessDFS(preprocessor, graph, iterTimesMap);
+	    IOUtils.stats().pln("Preprocessing took time: " + timer.stop());
+	    CScopeAnalyzer.reset();
+		}
+		
+		timer.start();
+		checkReachDFSLoopMerge(graph, label, iterTimesMap);
+		IOUtils.stats().pln("Encoding took time " + timer.stop());
+		CScopeAnalyzer.reset();
+	}
 
-  /**
+	private void checkReachDFS(PathGraph graph, String label, 
+			ImmutableMap<Path, Integer> iterTimesMap) 
+			throws PathFactoryException {
+		
+		/* Preparation */
+		
+		Table<Path, Path, StateExpression> phiNodeTable = HashBasedTable.create();
+	  Map<Path, Integer> currIterTimesMap = Maps.newHashMap(iterTimesMap);
+	  
+	  Path srcPath = graph.getSrcPath();
+	  
+		Deque<Path> queue = Queues.newArrayDeque();
+		queue.push(srcPath);
+		
+		while(!queue.isEmpty()) {
+			Path path = queue.pop();
+			
+			StateExpression preState;
+			if(path == graph.getSrcPath()) {
+				preState = pathEncoding.emptyState();
+			} else {
+				/* Resolve the phi-node to get the pre-state of join point */
+				Map<Path, StateExpression> phiNode = phiNodeTable.row(path);
+				preState = pathEncoding.noop(phiNode.values());
+				phiNode.clear();
+			}
+			
+			Pair<StateExpression, Boolean> pathStatePair = encodePathWithPreState(path, preState);
+			if(!pathStatePair.snd())	return;
+			StateExpression state = pathStatePair.fst();
+			
+			if(path.isFuncEnt()) { // nested function call
+				Triple<Path, StateExpression, Boolean> resFuncTriple = 
+						checkReachFuncDFS(graph, label, path, state, currIterTimesMap);
+				if(!resFuncTriple.thd()) return;
+				
+				path = resFuncTriple.fst(); // path is the function return path
+				state = resFuncTriple.snd();
+			}
+			
+			if(path.hasLabel(label)) {
+        IOUtils.out().println("Checking path reachability.");
+        SatResult<?> res = pathEncoding.checkPath(state);
+        IOUtils.out().println("Result: " + res);
+        runIsReachable = res.isSatisfiable();
+        if(!runIsReachable) return;
+        
+        if( Preferences.isSet(Preferences.OPTION_COUNTER_EXAMPLE) )
+        	IOUtils.out().println("\nCounter-example:\n" + res.getUnknown_reason());
+			}
+	  	
+	    /* find all the successors of path */
+			Collection<Path> succs = getSuccessorsViaUnroll(graph, path, currIterTimesMap);
+			
+	    for(Path succ : succs) {
+	    	phiNodeTable.put(succ, path, state);
+	    	
+				int preExprSize = phiNodeTable.row(succ).size();
+				int predecessorSize = getCompleteSize(graph, succ, currIterTimesMap);
+				
+				/* Do not encode the path until all its predecessors are encoded 
+				 * note that the graph is acyclic in merged encode 
+				 */
+				if(preExprSize == predecessorSize) queue.push(succ);
+	    }
+		}
+	}
+	
+	/**
+   * Encode the function graph, return the function return path,
+   * the return state, and the last assertion checking result (if
+   * <code>false</code>, no need to proceed further checking)
+   * 
+   * @param graph
+   * @param entPath
+   * @param preEntState
+   * @param currIterTimesMap 
+   * @return
+   * @throws PathFactoryException
+   */
+  private Triple<Path, StateExpression, Boolean> checkReachFuncDFS(
+  		PathGraph graph, 
+  		String label,
+			Path entPath, 
+			StateExpression entState,
+			Map<Path, Integer> currIterTimesMap) 
+					throws PathFactoryException {
+  	
+  	Table<Path, Path, StateExpression> phiNodeTable = HashBasedTable.create();
+
+		Deque<Path> queue = Queues.newArrayDeque();
+		queue.push(entPath);
+		
+		Path retPath = null;
+		
+		while(!queue.isEmpty()) {
+			Path path = queue.pop();
+			
+			if(path.isFuncRet()) {
+				retPath = path; continue;
+			}
+			
+			StateExpression state;
+			
+			if(path == entPath) {
+				state = entState;
+			} else {
+				/* Resolve the phi-node to get the pre-state of join point */
+				Map<Path, StateExpression> phiNode = phiNodeTable.row(path);
+				StateExpression preState = pathEncoding.noop(phiNode.values());
+				phiNode.clear();
+				Pair<StateExpression, Boolean> pathStatePair = encodePathWithPreState(path, preState);
+				state = pathStatePair.fst();
+			}
+			
+			if(path.isFuncEnt() && path != entPath) { // nested function call
+				Triple<Path, StateExpression, Boolean> resFuncTriple = 
+						checkReachFuncDFS(graph, label, path, state, currIterTimesMap);
+				if(!resFuncTriple.thd()) return Triple.of(null, null, false);
+				
+				path = resFuncTriple.fst(); // path is the function return path
+				state = resFuncTriple.snd();
+			}
+			
+			if(path.hasLabel(label)) {
+        IOUtils.out().println("Checking path reachability.");
+        SatResult<?> res = pathEncoding.checkPath(state);
+        IOUtils.out().println("Result: " + res);
+        runIsReachable = res.isSatisfiable();
+        if(!runIsReachable) return Triple.of(null, null, false);
+        
+        if( Preferences.isSet(Preferences.OPTION_COUNTER_EXAMPLE) )
+        	IOUtils.out().println("\nCounter-example:\n" + res.getUnknown_reason());
+			}
+    	
+      /* find all the successors of path */
+			Collection<Path> succs = getSuccessorsViaUnroll(graph, path, currIterTimesMap);
+			
+			for(Path succ : succs) {
+	    	phiNodeTable.put(succ, path, state);
+	    	
+				int preExprSize = phiNodeTable.row(succ).size();
+				int predecessorSize = getCompleteSize(graph, succ, currIterTimesMap);
+				
+				/* Do not encode the path until all its predecessors are encoded 
+				 * note that the graph is acyclic in merged encode 
+				 */
+				if(preExprSize == predecessorSize) queue.push(succ);
+	    }
+		}
+		
+		assert(retPath != null);
+		
+		/* Resolve the phi-node to get the pre-state of join point */
+		Map<Path, StateExpression> phiNode = phiNodeTable.row(retPath);
+		StateExpression preState = pathEncoding.noop(phiNode.values());
+		phiNode.clear();
+		Pair<StateExpression, Boolean> pathStatePair = encodePathWithPreState(retPath, preState);
+		return Triple.of(retPath, pathStatePair.fst(), pathStatePair.snd());
+	}
+  
+  private void checkReachDFSLoopMerge(PathGraph graph, String label, 
+			ImmutableMap<Path, Integer> iterTimesMap) 
+			throws PathFactoryException {
+		
+		/* Preparation */
+		
+		Table<Path, Path, StateExpression> phiNodeTable = HashBasedTable.create();
+		/* The order of the add-in pre-states should be kept */
+		Multimap<Path, StateExpression> loopExitPostPhiNode = LinkedHashMultimap.create();
+	  Map<Path, Integer> currIterTimesMap = Maps.newHashMap(iterTimesMap);
+	  
+	  Path srcPath = graph.getSrcPath();
+	  
+		Deque<Path> queue = Queues.newArrayDeque();
+		queue.push(srcPath);
+		
+		while(!queue.isEmpty()) {
+			Path path = queue.pop();
+			
+			StateExpression state;
+			if(path == graph.getSrcPath()) {
+				StateExpression preState = pathEncoding.emptyState();
+				Pair<StateExpression, Boolean> pathStatePair = encodePathWithPreState(path, preState);
+				state = pathStatePair.fst();
+			} else {
+				if(loopExitMap.containsValue(path)) {
+					Collection<StateExpression> preStates = loopExitPostPhiNode.get(path);
+					Collection<StateExpression> postStates = Lists.newArrayListWithExpectedSize(preStates.size());
+					for(StateExpression preState : preStates) {
+						Pair<StateExpression, Boolean> pathStatePair = encodePathWithPreState(path, preState);
+						StateExpression postState = pathStatePair.fst();
+						postStates.add(postState);
+					}
+					
+					/* Resolve the post-state of phi-node to merge the state at the loop exit point */
+					state = pathEncoding.noop(postStates);
+					
+					/* Clean phi-node for further collection */
+					loopExitPostPhiNode.removeAll(path);
+					Map<Path, StateExpression> phiNode = phiNodeTable.row(path);
+					phiNode.clear(); 
+		
+				} else {
+					/* Resolve the phi-node to get the pre-state of join point */
+					Map<Path, StateExpression> phiNode = phiNodeTable.row(path);
+					StateExpression preState = pathEncoding.noop(phiNode.values());
+					phiNode.clear();
+					
+					Pair<StateExpression, Boolean> pathStatePair = encodePathWithPreState(path, preState);
+					state = pathStatePair.fst();
+				}
+			}
+			
+			if(path.isFuncEnt()) { // nested function call
+				Triple<Path, StateExpression, Boolean> resFuncTriple = 
+						checkReachFuncDFSLoopMerge(graph, label, path, state, currIterTimesMap);
+				if(!resFuncTriple.thd()) return;
+				
+				path = resFuncTriple.fst(); // path is the function return path
+				state = resFuncTriple.snd();
+			}
+			
+			if(path.hasLabel(label)) {
+	      IOUtils.out().println("Checking path reachability.");
+	      SatResult<?> res = pathEncoding.checkPath(state);
+	      IOUtils.out().println("Result: " + res);
+	      runIsReachable = res.isSatisfiable();
+	      if(!runIsReachable) return;
+	      
+	      if( Preferences.isSet(Preferences.OPTION_COUNTER_EXAMPLE) )
+	      	IOUtils.out().println("\nCounter-example:\n" + res.getUnknown_reason());
+			}
+			
+			if(path.isLoopEntry()) {
+				for(Path loopExitPath : loopExitMap.get(path)) {
+					loopExitPostPhiNode.put(loopExitPath, state);
+				}
+			}
+	  	
+	    /* find all the successors of path */
+			Collection<Path> succs = getSuccessorsViaUnroll(graph, path, currIterTimesMap);
+			
+	    for(Path succ : succs) {
+	    	phiNodeTable.put(succ, path, state);
+	    	
+				/* Do not encode the path until all its predecessors are encoded 
+				 * note that the graph is acyclic in merged encode 
+				 */
+				int preExprSize = phiNodeTable.row(succ).size();
+				int predecessorSize = getCompleteSize(graph, succ, currIterTimesMap);
+				if(preExprSize == predecessorSize) queue.push(succ);
+	    }
+		}
+	}
+  
+	private Triple<Path, StateExpression, Boolean> checkReachFuncDFSLoopMerge(
+			PathGraph graph, 
+			String label,
+			Path entPath, 
+			StateExpression entState,
+			Map<Path, Integer> currIterTimesMap) 
+					throws PathFactoryException {
+		
+		Table<Path, Path, StateExpression> phiNodeTable = HashBasedTable.create();
+		/* The order of the add-in pre-states should be kept */
+		Multimap<Path, StateExpression> loopExitPostPhiNode = LinkedHashMultimap.create();
+	
+		Deque<Path> queue = Queues.newArrayDeque();
+		queue.push(entPath);
+		
+		Path retPath = null;
+		
+		while(!queue.isEmpty()) {
+			Path path = queue.pop();
+			
+			if(path.isFuncRet()) {
+				retPath = path; continue;
+			}
+			
+			StateExpression state;
+			
+			if(path == entPath) {
+				state = entState;
+			} else {
+				if(loopExitMap.containsValue(path)) {
+					Collection<StateExpression> preStates = loopExitPostPhiNode.get(path);
+					Collection<StateExpression> postStates = Lists.newArrayListWithExpectedSize(preStates.size());
+					for(StateExpression preState : preStates) {
+						Pair<StateExpression, Boolean> pathStatePair = encodePathWithPreState(path, preState);
+						StateExpression postState = pathStatePair.fst();
+						postStates.add(postState);
+					}
+					/* Resolve the post-state of phi-node to merge the state at the loop exit point */
+					state = pathEncoding.noop(postStates);
+					
+					/* Clean phi-node for further collection */
+					loopExitPostPhiNode.removeAll(path);
+					Map<Path, StateExpression> phiNode = phiNodeTable.row(path);
+					phiNode.clear(); 
+		
+				} else {
+					/* Resolve the phi-node to get the pre-state of join point */
+					Map<Path, StateExpression> phiNode = phiNodeTable.row(path);
+					StateExpression preState = pathEncoding.noop(phiNode.values());
+					phiNode.clear();
+					Pair<StateExpression, Boolean> pathStatePair = encodePathWithPreState(path, preState);
+					state = pathStatePair.fst();
+				}
+			}
+			
+			if(path.isFuncEnt() && path != entPath) { // nested function call
+				Triple<Path, StateExpression, Boolean> resFuncTriple = 
+						checkReachFuncDFSLoopMerge(graph, label, path, state, currIterTimesMap);
+				if(!resFuncTriple.thd()) return Triple.of(null, null, false);
+				
+				path = resFuncTriple.fst(); // path is the function return path
+				state = resFuncTriple.snd();
+			}
+			
+			if(path.hasLabel(label)) {
+	      IOUtils.out().println("Checking path reachability.");
+	      SatResult<?> res = pathEncoding.checkPath(state);
+	      IOUtils.out().println("Result: " + res);
+	      runIsReachable = res.isSatisfiable();
+	      if(!runIsReachable) return Triple.of(null, null, false);
+	      
+	      if( Preferences.isSet(Preferences.OPTION_COUNTER_EXAMPLE) )
+	      	IOUtils.out().println("\nCounter-example:\n" + res.getUnknown_reason());
+			}
+			
+			if(path.isLoopEntry()) {
+				for(Path loopExitPath : loopExitMap.get(path)) {
+					loopExitPostPhiNode.put(loopExitPath, state);
+				}
+			}
+			
+	    /* find all the successors of path */
+			Collection<Path> succs = getSuccessorsViaUnroll(graph, path, currIterTimesMap);
+			
+			for(Path succ : succs) {
+				phiNodeTable.put(succ, path, state);
+	    	
+				/* Do not encode the path until all its predecessors are encoded 
+				 * note that the graph is acyclic in merged encode 
+				 */
+				int preExprSize = phiNodeTable.row(succ).size();
+				int predecessorSize = getCompleteSize(graph, succ, currIterTimesMap);
+				if(preExprSize == predecessorSize) queue.push(succ);
+	    }
+		}
+		
+		assert(retPath != null);
+		
+		/* Resolve the phi-node to get the pre-state of join point */
+		Map<Path, StateExpression> phiNode = phiNodeTable.row(retPath);
+		StateExpression preState = pathEncoding.noop(phiNode.values());
+		phiNode.clear();
+		Pair<StateExpression, Boolean> pathStatePair = encodePathWithPreState(retPath, preState);
+		return Triple.of(retPath, pathStatePair.fst(), pathStatePair.snd());
+	}
+
+	private void statePropagateDFS(PathGraph graph,
+  		ImmutableMap<Path, Integer> iterTimesMap) 
+  				throws PathFactoryException {
+		
+		/* Preparation */
+		
+		Table<Path, Path, StateExpression> phiNodeTable = HashBasedTable.create();
+	  Map<Path, Integer> currIterTimesMap = Maps.newHashMap(iterTimesMap);
+	  
+	  Path srcPath = graph.getSrcPath();
+	  
+		Deque<Path> queue = Queues.newArrayDeque();
+		queue.push(srcPath);
+		
+		while(!queue.isEmpty()) {
+			Path path = queue.pop();
+			
+			StateExpression preState;
+			if(path == graph.getSrcPath()) {
+				preState = pathEncoding.emptyState();
+			} else {
+				/* Resolve the phi-node to get the pre-state of join point */
+				Map<Path, StateExpression> phiNode = phiNodeTable.row(path);
+				preState = pathEncoding.noop(phiNode.values());
+				phiNode.clear();
+			}
+			
+			Pair<StateExpression, Boolean> pathStatePair = encodePathWithPreState(path, preState);
+			if(!pathStatePair.snd())	return;
+			StateExpression state = pathStatePair.fst();
+			
+			if(path.isFuncEnt()) { // nested function call
+				Triple<Path, StateExpression, Boolean> resFuncTriple = 
+						statePropagateFuncDFS(graph, path, state, currIterTimesMap);
+				if(!resFuncTriple.thd()) return;
+				
+				path = resFuncTriple.fst(); // path is the function return path
+				state = resFuncTriple.snd();
+			}
+	  	
+	    /* find all the successors of path */
+			Collection<Path> succs = getSuccessorsViaUnroll(graph, path, currIterTimesMap);
+			
+	    for(Path succ : succs) {
+	    	phiNodeTable.put(succ, path, state);
+	    	
+				int preExprSize = phiNodeTable.row(succ).size();
+				int predecessorSize = getCompleteSize(graph, succ, currIterTimesMap);
+				
+				/* Do not encode the path until all its predecessors are encoded 
+				 * note that the graph is acyclic in merged encode 
+				 */
+				if(preExprSize == predecessorSize) queue.push(succ);
+	    }
+		}
+	}
+
+	/**
+   * Encode the function graph, return the function return path,
+   * the return state, and the last assertion checking result (if
+   * <code>false</code>, no need to proceed further checking)
+   * 
+   * @param graph
+   * @param entPath
+   * @param preEntState
+   * @param currIterTimesMap 
+   * @return
+   * @throws PathFactoryException
+   */
+  private Triple<Path, StateExpression, Boolean> statePropagateFuncDFS(
+  		PathGraph graph, 
+			Path entPath, 
+			StateExpression entState,
+			Map<Path, Integer> currIterTimesMap) throws PathFactoryException {
+  	
+  	Table<Path, Path, StateExpression> phiNodeTable = HashBasedTable.create();
+
+		Deque<Path> queue = Queues.newArrayDeque();
+		queue.push(entPath);
+		
+		Path retPath = null;
+		
+		while(!queue.isEmpty()) {
+			Path path = queue.pop();
+			
+			if(path.isFuncRet()) {
+				retPath = path; continue;
+			}
+			
+			StateExpression state;
+			
+			if(path == entPath) {
+				state = entState;
+			} else {
+				/* Resolve the phi-node to get the pre-state of join point */
+				Map<Path, StateExpression> phiNode = phiNodeTable.row(path);
+				StateExpression preState = pathEncoding.noop(phiNode.values());
+				phiNode.clear();
+				Pair<StateExpression, Boolean> pathStatePair = encodePathWithPreState(path, preState);
+				if(!pathStatePair.snd())	return Triple.of(null, null, false);
+				state = pathStatePair.fst();
+			}
+			
+			if(path.isFuncEnt() && path != entPath) { // nested function call
+				Triple<Path, StateExpression, Boolean> resFuncTriple = 
+						statePropagateFuncDFS(graph, path, state, currIterTimesMap);
+				if(!resFuncTriple.thd()) return Triple.of(null, null, false);
+				
+				path = resFuncTriple.fst(); // path is the function return path
+				state = resFuncTriple.snd();
+			}
+    	
+      /* find all the successors of path */
+			Collection<Path> succs = getSuccessorsViaUnroll(graph, path, currIterTimesMap);
+			
+			for(Path succ : succs) {
+	    	phiNodeTable.put(succ, path, state);
+	    	
+				int preExprSize = phiNodeTable.row(succ).size();
+				int predecessorSize = getCompleteSize(graph, succ, currIterTimesMap);
+				
+				/* Do not encode the path until all its predecessors are encoded 
+				 * note that the graph is acyclic in merged encode 
+				 */
+				if(preExprSize == predecessorSize) queue.push(succ);
+	    }
+		}
+		
+		assert(retPath != null);
+		
+		/* Resolve the phi-node to get the pre-state of join point */
+		Map<Path, StateExpression> phiNode = phiNodeTable.row(retPath);
+		StateExpression preState = pathEncoding.noop(phiNode.values());
+		phiNode.clear();
+		Pair<StateExpression, Boolean> pathStatePair = encodePathWithPreState(retPath, preState);
+		return Triple.of(retPath, pathStatePair.fst(), pathStatePair.snd());
+	}
+
+  private void preprocessDFS(PreProcessor<?> preprocessor, PathGraph graph, 
+  		ImmutableMap<Path, Integer> iterTimesMap) {
+  	Preconditions.checkArgument(graph.isValid());
+  	
+  	Multimap<Path, Path> phiNodeMap = HashMultimap.create();
+  	Map<Path, Integer> currIterTimesMap = Maps.newHashMap(iterTimesMap);
+  	
+  	IOUtils.debug().pln("Preprocessing ...");
+  	
+  	Deque<Path> queue = Queues.newArrayDeque();
+  	queue.push(graph.getSrcPath());
+			
+  	while(!queue.isEmpty()) {
+  		Path path = queue.pop();
+				
+  		if(path.isFuncEnt()) {
+  			path = preprocessFuncDFS(preprocessor, graph, path, currIterTimesMap);
+  		}
+				
+  		IOUtils.debug().pln("Preprocess path " + path);
+  		
+  		/* pre-process the current path */
+  		for(IRStatement stmt : path.getStmts()) preprocessor.analysis(stmt);
+		    
+  		/* clean pre-process phi-node for further collection */
+  		phiNodeMap.removeAll(path);
+  		
+  		/* find all the successors of path */
+  		Collection<Path> succs = getSuccessorsViaUnroll(graph, path, currIterTimesMap);
+  			
+  		for(Path succ : succs) {
+  			phiNodeMap.put(succ, path);
+  			
+  			int completeSize = getCompleteSize(graph, succ, currIterTimesMap);
+  			Collection<Path> succPhiNode = phiNodeMap.get(succ);	
+  			
+  			/* Process the path until all its predecessors are pre-processed */
+  			if(succPhiNode.size() == completeSize) queue.push(succ);
+  		}
+  	}
+	}
+	
+	/**
+   * Encode the function graph, return the function return path,
+   * the return state, and the last assertion checking result (if
+   * <code>false</code>, no need to proceed further checking)
+   * 
+   * @param graph
+   * @param entPath
+   * @param preEntState
+   * @param currIterTimesMap 
+   * @return
+   * @throws PathFactoryException
+   */
+  private Path preprocessFuncDFS(PreProcessor<?> preprocessor,
+  		PathGraph graph, 
+			Path entPath,
+			Map<Path, Integer> currIterTimesMap) {
+  	
+  	Multimap<Path, Path> phiNodeMap = HashMultimap.create();
+
+		Deque<Path> queue = Queues.newArrayDeque();
+		queue.push(entPath);
+		
+		Path retPath = null;
+		
+		while(!queue.isEmpty()) {
+			Path path = queue.pop();
+			
+			if(path.isFuncRet()) {
+				retPath = path; continue;
+			}
+			
+			if(path.isFuncEnt() && path != entPath) { // nested function call
+				path = preprocessFuncDFS(preprocessor, graph, path, currIterTimesMap);
+			}
+			
+			IOUtils.debug().pln("Preprocessing " + path.stmtsToString());
+			
+			/* pre-process the current path */
+	    for(IRStatement stmt : path.getStmts())	preprocessor.analysis(stmt);
+	    
+			/* clean preprocess phi-node for further collection */
+	    phiNodeMap.removeAll(path);
+    	
+      /* find all the successors of path */
+			Collection<Path> succs = getSuccessorsViaUnroll(graph, path, currIterTimesMap);
+			
+			for(Path succ : succs) {
+      	phiNodeMap.put(succ, path);
+      	
+      	int completeSize = getCompleteSize(graph, succ, currIterTimesMap);
+				Collection<Path> succPhiNode = phiNodeMap.get(succ);	
+				
+				/* Process the path until all its predecessors are pre-processed */
+				if(succPhiNode.size() == completeSize) queue.push(succ);
+	    }
+		}
+		
+		assert(retPath != null);
+		return retPath;
+	}
+
+	/**
    * Check the current statement's pre-condition 
    * 
    * @param stmt
@@ -91,10 +785,10 @@ final class PathMergeEncoder implements PathEncoder {
    * @return false if the statement results in an invalid verification condition
    *         or an infeasible path; true otherwise.
    */
-  private boolean checkPreCondition(Expression preCond, IRStatement stmt) 
-      throws PathFactoryException {    
-
-    ExpressionClosure pre = stmt.getPreCondition(pathEncoding.getExpressionEncoder());
+  private boolean checkPreCondition(StateExpression preCond, IRStatement stmt) 
+      throws PathFactoryException {
+  	
+    StateExpressionClosure pre = stmt.getPreCondition(pathEncoding.getExpressionEncoder());
     if (pre != null) {
       /* If the statement has a precondition, we have to check it before continuing with 
        * the encoding.
@@ -111,7 +805,7 @@ final class PathMergeEncoder implements PathEncoder {
             if(result.getCounterExample().isEmpty())
               IOUtils.out().println("\nCounter-example:\n" + result.getUnknown_reason());
             else
-              IOUtils.out().println("\nCounter-example:\n" + result.getCounterExample());
+              IOUtils.out().println("\nCounter-example:\n" + result.getCounterExampleToString());
         } else { // result.isUnknown()
           IOUtils.out().println("Unkown: " + result.getUnknown_reason());
         }
@@ -128,30 +822,18 @@ final class PathMergeEncoder implements PathEncoder {
   }
  
   /** Encode statement stmt, with single pre-condition */
-  private Expression encodeStatement(IRStatement stmt, final Expression preCond) 
+  private StateExpression encodeStatement(IRStatement stmt, StateExpression preCondition) 
       throws PathFactoryException {
     /* Precondition is OK, encode the postcondition. */
     IOUtils.out().println(stmt.getLocation() + " " + stmt); 
-    Expression  postCond = stmt.getPostCondition(pathEncoding, preCond);
-    if(IOUtils.debugEnabled())
+    StateExpression  postCond = stmt.getPostCondition(pathEncoding, preCondition);
+    if(IOUtils.debugEnabled()) {
       IOUtils.debug().pln("Post-condition: " + postCond).flush();
+      if(postCond.hasConstraint()) {
+      	 IOUtils.debug().pln("Constraint: " + postCond.getConstraint()).flush();
+      }
+    }
     return postCond;
-  }
-  
-  /**
-   * Encode current path with a collection of pre-conditions;
-   * 
-	 * @return a pair of pre-condition and whether the checking 
-	 * of prover is succeeded or not.
-   */
-  
-  private Pair<Expression, Boolean> encodePathWithPreConds(Path currPath, final Iterable<Expression> preConds,
-      final Iterable<Expression> preGuards) throws PathFactoryException {
-    Preconditions.checkArgument(!Iterables.isEmpty(preConds));
-    Preconditions.checkArgument(Iterables.size(preGuards) == Iterables.size(preConds));
-    
-    Expression preCond = pathEncoding.noop(preConds, preGuards); 
-    return encodePathWithPreCond(currPath, preCond);
   }
   
   /**
@@ -159,106 +841,119 @@ final class PathMergeEncoder implements PathEncoder {
    * 
    * @return a pair of pre-condition and whether the checking 
    * of prover is succeeded or not.
+   * 
+   * @throws PathFactoryException 
    */
-  private Pair<Expression, Boolean> encodePathWithPreCond(Path currPath, Expression preCond) 
+  private Pair<StateExpression, Boolean> encodeEdgePath(Path currPath, StateExpression preState) 
   		throws PathFactoryException {
-  	if(currPath.isEmpty()) return Pair.of(preCond, true);
+		Preconditions.checkArgument(currPath.getSize() == 1);
+		IRStatement stmt = currPath.getStmt(0);
+				
+		StateExpression currState = encodeStatement(stmt, preState);
+		currState.addGuard(currState.getConstraint());
   	
-  	Expression preCondition = preCond;
+  	boolean succeed = checkPreCondition(currState, stmt);
+    if(!succeed) {
+      if (runIsValid() && !runIsFeasible())
+        IOUtils.err().println("WARNING: path assumptions are unsatisfiable");
+      return Pair.of(currState, succeed);
+    }
+    return Pair.of(currState, succeed);
+  }
+  
+  private Pair<StateExpression, Boolean> encodeNonEdgePath(Path currPath, StateExpression preState) 
+  		throws PathFactoryException {
+  	StateExpression currState = preState;
   	boolean succeed = false;
-    for(IRStatement stmt : currPath.getStmts()) {
-    	preCondition = encodeStatement(stmt, preCondition);
+    for(IRStatement stmt : currPath.getStmts()) {  		
+    	currState = encodeStatement(stmt, currState);
       
-      /* This stmt is conditional control flow graph guard */
-      if(stmt.getPreLabels().contains(COND_ASSUME_LABEL))
-        currPath.addGuard(preCondition.asTuple().getChild(1));
-      
-      succeed = checkPreCondition(preCondition, stmt);
+      succeed = checkPreCondition(currState, stmt);
       if(!succeed) {
         if (runIsValid() && !runIsFeasible())
           IOUtils.err().println("WARNING: path assumptions are unsatisfiable");
-        return Pair.of(null, succeed);
+        return Pair.of(currState, succeed);
       }
     }
-    
-    return Pair.of(preCondition, succeed);
+    return Pair.of(currState, succeed);
   }
   
-  /** 
-   * Encode currPath within graph, return preCondition.
+  private Pair<StateExpression, Boolean> encodePathWithPreState(Path currPath, StateExpression preState) 
+  		throws PathFactoryException {
+  	if(currPath.isEmpty()) return Pair.of(preState, true);
+  	
+  	if(currPath.isEdgePath()) // edge path
+  		return encodeEdgePath(currPath, preState);
+  	else 
+  		return encodeNonEdgePath(currPath, preState);
+  }
+  
+  /**
+   * Get the full size of predecessors of path <code>succ</code>. 
+   * If it is not a loop entry, just return its predecessors' size.
+   * If so, before the loop iteration, return the number of init
+   * path (the path from loop init block to loop block); during the
+   * loop iteration, return the number of back paths (the path from
+   * the end of loop body to the loop entry).
    * 
-   * @return a pair of pre-condition and whether the checking 
-   * of prover is succeeded or not.
+   * @param graph
+   * @param succ
+   * @param iterTimesMap
+   * @return
    */
-  private Pair<Expression, Boolean> encodePath(final Graph graph, Path currPath, Map<Path, Expression> pathExprMap) 
-      throws PathFactoryException {
-    if(pathExprMap.containsKey(currPath))   
-    	return Pair.of(pathExprMap.get(currPath), true);
-    
-    Map<Path, Set<Path>> map = graph.getPredecessorMap();  
-    if(map == null || !map.containsKey(currPath)) {
-      Expression preCond = pathEncoding.emptyPath();
-      Pair<Expression, Boolean> resPair = encodePathWithPreCond(currPath, preCond);
-      if(resPair.snd()) pathExprMap.put(currPath, resPair.fst());
-      return resPair;
-    } else {
-      Set<Path> prePaths = map.get(currPath);
-      /* Collect the preconditions of pre-paths */
-      ImmutableList.Builder<Expression> preCondsBuilder = new ImmutableList.Builder<Expression>();
-      ImmutableList.Builder<Expression> preGuardsBuilder = new ImmutableList.Builder<Expression>();
-      for(Path prePath : prePaths) {
-        Pair<Expression, Boolean> resPair = encodePath(graph, prePath, pathExprMap);
-        
-        /* If the check is failed, stop encoding, just return */
-        if(!resPair.snd())	return resPair;
-        
-        preCondsBuilder.add(resPair.fst());
-        if(prePath.hasGuard()) {
-          Expression guard = pathEncoding.getExpressionManager().and(prePath.getGuards());
-          preGuardsBuilder.add(guard);
-        }
-      }
-      
-      ImmutableList<Expression> preGuards = preGuardsBuilder.build();
-      ImmutableList<Expression> preConds = preCondsBuilder.build();
-      
-      Pair<Expression, Boolean> resPair = null;
-      if(!preGuards.isEmpty()) {
-        currPath.addGuard(pathEncoding.getExpressionManager().or(preGuards));
-        resPair = encodePathWithPreConds(currPath, preConds, preGuards);
-      } else {
-      	if(preConds.size() != 1)
-      		throw new PathFactoryException("Unmatched number of pre-conditions and pre-guards");
-      	Expression preCond = preConds.get(0);
-      	resPair = encodePathWithPreCond(currPath, preCond);
-      }
-      
-      if(resPair.snd())	pathExprMap.put(currPath, resPair.fst());
-      return resPair;
-    }
+  private int getCompleteSize(PathGraph graph, Path succ, 
+  		Map<Path, Integer> iterTimesMap) {
+		if(!iterTimesMap.containsKey(succ)) // non-loop entry
+			return graph.getPredecessorMap().get(succ).size();
+		
+		int currIterTimes = iterTimesMap.get(succ);
+		int iterTimes = succ.getIterTimes();
+				
+		if(currIterTimes < iterTimes) { // unrolling happened
+			Collection<Path> backPaths = loopBackMap.get(succ);
+	  	return backPaths.size();
+		}
+		
+		/* unrolling not happened yet */
+    Collection<Path> entryPaths = loopInitMap.get(succ);
+		return entryPaths.size();
   }
   
-  private void preprocessPath(PreProcessor<?> preprocessor, final Graph graph, final Path path,  Set<Path> visitedPath) {
-  	if(visitedPath.contains(path))	return;
+  /**
+   * Get the successors of <code>path</code> in the <code>graph</code>
+   * If <code>path</code> is not loop entry, just return its successors.
+   * If <code>path</code> is a loop entry, during loop iteration, just
+   * return its out path (the path out-going into the loop body). Once
+   * the iteration is finished, return its exit path (that path exit the
+   * loop). The <code>currIterTimesMap</code> got updated after one 
+   * iteration.
+   * 
+   * @param graph
+   * @param path
+   * @param currIterTimesMap
+   * @return
+   */
+  private Collection<Path> getSuccessorsViaUnroll(
+  		PathGraph graph, 
+  		Path path, 
+  		Map<Path, Integer> currIterTimesMap) {
   	
-    if(graph.hasNullMap())	return;
-    
-    Map<Path, Set<Path>> map = graph.getPredecessorMap();
-  	if(!map.isEmpty()) {
-  		Set<Path> prePaths = map.get(path); 	
-  		if(prePaths != null) {
-  			for(Path prePath : prePaths) {
-  				preprocessPath(preprocessor, graph, prePath, visitedPath);
-  			}
-  		}
-  	}
+  	if(!currIterTimesMap.containsKey(path)) { // non-loop entry
+			return graph.getSuccessorMap().get(path);			
+		}
   	
-  	if(path.getStmts() != null) {
-    	for(IRStatement stmt : path.getStmts()) {
-    		preprocessor.analysis(stmt);
-    	}
-  	}
-  	
-  	visitedPath.add(path);
+  	int currIterTimes = currIterTimesMap.get(path);
+			
+  	/* Unrolling is not finished yet, add out paths only */
+  	if(currIterTimes > 0) {
+  		currIterTimesMap.put(path, currIterTimes-1);	
+  		return loopEnterMap.get(path);
+  	} 
+			
+  	/* Unrolling is finished, add exit paths only, reset iteration times */
+  	int iterTimes = path.getIterTimes();
+  	currIterTimesMap.put(path, iterTimes);
+				
+  	return loopExitMap.get(path);
   }
 }

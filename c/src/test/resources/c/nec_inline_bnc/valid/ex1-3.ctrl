@@ -1,0 +1,10 @@
+<controlFile>
+  <sourceFile name="../ex1.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="11" />
+    <wayPoint fileId="1" line="16" >
+      <loop iterTimes="3" />
+    </wayPoint>
+    <endPosition fileId="1" line="20" />
+  </run>
+</controlFile>

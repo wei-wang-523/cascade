@@ -1,7 +1,0 @@
-<controlFile>
-  <sourceFile name="absext.c" id="1" />
-  <run>
-    <startPosition fileId="1" line="8" />
-    <endPosition fileId="1" line="12" />
-  </run>
-</controlFile>

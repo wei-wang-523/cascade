@@ -1,0 +1,12 @@
+<controlFile>
+  <sourceFile name="for.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="1" />
+    <wayPoint fileId="1" line="4" >
+      <loop iterTimes="11" >
+        <wayPoint fileId="1" line="5" />
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="8" />
+  </run>
+</controlFile>

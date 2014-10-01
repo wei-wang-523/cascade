@@ -1,7 +1,0 @@
-<controlFile>
-  <sourceFile name="free.c" id="1" />
-  <run>
-    <startPosition fileId="1" line="3" />
-    <endPosition fileId="1" line="12" />
-  </run>
-</controlFile>

@@ -1,0 +1,25 @@
+<controlFile>
+  <sourceFile name="../ex18.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="2" />
+    <wayPoint fileId="1" line="15" >
+      <loop>
+        <invariant><![CDATA[
+          i >=0 && i<=k &&
+          implies(i>=0 && i<k, valid(&a[i]))
+        ]]>
+        </invariant>
+      </loop>
+    </wayPoint>
+    <wayPoint fileId="1" line="23" >
+      <loop>
+        <invariant><![CDATA[
+          j >=0 && j<=i && valid(&a[j]) && valid(&a[i]) &&
+          forall(idx, implies(0 <= idx && idx < j, a[idx] == a[i]))
+        ]]>
+        </invariant>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="28" />
+  </run>
+</controlFile>

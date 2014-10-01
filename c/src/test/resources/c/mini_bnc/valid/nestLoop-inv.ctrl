@@ -1,0 +1,23 @@
+<controlFile>
+  <sourceFile name="nestLoop.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="3" />
+    <wayPoint fileId="1" line="5" >
+      <loop>
+        <invariant><![CDATA[
+          y >= 0 && y <= 100
+        ]]>
+        </invariant>
+        <wayPoint fileId="1" line="6" >
+          <loop>
+            <invariant><![CDATA[
+              i >= 0 && i <= y
+            ]]>
+            </invariant>
+          </loop>
+        </wayPoint>
+      </loop>
+    </wayPoint>
+    <endPosition fileId="1" line="10" />
+  </run>
+</controlFile>

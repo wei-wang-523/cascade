@@ -3,7 +3,7 @@
   <run>
     <startPosition fileId="1" line="8" />
     <wayPoint fileId="1" line="10" >
-      <function funcName="swap" funcId="1" >
+      <function funcName="swap" >
         <wayPoint fileId="1" line="1" >
 	  <command>
             <cascadeFunction>  cascade_assume </cascadeFunction>

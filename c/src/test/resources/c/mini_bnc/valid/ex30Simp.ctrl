@@ -1,0 +1,42 @@
+<controlFile>
+  <sourceFile name="ex30Simp.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="18" />
+    <wayPoint fileId="1" line="24" >
+      <command>
+        <cascadeFunction>cascade_assume</cascadeFunction>
+        <argument><![CDATA[
+          n < 100 && n > 0
+        ]]>
+        </argument>
+      </command>
+    </wayPoint>
+    <wayPoint fileId="1" line="27" >
+      <function funcName="foo" >
+        <wayPoint fileId="1" line="14" >
+          <command>
+            <cascadeFunction>cascade_check</cascadeFunction>
+            <argument><![CDATA[
+              valid(y)
+            ]]>
+            </argument>
+          </command>
+        </wayPoint>
+      </function>
+    </wayPoint>
+    <wayPoint fileId="1" line="31" >
+      <function funcName="bar" >
+        <wayPoint fileId="1" line="8" >
+          <command>
+            <cascadeFunction>cascade_check</cascadeFunction>
+            <argument><![CDATA[
+              valid(w)
+            ]]>
+            </argument>
+          </command>
+        </wayPoint>
+      </function>
+    </wayPoint>
+    <endPosition fileId="1" line="32" />
+  </run>
+</controlFile>

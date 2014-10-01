@@ -1,17 +1,17 @@
 <!-- This is wrong, because swap doesn't work in x and y are aliased -->
 <controlFile>
-  <sourceFile name="swap-inline.c" id="1" /> 
-  <run>
-    <startPosition fileId="1" line="1" />
-    <endPosition fileId="1" line="7">
-      <command>
-        <cascadeFunction>  cascade_check
-        </cascadeFunction>
-        <argument><![CDATA[
-          old_x==*y && old_y==*x
-          ]]>
-        </argument>
-      </command>
-    </endPosition>
-  </run>
+    <sourceFile name="swap-inline.c" id="1" />
+    <run>
+        <startPosition fileId="1" line="1" />
+        <endPosition fileId="1" line="7">
+            <command>
+                <cascadeFunction>  cascade_check
+                </cascadeFunction>
+                <argument><![CDATA[
+                    old_x==*y && old_y==*x
+                ]]>
+                </argument>
+            </command>
+        </endPosition>
+    </run>
 </controlFile>

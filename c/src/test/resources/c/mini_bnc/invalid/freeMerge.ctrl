@@ -1,0 +1,7 @@
+<controlFile>
+  <sourceFile name="freeMerge.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="3" />
+    <endPosition fileId="1" line="9" />
+  </run>
+</controlFile>

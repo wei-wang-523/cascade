@@ -1,0 +1,14 @@
+<controlFile>
+  <sourceFile name="../ex39.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="5" />
+    <wayPoint fileId="1" line="11" >
+      <loop iterTimes="1" />
+    </wayPoint>
+    <wayPoint fileId="1" line="15" >
+      <loop iterTimes="1" />
+    </wayPoint>
+    <wayPoint fileId="1" line="21" />
+    <endPosition fileId="1" line="24" />
+  </run>
+</controlFile>
