@@ -11,7 +11,7 @@ import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 
-public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
+final class ArrayTypeImpl extends TypeImpl implements ArrayType {
   private final Type indexType;
   private final Type elementType;
 
@@ -58,11 +58,16 @@ public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
   }
 
   @Override
-  public ArrayBoundVariableImpl boundVariable(String name, boolean fresh) {
-    return ArrayBoundVariableImpl.create(getExpressionManager(),name,this,fresh);
+  public ArrayBoundVariableImpl boundVar(String name, boolean fresh) {
+    return new ArrayBoundVariableImpl(getExpressionManager(), name, this, fresh);
   }
 
   @Override
+	public ArrayExpression boundExpression(String name, int index, boolean fresh) {
+  	return boundVar(name, fresh);
+	}
+
+	@Override
   public Type getElementType() {
     return elementType;
   }
@@ -120,7 +125,7 @@ public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
   }
 
 	@Override
-	ArrayExpressionImpl create(Expr res, Expression e, Kind kind,
+	ArrayExpressionImpl createExpression(Expr res, Expression e, Kind kind,
 			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isArray());
 		return ArrayExpressionImpl.create(getExpressionManager(), kind, 

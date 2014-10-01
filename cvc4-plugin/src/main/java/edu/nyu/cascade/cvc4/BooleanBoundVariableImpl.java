@@ -3,13 +3,11 @@ package edu.nyu.cascade.cvc4;
 import com.google.common.collect.ImmutableList;
 
 import edu.nyu.cascade.prover.BooleanExpression;
-import edu.nyu.cascade.prover.BooleanVariableExpression;
 import edu.nyu.cascade.prover.Expression;
 
-public final class BooleanBoundVariableImpl extends BoundVariableExpressionImpl implements
-	BooleanVariableExpression {
+public final class BooleanBoundVariableImpl extends VariableExpressionImpl implements BooleanExpression {
 	
-  protected BooleanBoundVariableImpl(ExpressionManagerImpl em, String name, boolean fresh) {
+  BooleanBoundVariableImpl(ExpressionManagerImpl em, String name, boolean fresh) {
     super(em, name, em.booleanType(), fresh);
   }
 

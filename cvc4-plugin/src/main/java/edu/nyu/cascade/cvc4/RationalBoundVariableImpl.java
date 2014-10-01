@@ -3,38 +3,16 @@ package edu.nyu.cascade.cvc4;
 import com.google.common.base.Preconditions;
 
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.RationalVariableExpression;
-import edu.nyu.cascade.prover.VariableExpression;
+import edu.nyu.cascade.prover.RationalExpression;
 import edu.nyu.cascade.prover.type.Type;
 
-public class RationalBoundVariableImpl extends BoundVariableExpressionImpl
-    implements RationalVariableExpression {
-  public
-  static RationalBoundVariableImpl valueOf(ExpressionManagerImpl em, Expression e) {
-    if (e instanceof RationalBoundVariableImpl) {
-      return (RationalBoundVariableImpl) e;
-    } else if (e instanceof BoundVariableExpressionImpl) {
-      BoundVariableExpressionImpl e2 = (BoundVariableExpressionImpl)e;
-      return new RationalBoundVariableImpl(em,e2);
-    } else {
-      throw new IllegalArgumentException("Expression type: " + e.getClass());
-    }
-  }
+final class RationalBoundVariableImpl extends BoundVariableExpressionImpl
+    implements RationalExpression {
 
-  public static RationalBoundVariableImpl create(ExpressionManagerImpl em,
+  static RationalBoundVariableImpl create(ExpressionManagerImpl em,
       String name, Type type, boolean fresh) {
     Preconditions.checkArgument(type.isRational());
     return new RationalBoundVariableImpl(em, name, type, fresh);
-  }
-
-  /** Copy constructor. */
-  private RationalBoundVariableImpl(ExpressionManagerImpl em, VariableExpression x) {
-    this(em, x.getName(), x.getType(), false);
-  }
-
-  /** Create a new rational variable. */
-  public RationalBoundVariableImpl(ExpressionManagerImpl em, String name, boolean fresh) {
-    super(em, name, em.rationalType(),fresh);
   }
   
   /** Create a new variable of a rational sub-type (e.g., a range type). */

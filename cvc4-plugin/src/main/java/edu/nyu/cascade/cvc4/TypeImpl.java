@@ -2,7 +2,6 @@ package edu.nyu.cascade.cvc4;
 
 import java.util.List;
 
-import com.google.common.collect.Lists;
 import com.google.common.base.Preconditions;
 
 import edu.nyu.acsys.CVC4.DatatypeUnresolvedType;
@@ -10,8 +9,6 @@ import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.acsys.CVC4.ExprManager;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.Expression.Kind;
-import edu.nyu.cascade.prover.FunctionExpression;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.AddableType;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
@@ -23,11 +20,12 @@ import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.MultiplicativeType;
 import edu.nyu.cascade.prover.type.RationalType;
 import edu.nyu.cascade.prover.type.RecordType;
+import edu.nyu.cascade.prover.type.ScalarType;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.prover.type.UninterpretedType;
 
-public abstract class TypeImpl implements Type {
+abstract class TypeImpl implements Type {
   static interface BinaryConstructionStrategy {
     edu.nyu.acsys.CVC4.Type apply(ExprManager em, Expr arg1, Expr arg2);
   }
@@ -35,18 +33,9 @@ public abstract class TypeImpl implements Type {
     edu.nyu.acsys.CVC4.Type apply(ExprManager em, Expr arg);
   }
   
-/*  static <T extends IType> Type valueOf(ExpressionManager em, IType type) {
-    if( type instanceof Type ) {
-      return (Type) type;
-    } else {
-      throw new UnsupportedOperationException("Conversion to Type from " + type.getClass());
-    }
-  }*/
-  
   private edu.nyu.acsys.CVC4.Type cvc4_type = null;
   private DatatypeUnresolvedType cvc4_unresolved_datatype = null;
   private ExpressionManagerImpl em = null;
-//  private ExpressionImpl typeExpression;
 
   protected TypeImpl(ExpressionManagerImpl em, BinaryConstructionStrategy strategy,
       Expression expr1, Expression expr2) {
@@ -56,7 +45,6 @@ public abstract class TypeImpl implements Type {
 
     this.cvc4_type = strategy.apply(em.getTheoremProver().getCvc4ExprManager(),
         cvc4Expr1, cvc4Expr2);
-//    setTypeExpression(ExpressionImpl.mkTypeExpr(this));
   }
 
   protected TypeImpl(ExpressionManagerImpl em, UnaryConstructionStrategy strategy,
@@ -66,65 +54,58 @@ public abstract class TypeImpl implements Type {
 
     this.cvc4_type = strategy.apply(em.getTheoremProver().getCvc4ExprManager(),
         cvc4Expr);
-//    setTypeExpression(ExpressionImpl.mkTypeExpr(this));
   }
   
   protected TypeImpl(ExpressionManagerImpl em) {
     this.em = em;
   }
 
-  /**
-   * Construct the type given the lower and upper bound for the type.
-   * 
-   * @param em
-   *          the validity checker
-   * @param cvc4_lowerBound
-   *          the lower bound
-   * @param cvc4_upperBound
-   *          the upper bound
-   * @return the type
-   */
-/*  protected edu.nyu.acsys.CVC4.Type construct(ExprManager em, Expr cvc4_lowerBound,
-      Expr cvc4_upperBound) {
-    throw new TheoremProverException("Type construction of this kind is not supported.");
-  }*/
+  abstract String getName();
 
-  /**
-   * Construct the type given a sub-type.
-   * 
-   * @param em
-   *          the validity checker
-   * @param subType
-   *          sub-type to use for construction
-   * @return the type
-   * @ TODO
-   */
-/*  protected TypeMut construct(ExprManager em, TypeMut subType) {
-    throw new TheoremProverException("Type construction of this kind is not supported.");
-  }*/
+	abstract ExpressionImpl createExpression(Expr res, Expression e, Kind subst, Iterable<ExpressionImpl> importExpressions) ;
 
-  @Override
-  public boolean equals(Object obj) {
-    if (obj instanceof TypeImpl) {
-      if(getCVC4Type() != null)
-        return getCVC4Type().equals(((TypeImpl) obj).getCVC4Type());
-      else
-        return getCVC4UnresolvedDatatype().equals(((TypeImpl) obj).getCVC4UnresolvedDatatype());
-    }
-    return super.equals(obj);
-  }
-
-  public edu.nyu.acsys.CVC4.Type getCVC4Type() {
+	edu.nyu.acsys.CVC4.Type getCVC4Type() {
     return cvc4_type;
   }
   
-  public DatatypeUnresolvedType getCVC4UnresolvedDatatype() {
+  DatatypeUnresolvedType getCVC4UnresolvedDatatype() {
     return cvc4_unresolved_datatype;
   }
 
-  public abstract String getName();
-  
-  @Override
+  void setCVC4Type(edu.nyu.acsys.CVC4.Type cvc4_type) {
+	  this.cvc4_type = cvc4_type;
+	}
+
+	void setCVC4UnresolvedDatatype(DatatypeUnresolvedType cvc4_unresolved_datatype) {
+	  this.cvc4_unresolved_datatype = cvc4_unresolved_datatype;
+	}
+
+	/**
+	   * Construct the type given a sub-type.
+	   * 
+	   * @param em
+	   *          the validity checker
+	   * @param subType
+	   *          sub-type to use for construction
+	   * @return the type
+	   * @ TODO
+	   */
+	/*  protected TypeMut construct(ExprManager em, TypeMut subType) {
+	    throw new TheoremProverException("Type construction of this kind is not supported.");
+	  }*/
+	
+	  @Override
+	  public boolean equals(Object obj) {
+	    if (obj instanceof TypeImpl) {
+	      if(getCVC4Type() != null)
+	        return getCVC4Type().equals(((TypeImpl) obj).getCVC4Type());
+	      else
+	        return getCVC4UnresolvedDatatype().equals(((TypeImpl) obj).getCVC4UnresolvedDatatype());
+	    }
+	    return super.equals(obj);
+	  }
+
+	@Override
   public ExpressionManagerImpl getExpressionManager() {
     return em;
   }
@@ -171,77 +152,10 @@ public abstract class TypeImpl implements Type {
           + expression + "{ " + expression.getKind() + "}");
     }
   }
-  
-/*  @Override
-  public IExpression getLowerBound() {
-    return null;
-  }
 
-  @Override
-  public IExpression getUpperBound() {
-    return null;
-  }
-
-  @Override
-  public boolean hasLowerBound() {
-    return getLowerBound() != null;
-  }
-
-  @Override
-  public boolean hasUpperBound() {
-    return getUpperBound() != null;
-  }*/
-
-  /** Default implementation: a type is non-constant if it has a non-constant lower or upper bound. */
-/*  @Override
-  public boolean isConstant() {
-    return (getLowerBound() == null || getLowerBound().isConstant())
-        && (getUpperBound() == null || getUpperBound().isConstant());
-  }*/
-
-  protected void setCVC4Type(edu.nyu.acsys.CVC4.Type cvc4_type) {
-    this.cvc4_type = cvc4_type;
-  }
-  
-  protected void setCVC4UnresolvedDatatype(DatatypeUnresolvedType cvc4_unresolved_datatype) {
-    this.cvc4_unresolved_datatype = cvc4_unresolved_datatype;
-  }
-
-/*  protected void setTypeExpression(ExpressionImpl typeExpression) {
-    this.typeExpression = typeExpression;
-  }*/
-  
   @Override 
   public String toString() {
     return getCVC4Type().toString();
-  }
-  
-  @Override
-  public abstract VariableExpressionImpl variable(String name, boolean fresh);
-  
-  @Override
-  public abstract BoundVariableExpressionImpl boundVariable(String name, boolean fresh);
-
-  @Override
-  public FunctionExpression lambda(
-      Iterable<? extends VariableExpression> vars, Expression body) {
-    return FunctionExpressionImpl.create(getExpressionManager(), vars, body);
-  }
-
-  @Override
-  public FunctionExpression lambda(
-      VariableExpression var, Expression body) {
-    return FunctionExpressionImpl.create(getExpressionManager(),
-        Lists.newArrayList(var), body);
-  }
-
-  public FunctionExpression lambda(
-      BoundVariableListExpressionImpl vars, Expression body) {
-    return FunctionExpressionImpl.create(getExpressionManager(), vars, body);
-  }
-  
-  TypeImpl subType(ExpressionManagerImpl exprManager, Expr expr) {
-    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -264,6 +178,17 @@ public abstract class TypeImpl implements Type {
   public ComparableType asComparableType() {
     Preconditions.checkState(isComparableType());
     return (ComparableType)this;
+  }
+  
+  @Override
+  public boolean isScalarType() {
+    return this instanceof ScalarType;
+  }
+
+  @Override
+  public ScalarType asScalarType() {
+    Preconditions.checkState(isScalarType());
+    return (ScalarType)this;
   }
 
   @Override
@@ -386,7 +311,4 @@ public abstract class TypeImpl implements Type {
     Preconditions.checkState(isUninterpreted());
     return (UninterpretedType)this;
   }
-
-	abstract ExpressionImpl create(Expr res, Expression e, Kind subst,
-			Iterable<ExpressionImpl> importExpressions) ;
 }

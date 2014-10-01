@@ -5,9 +5,10 @@ import edu.nyu.cascade.prover.InductiveExpression;
 import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.Selector;
 
-public class InductiveVariableImpl extends VariableExpressionImpl
+final class InductiveVariableImpl extends VariableExpressionImpl
     implements InductiveExpression {
-  public static InductiveVariableImpl create(ExpressionManagerImpl exprManager,
+	
+	static InductiveVariableImpl create(ExpressionManagerImpl exprManager,
       String name, InductiveTypeImpl type, boolean fresh) {
     return new InductiveVariableImpl(exprManager, name, type, fresh);
   }

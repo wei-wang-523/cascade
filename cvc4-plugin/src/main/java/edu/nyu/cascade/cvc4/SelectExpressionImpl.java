@@ -14,7 +14,7 @@ import edu.nyu.cascade.prover.type.Selector;
 
 /* FIXME: The selector should be a child of this expression! */
 
-public class SelectExpressionImpl extends ExpressionImpl {
+final class SelectExpressionImpl extends ExpressionImpl {
   static SelectExpressionImpl create(
       ExpressionManagerImpl exprManager, Selector selector,
       Expression val) {

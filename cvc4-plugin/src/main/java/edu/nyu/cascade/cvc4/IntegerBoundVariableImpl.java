@@ -1,34 +1,18 @@
 package edu.nyu.cascade.cvc4;
 
+import java.util.Collections;
+
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.IntegerExpression;
-import edu.nyu.cascade.prover.IntegerVariableExpression;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
 
-public final class IntegerBoundVariableImpl extends BoundVariableExpressionImpl implements
-    IntegerVariableExpression {
+final class IntegerBoundVariableImpl extends BoundVariableExpressionImpl implements IntegerExpression {
 	
-  protected static IntegerBoundVariableImpl valueOf(ExpressionManagerImpl em, Expression e) {
-    if (e instanceof IntegerBoundVariableImpl && em.equals(e.getExpressionManager())) {
-      return (IntegerBoundVariableImpl) e;
-    } else if (e instanceof BoundVariableExpressionImpl) {
-      BoundVariableExpressionImpl e2 = (BoundVariableExpressionImpl)e;
-      return new IntegerBoundVariableImpl(em, e2);
-    } else {
-      throw new IllegalArgumentException("Expression type: " + e.getClass());
-    }
-  }
-  
-	protected static IntegerBoundVariableImpl create(
-      ExpressionManagerImpl em, String name, boolean fresh) {
-    return new IntegerBoundVariableImpl(em, name, fresh);
-  }
-
-  protected static IntegerBoundVariableImpl create(
+	static IntegerBoundVariableImpl create(
       ExpressionManagerImpl exprManager, String name, IntegerTypeImpl type, boolean fresh) {
     return new IntegerBoundVariableImpl(exprManager, name, type, fresh);
   }
@@ -42,21 +26,6 @@ public final class IntegerBoundVariableImpl extends BoundVariableExpressionImpl 
   private IntegerBoundVariableImpl(ExpressionManagerImpl em, String name, Type type, boolean fresh) {
     super(em, name, type, fresh);
     Preconditions.checkArgument(type.isInteger());
-  }
-
-  /** Copy constructor. */
-  private IntegerBoundVariableImpl(ExpressionManagerImpl em, VariableExpression x) {
-    this(em, x.getName(), x.getType(), false);
-  }
-  
-  @Override
-  public RationalExpressionImpl castToRational() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public Kind getKind() {
-    return Kind.VARIABLE;
   }
 
   @Override
@@ -118,4 +87,14 @@ public final class IntegerBoundVariableImpl extends BoundVariableExpressionImpl 
   public IntegerExpression mods(Expression e) {
     return getType().mod(this, e);
   }
+
+	@Override
+	public IntegerExpression plus(IntegerExpression... rest) {
+		return getType().add(this, rest);
+	}
+
+	@Override
+	public IntegerExpression plus(Iterable<? extends IntegerExpression> rest) {
+		return getType().add(Iterables.concat(Collections.singletonList(this), rest));
+	}
 }

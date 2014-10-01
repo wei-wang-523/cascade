@@ -16,24 +16,8 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.BooleanType;
 import edu.nyu.cascade.prover.type.ComparableType;
 
-public class BooleanExpressionImpl extends ExpressionImpl implements
-    BooleanExpression {
-  
-/*  private static final ConcurrentMap<ExpressionManager, ConcurrentMap<Boolean, BooleanExpression>> constantCache = new MapMaker()
-      .makeComputingMap(new Function<ExpressionManager, ConcurrentMap<Boolean, BooleanExpression>>() {
-        @Override
-        public ConcurrentMap<Boolean, BooleanExpression> apply(
-            final ExpressionManager exprManager) {
-          return new MapMaker()
-              .makeComputingMap(new Function<Boolean, BooleanExpression>() {
-                @Override
-                public BooleanExpression apply(Boolean value) {
-                  return new BooleanExpression(exprManager, value);
-                }
-              });
-        }
-      });
-*/  
+class BooleanExpressionImpl extends ExpressionImpl implements BooleanExpression {
+	
   static BooleanExpressionImpl mkAnd(ExpressionManagerImpl exprManager,
       Expression a, Expression b) {
     return new BooleanExpressionImpl(exprManager, Kind.AND,
@@ -263,12 +247,7 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
           public Expr apply(ExprManager em, List<Expr> vars, Expr body)
               throws Exception {
             vectorExpr varList = new vectorExpr();
-            for(Expr var : vars) {
-              if(var.getKind() == edu.nyu.acsys.CVC4.Kind.BOUND_VARIABLE)
-                varList.add(var);
-              else
-                varList.add(em.mkBoundVar(var.toString(), var.getType()));
-            }
+            for(Expr var : vars) varList.add(var);
             Expr boundVarList = em.mkExpr(edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
             return em.mkExpr(edu.nyu.acsys.CVC4.Kind.EXISTS, boundVarList, body);
           }
@@ -288,12 +267,7 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
           public Expr apply(ExprManager em, List<Expr> vars, Expr body, List<Expr> triggers)
               throws Exception {
             vectorExpr varList = new vectorExpr();
-            for(Expr var : vars) {
-              if(var.getKind() == edu.nyu.acsys.CVC4.Kind.BOUND_VARIABLE)
-                varList.add(var);
-              else
-                varList.add(em.mkBoundVar(var.toString(), var.getType()));
-            }
+            for(Expr var : vars) varList.add(var);
             Expr boundVarList = em.mkExpr(edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
             vectorExpr triggerList = new vectorExpr();
             for(Expr trigger : triggers) {
@@ -318,7 +292,6 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
             return em.mkConst(false);
           }
         });
-    e.setConstant(true);
     return e;
   }
 
@@ -331,12 +304,7 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
           public Expr apply(ExprManager em, List<Expr> vars, Expr body)
               throws Exception {
             vectorExpr varList = new vectorExpr();
-            for(Expr var : vars) {
-              if(var.getKind() == edu.nyu.acsys.CVC4.Kind.BOUND_VARIABLE)
-                varList.add(var);
-              else
-                varList.add(em.mkBoundVar(var.toString(), var.getType()));
-            }
+            for(Expr var : vars) varList.add(var);
             Expr boundVarList = em.mkExpr(edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
             return em.mkExpr(edu.nyu.acsys.CVC4.Kind.FORALL, boundVarList, body);
           }
@@ -356,12 +324,7 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
           public Expr apply(ExprManager em, List<Expr> vars, Expr body, List<Expr> triggers)
               throws Exception {
             vectorExpr varList = new vectorExpr();
-            for(Expr var : vars) {
-              if(var.getKind() == edu.nyu.acsys.CVC4.Kind.BOUND_VARIABLE)
-                varList.add(var);
-              else
-                varList.add(em.mkBoundVar(var.toString(), var.getType()));
-            }
+            for(Expr var : vars) varList.add(var);
             Expr boundVarList = em.mkExpr(edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
             vectorExpr triggerList = new vectorExpr();
             for(Expr trigger : triggers) {
@@ -517,7 +480,6 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
             return em.mkConst(true);
           }
         });
-    e.setConstant(true);
     return e;
   }
 
@@ -748,7 +710,6 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
           }
         });
     setType(exprManager.booleanType());
-    setConstant(true);
   }
   
   private BooleanExpressionImpl(ExpressionManagerImpl exprManager, Kind kind, 
@@ -756,7 +717,7 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
     super(exprManager, kind, expr, type);
   }
   
-  protected static BooleanExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
+  static BooleanExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
       Expr expr, BooleanType type, Iterable<? extends ExpressionImpl> children) {
   	return new BooleanExpressionImpl(exprManager, kind, expr, type, children);
   }
@@ -781,14 +742,12 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
   }
 
   @Override
-  public BooleanExpressionImpl exists(
-      Iterable<? extends Expression> vars) {
+  public BooleanExpressionImpl exists(Iterable<? extends Expression> vars) {
     return mkExists(getExpressionManager(), vars, this);
   }
 
   @Override
-  public BooleanExpression forall(
-      Iterable<? extends Expression> vars) {
+  public BooleanExpression forall(Iterable<? extends Expression> vars) {
     return mkForall(getExpressionManager(), vars, this);
   }
 
@@ -890,13 +849,13 @@ public class BooleanExpressionImpl extends ExpressionImpl implements
 
   @Override
   public BooleanExpression exists(Expression firstVar,
-      Expression... otherVars) {
+  		Expression... otherVars) {
     return exists(Lists.asList(firstVar, otherVars));
   }
 
   @Override
   public BooleanExpression forall(Expression firstVar,
-      Expression... otherVars) {
+  		Expression... otherVars) {
     return forall(Lists.asList(firstVar, otherVars));
   }
 

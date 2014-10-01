@@ -14,7 +14,7 @@ import edu.nyu.cascade.prover.type.Constructor;
 
 /* FIXME: The constructor should be a child of this expression! */
 
-public class TestExpressionImpl extends BooleanExpressionImpl {
+final class TestExpressionImpl extends BooleanExpressionImpl {
   static TestExpressionImpl create(ExpressionManagerImpl exprManager,
       Constructor constructor, Expression val) {
     checkArgument(val.isInductive());
@@ -22,7 +22,7 @@ public class TestExpressionImpl extends BooleanExpressionImpl {
     return new TestExpressionImpl(exprManager, constructor, val);
   }
 
-  private final Constructor constructor;
+//  private final Constructor constructor;
 
   private TestExpressionImpl(final ExpressionManagerImpl exprManager,
       final Constructor constructor, Expression val) {
@@ -40,10 +40,6 @@ public class TestExpressionImpl extends BooleanExpressionImpl {
       }
     }, val);
 
-    this.constructor = constructor;
-  }
-
-  public Constructor getConstructor() {
-    return constructor;
+//    this.constructor = constructor;
   }
 }

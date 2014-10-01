@@ -3,9 +3,8 @@ package edu.nyu.cascade.cvc4;
 import static edu.nyu.cascade.prover.Expression.Kind.APPLY;
 import static edu.nyu.cascade.prover.Expression.Kind.CONSTANT;
 import static edu.nyu.cascade.prover.Expression.Kind.IF_THEN_ELSE;
-import static edu.nyu.cascade.prover.Expression.Kind.SUBST;
-import static edu.nyu.cascade.prover.Expression.Kind.VARIABLE;
 import static edu.nyu.cascade.prover.Expression.Kind.NULL_EXPR;
+import static edu.nyu.cascade.prover.Expression.Kind.VARIABLE;
 import xtc.tree.GNode;
 
 import java.util.List;
@@ -23,13 +22,13 @@ import edu.nyu.acsys.CVC4.ExprManager;
 import edu.nyu.acsys.CVC4.vectorExpr;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
+import edu.nyu.cascade.prover.BoundExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.FunctionExpression;
 import edu.nyu.cascade.prover.InductiveExpression;
 import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.UninterpretedExpression;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.FunctionType;
@@ -99,6 +98,10 @@ public class ExpressionImpl implements Expression {
     Expr apply(ExprManager em, String name, edu.nyu.acsys.CVC4.Type type);
   }
   
+  static interface BoundVariableConstructionStrategy {
+    Expr apply(ExprManager em, String name, edu.nyu.acsys.CVC4.Type type);
+  }
+  
   static ExpressionImpl mkNullExpr(ExpressionManagerImpl exprManager) {
     ExpressionImpl result = new ExpressionImpl(exprManager, NULL_EXPR,
         new NullaryConstructionStrategy() {
@@ -109,13 +112,6 @@ public class ExpressionImpl implements Expression {
         });
     return result;
   }
-
-/*  static ExpressionImpl mkFunApply(
-      ExpressionManagerImpl exprManager, Expression fun,
-      Expression arg1, Expression arg2) {
-    Preconditions.checkArgument(fun.getType().getArity() == 2);
-    return mkFunApply(exprManager, fun, ImmutableList.of(arg1, arg2));
-  }*/
 
   static ExpressionImpl mkFunApply(
       ExpressionManagerImpl exprManager, Expression fun,
@@ -171,8 +167,14 @@ public class ExpressionImpl implements Expression {
         .size(newExprs));
     
     /* Don't bother to SUBST a constant */
-    if( CONSTANT.equals(e.getKind()) || VARIABLE.equals(e.getKind())) {
+    if( CONSTANT.equals(e.getKind())) {
       return exprManager.importExpression(e);
+    }
+    
+    if( VARIABLE.equals(e.getKind())) {
+    	if(!Iterables.contains(oldExprs, e)) {
+    		return exprManager.importExpression(e);
+    	}
     }
     
     int n = Iterables.size(oldExprs);
@@ -198,40 +200,10 @@ public class ExpressionImpl implements Expression {
     for(Expr arg : newArgs)   newArgVec.add(arg);
     
     Expr res = exprManager.toCvc4Expr(e).substitute(oldArgVec, newArgVec);
-    return exprManager.importType(e.getType()).create(res, e, SUBST, exprManager.importExpressions(newExprs));
-    
-//    List<Expression> subs = Lists.newArrayList();
-//    subs.add(e);
-//    Iterables.addAll(subs, oldExprs);
-//    Iterables.addAll(subs, newExprs);
-//    ExpressionImpl result = new ExpressionImpl(exprManager, SUBST,
-//        new NarySubstitutionStrategy() {
-//          @Override
-//          public Expr apply(ExprManager em, List<Expr> args)
-//              throws Exception {
-//            assert (args.size() > 0);
-//            Expr e = args.get(0);
-//            int n = args.size() / 2;
-//            assert (args.size() == 2 * n + 1);
-//            vectorExpr oldExprs = new vectorExpr(n);
-//            for(int i = 1; i < n+1; i++)   
-//              oldExprs.add(args.get(i));
-//            vectorExpr newExprs = new vectorExpr(n);
-//            for(int i = n+1; i < args.size(); i++)  
-//              newExprs.add(args.get(i));
-//            return e.substitute(oldExprs, newExprs);
-//          }
-//        }, subs);
-//    result.setType(e.getType());
-//    return result;
+    return exprManager.importType(e.getType()).createExpression(
+    		res, e, e.getKind(), 
+    		exprManager.importExpressions(newExprs));
   }
-
-/*  static ExpressionImpl mkTypeExpr(TypeImpl t) {
-    ExpressionManagerImpl exprManager = t.getExpressionManager();
-    return new ExpressionImpl(exprManager, TYPE, t
-        .getCVC4Type().mkGroundTerm(), 
-        new TypeKindImpl(exprManager, t));
-  }*/
 
   static ExpressionImpl mkTypeStub(
       ExpressionManagerImpl exprManager, final String name) {
@@ -266,6 +238,8 @@ public class ExpressionImpl implements Expression {
   private boolean constant;
 
   private boolean isVariable;
+  
+  private boolean isBoundVariable;
 
   private TypeImpl type;
   
@@ -278,16 +252,13 @@ public class ExpressionImpl implements Expression {
   private final Kind kind;
   /* Copy constructor. */
   protected ExpressionImpl(ExpressionImpl e) {
-    this.kind = e.getKind();
-    exprManager = e.getExpressionManager();
+    this(e.getExpressionManager(), e.getKind());
     setCvc4Expression(e.getCvc4Expression());
     if (!e.getChildren().isEmpty()) {
       initChildren(e.getChildren());
     } else {
       children = ImmutableList.of();
     }
-    setConstant(e.isConstant());
-    setIsVariable(e.isVariable());
     setType(e.getType());
     setNode(e.getNode());
   }
@@ -301,8 +272,7 @@ public class ExpressionImpl implements Expression {
    * be responsible for making sure it gets set!
    */
   protected ExpressionImpl(final ExpressionManagerImpl exprManager, Expression expr) {
-    this.exprManager = exprManager;
-    this.kind = expr.getKind();
+  	this(exprManager, expr.getKind());
     children = ImmutableList.copyOf(Lists.transform(expr.getChildren(),
         new Function<Expression, ExpressionImpl>() {
           @Override
@@ -310,8 +280,6 @@ public class ExpressionImpl implements Expression {
             return exprManager.importExpression(from);
           }
         }));
-    setConstant(expr.isConstant());
-    setIsVariable(expr.isVariable());
     setType(expr.getType());
     setNode(expr.getNode());
   }
@@ -319,6 +287,7 @@ public class ExpressionImpl implements Expression {
   private ExpressionImpl(ExpressionManagerImpl em, Kind kind) {
     this.exprManager = em;
     this.kind = kind;
+    init();
   }
   
   protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
@@ -373,16 +342,10 @@ public class ExpressionImpl implements Expression {
     assert (exprs.size() == 1);
 
     Expr cvc4_body = exprs.get(0);
-
-    // New list for the cvc4 variables
+    
     List<Expr> cvc4_vars = ImmutableList.copyOf(getExpressionManager()
         .toCvc4Exprs(vars));
-
-    /*
-     * List<Expr> cvc4_triggers = ImmutableList.copyOf(ExpressionManager
-     * .toCvc4Exprs(triggers));
-     */
-    // Call the construct method for quantification
+    
     ExprManager cvc4_em = getExpressionManager()
         .getTheoremProver()
         .getCvc4ExprManager();
@@ -481,7 +444,6 @@ public class ExpressionImpl implements Expression {
   protected ExpressionImpl(ExpressionManagerImpl em, Kind kind, Type type) {
     this(em, kind);
     setType(type);
-    init();
   }
 
   protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
@@ -519,15 +481,7 @@ public class ExpressionImpl implements Expression {
     // Following is the right version of convert children, which cause invalid memory access.
     init(expressions);
     List<Expr> exprs = convertChildrenToExpr();
-
-//  Expression expr;
-//  if(cvc4_expr.getType().isBoolean()) {
-//    expr = exprManager.toBooleanExpression(cvc4_expr);
-//  } else
-//    expr = exprManager.toExpression(cvc4_expr);
-//  initChildren(expr.getChildren());
     
-    // Get the cvc4 expression manager
     ExprManager cvc4_em = exprManager.getTheoremProver().getCvc4ExprManager();
 
     // Create the new expression
@@ -537,7 +491,6 @@ public class ExpressionImpl implements Expression {
   protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
       NullaryConstructionStrategy strategy) {
     this(em, kind);
-    init();
 
     // Get the cvc4 expression manager
     ExprManager cvc4_em = exprManager.getTheoremProver().getCvc4ExprManager();
@@ -565,7 +518,9 @@ public class ExpressionImpl implements Expression {
     ExprManager cvc4_em = exprManager.getTheoremProver().getCvc4ExprManager();
 
     // Create the new expression
-    setCvc4Expression(strategy.apply(cvc4_em, expr1, expr2, expr3));
+    Expr expr = strategy.apply(cvc4_em, expr1, expr2, expr3);
+    setCvc4Expression(expr);    
+    setType(exprManager.toType(expr.getType()));
   }
 
   protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
@@ -600,14 +555,21 @@ public class ExpressionImpl implements Expression {
 
     String actualName = uniquify ? Identifiers.uniquify(name) : name;
 
-    this.name = actualName;
-    setConstant(false);
-    setIsVariable(true);
-
-    // Get the cvc4 expression manager
+    setName(actualName);
     ExprManager cvc4_em = em.getTheoremProver().getCvc4ExprManager();
+    setCvc4Expression(strategy.apply(cvc4_em, actualName, type.getCVC4Type()));
+  }
+  
+  protected ExpressionImpl(ExpressionManagerImpl em,
+      BoundVariableConstructionStrategy strategy, String name, Type itype,
+      boolean uniquify) {
+    this(em, Kind.BOUND, itype);
+    assert( type != null );
 
-    // Create the new expression
+    String actualName = uniquify ? Identifiers.uniquify(name) : name;
+
+    this.name = actualName;
+    ExprManager cvc4_em = em.getTheoremProver().getCvc4ExprManager();
     setCvc4Expression(strategy.apply(cvc4_em, actualName, type.getCVC4Type()));
   }
   
@@ -636,21 +598,9 @@ public class ExpressionImpl implements Expression {
   }
 
   @Override
-  public IntegerVariableImpl asIntegerVariable() {
-    Preconditions.checkState( isInteger() && isVariable() );
-    return getExpressionManager().asIntegerVariable(this);
-  }
-
-  @Override
   public RationalExpressionImpl asRationalExpression() {
     Preconditions.checkState( isRational() );
     return getExpressionManager().asRationalExpression(this);
-  }
-
-  @Override
-  public RationalVariableImpl asRationalVariable() {
-    Preconditions.checkState( isRational() && isVariable() );
-    return getExpressionManager().asRationalVariable(this);
   }
 
   @Override
@@ -664,7 +614,7 @@ public class ExpressionImpl implements Expression {
     Preconditions.checkState(isVariable());
     return getExpressionManager().asVariable(this);
   }
-
+  
   private ImmutableList<Expr> convertChildrenToExpr() {
     // ImmutableList.copyOf(ExpressionManager.toCvc4Expr(children));
     ImmutableList.Builder<Expr> listBuilder = ImmutableList.builder();
@@ -726,34 +676,16 @@ public class ExpressionImpl implements Expression {
     return exprManager;
   }
 
-/*  private void initChildren(IExpression first, IExpression... rest) {
-    initChildren(Lists.asList(first, rest));
-  }
-*/
-  /*
-   * public Expression simplify() { ExprManager em =
-   * exprManager.getTheoremProver().getValidityChecker(); try { Expr cvc4_expr =
-   * em.simplify(getCvc4Expression()); return new
-   * Expression(exprManager,cvc4_expr); } catch (Exception e) { throw new
-   * TheoremProverException(e); } }
-   */
-
   @Override
   public Kind getKind() {
     return kind;
   }
 
-  protected String getName() { return name; }
+  String getName() { return name; }
 
   @Override
   public Type getType() {
     return type;
-  }
-  
-  @Override
-  public FunctionType getFuncDecl() {
-    // FIXME: FuncDecl is only for Z3 expression
-    return null;
   }
   
   @Override
@@ -771,12 +703,13 @@ public class ExpressionImpl implements Expression {
   public int hashCode() {
     return getCvc4Expression().hashCode();
   }
-
+  
   private void init() {
+    setConstant(kind.equals(Kind.CONSTANT) || kind.equals(Kind.SKOLEM));
+    setIsVariable(kind.equals(Kind.VARIABLE));
+    setIsBoundVariable(kind.equals(Kind.BOUND));
     cvc4_expr = null;
     children = ImmutableList.of();
-    setConstant(false);
-    setIsVariable(false);
   }
 
   private void init(Expression first, Expression... rest) {
@@ -785,11 +718,14 @@ public class ExpressionImpl implements Expression {
 
   private void init(Iterable<? extends Expression> subExpressions) {
     initChildren(subExpressions);
-    // setExpressionManagerFromChildren();
-    setConstantFromChildren();
+    setConstant(Iterables.all(children, new Predicate<ExpressionImpl>() {
+      public boolean apply(ExpressionImpl expr) {
+        return expr.isConstant();
+      }
+    }));
   }
 
-  protected void initChildren(Iterable<? extends Expression> subExpressions) {
+  private void initChildren(Iterable<? extends Expression> subExpressions) {
     /*
      * TODO: Is there a reason we won't take an empty Iterable here? See
      * BooleanExpression for an example of why this is annoying
@@ -802,25 +738,6 @@ public class ExpressionImpl implements Expression {
         subExpressions));
   }
 
-  /*
-   * protected void setExpressionManagerFromChildren() {
-   * Preconditions.checkState( children.size() > 0 );
-   * 
-   * // element 0 is guaranteed to exist, from the assertion above, // and to
-   * have a CVC4 ExpressionManager, from toExpression. Expression firstExpr =
-   * children.get(0); final IExpressionManager em =
-   * firstExpr.getExpressionManager();
-   * 
-   * boolean emsMatch = Iterables.all(children, new Predicate<Expression>() {
-   * public boolean apply(Expression expr) { return
-   * expr.getExpressionManager() == em; }});
-   * 
-   * if (!emsMatch || !(em instanceof ExpressionManager)) { throw new
-   * TheoremProverException("Expression manager mismatch."); }
-   * 
-   * exprManager = (ExpressionManager) em; }
-   */
-
   @Override
   public final boolean isConstant() {
     return constant;
@@ -831,67 +748,30 @@ public class ExpressionImpl implements Expression {
     return isVariable;
   }
 
-/*  private Kind kindOfCvc4Expr(Expr e) {
-    if (e.isMinus()) {
-      return MINUS;
-    } else if (e.isMult()) {
-      return MULT;
-    } else if (e.isPlus()) {
-      return PLUS;
-    } else if (e.isPow()) {
-      return POW;
-    } else if (e.isUminus()) {
-      return UNARY_MINUS;
-    } else if (e.isVar()) {
-      return VARIABLE;
-    } else
-      throw new IllegalArgumentException("Unsupported kind (this is a bug).");
-  }
-*/
-  
-  public FunctionExpression lambda(BoundVariableListExpressionImpl vars) {
-    return ((TypeImpl) getType()).lambda(vars, this);
-  }
-  
-  @Override
-  public FunctionExpression lambda(VariableExpression var) {
-    return getType().lambda(var, this);
-  }
-  
-  @Override
-  public FunctionExpression lambda(
-      Iterable<? extends VariableExpression> vars) {
-    return getType().lambda(vars, this);
-  }
-
   @Override
   public BooleanExpression neq(Expression e) {
     return getExpressionManager().neq(this, e);
   }
 
-  protected void setConstant(boolean constant) {
+  private void setConstant(boolean constant) {
     this.constant = constant;
   }
 
-  protected void setConstantFromChildren() {
-    setConstant(Iterables.all(children, new Predicate<ExpressionImpl>() {
-      public boolean apply(ExpressionImpl expr) {
-        return expr.isConstant();
-      }
-    }));
-  }
-
-  protected void setCvc4Expression(Expr cvc4_expr) {
+  void setCvc4Expression(Expr cvc4_expr) {
     this.cvc4_expr = cvc4_expr;
   }
 
-  protected void setIsVariable(boolean b) {
+  private void setIsVariable(boolean b) {
     this.isVariable = b;
   }
+  
+  private void setIsBoundVariable(boolean b) {
+  	this.isBoundVariable = b;
+  }
 
-  protected void setName(String name) { this.name = name; }
+  void setName(String name) { this.name = name; }
 
-  protected void setType(Type type) {
+  void setType(Type type) {
     this.type = getExpressionManager().importType(type);
   }
 
@@ -907,7 +787,17 @@ public class ExpressionImpl implements Expression {
   @Override
   public Expression subst(Iterable<? extends Expression> oldExprs,
       Iterable<? extends Expression> newExprs) {
-    return mkSubst(getExpressionManager(), this, oldExprs, newExprs);
+    Expression res = mkSubst(getExpressionManager(), this, oldExprs, newExprs);
+    res.setNode(getNode());
+    return res;
+  }
+  
+  @Override
+  public Expression simplify() {
+  	ExpressionManagerImpl em = getExpressionManager();
+		Expr cvc4_expr_simp = em.getTheoremProver()
+				.getSmtEngine().simplify(cvc4_expr);
+		return new ExpressionImpl(em, this.kind, cvc4_expr_simp, type);
   }
 
   @Override
@@ -998,25 +888,6 @@ public class ExpressionImpl implements Expression {
   public boolean isInductive() {
     return getType() instanceof InductiveType;
   }
-  
-  public boolean isBoundVariable() {
-    return getType() instanceof BoundVarTypeImpl;
-  }
-  
-  public boolean isBoundVariableList() {
-    return Iterables.all(children, new Predicate<ExpressionImpl>() {
-      @Override
-      public boolean apply(ExpressionImpl input) {
-        return input.isBoundVariable();
-      }
-    });
-  }
-  
-  public BoundVariableListExpressionImpl asBoundVariableList() {
-    Preconditions.checkState(isBoundVariableList());
-    return BoundVariableListExpressionImpl.valueOf(
-    		getExpressionManager(), this);
-  }
 
   @Override
   public RecordExpression asRecord() {
@@ -1038,5 +909,16 @@ public class ExpressionImpl implements Expression {
   @Override
   public boolean isUninterpreted() {
     return getType() instanceof UninterpretedType;
+  }
+
+	@Override
+  public BoundExpression asBound() {
+    Preconditions.checkState(isBound());
+    return getExpressionManager().asBoundExpression(this);
+  }
+
+	@Override
+  public boolean isBound() {
+	  return isBoundVariable;
   }
 }

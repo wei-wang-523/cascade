@@ -1,29 +1,13 @@
 package edu.nyu.cascade.cvc4;
 
-import com.google.common.base.Preconditions;
-
-import edu.nyu.cascade.prover.ArrayVariableExpression;
+import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.Type;
 
-public final class ArrayBoundVariableImpl extends BoundVariableExpressionImpl implements
-    ArrayVariableExpression {
+final class ArrayBoundVariableImpl extends BoundVariableExpressionImpl implements
+    ArrayExpression {
 
-  static  ArrayBoundVariableImpl create(
-      ExpressionManagerImpl exprManager, String name, TypeImpl indexType, TypeImpl elementType, boolean fresh) {
-    Preconditions.checkArgument(indexType.getExpressionManager().equals(
-        elementType.getExpressionManager()));
-    ArrayTypeImpl type = exprManager.arrayType(indexType, elementType);
-
-    return new ArrayBoundVariableImpl(exprManager,name, type,fresh);
-  }
-
-  static  ArrayBoundVariableImpl create(
-      ExpressionManagerImpl exprManager, String name, ArrayTypeImpl type, boolean fresh) {
-    return new ArrayBoundVariableImpl(exprManager,name, type, fresh);
-  }
-
-  private ArrayBoundVariableImpl(ExpressionManagerImpl exprManager, String name, ArrayTypeImpl type, boolean fresh) {
+  ArrayBoundVariableImpl(ExpressionManagerImpl exprManager, String name, ArrayTypeImpl type, boolean fresh) {
     super(exprManager, name, type, fresh);
   }
 

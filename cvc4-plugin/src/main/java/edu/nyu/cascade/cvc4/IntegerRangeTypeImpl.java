@@ -13,7 +13,7 @@ import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.RangeType;
 
-public final class IntegerRangeTypeImpl extends IntegerTypeImpl implements
+final class IntegerRangeTypeImpl extends IntegerTypeImpl implements
     RangeType, IntegerType {
   static IntegerRangeTypeImpl create(ExpressionManagerImpl exprManager,
       Expression lowerBound, Expression upperBound) {
@@ -48,12 +48,6 @@ public final class IntegerRangeTypeImpl extends IntegerTypeImpl implements
    *          the lower bound
    * @param upperBound
    *          the upper bound @ * @throws Exception
-   */
-  /*
-   * IntegerRangeType(IntegerExpression lowerBound, IntegerExpression
-   * upperBound) { super(lowerBound, upperBound); this.lowerBound =
-   * (IntegerExpression) lowerBound; this.upperBound = (IntegerExpression)
-   * upperBound; }
    */
 
   IntegerRangeTypeImpl(ExpressionManagerImpl exprManager,

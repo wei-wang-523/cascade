@@ -20,23 +20,31 @@ import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Type;
 
-public final class RecordTypeImpl extends TypeImpl implements RecordType {
-	protected static RecordTypeImpl create(ExpressionManagerImpl em, String tname, String elemName, Type elemType) {
+final class RecordTypeImpl extends TypeImpl implements RecordType {
+	static RecordTypeImpl create(ExpressionManagerImpl em, String tname, String elemName, Type elemType) {
     return new RecordTypeImpl(em, tname, Lists.newArrayList(elemName), Lists.newArrayList(elemType));
   }
 
-	protected static RecordTypeImpl create(ExpressionManagerImpl em, String tname, Iterable<String> elemNames,
+	static RecordTypeImpl create(ExpressionManagerImpl em, String tname, Iterable<String> elemNames,
       Iterable<? extends Type> elemTypes) {
     return new RecordTypeImpl(em, tname, elemNames, elemTypes);
   }
   
-	protected static RecordTypeImpl create(ExpressionManagerImpl em, String tname) {
+	static RecordTypeImpl create(ExpressionManagerImpl em, String tname) {
     ImmutableList<String> elemNames = ImmutableList.of();
     ImmutableList<? extends Type> elemTypes = ImmutableList.of();
     return new RecordTypeImpl(em, tname, elemNames, elemTypes);
   }
 
-	protected static RecordTypeImpl valueOf(ExpressionManagerImpl em, Type t) {
+	@Override
+	RecordExpressionImpl createExpression(Expr res, Expression e, Kind kind,
+			Iterable<ExpressionImpl> children) {
+		Preconditions.checkArgument(e.isRecord());
+		return RecordExpressionImpl.create(getExpressionManager(), 
+				kind, res, e.getType().asRecord(), children);
+	}
+
+	static RecordTypeImpl valueOf(ExpressionManagerImpl em, Type t) {
     if (t instanceof RecordTypeImpl) {
       return (RecordTypeImpl) t;
     } else {
@@ -103,8 +111,13 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
   }
   
   @Override
-  public RecordBoundVariableImpl boundVariable(String name, boolean fresh) {
+  public RecordBoundVariableImpl boundVar(String name, boolean fresh) {
     return RecordBoundVariableImpl.create(getExpressionManager(), name, this, fresh);
+  }
+  
+  @Override
+  public RecordBoundVariableImpl boundExpression(String name, int index, boolean fresh) {
+    return boundVar(name, fresh);
   }
 
   @Override
@@ -128,12 +141,4 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
       Expression value) {
 	  return RecordExpressionImpl.mkUpdate(getExpressionManager(), record, fieldName, value);
   }
-  
-	@Override
-	RecordExpressionImpl create(Expr res, Expression e, Kind kind,
-			Iterable<ExpressionImpl> children) {
-		Preconditions.checkArgument(e.isRecord());
-		return RecordExpressionImpl.create(getExpressionManager(), 
-				kind, res, e.getType().asRecord(), children);
-	}
 }

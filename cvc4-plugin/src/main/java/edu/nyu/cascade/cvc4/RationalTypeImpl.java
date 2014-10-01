@@ -13,7 +13,7 @@ import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.type.RationalType;
 import edu.nyu.cascade.util.CacheException;
 
-public class RationalTypeImpl extends TypeImpl implements RationalType {
+class RationalTypeImpl extends TypeImpl implements RationalType {
   private static final LoadingCache<ExpressionManagerImpl, RationalTypeImpl> typeCache = CacheBuilder
       .newBuilder().build(
           new CacheLoader<ExpressionManagerImpl, RationalTypeImpl>(){
@@ -22,7 +22,7 @@ public class RationalTypeImpl extends TypeImpl implements RationalType {
             }
           });
   
-  public static RationalTypeImpl getInstance(ExpressionManagerImpl expressionManager) {
+  static RationalTypeImpl getInstance(ExpressionManagerImpl expressionManager) {
     try {
       return typeCache.get(expressionManager);
     } catch (ExecutionException e) {
@@ -182,8 +182,13 @@ public class RationalTypeImpl extends TypeImpl implements RationalType {
   }
   
   @Override
-  public RationalBoundVariableImpl boundVariable(String name, boolean fresh) {
+  public RationalBoundVariableImpl boundVar(String name, boolean fresh) {
     return RationalBoundVariableImpl.create(getExpressionManager(), name, this, fresh);
+  }
+  
+  @Override
+  public RationalBoundVariableImpl boundExpression(String name, int index, boolean fresh) {
+    return boundVar(name, fresh);
   }
 
   @Override
@@ -198,7 +203,7 @@ public class RationalTypeImpl extends TypeImpl implements RationalType {
   }
   
 	@Override
-	RationalExpressionImpl create(Expr res, Expression e, Kind kind,
+	RationalExpressionImpl createExpression(Expr res, Expression e, Kind kind,
 			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isRational());
 		return RationalExpressionImpl.create(getExpressionManager(), 

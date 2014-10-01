@@ -1,98 +1,81 @@
 package edu.nyu.cascade.cvc4;
 
-import static edu.nyu.cascade.prover.Expression.Kind.SKOLEM;
-import static edu.nyu.cascade.prover.Expression.Kind.VARIABLE;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 
-import com.google.common.base.Preconditions;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.collect.MapMaker;
 
 import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.acsys.CVC4.ExprManager;
 import edu.nyu.acsys.CVC4.DatatypeType;
+import edu.nyu.cascade.prover.BoundExpression;
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.CacheException;
 
-public class BoundVariableExpressionImpl extends ExpressionImpl implements
-    VariableExpression {
+class BoundVariableExpressionImpl extends ExpressionImpl implements BoundExpression {
+  private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, Expr>> boundCache = CacheBuilder
+      .newBuilder().build(
+          new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, Expr>>(){
+            public ConcurrentMap<String, Expr> load(ExpressionManagerImpl expressionManager) {
+              return new MapMaker().makeMap();
+            }
+          });
 	
-	protected static BoundVariableExpressionImpl valueOf(
+  static BoundVariableExpressionImpl create(ExpressionManagerImpl exprManager, 
+  		String name, Type type, boolean fresh) {
+    return new BoundVariableExpressionImpl(exprManager, name, type, fresh);
+  }
+  
+  BoundVariableExpressionImpl(final ExpressionManagerImpl exprManager, String name, Type type, boolean fresh) {
+    super(exprManager, new BoundVariableConstructionStrategy() {
+      @Override
+      public Expr apply(ExprManager em, String name, edu.nyu.acsys.CVC4.Type type) {
+      	try {
+        	if(boundCache.get(exprManager).containsKey(name)) {
+            return boundCache.get(exprManager).get(name);
+          }
+          
+          Expr bound =  em.mkBoundVar(name, type);
+          boundCache.get(exprManager).put(name, bound);
+          
+          if(type.isDatatype()) {
+            DatatypeType dtt = new DatatypeType(type);
+            TheoremProverImpl.tpFileCommand("(declare-const " + bound + " " + dtt.getDatatype().getName() + ")");
+            TheoremProverImpl.debugCommand("(declare-const " + bound + " " + dtt.getDatatype().getName() + ")");
+          } else {
+          	TheoremProverImpl.tpFileCommand("(declare-const " + bound + " ", type, ")");
+            TheoremProverImpl.debugCommand("(declare-const " + bound + " ", type, ")");
+          }
+          return bound;
+        } catch (ExecutionException e) {
+          throw new CacheException(e);
+        }
+      }
+    }, name, type, fresh);
+  }
+  
+  static BoundVariableExpressionImpl valueOf(
       ExpressionManagerImpl exprManager, Expression e) {
     if (e instanceof BoundVariableExpressionImpl) {
       return (BoundVariableExpressionImpl) e;
-    } else if (e instanceof VariableExpression) {
-      VariableExpression e2 = (VariableExpression) e;
+    } else if (e instanceof BoundExpression) {
+    	BoundExpression e2 = (BoundExpression) e;
       return new BoundVariableExpressionImpl(exprManager, e2.getName(), e2.getType(),
           false);
-    } else if (e instanceof ExpressionImpl && e.isVariable()) {
+    } else if (e instanceof ExpressionImpl && e.isBound()) {
       ExpressionImpl ei = (ExpressionImpl) e; 
       assert( exprManager.equals(ei.getExpressionManager()) );
-      /*FIXME: equivalent way to get String name = cvcExpr.getName();*/
       Expr cvcExpr = ei.getCvc4Expression();
-      String name = cvcExpr.getChild(0).getConstString();
+      String name = cvcExpr.toString();
       return new BoundVariableExpressionImpl(exprManager, name, ei.getType(), 
           false);
     } else {
       throw new IllegalArgumentException("Expression type: " + e.getClass());
     }
-  }
-
-  protected static ExpressionImpl valueOfSkolem(
-      ExpressionManagerImpl exprManager, final Expr sk, Type type) {
-    Preconditions.checkArgument(sk.getKind().equals(edu.nyu.acsys.CVC4.Kind.SKOLEM));
-    Preconditions.checkArgument(exprManager.toType(sk.getType()).equals(type));
-    
-    BoundVariableExpressionImpl result = new BoundVariableExpressionImpl(exprManager,
-        SKOLEM, sk, sk.toString(), type);
-    result.setConstant(true);
-    return result;
-  }
-  
-  protected static ExpressionImpl valueOfVariable(
-      ExpressionManagerImpl exprManager, final Expr expr, Type type) {
-    Preconditions.checkArgument(expr.getKind().equals(edu.nyu.acsys.CVC4.Kind.VARIABLE) 
-        /*|| expr.isSymbol()*/);
-    Preconditions.checkArgument(exprManager.toType(expr.getType()).equals( type ));
-
-    BoundVariableExpressionImpl result = new BoundVariableExpressionImpl(exprManager,
-        VARIABLE, expr, expr.toString(), type);
-    result.setIsVariable(true);
-    return result;
-  }
-  
-  protected static BoundVariableExpressionImpl create(ExpressionManagerImpl exprManager, String name, Type type, boolean fresh) {
-    return new BoundVariableExpressionImpl(exprManager, name, type, fresh);
-  }
-  
-  protected BoundVariableExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-      Expr expr, String name, Type type) {
-    super(exprManager, kind, expr, type);
-    setName(name);
-  }
-  
-  protected BoundVariableExpressionImpl(ExpressionManagerImpl exprManager, String name, Type type, boolean fresh) {
-    super(exprManager, new VariableConstructionStrategy() {
-      @Override
-      public Expr apply(ExprManager em, String name, edu.nyu.acsys.CVC4.Type type) {
-        if(type.isDatatype()) {
-          DatatypeType dtt = new DatatypeType(type);
-          TheoremProverImpl.tpFileCommand(name + " : " + dtt.getDatatype().getName());
-          TheoremProverImpl.debugCommand(name + " : " + dtt.getDatatype().getName());
-        } else {
-          TheoremProverImpl.tpFileCommand(name + " : " + type.toString());
-          TheoremProverImpl.debugCommand(name + " : " + type.toString());
-        }
-        return em.mkBoundVar(name, type);
-      }
-    }, name, type, fresh);
-  }
-
-  /** Constructor with strategy, for subclasses that need to modify the
-   * interaction with CVC4 (c.f., FunctionVariable).
-   */
-  protected BoundVariableExpressionImpl(ExpressionManagerImpl exprManager,
-      VariableConstructionStrategy strategy, String name,
-      Type type, boolean fresh) {
-    super(exprManager,strategy,name,type,fresh);
   }
 
   @Override

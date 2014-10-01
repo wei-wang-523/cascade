@@ -15,7 +15,7 @@ import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.util.CacheException;
 
-public class IntegerTypeImpl extends TypeImpl implements IntegerType {
+class IntegerTypeImpl extends TypeImpl implements IntegerType {
   
   private static final LoadingCache<ExpressionManagerImpl, IntegerTypeImpl> typeCache = CacheBuilder
       .newBuilder().build(
@@ -25,7 +25,7 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
             }
           });
 
-  public static IntegerTypeImpl getInstance(ExpressionManagerImpl expressionManager) {
+  static IntegerTypeImpl getInstance(ExpressionManagerImpl expressionManager) {
     try {
       return typeCache.get(expressionManager);
     } catch (ExecutionException e) {
@@ -33,7 +33,7 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
     }
   }
   
-  protected IntegerTypeImpl(ExpressionManagerImpl expressionManager) {
+  private IntegerTypeImpl(ExpressionManagerImpl expressionManager) {
     super(expressionManager);
     setCVC4Type(expressionManager
         .getTheoremProver()
@@ -101,7 +101,6 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
     return DomainType.INTEGER;
   }
 
-
   @Override
   public String getName() {
     return "INT";
@@ -116,8 +115,7 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
   @Override
   public BooleanExpression sgt(Expression a, 
       Expression b) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException();
+    return gt(a, b);
   }
 
   @Override
@@ -129,8 +127,7 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
   @Override
   public BooleanExpression sleq(Expression a, 
       Expression b) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException();
+    return leq(a, b);
   }
 
   @Override
@@ -141,8 +138,7 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
 
   @Override
   public BooleanExpression slt(Expression a, Expression b) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException();
+    return lt(a, b);
   }
   
   @Override
@@ -182,23 +178,18 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
   }
 
   @Override
-  TypeImpl subType(ExpressionManagerImpl exprManager, Expr expr) {
-    throw new UnsupportedOperationException("Records not supported by CVC4 yet (sorry!)");
-//    IntegerTypeImpl result = new IntegerTypeImpl(exprManager);
-//    ExprManager em = exprManager.getTheoremProver().getCvc4ExprManager();
-//    result.setCVC4Type(em.mkPredicateSubtype(expr));
-//    result.setTypeExpression(ExpressionImpl.mkTypeExpr(result));
-//    return result;
-  }
-
-  @Override
   public IntegerVariableImpl variable(String name, boolean fresh) {
     return new IntegerVariableImpl(getExpressionManager(), name, this, fresh);
   }
   
   @Override
-  public IntegerBoundVariableImpl boundVariable(String name, boolean fresh) {
+  public IntegerBoundVariableImpl boundVar(String name, boolean fresh) {
     return IntegerBoundVariableImpl.create(getExpressionManager(), name, this, fresh);
+  }
+  
+  @Override
+  public IntegerBoundVariableImpl boundExpression(String name, int index, boolean fresh) {
+    return boundVar(name, fresh);
   }
 
   @Override
@@ -207,7 +198,7 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
   }
   
 	@Override
-	IntegerExpressionImpl create(Expr res, Expression e, Kind kind,
+	IntegerExpressionImpl createExpression(Expr res, Expression e, Kind kind,
 			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isInteger());
 		return IntegerExpressionImpl.create(getExpressionManager(), 

@@ -4,6 +4,7 @@ import static edu.nyu.cascade.prover.TheoremProverFactory.Capability.DATATYPES;
 import static edu.nyu.cascade.prover.TheoremProverFactory.Capability.SMT;
 
 import java.io.File;
+import java.io.PrintStream;
 //import java.lang.management.ManagementFactory;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -22,7 +23,7 @@ import edu.nyu.acsys.CVC4.SExpr;
 import edu.nyu.acsys.CVC4.ExprManager;
 import edu.nyu.acsys.CVC4.Result;
 import edu.nyu.acsys.CVC4.SmtEngine;
-
+import edu.nyu.acsys.CVC4.Type;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.SatResult;
@@ -30,7 +31,6 @@ import edu.nyu.cascade.prover.TheoremProver;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.ValidityResult;
 import edu.nyu.cascade.prover.TheoremProverFactory.Capability;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Preferences;
 
@@ -41,7 +41,7 @@ import edu.nyu.cascade.util.Preferences;
  */
 public class TheoremProverImpl implements TheoremProver {
 
-  public static class Provider implements TheoremProver.Provider {
+	public static class Provider implements TheoremProver.Provider {
 
     @Override
     public TheoremProver create() {
@@ -55,7 +55,7 @@ public class TheoremProverImpl implements TheoremProver {
 
     @Override
     public String getName() {
-      return "cvc4";
+      return Preferences.PROVER_CVC4;
     }
 
     @SuppressWarnings("static-access")
@@ -114,38 +114,71 @@ public class TheoremProverImpl implements TheoremProver {
 
   private static final Pattern p = Pattern.compile("(^|\\n|\\r\\n?)");
 
-  public static void debugCall(String string) {
+  static void debugCall(String string) {
     if (IOUtils.debugEnabled()) {
       IOUtils.debug().pln(prefixLinesWith(string, "CVC.API> ") + ";").flush();
     }
   }
 
-  public static void debugCall(String format, Object... objects) {
+  static void debugCall(String format, Object... objects) {
     if (IOUtils.debugEnabled()) {
       debugCall(String.format(format, objects));
     }
   }
 
-  public static void debugCommand(String string) {
+  static void debugCommand(String string) {
     // p.matcher(string).replaceAll("\1CVC> ");
     if (IOUtils.debugEnabled()) {
       IOUtils.debug().pln(prefixLinesWith(string, "CVC> ") + ";").flush();
     }
   }
   
-  public static void tpFileCommand(String string) {
+  static void tpFileCommand(String prefix, Expr cvc4Expr, String postfix) {
     if(IOUtils.tpFileEnabled()) {
-      IOUtils.tpFile().pln(string + ";").flush();
+    	PrintStream stream = IOUtils.tpFileStream().append(prefix);
+    	cvc4Expr.toStream(stream);
+      // cvc4Expr.toStream(stream, -1, false, 1, edu.nyu.acsys.CVC4.OutputLanguage.OUTPUT_LANG_SMTLIB_V2);
+      stream.append(postfix).append('\n').flush();
+    }
+  }
+  
+	static void tpFileCommand(String prefix, Type cvc4Type, String postfix) {
+    if(IOUtils.tpFileEnabled()) {
+    	PrintStream stream = IOUtils.tpFileStream().append(prefix);
+    	cvc4Type.toStream(stream);
+      stream.append(postfix).append('\n').flush();
+    }
+  }
+  
+	static void tpFileCommand(String string) {
+    if(IOUtils.tpFileEnabled()) {
+      IOUtils.tpFile().pln(string).flush();
+    }
+  }
+  
+	static void debugCommand(String prefix, Expr cvc4Expr, String postfix) {
+    if(IOUtils.debugEnabled()) {
+    	PrintStream stream = IOUtils.debugStream().append(prefix);
+      cvc4Expr.toStream(stream);
+      stream.append(postfix).flush();
+    }
+  }
+  
+	static void debugCommand(String prefix, Type cvc4Type, String postfix) {
+    if(IOUtils.debugEnabled()) {
+    	PrintStream stream = IOUtils.debugStream().append(prefix);
+    	cvc4Type.toStream(stream);
+      stream.append(postfix).flush();
     }
   }
 
-  public static void debugCommand(String format, Object... objects) {
+	static void debugCommand(String format, Object... objects) {
     if (IOUtils.debugEnabled()) {
       debugCommand(String.format(format, objects));
     }
   }
   
-  public static void tpFileCommand(String format, Object... objects) {
+	static void tpFileCommand(String format, Object... objects) {
     if (IOUtils.tpFileEnabled()) {
       tpFileCommand(String.format(format, objects));
     }
@@ -174,16 +207,12 @@ public class TheoremProverImpl implements TheoremProver {
 
   /** A list of asserted expressions. */
   private final List<BooleanExpression> assumptions;
-  
-  /* private final FlagsMut flags; */
 
   /**
    * This constructor is an escape hatch for subclasses to do initialization
    * themselves.
    */
   protected TheoremProverImpl(ExprManager em) throws TheoremProverException {
-    /* validityChecker = vc;
-    flags = vc.getFlags(); */
     cvc4ExprManager = em;
     smtEngine = new SmtEngine(em);
     exprManager = null;
@@ -194,14 +223,7 @@ public class TheoremProverImpl implements TheoremProver {
   /**
    * Construct a new CVC4 theorem prover.
    */
-  public TheoremProverImpl() {
-    /* flags = ValidityChecker.createFlags(null); */
-
-    // flags.setFlag("dag", 0);
-    // flags.setFlag("quant-complete-inst",1);
-
-    // Create a validity checker with these flags
-    /* validityChecker = null; */
+  TheoremProverImpl() {
     
     // Create the cvc4 expression manager
     cvc4ExprManager = null;
@@ -223,49 +245,38 @@ public class TheoremProverImpl implements TheoremProver {
 
   @Override
   public void assume(Iterable<? extends Expression> propositions) {
-    /*
-     * for (IExpression<IBooleanType> proposition : propositions) { Expr expr =
-     * getExpressionManager().toCvc4Expr(proposition); // debugCommand("ASSERT "
-     * + expr.toString()); // debugCall("vc.assertFormula(" + expr.toString() +
-     * ");"); // cvc4_vc.assertFormula(expr); }
-     */
     for( Expression e : propositions ) {
       Preconditions.checkArgument(e.isBoolean());
+      Expr assump = exprManager.toCvc4Expr(e);
+      debugCommand("(assert ", assump, ")");
+      tpFileCommand("(assert ", assump, ")");
+      getSmtEngine().assertFormula( assump );
       assumptions.add(e.asBooleanExpression());
-    }
-  }
-
-  private void addAssumptions() {
-    for (Expression p : assumptions) {
-      Expr expr = getExpressionManager().toCvc4Expr(p);
-      debugCommand("ASSERT " + expr.toString());
-      tpFileCommand("ASSERT " + expr.toString());
-      /* debugCall("vc.assertFormula(" + expr.toString() + ");"); */
-      /* getCvc4ExprManager().assertFormula(expr); */
-      getSmtEngine().assertFormula( expr );
     }
   }
   
   @Override
   public SatResult<?> checkSat(Expression expr) {
     Preconditions.checkArgument(expr.isBoolean());
-    try {      
-      /* getCvc4ExprManager().push(); */
+    try {
+    	
       getSmtEngine().push();
+      tpFileCommand("(push)");
 
-      addAssumptions();
-
-      Expr cvc4Expr = getExpressionManager().toCvc4Expr(expr);
-
-      if (IOUtils.debugEnabled()) {
+      Expr cvc4Expr = exprManager.toCvc4Expr(expr);
+      Expr cvc4ExprSimp = getSmtEngine().simplify(cvc4Expr);
+      
+      if (IOUtils.debugEnabled()) {        
         IOUtils.debug().pln(
                             "Simplified: "
-                                + getSmtEngine().simplify(cvc4Expr)
-                                    .toString()).flush();
-	debugCommand("CHECKSAT " + cvc4Expr.toString());
-	tpFileCommand("CHECKSAT " + cvc4Expr.toString());
+                                + cvc4ExprSimp).flush();
       }
       
+      debugCommand("(assert " + cvc4ExprSimp, ")");
+      tpFileCommand("(assert ", cvc4Expr, ")");
+      
+      debugCommand("(check-sat)");
+      tpFileCommand("(check-sat)");     
       Result cvc4SatResult = getSmtEngine().checkSat(cvc4Expr);
       IOUtils.debug().pln(cvc4SatResult.toString()).flush();
       SatResult.Type resultType = convertCvc4SatResult(cvc4SatResult);
@@ -292,7 +303,6 @@ public class TheoremProverImpl implements TheoremProver {
             modelWorked = true;
           } catch (Exception e) {
             IOUtils.err().println("[WARNING] " + e.getMessage());
-            // e.printStackTrace(IOUtils.err());
             ctrex.clear();
           }
           
@@ -312,9 +322,9 @@ public class TheoremProverImpl implements TheoremProver {
       if (Preferences.isSet(OPTION_TP_STATS)) {
         getSmtEngine().getStatistics().flushInformation(IOUtils.out());
       }
-          
-      /* getCvc4ExprManager().pop(); */
+      
       getSmtEngine().pop();
+      tpFileCommand("(pop)");
 
       return res;
     } catch (Exception e) {
@@ -325,28 +335,30 @@ public class TheoremProverImpl implements TheoremProver {
   @Override
   public ValidityResult<?> checkValidity(Expression expr) {
     Preconditions.checkArgument(expr.isBoolean());
-    long time = System.currentTimeMillis();
     try {
       
-      /* getCvc4ExprManager().push(); */
       getSmtEngine().push();
-
-      addAssumptions();
-
-      final ExpressionManagerImpl exprManager = getExpressionManager();
+      tpFileCommand("(push)");
+      
       Expr cvc4Expr = exprManager.toCvc4Expr(expr);
-
+      Expr cvc4ExprSimp = getSmtEngine().simplify(cvc4Expr);
+      
       if (IOUtils.debugEnabled()) {  
         IOUtils.debug().pln(
-                            "Simplified: "
-                                + getSmtEngine().simplify(cvc4Expr)
-                                    .toString()).flush();
-        debugCommand("QUERY " + cvc4Expr.toString());
-	tpFileCommand("QUERY " + cvc4Expr.toString());
+                            "Simplified: " + cvc4ExprSimp)
+                                .flush();
       }
       
+      debugCommand("(assert ", cvc4ExprSimp, ")");
+      tpFileCommand("(assert ", cvc4Expr, ")");
+      
+      debugCommand("(check-sat)");
+      tpFileCommand("(check-sat)");
+      
 //      IOUtils.out().println(ManagementFactory.getRuntimeMXBean().getName());
+      long start = System.currentTimeMillis(); 
       Result cvc4QueryResult = getSmtEngine().query(cvc4Expr);
+      IOUtils.stats().pln("CVC4 took time: " + (System.currentTimeMillis() - start)/1000.0 + "s");
       IOUtils.debug().pln(cvc4QueryResult.toString());
       ValidityResult.Type resultType = convertCvc4QueryResult(cvc4QueryResult);
 
@@ -360,20 +372,17 @@ public class TheoremProverImpl implements TheoremProver {
          * so we catch any Exception in the model generation phase and
          * revert to using a counter-example.
          */
-        List<BooleanExpression> ctrex = Lists.newLinkedList();
+        List<BooleanExpression> ctrex = Lists.newArrayList();
         boolean modelWorked = false;
         
         try {
-          for (VariableExpression e: exprManager.getVariables()) {
-            if(e.getName().startsWith("m_") || e.getName().startsWith("alloc_"))
-              continue;
+          for (Expression e: exprManager.getVariables()) {
             Expr eValue = getSmtEngine().getValue(exprManager.toCvc4Expr(e));
             ctrex.add(e.eq((ExpressionImpl) exprManager.toExpression(eValue)));
           }   
           modelWorked = true;
         } catch (Exception e) {
           IOUtils.err().println("[WARNING] " + e.getMessage());
-          // e.printStackTrace(IOUtils.err());
           ctrex.clear();
         }
         
@@ -394,14 +403,9 @@ public class TheoremProverImpl implements TheoremProver {
         getSmtEngine().getStatistics().flushInformation(IOUtils.out());
       }
       
-      /*  getCvc4ExprManager().pop();*/
       getSmtEngine().pop();
-      time = System.currentTimeMillis() - time;
-      IOUtils.err()
-      .println(
-          "CVC4 took time: "
-              + time/1000.0 + "s");
-
+      tpFileCommand("(pop)");
+      
       return res;
     } catch (Exception e) {
       throw new TheoremProverException(e);
@@ -410,11 +414,7 @@ public class TheoremProverImpl implements TheoremProver {
 
   @Override
   public void clearAssumptions() {
-    try {
-      assumptions.clear();
-    } catch (Exception e) {
-      throw new TheoremProverException(e);
-    }
+  	assumptions.clear();
   }
 
   private ValidityResult.Type convertCvc4QueryResult(Result validResult) {
@@ -478,7 +478,7 @@ public class TheoremProverImpl implements TheoremProver {
    * 
    * @return the expression manager
    */
-  protected SmtEngine getSmtEngine() {
+  SmtEngine getSmtEngine() {
     if(smtEngine == null) {
       smtEngine = new SmtEngine(getCvc4ExprManager());
       initializePreferences();
@@ -525,7 +525,7 @@ public class TheoremProverImpl implements TheoremProver {
     }
   }
   
-  public void enableCvc4Stats() {
+  private void enableCvc4Stats() {
     try {
       getSmtEngine().setOption("statistics", new SExpr("true"));
     } catch (Exception e) {
@@ -533,7 +533,7 @@ public class TheoremProverImpl implements TheoremProver {
     }
   }
   
-  public void enableCvc4Trace(String s) {
+  private void enableCvc4Trace(String s) {
     try {
       getSmtEngine().setOption("trace", new SExpr(s));
     } catch (Exception e) {
@@ -541,7 +541,7 @@ public class TheoremProverImpl implements TheoremProver {
     }
   }
   
-  public void enableCvc4Debug(String s) {
+  private void enableCvc4Debug(String s) {
     try {
       getSmtEngine().setOption("debug", new SExpr(s));
     } catch (Exception e) {
@@ -577,49 +577,9 @@ public class TheoremProverImpl implements TheoremProver {
           enableCvc4Debug(flag);
         }
       }
-    
-      /** FIXME: other preferences are not supported in CVC4 */
-      
-      /** 
-       * Some of these preferences (e.g., DUMP_LOG) must be set
-       * before the ValidityChecker is created. Hence, setPreferences
-       * *must* be called before that happens... 
-       */
-      
-/*      if (Preferences.isSet(OPTION_DUMP_LOG)) {
-        setLogFile(Preferences.getFile(OPTION_DUMP_LOG));
-      }
-      if (Preferences.isSet(OPTION_DUMP_TRACE)) {
-        flags.setFlag(FLAG_DUMP_TRACE,Preferences.getFile(OPTION_DUMP_TRACE).getAbsolutePath());
-      }
-     if (Preferences.isSet(OPTION_QUANT_LIMIT)) {
-        setQuantifierLimit(Preferences.getInt(OPTION_QUANT_LIMIT));
-      }
-      if (!Preferences.isSet(OPTION_NO_TYPE_CORRECTNESS_CONDITIONS)) {
-        flags.setFlag(FLAG_TYPE_CORRECTNESS_CONDITIONS,true);
-        new SExpr();
-      }
-*/
     } catch (Exception e) {
       throw new TheoremProverException(e);
     }
-  }
-
-  /** 
-   * FIXME: Flags are not supported in cvc4
-   */
-  public void setLogFile(File logFile) {
-    /* flags.setFlag(FLAG_DUMP_LOG, logFile.getAbsolutePath()); */
-    throw new UnsupportedOperationException("Not supported flag in CVC4.");
-  } 
-
-  public void setQuantifierLimit(int limit) {
-    /* flags.setFlag(FLAG_QUANT_MAX_INST_LEVEL, limit); */
-    throw new UnsupportedOperationException("Not supported flag in CVC4.");
-  }
-
-  public void setResourceLimit(int limit) {
-    getSmtEngine().setResourceLimit(limit);
   }
 
   ImmutableList<Option> getOptions() {
@@ -631,14 +591,14 @@ public class TheoremProverImpl implements TheoremProver {
     // also incrementally-simplifying and interactive
     smtEngine.setOption("incremental", new SExpr("true"));
     smtEngine.setOption("produce-models", new SExpr("true"));
-    smtEngine.setOption("simplification-mode", new SExpr("incremental"));
+    //    smtEngine.setOption("simplification-mode", new SExpr("incremental"));
     smtEngine.setOption("interactive-mode", new SExpr("true")); // support SmtEngine::getAssertions()
     smtEngine.setOption("produce-assignments", new SExpr("true"));
     smtEngine.setOption("statistics", new SExpr("false"));
     smtEngine.setOption("random-seed", new SExpr("91648253"));
     smtEngine.setOption("parse-only", new SExpr("false"));
-    smtEngine.setOption("input-language", new SExpr("presentation"));
-    smtEngine.setOption("output-language", new SExpr("cvc4"));
+    smtEngine.setOption("input-language", new SExpr("smt2"));
+    smtEngine.setOption("output-language", new SExpr("smt2"));
   }
 
   @Override

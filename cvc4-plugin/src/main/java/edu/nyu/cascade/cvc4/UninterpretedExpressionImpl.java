@@ -14,7 +14,7 @@ import edu.nyu.cascade.prover.UninterpretedExpression;
 import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.prover.type.Type;
 
-public final class UninterpretedExpressionImpl extends ExpressionImpl implements
+final class UninterpretedExpressionImpl extends ExpressionImpl implements
     UninterpretedExpression {
 
   static UninterpretedExpressionImpl create(ExpressionManagerImpl exprManager, Type type, int id) {
@@ -22,7 +22,29 @@ public final class UninterpretedExpressionImpl extends ExpressionImpl implements
     return new UninterpretedExpressionImpl(exprManager, type, id);
   }
 
-  private UninterpretedExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
+  static UninterpretedExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
+	    Expr expr, UninterpretedType type, Iterable<? extends ExpressionImpl> children) {
+		return new UninterpretedExpressionImpl(exprManager, kind, expr, type, children);
+	}
+
+	static UninterpretedExpressionImpl valueOf(ExpressionManagerImpl exprManager,
+	    ExpressionImpl expr) {
+	  Preconditions.checkArgument(expr.isTuple());
+	  if (exprManager.equals(expr.getExpressionManager())) {
+	    if( expr instanceof UninterpretedExpressionImpl ) {
+	      return (UninterpretedExpressionImpl) expr;
+	    } else {
+	      return new UninterpretedExpressionImpl((ExpressionImpl) expr);
+	    }
+	  }
+	
+	  switch (expr.getKind()) {
+	  default:
+	    throw new UnsupportedOperationException();
+	  }
+	}
+
+	private UninterpretedExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
       BinaryConstructionStrategy strategy, Expression left,
       Expression right, Type t) {
     super(exprManager, kind, strategy, left, right);
@@ -52,30 +74,8 @@ public final class UninterpretedExpressionImpl extends ExpressionImpl implements
     super(exprManager, kind, expr, type);
   }
   
-  protected static UninterpretedExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
-      Expr expr, UninterpretedType type, Iterable<? extends ExpressionImpl> children) {
-  	return new UninterpretedExpressionImpl(exprManager, kind, expr, type, children);
-  }
-
   @Override
   public UninterpretedTypeImpl getType() {
     return (UninterpretedTypeImpl) super.getType();
-  }
-  
-  static UninterpretedExpressionImpl valueOf(ExpressionManagerImpl exprManager,
-      ExpressionImpl expr) {
-    Preconditions.checkArgument(expr.isTuple());
-    if (exprManager.equals(expr.getExpressionManager())) {
-      if( expr instanceof UninterpretedExpressionImpl ) {
-        return (UninterpretedExpressionImpl) expr;
-      } else {
-        return new UninterpretedExpressionImpl((ExpressionImpl) expr);
-      }
-    }
-
-    switch (expr.getKind()) {
-    default:
-      throw new UnsupportedOperationException();
-    }
   }
 }

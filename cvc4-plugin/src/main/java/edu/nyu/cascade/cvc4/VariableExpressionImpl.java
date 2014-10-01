@@ -20,7 +20,7 @@ import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
 
-public class VariableExpressionImpl extends ExpressionImpl implements
+class VariableExpressionImpl extends ExpressionImpl implements
     VariableExpression {
   private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, Expr>> varCache = CacheBuilder
       .newBuilder().build(
@@ -43,7 +43,7 @@ public class VariableExpressionImpl extends ExpressionImpl implements
       assert( exprManager.equals(ei.getExpressionManager()) );
       /*FIXME: equivalent way to get String name = cvcExpr.getName();*/
       Expr cvcExpr = ei.getCvc4Expression();
-      String name = cvcExpr.getChild(0).getConstString();
+      String name = cvcExpr.toString();
       return new VariableExpressionImpl(exprManager, name, ei.getType(), 
           false);
     } else {
@@ -58,7 +58,6 @@ public class VariableExpressionImpl extends ExpressionImpl implements
     
     VariableExpressionImpl result = new VariableExpressionImpl(exprManager,
         SKOLEM, sk, sk.toString(), type);
-    result.setConstant(true);
     return result;
   }
   
@@ -70,17 +69,16 @@ public class VariableExpressionImpl extends ExpressionImpl implements
 
     VariableExpressionImpl result = new VariableExpressionImpl(exprManager,
         VARIABLE, expr, expr.toString(), type);
-    result.setIsVariable(true);
     return result;
   }
   
-  protected VariableExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
+  VariableExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
       Expr expr, String name, Type type) {
     super(exprManager, kind, expr, type);
     setName(name);
   }
   
-  protected VariableExpressionImpl(final ExpressionManagerImpl exprManager, String name, Type type, boolean fresh) {
+  VariableExpressionImpl(final ExpressionManagerImpl exprManager, String name, Type type, boolean fresh) {
     super(exprManager, new VariableConstructionStrategy() {
       @Override
       public Expr apply(ExprManager em, String name, edu.nyu.acsys.CVC4.Type type) {
@@ -88,22 +86,24 @@ public class VariableExpressionImpl extends ExpressionImpl implements
          * bc it's second parameter is a output parameter. Need to change
          * the API so that it only takes the name.
          */
-//        if( IOUtils.debugEnabled() && em.lookupVar(name) == null ) {
         try {
           if(varCache.get(exprManager).containsKey(name)) {
             return varCache.get(exprManager).get(name);
           } 
+          Expr res = em.mkVar(name, type);
+          varCache.get(exprManager).put(name, res);
+          
           if(type.isDatatype()) {
           	DatatypeType dtt = new DatatypeType(type);
           	String dtName = dtt.getDatatype().getName();
-          	TheoremProverImpl.tpFileCommand(name + " : " + dtName);
-          	TheoremProverImpl.debugCommand(name + " : " + dtName);
+          	
+          	TheoremProverImpl.tpFileCommand("(declare-const " + res + " " + dtName + ")");
+            TheoremProverImpl.debugCommand("(declare-const " + res + " " + dtName + ")");
           } else {
-          	TheoremProverImpl.tpFileCommand(name + " : " + type.toString());
-          	TheoremProverImpl.debugCommand(name + " : " + type.toString());
+          	TheoremProverImpl.tpFileCommand("(declare-const " + res + " ", type, ")");
+            TheoremProverImpl.debugCommand("(declare-const " + res + " ", type, ")");
           }
-          Expr res = em.mkVar(name, type);
-          varCache.get(exprManager).put(name, res);
+
           return res;
         } catch (ExecutionException e) {
           throw new CacheException(e);
@@ -115,7 +115,7 @@ public class VariableExpressionImpl extends ExpressionImpl implements
   /** Constructor with strategy, for subclasses that need to modify the
    * interaction with CVC4 (c.f., FunctionVariable).
    */
-  protected VariableExpressionImpl(ExpressionManagerImpl exprManager,
+  VariableExpressionImpl(ExpressionManagerImpl exprManager,
       VariableConstructionStrategy strategy, String name,
       Type type, boolean fresh) {
     super(exprManager,strategy,name,type,fresh);
@@ -125,5 +125,4 @@ public class VariableExpressionImpl extends ExpressionImpl implements
   public String getName() {
     return super.getName();
   }
-
 }

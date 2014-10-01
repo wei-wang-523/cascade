@@ -2,6 +2,7 @@ package edu.nyu.cascade.cvc4;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -50,7 +51,7 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
           });
   
   
-  static class Builder {
+  private static class Builder {
     private final List<String> typeNames; 
     private final List<List<ConstructorImpl>> constructorLists;
     private final List<List<String>> constructorNameLists;
@@ -113,50 +114,66 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
       ExprManager em = exprManager.getTheoremProver().getCvc4ExprManager();
       
       if (IOUtils.debugEnabled() || IOUtils.tpFileEnabled()) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("DATATYPE\n  ");
+        PrintStream debugStream = IOUtils.debugStream();
+        PrintStream tpFileStream = IOUtils.tpFileStream();
+        
+        debugStream.append("(declare-datatypes () ("); // Type parameter
+        tpFileStream.append("(declare-datatypes () ("); // Type parameter
+        
         int i = 0;
         for (String typeName : typeNames) {
           if (i > 0) {
-            sb.append(",\n  ");
+          	debugStream.append("\n                       ");
+          	tpFileStream.append("\n                       ");
           }
-          sb.append(typeName + " =\n    ");
+          debugStream.append(" (" + typeName);
+          tpFileStream.append(" (" + typeName);
+          
           int j = 0;
           for (String constructorName : constructorNameLists.get(i)) {
-            if (j > 0) {
-              sb.append("\n  | ");
-            }
-            sb.append(constructorName);
-            if (selectorNameListLists.get(i).get(j).size() > 0) {
-              sb.append(" (");
+          	int selectorSize = selectorNameListLists.get(i).get(j).size();
+          	debugStream.append(" (" + constructorName);
+          	tpFileStream.append(" (" + constructorName);
+          	
+            if (selectorSize > 0) {
               int k = 0;
               for (String selectorName : selectorNameListLists.get(i).get(j)) {
-                if (k > 0) {
-                  sb.append(", ");
-                }
-                sb.append(selectorName + " : ");
+              	debugStream.append(" (" + selectorName + " ");
+              	tpFileStream.append(" (" + selectorName + " ");
+              	
                 edu.nyu.acsys.CVC4.Type sType = selectorTypeListLists.get(i).get(j).get(k);
                 edu.nyu.acsys.CVC4.DatatypeUnresolvedType usType = 
                     selectorUnresolvedTypeListLists.get(i).get(j).get(k);
                 try {
-                  if(sType != null)     sb.append(sType);
-                  else                  sb.append(usType.getName());
+                  if(sType != null) {
+                  	sType.toStream(debugStream);
+                  	sType.toStream(tpFileStream);
+                  }
+                  else {
+                  	debugStream.append(usType.getName());
+                    tpFileStream.append(usType.getName());
+                  }
                 } catch (Exception e) {
                   throw new TheoremProverException(e);
                 }
+                debugStream.append(")");
+                tpFileStream.append(")");
                 k++;
               }
-              sb.append(")");
             }
+            debugStream.append(")");
+            tpFileStream.append(")");
             j++;
           }
+          debugStream.append(")");
+          tpFileStream.append(")");
           i++;
         }
-        sb.append("\nEND;");
-        if(IOUtils.debugEnabled())
-          TheoremProverImpl.debugCommand(sb.toString());
-        if(IOUtils.tpFileEnabled())
-          TheoremProverImpl.tpFileCommand(sb.toString());
+        debugStream.append("))");
+        tpFileStream.append("))");
+        
+        debugStream.append('\n').flush();
+        tpFileStream.append('\n').flush();
       }    
       
       vectorDatatypeType cvcTypes = new vectorDatatypeType();
@@ -435,58 +452,16 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
       throw new CacheException(e);
     }
   }
-  
-/*
-  public static <T extends IType> ISelector<T> selector(String name, T type) {
-    return new Selector<T>(name,type);
-  }
-*/
 
-  static InductiveTypeImpl create(ExpressionManagerImpl expressionManager,
+  static InductiveTypeImpl createInductiveType(ExpressionManagerImpl expressionManager,
       String name, Constructor... constructors) {
-    return create(expressionManager, name, ImmutableList.copyOf(Arrays.asList(constructors)));
-  }
-
-  
-  @SuppressWarnings("unchecked")
-  public static InductiveTypeImpl create(ExpressionManagerImpl expressionManager,
-      String name, List<? extends Constructor> constructors) {
+    @SuppressWarnings("unchecked")
     List<InductiveTypeImpl> types = recursiveTypes(expressionManager, ImmutableList
-        .of(name), constructors);
+        .of(name), Lists.newArrayList(constructors));
     assert( types.size() == 1 );
     return types.get(0);
-    
-/*    ExprManager em = expressionManager
-        .getTheoremProver()
-        .getValidityChecker();
-
-    List<String> constructorNames = Lists
-        .newArrayListWithExpectedSize(constructors.size());
-    List<List<String>> selectorLists = Lists
-        .newArrayListWithExpectedSize(constructors.size());
-    List<List<ExprMut>> selectorTypeLists = Lists
-        .newArrayListWithExpectedSize(constructors.size());
-
-    for (IConstructor constr : constructors) {
-      constructorNames.add(constr.getName());
-      List<? extends ISelector<?>> selectors = constr.getSelectors();
-      List<String> selectorNames = Lists.newArrayListWithExpectedSize(selectors.size());
-      List<ExprMut> selectorTypes = 
-        Lists.newArrayListWithExpectedSize(selectors.size());
-      for( ISelector<?>  selector : selectors ) {
-        selectorNames.add( selector.getName() );
-        selectorTypes.add( ExpressionManager.toCvc4Expr( selector.getTypeDescriptor() ));
-      }
-      selectorLists.add(selectorNames);
-      selectorTypeLists.add(selectorTypes);
-    }
-    TypeMut type = em.dataType(name, constructorNames, selectorLists,
-        selectorTypeLists);
-    
-    return new InductiveType(expressionManager, type, name, constructors);
-*/
-    }
-
+  }
+  
   static ImmutableList<InductiveTypeImpl> recursiveTypes(
       ExpressionManagerImpl expressionManager, List<String> names,
       List<? extends Constructor>... constructorLists) {
@@ -584,7 +559,15 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
     return new InductiveTypeImpl(exprManager,name);
   }
   
-  private final String name;
+  @Override
+	InductiveExpressionImpl createExpression(Expr res, Expression e, Kind kind,
+			Iterable<ExpressionImpl> children) {
+		Preconditions.checkArgument(e.isInductive());
+		return InductiveExpressionImpl.create(getExpressionManager(), 
+				kind, res, e.getType().asInductive(), children);
+	}
+
+	private final String name;
   private final ImmutableList<Constructor> constructors;
 //  private final boolean stub;
 
@@ -700,8 +683,13 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
   }
   
   @Override
-  public InductiveBoundVariableImpl boundVariable(final String name, boolean fresh) {
-    return InductiveBoundVariableImpl.create(getExpressionManager(),name,this,fresh);
+  public InductiveBoundVariableImpl boundVar(final String name, boolean fresh) {
+    return new InductiveBoundVariableImpl(getExpressionManager(), name, this, fresh);
+  }
+  
+  @Override
+  public InductiveBoundVariableImpl boundExpression(final String name, int index, boolean fresh) {
+    return boundVar(name, fresh);
   }
 
   @Override
@@ -709,12 +697,4 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
       Expression expression) {
     throw new UnsupportedOperationException();
   }
-
-	@Override
-	InductiveExpressionImpl create(Expr res, Expression e, Kind kind,
-			Iterable<ExpressionImpl> children) {
-		Preconditions.checkArgument(e.isInductive());
-		return InductiveExpressionImpl.create(getExpressionManager(), 
-				kind, res, e.getType().asInductive(), children);
-	}
 }

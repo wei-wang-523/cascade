@@ -1,18 +1,18 @@
 package edu.nyu.cascade.cvc4;
 
+import java.util.Collections;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 import edu.nyu.cascade.prover.BitVectorExpression;
-import edu.nyu.cascade.prover.BitVectorVariableExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 
-public class BitVectorBoundVariableImpl extends BoundVariableExpressionImpl
-    implements BitVectorVariableExpression {
+final class BitVectorBoundVariableImpl extends BoundVariableExpressionImpl
+    implements BitVectorExpression {
 
-  public BitVectorBoundVariableImpl(ExpressionManagerImpl em, String name, BitVectorTypeImpl type, boolean fresh) {
+	BitVectorBoundVariableImpl(ExpressionManagerImpl em, String name, BitVectorTypeImpl type, boolean fresh) {
       super(em,name,type,fresh);
   }
 
@@ -59,12 +59,16 @@ public class BitVectorBoundVariableImpl extends BoundVariableExpressionImpl
   @Override
   public BitVectorExpressionImpl nor(Expression a) {
     return BitVectorExpressionImpl.mkNor(getExpressionManager(), this, a);
-
   }
 
   @Override
   public BitVectorExpressionImpl not() {
     return BitVectorExpressionImpl.mkNot(getExpressionManager(), this);
+  }
+  
+  @Override
+  public BitVectorExpressionImpl neg() {
+    return BitVectorExpressionImpl.mkNegate(getExpressionManager(), this);
   }
 
   @Override
@@ -73,24 +77,24 @@ public class BitVectorBoundVariableImpl extends BoundVariableExpressionImpl
   }
 
   @Override
-  public BitVectorExpressionImpl plus(int size, Expression a) {
-    return BitVectorExpressionImpl.mkPlus(getExpressionManager(), size, this, a);
+  public BitVectorExpressionImpl plus(Expression a) {
+    return BitVectorExpressionImpl.mkPlus(getExpressionManager(), this, a);
   }
 
   @Override
-  public BitVectorExpressionImpl plus(int size, Expression... args) {
-    return BitVectorExpressionImpl.mkPlus(getExpressionManager(), size, this, args);
+  public BitVectorExpressionImpl plus(Expression... args) {
+    return BitVectorExpressionImpl.mkPlus(getExpressionManager(), this, args);
   }
 
   @Override
-  public BitVectorExpressionImpl plus(int size,
-      Iterable<? extends Expression> args) {
-    return BitVectorExpressionImpl.mkPlus(getExpressionManager(), size, Iterables.concat(Lists.newArrayList(this), args));
+  public BitVectorExpressionImpl plus(Iterable<? extends Expression> args) {
+    return BitVectorExpressionImpl.mkPlus(getExpressionManager(), 
+    		Iterables.concat(Collections.singletonList(this), args));
   }
 
   @Override
-  public BitVectorExpressionImpl times(int size, Expression a) {
-    return BitVectorExpressionImpl.mkMult(getExpressionManager(), size, this, a);
+  public BitVectorExpressionImpl times(Expression a) {
+    return BitVectorExpressionImpl.mkMult(getExpressionManager(), this, a);
   }
   
   @Override
@@ -121,6 +125,11 @@ public class BitVectorBoundVariableImpl extends BoundVariableExpressionImpl
   @Override
   public BitVectorExpressionImpl rshift(Expression a) {
     return BitVectorExpressionImpl.mkRShift(getExpressionManager(), this, a);
+  }
+  
+  @Override
+  public BitVectorExpressionImpl signedRshift(Expression a) {
+    return BitVectorExpressionImpl.mkSRShift(getExpressionManager(), this, a);
   }
 
   @Override
@@ -173,4 +182,15 @@ public class BitVectorBoundVariableImpl extends BoundVariableExpressionImpl
   public BitVectorExpressionImpl uminus() {
     return BitVectorExpressionImpl.mkUminus(getExpressionManager(), this);
   }
+
+	@Override
+	public BitVectorExpression times(Expression... args) {
+		return BitVectorExpressionImpl.mkMult(getExpressionManager(), this, args);
+	}
+
+	@Override
+	public BitVectorExpression times(Iterable<? extends Expression> args) {
+    return BitVectorExpressionImpl.mkMult(getExpressionManager(), 
+    		Iterables.concat(Collections.singletonList(this), args));
+	}
 }

@@ -3,37 +3,19 @@ package edu.nyu.cascade.cvc4;
 import com.google.common.base.Preconditions;
 
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.RationalVariableExpression;
-import edu.nyu.cascade.prover.VariableExpression;
+import edu.nyu.cascade.prover.RationalExpression;
 import edu.nyu.cascade.prover.type.Type;
 
-public class RationalVariableImpl extends VariableExpressionImpl
-    implements RationalVariableExpression {
-  public
-  static RationalVariableImpl valueOf(ExpressionManagerImpl em, Expression e) {
-    if (e instanceof RationalVariableImpl) {
-      return (RationalVariableImpl) e;
-    } else if (e instanceof VariableExpression) {
-      VariableExpression e2 = (VariableExpression)e;
-      return new RationalVariableImpl(em,e2);
-    } else {
-      throw new IllegalArgumentException("Expression type: " + e.getClass());
-    }
-  }
+class RationalVariableImpl extends VariableExpressionImpl implements RationalExpression {
 
-  public static RationalVariableImpl create(ExpressionManagerImpl em,
+  static RationalVariableImpl create(ExpressionManagerImpl em,
       String name, Type type, boolean fresh) {
     Preconditions.checkArgument(type.isRational());
     return new RationalVariableImpl(em, name, type, fresh);
   }
 
-  /** Copy constructor. */
-  private RationalVariableImpl(ExpressionManagerImpl em, VariableExpression x) {
-    this(em, x.getName(), x.getType(), false);
-  }
-
   /** Create a new rational variable. */
-  public RationalVariableImpl(ExpressionManagerImpl em, String name, boolean fresh) {
+  private RationalVariableImpl(ExpressionManagerImpl em, String name, boolean fresh) {
     super(em, name, em.rationalType(),fresh);
   }
   

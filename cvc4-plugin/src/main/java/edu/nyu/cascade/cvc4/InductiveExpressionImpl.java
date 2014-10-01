@@ -25,13 +25,9 @@ import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.Selector;
 
-public class InductiveExpressionImpl extends ExpressionImpl implements
+final class InductiveExpressionImpl extends ExpressionImpl implements
     InductiveExpression {
-  /*
-   * static InductiveExpression create(ExpressionManager exprManager, final
-   * IConstructor constructor) { checkArgument(constructor.getSelectors().size()
-   * == 0); return new InductiveExpression(exprManager,constructor); }
-   */
+
   static InductiveExpressionImpl create(Constructor constructor,
       Expression... args) {
     checkArgument(constructor.getSelectors().size() == args.length);
@@ -52,7 +48,28 @@ public class InductiveExpressionImpl extends ExpressionImpl implements
 
 //  private final ConstructorImpl constructor;
   
-  private InductiveExpressionImpl(final ConstructorImpl constructor) {
+  static InductiveExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
+	    Expr expr, InductiveType type, Iterable<? extends ExpressionImpl> children) {
+		return new InductiveExpressionImpl(exprManager, kind, expr, type, children);
+	}
+
+	static InductiveExpressionImpl valueOf(ExpressionManagerImpl exprManager, ExpressionImpl expr) {
+	  Preconditions.checkArgument(expr.isInductive());
+	  if (exprManager.equals(expr.getExpressionManager())) {
+	    if( expr instanceof InductiveExpressionImpl ) {
+	      return (InductiveExpressionImpl) expr;
+	    } else {
+	      return new InductiveExpressionImpl(expr);
+	    }
+	  }
+	
+	  switch (expr.getKind()) {
+	  default:
+	    throw new UnsupportedOperationException();
+	  }
+	}
+
+	private InductiveExpressionImpl(final ConstructorImpl constructor) {
     super(constructor.getExpressionManager(), Kind.DATATYPE_CONSTRUCT,
         new NullaryConstructionStrategy() {
           @Override
@@ -114,10 +131,7 @@ public class InductiveExpressionImpl extends ExpressionImpl implements
     super(exprManager, kind, expr, type);
   }
   
-  protected static InductiveExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
-      Expr expr, InductiveType type, Iterable<? extends ExpressionImpl> children) {
-  	return new InductiveExpressionImpl(exprManager, kind, expr, type, children);
-  }
+  
 
 /*  public ConstructorImpl getConstructor() {
     return constructor;
@@ -137,21 +151,5 @@ public class InductiveExpressionImpl extends ExpressionImpl implements
   @Override
   public BooleanExpression test(Constructor constructor) {
     return TestExpressionImpl.create(getExpressionManager(),constructor,this);
-  }
-
-  static InductiveExpressionImpl valueOf(ExpressionManagerImpl exprManager, ExpressionImpl expr) {
-    Preconditions.checkArgument(expr.isInductive());
-    if (exprManager.equals(expr.getExpressionManager())) {
-      if( expr instanceof InductiveExpressionImpl ) {
-        return (InductiveExpressionImpl) expr;
-      } else {
-        return new InductiveExpressionImpl(expr);
-      }
-    }
-
-    switch (expr.getKind()) {
-    default:
-      throw new UnsupportedOperationException();
-    }
   }
 }

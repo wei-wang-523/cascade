@@ -13,13 +13,13 @@ import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.RangeType;
 import edu.nyu.cascade.prover.type.RationalType;
 
-public class RationalRangeTypeImpl extends RationalTypeImpl implements
+final class RationalRangeTypeImpl extends RationalTypeImpl implements
     RangeType, RationalType {
   /** Lower bound of the range, null if unbounded */
-  protected RationalExpressionImpl lowerBound = null;
+  private RationalExpressionImpl lowerBound = null;
 
   /** Upper bound of the range, null if unbounded */
-  protected RationalExpressionImpl upperBound = null;
+  private RationalExpressionImpl upperBound = null;
 
   /**
    * Construct a new rational range type given the bounds. A null lower bound

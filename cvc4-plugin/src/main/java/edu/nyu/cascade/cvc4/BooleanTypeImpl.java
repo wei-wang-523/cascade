@@ -10,11 +10,10 @@ import com.google.common.collect.Lists;
 import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.type.BooleanType;
 
-public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
+final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   @Override
   public BooleanExpressionImpl importExpression(
       Expression expression) {
@@ -50,9 +49,14 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   }
   
   @Override
-  public BooleanBoundVariableImpl boundVariable(String name, boolean fresh) {
+  public BooleanBoundVariableImpl boundVar(String name, boolean fresh) {
     return new BooleanBoundVariableImpl(getExpressionManager(), name, fresh);
   }
+  
+  @Override
+	public BooleanBoundVariableImpl boundExpression(String name, int index, boolean fresh) {
+  	return boundVar(name, fresh);
+	}
 
   @Override
   public String getName() {
@@ -75,7 +79,6 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
     ImmutableList<? extends Expression> subList = ImmutableList
         .copyOf(subExpressions);
     if (!subList.isEmpty()) {
-      // Create the and expression
       return BooleanExpressionImpl.mkAnd(getExpressionManager(),subList);
     }
     return tt();
@@ -151,7 +154,7 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   }
   
   @Override
-  public BooleanExpressionImpl rewriteRule(Iterable<? extends VariableExpression> vars, 
+  public BooleanExpressionImpl rewriteRule(Iterable<? extends Expression> vars, 
       Expression guard, Expression rule) {
     return BooleanExpressionImpl.mkRewriteRule(getExpressionManager(), vars, guard, rule);
   }
@@ -252,7 +255,7 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   }
   
 	@Override
-	BooleanExpressionImpl create(Expr res, Expression e, Kind kind,
+	BooleanExpressionImpl createExpression(Expr res, Expression e, Kind kind,
 			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isBoolean());
 		return BooleanExpressionImpl.create(getExpressionManager(), kind, 

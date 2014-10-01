@@ -10,6 +10,7 @@ import static edu.nyu.cascade.prover.Expression.Kind.UNARY_MINUS;
 import static edu.nyu.cascade.prover.Expression.Kind.MOD;
 
 import java.math.BigInteger;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -18,6 +19,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
 import edu.nyu.acsys.CVC4.Exception;
 import edu.nyu.acsys.CVC4.Expr;
@@ -25,11 +27,10 @@ import edu.nyu.acsys.CVC4.ExprManager;
 import edu.nyu.acsys.CVC4.Rational;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.IntegerExpression;
-import edu.nyu.cascade.prover.RationalExpression;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.util.CacheException;
 
-public final class IntegerExpressionImpl extends ExpressionImpl implements
+final class IntegerExpressionImpl extends ExpressionImpl implements
     IntegerExpression {
 
   private static final LoadingCache<ExpressionManagerImpl, LoadingCache<BigInteger, IntegerExpressionImpl>> constantCache = CacheBuilder
@@ -149,6 +150,11 @@ public final class IntegerExpressionImpl extends ExpressionImpl implements
           }
         }, a, b);
   }
+  
+  static IntegerExpressionImpl mkPlus(ExpressionManagerImpl exprManager,
+      Expression first, Expression... rest) {
+    return mkPlus(exprManager, Lists.asList(first, rest));
+  }
 
   static IntegerExpressionImpl mkPlus(ExpressionManagerImpl exprManager,
       Iterable<? extends Expression> args) {
@@ -220,7 +226,6 @@ public final class IntegerExpressionImpl extends ExpressionImpl implements
     super(em, CONSTANT, em.integerType());
     ExprManager cvc4_em = em.getTheoremProver().getCvc4ExprManager();
     setCvc4Expression(cvc4_em.mkConst(Rational.fromDecimal(value.toString())));
-    setConstant(true);
   }
 
   private IntegerExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
@@ -247,15 +252,9 @@ public final class IntegerExpressionImpl extends ExpressionImpl implements
     super(exprManager, kind, expr, type);
   }
   
-  protected static IntegerExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
+  static IntegerExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
       Expr expr, IntegerType type, Iterable<? extends ExpressionImpl> children) {
   	return new IntegerExpressionImpl(exprManager, kind, expr, type, children);
-  }
-
-  @Override
-  public RationalExpression castToRational() {
-    // return getType().castToRational(this);
-    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -299,6 +298,17 @@ public final class IntegerExpressionImpl extends ExpressionImpl implements
   }
 
   @Override
+	public IntegerExpression plus(IntegerExpression... rest) {
+  	return mkPlus(getExpressionManager(), this, rest);
+	}
+
+	@Override
+	public IntegerExpression plus(Iterable<? extends IntegerExpression> rest) {
+  	return mkPlus(getExpressionManager(), 
+  			Iterables.concat(Collections.singletonList(this), rest));
+	}
+
+	@Override
   public IntegerExpression pow(Expression e) {
     return mkPow(getExpressionManager(), this, e);
   }

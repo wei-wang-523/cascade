@@ -5,14 +5,10 @@ import edu.nyu.cascade.prover.InductiveExpression;
 import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.Selector;
 
-public class InductiveBoundVariableImpl extends BoundVariableExpressionImpl
+final class InductiveBoundVariableImpl extends BoundVariableExpressionImpl
     implements InductiveExpression {
-  public static InductiveBoundVariableImpl create(ExpressionManagerImpl exprManager,
-      String name, InductiveTypeImpl type, boolean fresh) {
-    return new InductiveBoundVariableImpl(exprManager, name, type, fresh);
-  }
-
-  private InductiveBoundVariableImpl(ExpressionManagerImpl exprManager, String name,
+	
+	InductiveBoundVariableImpl(ExpressionManagerImpl exprManager, String name,
       InductiveTypeImpl type, boolean fresh) {
     super(exprManager, name, type, true);
   }

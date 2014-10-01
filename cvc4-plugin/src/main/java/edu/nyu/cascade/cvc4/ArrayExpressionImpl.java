@@ -14,7 +14,7 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 
-public final class ArrayExpressionImpl
+final class ArrayExpressionImpl
     extends ExpressionImpl implements ArrayExpression {
   
   static ArrayExpressionImpl mkUpdate(
@@ -64,13 +64,11 @@ public final class ArrayExpressionImpl
 
   private final Type indexType;
   private final Type elementType;
-  private final ArrayType type;
 
   private ArrayExpressionImpl(ExpressionImpl expr) {
     super(expr);
-    this.type = (ArrayType) expr.getType();
-    this.indexType = type.getIndexType();
-    this.elementType = type.getElementType();
+    indexType = super.getType().asArrayType().getIndexType();
+    elementType = super.getType().asArrayType().getElementType();
   }
   
   private ArrayExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
@@ -78,9 +76,8 @@ public final class ArrayExpressionImpl
       Expression array, Expression index,
       Expression element) {
     super(exprManager, kind, strategy, array, index, element);
-    type = array.asArray().getType();
-    indexType = type.getIndexType();
-    elementType = type.getElementType();
+    indexType = index.getType();
+    elementType = element.getType();
   }
 
   private ArrayExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
@@ -89,13 +86,11 @@ public final class ArrayExpressionImpl
     super(exprManager, kind, strategy, arrayType, expr);
     indexType = arrayType.asArrayType().getIndexType();
     elementType = arrayType.asArrayType().getElementType();
-    type = exprManager.arrayType(indexType,elementType);
   }
 
   private ArrayExpressionImpl(ExpressionManagerImpl exprManager, Kind kind, 
       Expr expr, ArrayType type, Iterable<? extends ExpressionImpl> children) {
     super(exprManager, kind, expr, type);
-    this.type = type;
     indexType = type.getIndexType();
     elementType = type.getElementType();
   }
@@ -107,7 +102,7 @@ public final class ArrayExpressionImpl
   
   @Override
   public ArrayType getType() {
-    return type;
+    return getExpressionManager().arrayType(indexType,elementType);
   }
 
   @Override

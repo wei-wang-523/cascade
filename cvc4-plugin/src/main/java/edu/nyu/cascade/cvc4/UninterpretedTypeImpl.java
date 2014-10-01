@@ -18,7 +18,7 @@ import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.IOUtils;
 
-public final class UninterpretedTypeImpl extends TypeImpl implements UninterpretedType {
+final class UninterpretedTypeImpl extends TypeImpl implements UninterpretedType {
   private final String name;
   
   private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, UninterpretedTypeImpl>> typeCache = CacheBuilder
@@ -44,7 +44,15 @@ public final class UninterpretedTypeImpl extends TypeImpl implements Uninterpret
     }
   }
   
-  static UninterpretedTypeImpl valueOf(
+  @Override
+	UninterpretedExpressionImpl createExpression(Expr res, Expression e, Kind kind,
+			Iterable<ExpressionImpl> children) {
+		Preconditions.checkArgument(e.isUninterpreted());
+		return UninterpretedExpressionImpl.create(getExpressionManager(), 
+				kind, res, e.getType().asUninterpreted(), children);
+	}
+
+	static UninterpretedTypeImpl valueOf(
       ExpressionManagerImpl exprManager, Type type) {
     Preconditions.checkArgument(type.isUninterpreted());
     if (type instanceof UninterpretedTypeImpl) {
@@ -62,9 +70,9 @@ public final class UninterpretedTypeImpl extends TypeImpl implements Uninterpret
       TheoremProverImpl.debugCall("uninterpretedType of " + name);
       setCVC4Type(exprManager.getTheoremProver().getCvc4ExprManager().mkSort(name));
       if(IOUtils.debugEnabled())
-        TheoremProverImpl.debugCommand(name + " : TYPE");
+        TheoremProverImpl.debugCommand("(declare-sort " + name + " 0)");
       if(IOUtils.tpFileEnabled())
-        TheoremProverImpl.tpFileCommand(name + " : TYPE");
+        TheoremProverImpl.tpFileCommand("(declare-sort " + name + " 0)");
     } catch (Exception e) {
       throw new TheoremProverException(e);
     }
@@ -73,6 +81,16 @@ public final class UninterpretedTypeImpl extends TypeImpl implements Uninterpret
   @Override
   public UninterpretedVariableImpl variable(String name, boolean fresh) {
     return UninterpretedVariableImpl.create(getExpressionManager(),name,this,fresh);
+  }
+  
+  @Override
+  public UninterpretedBoundVariableImpl boundVar(String name, boolean fresh) {
+    return UninterpretedBoundVariableImpl.create(getExpressionManager(),name,this,fresh);
+  }
+  
+  @Override
+  public UninterpretedBoundVariableImpl boundExpression(String name, int index, boolean fresh) {
+    return boundVar(name, fresh);
   }
 
   @Override
@@ -89,17 +107,4 @@ public final class UninterpretedTypeImpl extends TypeImpl implements Uninterpret
   public DomainType getDomainType() {
     return DomainType.UNINTERPRETED;
   }
-
-  @Override
-  public BoundVariableExpressionImpl boundVariable(String name, boolean fresh) {
-    throw new UnsupportedOperationException("bound variable is not supported in uninterpreted type.");
-  }
-  
-	@Override
-	UninterpretedExpressionImpl create(Expr res, Expression e, Kind kind,
-			Iterable<ExpressionImpl> children) {
-		Preconditions.checkArgument(e.isUninterpreted());
-		return UninterpretedExpressionImpl.create(getExpressionManager(), 
-				kind, res, e.getType().asUninterpreted(), children);
-	}
 }

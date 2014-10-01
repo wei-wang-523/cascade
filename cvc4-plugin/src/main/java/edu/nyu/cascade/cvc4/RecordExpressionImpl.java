@@ -7,7 +7,6 @@ import static edu.nyu.cascade.prover.Expression.Kind.RECORD_UPDATE;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import edu.nyu.acsys.CVC4.Exception;
@@ -19,7 +18,7 @@ import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Type;
 
-public final class RecordExpressionImpl extends ExpressionImpl implements
+final class RecordExpressionImpl extends ExpressionImpl implements
     RecordExpression {
   static RecordExpressionImpl create(ExpressionManagerImpl exprManager, Type type,
       Expression first, Expression... rest) {
@@ -28,18 +27,32 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
 
   static RecordExpressionImpl create(ExpressionManagerImpl exprManager, Type type,
       Iterable<? extends Expression> elements) {
-    Preconditions.checkArgument(!Iterables.isEmpty(elements));
     return new RecordExpressionImpl(exprManager, type, elements);
   } 
 
-  static ExpressionImpl mkRecordIndex(ExpressionManagerImpl exprManager,
+  static RecordExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
+	    Expr expr, RecordType type, Iterable<? extends ExpressionImpl> children) {
+		return new RecordExpressionImpl(exprManager, kind, expr, type, children);
+	}
+
+	static RecordExpressionImpl valueOf(ExpressionManagerImpl exprManager,
+	    ExpressionImpl expr) {
+	  Preconditions.checkArgument(expr.isRecord());
+	  if( expr instanceof RecordExpressionImpl ) {
+	    return (RecordExpressionImpl) expr;
+	  } else {
+	    return new RecordExpressionImpl((ExpressionImpl) expr);
+	  }
+	}
+
+	static ExpressionImpl mkRecordIndex(ExpressionManagerImpl exprManager,
       Expression record, final String field) {
     ExpressionImpl result = new ExpressionImpl(exprManager, RECORD_SELECT,
         new UnaryConstructionStrategy() {
           @Override
           public Expr apply(ExprManager em, Expr record) {
-            Expr index = em.mkConst(new edu.nyu.acsys.CVC4.CVC4String(field));
-            return em.mkExpr(edu.nyu.acsys.CVC4.Kind.RECORD_SELECT, record, index);
+            Expr index = em.mkConst(new edu.nyu.acsys.CVC4.RecordSelect(field));
+            return em.mkExpr(index, record);
           }
         }, record);
     int index = record.getType().asRecord().getElementNames().indexOf(field);
@@ -55,9 +68,8 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
         new BinaryConstructionStrategy() {
           @Override
           public Expr apply(ExprManager em, Expr record, Expr val) {
-            Expr index = em.mkConst(new edu.nyu.acsys.CVC4.CVC4String(field));
-            return em.mkExpr(
-                edu.nyu.acsys.CVC4.Kind.RECORD_UPDATE, record, index, val);
+            Expr index = em.mkConst(new edu.nyu.acsys.CVC4.RecordUpdate(field));
+            return em.mkExpr(index, record, val);
           }
         }, record, val);
   }
@@ -98,11 +110,6 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
     super(exprManager, kind, expr, type);
   }
   
-  protected static RecordExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
-      Expr expr, RecordType type, Iterable<? extends ExpressionImpl> children) {
-  	return new RecordExpressionImpl(exprManager, kind, expr, type, children);
-  }
-  
   @Override
   public RecordTypeImpl getType() {
     return (RecordTypeImpl) super.getType();
@@ -111,16 +118,6 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
   @Override
   public RecordExpressionImpl update(String field, Expression val) {
     return mkUpdate(getExpressionManager(), this, field, val);
-  }
-
-  static RecordExpressionImpl valueOf(ExpressionManagerImpl exprManager,
-      ExpressionImpl expr) {
-    Preconditions.checkArgument(expr.isRecord());
-    if( expr instanceof RecordExpressionImpl ) {
-      return (RecordExpressionImpl) expr;
-    } else {
-      return new RecordExpressionImpl((ExpressionImpl) expr);
-    }
   }
 
   @Override

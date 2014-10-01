@@ -1,6 +1,8 @@
 package edu.nyu.cascade.cvc4;
 
 import java.math.BigInteger;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
@@ -16,13 +18,14 @@ import com.google.common.collect.Maps;
 
 import edu.nyu.acsys.CVC4.ArrayStoreAll;
 import edu.nyu.acsys.CVC4.Expr;
+import edu.nyu.acsys.CVC4.Integer;
 import edu.nyu.acsys.CVC4.vectorExpr;
 import edu.nyu.acsys.CVC4.vectorType;
 import edu.nyu.cascade.cvc4.InductiveTypeImpl.ConstructorImpl;
 import edu.nyu.cascade.cvc4.InductiveTypeImpl.SelectorImpl;
-import edu.nyu.cascade.fds.StateExpression;
 import edu.nyu.cascade.prover.AbstractExpressionManager;
 import edu.nyu.cascade.prover.BooleanExpression;
+import edu.nyu.cascade.prover.BoundExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.FunctionExpression;
@@ -65,28 +68,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   /** The integer type */
   private final IntegerTypeImpl integerType;
   
-/*  @SuppressWarnings("unchecked")
-  public static <D extends IType, R extends IType> UnaryFunctionExpression toFunctionExpression(
-      IExpression> funExpr) {
-    if( funExpr instanceof UnaryFunctionExpression ) {
-      return (UnaryFunctionExpression)funExpr;
-    } else {
-      throw new UnsupportedOperationException("toCvc4Op(" + funExpr.getClass()
-          + ")");
-    }
-  }*/
-/*
-  @SuppressWarnings("unchecked")
-  public static <T extends IType> Type toType(IType type) {
-    assert( type != null );
-    if (type instanceof Type) {
-      return (Type) type;
-    } else {
-      throw new UnsupportedOperationException("toType(" + type.getClass()
-          + ")");
-    }
-  }  */
-  
   /** The Boolean type */
   private final BooleanTypeImpl booleanType;
 
@@ -94,9 +75,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   private final RationalTypeImpl rationalType;
   
   private final TheoremProverImpl theoremProver;
-//  private final BooleanConstant ff, tt;
-//  private final RationalExpression ratOne;
-//  private final RationalExpression ratZero;
 
   /** Cache of previously created inductive datatypes. It's helpful
    * to have this around because datatypes are pretty much impossible
@@ -109,14 +87,10 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     this.theoremProver = theoremProver;
     
     booleanType = new BooleanTypeImpl(this);
-//    tt = new BooleanConstant(true, this);
-//    ff = new BooleanConstant(false, this);
 
     integerType = IntegerTypeImpl.getInstance(this);
     rationalType = RationalTypeImpl.getInstance(this);
 
-//    ratOne = rationalType.one();
-//    ratZero = rationalType.zero();
     inductiveTypeCache = Maps.newHashMap();
   }
 
@@ -163,20 +137,10 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   public IntegerExpressionImpl asIntegerExpression(Expression expression)  {
     return IntegerExpressionImpl.valueOf(this,importExpression(expression));
   }
-
-  @Override
-  public IntegerVariableImpl asIntegerVariable(Expression expression)  {
-    return IntegerVariableImpl.valueOf(this,importExpression(expression));
-  }
   
   @Override
   public RationalExpressionImpl asRationalExpression(Expression expression)  {
     return RationalExpressionImpl.valueOf(this,importExpression(expression));
-  }
-  
-  @Override
-  public RationalVariableImpl asRationalVariable(Expression expression)  {
-    return RationalVariableImpl.valueOf(this,importExpression(expression));
   }
   
   @Override
@@ -193,6 +157,12 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   public VariableExpressionImpl asVariable(Expression expression)  {
     Preconditions.checkArgument(expression.isVariable());
     return VariableExpressionImpl.valueOf(this,importExpression(expression));
+  }
+  
+  @Override
+  public BoundVariableExpressionImpl asBoundExpression(Expression expression)  {
+    Preconditions.checkArgument(expression.isBound());
+    return BoundVariableExpressionImpl.valueOf(this,importExpression(expression));
   }
 
   @Override
@@ -257,7 +227,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   
   @Override
   public InductiveType dataType(String name, Constructor... constructors)   {
-    return InductiveTypeImpl.create(this, name, constructors);
+    return InductiveTypeImpl.createInductiveType(this, name, constructors);
   }
   
   /**
@@ -371,21 +341,9 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   }
 
   @Override
-  public FunctionType functionType(String fname, Iterable<? extends Type> args,
+  public FunctionType functionType(Iterable<? extends Type> args,
       Type range) {
     return FunctionTypeImpl.create(this, args, range);
-  }
-
-  @Override
-  public VariableExpression functionVar(String fname, FunctionType func,
-      boolean fresh) {
-    return func.variable(fname, fresh);
-  }
-
-  @Override
-  public VariableExpression functionBoundVar(String fname, FunctionType func,
-      boolean fresh) {
-    return func.boundVariable(fname, fresh);
   }
 
   @Override
@@ -414,12 +372,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   @Override
   public TupleTypeImpl tupleType(String tname, Type firstType, Type... elementTypes) {
     return TupleTypeImpl.create(this, tname, firstType, elementTypes);
-  }
-
-  @Override
-  public Expression boundExpression(int index, Type type) {
-    // TODO Auto-generated method stub
-    return null;
   }
 
   @Override
@@ -490,11 +442,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
 	  inductiveTypeCache.put(type.getName(), type);
 	}
 
-	protected BooleanExpressionImpl toBooleanExpression(Expr e) throws TheoremProverException {
-    // try {
-    // IOUtils.debug().indent().incr().pln(">> toBooleanExpression(" +
-    // e.toString() + ")");
-
+	private BooleanExpressionImpl toBooleanExpression(Expr e) throws TheoremProverException {
     if (e.getKind() == edu.nyu.acsys.CVC4.Kind.NOT) {
       Preconditions.checkArgument(e.getNumChildren() == 1);
       return BooleanExpressionImpl.valueOf(this, 
@@ -562,40 +510,38 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
         return BooleanExpressionImpl.valueOf(this, ff());
     } else if (e.getKind() == edu.nyu.acsys.CVC4.Kind.FORALL) {
       vectorExpr childExpr = e.getChildren();
-      Vector<VariableExpression> vars = new Vector<VariableExpression>();
-      for(int i = 0; i < childExpr.size()-1; i++) 
-        vars.add((VariableExpressionImpl) toExpression(e.getChild(i)));
+      
+      Vector<BoundExpression> bounds = new Vector<BoundExpression>();
+      for(int i = 0; i < childExpr.size()-1; i++) {
+      	Expression var = toExpression(e.getChild(i));
+      	BoundVariableExpressionImpl bound = BoundVariableExpressionImpl.valueOf(this, var);
+      	bounds.add(bound);
+      }
       BooleanExpression body = toBooleanExpression(e.getChild(childExpr.size()-1));
-      return BooleanExpressionImpl.valueOf(this, forall(vars, body));
+      return BooleanExpressionImpl.valueOf(this, forall(bounds, body));
+      
     } else if (e.getKind() == edu.nyu.acsys.CVC4.Kind.EXISTS) {
       vectorExpr childExpr = e.getChildren();
-      Vector<VariableExpression> vars = new Vector<VariableExpression>();
-      for(int i = 0; i < childExpr.size()-1; i++) 
-        vars.add(VariableExpressionImpl.valueOf(this, toExpression(e.getChild(i))));
+      
+      Vector<BoundExpression> bounds = new Vector<BoundExpression>();
+      for(int i = 0; i < childExpr.size()-1; i++) {
+      	Expression var = toExpression(e.getChild(i));
+      	BoundVariableExpressionImpl bound = BoundVariableExpressionImpl.valueOf(this, var);
+      	bounds.add(bound);
+      }
+      
       BooleanExpression body = toBooleanExpression(e.getChild(childExpr.size()-1));
-      return BooleanExpressionImpl.valueOf(this, exists(vars, body));
-    } else // FIXME: LAMBDA Expr 
-      if (/*e.getKind() == edu.nyu.acsys.CVC4.Kind.LAMBDA ||*/ 
-        e.getKind() == edu.nyu.acsys.CVC4.Kind.APPLY ) {
-        return BooleanExpressionImpl.valueOf(this, toExpression(e));
-/*      return BooleanExpression.valueOf(this, (Expression) lambda(
-          (List<VariableExpression>) toExpressionList((List<Expr>) e
-              .getVars()), toBooleanExpression(e.getBody())));
-*/    
-    } else {
-      // IOUtils.debug().indent().pln("NOT HANDLED--BOOL");
-      throw new UnsupportedOperationException("Unexpected expression: " + e);
-    }
-    /*
-     * } catch (Exception ex) { IOUtils.debug().indent().pln("EXCEPTION: " +
-     * ex.getMessage()); throw ex; } catch (RuntimeException ex) {
-     * IOUtils.debug().indent().pln("EXCEPTION: " + ex.getMessage()); throw ex;
-     * } finally { IOUtils.debug().decr().indent().pln("<< toBooleanExpression("
-     * + e.toString() + ")"); }
-     */
+      return BooleanExpressionImpl.valueOf(this, exists(bounds, body));
+      
+    } else 
+    	if (e.getKind() == edu.nyu.acsys.CVC4.Kind.APPLY ) {
+    		return BooleanExpressionImpl.valueOf(this, toExpression(e));
+    	} else {
+    		throw new UnsupportedOperationException("Unexpected expression: " + e);
+    	}
   }
 
-  protected List<BooleanExpressionImpl> toBooleanExpressionList(vectorExpr var) {
+	private List<BooleanExpressionImpl> toBooleanExpressionList(vectorExpr var) {
     List<Expr> args = Lists.newArrayList();
     for(int i = 0; i < var.size(); i++) 
       args.add(var.get(i));
@@ -607,22 +553,29 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     });
   }
   
-  protected ExpressionImpl importExpression(Expression expr) {
+	FunctionExpression lambda(
+      Collection<BoundExpression> args, Expression body) {
+    return FunctionExpressionImpl.create(this, args, body);
+  }
+	
+	FunctionExpression lambda(
+      BoundExpression arg, Expression body) {
+    return FunctionExpressionImpl.create(this, Collections.singletonList(arg), body);
+  }
+	
+	ExpressionImpl importExpression(Expression expr) {
 	  Preconditions.checkNotNull(expr);
 	  if (expr instanceof ExpressionImpl
 	      && this.equals(expr.getExpressionManager())) {
 	    return (ExpressionImpl) expr;
 	  } else if (expr instanceof VariableExpression) {
 	    return VariableExpressionImpl.valueOf(this, expr);
-	  } else if (expr instanceof StateExpression) {
-	    // FIXME: Do we really need a special case for IStateExpression???
-	    return importExpression(((StateExpression) expr).toExpression());
 	  } else {
 	    return importType(expr.getType()).importExpression(expr);
 	  }
 	}
 
-	protected Iterable<ExpressionImpl> importExpressions(
+	Iterable<ExpressionImpl> importExpressions(
 	    Iterable<? extends Expression> subExpressions) {
 	  return Iterables.transform(subExpressions,
 	      new Function<Expression, ExpressionImpl>() {
@@ -633,7 +586,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
 	  });
 	}
 
-	protected TypeImpl importType(Type type) {
+	TypeImpl importType(Type type) {
 	  if (type instanceof TypeImpl && this.equals( type.getExpressionManager() )) {
 	    return (TypeImpl) type;
 	  } else if (type instanceof ArrayType) {
@@ -655,11 +608,11 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
 	  }
 	}
 
-	protected Expr toCvc4Expr(Expression expr)  {
+	Expr toCvc4Expr(Expression expr)  {
     return importExpression(expr).getCvc4Expression();
   }
   
-  protected List<Expr> toCvc4Exprs(
+	List<Expr> toCvc4Exprs(
       Iterable<? extends Expression> subExpressions) {
     return Lists.newArrayList(Iterables.transform(subExpressions,
         new Function<Expression, Expr>() {
@@ -669,20 +622,15 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     }));
   }
 
-  protected edu.nyu.acsys.CVC4.Type toCvc4Type(Type type) {
+	edu.nyu.acsys.CVC4.Type toCvc4Type(Type type) {
     return importType(type).getCVC4Type();
   }
   
-  protected edu.nyu.acsys.CVC4.DatatypeUnresolvedType toCvc4UnresolvedType(Type type) {
+	edu.nyu.acsys.CVC4.DatatypeUnresolvedType toCvc4UnresolvedType(Type type) {
     return importType(type).getCVC4UnresolvedDatatype();
   }
   
-  protected ExpressionImpl toExpression(Expr e) throws TheoremProverException {
-    // try {
-    // IOUtils.debug().indent().incr().pln(">> toExpression(" + e.toString() +
-    // ")");
-    // IOUtils.debug().flush();
-
+	ExpressionImpl toExpression(Expr e) throws TheoremProverException {
     if ( e.getKind() == edu.nyu.acsys.CVC4.Kind.PLUS ) {
       return 
       		importExpression(
@@ -707,9 +655,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       return VariableExpressionImpl.valueOfSkolem(
       		this, e, toType(e.getType()));
     } 
-    else if ( e.getKind() == edu.nyu.acsys.CVC4.Kind.VARIABLE
-        // FIXME: SYMBOL Expr is not supported
-        /*|| e.getKind() == edu.nyu.acsys.CVC4.Kind.SYMBOL*/) {
+    else if ( e.getKind() == edu.nyu.acsys.CVC4.Kind.VARIABLE) {
       return VariableExpressionImpl.valueOfVariable(
       		this, e, toType(e.getType()));
     } 
@@ -718,9 +664,9 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       return new ExpressionImpl(this, Kind.CONSTANT, e, integerType());
     } 
     else if ( e.getKind() == edu.nyu.acsys.CVC4.Kind.LAMBDA ) {
-    	List<VariableExpressionImpl> args = Lists.newArrayList();
+    	Collection<BoundExpression> args = Lists.newArrayList();
     	for(int i = 0; i < e.getNumChildren()-1; i++)
-    		args.add(VariableExpressionImpl.valueOf(this, toExpression(e.getChild(i))));
+    		args.add(BoundVariableExpressionImpl.valueOf(this, toExpression(e.getChild(i))));
       Expression body = toExpression(e.getChild((int) e.getNumChildren()-1));
       return 
       		importExpression(lambda(args, body));
@@ -769,13 +715,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       return 
       		importExpression(
       				BoundVariableExpressionImpl.create(this, name, type, true));
-    } 
-    else if( e.getKind() == edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST ) {
-      return 
-      		importExpression(
-      				BoundVariableListExpressionImpl.create(this,
-      						toExpressionList(e.getChildren())));
-    } 
+    }
     else if (e.getKind() == edu.nyu.acsys.CVC4.Kind.SELECT) {
     	Preconditions.checkArgument(e.getNumChildren() == 2);
       return 
@@ -806,17 +746,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       return toBooleanExpression(e);
     } 
     else if (e.getKind() == edu.nyu.acsys.CVC4.Kind.CONST_BITVECTOR) {
-//      Rational val = getTheoremProver().getCvc4ExprManager().computeBVConst(e);
-//      edu.nyu.acsys.CVC4.Type t = e.getType();
-//      assert( t.isBitVector() );
-//      Expr typeExpr = t.getExpr();
-//      assert( typeExpr.getNumChildren() == 1 );
-//      Expr typeArg = typeExpr.getChild(0);
-//      assert( typeArg.isRational() );
-//      Rational size = typeArg.getRational();
-//      assert( size.isInteger() );
-//      return BitVectorExpressionImpl.mkConstant(this, val, size.getInteger());
-      int val = e.getConstBitVector().getValue().getLong();
+      Integer val = e.getConstBitVector().getValue();
       int size = (int) e.getConstBitVector().getSize();
       return BitVectorExpressionImpl.mkConstant(this, size, val);
     } 
@@ -870,27 +800,14 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     } 
     else if (e.getKind() == edu.nyu.acsys.CVC4.Kind.UNINTERPRETED_CONSTANT) { 
     	return new ExpressionImpl(this, Kind.UNINTERPRETED, e, uninterpretedType(e.getType().toString()));
-    } 
+    }
     else {
-      // TODO: ExprMut is (_TUPLE_SELECT 0), how to get it?
-      // IOUtils.debug().indent().pln("NOT HANDLED--INT");
       throw new UnsupportedOperationException("Unexpected expression with Kind: " + e.getKind() 
           + "\n expression " + e);
     }
-    // } catch (Exception ex) {
-    // IOUtils.debug().indent().pln("EXCEPTION: " + ex.getMessage());
-    // throw new TheoremProverException(
-    // "while converting a CVC4 expression to an IBooleanExpression", ex);
-    // } catch (RuntimeException ex) {
-    // IOUtils.debug().indent().pln("EXCEPTION: " + ex.getMessage());
-    // throw ex;
-    // } finally {
-    // IOUtils.debug().decr().indent().pln("<< toExpression(" + e.toString() +
-    // ")");
-    // }
   }
   
-  protected List<? extends ExpressionImpl> toExpressionList(vectorExpr var) {
+	List<? extends ExpressionImpl> toExpressionList(vectorExpr var) {
     List<Expr> args = Lists.newArrayList();
     for(int i = 0; i < var.size(); i++)
       args.add(var.get(i));
@@ -903,7 +820,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     });
   }
   
-  protected TypeImpl toType(edu.nyu.acsys.CVC4.Type type) {
+	TypeImpl toType(edu.nyu.acsys.CVC4.Type type) {
     if( type.isBoolean() ) {
       return booleanType();
     } 
@@ -936,48 +853,35 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       int size = (int) bvType.getSize();
       return bitVectorType(size);
     } 
+    else if ( type.isRecord() ) {
+    	edu.nyu.acsys.CVC4.RecordType recordType = 
+    			new edu.nyu.acsys.CVC4.RecordType(type);
+    	edu.nyu.acsys.CVC4.Record record = recordType.getRecord();
+    	long size = record.getNumFields();
+    	Collection<String> fieldNames = Lists.newArrayList();
+    	Collection<Type> fieldTypes = Lists.newArrayList();
+    	for(int i = 0; i < size; i++) {
+    		Object[] field = record.getField(i);
+    		fieldNames.add((String) field[0]);
+    		fieldTypes.add(toType((edu.nyu.acsys.CVC4.Type) field[1]));
+    	}
+    	return RecordTypeImpl.create(this, "cvc4_record", fieldNames, fieldTypes);
+    }
     else if ( type.isDatatype() ) {
-      InductiveTypeImpl inductiveType = lookupInductiveType( type.toString() );
+      InductiveTypeImpl inductiveType = inductiveTypeCache.get( type.toString() );
       if( inductiveType == null ) {
         throw new TheoremProverException("Unknown datatype: " + type.toString() );
       }
       return inductiveType;
-    } 
-    // FIXME: Any type and Sub type not supported in CVC4
-/*    else if ( type.isAny() ) { 
-      return universalType();
-    } else if( type.isSubtype() ) {
-      
-       * This is a bit tortured, I know. A subtype looks like: TYPE(SUBTYPE(p :
-       * D -> R)), where the SUBTYPE is an expression with a lambda as a child.
-       
-
-//      IOUtils.debug().pln("Predicate subtype: " + typeExpr);
-//      IOUtils.debug().pln("supertype: " + typeExpr.getType());
-//      IOUtils.debug().pln("arity: " + typeExpr.arity());
-
-       Subtype's only child is the type predicate 
-      assert( typeExpr.arity() == 1 );
-      Expr pred = typeExpr.getChild(0);
-
-//      IOUtils.debug().pln("predicate: " + pred);
-      
-      edu.nyu.acsys.CVC4.Type predType = pred.getType();
-
-//      IOUtils.debug().pln("predicate type: " + predType);
-//      IOUtils.debug().pln("arity: " + predType.arity());
-
-       Predicate type's 2 children are domain and range 
-      assert( predType.arity() == 2 );
-      TypeImpl superType = toType(predType.getChild(0));
-      return superType.subType(this,pred);
-    }*/
+    }
     else {
       throw new UnsupportedOperationException("unexpected type: " + type);
     }
   }
 
-	private InductiveTypeImpl lookupInductiveType(String name) {
-	  return inductiveTypeCache.get(name);
-	}
+	@Override
+  public FunctionExpression functionDeclarator(String name,
+      FunctionType functionType, boolean fresh) {
+	  return FunctionDeclarator.create(this, name, functionType, fresh);
+  }
 }

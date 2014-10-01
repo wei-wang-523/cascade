@@ -5,20 +5,19 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 import edu.nyu.acsys.CVC4.Exception;
 import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.acsys.CVC4.vectorType;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.Expression.Kind;
-import edu.nyu.cascade.prover.FunctionExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.Type;
 
-public final class FunctionTypeImpl extends TypeImpl
+final class FunctionTypeImpl extends TypeImpl
     implements FunctionType {
+	
   static FunctionTypeImpl create(final ExpressionManagerImpl exprManager,
       Iterable<? extends Type> argTypes, Type range) {
     Iterable<TypeImpl> argTypes1 = Iterables.transform(argTypes,
@@ -68,20 +67,6 @@ public final class FunctionTypeImpl extends TypeImpl
   }
   
   @Override
-  public ExpressionImpl apply(FunctionExpression fun,
-      Iterable<? extends Expression> args) {
-    return ExpressionImpl.mkFunApply(getExpressionManager(),fun,args);
-  }
-  
-  @Override
-  public ExpressionImpl apply(FunctionExpression fun, 
-  		Expression arg1, Expression... otherArgs) {
-    Preconditions.checkArgument(getArity() == otherArgs.length + 1);
-    return ExpressionImpl.mkFunApply(getExpressionManager(), fun,
-        Lists.asList(arg1, otherArgs));
-  }
-  
-  @Override
   public Type getArgTypeAtIndex(int index) {
     return argTypes.get(index);
   }
@@ -106,28 +91,8 @@ public final class FunctionTypeImpl extends TypeImpl
     return DomainType.FUNCTION;
   }
 
-  @Override
-  public FunctionVariableImpl variable(String name, boolean fresh) {
-    return FunctionVariableImpl.create(getExpressionManager(),name,this,fresh);
-  }
-
-  @Override
-  public FunctionBoundVariableImpl boundVariable(String name, boolean fresh) {
-    return FunctionBoundVariableImpl.create(getExpressionManager(),name,this,fresh);
-  }
-
-  @Override
-  public Expression apply(Expression arg1, Expression... rest) {
-    throw new UnsupportedOperationException("cvc4 does not support it.");
-  }
-
-  @Override
-  public Expression apply(Iterable<? extends Expression> args) {
-  	throw new UnsupportedOperationException("cvc4 does not support it.");
-  }
-
 	@Override
-	FunctionExpressionImpl create(Expr res, Expression e, Kind kind,
+	FunctionExpressionImpl createExpression(Expr res, Expression e, Kind kind,
 			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isFunction());
 		return FunctionExpressionImpl.create(getExpressionManager(), kind, 

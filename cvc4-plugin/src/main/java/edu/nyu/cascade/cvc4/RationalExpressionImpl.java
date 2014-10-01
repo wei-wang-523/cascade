@@ -23,7 +23,7 @@ import edu.nyu.cascade.prover.type.RationalType;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.Type;
 
-public class RationalExpressionImpl extends ExpressionImpl implements
+class RationalExpressionImpl extends ExpressionImpl implements
     RationalExpression {
 
   static RationalExpressionImpl mkConstant(ExpressionManagerImpl em,
@@ -35,7 +35,6 @@ public class RationalExpressionImpl extends ExpressionImpl implements
             return em.mkConst(new Rational(numerator, denominator));
           }
         });
-    e.setConstant(true);
     return e;
   }
 
@@ -173,11 +172,6 @@ public class RationalExpressionImpl extends ExpressionImpl implements
    * RationalExpression(DIVIDE, DIVIDE_STRATEGY, numerator, denominator); }
    */
 
-  @Override
-  public RationalTypeImpl getType() {
-    return getExpressionManager().rationalType();
-  }
-
   private RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
       UnaryConstructionStrategy strategy, Expression a) {
     super(exprManager, kind, strategy, a);
@@ -207,12 +201,31 @@ public class RationalExpressionImpl extends ExpressionImpl implements
     super(exprManager, kind, expr, type);
   }
   
-  protected static RationalExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
+  static RationalExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
       Expr expr, RationalType type, Iterable<? extends ExpressionImpl> children) {
   	return new RationalExpressionImpl(exprManager, kind, expr, type, children);
   }
 
-  public static RationalExpressionImpl valueOf(
+  /*
+	 * static RationalExpression mkDivideIntRat(IExpression
+	 * numerator, IExpression denominator) { return new
+	 * RationalExpression(DIVIDE, DIVIDE_STRATEGY, numerator, denominator); }
+	 * 
+	 * static RationalExpression mkDivideRatInt(IExpression
+	 * numerator, IExpression denominator) { return new
+	 * RationalExpression(DIVIDE, DIVIDE_STRATEGY, numerator, denominator); }
+	 * 
+	 * static RationalExpression mkDivideIntInt(IExpression
+	 * numerator, IExpression denominator) { return new
+	 * RationalExpression(DIVIDE, DIVIDE_STRATEGY, numerator, denominator); }
+	 */
+	
+	@Override
+	public RationalTypeImpl getType() {
+	  return getExpressionManager().rationalType();
+	}
+
+	public static RationalExpressionImpl valueOf(
       ExpressionManagerImpl exprManager, Expression e) {
     if (e instanceof RationalExpressionImpl) {
       return (RationalExpressionImpl) e;
