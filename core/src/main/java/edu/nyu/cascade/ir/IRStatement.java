@@ -7,11 +7,11 @@ import xtc.tree.Node;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
-import edu.nyu.cascade.ir.expr.PathEncoding;
-import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.ir.path.PathEncoding;
+import edu.nyu.cascade.ir.state.StateExpression;
+import edu.nyu.cascade.ir.state.StateExpressionClosure;
 
 public interface IRStatement {
   /**
@@ -21,22 +21,38 @@ public interface IRStatement {
       
       // Basic statements
       
+  	  /** Declare a symbol */
+  		DECLARE,
       /** Assignment of values to a variable (set of variables) */ 
       ASSIGN,
       /** Allocate a region */
       ALLOC,
       /** Change the type of a by casting */
       CAST,
-      /** Allocate an array */
-      DECLARE_ARRAY,
-      /** Allocate a structure */
-      DECLARE_STRUCT,
-      /** Field assignment a->next = b */
-      FIELD_ASSIGN,
       /** Free a region in memory */
       FREE,
       /** Empty instruction node */
       SKIP,
+      /** Call a procedure */
+      CALL,
+      /** Return from a procedure */
+      RETURN,
+      /** Declare enum type */
+      ENUM,
+      
+      // Label statements
+      
+      /** Mark the start of statements lifted from loop for havoc */
+      LIFT_BEGIN,
+      /** Mark the end of statements lifted from loop for havoc */
+      LIFT_END,
+      /** Mark the enter into a scope */
+      FUNC_ENT,
+      /** Mark the exit out of a scope */
+      FUNC_EXIT,
+      
+      // Multi-threads statements
+      
       /** Send over a channel */
       SEND,
       /** Receive over a channel */
@@ -47,10 +63,6 @@ public interface IRStatement {
       RELEASE_SEMAPHORE,
       /** Fair waiting node */
       AWAIT,
-      /** Call a procedure */
-      CALL,
-      /** Return from a procedure */
-      RETURN,
       
       // Schematic statements
       
@@ -68,7 +80,9 @@ public interface IRStatement {
       /** A fork node, starting a number of threads running in parallel */
       FORK_PARALLEL,
       /** A join node, for a given fork node, joins the treads to a single execution thread */
-      JOIN_PARALLEL,     
+      JOIN_PARALLEL,
+      
+      // Cascade command
       
       /** An assertion, aborts if its argument is false */
       ASSERT,
@@ -91,7 +105,7 @@ public interface IRStatement {
    * <code>assert x!=null</code>, then the pre-condition is <code>x!=null</code>.
    * @throws ExpressionFactoryException 
    */
-  ExpressionClosure getPreCondition(ExpressionEncoder  encoder);
+  StateExpressionClosure getPreCondition(ExpressionEncoder  encoder);
 
   /**
    * Get the strongest post-condition of the statement, using the given
@@ -100,15 +114,19 @@ public interface IRStatement {
    * the post-condition will be <code>P && x!=null</code>.
    * @throws ExpressionFactoryException 
    */
-  Expression getPostCondition(PathEncoding factory, Expression precondition);
+  StateExpression getPostCondition(PathEncoding factory, StateExpression preCondition);
   
   StatementType getType();
   ImmutableList<IRExpression> getOperands();
-  List<ExpressionClosure> getOperands(ExpressionEncoder encoder);
-  ExpressionClosure getOperand(ExpressionEncoder encoder,int i);
+  List<StateExpressionClosure> getOperands(ExpressionEncoder encoder);
+  StateExpressionClosure getOperand(ExpressionEncoder encoder,int i);
 	IRExpression getOperand(int i);
   IRLocation getLocation();
   
   ImmutableSet<String> getPreLabels();
   ImmutableSet<String> getPostLabels();
+	void setProperty(String name, Object o);
+	Object getProperty(String name);
+	boolean hasProperty(String name);
+	boolean hasLocation();
 }

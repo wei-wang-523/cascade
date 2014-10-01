@@ -29,6 +29,7 @@
 package edu.nyu.cascade.util;
 
 import java.lang.reflect.Array;
+import java.util.Collection;
 import java.util.Iterator;
 
 
@@ -83,7 +84,7 @@ public final class HashCodeUtil {
     * Note that byte and short are handled by this method, through
     * implicit conversion.
     */
-    IOUtils.debug().pln("int...");
+//    IOUtils.debug().pln("int...");
     return firstTerm( aSeed ) + aInt;
   }
 
@@ -134,7 +135,7 @@ public final class HashCodeUtil {
     return result;
   }
   
-  public static int hash( int aSeed , Iterable<Object> aObject ) {
+  public static int hash( int aSeed , Collection<Object> aObject ) {
     int result = aSeed;
     if ( aObject == null) {
       result = hash(result, 0);

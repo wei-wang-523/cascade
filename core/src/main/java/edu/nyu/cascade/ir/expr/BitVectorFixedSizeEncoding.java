@@ -2,11 +2,13 @@ package edu.nyu.cascade.ir.expr;
 
 import java.math.BigInteger;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
+import xtc.tree.GNode;
+import xtc.tree.Node;
 
+import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
+import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -14,17 +16,21 @@ import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 
+/**
+ * Used for linear pointer encoding
+ * 
+ * @author Wei
+ *
+ */
 public class BitVectorFixedSizeEncoding extends
     AbstractTypeEncoding<BitVectorExpression> implements
     IntegerEncoding<BitVectorExpression> {
 	
-	private static final String UNKNOWN_VARIABLE_NAME = "bv_encoding_unknown";
-	
 	private final BitVectorIntegerEncoding intEncoding;
 	
 	public static BitVectorFixedSizeEncoding create(ExpressionManager exprManager,
-			BitVectorIntegerEncoding intEncoding, int size) {
-    BitVectorType type = exprManager.bitVectorType(size);
+			BitVectorIntegerEncoding intEncoding, long size) {
+    BitVectorType type = exprManager.bitVectorType((int) size);
     return new BitVectorFixedSizeEncoding(exprManager, type, intEncoding);
   }
   
@@ -45,9 +51,26 @@ public class BitVectorFixedSizeEncoding extends
   }
 
 	@Override
-  public BitVectorExpression bitwiseAnd(BitVectorExpression a,
-      BitVectorExpression b) {
-	  return intEncoding.bitwiseAnd(a, b);
+  public BitVectorExpression bitwiseAnd(BitVectorExpression lhs,
+      BitVectorExpression rhs) {
+	  return intEncoding.bitwiseAnd(typeConversion(lhs), typeConversion(rhs));
+  }
+	
+	@Override
+  public BitVectorExpression bitwiseOr(BitVectorExpression lhs,
+      BitVectorExpression rhs) {
+	  return intEncoding.bitwiseOr(typeConversion(lhs), typeConversion(rhs));
+  }
+	
+	@Override
+  public BitVectorExpression bitwiseXor(BitVectorExpression lhs,
+      BitVectorExpression rhs) {
+	  return intEncoding.bitwiseXor(typeConversion(lhs), typeConversion(rhs));
+  }
+	
+	@Override
+  public BitVectorExpression bitwiseNegate(BitVectorExpression a) {
+	  return intEncoding.bitwiseNegate(typeConversion(a));
   }
 
 	@Override
@@ -57,6 +80,11 @@ public class BitVectorFixedSizeEncoding extends
 
 	@Override
   public BitVectorExpression constant(long c) {
+		return getExpressionManager().bitVectorConstant(c, getType().getSize());
+  }
+	
+	@Override
+  public BitVectorExpression characterConstant(long c) {
 		return getExpressionManager().bitVectorConstant(c, getType().getSize());
   }
 
@@ -80,33 +108,25 @@ public class BitVectorFixedSizeEncoding extends
 	@Override
   public BooleanExpression greaterThan(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-	  return intEncoding.greaterThan(lhs, rhs);
+	  return intEncoding.greaterThan(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
   public BooleanExpression signedGreaterThan(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-	  return intEncoding.signedGreaterThan(lhs, rhs);
+	  return intEncoding.signedGreaterThan(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
   public BooleanExpression greaterThanOrEqual(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-	  return intEncoding.greaterThanOrEqual(lhs, rhs);
+	  return intEncoding.greaterThanOrEqual(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
   public BooleanExpression signedGreaterThanOrEqual(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-	  return intEncoding.signedGreaterThanOrEqual(lhs, rhs);
+	  return intEncoding.signedGreaterThanOrEqual(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
@@ -114,7 +134,7 @@ public class BitVectorFixedSizeEncoding extends
       BitVectorExpression thenExpr, BitVectorExpression elseExpr) {
 	  Preconditions.checkArgument(thenExpr.getType().equals(getType()));
 	  Preconditions.checkArgument(elseExpr.getType().equals(getType()));
-	  return intEncoding.ifThenElse(b, thenExpr, elseExpr);
+	  return intEncoding.ifThenElse(b, typeConversion(thenExpr), typeConversion(elseExpr));
   }
 
 	@Override
@@ -126,41 +146,31 @@ public class BitVectorFixedSizeEncoding extends
 	@Override
   public BooleanExpression lessThan(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-	  return intEncoding.lessThan(lhs, rhs);
+	  return intEncoding.lessThan(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
   public BooleanExpression signedLessThan(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-	  return intEncoding.signedLessThan(lhs, rhs);
+	  return intEncoding.signedLessThan(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
   public BooleanExpression lessThanOrEqual(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-	  return intEncoding.lessThanOrEqual(lhs, rhs);
+	  return intEncoding.lessThanOrEqual(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
   public BooleanExpression signedLessThanOrEqual(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-	  return intEncoding.signedLessThanOrEqual(lhs, rhs);
+	  return intEncoding.signedLessThanOrEqual(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
   public BitVectorExpression minus(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-	  return intEncoding.minus(lhs, rhs);
+	  return intEncoding.minus(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
@@ -170,9 +180,7 @@ public class BitVectorFixedSizeEncoding extends
 
 	@Override
   public BooleanExpression neq(BitVectorExpression lhs, BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-		return intEncoding.neq(lhs, rhs);
+		return intEncoding.neq(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
@@ -193,55 +201,45 @@ public class BitVectorFixedSizeEncoding extends
   }
 
 	@Override
-  public BitVectorExpression plus(Iterable<? extends BitVectorExpression> args) {
-		Preconditions.checkArgument(Iterables.all(args, new Predicate<BitVectorExpression>(){
+  public BitVectorExpression plus(BitVectorExpression first, 
+  		Iterable<? extends BitVectorExpression> rest) {
+		Iterable<BitVectorExpression> argsPrime = Iterables.transform(rest, 
+				new Function<BitVectorExpression, BitVectorExpression>() {
 			@Override
-			public boolean apply(BitVectorExpression arg) {
-				return arg.getType().equals(getType());
+			public BitVectorExpression apply(BitVectorExpression input) {
+				return typeConversion(input);
 			}
-		}));
-		return intEncoding.plus(args);
+		});
+		return intEncoding.plus(typeConversion(first), argsPrime);
   }
 
 	@Override
-  public BitVectorExpression plus(BitVectorExpression... args) {
-	  return plus(Lists.newArrayList(args));
+  public BitVectorExpression plus(BitVectorExpression first, BitVectorExpression... rest) {
+	  return plus(first, rest);
   }
 
 	@Override
   public BitVectorExpression plus(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().getSize() <= getType().getSize());
-		Preconditions.checkArgument(rhs.getType().getSize() <= getType().getSize());
-		if(lhs.getType().getSize() < getType().getSize())
-			lhs = lhs.signExtend(getType().getSize());
-		if(rhs.getType().getSize() < getType().getSize())
-			rhs = rhs.signExtend(getType().getSize());
-		return intEncoding.plus(lhs, rhs);
+		return intEncoding.plus(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
   public BitVectorExpression times(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-		return intEncoding.times(lhs, rhs);
+		return intEncoding.times(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
   public BitVectorExpression divide(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-		return intEncoding.divide(lhs, rhs);
+		return intEncoding.divide(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
   public BitVectorExpression mod(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-		return intEncoding.mod(lhs, rhs);
+		return intEncoding.mod(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
@@ -252,7 +250,7 @@ public class BitVectorFixedSizeEncoding extends
 
 	@Override
   public BitVectorExpression unknown() {
-	  return variable(UNKNOWN_VARIABLE_NAME, true);
+	  return unknown(getType());
   }
 
 	@Override
@@ -267,55 +265,48 @@ public class BitVectorFixedSizeEncoding extends
 
 	@Override
   public BitVectorExpression uminus(BitVectorExpression expr) {
-	  Preconditions.checkArgument(expr.getType().equals(getType()));
-	  return intEncoding.uminus(expr);
+	  return intEncoding.uminus(typeConversion(expr));
   }
 
 	@Override
   public BitVectorExpression lshift(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-		return intEncoding.lshift(lhs, rhs);
+		return intEncoding.lshift(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
   public BitVectorExpression rshift(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-		return intEncoding.rshift(lhs, rhs);
+		return intEncoding.rshift(typeConversion(lhs), typeConversion(rhs));
+  }
+	
+	@Override
+  public BitVectorExpression signedRshift(BitVectorExpression lhs,
+      BitVectorExpression rhs) {
+		return intEncoding.signedRshift(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
   public BitVectorExpression rem(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-		return intEncoding.rem(lhs, rhs);
+		return intEncoding.rem(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
   public BitVectorExpression signedRem(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-		return intEncoding.signedRem(lhs, rhs);
+		return intEncoding.signedRem(typeConversion(lhs), typeConversion(rhs));
   }
 
 	@Override
   public BitVectorExpression signedDivide(BitVectorExpression lhs,
       BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-		return intEncoding.signedDivide(lhs, rhs);
+		return intEncoding.signedDivide(typeConversion(lhs), typeConversion(rhs));
   }
 	
 	@Override
 	public BooleanExpression eq(BitVectorExpression lhs, BitVectorExpression rhs) {
-		Preconditions.checkArgument(lhs.getType().equals(getType()));
-		Preconditions.checkArgument(rhs.getType().equals(getType()));
-		return intEncoding.eq(lhs, rhs);
+		return intEncoding.eq(typeConversion(lhs), typeConversion(rhs));
 	}
 	
   @Override
@@ -323,4 +314,26 @@ public class BitVectorFixedSizeEncoding extends
   	Preconditions.checkArgument(type.isBitVectorType());
   	return type.asBitVectorType().variable(name, fresh);
   }
+  
+	private BitVectorExpression typeConversion(BitVectorExpression bvExpr) {
+		Preconditions.checkArgument(bvExpr.getSize() <= getType().getSize());
+		
+		int exprSize = bvExpr.getSize(), size = getType().getSize();
+		
+		if(exprSize == size)	return bvExpr;
+		
+		if(bvExpr.getNode() != null) {
+			Node srcNode = bvExpr.getNode();
+			if(CType.hasType(srcNode)) {
+				xtc.type.Type srcType = CType.getType(srcNode);
+				if(CType.isUnsigned(srcType)) {
+					return bvExpr.zeroExtend(size)
+							.setNode(GNode.cast(srcNode)).asBitVector();
+				}
+			}
+			return bvExpr.signExtend(size)
+					.setNode(GNode.cast(srcNode)).asBitVector();
+		}
+		return bvExpr.signExtend(size);
+	}
 }

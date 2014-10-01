@@ -1,8 +1,7 @@
 package edu.nyu.cascade.c.preprocessor.steensgaard;
 
-import static edu.nyu.cascade.c.preprocessor.steensgaard.ValueType.ValueTypeKind.BOTTOM;
-
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -12,89 +11,128 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
+import edu.nyu.cascade.c.CScopeAnalyzer;
+import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IRVar;
-import edu.nyu.cascade.c.preprocessor.steensgaard.ValueType.ValueTypeKind;
 import edu.nyu.cascade.util.UnionFind;
 import edu.nyu.cascade.util.UnionFind.Partition;
 
-public class UnionFindECR {
+class UnionFindECR {
   UnionFind<IRVar> uf;
   
   private UnionFindECR () {
     uf = UnionFind.create();
   }
 
-  protected static UnionFindECR create() {
+  static UnionFindECR create() {
     return new UnionFindECR();
   }
-  
 
-  protected void add(IRVarImpl var) {
+  /**
+   * Add <code>var</code> into union find
+   * @param var
+   */
+  void add(VarImpl var) {
     uf.add(var, var.getECR());
   }
   
-  protected void addAll(Iterable<IRVarImpl> vars) {
-  	for(IRVarImpl var : vars) {
+  /**
+   * Add <code>vars</code> into union find
+   * @param vars
+   */
+  void addAll(Iterable<VarImpl> vars) {
+  	for(VarImpl var : vars) {
   		uf.add(var, var.getECR());
   	}
   }
   
  /**
-  * Conditional join two ECRs@param e1
+  * Conditional join two ECRs <code>e1</code>
+   * and <code>e2</code>
+  * @param e1
   * @param e2
   */
-  protected void cjoin(ECR e1, ECR e2) {
-    if(BOTTOM.equals(getType(e2).getKind())) {
-      addPending(e2, e1);
-    } else {
-      join(e1, e2);
-    }
+  void cjoin(ECR e1, ECR e2) {
+  	if(e1.equals(e2)) return;
+  	
+  	switch(getType(e2).getKind()) {
+		case BOTTOM:
+			addPending(e2, e1); break;
+		default:
+			join(e1, e2); break;
+  	}
   }
     
   /**
-   * Join the types represented by @param e1 and the specified ECR @param e2
+   * Join the types represented by <code>e1</code>
+   * and <code>e2</code>
+   * @param e1
+	 * @param e2
    */
-  protected void join(ECR e1, ECR e2) {
+  void join(ECR e1, ECR e2) {
     ValueType t1 = getType(e1);
     ValueType t2 = getType(e2);
     union(e1, e2);
     ECR root = (ECR) e1.findRoot();
-    if(BOTTOM.equals(t1.getKind())) {
-      root.setType(t2);
-      if(BOTTOM.equals(t2.getKind())) {
-        if(e1.hasPending()) {
-          Set<ECR> pending_1 = Sets.newHashSet(e1.getPending());
-          addPending(root, pending_1);
+    
+    switch(t1.getKind()) {
+		case BOTTOM: {
+			root.setType(t2);
+			
+			switch(t2.getKind()) {
+			case BOTTOM: {
+				Set<ECR> pendings = Sets.newHashSet();
+				
+				if(e1.hasPending()) {
+					pendings.addAll(e1.getPending());
         }
+				
         if(e2.hasPending()) {
-          Set<ECR> pending_2 = Sets.newHashSet(e2.getPending());
-          addPending(root, pending_2);
+        	pendings.addAll(e2.getPending());
         }
-      } else {
-        if(e1.hasPending()) {
+        
+        addPendings(root, pendings);
+				break;
+			}
+			default:
+				if(e1.hasPending()) {
           for(ECR x : e1.getPending()) {
             union(root, x);
           }
         }
-      }
-    } else {
-      root.setType(t1);
-      if(BOTTOM.equals(t2.getKind())) {
-        if(e2.hasPending()) {
+        break;
+			}
+			break;
+		}
+		
+		default: {
+			root.setType(t1);
+			
+			switch(t2.getKind()) {
+			case BOTTOM:
+				if(e2.hasPending()) {
           for(ECR x : e2.getPending()) {
             union(root, x);
           }
         }
-      } else {
-        unify(t1, t2);
-      }
+				break;
+			default: {
+				ValueType rootType = root.getType();
+				ValueType t = unify(t1, t2);
+				t.setAddress(rootType.getAddress());
+				root.setType(t);
+				break;
+			}
+			}
+			break;
+		}
     }
   }
   
   /**
    * Set the type of the ECR @param e to @param type
    */
-  protected void setType(ECR e, ValueType type) { 
+  void setType(ECR e, ValueType type) { 
     ECR root = (ECR) e.findRoot();
     root.setType(type);
     if(root.hasPending()) {
@@ -105,133 +143,113 @@ public class UnionFindECR {
     }
   }
   
-  protected void setInitVar(ECR e, IRVarImpl initVar) {
-    ECR root = (ECR) e.findRoot();
-    root.setInitVar(initVar);
-  }
-  
   /**
-   * Add @param newPending to @param ecr
+   * Get the type of the ECR <code>e</code>
+   * @param e
    */
-  protected void addPending(ECR ecr, Collection<ECR> newPending) {
-    ECR root = (ECR) ecr.findRoot();
-    root.addPending(newPending);
-  }
-  
-  protected void addPending(ECR ecr, ECR newPending) {
-    ECR root = (ECR) ecr.findRoot();
-    root.addPending(newPending);
-  }
-  
-  /**
-   * Get the type of the ECR @param e
-   */
-  protected ValueType getType(ECR e) {
+  ValueType getType(ECR e) {
     ECR root = (ECR) e.findRoot();
     return root.getType();
   }
   
-  
   /**
-   * Get the initial type variable of root ecr
+   * Get the root of ECR <code>e</code>
+   * @param e
+   * @return
    */
-  protected IRVarImpl getRootInitVar(ECR e) {
-    ECR root = (ECR) e.findRoot();
-    return root.getInitTypeVar();
-  }
-  
-  protected String getPointsToChain(ECR e) {
-    return e.getPointsToChain();
-  }
-  
-  protected boolean hasPointsToChain(ECR e) {
-    ECR root = (ECR) e.findRoot();
-    ValueType rootType = root.getType();
-    if(ValueTypeKind.LOCATION.equals(rootType.getKind())) {
-      ECR operand_0 = rootType.getOperand(0);
-      if(((ECR) operand_0.findRoot()).hasInitTypeVar())
-        return true;
-    }
-    return false;
-  }
-  
-  /**
-   * Union two ecrs, and always attach an initial var to the root ecr
-   * We need it to pick the name of representative var, and also get 
-   * final snapshot(map) of the points-to relation of the analysis of
-   * all program variables, of course, null will be not acceptable to 
-   * be the key of the map.
-   */
-  protected void union(ECR e1, ECR e2) {
-    ECR root1 = (ECR) e1.findRoot();
-    ECR root2 = (ECR) e2.findRoot();
-    uf.union(e1, e2);
-    ECR root = (ECR) e1.findRoot();
-    if(!root.hasInitTypeVar()) {
-      if(root1.hasInitTypeVar()) {
-        root.setInitVar(root1.getInitTypeVar());
-      } else if(root2.hasInitTypeVar()) {
-        root.setInitVar(root2.getInitTypeVar());
-      }
-    }
-  }
-  
-  /**
-   * Unify two value types @param t1 and @param t2
-   */
-  protected void unify(ValueType t1, ValueType t2) {
-    Preconditions.checkArgument(t1.getKind().equals(t2.getKind()));
-    switch(t1.getKind()) {
-    case BOTTOM: return;
-    
-    case FUNCTION: {
-      ECR location_1 = t1.getOperand(0);
-      ECR location_2 = t2.getOperand(0);
-      if(!location_1.equals(location_2)) {
-        join(location_1, location_2);
-      }
-      
-      ECR function_1 = t1.getOperand(1);
-      ECR function_2 = t2.getOperand(1);
-      if(!function_1.equals(function_2)) {
-        join(function_1, function_2);
-      }
-      break;
-    }
-    
-    case LOCATION: {
-      Iterator<ECR> args_itr_1 = t1.getOperands().iterator();
-      Iterator<ECR> args_itr_2 = t2.getOperands().iterator();
-      while(args_itr_1.hasNext() && args_itr_2.hasNext()) {
-        ECR arg_1 = args_itr_1.next();
-        ECR arg_2 = args_itr_2.next();
-        if(!arg_1.equals(arg_2)) {
-          join(arg_1, arg_2);
-        }
-      }
-      break;
-    }
-    default: 
-      throw new IllegalArgumentException("Unknown type kind " + t1.getKind());
-    }
+  ECR findRoot(ECR e) {
+  	return (ECR) e.findRoot();
   }
   
   /**
    * Get the snapshot of union find
    */
-  protected ImmutableMap<ECR, Set<IRVar>> snapshot() {
+  ImmutableMap<ECR, Collection<IRVar>> snapshot() {
     SetMultimap<Partition, IRVar> map = uf.snapshot();
-    ImmutableMap.Builder<ECR, Set<IRVar>> builder = ImmutableMap.builder();
+    ImmutableMap.Builder<ECR, Collection<IRVar>> builder = ImmutableMap.builder();
     for (Partition ecr : map.asMap().keySet()) {
-      builder.put((ECR) ecr, ImmutableSet.copyOf(map.asMap().get(ecr)));
+      builder.put((ECR) ecr.findRoot(), ImmutableSet.copyOf(map.asMap().get(ecr)));
     }
     return builder.build();
   }
   
-  /**
-   * Get the alias variable equivalent class of union find
-   */
-  protected ImmutableSet<IRVar> getEquivClass(ECR e) {
-    return ImmutableSet.copyOf(uf.getEquivClass(e));
+  Collection<IRVar> getEquivClass(ECR key) {
+  	return uf.getEquivClass(key);
   }
+	
+	private void addPendings(ECR ecr, Collection<ECR> newPendings) {
+	  ECR root = (ECR) ecr.findRoot();
+	  root.addPending(newPendings);
+	}
+
+	private void addPending(ECR ecr, ECR newPending) {
+		addPendings(ecr, Collections.singleton(newPending));
+	}
+
+	/**
+	 * Union two ecrs, and always attach an initial var to the root ecr.
+	 * We need it to pick the name of representative var, and also get 
+	 * final snapshot(map) of the points-to relation of the analysis of
+	 * all program variables, of course, null will be not acceptable to 
+	 * be the key of the map.
+	 */
+	private void union(ECR e1, ECR e2) {
+	  uf.union(e1, e2);
+	}
+
+	/**
+	 * Unify two value types <code>t1</code>, <code>t2</code>
+	 * @param t1 
+	 * @param t2
+	 */
+	private ValueType unify(ValueType t1, ValueType t2) {
+	  Preconditions.checkArgument(t1.getKind().equals(t2.getKind()));
+	  switch(t1.getKind()) {
+	  case REF: {
+	  	RefType locType1 = t1.asRef();
+	  	RefType locType2 = t2.asRef();
+	    ECR location_1 = locType1.getLocation();
+	    ECR location_2 = locType2.getLocation();
+	    if(!location_1.equals(location_2)) {
+	      join(location_1, location_2);
+	    }
+	    
+	    ECR function_1 = locType1.getFunction();
+	    ECR function_2 = locType2.getFunction();
+	    if(!function_1.equals(function_2)) {
+	      join(function_1, function_2);
+	    }
+	    
+	    xtc.type.Type xtcType1 = locType1.getXtcType();
+	    xtc.type.Type xtcType2 = locType2.getXtcType();
+	    
+	    String scopeName1 = locType1.getScopeName();
+	    String scopeName2 = locType2.getScopeName();
+	    
+	    if(xtcType1.equals(xtcType2) && scopeName1.equals(scopeName2)) break;
+	    
+	    xtc.type.Type xtcType = CType.getBottomType(xtcType1, xtcType2);
+
+	    String scopeName = CScopeAnalyzer.getTopScope(scopeName1, scopeName2);
+	    
+	    t1 = ValueType.ref(location_1, function_1, xtcType, scopeName);	    
+	    break;
+	  }
+	  
+	  case LAMBDA: {
+	    Iterator<ECR> args_itr_1 = t1.asLambda().getOperands().iterator();
+	    Iterator<ECR> args_itr_2 = t2.asLambda().getOperands().iterator();
+	    while(args_itr_1.hasNext() && args_itr_2.hasNext()) {
+	      ECR arg_1 = args_itr_1.next();
+	      ECR arg_2 = args_itr_2.next();
+	      if(!arg_1.equals(arg_2)) {
+	        join(arg_1, arg_2);
+	      }
+	    }
+	    break;
+	  }
+	  default: break;
+	  }
+	  return t1;
+	}
 }

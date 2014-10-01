@@ -1,5 +1,6 @@
 package edu.nyu.cascade.ir.expr;
 
+import edu.nyu.cascade.ir.type.IRType;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -78,9 +79,33 @@ public interface TypeEncoding<T extends Expression> {
    * 
    * @param name
    *          the name of the variable
+   * @param type
+   *          the type of the variable         
+   * @param fresh
+   *          if true, the variable is guaranteed to be unique in the encoding
+   * @return an expression encoding the variable 
+   */
+  T variable(String name, IRType type, boolean fresh);
+
+	T boundVar(String name, IRType type, boolean fresh);
+
+	T boundExpression(String name, int index, IRType type, boolean fresh);
+	
+  /**
+   * A variable in the encoding. Creates the variable if it doesn't already
+   * exist. If a variable with the same name already exists, it will be returned
+   * if <code>fresh</code> is false; a new variable with a mangled name will be
+   * created if <code>fresh</code> is true.
+   * 
+   * @param name
+   *          the name of the variable  
    * @param fresh
    *          if true, the variable is guaranteed to be unique in the encoding
    * @return an expression encoding the variable 
    */
   T variable(String name, boolean fresh);
+
+	T boundVar(String name, boolean fresh);
+
+	T boundExpression(String name, int index, boolean fresh);
 }

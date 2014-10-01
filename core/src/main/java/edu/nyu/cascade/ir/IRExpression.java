@@ -3,8 +3,8 @@ package edu.nyu.cascade.ir;
 import xtc.tree.Node;
 import xtc.tree.Printer;
 import xtc.util.SymbolTable.Scope;
-import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
+import edu.nyu.cascade.ir.state.StateExpressionClosure;
 
 public interface IRExpression {
   void format(Printer printer);
@@ -13,11 +13,11 @@ public interface IRExpression {
 
   IRLocation getLocation();
 
-  ExpressionClosure toBoolean(ExpressionEncoder encoder);
+  StateExpressionClosure toBoolean(ExpressionEncoder encoder);
 
-  ExpressionClosure toExpression(ExpressionEncoder encoder);
+  StateExpressionClosure toExpression(ExpressionEncoder encoder);
 
-  ExpressionClosure toLval(ExpressionEncoder encoder);
+  StateExpressionClosure toLval(ExpressionEncoder encoder);
 
   Scope getScope();
 }

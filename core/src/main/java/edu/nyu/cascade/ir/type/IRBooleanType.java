@@ -7,8 +7,7 @@ public final class IRBooleanType extends IRType {
     return singleton; 
   }
   
-  private IRBooleanType() { 
-  }
+  private IRBooleanType() { }
   
   @Override
   public String toString() { return "boolean"; }

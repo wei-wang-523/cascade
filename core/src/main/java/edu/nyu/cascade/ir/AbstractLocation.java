@@ -70,6 +70,8 @@ public abstract class AbstractLocation implements IRLocation {
   @Override
   public boolean isWithin(IRBasicBlock block) {
     Preconditions.checkNotNull(block);
+    if(!block.hasLocation()) return false;
+    
     return !strictFollows(block) && !strictPrecedes(block);
   }
 

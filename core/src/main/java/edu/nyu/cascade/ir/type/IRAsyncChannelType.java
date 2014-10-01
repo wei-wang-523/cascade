@@ -2,7 +2,6 @@ package edu.nyu.cascade.ir.type;
 
 import java.util.Map;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
 public final class IRAsyncChannelType<T extends IRType> extends IRType {
@@ -24,11 +23,6 @@ public final class IRAsyncChannelType<T extends IRType> extends IRType {
   
   private IRAsyncChannelType(T type) {
     this.type = type;
-  }
-  
-  @Override
-  public ImmutableList<? extends IRType> getTypeArguments() {
-    return ImmutableList.of(type);
   }
 
   @Override

@@ -1,6 +1,6 @@
 package edu.nyu.cascade.prover;
 
-import java.util.LinkedHashSet;
+import java.util.Collection;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
@@ -16,7 +16,7 @@ import edu.nyu.cascade.prover.type.Type;
 
 public abstract class AbstractExpressionManager implements ExpressionManager {
   
-  private final LinkedHashSet<VariableExpression> variableSet = Sets.newLinkedHashSet();
+  private final Collection<Expression> variableSet = Sets.newLinkedHashSet();
   
   @Override
   public void addTrigger(Expression e, Expression p) {
@@ -41,24 +41,6 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   public BooleanExpression and(Expression first,
       Expression... rest) {
     return and(Lists.asList(first, rest));
-  }
-
-  @Override
-  public Expression applyExpr(FunctionType func, Expression first,
-      Expression... rest) {
-    return applyExpr(func, Lists.asList(first, rest));
-  }
-  
-  @Override
-  public Expression applyExpr(
-      FunctionType fun, Expression arg) {
-    return fun.apply(arg);
-  }
-  
-  @Override
-  public Expression applyExpr(
-      FunctionType fun, Iterable<? extends Expression> args) {
-    return fun.apply(args);
   }
 
   @Override
@@ -152,16 +134,6 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   	Type type = a.getType();
     return type.asBitVectorType().bitwiseXor(a, b);
   }
-  
-  @Override
-  public BooleanVariableExpression booleanVar(String name, boolean fresh)  {
-    return booleanType().variable(name, fresh);
-  }
-  
-  @Override
-  public BooleanVariableExpression booleanBoundVar(String name, boolean fresh)  {
-    return booleanType().boundVariable(name, fresh);
-  }
 
   @Override
   public BitVectorExpression concat(Expression left,
@@ -214,88 +186,90 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   	Type type = numerator.getType();
   	return type.asBitVectorType().signedRem(numerator, denominator);
   }
+  
 
-  @Override
-  public BooleanExpression exists(Expression var,
-      Expression body) {
-    return exists(ImmutableList.of(var), body);
-  }
-  
-  @Override
-  public BooleanExpression exists(Expression var,
-      Expression body, Iterable<? extends Expression> patterns) {
-    return exists(ImmutableList.of(var), body, patterns);
-  }
-  
-  @Override
-  public BooleanExpression exists(Expression var,
-      Expression body, Iterable<? extends Expression> patterns,
-      Iterable<? extends Expression> noPatterns) {
-    return exists(ImmutableList.of(var), body, patterns, noPatterns);
+	@Override
+  public BooleanExpression exists(Expression var, Expression body) {
+		return exists(ImmutableList.of(var), body);
   }
 
-  @Override
-  public BooleanExpression exists(Expression var1,
-      Expression var2, Expression body) {
-    return exists(ImmutableList.of(var1, var2), body);
-  }
-  
-  @Override
-  public BooleanExpression exists(Expression var1,
-      Expression var2, Expression body,
+	@Override
+  public BooleanExpression exists(Expression var, Expression body,
       Iterable<? extends Expression> patterns) {
-    return exists(ImmutableList.of(var1, var2), body, patterns);
-  }
-  
-  @Override
-  public BooleanExpression exists(Expression var1,
-      Expression var2, Expression body,
-      Iterable<? extends Expression> patterns,
-      Iterable<? extends Expression> noPatterns) {
-    return exists(ImmutableList.of(var1, var2), body, patterns, noPatterns);
+		return exists(ImmutableList.of(var), body, patterns);
   }
 
-  @Override
-  public BooleanExpression exists(Expression var1,
-      Expression var2, Expression var3,
+	@Override
+  public BooleanExpression exists(Expression var, Expression body,
+      Iterable<? extends Expression> patterns,
+      Iterable<? extends Expression> noPatterns) {
+		return exists(ImmutableList.of(var), body, patterns, noPatterns);
+  }
+
+	@Override
+  public BooleanExpression exists(Expression var1, Expression var2,
       Expression body) {
-    return exists(ImmutableList.of(var1, var2, var3), body);
+		return exists(ImmutableList.of(var1, var2), body);
   }
-  
-  @Override
-  public BooleanExpression exists(Expression var1,
-      Expression var2, Expression var3,
+
+	@Override
+  public BooleanExpression exists(Expression var1, Expression var2,
       Expression body, Iterable<? extends Expression> patterns) {
-    return exists(ImmutableList.of(var1, var2, var3), body, patterns);
+	  return exists(ImmutableList.of(var1, var2), body, patterns);
   }
-  
-  @Override
-  public BooleanExpression exists(Expression var1,
-      Expression var2, Expression var3,
+
+	@Override
+  public BooleanExpression exists(Expression var1, Expression var2,
       Expression body, Iterable<? extends Expression> patterns,
       Iterable<? extends Expression> noPatterns) {
-    return exists(ImmutableList.of(var1, var2, var3), body, patterns, noPatterns);
-  }
-  
-  @Override
-  public BooleanExpression exists(
-      Iterable<? extends Expression> vars,
-      Expression body, 
-      Iterable<? extends Expression> patterns,
-      Iterable<? extends Expression> noPatterns)  {
-    return booleanType().exists(vars, body, patterns, noPatterns);
-  }
-  
-  @Override
-  public BooleanExpression exists(Iterable<? extends Expression> vars,
-      Expression body) {
-    return booleanType().exists(vars, body);
+		return exists(ImmutableList.of(var1, var2), body, patterns, noPatterns);
   }
 
-  @Override
+	@Override
+  public BooleanExpression exists(Expression var1,
+  		Expression var2, Expression var3,
+  		Expression body) {
+		return exists(ImmutableList.of(var1, var2, var3), body);
+  }
+
+	@Override
+  public BooleanExpression exists(Expression var1, Expression var2,
+      Expression var3, Expression body, Iterable<? extends Expression> patterns) {
+		return exists(ImmutableList.of(var1, var2, var3), body, patterns);
+  }
+
+	@Override
+  public BooleanExpression exists(Expression var1, Expression var2,
+      Expression var3, Expression body,
+      Iterable<? extends Expression> patterns,
+      Iterable<? extends Expression> noPatterns) {
+		return exists(ImmutableList.of(var1, var2, var3), body, patterns, noPatterns);
+  }
+
+	@Override
+  public BooleanExpression exists(Iterable<? extends Expression> vars,
+      Expression body) {
+		return exists(vars, body);
+  }
+
+	@Override
   public BooleanExpression exists(Iterable<? extends Expression> vars,
       Expression body, Iterable<? extends Expression> patterns) {
-    return booleanType().exists(vars, body, patterns);
+		return exists(vars, body, patterns);
+  }
+
+	@Override
+  public BooleanExpression exists(Iterable<? extends Expression> vars,
+      Expression body, Iterable<? extends Expression> patterns,
+      Iterable<? extends Expression> noPatterns) {
+		return exists(vars, body, patterns, noPatterns);
+  }
+
+	@Override
+  public BooleanExpression forall(Expression var, Expression body,
+      Iterable<? extends Expression> patterns,
+      Iterable<? extends Expression> noPatterns) {
+		return forall(ImmutableList.of(var), body, patterns, noPatterns);
   }
 
   @Override
@@ -308,13 +282,6 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   public BooleanExpression forall(Expression var,
       Expression body, Iterable<? extends Expression> patterns) {
     return forall(ImmutableList.of(var), body, patterns);
-  }
-  
-  @Override
-  public BooleanExpression forall(Expression var, Expression body, 
-      Iterable<? extends Expression> patterns,
-      Iterable<? extends Expression> noPatterns) {
-    return forall(ImmutableList.of(var), body, patterns, noPatterns);
   }
 
   @Override
@@ -330,7 +297,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   
   @Override
   public BooleanExpression forall(Expression var1,
-      Expression var2, Expression body,
+  		Expression var2, Expression body,
       Iterable<? extends Expression> patterns,
       Iterable<? extends Expression> noPatterns) {
     return forall(ImmutableList.of(var1, var2), body, patterns, noPatterns);
@@ -377,7 +344,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   }
 
   @Override
-  public FunctionType functionType(String fname, Type argType1,
+  public FunctionType functionType(Type argType1,
       Type argType2, Type... rest) {
     List<Type> argTypes = Lists.newArrayList(argType1);
     Type range = argType2;
@@ -389,23 +356,13 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
       }
       range = rest[rest.length-1];
     } 
-    return functionType(fname, argTypes, range);
+    return functionType(argTypes, range);
   }
   
   @Override
-  public FunctionType functionType(String fname, Type argType, Type range) {
+  public FunctionType functionType(Type argType, Type range) {
     List<Type> argTypes = Lists.newArrayList(argType);
-    return functionType(fname, argTypes, range);
-  }
-  
-  @Override
-  public VariableExpression functionVar(String name, FunctionType func, boolean fresh)  {
-      return func.variable(name, fresh);
-  }
-
-  @Override
-  public VariableExpression functionBoundVar(String name, FunctionType func, boolean fresh)  {
-      return func.boundVariable(name, fresh);
+    return functionType(argTypes, range);
   }
   
   @Override
@@ -438,16 +395,6 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
     Preconditions.checkArgument(tuple.isTuple());
     return tuple.getType().asTuple().index(tuple, index);
   }
-  
-  @Override
-  public IntegerVariableExpression integerVar(String name, boolean fresh)  {
-    return integerType().variable(name, fresh);  
-  }
-
-  @Override
-  public IntegerVariableExpression integerBoundVar(String name, boolean fresh) {
-    return integerType().boundVariable(name, fresh);
-  }
 
   @Override
   public BooleanExpression greaterThanOrEqual(
@@ -479,25 +426,6 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
     Type type = left.getType();
     Preconditions.checkArgument(type.isComparableType());
     return type.asComparableType().sgt(left, right);
-  }
-
-  @Override
-  public FunctionExpression lambda(
-      VariableExpression var1, VariableExpression var2,
-      Expression expr) {
-    return lambda(ImmutableList.of(var1, var2), expr);
-  }
-  
-  @Override
-  public  FunctionExpression lambda(
-      Iterable<? extends VariableExpression> vars, Expression expr) {
-    return expr.getType().lambda(vars, expr);
-  }
-  
-  @Override
-  public FunctionExpression lambda(
-      VariableExpression var, Expression expr) {
-    return expr.getType().lambda(var, expr);
   }
 
   @Override
@@ -629,7 +557,26 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   @Override
   public VariableExpression variable(String name,
       Type type, boolean fresh) {
-    VariableExpression res = type.variable(name, fresh);
+  	Preconditions.checkArgument(type.isScalarType());
+  	Expression res = type.asScalarType().variable(name, fresh);
+    variableSet.add(res);
+    return res.asVariable();
+  }
+  
+  @Override
+  public Expression boundVar(String name,
+      Type type, boolean fresh) {
+  	Preconditions.checkArgument(type.isScalarType());
+  	Expression res = type.asScalarType().boundVar(name, fresh);
+    variableSet.add(res);
+    return res;
+  }
+  
+  @Override
+  public Expression boundExpression(String name, int index,
+      Type type, boolean fresh) {
+  	Preconditions.checkArgument(type.isScalarType());
+  	Expression res = type.asScalarType().boundExpression(name, index, fresh);
     variableSet.add(res);
     return res;
   }
@@ -640,7 +587,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   }
   
   @Override
-  public LinkedHashSet<VariableExpression> getVariables() {
+  public Collection<Expression> getVariables() {
     return variableSet;
   }
   
@@ -650,7 +597,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   }
   
   @Override
-  public BooleanExpression rewriteRule(Iterable<? extends VariableExpression> vars,
+  public BooleanExpression rewriteRule(Iterable<? extends Expression> vars,
 		  Expression guard, Expression rule) {
     return booleanType().rewriteRule(vars, guard, rule);
   }
@@ -695,16 +642,6 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   @Override
   public RationalExpression rationalConstant(int numerator, int denominator)  {
     return rationalType().constant(numerator, denominator);
-  }
-  
-  @Override
-  public RationalVariableExpression rationalVar(String name, boolean fresh)  {
-    return rationalType().variable(name, fresh);
-  }
-  
-  @Override
-  public RationalVariableExpression rationalBoundVar(String name, boolean fresh)  {
-    return rationalType().boundVariable(name, fresh);
   }
   
   @Override
@@ -820,20 +757,6 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   public Expression applyExpr(Expression fun, Expression first,
       Expression... rest) {
   	return fun.asFunctionExpression().apply(first, rest);
-  }
-  
-  @Override
-  public ArrayVariableExpression arrayVar(
-  		String name, Type indexType, Type elementType, boolean fresh)  {
-  	Type type = asArrayType(indexType, elementType);
-  	return type.asArrayType().variable(name, fresh);
-  }
-  
-  @Override
-  public ArrayVariableExpression arrayBoundVar(
-      String name, Type indexType, Type elementType, boolean fresh)  {
-  	Type type = asArrayType(indexType, elementType);
-  	return type.asArrayType().boundVariable(name, fresh);
   }
   
   @Override

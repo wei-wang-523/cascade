@@ -30,20 +30,36 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
     return new BasicBlock();
   }
 
+  public static BasicBlock loopInitBlock() {
+  	return new BasicBlock(Type.LOOPINIT);
+  }
+  
+  public static BasicBlock loopExitBlock() {
+  	return new BasicBlock(Type.LOOPEXIT);
+  }
+  
   public static BasicBlock loopBlock(Location loc) {
     return new BasicBlock(Type.LOOP, loc);
   }
 
   public static BasicBlock entryBlock(Location loc) {
-    return new BasicBlock(Type.ENTRY, loc);
+    return new BasicBlock(Type.FUNC_ENT, loc);
   }
   
   public static BasicBlock exitBlock() {
-    return new BasicBlock(Type.EXIT);
+    return new BasicBlock(Type.FUNC_EXIT);
   }
 
   public static BasicBlock switchBlock(Location loc) {
     return new BasicBlock(Type.SWITCH, loc);
+  }
+  
+	public static BasicBlock labelBlock(Location loc) {
+	  return new BasicBlock(Type.LABEL, loc);
+  }
+	
+	public static BasicBlock labelBlock() {
+	  return new BasicBlock(Type.LABEL);
   }
   
   public static BasicBlock mergeBlock(IRBasicBlock switchBlock) {
@@ -119,28 +135,13 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
   
   public void addStatement(IRStatement statement) {
     statements.add(statement);
-    addLocation(statement.getLocation());
+    if(statement.hasLocation()) addLocation(statement.getLocation());
   }
 
   public void addStatements(List<? extends IRStatement> statements) {
-    if( !statements.isEmpty() ) {
-      this.statements.addAll(statements);
-//      addLocation( statements.get(statements.size()-1).getLocation());
-      addLocation(statements.get(0).getLocation(), statements.get(statements.size()-1).getLocation());
-    }
-  }
-  
-  public void addStatement(int index, IRStatement statement) {
-    statements.add(index, statement);
-    addLocation(statement.getLocation());
-  }
-
-  public void addStatements(int index, List<? extends IRStatement> statements) {
-    if( !statements.isEmpty() ) {
-      this.statements.addAll(index, statements);
-//      addLocation( statements.get(statements.size()-1).getLocation());
-      addLocation(statements.get(0).getLocation(), statements.get(statements.size()-1).getLocation());
-    }
+  	for(IRStatement stmt : statements) {
+  		addStatement(stmt);
+  	}
   }
 
   @Override
@@ -185,6 +186,7 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
 
   @Override
   public BasicBlock splitBefore(IRLocation position) {
+  	Preconditions.checkArgument(!Type.LOOP.equals(type));
     int i = 0;
     for (IRStatement stmt : statements) {
       if (position.precedes(stmt)) {
@@ -202,6 +204,7 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
   
   @Override
   public BasicBlock splitAfter(IRLocation position) {
+  	Preconditions.checkArgument(!Type.LOOP.equals(type));
     int i = 0;
     for (IRStatement stmt : statements) {
       if (position.strictPrecedes(stmt)) {

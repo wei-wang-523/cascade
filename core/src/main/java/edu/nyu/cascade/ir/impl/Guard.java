@@ -6,8 +6,8 @@ import xtc.util.SymbolTable.Scope;
 import edu.nyu.cascade.ir.IRBooleanExpression;
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRLocation;
-import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
+import edu.nyu.cascade.ir.state.StateExpressionClosure;
 
 public class Guard implements IRBooleanExpression {
   public static Guard create(IRExpression test) {
@@ -66,17 +66,17 @@ public class Guard implements IRBooleanExpression {
   }
 
   @Override
-  public  ExpressionClosure toBoolean(ExpressionEncoder encoder) {
+  public StateExpressionClosure toBoolean(ExpressionEncoder encoder) {
     return encoder.toBoolean(getSourceNode(), isNegated(), getScope());
   }
 
   @Override
-  public  ExpressionClosure toExpression(ExpressionEncoder encoder) {
+  public StateExpressionClosure toExpression(ExpressionEncoder encoder) {
     throw new UnsupportedOperationException("Guard.toExpression");
   }
 
   @Override
-  public  ExpressionClosure toLval(ExpressionEncoder encoder) {
+  public StateExpressionClosure toLval(ExpressionEncoder encoder) {
     throw new UnsupportedOperationException("Guard.toLval");
   }
 

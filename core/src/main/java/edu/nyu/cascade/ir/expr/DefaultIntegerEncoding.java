@@ -1,7 +1,6 @@
 package edu.nyu.cascade.ir.expr;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 
 import com.google.common.base.Preconditions;
 
@@ -24,7 +23,27 @@ public class DefaultIntegerEncoding extends
   public IntegerExpression bitwiseAnd(IntegerExpression a, IntegerExpression b) {
     return unknown();
   }
+  
+  @Override
+  public IntegerExpression bitwiseNegate(IntegerExpression a) {
+    return unknown();
+  }
+  
+  @Override
+  public IntegerExpression bitwiseOr(IntegerExpression a, IntegerExpression b) {
+    return unknown();
+  }
+  
+  @Override
+  public IntegerExpression bitwiseXor(IntegerExpression a, IntegerExpression b) {
+    return unknown();
+  }
 
+  @Override
+  public IntegerExpression characterConstant(long c) {
+  	return getExpressionManager().constant(c);
+  }
+  
   @Override
   public IntegerExpression constant(int c) {
     return getExpressionManager().constant(c);
@@ -162,8 +181,8 @@ public class DefaultIntegerEncoding extends
   }
 
   @Override
-  public IntegerExpression plus(IntegerExpression... args) {
-    return plus(Arrays.asList(args));
+  public IntegerExpression plus(IntegerExpression first, IntegerExpression... rest) {
+    return first.plus(rest);
   }
 
   @Override
@@ -172,8 +191,8 @@ public class DefaultIntegerEncoding extends
   }
 
   @Override
-  public IntegerExpression plus(Iterable<? extends IntegerExpression> args) {
-    return getExpressionManager().plus(args).asIntegerExpression();
+  public IntegerExpression plus(IntegerExpression first, Iterable<? extends IntegerExpression> rest) {
+    return first.plus(rest);
   }
 
   @Override
@@ -183,7 +202,7 @@ public class DefaultIntegerEncoding extends
 
   @Override
   public IntegerExpression unknown() {
-    return variable(UNKNOWN_VARIABLE_NAME, true);
+    return unknown(getType());
   }
 
   @Override
@@ -194,7 +213,7 @@ public class DefaultIntegerEncoding extends
   @Override
   public IntegerExpression unknown(Type type) {
     Preconditions.checkArgument(type.isInteger());
-    return type.variable(UNKNOWN_VARIABLE_NAME, true).asIntegerExpression();
+    return type.asInteger().variable(UNKNOWN_VARIABLE_NAME, true);
   }
 
 	@Override
@@ -204,12 +223,18 @@ public class DefaultIntegerEncoding extends
 
 	@Override
 	public IntegerExpression lshift(IntegerExpression lhs, IntegerExpression rhs) {
-		return lhs.divides(constant(2).pow(rhs));
+		return lhs.times(constant(2).pow(rhs));
 	}
 
 	@Override
 	public IntegerExpression rshift(IntegerExpression lhs, IntegerExpression rhs) {
-		return lhs.times(constant(2).pow(rhs));
+		return ifThenElse(lhs.greaterThanOrEqual(zero()), lhs.divides(constant(2).pow(rhs)),
+				uminus(lhs).divides(constant(2).pow(rhs)));
+	}
+	
+	@Override
+	public IntegerExpression signedRshift(IntegerExpression lhs, IntegerExpression rhs) {
+		return lhs.divides(constant(2).pow(rhs));
 	}
 
 	@Override
@@ -231,6 +256,6 @@ public class DefaultIntegerEncoding extends
 
   @Override
   public IntegerExpression variable(String name, Type type, boolean fresh) {
-  	return variable(name, fresh);
+  	return variable(name, type, fresh);
   }
 }

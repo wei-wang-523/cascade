@@ -28,7 +28,8 @@ public class IOUtils {
     int n;
     char[] buf = new char[DEFAULT_BUFFER_SIZE];
     while ((n = inputReader.read(buf)) >= 0) {
-      appendable.append(CharBuffer.wrap(buf, 0, n));
+    	CharBuffer charBuf = CharBuffer.wrap(buf, 0, n);
+      appendable.append(charBuf);
     }
 
     return appendable;
@@ -55,6 +56,9 @@ public class IOUtils {
   /** Set to true iff debugging is enabled. */
   private static boolean debugFlag = false;
   
+  /** Set to true iff stats is enabled. */
+  private static boolean statsFlag = false;
+  
   /** Set to true iff tpFile is enabled. */
   private static boolean tpFileFlag = false;
 
@@ -73,6 +77,9 @@ public class IOUtils {
   /** Cascade's debug stream. */
   private static PrintStream debug;
   
+  /** Cascade's stats stream. */
+  private static PrintStream stats;
+  
   /** Cascade's tp-file stream. */
   private static PrintStream tpFile;
 
@@ -84,6 +91,9 @@ public class IOUtils {
 
   /** Cascade's debug Printer. */
   private static Printer debugPrinter;
+  
+  /** Cascade's stats Printer. */
+  private static Printer statsPrinter;
   
   /** Cascade's tp-file Printer. */
   private static Printer tpFilePrinter;
@@ -120,6 +130,12 @@ public class IOUtils {
     return debugFlag ? debugPrinter : NULL_PRINTER;
   }
   
+  /** Returns the stdstats stream, if output to stdstats is enabled. Otherwise,
+  returns a null stream. */
+  public static Printer stats() {
+  	return statsFlag ? statsPrinter : NULL_PRINTER;
+  }
+  
   /** Returns the tp-file printer, if tp-file is enabled. Otherwise,
    * returns a null printer. */
   public static Printer tpFile() {
@@ -135,6 +151,11 @@ public class IOUtils {
   public static boolean tpFileEnabled() {
     return tpFileFlag;
   }
+  
+  /** Returns true iff tpFile is enabled. */
+  public static boolean statsEnabled() {
+    return statsFlag;
+  }
 
   /** Returns the debug stream, if debugging is enabled. Otherwise,
       returns a null stream. */
@@ -142,9 +163,15 @@ public class IOUtils {
     return debugFlag ? debug: NULL_PRINT_STREAM;
   }
   
+  /** Returns the stats stream, if stats is enabled. Otherwise,
+  returns a null stream. */
+  public static PrintStream statsStream() {
+  	return statsFlag ? stats: NULL_PRINT_STREAM;
+  }
+  
   /** Returns the tp-file stream, if tp-file is enabled. Otherwrise,
        returns a null stream. */
-  public static PrintStream tpFileStrem() {
+  public static PrintStream tpFileStream() {
     return tpFileFlag ? tpFile: NULL_PRINT_STREAM;
   }
 
@@ -157,7 +184,12 @@ public class IOUtils {
     errFlag = userEnabledErr;
   }
 
-  /** Disables output on stderr. */
+  /** Disables output on stdout. */
+	public static void disableStats() {
+	  statsFlag = false;
+	}
+
+	/** Disables output on stderr. */
   public static void disableErr() {
     errFlag = false;
     userEnabledErr = false;
@@ -186,6 +218,11 @@ public class IOUtils {
   public static void enableTpFile() {
     tpFileFlag = true;
   }
+  
+  /** Enables output on tp-file. */
+  public static void enableStats() {
+    statsFlag = true;
+  }
 
   /** Enables output on stderr. */
   public static void enableErr() {
@@ -193,7 +230,7 @@ public class IOUtils {
     userEnabledErr = true;
   }
 
-  /** Enables output on stdout. */
+	/** Enables output on stdout. */
   public static void enableOut() {
     outFlag = true;
     userEnabledOut = true;
@@ -260,5 +297,10 @@ public class IOUtils {
   public static void setOutStream(PrintStream out) {
     IOUtils.out = out;
     outPrinter = new FlushingPrinter(out);
+  }
+
+	public static void setStatsStream(PrintStream s) {
+    stats = s;
+    statsPrinter = new FlushingPrinter(s);
   }
 }

@@ -3,11 +3,9 @@ package edu.nyu.cascade.prover.type;
 import com.google.common.collect.ImmutableList;
 
 import edu.nyu.cascade.prover.BooleanExpression;
-import edu.nyu.cascade.prover.BooleanVariableExpression;
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.VariableExpression;
 
-public interface BooleanType extends Type {
+public interface BooleanType extends Type, ScalarType {
   /**
    * Add a trigger pattern p to quantified expression e. A trigger pattern is a
    * term or atomic predicate that is a sub-expression of e. The free variables
@@ -103,7 +101,7 @@ public interface BooleanType extends Type {
    * @param a, b, c
    * @return the rewrite rule
    */
-  BooleanExpression rewriteRule(Iterable<? extends VariableExpression> vars, 
+  BooleanExpression rewriteRule(Iterable<? extends Expression> vars, 
       Expression guard, Expression body);
   
   /**
@@ -196,14 +194,23 @@ public interface BooleanType extends Type {
   /**
    * Return a Boolean variable with <code>name</code>
    */
-  BooleanVariableExpression variable(String name, boolean fresh);
+  @Override
+  BooleanExpression variable(String name, boolean fresh);
   
   /**
    * Return a bound Boolean variable with <code>name</code> used for
    * quantified expression
    */
-  BooleanVariableExpression boundVariable(String name, boolean fresh);
+  @Override
+  BooleanExpression boundVar(String name, boolean fresh);
 
+  /**
+   * Return a bound Boolean variable with <code>name</code> used for
+   * quantified expression
+   */
+  @Override
+  BooleanExpression boundExpression(String name, int index, boolean fresh);
+  
   /**
    * Create an expression stating that all of the children are pairwise
    * distinct. I.e., the expression created by

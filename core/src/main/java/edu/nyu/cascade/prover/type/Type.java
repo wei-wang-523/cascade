@@ -2,8 +2,6 @@ package edu.nyu.cascade.prover.type;
 
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
-import edu.nyu.cascade.prover.FunctionExpression;
-import edu.nyu.cascade.prover.VariableExpression;
 
 public interface Type {
 
@@ -14,7 +12,6 @@ public interface Type {
    */
   public enum DomainType {
     BOOLEAN,
-    BOUND_VAR_TYPE,
     INTEGER,
     INTEGER_RANGE,
     RATIONAL,
@@ -26,8 +23,7 @@ public interface Type {
     DATATYPE,
     TUPLE,
     RECORD,
-    UNINTERPRETED,
-    FUNARGS
+    UNINTERPRETED
   }
 
   /**
@@ -37,37 +33,6 @@ public interface Type {
    */
   public DomainType getDomainType();
 
-  /*	*//**
-   * Is the domain bounded from below.
-   * 
-   * @return true if bounded
-   */
-  /*
-   * public boolean hasLowerBound();
-   *//**
-   * Is the domain bounded from above.
-   * 
-   * @return true if bounded
-   */
-  /*
-   * public boolean hasUpperBound();
-   */
-
-  /*	*//**
-   * Get the lower bound of this domain
-   * 
-   * @return the lower bound, null if no bound
-   */
-  /*
-   * public IExpression<T> getLowerBound();
-   *//**
-   * Get the upper bound of this domain
-   * 
-   * @return the upper bound, null if no bound
-   */
-  /*
-   * public IExpression<T> getUpperBound();
-   */
   /**
    * Get the expression manager responsible for this type.
    * 
@@ -88,38 +53,15 @@ public interface Type {
    * <code>VARIABLE</code>.
    */
   Expression importExpression(Expression expression);
-
-  /**
-   * Returns a function with the given expression as the body, where
-   * <code>vars</code> are bound as parameters.
-   */
-  FunctionExpression lambda(
-      Iterable<? extends VariableExpression> vars, Expression body);
-
-  /**
-   * Returns a function with the given expression as the body, where
-   * <code>var</code> is bound as a parameter.
-   */
-  FunctionExpression lambda(
-      VariableExpression var, Expression body);
-
-  /**
-   * Return whether this domain is constant. For example the range [1..10] is a
-   * constant domain, and [1..n] is not constant.
-   * 
-   * @param fresh
-   *          TODO
-   */
-  // boolean isConstant();
-
-  VariableExpression variable(String name, boolean fresh);
-  VariableExpression boundVariable(String name, boolean fresh);
   
   boolean isAddableType();
   AddableType asAddableType();
 
   boolean isComparableType();
   ComparableType asComparableType();
+  
+  boolean isScalarType();
+  ScalarType asScalarType();
 
   boolean isMultiplicativeType();
   MultiplicativeType asMultiplicativeType();

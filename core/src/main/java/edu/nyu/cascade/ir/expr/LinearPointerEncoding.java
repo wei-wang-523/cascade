@@ -1,6 +1,7 @@
 package edu.nyu.cascade.ir.expr;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -51,12 +52,13 @@ implements PointerEncoding<T> {
 	@SuppressWarnings("unchecked")
   @Override
   public T plus(T first, Iterable<? extends Expression> rest) {
-		ImmutableList.Builder<T> builder = new ImmutableList.Builder<T>();
-		builder.add(first);
-		for(Expression arg : rest) {
-			builder.add((T) arg);
-		}
-	  return encoding.plus(builder.build());
+		Iterable<T> args = Iterables.transform(rest, new Function<Expression, T>() {
+			@Override
+			public T apply(Expression input) {
+				return (T) input;
+			}
+		});
+	  return encoding.plus(first, args);
   }
 
 	@Override
@@ -107,12 +109,12 @@ implements PointerEncoding<T> {
 
 	@Override
   public T unknown() {
-	  return encoding.variable(UNKNOWN_VARIABLE_NAME, true);
+	  return encoding.variable(UNKNOWN_VARIABLE_NAME, getType(), true);
   }
 
 	@Override
   public T freshPtr(String name, boolean fresh) {
-	  return encoding.variable(name, fresh);
+	  return encoding.variable(name, getType(), fresh);
   }
 
 	@Override

@@ -6,8 +6,10 @@ import java.security.Permission;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Stopwatch;
 
 public class TestUtils {
   public static final String TEST_RESOURCES_DIRECTORY = FileUtils.RESOURCES_DIRECTORY;
@@ -41,23 +43,62 @@ public class TestUtils {
    * @throws AssertionError if any test fails (or, if {@code shouldFail} is
    *         {@literal true}, if any test succeeds).
    */
+  public static void checkDirectoryRec(File dir, FilenameFilter filter,
+      Tester<File> tester, boolean shouldFail) {
+    // Get all test files
+    for(File file : dir.listFiles()) {
+    	if(file.isDirectory()) {
+    		checkDirectoryRec(file.getAbsoluteFile(), filter, tester, shouldFail);
+    	} else {
+    		if(filter.accept(dir, file.getName())) {
+    			// We catch any failure here so we can compare it to shouldFail below.
+          AssertionError failure = null;
+          try {
+            tester.runTest(file);
+          } catch (AssertionError e) {
+            failure = e;
+          }
+
+          if (failure != null && !shouldFail) {
+            // The test failed when it shouldn't have
+            throw failure;
+          } 
+
+          if (failure == null && shouldFail) {
+            // The test didn't fail when it should have
+            throw new AssertionError("Expected failure succeeded: " + file);
+          }
+    		}
+    	}
+    }
+  }
+  
+  /**
+   * Run a series of tests over the files in a directory. Prints "OK" if the
+   * tests succeeds. Throws an {@link AssertionError} if any test fails.
+   * 
+   * @param dir
+   *          the directory in which the test cases reside
+   * @param filter
+   *          a {@link FilenameFilter} that selects the relevant test cases from
+   *          {@code dir}
+   * @param tester
+   *          a {@link File} tester
+   * @param shouldFail
+   *          {@literal true} if the tester <em>should fail</em> on the test
+   *          cases, otherwise {@literal false}.
+   * @throws AssertionError if any test fails (or, if {@code shouldFail} is
+   *         {@literal true}, if any test succeeds).
+   */
   public static void checkDirectory(File dir, FilenameFilter filter,
       Tester<File> tester, boolean shouldFail) {
     // Get all test files
-    String[] tests = dir.list(filter);
-
-    if (tests == null) {
-      throw new AssertionError("No test cases found in directory: "
-          + dir.getAbsolutePath());
-    } else {
-      for (String test : tests) {
-        // Try to parse the file
-        File testFile = new File(dir, test);
-
-        // We catch any failure here so we can compare it to shouldFail below.
+    for(File file : dir.listFiles(filter)) {
+    	if(filter.accept(dir, file.getName())) {
+  			// We catch any failure here so we can compare it to shouldFail below.
         AssertionError failure = null;
         try {
-          tester.runTest(testFile);
+          tester.runTest(file);
         } catch (AssertionError e) {
           failure = e;
         }
@@ -65,15 +106,14 @@ public class TestUtils {
         if (failure != null && !shouldFail) {
           // The test failed when it shouldn't have
           throw failure;
-        } else if (failure == null && shouldFail) {
-          // The test didn't fail when it should have
-          throw new AssertionError("Expected failure succeeded: " + testFile);
-        } else {
-          // System.out.println("OK");
-        }
-      }
-    }
+        } 
 
+        if (failure == null && shouldFail) {
+          // The test didn't fail when it should have
+          throw new AssertionError("Expected failure succeeded: " + file);
+        }
+    	}
+    }
   }
   
   public static void checkFile(File dir, Map<Tester<File>, String[]> optMap, 
@@ -151,17 +191,18 @@ public class TestUtils {
      */
   }
   
+  @SuppressWarnings("deprecation")
   public static <T> T callWithTimeout(final Runnable runnable, int timeout) throws Exception {
     SecurityManager defaultSecurityManager = System.getSecurityManager();
     try {
       System.setSecurityManager(noExitSecurityManager);
       Thread thread = new Thread(runnable);
       
-      long startTime = System.currentTimeMillis();
+      Stopwatch timer = Stopwatch.createStarted();
       thread.start();
       while(thread.isAlive()) {
       	Thread.sleep(30);
-      	if(System.currentTimeMillis() - startTime > timeout * 1000) {
+      	if(timer.elapsed(TimeUnit.SECONDS) > timeout) {
       		thread.stop();
       		IOUtils.err().println("Timeout");
       		break;

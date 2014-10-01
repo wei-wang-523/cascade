@@ -1,12 +1,18 @@
 package edu.nyu.cascade.prover.type;
 
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.IntegerVariableExpression;
+import edu.nyu.cascade.prover.IntegerExpression;
 
 public interface IntegerType extends Type, AddableType,
-    ComparableType, MultiplicativeType {
+    ComparableType, MultiplicativeType, ScalarType {
   Expression mod(Expression left, Expression right);
   
-  IntegerVariableExpression variable(String name, boolean fresh);
-  IntegerVariableExpression boundVariable(String name, boolean fresh);
+  @Override
+  IntegerExpression variable(String name, boolean fresh);
+  
+  @Override
+  IntegerExpression boundVar(String name, boolean fresh);
+  
+  @Override
+  IntegerExpression boundExpression(String name, int index, boolean fresh);
 }

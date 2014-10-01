@@ -30,5 +30,8 @@ public interface SymbolTable {
   String toNamespace(String name, String namespace);
   void undefine(String name);
   xtc.util.SymbolTable toXtcSymbolTable();
+  xtc.util.SymbolTable getOriginalSymbolTable();
   Type lookupType(String name);
+	void enter(String name);
+	void exit();
 }

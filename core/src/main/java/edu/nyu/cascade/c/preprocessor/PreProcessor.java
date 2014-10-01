@@ -1,49 +1,67 @@
 package edu.nyu.cascade.c.preprocessor;
 
-import java.util.Set;
+import java.util.Collection;
 
 import xtc.tree.Node;
+import xtc.type.Type;
 
 import com.google.common.collect.ImmutableMap;
 
 import edu.nyu.cascade.ir.IRStatement;
-import edu.nyu.cascade.ir.SymbolTable;
+import edu.nyu.cascade.prover.Expression;
 
 /**
  * Pre-analysis statement
  * @author Wei
  *
  */
-public abstract class PreProcessor<T> {
-	
-	public static abstract class Builder<T> {
-		public Builder() {}
-		public abstract Builder<T> setSymbolTable(SymbolTable _symbolTable);
-		public abstract PreProcessor<T> build();	
-	}
-	
-  /**
-   * Pre analysis statement <code>stmt</code>
-   * @param stmt
-   */
-	public abstract void analysis(IRStatement stmt);
-
+public interface PreProcessor<T> {	
   /**
    * Display the snap shot
    */
-	public abstract String displaySnapShot();
+	String displaySnapShot();
 
-	public abstract IREquivClosure getEquivClass(T arg);
+	void buildSnapShot();
 
-	public abstract ImmutableMap<T, Set<IRVar>> getSnapShot();
+	ImmutableMap<T, Collection<IRVar>> getSnapShot();
 
-	public abstract T getPointsToElem(Node node);
+	T getPointsToRep(Node node);
+	
+	Type getRepType(T rep);
 
-	public abstract IRVar getAllocateElem(Node node);
+	String getRepId(T rep);
 
-	public abstract String getRepName(T arg);
+	T getRep(Node node);
+	
+	/**
+	 * Get the source representative of <code>rep</code>. It's
+	 * used to in field-sensitive steensgaard analysis, to find 
+	 * the parent representative for the structure components
+	 * 
+	 * @param rep
+	 * @return
+	 */
+	T getSrcRep(T rep);
 
-	public abstract T getRep(Node node);
+	/**
+	 * Pre analysis statement <code>stmt</code>
+	 * @param stmt
+	 */
+	void analysis(IRStatement stmt);
 
-	public abstract void buildSnapShot();
+	/**
+	 * Add an newly allocated variable with variable information 
+	 * <code>info</code> in the partition with representative 
+	 * <code>rep</code>
+	 * @param rep
+	 * @param rep
+	 * @return
+	 */
+	void addAllocRegion(T rep, Expression region);
+
+	/**
+	 * Add a stack variable with expression <code>lval</code>
+	 * @param lval
+	 */
+	IRVar addStackVar(Expression lval);
 }

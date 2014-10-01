@@ -13,4 +13,5 @@ public interface FunctionExpression extends
   Type getRange();
   @Override
   FunctionType getType();
+  String getName();
 }

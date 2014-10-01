@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
+import edu.nyu.cascade.ir.type.IRType;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -125,9 +126,9 @@ public class DefaultTupleEncoding implements TupleEncoding<TupleExpression> {
 	  @Override
 	  public int hashCode() {
 	    int hash = HashCodeUtil.SEED;
-	    HashCodeUtil.hash(hash, exprManager);
+	    hash = HashCodeUtil.hash(hash, exprManager);
 	    for(TypeEncoding<?> encoding : elementEncodings) {
-	    	HashCodeUtil.hash(hash, encoding);
+	    	hash = HashCodeUtil.hash(hash, encoding);
 	    }
 	    return hash;
 	  }
@@ -152,7 +153,7 @@ public class DefaultTupleEncoding implements TupleEncoding<TupleExpression> {
 	  
 	  @Override
 	  public TupleExpression symbolicConstant(String name, boolean fresh) {
-	    return variable(name, fresh);
+	  	return getExpressionManager().variable(name, getType(), fresh).asTuple();
 	  }
 
 	  @Override
@@ -171,10 +172,35 @@ public class DefaultTupleEncoding implements TupleEncoding<TupleExpression> {
 	      int index, Expression val) {
 	    return Tuple.update(index, val);
 	  }
-
+	  
 	  @Override
 	  public TupleExpression variable(String name, boolean fresh) {
+	    return variable(name, fresh);
+	  }
+	  
+	  @Override
+	  public TupleExpression boundVar(String name, boolean fresh) {
+	    return boundVar(name, fresh);
+	  }
+	  
+	  @Override
+	  public TupleExpression boundExpression(String name, int index, boolean fresh) {
+	    return boundExpression(name, index, fresh);
+	  }
+
+	  @Override
+	  public TupleExpression variable(String name, IRType iType, boolean fresh) {
 	    return getExpressionManager().variable(name, getType(), fresh).asTuple();
+	  }
+	  
+	  @Override
+	  public TupleExpression boundVar(String name, IRType iType, boolean fresh) {
+	    return getExpressionManager().boundVar(name, getType(), fresh).asTuple();
+	  }
+	  
+	  @Override
+	  public TupleExpression boundExpression(String name, int index, IRType iType, boolean fresh) {
+	    return getExpressionManager().boundExpression(name, index, getType(), fresh).asTuple();
 	  }
 	}
 }

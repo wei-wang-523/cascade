@@ -20,6 +20,20 @@ public interface IRBasicBlock {
      */
     LOOP,
     /**
+     * A loop init. The block has init statements or not (while statement)
+     * and only one successor: the loop
+     */
+    LOOPINIT,
+    /**
+     * A loop exit. The block has no statements and only one predecessor: the loop
+     */
+    LOOPEXIT,
+    /**
+     * A label block. The block has no statements and only one successor, and may
+     * many predecessors.
+     */
+    LABEL,
+    /**
      * A switch block. The block has no statements and N successors, one for
      * each case label.
      */
@@ -34,9 +48,9 @@ public interface IRBasicBlock {
      */
     CALL,
     /** An entry block. The block has no statements and one successor. */
-    ENTRY,
+    FUNC_ENT,
     /** An exit block. The block has no statements and no successors. */
-    EXIT ;
+    FUNC_EXIT ;
   }
 
   void addPreLabel(String label);

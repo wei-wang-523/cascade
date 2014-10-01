@@ -1,7 +1,7 @@
 package edu.nyu.cascade.prover;
 
 import java.math.BigInteger;
-import java.util.LinkedHashSet;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.cli.Option;
@@ -83,18 +83,6 @@ public interface ExpressionManager {
 
   /**
    * Create a function expression with parameter <code>arg</code> and 
-   * function type <code>func</code>
-   */
-  Expression applyExpr(FunctionType func, Expression arg);
-  
-  Expression applyExpr(
-      FunctionType func, Expression first, Expression... rest);
-
-  Expression applyExpr(
-      FunctionType func, Iterable<? extends Expression> args);
-
-  /**
-   * Create a function expression with parameter <code>arg</code> and 
    * function expression <code>fun</code>
    */
   Expression applyExpr(
@@ -112,34 +100,11 @@ public interface ExpressionManager {
    *          the element type
    * @return an array type
    */
-   ArrayType arrayType(
-      Type index, Type elem);
+  ArrayType arrayType(Type index, Type elem);
 
-  /**
-   * Create a new array variable given the index and element types of the array.
-   * If a variable of the same name has been previously created by the
-   * expression manager, the name may be mangled.
-   * 
-   * @param name
-   *          the suggested name of the variable
-   * @param index
-   *          the index type of the array
-   * @param elem
-   *          the element type of the array
-   * @param fresh
-   *          TODO
-   * @return the variable
-   */
-
-   ArrayVariableExpression arrayVar(
-      String name, Type index, Type elem, boolean fresh);
+  ArrayType asArrayType(Type type);
    
-   ArrayVariableExpression arrayBoundVar(
-       String name, Type index, Type elem, boolean fresh);
-
-   ArrayType asArrayType(Type type);
-   
-   ArrayType asArrayType(Type indexType, Type elementType);
+  ArrayType asArrayType(Type indexType, Type elementType);
 
   BitVectorExpression asBitVector(Expression expression);
 
@@ -151,26 +116,16 @@ public interface ExpressionManager {
   FunctionType asFunctionType(Type t);
 
   IntegerExpression asIntegerExpression(Expression expression);
-
-  IntegerVariableExpression asIntegerVariable(
-      Expression expression);
-
+  
   RationalExpression asRationalExpression(Expression expression);
-
-  RationalVariableExpression asRationalVariable(
-      Expression expression);
 
   TupleType asTupleType(Type t);
   
   RecordType asRecordType(Type t);
 
-  /* UnaryFunctionExpression asUnaryFunctionExpression(
-      Expression expression);
-
-   UnaryFunctionType asUnaryFunctionType(
-      Type> t);
-*/
   VariableExpression asVariable(Expression var);
+  
+  BoundExpression asBoundExpression(Expression bound);
 
   /**
    * Create a bit-vector constant of given size representing the value
@@ -248,20 +203,6 @@ public interface ExpressionManager {
    * @return the Boolean type
    */
   BooleanType booleanType();
-
-  /**
-   * Create a new Boolean variable. If a variable of the same name has been
-   * previously created by the expression manager, the name may be mangled.
-   * 
-   * @param name
-   *          the suggested name of the variable
-   * @param fresh
-   *          TODO
-   * @return the variable
-   */
-  VariableExpression booleanVar(String name, boolean fresh);
-  
-  VariableExpression booleanBoundVar(String name, boolean fresh);
 
   /**
    * Concatenate two bit vectors. The result will be a bit vector with length
@@ -453,27 +394,27 @@ public interface ExpressionManager {
       Iterable<? extends Expression> noPatterns);
 
   BooleanExpression exists(Expression var1,
-      Expression var2, Expression body);
+  		Expression var2, Expression body);
 
   BooleanExpression exists(Expression var1,
-      Expression var2, Expression body, 
+  		Expression var2, Expression body, 
       Iterable<? extends Expression> patterns);
   
   BooleanExpression exists(Expression var1,
-      Expression var2, Expression body, 
+  		Expression var2, Expression body, 
       Iterable<? extends Expression> patterns,
       Iterable<? extends Expression> noPatterns);
   
   BooleanExpression exists(Expression var1,
-      Expression var2, Expression var3,
+  		Expression var2, Expression var3,
       Expression body);
   
   BooleanExpression exists(Expression var1,
-      Expression var2, Expression var3,
+  		Expression var2, Expression var3,
       Expression body, Iterable<? extends Expression> patterns);
   
   BooleanExpression exists(Expression var1,
-      Expression var2, Expression var3,
+  		Expression var2, Expression var3,
       Expression body, 
       Iterable<? extends Expression> patterns,
       Iterable<? extends Expression> noPatterns);
@@ -530,27 +471,27 @@ public interface ExpressionManager {
       Iterable<? extends Expression> noPatterns);
 
   BooleanExpression forall(Expression var1,
-      Expression var2, Expression body);
+  		Expression var2, Expression body);
 
   BooleanExpression forall(Expression var1,
-      Expression var2, Expression body, 
+  		Expression var2, Expression body, 
       Iterable<? extends Expression> patterns);
   
   BooleanExpression forall(Expression var1,
-      Expression var2, Expression body, 
+  		Expression var2, Expression body, 
       Iterable<? extends Expression> patterns,
       Iterable<? extends Expression> noPatterns);
   
   BooleanExpression forall(Expression var1,
-      Expression var2, Expression var3,
+  		Expression var2, Expression var3,
       Expression body);
   
   BooleanExpression forall(Expression var1,
-      Expression var2, Expression var3,
+  		Expression var2, Expression var3,
       Expression body, Iterable<? extends Expression> patterns);
   
   BooleanExpression forall(Expression var1,
-      Expression var2, Expression var3,
+  		Expression var2, Expression var3,
       Expression body, 
       Iterable<? extends Expression> patterns,
       Iterable<? extends Expression> noPatterns);
@@ -573,7 +514,7 @@ public interface ExpressionManager {
    * @param arg
    * @return the rewrite rule
    */
-  BooleanExpression rewriteRule(Iterable<? extends VariableExpression> vars, 
+  BooleanExpression rewriteRule(Iterable<? extends Expression> vars, 
       Expression guard, Expression rule);
   
   /**
@@ -609,19 +550,12 @@ public interface ExpressionManager {
    * @param range the result type
    * @return an function type
    */
-  FunctionType functionType(String fname,
-      Iterable<? extends Type> args, Type range);
+  FunctionType functionType(Iterable<? extends Type> args, Type range);
+  FunctionType functionType(Type argType1, Type argType2, Type... rest);  
+  FunctionType functionType(Type argType, Type range);
 
-  FunctionType functionType(String fname, Type argType1,
-      Type argType2, Type... rest);
+  FunctionExpression functionDeclarator(String name, FunctionType functionType, boolean fresh);
   
-  FunctionType functionType(String fname, Type argType, Type range);
-
-  VariableExpression functionVar(String fname, FunctionType func, boolean fresh);
-  
-  VariableExpression functionBoundVar(String fname, FunctionType func, 
-      boolean fresh);
-
   /**
    * Create a new greater than or equal expression.
    */
@@ -721,39 +655,6 @@ public interface ExpressionManager {
    * @return the integer type
    */
   IntegerType integerType();
-
-  /**
-   * Create a new integer variable. If a variable of the same name has been
-   * previously created by the expression manager, the name may be mangled.
-   * 
-   * @param name
-   *          the suggested name of the variable
-   * @param fresh
-   *          TODO
-   * @return the variable
-   */
-  IntegerVariableExpression integerVar(String name, boolean fresh); 
-
-  IntegerVariableExpression integerBoundVar(String name, boolean fresh);
-
-  /**
-   * Create a function expression (a lambda abstraction) with parameter var.
-   * 
-   * @param var
-   *          the parameter to the function
-   * @param expr
-   *          the body of the function
-   * @return an function expression
-   */
-  
-  FunctionExpression lambda(
-      Iterable<? extends VariableExpression> vars, Expression expr);
-
-  FunctionExpression lambda(
-      VariableExpression var1, VariableExpression var2,
-      Expression expr);
-  
-  FunctionExpression lambda(VariableExpression var, Expression expr);
 
   /**
    * Create a new less than or equal expression
@@ -930,20 +831,6 @@ public interface ExpressionManager {
    */
   RationalType rationalType();
 
-  /**
-   * Create a new rational variable. If a variable of the same name has been
-   * previously created by the expression manager, the name may be mangled.
-   * 
-   * @param name
-   *          the suggested name of the variable
-   * @param fresh
-   *          TODO
-   * @return the variable
-   */
-  RationalVariableExpression rationalVar(String name, boolean fresh);
-  
-  RationalVariableExpression rationalBoundVar(String name, boolean fresh);
-
   RationalExpression ratOne();
 
   RationalExpression ratZero();
@@ -1047,6 +934,15 @@ public interface ExpressionManager {
    * manager, the name may be mangled to ensure uniqueness.
    */
   VariableExpression variable(String name, Type type, boolean fresh);
+  
+  /**
+   * Create a new bound variable of the given type. If <code>fresh</code> is true and
+   * a variable of the same name has been previously created by this expression
+   * manager, the name may be mangled to ensure uniqueness.
+   */
+  Expression boundVar(String name, Type type, boolean fresh);
+  
+  Expression boundExpression(String name, int i, Type type, boolean fresh);
 
   /**
    * Create a new Boolean xor expression
@@ -1102,12 +998,6 @@ public interface ExpressionManager {
    * Get a set of variables
    * @return a set of variables
    */
-  LinkedHashSet<VariableExpression> getVariables();
-
-  /**
-   * Get a bound for quantified expression
-   * @return
-   */
-  Expression boundExpression(int index, Type type);
+  Collection<Expression> getVariables();
 
 }

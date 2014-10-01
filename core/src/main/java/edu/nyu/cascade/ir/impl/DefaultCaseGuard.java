@@ -15,8 +15,9 @@ import com.google.common.collect.Lists;
 import edu.nyu.cascade.ir.IRBooleanExpression;
 import edu.nyu.cascade.ir.IRLocation;
 import edu.nyu.cascade.ir.IRLocations;
-import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
+import edu.nyu.cascade.ir.state.StateExpression;
+import edu.nyu.cascade.ir.state.StateExpressionClosure;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -58,14 +59,14 @@ public class DefaultCaseGuard implements IRBooleanExpression {
   }
 
   @Override
-  public  ExpressionClosure toBoolean(final ExpressionEncoder encoder) {
-    return new ExpressionClosure() {
+  public StateExpressionClosure toBoolean(final ExpressionEncoder encoder) {
+    return new StateExpressionClosure() {
       @Override
-      public Expression eval(Expression mem) {
+      public Expression eval(StateExpression mem) {
         List<BooleanExpression> argExprs = Lists.newArrayList();
         ExpressionManager exprManager = null;
         for( CaseGuard guard : guards ) {
-          ExpressionClosure closure = guard.toBoolean(encoder);
+        	StateExpressionClosure closure = guard.toBoolean(encoder);
           Expression expr = closure.eval(mem);
           assert( expr.isBoolean() );
           argExprs.add(expr.asBooleanExpression());
@@ -78,26 +79,26 @@ public class DefaultCaseGuard implements IRBooleanExpression {
       public Type getOutputType() {
         return encoder.getEncoding().getExpressionManager().booleanType();
       }
-
-      @Override
-      public Type getInputType() {
-        return encoder.getMemoryModel().getStateType();
-      }
-
+      
       @Override
       public ExpressionManager getExpressionManager() {
         return encoder.getEncoding().getExpressionManager();
+      }
+
+			@Override
+      public Expression getOutput() {
+				throw new UnsupportedOperationException();
       }
     };
   }
 
   @Override
-  public  ExpressionClosure toExpression(ExpressionEncoder encoder){
+  public StateExpressionClosure toExpression(ExpressionEncoder encoder){
     throw new UnsupportedOperationException("DefaultCaseGuard.toExpression");
   }
 
   @Override
-  public  ExpressionClosure toLval(ExpressionEncoder encoder) {
+  public StateExpressionClosure toLval(ExpressionEncoder encoder) {
     throw new UnsupportedOperationException("DefaultCaseGuard.toLval");
   }
 

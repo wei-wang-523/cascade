@@ -1,5 +1,6 @@
 package edu.nyu.cascade.ir.expr;
 
+import edu.nyu.cascade.ir.type.IRType;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -25,13 +26,7 @@ public class UnimplementedPointerEncoding<T extends Expression> implements Point
 	  // TODO Auto-generated method stub
 	  return null;
   }
-
-	@Override
-  public T variable(String name, boolean fresh) {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
+	
 	@Override
   public ExpressionManager getExpressionManager() {
 	  // TODO Auto-generated method stub
@@ -172,6 +167,42 @@ public class UnimplementedPointerEncoding<T extends Expression> implements Point
 
 	@Override
   public LinearPointerEncoding<? extends Expression> asLinearPointerEncoding() {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
+
+	@Override
+  public T variable(String name, IRType type, boolean fresh) {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
+
+	@Override
+  public T boundVar(String name, IRType type, boolean fresh) {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
+
+	@Override
+  public T boundExpression(String name, int index, IRType type, boolean fresh) {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
+
+	@Override
+  public T variable(String name, boolean fresh) {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
+
+	@Override
+  public T boundVar(String name, boolean fresh) {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
+
+	@Override
+  public T boundExpression(String name, int index, boolean fresh) {
 	  // TODO Auto-generated method stub
 	  return null;
   }

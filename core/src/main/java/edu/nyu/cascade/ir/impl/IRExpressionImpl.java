@@ -6,8 +6,8 @@ import xtc.util.SymbolTable;
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRLocation;
 import edu.nyu.cascade.ir.IRLocations;
-import edu.nyu.cascade.ir.expr.ExpressionClosure;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
+import edu.nyu.cascade.ir.state.StateExpressionClosure;
 
 public class IRExpressionImpl implements IRExpression {
 /*  public static IRExpressionImpl create(Node sourceNode) {
@@ -54,19 +54,17 @@ public class IRExpressionImpl implements IRExpression {
   public SymbolTable.Scope getScope() { return scope; }
 
   @Override
-  public  ExpressionClosure toBoolean(ExpressionEncoder encoder) {
+  public  StateExpressionClosure toBoolean(ExpressionEncoder encoder) {
     return encoder.toBoolean(getSourceNode(),scope);
   }
 
   @Override
-  public  ExpressionClosure toExpression(ExpressionEncoder encoder) {
-    encoder.setScope(scope);
-//    return encoder.toInteger(getSourceNode(),scope);
+  public  StateExpressionClosure toExpression(ExpressionEncoder encoder) {
     return encoder.toExpression(getSourceNode(),scope);
   }
 
   @Override
-  public  ExpressionClosure toLval(ExpressionEncoder encoder) {
+  public  StateExpressionClosure toLval(ExpressionEncoder encoder) {
     return encoder.toLval(getSourceNode(),scope);
   }
 }

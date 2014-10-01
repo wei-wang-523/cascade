@@ -1,8 +1,13 @@
 package edu.nyu.cascade.c.preprocessor.steensgaard;
 
+import java.math.BigInteger;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 
+import xtc.type.Type;
+
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.preprocessor.steensgaard.ValueType.ValueTypeKind;
@@ -21,10 +26,10 @@ import edu.nyu.cascade.util.UnionFind;
 public final class ECR extends UnionFind.Partition {
 
   private static final long serialVersionUID = -8706921066542618766L;
+  private static BigInteger nextId = BigInteger.ONE;
 
   private ValueType type;
-  
-  private IRVarImpl initVar;
+  private BigInteger id;
   
   /**
    * A list of 'pending' joins for this ECR.  We make conditional joins,
@@ -32,32 +37,22 @@ public final class ECR extends UnionFind.Partition {
    * this variable changes, we need to update the types of all the 
    * ECRs on the pending list.
    */
-  private Set<ECR> pending;
+  private Set<ECR> pending = Sets.newHashSet();
   
-  private ECR(IRVarImpl var, ValueType _type) {
+  private ECR(ValueType _type) {
     super();
-    pending = null;
     type = _type;
-    initVar = var;
+    
+    id = nextId;
+    nextId = nextId.add(BigInteger.ONE);
   }
   
   protected static ECR createBottom() {
-    return new ECR(null, ValueType.bottom());
+    return new ECR(ValueType.bottom());
   }
   
-  protected static ECR create(IRVarImpl var, ValueType type) {
-    return new ECR(var, type);
-  }
-
-  protected boolean hasInitTypeVar() {
-    return initVar != null;
-  }
-  
-  /**
-   * @return the initial type variable
-   */
-  protected IRVarImpl getInitTypeVar() {
-    return initVar;
+  protected static ECR create(ValueType type) {
+    return new ECR(type);
   }
   
   /**
@@ -71,92 +66,59 @@ public final class ECR extends UnionFind.Partition {
     type = _type;
   }
   
-  protected void setInitVar(IRVarImpl var) {
-    initVar = var;
-  }
-  
   /**
    * @return the pending with the ECR
    */
-  protected Iterable<ECR> getPending() {
+  protected Collection<ECR> getPending() {
     return pending;
   }
   
   protected void cleanPending() {
-    pending = null;
+  	pending.clear();
   }
   
   protected boolean hasPending() {
-    return pending != null;
+    return pending.isEmpty();
   }
   
   protected boolean addPending(Collection<ECR> newPending) {
-    if(newPending == null) return false;
-    
-    if(pending == null) {
-      pending = Sets.newHashSet(newPending);
-      return true;
-    }
-    
+    if(newPending == null) return false;    
     pending.addAll(newPending);
     return true;
   }
   
   protected boolean addPending(ECR newPending) {
-    if(newPending == null) return false;
-    
-    if(pending == null) {
-      pending = Sets.newHashSet(newPending);
-      return true;
-    }
-    
-    pending.add(newPending);
-    return true;
+    return addPending(Collections.singleton(newPending));
   }
   
-  /**
-   * Get the points to chain of this ECR
-   */
-  protected String getPointsToChain() {
-    ECR root = (ECR) findRoot();
-    ValueType rootType = root.getType();
-    StringBuilder sb = new StringBuilder();
-    if(ValueTypeKind.LOCATION.equals(rootType.getKind())) {
-      sb.append(" -> ");
-      if(root.hasInitTypeVar()) {
-        sb.append(root.getInitTypeVar().getName()).append('@')
-        .append(root.getInitTypeVar().getScope().getQualifiedName());
-      } else {
-        sb.append("null");
-      }
-      if(!rootType.getOperand(0).equals(root))
-      	sb.append(rootType.getOperand(0).getPointsToChain());
-    }
-    return sb.toString();
-  }
-  
-  @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder().append("(ECR ").append(type.toString());
+  protected String toStringShort() {
+		return new StringBuilder().append("ECR ")
+	  		.append(id).append(" : ").append(type).toString();
+	}
 
-    if(initVar != null) {
-      sb.append(" (initVar ").append(initVar.toStringShort());
-    }
+	@Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder().append("(ECR ")
+    		.append(id).append(" : ").append(type);
     
-    if ((pending != null) && (pending.size() > 0)) {
-      sb.append(" (pending ");
+    if (!pending.isEmpty()) {
+      sb.append(" pending : [ ");
       for(ECR e : pending) {
-        sb.append(e.toStringShort());
+        sb.append(e.toStringShort()).append(' ');
       }
-      sb.append(')');
+      sb.append(']');
     }
     sb.append(')');
 
     return sb.toString();
   }
   
-  protected String toStringShort() {
-    StringBuilder sb = new StringBuilder().append("ECR ").append(getType());
-    return sb.toString();
+	protected String getId() {
+	  return id.toString();
   }
+	
+	protected Type getXtcType() {
+		Preconditions.checkArgument(type.getKind().equals(ValueTypeKind.REF));
+		return type.asRef().getXtcType();
+	}
 }

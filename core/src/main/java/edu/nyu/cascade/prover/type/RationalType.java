@@ -1,12 +1,17 @@
 package edu.nyu.cascade.prover.type;
 
 import edu.nyu.cascade.prover.RationalExpression;
-import edu.nyu.cascade.prover.RationalVariableExpression;
 
 public interface RationalType extends Type, ComparableType, AddableType,
-    MultiplicativeType {
+    MultiplicativeType, ScalarType {
   RationalExpression constant(int numerator, int denominator);
   
-  RationalVariableExpression variable(String name, boolean fresh) ;
-  RationalVariableExpression boundVariable(String name, boolean fresh);
+  @Override
+  RationalExpression variable(String name, boolean fresh) ;
+  
+  @Override
+  RationalExpression boundVar(String name, boolean fresh);
+  
+  @Override
+  RationalExpression boundExpression(String name, int index, boolean fresh);
 }

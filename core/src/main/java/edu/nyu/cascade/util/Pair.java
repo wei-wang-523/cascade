@@ -45,10 +45,8 @@ public class Pair<T,U> {
   
   @Override
   public int hashCode() {
-    int result = HashCodeUtil.SEED;
-    //collect the contributions of various fields
-    result = HashCodeUtil.hash(result, fst);
-    result = HashCodeUtil.hash(result, snd);
-    return result;
+    return HashCodeUtil.hash(
+    		HashCodeUtil.hash(
+    				HashCodeUtil.SEED, fst), snd);
   }
 }

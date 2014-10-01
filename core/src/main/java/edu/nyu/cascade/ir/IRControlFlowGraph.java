@@ -14,10 +14,11 @@
  */
 package edu.nyu.cascade.ir;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import edu.nyu.cascade.util.Pair;
-
 import xtc.tree.Location;
 import xtc.tree.Node;
 import xtc.tree.Printer;
@@ -59,7 +60,7 @@ public interface IRControlFlowGraph {
    * 
    * @return the list of incoming edges.
    */
-  public Set<? extends IREdge<? extends IRBasicBlock>> getIncomingEdges(
+  public Collection<? extends IREdge<? extends IRBasicBlock>> getIncomingEdges(
       IRBasicBlock block);
 
   /**
@@ -67,12 +68,14 @@ public interface IRControlFlowGraph {
    * 
    * @return the list of outgoing edges.
    */
-  public Set<? extends IREdge<? extends IRBasicBlock>> getOutgoingEdges(
+  public Collection<? extends IREdge<? extends IRBasicBlock>> getOutgoingEdges(
       IRBasicBlock block);
 
   public Scope getScope();
-  
+
   public IRBasicBlock bestBlockForPosition(IRLocation loc);
+  
+  public IRBasicBlock bestBlockForPosition(IRLocation loc, boolean isLoopPos);
 
   /**
    * Alters the CFG, if necessary, so that <code>location</code> lies between
@@ -83,9 +86,18 @@ public interface IRControlFlowGraph {
    * true, then the CFG will be split <em>before</em> the source line; otherwise,
    * it will be split <em>after</em> the source line.
    * 
-   * Returns <code>null</code> if the CFG cannot be split at <code>position</code>.
+   * Returns <code>null</code> if the CFG cannot be split at <code>location</code>.
    */
   public Pair<? extends IRBasicBlock, ? extends IRBasicBlock> splitAt(IRLocation location, boolean insertBefore);
+  
+  /**
+   * If <code>isLoopPos</code> is <code>true</code>, get the pair of the entry block 
+   * of the loop block of <code>location</code> and the loop block, otherwise, 
+   * equivalent to <code>splitAt(location,insertBefore)</code>
+   * @return <code>null</code> if the CFG cannot be split at <code>location</code>.
+   */
+  public Pair<? extends IRBasicBlock, ? extends IRBasicBlock> splitAt(IRLocation location, 
+  		boolean isLoopPos, boolean insertBefore);
   
   /** Equivalent to <code>splitAt(location,true)</code> */
   public Pair<? extends IRBasicBlock, ? extends IRBasicBlock> splitAt(IRLocation location);
@@ -102,5 +114,17 @@ public interface IRControlFlowGraph {
 
   /** Pretty-print the CFG to the given <code>Printer</code>. */
   void format(Printer printer);
+
+  /** Insert <code>stmts</code> into the <code>position</code>*/
+	void insertAt(IRLocation position, List<IRStatement> stmts, boolean isLoop,
+      boolean insertBefore);
+
+	void removeBlock(IRBasicBlock block);
+
+	void removeEdge(IREdge<?> edge);
+
+	IRControlFlowGraph findPathsBtwnBlocks(IRBasicBlock start, IRBasicBlock target);
+
+	boolean isEmpty();
 
 }

@@ -1,9 +1,9 @@
 package edu.nyu.cascade.ir.expr;
 
 import edu.nyu.cascade.prover.BooleanExpression;
+import edu.nyu.cascade.prover.BoundExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
-import edu.nyu.cascade.prover.VariableExpression;
 
 public interface BooleanEncoding<T extends Expression> extends TypeEncoding<T> {
   T and(T lhs, T rhs);
@@ -13,9 +13,10 @@ public interface BooleanEncoding<T extends Expression> extends TypeEncoding<T> {
    * expression encoding.
    */
   ExpressionManager getExpressionManager();
-  T forall(Iterable<? extends VariableExpression> ids, T expr);
-  T exists(Iterable<? extends VariableExpression> ids, T expr);
+  T forall(Iterable<? extends BoundExpression> ids, T expr);
+  T exists(Iterable<? extends BoundExpression> ids, T expr);
   T ff();
+  T ifThenElse(BooleanExpression b, T thenExpr, T elseExpr);
   T iff(T lhs, T rhs);
   T implies(T lhs, T rhs);
   T not(T arg);

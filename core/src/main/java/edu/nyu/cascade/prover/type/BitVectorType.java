@@ -3,10 +3,9 @@ package edu.nyu.cascade.prover.type;
 import java.math.BigInteger;
 
 import edu.nyu.cascade.prover.BitVectorExpression;
-import edu.nyu.cascade.prover.BitVectorVariableExpression;
 import edu.nyu.cascade.prover.Expression;
 
-public interface BitVectorType extends Type, ComparableType {
+public interface BitVectorType extends Type, ComparableType, ScalarType {
   BitVectorExpression add(int size, Expression a, Expression b);
 
   BitVectorExpression add(int size, Expression first, Expression... rest);
@@ -44,14 +43,16 @@ public interface BitVectorType extends Type, ComparableType {
   BitVectorExpression extract(Expression a, int i, int j);
 
   BitVectorExpression mult(int size, Expression a, Expression b);
+  
+  BitVectorExpression mult(int size, Expression first, Expression... rest);
+
+  BitVectorExpression mult(int size, Iterable<? extends Expression> args);
 
   BitVectorExpression subtract(Expression a, Expression b);
   
   BitVectorExpression lshift(Expression a, Expression b);
   
   BitVectorExpression rshift(Expression a, Expression b);
-
-  BitVectorVariableExpression variable(String name, boolean fresh);
 
   BitVectorExpression zero(int size);
   
@@ -66,4 +67,15 @@ public interface BitVectorType extends Type, ComparableType {
 	BitVectorExpression signedExtend(int size, Expression bv);
 	
 	BitVectorExpression zeroExtend(int size, Expression bv);
+	
+  @Override
+  BitVectorExpression variable(String name, boolean fresh);
+  
+  @Override
+  BitVectorExpression boundVar(String name, boolean fresh);
+  
+  @Override
+  BitVectorExpression boundExpression(String name, int index, boolean fresh);
+  
+	BitVectorExpression signedRshift(Expression a, Expression b);
 }

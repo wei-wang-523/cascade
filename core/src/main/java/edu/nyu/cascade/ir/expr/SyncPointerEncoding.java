@@ -1,11 +1,11 @@
 package edu.nyu.cascade.ir.expr;
 
-import java.util.List;
-
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
+import edu.nyu.cascade.ir.type.IRType;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TupleExpression;
@@ -41,11 +41,11 @@ public class SyncPointerEncoding <T extends Expression, S extends Expression>
   	return new SyncPointerEncoding(instance);
   }
   
-  protected UninterpretedEncoding<? extends Expression> getBaseEncoding() {
+  public UninterpretedEncoding<? extends Expression> getBaseEncoding() {
   	return baseEncoding;
   }
   
-  protected IntegerEncoding<T> getOffsetEncoding() {
+  public IntegerEncoding<T> getOffsetEncoding() {
   	return offsetEncoding;
   }
   
@@ -69,13 +69,15 @@ public class SyncPointerEncoding <T extends Expression, S extends Expression>
     return ie.plus(ie.ofExpression(lhs), ie.ofExpression(rhs));
 	}
 	
-	private T plus_(IntegerEncoding<T> ie, Iterable<? extends Expression> terms) {
-	  List<T> iTerms = Lists.newArrayList();
-	  for (Expression t : terms) {
-	    Preconditions.checkArgument(isOffset(t));
-	    iTerms.add(ie.ofExpression(t));
-	  }
-	  return ie.plus(iTerms);
+	private T plus_(final IntegerEncoding<T> ie, Expression first, Iterable<? extends Expression> rest) {
+	  Iterable<T> iTerms = Iterables.transform(rest, new Function<Expression, T>(){
+			@Override
+			public T apply(Expression input) {
+				Preconditions.checkArgument(isOffset(input));
+				return ie.ofExpression(input);
+			}
+	  });
+	  return ie.plus(ie.ofExpression(first), iTerms);
 	}
 	
 	private BooleanExpression lessThan_(IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
@@ -105,7 +107,7 @@ public class SyncPointerEncoding <T extends Expression, S extends Expression>
   }
 
 	@Override
-  public TupleExpression variable(String name, boolean fresh) {
+  public TupleExpression variable(String name, IRType type, boolean fresh) {
 	  return getExpressionManager().variable(name, getType(), fresh).asTuple();
   }
 
@@ -164,12 +166,7 @@ public class SyncPointerEncoding <T extends Expression, S extends Expression>
 	  Preconditions.checkArgument(isPointer(first));
 	  Expression base = first.asTuple().index(0);
 	  Expression offset = first.asTuple().index(1);
-	  List<Expression> args = Lists.newArrayList(offset);
-	  for(Expression expr : rest) {
-	  	Preconditions.checkArgument(isOffset(expr));
-	  	args.add(expr);
-	  }
-	  Expression resOffset = plus_(getOffsetEncoding(), args);
+	  Expression resOffset = plus_(getOffsetEncoding(), offset, rest);
 	  return getExpressionManager().tuple(getType(), base, resOffset);
   }
 

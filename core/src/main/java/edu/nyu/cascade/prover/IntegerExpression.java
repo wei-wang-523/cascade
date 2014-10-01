@@ -51,6 +51,22 @@ public interface IntegerExpression extends Expression {
 	 * @return the sum expression
 	 */	
 	IntegerExpression plus(Expression e) ;
+	
+	/**
+	 * Returns a new Integer expression that is the sum of this expression
+	 * and a given expression <code>rest</code>.
+	 * @param rest the expression to add
+	 * @return the sum expression
+	 */	
+	IntegerExpression plus(IntegerExpression... rest);
+	
+	/**
+	 * Returns a new Integer expression that is the sum of this expression
+	 * and a given expression <code>rest</code>.
+	 * @param rest the expression to add
+	 * @return the sum expression
+	 */	
+	IntegerExpression plus(Iterable<? extends IntegerExpression> rest);
 
 	/**
 	 * Returns a new Integer expression that is the difference of this expression
@@ -92,13 +108,6 @@ public interface IntegerExpression extends Expression {
 	 * @return the power expression
 	 */
 	IntegerExpression pow(Expression e) ;
-
-	/**
-	 * Returns a new Rational expression that represents the rational cast of this
-	 * integer expression.
-	 * @return the rational representing this
-	 */
-	RationalExpression castToRational() ;
 	
 	@Override
 	IntegerType getType();

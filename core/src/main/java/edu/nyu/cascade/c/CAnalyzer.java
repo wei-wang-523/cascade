@@ -28,10 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
+import edu.nyu.cascade.util.ReservedFunction;
 import xtc.Constants;
 import xtc.Limits;
 import xtc.tree.Attribute;
@@ -890,9 +892,8 @@ public class CAnalyzer extends Visitor {
         multipleTypes();
       } else {
         final String tag  = n.getString(1);
-        final String name;
-        if(!tag.startsWith("tag"))  name = SymbolTable.toTagName(tag);
-        else                        name = tag;
+        final String name = SymbolTable.toTagName(tag);
+        
         if ((refIsDecl && table.current().isDefinedLocally(name)) ||
             ((! refIsDecl) && table.isDefined(name))) {
           final Type t = (Type)table.lookup(name);
@@ -1949,9 +1950,6 @@ public class CAnalyzer extends Visitor {
 
   /** The fully qualified name of the scope for external declarations. */
   protected static final String EXTERN_PATH = Constants.QUALIFIER + EXTERN_SCOPE;
-  
-  /** The name of the bounded variable. */
-  protected static final String BOUND = "bound";
 
   /** The common type operations for C. */
   protected final C cops;
@@ -1964,6 +1962,9 @@ public class CAnalyzer extends Visitor {
 
   /** The symbol table. */
   protected SymbolTable table;
+  
+  /** The table for bound variable. */
+  protected Map<String, Type> boundVarTable;
 
   /**
    * The flag for whether the current declaration is top-level, that
@@ -2002,13 +2003,6 @@ public class CAnalyzer extends Visitor {
    * translation unit.
    */
   protected List<CompletenessCheck> checks;
-  
-  /**
-   * The type cache for bound variable in forall or exists function 
-   * in ctrl file.
-   */
-  protected Map<GNode, Type> bVarTypeMap;
-  
 
   /**
    * Create a new C analyzer.  The newly created analyzer uses {@link
@@ -2033,7 +2027,7 @@ public class CAnalyzer extends Visitor {
     loops        = new ArrayList<Boolean>();
     switches     = new ArrayList<Boolean>();
     checks       = new ArrayList<CompletenessCheck>();
-    bVarTypeMap  = Maps.newConcurrentMap(); 
+    boundVarTable = Maps.newHashMap();
   }
 
   /**
@@ -3142,17 +3136,21 @@ public class CAnalyzer extends Visitor {
       }
 
       public void visit(GNode n) {
-        if(table.current().getQualifiedName().equals(n.getStringProperty(Constants.SCOPE))) {
-          for (Object o : n) {
-            if (o instanceof Node) dispatch((Node)o);
-          }
-        } else {
-          table.enter(n);
-          for (Object o : n) {
-            if (o instanceof Node) dispatch((Node)o);
-          }
-          table.exit(n);
-        }
+      	boolean isNestedScope = false;
+      	if(n.hasProperty(Constants.SCOPE)) {
+      		String nScopeQid = n.getStringProperty(Constants.SCOPE);
+      		Scope nScope = table.getScope(nScopeQid);
+        	String nScopeId = nScope.getName();
+        	isNestedScope = table.current().hasNested(nScopeId);
+      	}
+      	
+      	if(isNestedScope)	table.enter(n);
+      	
+      	for (Object o : n) {
+      		if (o instanceof Node) dispatch((Node)o);
+      	}
+      	
+      	if(isNestedScope)  table.exit(n);
       }
     };
 
@@ -3206,17 +3204,21 @@ public class CAnalyzer extends Visitor {
       }
 
       public void visit(GNode n) {
-        if(table.current().getQualifiedName().equals(n.getStringProperty(Constants.SCOPE))) {
-          for (Object o : n) {
-            if (o instanceof Node) dispatch((Node)o);
-          }
-        } else {
-          table.enter(n);
-          for (Object o : n) {
-            if (o instanceof Node) dispatch((Node)o);
-          }
-          table.exit(n);
-        }
+      	boolean isNestedScope = false;
+      	if(n.hasProperty(Constants.SCOPE)) {
+      		String nScopeQid = n.getStringProperty(Constants.SCOPE);
+      		Scope nScope = table.getScope(nScopeQid);
+        	String nScopeId = nScope.getName();
+        	isNestedScope = table.current().hasNested(nScopeId);
+      	}
+      	
+      	if(isNestedScope)	table.enter(n);
+      	
+      	for (Object o : n) {
+      		if (o instanceof Node) dispatch((Node)o);
+      	}
+      	
+      	if(isNestedScope)  table.exit(n);
       }
     };
     v.dispatch(function);
@@ -4235,29 +4237,6 @@ public class CAnalyzer extends Visitor {
             } catch (IllegalStateException x) {
               result = result.constant(new StaticReference(result));
             }
-          } else {
-            Reference ref;
-            Type ptr1 = r1.toPointer().getType().resolve();
-            if (t1.hasShape() && t2.hasConstant()) {
-              try {
-                if(t1.resolve().isArray()) {
-                  ref = addressOf(t1.getShape().add(t2.getConstant().bigIntValue()));
-                } else {
-                  ref = t1.getShape();     
-                }
-              } catch (IllegalStateException x) {
-                ref = new StaticReference(ptr1);
-              }
-            } else if(t1.hasShape() && !t2.hasConstant()) {
-              try {
-                ref = t1.getShape();
-              } catch (IllegalStateException x) {
-                ref = new StaticReference(ptr1);
-              }
-            } else {
-              ref = new DynamicReference(ptr1);
-            }
-            result = result.annotate().shape(ref);
           }
         } else {
           result = ErrorT.TYPE;
@@ -4276,29 +4255,6 @@ public class CAnalyzer extends Visitor {
             } catch (IllegalStateException x) {
               result = result.constant(new StaticReference(result));
             }
-          } else {
-            Reference ref;
-            Type ptr2 = r2.toPointer().getType().resolve();
-            if (t2.hasShape() && t1.hasConstant()) {
-              try {
-                if(t2.resolve().isArray()) {
-                  ref = addressOf(t1.getShape().add(t2.getConstant().bigIntValue()));
-                } else {
-                  ref = t2.getShape();     
-                }
-              } catch (IllegalStateException x) {
-                ref = new StaticReference(ptr2);
-              }
-            } else if(t2.hasShape() && !t1.hasConstant()) {
-              try {
-                ref = t2.getShape();
-              } catch (IllegalStateException x) {
-                ref = new StaticReference(ptr2);
-              }
-            } else {
-              ref = new DynamicReference(ptr2);
-            }
-            result = result.annotate().shape(ref);
           }
         } else {
           result = ErrorT.TYPE;
@@ -4496,22 +4452,6 @@ public class CAnalyzer extends Visitor {
             // The types have different shapes.
             result =
               result.constant(new CastReference(pt1, c().getConstRef(t2)));
-          }
-        }
-        // FIXME: is it safe to move the shape of right op to left op?
-        else if (t2.hasShape()) {
-          Type pt1 = r1.toPointer().getType();
-          Type pt2 = r2.toPointer().getType();
-          result   = result.annotate();
-
-          if (pt1.equals(pt2)) {
-            // The types have the same memory shape.
-            result = result.annotate().shape(t2.getShape());
-
-          } else {
-            // The types have different shapes.
-            result =
-              result.annotate().shape(new CastReference(pt1, t2.getShape()));
           }
         }
       }
@@ -4904,8 +4844,6 @@ public class CAnalyzer extends Visitor {
           }
         } else if (base.hasConstant()) {
           result = result.annotate().constant(base.getConstant().getValue());
-        } else {
-          result = result.annotate().shape(base.getShape());
         }
       }
 
@@ -4951,8 +4889,6 @@ public class CAnalyzer extends Visitor {
           } catch (IllegalStateException x) {
             result = result.constant(new StaticReference(result));
           }
-        } else {
-          result = result.annotate().shape(addressOf(type.getShape()));
         }
       }
 
@@ -4965,12 +4901,10 @@ public class CAnalyzer extends Visitor {
     Type       result = processAddress(n, t1);
 
     // Track compile-time constant pointers.
-    if (t1.hasShape()) {
-      if(t1.getShape().isConstant()) {
-        result = result.annotate().constant(t1.getShape());
-      } 
-      result = result.annotate().shape(addressOf(t1.getShape()));
+    if (t1.hasShape() && t1.getShape().isConstant()) {
+      result = result.annotate().constant(t1.getShape());
     }
+    
     // Done.
     mark(n, result);
     return result;
@@ -5200,12 +5134,6 @@ public class CAnalyzer extends Visitor {
           } catch (IllegalStateException x) {
             ref = new StaticReference(ptr1);
           }
-        } else if(base.hasShape() && !index.hasConstant()) {
-          try {
-            ref = base.getShape().indirect(base);
-          } catch (IllegalStateException x) {
-            ref = new StaticReference(ptr1);
-          }
         } else {
           ref = new DynamicReference(ptr1);
         }
@@ -5336,16 +5264,17 @@ public class CAnalyzer extends Visitor {
     if (GNode.cast(n1).hasName("PrimaryIdentifier")) {
       final String name = GNode.cast(n1).getString(0);
       /* Marked the bounded variable node in forall and exists function */
-      if("forall".equals(name) || "exists".equals(name)) {
-        Iterator<Object> itr = n2.iterator();
-        while(itr.hasNext()) {
-          Object o = itr.next();
-          if(o instanceof Node) {
-            Node node = (Node) o;
-            if("PrimaryIdentifier".equals(node.getName()))
-              node.setProperty(BOUND, true);
-          }
-        }
+      if(ReservedFunction.FUN_FORALL.equals(name) || ReservedFunction.FUN_EXISTS.equals(name)) {
+      	int lastBoundVarIdx = n2.size() - 1;
+      	for(int i = 0; i < lastBoundVarIdx; i++) {
+      		Node boundVar = n2.getNode(i);
+      		String id = boundVar.getString(0);
+          Type result = IntegerT.INT;
+          Reference ref = new DynamicReference(id, result);
+          result = result.annotate().shape(ref);
+          mark(boundVar, result);
+          boundVarTable.put(id, result);
+      	}
       }
 
       // Support __xtc_trace() diagnostic.
@@ -5540,47 +5469,27 @@ public class CAnalyzer extends Visitor {
   /** Visit the specified primary identifier. */
   public Type visitPrimaryIdentifier(GNode n) {
     Type result = (Type)table.lookup(n.getString(0));
+    
+  	if(null == result) {
+  		result = boundVarTable.get(n.getString(0));
+  	}
+  	
     if (null == result) {
-      if(bVarTypeMap.containsKey(n)) {
-        result = bVarTypeMap.get(n);
-        table.current().define(n.getString(0), result);
-      } else if(n.hasProperty(Constants.TYPE)) {
-        result = (Type) n.getProperty(Constants.TYPE);
-        table.current().define(n.getString(0), result);
-      } else if(n.hasProperty(BOUND)) { // bound variable in control file
-        result = IntegerT.INT;
-        Reference ref = new DynamicReference(n.getString(0), result);
-        result = result.annotate().shape(ref);
-        bVarTypeMap.put(n, result);
-        table.current().define(n.getString(0), result);
-      } else {
-        runtime.error("'" + n.getString(0) + "' undeclared", n);
-        result = ErrorT.TYPE;
-      }
+    	runtime.error("'" + n.getString(0) + "' undeclared", n);
+      result = ErrorT.TYPE;
     }
     mark(n, result);
     return result;
   }
   
+  // Newly defined symbol in cfgBuilder
   public Type visitSimpleDeclarator(GNode n) {
-    Type result = (Type)table.lookup(n.getString(0));
-    if (null == result) {
-      if(bVarTypeMap.containsKey(n)) {
-        result = bVarTypeMap.get(n);
-      } else if(n.hasProperty(Constants.TYPE)) {
-        result = (Type) n.getProperty(Constants.TYPE);
-      } else if(n.hasProperty(BOUND)) {
-        result = IntegerT.INT;
-        Reference ref = new DynamicReference(n.getString(0), result);
-        result = result.annotate().shape(ref);
-        bVarTypeMap.put(n, result);
-      } else {
-        runtime.error("'" + n.getString(0) + "' undeclared", n);
-        result = ErrorT.TYPE;
-      }
-    }
-
-    mark(n, result);
+  	Type result = (Type)table.lookup(n.getString(0));
+  	if(null == result) {
+  		result = (Type) n.getProperty(Constants.TYPE);
+    	table.current().define(n.getString(0), result);
+  	}
+  	mark(n, result);
     return result;
   }
 
@@ -7087,24 +6996,6 @@ public class CAnalyzer extends Visitor {
         runtime.errConsole().p("declaration");
       }
       runtime.errConsole().p(" of '").p(tag.getName()).p("' was here").flush();
-    }
-  }
-
-  /**
-   * Indirect this reference.  This method determines the appropriate
-   * reference when using a pointer-decayed type.  For arrays and
-   * functions, it simly returns this reference.  For all other types,
-   * it returns an indirect reference, with this reference as the
-   * base.
-   *
-   * @param type The reference's declared type (before pointer decay).
-   */
-  private Reference addressOf(Reference ref) {
-    Type resolved = ref.getType().resolve();
-    if (resolved.isArray() || resolved.isFunction()) {
-      return ref;
-    } else {
-      return new AddressOfReference(ref);
     }
   }
 }

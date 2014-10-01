@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 
 public class FileUtils {
   private static final String[] C_FILES_SUFFIXES = { ".c", ".C" };
+  private static final String[] I_FILES_SUFFIXES = { ".i", ".I" };
   private static final String[] CONTROL_FILE_SUFFIXES = { ".ctrl" };
   
   protected static final String RESOURCES_DIRECTORY = "META-INF";
@@ -27,6 +28,10 @@ public class FileUtils {
   
   public static boolean isCSourceFile(File file) {
     return suffixIn(file, C_FILES_SUFFIXES);
+  }
+  
+  public static boolean isISourceFile(File file) {
+  	return suffixIn(file, I_FILES_SUFFIXES);
   }
 
   public static boolean isControlFile(File file) {

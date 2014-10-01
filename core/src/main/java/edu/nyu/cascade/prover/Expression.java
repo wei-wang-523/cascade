@@ -4,7 +4,6 @@ import java.util.List;
 
 import xtc.tree.GNode;
 
-import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.Type;
 
 /**
@@ -60,6 +59,8 @@ public interface Expression {
     BV_NOR,
     /** Bit-wise NOT. One children, a bit-vector. */
     BV_NOT,
+    /** Bit-wise NEG. One children, a bit-vector. */
+    BV_NEG,
     /** Bit-wise OR. Two children, both bit-vectors. */
     BV_OR,
     /** Sign extension of a bit-vector. Two children: a bit vector and a size. */
@@ -104,6 +105,8 @@ public interface Expression {
      * quantify over and, finally, the body (a boolean).
      */
     EXISTS,
+    
+    FUNCTION,
     /**
      * Universal quantification. Two or more children: the variables to quantify
      * over and, finally, the body (a boolean).
@@ -262,22 +265,10 @@ public interface Expression {
   IntegerExpression asIntegerExpression();
 
   /**
-   * Coerce the expression to a <code>IIntegerVariableExpression</code>. Throws
-   * an exception if the expression is not a variable of integer type.
-   */
-  IntegerVariableExpression asIntegerVariable();
-
-  /**
    * Coerce the expression to a <code>IRationalExpression</code>. Throws an
    * exception if the expression is not of rational type.
    */
   RationalExpression asRationalExpression();
-
-  /**
-   * Coerce the expression to a <code>IRationalVariableExpression</code>. Throws
-   * an exception if the expression is not a variable of rational type.
-   */
-  RationalVariableExpression asRationalVariable();
   
   /**
    * Coerce the expression to a <code>FunctionExpression</code>.
@@ -286,10 +277,16 @@ public interface Expression {
   FunctionExpression asFunctionExpression();
 
   /**
-   * Coerce the expression to a <code>IVariableExpression</code>. Throws an
+   * Coerce the expression to a <code>VariableExpression</code>. Throws an
    * exception if the expression is not a variable.
    */
   VariableExpression asVariable();
+  
+  /**
+   * Coerce the expression to a <code>BoundVariableExpression</code>. Throws an
+   * exception if the expression is not a bound variable.
+   */
+	BoundExpression asBound();
 
   /**
    * Returns an equality expression between this expression and <code>e</code>.
@@ -332,10 +329,6 @@ public interface Expression {
    */
   GNode getNode();
   
-  /** Returns the function declarator of this expression if its kind is APPLY
-   */
-  FunctionType getFuncDecl();
-  
   /** Set the node of this expression.
    */
   Expression setNode(GNode node);
@@ -353,19 +346,11 @@ public interface Expression {
    * inverse of isConstant()!
    * */
   boolean isVariable();
-
-  /**
-   * Returns a function with this expression as the body, where <code>var</code>
-   * is bound as a parameter.
-   */
-  FunctionExpression lambda(VariableExpression var);
   
   /**
-   * Returns a function with this expression as the body, where <code>vars</code>
-   * are bound as parameters.
-   */
-  FunctionExpression lambda(
-      Iterable<? extends VariableExpression> vars);
+   * Returns whether the expression represents a bound variable.
+   * */
+  boolean isBound();
 
   /**
    * Returns a disequality expression between this expression and <code>e</code>.
@@ -398,4 +383,5 @@ public interface Expression {
   boolean isRecord();
   boolean isUninterpreted();
 
+  Expression simplify();
 }

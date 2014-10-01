@@ -7,9 +7,9 @@ import edu.nyu.cascade.ir.IRBooleanExpression;
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRLocation;
 import edu.nyu.cascade.ir.IRLocations;
-import edu.nyu.cascade.ir.expr.ExpressionClosure;
-import edu.nyu.cascade.ir.expr.ExpressionClosures;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
+import edu.nyu.cascade.ir.state.StateExpressionClosure;
+import edu.nyu.cascade.ir.state.StateExpressionClosures;
 
 public class CaseGuard implements IRBooleanExpression {
   private final IRExpression testExpr, caseLabel;
@@ -47,17 +47,17 @@ public class CaseGuard implements IRBooleanExpression {
   }
 
   @Override
-  public  ExpressionClosure toBoolean(ExpressionEncoder encoder) {
-    return ExpressionClosures.eq(testExpr.toExpression(encoder),caseLabel.toExpression(encoder));
+  public StateExpressionClosure toBoolean(ExpressionEncoder encoder) {
+    return StateExpressionClosures.eq(testExpr.toExpression(encoder),caseLabel.toExpression(encoder));
   }
 
   @Override
-  public  ExpressionClosure toExpression(ExpressionEncoder encoder) {
+  public StateExpressionClosure toExpression(ExpressionEncoder encoder) {
     throw new UnsupportedOperationException("CaseGuard.toExpression");
   }
   
   @Override
-  public  ExpressionClosure toLval(ExpressionEncoder encoder) {
+  public StateExpressionClosure toLval(ExpressionEncoder encoder) {
     throw new UnsupportedOperationException("CaseGuard.toLval");
   }
 

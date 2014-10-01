@@ -3,6 +3,7 @@ package edu.nyu.cascade.ir.expr;
 /** An expression factory that encodes memory as an int-to-int array. */
 
 import xtc.type.NumberT;
+import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -31,10 +32,13 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
     			new DefaultTupleEncoding(exprManager).getInstance(
     					Identifiers.PTR_TYPE_NAME, uninterpretedEncoding, integerEncoding));
     	} else {
-    		integerEncoding = BitVectorIntegerEncoding.create(exprManager, cAnalyzer, WORD_SIZE);
+    		integerEncoding = BitVectorIntegerEncoding.create(exprManager, WORD_SIZE);
     		
-        int offsetSize = Preferences.isSet(Preferences.OPTION_MULTI_CELL) ? 
-        		(int) cAnalyzer.getSize(NumberT.U_INT) * WORD_SIZE : WORD_SIZE;
+    		long offsetSize = WORD_SIZE;
+    		
+    		if( Preferences.isSet(Preferences.OPTION_BYTE_BASED) ) {
+    			offsetSize = CType.getSizeofType(NumberT.LONG) * WORD_SIZE;
+    		}
     		
     		IntegerEncoding<?> offsetEncoding = BitVectorFixedSizeEncoding.create(exprManager, 
     				(BitVectorIntegerEncoding) integerEncoding, offsetSize);
@@ -46,7 +50,7 @@ public class PointerExpressionEncoding extends AbstractExpressionEncoding {
     	if(Preferences.isSet(Preferences.OPTION_NON_OVERFLOW)) {
     		integerEncoding = new DefaultIntegerEncoding(exprManager);
     	} else {
-    		integerEncoding = BitVectorIntegerEncoding.create(exprManager, cAnalyzer, WORD_SIZE);
+    		integerEncoding = BitVectorIntegerEncoding.create(exprManager, WORD_SIZE);
     	}
   		pointerEncoding = LinearPointerEncoding.create(integerEncoding);
     }

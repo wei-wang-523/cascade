@@ -169,4 +169,19 @@ public class SymbolTableImpl implements SymbolTable {
   public Type lookupType(String name) {
     return (Type) xtcSymbolTable.lookup(name);
   }
+
+	@Override
+  public void enter(String name) {
+	  xtcSymbolTable.enter(name);
+  }
+
+	@Override
+  public void exit() {
+		xtcSymbolTable.exit();	  
+  }
+
+	@Override
+  public xtc.util.SymbolTable getOriginalSymbolTable() {
+	  return xtcSymbolTable;
+  }
 }

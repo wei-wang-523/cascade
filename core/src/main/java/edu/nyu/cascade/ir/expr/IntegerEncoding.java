@@ -13,6 +13,24 @@ public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
    * integer arguments.
    */
   T bitwiseAnd(T a, T b);
+  
+  /**
+   * Returns a boolean expression representing the bitwise OR of the two
+   * integer arguments.
+   */
+  T bitwiseOr(T a, T b);
+  
+  /** 
+   * Returns a boolean expression representing the bitwise XOR of the two
+   * integer arguments.
+   */
+  T bitwiseXor(T a, T b);
+  
+  /** 
+   * Returns a boolean expression representing the bitwise Negate of the
+   * integer argument.
+   */
+  T bitwiseNegate(T a);
 
   /** Returns an integer expression representing the constant <code>c</code>. */
   T constant(int c);
@@ -20,6 +38,9 @@ public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
   T constant(long c);
   
   T constant(BigInteger c);
+  
+  /** Returns an integer expression representing the character constant <code>c</code>. */
+  T characterConstant(long c);
   
   /**
    * Returns an integer expression representing the integer <code>expr</code>
@@ -118,12 +139,12 @@ public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
   /**
    * @return an integer expression representing <code>\sigma(args)</code>.
    */
-  T plus(Iterable<? extends T> args) ;
+  T plus(T first, Iterable<? extends T> args) ;
 
   /**
    * @return an integer expression representing <code>\sigma(args)</code>.
    */
-  T plus(T... args) ;
+  T plus(T first, T... rest) ;
 
   /**
    * @return an integer expression representing <code>lhs + rhs</code>.
@@ -181,9 +202,14 @@ public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
   T lshift(T lhs, T rhs);
   
   /**
-   * @return an expression representing <code>lhs >> rhs</code>
+   * @return an expression representing logic <code>lhs >> rhs</code>
    */
   T rshift(T lhs, T rhs);
+  
+  /**
+   * @return an expression representing arithmetic <code>lhs >> rhs</code>
+   */
+  T signedRshift(T lhs, T rhs);
   
   /**
    * @return an expression representing <code>lhs % rhs</code>

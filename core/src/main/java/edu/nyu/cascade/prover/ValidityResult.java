@@ -66,4 +66,12 @@ public class ValidityResult<T> extends QueryResult<ValidityResult.Type> {
   public ImmutableList<BooleanExpression> getCounterExample() {
     return getCertificate();
   }
+  
+  public String getCounterExampleToString() {
+  	StringBuilder sb = new StringBuilder();
+  	for(BooleanExpression bool : getCertificate()) {
+  		sb.append(bool).append('\n');
+  	}
+  	return sb.toString();
+  }
 }

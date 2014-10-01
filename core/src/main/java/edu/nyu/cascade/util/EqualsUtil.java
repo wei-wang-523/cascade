@@ -28,10 +28,6 @@
 
 package edu.nyu.cascade.util;
 
-import java.util.Iterator;
-
-import com.google.common.collect.Iterables;
-
 
 /**
 * Collected methods which allow easy implementation of <code>equals</code>.
@@ -96,19 +92,18 @@ public final class EqualsUtil {
   * arrays. See class comment.
   */
   static public boolean areEqual(Object aThis, Object aThat){
-    //System.out.println("Object");
+//    System.out.println("Object");
     return aThis == null ? aThat == null : aThis.equals(aThat);
   }
   
-  static public boolean areEqual(Iterable<Object> aThis, Iterable<Object> aThat){
-    //System.out.println("Object");
-    if(Iterables.size(aThis) != Iterables.size(aThat)) return false;
-    Iterator<Object> thisItr = aThis.iterator();
-    Iterator<Object> thatItr = aThat.iterator();
+  static public boolean areEqual(Object[] aThis, Object[] aThat){
+//    System.out.println("Array");
+    if(aThis.length != aThat.length) return false;
     
-    while(thisItr.hasNext() && thatItr.hasNext()) {
-      if(!thisItr.next().equals(thatItr.next()))    return false;
+    for(int i = 0; i < aThis.length; i++) {
+    	if(!aThis[i].equals(aThat[i])) return false;
     }
+    
     return true;
   }
 }

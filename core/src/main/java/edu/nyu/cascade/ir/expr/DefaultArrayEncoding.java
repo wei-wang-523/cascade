@@ -2,6 +2,7 @@ package edu.nyu.cascade.ir.expr;
 
 import com.google.common.base.Preconditions;
 
+import edu.nyu.cascade.ir.type.IRType;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -116,9 +117,9 @@ class DefaultArrayInstance implements ArrayEncoding.Instance<ArrayExpression> {
   @Override
   public int hashCode() {
     int hash = HashCodeUtil.SEED;
-    HashCodeUtil.hash(hash, exprManager);
-    HashCodeUtil.hash(hash, indexEncoding);
-    HashCodeUtil.hash(hash, elementEncoding);
+    hash = HashCodeUtil.hash(hash, exprManager);
+    hash = HashCodeUtil.hash(hash, indexEncoding);
+    hash = HashCodeUtil.hash(hash, elementEncoding);
     return hash;
   }
 
@@ -155,24 +156,15 @@ class DefaultArrayInstance implements ArrayEncoding.Instance<ArrayExpression> {
   
   @Override
   public ArrayExpression symbolicConstant(String name, boolean fresh) {
-    return variable(name, fresh);
+    return exprManager.arrayType(getIndexEncoding().getType(), 
+    		getElementEncoding().getType()).variable(name, fresh);
   }
 
   @Override
   public ArrayExpression toArrayExpression(ArrayExpression array) {
     return array;
   }
-
-/*  @Override
-  public EncodingValue toEncodingValue(ArrayExpression x) {
-    return mkEncodingValue(x);
-  }
-*/
-/*  @Override
-  public Expression<?> toExpression(ArrayExpression x) {
-    return x;
-  }
-*/
+  
   @Override
   public VariableExpression toVariable(ArrayExpression x) {
     Preconditions.checkArgument(x.isVariable());
@@ -182,15 +174,39 @@ class DefaultArrayInstance implements ArrayEncoding.Instance<ArrayExpression> {
   @Override
   public ArrayExpression update(ArrayExpression array,
       Expression index, Expression val) {
-/*    Preconditions.checkArgument( indexEncoding.isEncodingFor(index) );
-    Preconditions.checkArgument( elementEncoding.isEncodingFor(val) );
-*/    
     return array.update(index, val);
+  }
+  
+  @Override
+  public ArrayExpression variable(String name, boolean fresh) {
+    return exprManager.arrayType(getIndexEncoding().getType(), 
+    		getElementEncoding().getType()).variable(name, fresh);
+  }
+  
+  @Override
+  public ArrayExpression boundVar(String name, boolean fresh) {
+    return exprManager.arrayType(getIndexEncoding().getType(), 
+    		getElementEncoding().getType()).boundVar(name, fresh);
+  }
+  
+  @Override
+  public ArrayExpression boundExpression(String name, int index, boolean fresh) {
+    return exprManager.arrayType(getIndexEncoding().getType(), 
+    		getElementEncoding().getType()).boundExpression(name, index, fresh);
   }
 
   @Override
-  public ArrayExpression variable(String name, boolean fresh) {
-    return exprManager.arrayVar(name, getIndexEncoding().getType(), 
-    		getElementEncoding().getType(), fresh);
+  public ArrayExpression variable(String name, IRType iType, boolean fresh) {
+    return variable(name, fresh);
+  }
+  
+  @Override
+  public ArrayExpression boundVar(String name, IRType iType, boolean fresh) {
+    return boundVar(name, fresh);
+  }
+  
+  @Override
+  public ArrayExpression boundExpression(String name, int index, IRType iType, boolean fresh) {
+    return boundExpression(name, index, fresh);
   }
 }

@@ -4,8 +4,8 @@ import com.google.common.base.Preconditions;
 
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.BoundExpression;
 import edu.nyu.cascade.prover.ExpressionManager;
-import edu.nyu.cascade.prover.VariableExpression;
 
 public class DefaultBooleanEncoding extends
     AbstractTypeEncoding<BooleanExpression> implements
@@ -33,13 +33,13 @@ public class DefaultBooleanEncoding extends
 
   @Override
   public BooleanExpression forall(
-      Iterable<? extends VariableExpression> ids, BooleanExpression expr) {
+      Iterable<? extends BoundExpression> ids, BooleanExpression expr) {
     return expr.forall(ids);
   }
   
   @Override
   public BooleanExpression exists(
-      Iterable<? extends VariableExpression> ids, BooleanExpression expr) {
+      Iterable<? extends BoundExpression> ids, BooleanExpression expr) {
     return expr.exists(ids);
   }
 
@@ -101,6 +101,12 @@ public class DefaultBooleanEncoding extends
   
   @Override
   public BooleanExpression unknown() {
-    return variable(UNKNOWN_VARIABLE_NAME, true);
+    return getType().asBooleanType().variable(UNKNOWN_VARIABLE_NAME, true);
+  }
+
+	@Override
+  public BooleanExpression ifThenElse(BooleanExpression b,
+      BooleanExpression thenExpr, BooleanExpression elseExpr) {
+	  return getExpressionManager().ifThenElse(b, thenExpr, elseExpr).asBooleanExpression();
   }
 }

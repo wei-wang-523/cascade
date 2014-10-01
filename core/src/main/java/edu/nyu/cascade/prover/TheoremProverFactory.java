@@ -242,11 +242,12 @@ public class TheoremProverFactory {
             "No registered theorem prover with name: '" + name + "'");
       }
     } else {
-      tp = chooseProvider(allProviders);
-      if (tp == null) {
-        throw new TheoremProverFactoryException(
-            "No theorem prover instances registered.");
-      }
+    	tp = nameMap.get("z3");
+//      tp = chooseProvider(allProviders);
+//      if (tp == null) {
+//        throw new TheoremProverFactoryException(
+//            "No theorem prover instances registered.");
+//      }
     }
     return tp.create();
   }

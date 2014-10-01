@@ -56,7 +56,7 @@ public class IRLocations {
     if( loc.getFile() == null ) {
       builder.append("<none>");
     } else {
-    builder.append(loc.getFile().getPath()).append(":").append(loc.getLine());
+    builder.append(loc.getFile().getName()).append(":").append(loc.getLine());
     }
   }
   

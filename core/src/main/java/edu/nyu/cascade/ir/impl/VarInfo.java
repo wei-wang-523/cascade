@@ -5,29 +5,47 @@ import java.util.Map;
 import com.google.common.collect.Maps;
 
 import xtc.tree.Node;
-import xtc.util.SymbolTable.Scope;
+import xtc.type.Type;
+import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.type.IRType;
+import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.util.HashCodeUtil;
 
-public class VarInfo implements IRVarInfo {
-  private final Scope scope;
+public class VarInfo implements IRVarInfo {	
+  private final String scope;
   private final String name;
   private final IRType type;
+  private final Type sourceType;
+  private Expression lBinding, rBinding;
+  
+  /** A set of client-specified properties. */
+  private final Map<String,Object> properties;
+  
   /**
    * The source node of the variable declaration. May not literally be a
    * Declaration node, if the variable was declared as part of a list. It
    * should, however, uniquely define the variable within the parse tree.
    */
-  private final Node sourceNode;
-  /** A set of client-specified properties. */
-  private final Map<String,Object> properties;
+  private Node sourceNode;
   
-  public VarInfo(Scope scope, String name, IRType type, Node sourceNode) {
+  VarInfo(String scope, String name, IRType type, Node sourceNode, Type sourceType) {
     this.scope = scope;
     this.name = name;
     this.type = type;
     this.sourceNode = sourceNode;
+    this.sourceType = sourceType;
     this.properties = Maps.newHashMap();
+  }
+  
+  @Override
+  public void setDeclarationNode(Node node) {
+  	sourceNode = node;
+  }
+  
+  @Override
+  public Type getXtcType() {
+  	return sourceType;
   }
   
   @Override
@@ -46,7 +64,7 @@ public class VarInfo implements IRVarInfo {
   }
 
   @Override
-  public IRType getType() {
+  public IRType getIRType() {
     return type;
   }
 
@@ -66,11 +84,17 @@ public class VarInfo implements IRVarInfo {
     sb.append("{ name=" );
     sb.append(name);
     sb.append("; scope=" );
-    sb.append(scope.getQualifiedName());
+    sb.append(scope);
     sb.append("; type=" );
     sb.append(type);
-    sb.append("; node=@" );
-    sb.append(Integer.toHexString(sourceNode.hashCode()));
+    sb.append("; xtcType=" );
+    sb.append(sourceType);
+    sb.append("; isDeclared=" );
+    sb.append(sourceNode != null);
+    if(sourceNode != null) {
+      sb.append("; node=@" );
+      sb.append(Integer.toHexString(sourceNode.hashCode()));
+    }
     for( String key : properties.keySet() ) {
       sb.append("; ");
       sb.append(key);
@@ -82,7 +106,51 @@ public class VarInfo implements IRVarInfo {
   }
 
   @Override
-  public Scope getScope() {
+  public String getScopeName() {
     return scope;
+  }
+
+	@Override
+  public Expression getLValBinding() {
+	  return lBinding;
+  }
+
+	@Override
+  public Expression getRValBinding() {
+	  return rBinding;
+  }
+	
+	@Override
+	public boolean hasLValBinding() {
+		return lBinding != null;
+	}
+	
+	@Override
+	public boolean hasRValBinding() {
+		return rBinding != null;
+	}
+
+	@Override
+  public void setLValBinding(Expression varExpr) {
+		this.lBinding = varExpr;
+  }
+	
+	@Override
+  public void setRValBinding(Expression varExpr) {
+		this.rBinding = varExpr;
+  }
+	
+	@Override
+	public int hashCode() {
+		return HashCodeUtil.hash(
+				HashCodeUtil.hash(
+						HashCodeUtil.hash(HashCodeUtil.SEED, name), 
+						scope), 
+						sourceType.resolve());
+	}
+
+	@Override
+  public long getSize() {
+		return CType.getSizeofType(sourceType);
   }
 }

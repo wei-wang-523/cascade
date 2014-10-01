@@ -1,13 +1,30 @@
 package edu.nyu.cascade.ir.type;
 
+import xtc.type.NumberT;
+import xtc.type.Type;
+
 public final class IRIntegerType extends IRType {
-  private static final IRIntegerType singleton = new IRIntegerType();
+  private static IRIntegerType singleton = null;
   
-  public static IRIntegerType getInstance() {
-    return singleton; 
+  private final Type srcType;
+  
+  static IRIntegerType getInstance() {
+  	if(singleton != null) return singleton;
+  	
+  	singleton = create(NumberT.INT);
+  	return singleton;
   }
   
-  private IRIntegerType() { 
+  static IRIntegerType create(Type srcType) {
+  	return new IRIntegerType(srcType); 
+  }
+  
+  public Type getSrcType() {
+  	return srcType;
+  }
+  
+  private IRIntegerType(Type srcType) {
+  	this.srcType = srcType;
   }
   
   @Override

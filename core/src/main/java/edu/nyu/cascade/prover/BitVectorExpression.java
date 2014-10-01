@@ -48,13 +48,15 @@ public interface BitVectorExpression extends Expression {
   BitVectorExpression nand(Expression a) ;
   BitVectorExpression nor(Expression a) ;
   BitVectorExpression not() ;
+  BitVectorExpression neg() ;
   BitVectorExpression or(Expression a) ;
-  BitVectorExpression plus(int size, Expression a);
-  BitVectorExpression plus(int size, 
-      Expression... args);
-  BitVectorExpression plus(int size, Iterable<? extends Expression> args);
+  BitVectorExpression plus(Expression a);
+  BitVectorExpression plus(Expression... args);
+  BitVectorExpression plus(Iterable<? extends Expression> args);
   
-  BitVectorExpression times(int size, Expression a) ;
+  BitVectorExpression times(Expression a) ;
+  BitVectorExpression times(Expression... args);
+  BitVectorExpression times(Iterable<? extends Expression> args);
   
   BitVectorExpression divides(Expression a);
   BitVectorExpression signedDivides(Expression a);
@@ -64,6 +66,7 @@ public interface BitVectorExpression extends Expression {
   BitVectorExpression xor(Expression a) ;
   BitVectorExpression lshift(Expression a);
   BitVectorExpression rshift(Expression a);
+  BitVectorExpression signedRshift(Expression a);
   BitVectorExpression zeroExtend(int size);
   BitVectorExpression signExtend(int size);
   BitVectorExpression uminus();

@@ -2,7 +2,6 @@ package edu.nyu.cascade.ir.type;
 
 import java.util.Map;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
 public final class IRChannelType<T extends IRType> extends IRType {
@@ -28,11 +27,6 @@ public final class IRChannelType<T extends IRType> extends IRType {
   @Override
   public Kind getKind() {
     return Kind.CHANNEL;
-  }
-  
-  @Override
-  public ImmutableList<? extends IRType> getTypeArguments() {
-    return ImmutableList.of(type);
   }
 
   @Override

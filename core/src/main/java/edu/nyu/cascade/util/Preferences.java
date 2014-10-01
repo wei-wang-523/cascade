@@ -37,64 +37,107 @@ public class Preferences {
   /** User-defined properties */
   private static final Map<String, Object> PROPERTIES = Maps.newHashMap();
 
-  public static final String OPTION_SOUND_ALLOC = "sound";
-  public static final String OPTION_ORDER_ALLOC = "order";
-  
-  public static final String OPTION_COUNTER_EXAMPLE = "counter-example";
-
   public static final String OPTION_PLUGINS_DIRECTORY = "plugins";
   
-  public static final String OPTION_ITERATION_TIMES = "iter-times";
   
-  /** Enable unsigned arithmetic operations */
-  public static final String OPTION_UNSIGNED_OPERATION = "unsigned";
-  
-  /** Set the size of each memory cell, default value is 8 */
-  public static final String OPTION_MEM_CELL_SIZE = "mem-cell-size";
-  
-  /** Enable multiple cells encoding of various data type in the real C, 
-   * which is byte-unit and default cell size is 8.
-   * 
-   * It is impossible to set both <code>OPTION_MEM_CELL_SIZE</code> and 
-   * <code>OPTION_MEM_MULTICELL</code>.
-   */
-  public static final String OPTION_MULTI_CELL = "multi-cell";
-  
-  /** Used for encoding reacheability theory of linked data structures */
-  public static final String OPTION_ENCODE_FIELD_ARRAY = "field-array";
-  public static final String OPTION_PARTIAL_INST = "partial-inst";
-  public static final String OPTION_TOTAL_INST = "total-inst";
-  
-  /** Enable integer encoding without overflow, default is fixed-size 
-   * bit-vector encoding.
-   */
-  public static final String OPTION_NON_OVERFLOW = "non-overflow";
-  
-  /** Theory of memory model: flat, Burstall and partition */
-  public static final String OPTION_THEORY = "theory";
-  
-  /** Sequential path encoding, default is merge path encoding*/
-  public static final String OPTION_SEQ_PATH = "seq";
-  
-  
-  /** Enable in-line annotation, such as <code>ASSERT</code>, <code>
-   * ASSUME</code>, <code>INVARIANT</code>
-   */
-  public static final String OPTION_INLINE_ANNOTATION = "inline-anno";
-  
-  /** Check memory safety assertions, including safe memory access */
-  public static final String OPTION_MEMORY_CHECK = "memory-check";
+  /** Give a counter example is the assertion is invalid */
+  public static final String OPTION_COUNTER_EXAMPLE = "counter-example";
   
   /** Set the timeout of cascade */
   public static final String OPTION_TIMEOUT = "timeout";
   
-  /** Set the fixed version of Burstall multi cell */
-  public static final String OPTION_BURSTALL_MULTI_CELL_SIMP = "simp";
+  /** Enable in-line annotation */
+  public static final String OPTION_INLINE_ANNOTATION = "inline-anno";
   
-  /** Set the memory encoding: synchronous and linear */
+  /** Check safe memory access for all memory dereferences */
+  public static final String OPTION_MEMORY_CHECK = "memory-check";
+  
+  /** Enable integer encoding, default is fixed-size bit-vector encoding (might overflow).*/
+  public static final String OPTION_NON_OVERFLOW = "non-overflow";
+  
+  /** Make variables are pure logic variables, if they with no the compound type and 
+   * have no address-of op on it. */
+  public static final String OPTION_HOARE = "hoare";
+  
+  
+  /** Incrementally check reachability until reach the function 
+   * inline and loop unrolling bounds */
+  
+  public static final String OPTION_INCREMENTAL = "incremental";
+  
+  public static final String OPTION_FUNC_INLINE = "function-inline";
+  
+  public static final String OPTION_ITERATION_TIMES = "iter-times";
+  
+  
+  /** ------------- Options for pointer analysis ----------- */
+  
+  /** Enable field sensitive pointer analysis */
+  public static final String OPTION_FIELD_SENSITIVE = "field-sensitive";
+  
+  /** Enable context sensitive pointer analysis */
+  public static final String OPTION_CONTEXT_SENSITIVE = "context-sensitive";
+  
+  
+  /** -------------- memory layout encoding ----------------- */
+ 
+  /** Memory layout encoding: sound (no assume an order between regions), 
+   * order (assume an arbitrary order)
+   */ 
+  public static final String OPTION_SOUND_ALLOC = "sound";
+  public static final String OPTION_ORDER_ALLOC = "order";
+  
+  
+  /** ------------------ memory cell --------------------- */
+  
+  /** Set the size of each memory cell, default value is 16 */
+  public static final String OPTION_MEM_CELL_SIZE = "mem-cell-size";
+  
+  /** Enable multiple cells encoding of various data type in the real C, 
+   * which is byte-unit and default cell size is 8.
+   */
+  public static final String OPTION_MULTI_CELL = "multi-cell";
+  
+  /** Used the type information contained in Burstall memory model, 
+   * to calculate the size of cell based on type information
+   */
+  public static final String OPTION_VARI_CELL = "vari-cell";
+  
+  /** Option to set value-based or byte-based encoding: 
+   * - For vari-cell and multi-cell, it is set to be true;
+   * - Otherwise, it is set to be false (value-based).
+   */
+  public static final String OPTION_BYTE_BASED = "byte-based";
+  
+  
+  /** ------------------ path encoding --------------------- */
+  
+  /** Path encoding: sequential (no ite-branch merge), merge (default),
+   * path-based
+   */
+  public static final String OPTION_SEQ_PATH = "seq";
+  public static final String OPTION_PATH_BASED = "path-based";
+  
+  
+  /** ------------------ memory model theory -------------- */
+  
+  /** Options: Flat(default), Burstall, Partition */
+  public static final String OPTION_MODE = "mode";
+  
+  /** Enable the lambda encoding */
+	public static final String OPTION_LAMBDA = "lambda";
+  
+  
+	/** ----------------- memory encoding ------------------- */
+  
   public static final String OPTION_MEM_ENCODING = "mem-encoding";
   public static final String MEM_ENCODING_SYNC = "sync";
   public static final String MEM_ENCODING_LINEAR = "linear";
+  
+	
+  /** ------------- Theorem prover: z3, cvc4 ---------------- */
+	public static final String PROVER_Z3 = "z3";
+	public static final String PROVER_CVC4 = "cvc4";
   
   public static void clearAll() {
     getProperties().clear();

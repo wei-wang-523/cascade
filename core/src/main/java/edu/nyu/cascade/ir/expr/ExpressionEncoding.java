@@ -33,6 +33,13 @@ public interface ExpressionEncoding {
    * @return a variable in the encoding
    */
   Expression addSourceVariable(String qName, IRType type) ;
+  
+  /**
+   * Add <code>assumption</code> to be asserted as axioms in backend solver
+   * @param assumption
+   * @return
+   */
+  boolean addAssumption(BooleanExpression assumption);
 
   /**
    * The logical AND of the given expressions. 
@@ -78,8 +85,34 @@ public interface ExpressionEncoding {
    * @return an integer-encoded expression
    */
   Expression bitwiseAnd(Expression lhs, Expression rhs) ;
+  
+  /**
+   * The bitwise OR of the given expressions.
+   * 
+   * @param lhs an integer-encoded expression
+   * @param rhs an integer-encoded expression
+   * @return an integer-encoded expression
+   */
+  Expression bitwiseOr(Expression lhs, Expression rhs) ;
+  
+  /**
+   * The bitwise XOR of the given expressions.
+   * 
+   * @param lhs an integer-encoded expression
+   * @param rhs an integer-encoded expression
+   * @return an integer-encoded expression
+   */
+  Expression bitwiseXor(Expression lhs, Expression rhs) ;
 
   /**
+   * The bitwise NEGATE of the given expression.
+   * 
+   * @param src an integer-encoded expression
+   * @return an integer-encoded expression
+   */
+  Expression bitwiseNegate(Expression src);
+
+	/**
    * The conversion of the given expression to a boolean, according to the
    * conversion rule of the underlying encoding.
    * 
@@ -221,7 +254,7 @@ public interface ExpressionEncoding {
   /**
    * The underlying tuple encoding.
    */
-  PointerEncoding<?> getPointerEncoding();
+  PointerEncoding<? extends Expression> getPointerEncoding();
 
   /**
    * Get logical assumptions used in the underlying encoding. E.g., if variables
@@ -230,6 +263,11 @@ public interface ExpressionEncoding {
    * <code>{ x ≠ y, x ≠ z, y ≠ z }</code>.
    */
   ImmutableSet<? extends BooleanExpression> getAssumptions();
+  
+  /**
+   * Clear the assumptions
+   */
+	void clearAssumptions();
 
   /**
    * The underlying boolean encoding.
@@ -371,6 +409,14 @@ public interface ExpressionEncoding {
    * @return an integer-encoded expression
    */
   Expression integerConstant(long c) ;
+  
+  /** 
+   * An encoded character constant.
+   * 
+   * @param c the long number
+   * @return an integer-encoded expression
+   */
+  Expression characterConstant(long c) ;
   
   /** 
    * An encoded integer constant.
@@ -643,18 +689,20 @@ public interface ExpressionEncoding {
   /**
    * The addition of the given expressions. 
    * 
-   * @param args integer-encoded expressions
+   * @param first an integer-encoded expression
+   * @param rest integer-encoded expressions
    * @return an integer-encoded expression
    */
-  Expression plus(Expression... args) ;
+  Expression plus(Expression first, Expression... rest) ;
 
   /**
    * The addition of the given expressions. 
    * 
-   * @param args integer-encoded expressions
+   * @param first an integer-encoded expression
+   * @param rest integer-encoded expressions
    * @return an integer-encoded expression
    */
-  Expression plus(Iterable<? extends Expression> args) ;
+  Expression plus(Expression first, Iterable<? extends Expression> args) ;
   
   /**
    * The left shift of the given expressions. 
@@ -673,6 +721,15 @@ public interface ExpressionEncoding {
    * @return an integer-encoded expression
    */
   Expression rshift(Expression lhs, Expression rhs) ;
+  
+  /**
+   * The signed right shift of the given expressions. 
+   * 
+   * @param lhs an integer-encoded expression
+   * @param rhs an integer-encoded expression
+   * @return an integer-encoded expression
+   */
+  Expression signedRshift(Expression lhs, Expression rhs) ;
 
   /**
    * Look up the name of the source variable associated with the encoded variable.
@@ -742,7 +799,7 @@ public interface ExpressionEncoding {
    * 
    * @param name
    *          the name of the variable
-   * @param t
+   * @param type
    *          the type of the variable
    * @param fresh
    *          if true, the variable is guaranteed to be unique in the encoding
@@ -757,25 +814,17 @@ public interface ExpressionEncoding {
   Expression zero() ;
   
   /**
-   * Get the xtc.type.c type analyzer
-   */
-  xtc.type.C getCAnalyzer() ;
-  
-  /**
-   * Get the cell size
+   * Get the word size
    */
   int getWordSize() ;
-  
-  /**
-   * Get the size of @param type
-   */
-  int getSizeofType(xtc.type.Type type) ;
 
   /**
    * Cast @param src expression to @param targetType
    */
   Expression castExpression(Expression src, Type targetType) ;
 
+  
+  Expression componentSelect(Expression lhs, Expression rhs);
   
   /**
    * The pointer addition of the given expressions. 
@@ -794,4 +843,100 @@ public interface ExpressionEncoding {
    * @return an pointer-encoded expression
    */
   Expression pointerMinus(Expression lhs, Expression rhs) ;
+  
+  /**
+   * <code>base <= base + size</code> while <code>+</code>
+   * is modular arithmetic in fixed-size bitvector encoding 
+   * 
+   * @param base
+   * @param size must be positive
+   * @return
+   */
+  Expression notOverflow(Expression base, Expression size);
+  
+  /**
+   * Regions <code>[base1, base1 + size1)</code> and <code>[base2, base2 + size2)</code> are
+   * disjoint.
+   * 
+   * @param base1
+   * @param size1
+   * @param base2
+   * @param size2
+   * @return
+   */
+  Expression disjoint(Expression base1, Expression size1, Expression base2, Expression size2);
+  
+  /**
+   * Regions <code>[base1, base1 + size1)</code> and <code>base2</code> are
+   * disjoint.
+   * 
+   * @param base1
+   * @param size1
+   * @param base2
+   * @return
+   */
+  Expression disjoint(Expression base1, Expression size1, Expression base2);
+  
+  /**
+   * Region <code>[base2, base2 + size2)</code> is within region 
+   * <code>[base1, base1 + size1)</code>
+   * 
+   * @param base1
+   * @param size1
+   * @param base2
+   * @param size2
+   * @return
+   */
+  Expression within(Expression base1, Expression size1, Expression base2, Expression size2);
+  
+  /**
+   * <code>base2</code> is within region <code>[base1, base1 + size1)</code>
+   * 
+   * @param base1
+   * @param size1
+   * @param base2
+   * @return
+   */
+  Expression within(Expression base1, Expression size1, Expression base2);
+
+  /**
+   * A bound variable in the encoding. Creates the bound variable if it doesn't already
+   * exist. If a bound variable with the same name already exists, it will be returned
+   * if <code>fresh</code> is false; a new bound variable with a mangled name will be
+   * created if <code>fresh</code> is true.
+   * 
+   * @param name
+   *          the name of the bound variable
+   * @param type
+   *          the type of the bound variable
+   * @param fresh
+   *          if true, the bound variable is guaranteed to be unique in the encoding
+   * @return an expression encoding the bound variable 
+   */
+	Expression boundVar(String name, IRType type, boolean fresh);
+
+  /**
+   * A bound expression in the encoding. Creates the bound expression if it doesn't already
+   * exist. If a bound expression with the same name already exists, it will be returned
+   * if <code>fresh</code> is false; a new bound expression with a mangled name will be
+   * created if <code>fresh</code> is true.
+   * 
+   * @param name
+   *          the name of the bound expression
+   * @param type
+   *          the type of the bound expression
+   * @param fresh
+   *          if true, the bound expression is guaranteed to be unique in the encoding
+   * @return an expression encoding the bound expression 
+   */
+	Expression boundExpression(String name, int index, IRType type, boolean fresh);
+
+	Expression castToOffset(Expression expr);
+
+	/**
+	 * Get the unknown expression for <code>type</code>
+	 * @param type
+	 * @return
+	 */
+	Expression unknown(Type type);
 }

@@ -1,5 +1,8 @@
 package edu.nyu.cascade.ir.expr;
 
+import edu.nyu.cascade.ir.memory.model.MemoryModel;
+import edu.nyu.cascade.ir.state.StateExpressionClosure;
+import edu.nyu.cascade.ir.state.StateFactory;
 import xtc.tree.Node;
 import xtc.util.SymbolTable;
 import xtc.util.SymbolTable.Scope;
@@ -17,19 +20,18 @@ import xtc.util.SymbolTable.Scope;
 
 public interface ExpressionEncoder {
   ExpressionEncoding getEncoding();
-  MemoryModel getMemoryModel();
-  SymbolTable.Scope getCurrentScope();
+  MemoryModel<?> getMemoryModel();
+	StateFactory<?> getStateFactory();
+	SymbolTable.Scope getCurrentScope();
   
-  ExpressionClosure toBoolean(Node node);
-  ExpressionClosure toBoolean(Node node, Scope scope);
-  ExpressionClosure toBoolean(Node node, boolean negated);
-  ExpressionClosure toBoolean(Node node, boolean negated, Scope scope);
+  StateExpressionClosure toBoolean(Node node);
+  StateExpressionClosure toBoolean(Node node, Scope scope);
+  StateExpressionClosure toBoolean(Node node, boolean negated);
+  StateExpressionClosure toBoolean(Node node, boolean negated, Scope scope);
 //  ExpressionClosure toInteger(Node node);
 //  ExpressionClosure toInteger(Node node, Scope scope);
-  ExpressionClosure toExpression(Node node);
-  ExpressionClosure toExpression(Node node, Scope scope);
-  ExpressionClosure toLval(Node node);
-  ExpressionClosure toLval(Node node, Scope scope);
-  
-  void setScope(Scope scope);
+  StateExpressionClosure toExpression(Node node);
+  StateExpressionClosure toExpression(Node node, Scope scope);
+  StateExpressionClosure toLval(Node node);
+  StateExpressionClosure toLval(Node node, Scope scope);
 }
