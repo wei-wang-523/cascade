@@ -17,10 +17,8 @@ import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Type;
 
-public final class RecordExpressionImpl extends ExpressionImpl implements
-    RecordExpression {
-  static final String SELECT_PREFIX = "sel@";
-  
+final class RecordExpressionImpl extends ExpressionImpl implements
+    RecordExpression {  
   static RecordExpressionImpl create(ExpressionManagerImpl exprManager, Type type,
       Expression first, Expression... rest) {
     return new RecordExpressionImpl(exprManager, type, Lists.asList(first, rest));
@@ -28,11 +26,26 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
 
   static RecordExpressionImpl create(ExpressionManagerImpl exprManager, Type type,
       Iterable<? extends Expression> elements) {
-//    Preconditions.checkArgument(!Iterables.isEmpty(elements));
     return new RecordExpressionImpl(exprManager, type, elements);
   }
 
-  static RecordExpressionImpl mkUpdate(ExpressionManagerImpl exprManager,
+  static RecordExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
+	    Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
+		Preconditions.checkArgument(type.isRecord());
+	  return new RecordExpressionImpl(em, kind, expr, type.asRecord(), children);
+	}
+
+	static RecordExpressionImpl valueOf(ExpressionManagerImpl exprManager,
+	    ExpressionImpl expr) {
+	  Preconditions.checkArgument(expr.isRecord());
+	  if( expr instanceof RecordExpressionImpl ) {
+	    return (RecordExpressionImpl) expr;
+	  } else {
+	    return new RecordExpressionImpl((ExpressionImpl) expr);
+	  }
+	}
+
+	static RecordExpressionImpl mkUpdate(ExpressionManagerImpl exprManager,
       Expression record, String name, Expression val) {
     Preconditions.checkArgument(record.isRecord());
     final int index = record.getType().asRecord().getElementNames().indexOf(name);
@@ -41,9 +54,9 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
           new BinaryConstructionStrategy() {
         @Override
         public Expr apply(Context ctx, Expr record, Expr val) throws Z3Exception {
-          Expr[] args = record.Args();
+          Expr[] args = record.getArgs();
           args[index] = val;
-          return ctx.MkApp(((DatatypeSort) record.Sort()).Constructors()[0], args); 
+          return ctx.mkApp(((DatatypeSort) record.getSort()).getConstructors()[0], args); 
         }
       }, record, val);
     } catch (Z3Exception e) {
@@ -61,8 +74,8 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
           @Override
           public Expr apply(Context ctx, Expr expr) {
               try {
-                DatatypeSort recordSort = (DatatypeSort) expr.Sort();                
-                return recordSort.Accessors()[0][index].Apply(expr);
+                DatatypeSort recordSort = (DatatypeSort) expr.getSort();                
+                return recordSort.getAccessors()[0][index].apply(expr);
               } catch (Z3Exception e) {
                 throw new TheoremProverException(e);
               }
@@ -71,10 +84,6 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
     
     Type argType = (Type) record.asRecord().getType().getElementTypes().toArray()[index];
     result.setType(argType);
-    
-    FunctionDeclarator func = FunctionDeclarator.create(
-        exprManager, SELECT_PREFIX + name, Lists.newArrayList(record.getType()), argType);
-    result.setFuncDecl(func);
     return result;
   }
 
@@ -92,7 +101,7 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
           @Override
           public Expr apply(Context ctx, Expr[] args) {
             try {
-              return ((DatatypeSort) exprManager.toZ3Type(type)).Constructors()[0].Apply(args);
+              return ((DatatypeSort) exprManager.toZ3Type(type)).getConstructors()[0].apply(args);
             } catch (Z3Exception e) {
               throw new TheoremProverException(e);
             }            
@@ -110,25 +119,9 @@ public final class RecordExpressionImpl extends ExpressionImpl implements
   	super(em, kind, expr, type, children);
   }
   
-  protected static RecordExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
-      Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
-  	Preconditions.checkArgument(type.isRecord());
-    return new RecordExpressionImpl(em, kind, expr, type.asRecord(), children);
-  }
-  
   @Override
   public RecordTypeImpl getType() {
     return (RecordTypeImpl) super.getType();
-  }
-
-  static RecordExpressionImpl valueOf(ExpressionManagerImpl exprManager,
-      ExpressionImpl expr) {
-    Preconditions.checkArgument(expr.isRecord());
-    if( expr instanceof RecordExpressionImpl ) {
-      return (RecordExpressionImpl) expr;
-    } else {
-      return new RecordExpressionImpl((ExpressionImpl) expr);
-    }
   }
 
   @Override

@@ -17,7 +17,7 @@ import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 
-public final class ArrayExpressionImpl
+final class ArrayExpressionImpl
     extends ExpressionImpl implements ArrayExpression {
   
   static ArrayExpressionImpl mkUpdate(
@@ -31,7 +31,7 @@ public final class ArrayExpressionImpl
       @Override
       public Expr apply(Context ctx, Expr arg1, Expr arg2, Expr arg3) {
         try {
-          return ctx.MkStore((ArrayExpr) arg1, arg2, arg3);
+          return ctx.mkStore((ArrayExpr) arg1, arg2, arg3);
         } catch (Z3Exception e) {
           throw new TheoremProverException(e);
         }
@@ -49,7 +49,7 @@ public final class ArrayExpressionImpl
           @Override
           public Expr apply(Context ctx, Expr left, Expr right) {
               try {
-                return ctx.MkSelect((ArrayExpr)left, right);
+                return ctx.mkSelect((ArrayExpr)left, right);
               } catch (Z3Exception e) {
                 throw new TheoremProverException(e);
               }
@@ -68,7 +68,7 @@ public final class ArrayExpressionImpl
           @Override
           public Expr apply(Context ctx, Sort type, Expr expr) {
             try {
-              return ctx.MkConstArray(type, expr);
+              return ctx.mkConstArray(type, expr);
             } catch (Z3Exception e) {
               throw new TheoremProverException(e);
             }
@@ -78,13 +78,11 @@ public final class ArrayExpressionImpl
 
   private final Type indexType;
   private final Type elementType;
-  private final ArrayType type;
 
   private ArrayExpressionImpl(ExpressionImpl expr) {
     super(expr);
-    this.type = (ArrayType) expr.getType();
-    this.indexType = type.getIndexType();
-    this.elementType = type.getElementType();
+    indexType = super.getType().asArrayType().getIndexType();
+    elementType = super.getType().asArrayType().getElementType();
   }
   
   private ArrayExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
@@ -92,9 +90,8 @@ public final class ArrayExpressionImpl
       Expression array, Expression index,
       Expression element) {
     super(exprManager, kind, strategy, array, index, element);
-    type = array.asArray().getType();
-    indexType = type.getIndexType();
-    elementType = type.getElementType();
+    indexType = index.getType();
+    elementType = element.getType();
   }
   
   private ArrayExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
@@ -103,18 +100,16 @@ public final class ArrayExpressionImpl
     super(exprManager, kind, strategy, arrayType.asArrayType().getIndexType(), expr);
     indexType = arrayType.asArrayType().getIndexType();
     elementType = arrayType.asArrayType().getElementType();
-    type = exprManager.arrayType(indexType,elementType);
   }
   
   private ArrayExpressionImpl(ExpressionManagerImpl em, Kind kind, 
       Expr expr, ArrayType type, Iterable<? extends ExpressionImpl> children) {
   	super(em, kind, expr, type, children);
-  	this.type = type;
-  	indexType = type.getIndexType();
-  	elementType = type.getElementType();
+    indexType = type.getIndexType();
+    elementType = type.getElementType();
   }
   
-  protected static ArrayExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
+  static ArrayExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
       Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
   	Preconditions.checkArgument(type.isArrayType());
     return new ArrayExpressionImpl(em, kind, expr, type.asArrayType(), children);
@@ -122,7 +117,7 @@ public final class ArrayExpressionImpl
 
   @Override
   public ArrayType getType() {
-    return type;
+    return getExpressionManager().arrayType(indexType, elementType);
   }
 
   @Override

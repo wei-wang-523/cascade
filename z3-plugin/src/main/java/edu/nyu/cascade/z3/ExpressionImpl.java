@@ -2,9 +2,8 @@ package edu.nyu.cascade.z3;
 
 import static edu.nyu.cascade.prover.Expression.Kind.APPLY;
 import static edu.nyu.cascade.prover.Expression.Kind.CONSTANT;
-import static edu.nyu.cascade.prover.Expression.Kind.IF_THEN_ELSE;
 import static edu.nyu.cascade.prover.Expression.Kind.VARIABLE;
-
+import static edu.nyu.cascade.prover.Expression.Kind.IF_THEN_ELSE;
 import xtc.tree.GNode;
 
 import java.util.List;
@@ -15,7 +14,6 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-
 import com.microsoft.z3.BoolExpr;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Context;
@@ -26,6 +24,7 @@ import com.microsoft.z3.Z3Exception;
 
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
+import edu.nyu.cascade.prover.BoundExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.FunctionExpression;
 import edu.nyu.cascade.prover.InductiveExpression;
@@ -33,7 +32,6 @@ import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.UninterpretedExpression;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.FunctionType;
@@ -51,7 +49,7 @@ import edu.nyu.cascade.util.Identifiers;
  * 
  * @author dejan, wei
  */
-public class ExpressionImpl implements Expression {
+class ExpressionImpl implements Expression {
   
   static interface BinaryConstructionStrategy {
     Expr apply(Context ctx, Expr left, Expr right) throws Z3Exception;
@@ -67,6 +65,12 @@ public class ExpressionImpl implements Expression {
   
   static interface BinderTriggersConstructionStrategy {
     Expr apply(Context ctx, Expr[] names, Expr body, 
+        Expr[] pattern, Expr[] noPatter, 
+        Symbol quantifierID, Symbol skolemID);
+  }
+  
+  static interface BinderTriggersDeBruijnConstructionStrategy {
+    Expr apply(Context ctx, Sort[] sorts, Symbol[] names, Expr body, 
         Expr[] pattern, Expr[] noPatter, 
         Symbol quantifierID, Symbol skolemID);
   }
@@ -87,60 +91,42 @@ public class ExpressionImpl implements Expression {
     Expr apply(Context ctx, Expr arg) throws Z3Exception;
   }
   
-  static interface BoundConstructionStrategy {
-    Expr apply(Context ctx, int index, Sort tyoe) throws Z3Exception;
-  }
-
   static interface VariableConstructionStrategy {
     Expr apply(Context ctx, String name, Sort type) throws Z3Exception;
+  }
+  
+  static interface BoundVariableConstructionStrategy {
+  	Expr apply(Context ctx, String name, Sort type) throws Z3Exception;
   }
   
   static interface ConstantConstructionStrategy {
     Expr apply(Context ctx, String name, Sort type) throws Z3Exception;
   }
 
-  static ExpressionImpl mkFunApply(
-      final ExpressionManagerImpl exprManager, Type fun,
+	static ExpressionImpl mkFunApply(
+      final ExpressionManagerImpl exprManager, FunctionExpression fun,
       Iterable<? extends Expression> args) {
     Preconditions.checkArgument(fun.isFunction());
-    Preconditions.checkArgument(fun.asFunction().getArity() == Iterables.size(args));
-    FunctionDeclarator funcDeclarator = (FunctionDeclarator) fun.asFunction();
+    Preconditions.checkArgument(fun.getArity() == Iterables.size(args));
+    FunctionDeclarator funcDeclarator = (FunctionDeclarator) fun;
     final FuncDecl func = funcDeclarator.getFunc();
     ExpressionImpl result = new ExpressionImpl(exprManager, APPLY,
         new NaryConstructionStrategy() {
           @Override
           public Expr apply(Context ctx, Expr[] args) {
             try {
-              return ctx.MkApp(func, args);
+              return ctx.mkApp(func, args);
             } catch (Z3Exception e) {
               throw new TheoremProverException(e);
             }
           }
         }, args);
-    result.setType(funcDeclarator.getRangeType());
-    result.setFuncDecl(funcDeclarator);
-    return result;
-  }
-  
-  static ExpressionImpl mkBound(final ExpressionManagerImpl exprManager,
-      int index, Type type) {
-    ExpressionImpl result = new ExpressionImpl(exprManager, 
-        new BoundConstructionStrategy() {
-          @Override
-          public Expr apply(Context ctx, int index, Sort sort) {
-            try {
-              return ctx.MkBound(index, sort);
-            } catch (Z3Exception e) {
-              throw new TheoremProverException(e);
-            }
-          }
-      }, index, type);
-    result.setType(type);
+    result.setType(funcDeclarator.getRange());
     return result;
   }
 
   static ExpressionImpl mkFunApply(
-      ExpressionManagerImpl exprManager, Type fun,
+      ExpressionManagerImpl exprManager, FunctionExpression fun,
       Expression firstArg,
       Expression... restArgs) {
     return mkFunApply(exprManager, fun, Lists.asList(firstArg, restArgs));
@@ -157,7 +143,7 @@ public class ExpressionImpl implements Expression {
           @Override
           public Expr apply(Context ctx, Expr arg1, Expr arg2, Expr arg3) {
             try {
-              return ctx.MkITE((BoolExpr) arg1, arg2, arg3);
+              return ctx.mkITE((BoolExpr) arg1, arg2, arg3);
             } catch (Z3Exception e) {
               throw new TheoremProverException(e);
             }
@@ -175,8 +161,14 @@ public class ExpressionImpl implements Expression {
         .size(newExprs));
     
     /* Don't bother to SUBST a constant */
-    if( CONSTANT.equals(expr.getKind()) || VARIABLE.equals(expr.getKind())) {
+    if( CONSTANT.equals(expr.getKind())) {
       return exprManager.importExpression(expr);
+    }
+    
+    if( VARIABLE.equals(expr.getKind())) {
+    	if(!Iterables.contains(oldExprs, expr)) {
+    		return exprManager.importExpression(expr);
+    	}
     }
     
     Expr[] oldArgs = Iterables.toArray(Iterables.transform(oldExprs, new Function<Expression, Expr>(){
@@ -194,31 +186,18 @@ public class ExpressionImpl implements Expression {
     }), Expr.class);
     
     try {
-      Expr res = exprManager.toZ3Expr(expr).Substitute(oldArgs, newArgs);
-//      return new ExpressionImpl(exprManager, expr.getKind(), res, expr.getType(), 
-//    		  exprManager.importExpressions(newExprs));
-      return exprManager.importType(expr.getType()).create(res, expr, 
+      Expr res = exprManager.toZ3Expr(expr).substitute(oldArgs, newArgs);
+      return exprManager.importType(expr.getType()).createExpression(res, expr, 
     		  exprManager.importExpressions(newExprs));
-      
-      /* 
-       * FIXME: slow when attached real children
-       */
-//      List<? extends ExpressionImpl> resChildren = exprManager.toExpressionList(res.Args());
-//      return new ExpressionImpl(exprManager, expr.getKind(), 
-//          res, expr.getType(), exprManager.importExpressions(resChildren));
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
     }   
   }
   
-  /**
-   * The expression manager we are using.
-   */
+  /** The expression manager we are using. */
   private final ExpressionManagerImpl exprManager;
 
-  /**
-   * The z3 expression we are using
-   */
+  /** The z3 expression we are using */
   private Expr z3_expr;
 
   /** The vector of children to return on request (read only) */
@@ -230,33 +209,39 @@ public class ExpressionImpl implements Expression {
   private boolean constant;
 
   private boolean isVariable;
+  
+  private boolean isBound;
 
   private TypeImpl type;
   
   private GNode sourceNode;
   
-  private FunctionDeclarator funcDecl;
-  
   /** The name of a variable expression. <code>null</code> if the expression
    * is not a variable. */
-  protected String name = null;
+  private String name;
 
   private final Kind kind;
-  /* Copy constructor. */
+  
+  private ExpressionImpl(ExpressionManagerImpl em, Kind kind) {
+	  this.exprManager = em;
+	  this.kind = kind;
+    init();
+	}
+
+	/* Copy constructor. */
   protected ExpressionImpl(ExpressionImpl e) {
     this.kind = e.getKind();
+    init();
     exprManager = e.getExpressionManager();
+    
     setZ3Expression(e.getZ3Expression());
     if (!e.getChildren().isEmpty()) {
       initChildren(e.getChildren());
     } else {
       children = ImmutableList.of();
     }
-    setConstant(e.isConstant());
-    setIsVariable(e.isVariable());
     setType(e.getType());
     setNode(e.getNode());
-    setFuncDecl(e.getFuncDecl());
   }
   
   /*
@@ -270,6 +255,8 @@ public class ExpressionImpl implements Expression {
   protected ExpressionImpl(final ExpressionManagerImpl exprManager, Expression expr) {
     this.exprManager = exprManager;
     this.kind = expr.getKind();
+    init();
+    
     children = ImmutableList.copyOf(Lists.transform(expr.getChildren(),
         new Function<Expression, ExpressionImpl>() {
           @Override
@@ -277,17 +264,10 @@ public class ExpressionImpl implements Expression {
             return exprManager.importExpression(from);
           }
         }));
-    setConstant(expr.isConstant());
-    setIsVariable(expr.isVariable());
     setType(expr.getType());
     setNode(expr.getNode());
   }
 
-  private ExpressionImpl(ExpressionManagerImpl em, Kind kind) {
-    this.exprManager = em;
-    this.kind = kind;
-  }
-  
   protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
       ArrayStoreAllConstructionStrategy strategy, Type arrayType,
       Expression expr) {
@@ -342,7 +322,7 @@ public class ExpressionImpl implements Expression {
       FuncApplyConstructionStrategy strategy,
       FunctionDeclarator funcDecl, Expression var) 
            {
-    this(em, APPLY, funcDecl.getRangeType());
+    this(em, APPLY, funcDecl.getRange());
     init(var);
     Expr[] exprs = convertChildrenToExpr();
 
@@ -364,7 +344,7 @@ public class ExpressionImpl implements Expression {
       FuncApplyConstructionStrategy strategy,
       FunctionDeclarator funcDecl, Iterable<? extends Expression> vars) 
            {
-    this(em, APPLY, funcDecl.getRangeType());
+    this(em, APPLY, funcDecl.getRange());
     init(vars);
     Expr[] exprs = convertChildrenToExpr();
 
@@ -397,48 +377,103 @@ public class ExpressionImpl implements Expression {
 
     Expr z3_body = exprs[0];
     
-    try {
-      final Context z3_ctx = getExpressionManager().getTheoremProver().getZ3Context();
-
-      // New list for the z3 variables
+    try {      
+    	Function<Expression, Expr> toZ3Expr =  new Function<Expression, Expr>(){
+        @Override
+        public Expr apply(Expression expr) {
+          return em.toZ3Expr(expr);
+        }
+      };
+    	
+      final Context z3_ctx = em.getTheoremProver().getZ3Context();
+      
       Expr[] z3_vars = null; 
       if(vars != null)
-        z3_vars = Iterables.toArray(
-          Iterables.transform(vars, new Function<Expression, Expr>(){
-            @Override
-            public Expr apply(Expression expr) {
-              return getExpressionManager().toZ3Expr(expr);
-            }
-          }), Expr.class);
+        z3_vars = Iterables.toArray(Iterables.transform(vars, toZ3Expr), Expr.class);
       
       Expr[] z3_pattern = null; 
       if(patterns != null)
-        z3_pattern = Iterables.toArray(
-          Iterables.transform(patterns, new Function<Expression, Expr>(){
-            @Override
-            public Expr apply(Expression expr) {
-              return getExpressionManager().toZ3Expr(expr);
-            }
-          }), Expr.class);
+        z3_pattern = Iterables.toArray( Iterables.transform(patterns, toZ3Expr), Expr.class);
       
       Expr[] z3_no_pattern = null;
       if(noPatterns != null)
-        z3_no_pattern = Iterables.toArray(
-          Iterables.transform(noPatterns, new Function<Expression, Expr>(){
-            @Override
-            public Expr apply(Expression expr) {
-              return getExpressionManager().toZ3Expr(expr);
-            }
-          }), Expr.class);
+        z3_no_pattern = Iterables.toArray(Iterables.transform(noPatterns, toZ3Expr), Expr.class);
       
-      String quantifierID = Identifiers.uniquify("Q").replace("_", "");
-      String skolemID = Identifiers.uniquify("sk").replace("_", "");
-      
-      Symbol z3_qid = z3_ctx.MkSymbol(quantifierID);
-      Symbol z3_skid = z3_ctx.MkSymbol(skolemID);
+//      String quantifierID = Identifiers.uniquify("Q").replace("_", "");
+//      String skolemID = Identifiers.uniquify("skid").replace("_", "");
+//      
+//      Symbol z3_qid = z3_ctx.mkSymbol(quantifierID);
+//      Symbol z3_skid = z3_ctx.mkSymbol(skolemID);
 
+      // Don't set quantifier id and skolem id
       setZ3Expression(strategy.apply(z3_ctx, z3_vars, z3_body, z3_pattern, 
-          z3_no_pattern, z3_qid, z3_skid));
+          z3_no_pattern, null, null));
+    } catch (Z3Exception e) {
+      throw new TheoremProverException(e);
+    }
+  }
+  
+  protected ExpressionImpl(final ExpressionManagerImpl em, Kind kind,
+      BinderTriggersDeBruijnConstructionStrategy strategy,
+      Iterable<? extends Expression> vars, 
+      Expression body, 
+      Iterable<? extends Expression> patterns, 
+      Iterable<? extends Expression> noPatterns) 
+           {
+    this(em, kind);
+    init(body);
+    Expr[] exprs = convertChildrenToExpr();
+
+    assert (exprs.length == 1);
+
+    Expr z3_body = exprs[0];
+    
+    try {    	
+      final Context z3_ctx = em.getTheoremProver().getZ3Context();
+      
+      Symbol[] z3_names = null;
+      Sort[] z3_sorts = null;
+      
+      if(vars != null) {
+      	z3_names = Iterables.toArray(Iterables.transform(vars, new Function<Expression, Symbol>(){
+          @Override
+          public Symbol apply(Expression expr) {
+            return ((BoundExpressionImpl)expr.asBound()).getSymbol();
+          }
+        }), Symbol.class);
+      
+      	z3_sorts = Iterables.toArray(Iterables.transform(vars, new Function<Expression, Sort>(){
+          @Override
+          public Sort apply(Expression expr) {
+            return em.toZ3Type(expr.getType());
+          }
+        }), Sort.class);
+      }
+      
+    	Function<Expression, Expr> toZ3Expr =  new Function<Expression, Expr>(){
+        @Override
+        public Expr apply(Expression expr) {
+          return em.toZ3Expr(expr);
+        }
+      };
+      
+      Expr[] z3_pattern = null;
+      if(patterns != null)
+        z3_pattern = Iterables.toArray( Iterables.transform(patterns, toZ3Expr), Expr.class);
+      
+      Expr[] z3_no_pattern = null;
+      if(noPatterns != null)
+        z3_no_pattern = Iterables.toArray(Iterables.transform(noPatterns, toZ3Expr), Expr.class);
+
+//      String quantifierID = Identifiers.uniquify("Q").replace("_", "");
+//      String skolemID = Identifiers.uniquify("skid").replace("_", "");
+//      
+//      Symbol z3_qid = z3_ctx.mkSymbol(quantifierID);
+//      Symbol z3_skid = z3_ctx.mkSymbol(skolemID);
+
+      // Don't set quantifier id and skolem id
+      setZ3Expression(strategy.apply(z3_ctx, z3_sorts, z3_names, z3_body, z3_pattern, 
+          z3_no_pattern, null, null));
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
     }
@@ -466,7 +501,6 @@ public class ExpressionImpl implements Expression {
   protected ExpressionImpl(ExpressionManagerImpl em, Kind kind, Type type) {
     this(em, kind);
     setType(type);
-    init();
   }
 
   protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
@@ -485,14 +519,11 @@ public class ExpressionImpl implements Expression {
       NaryConstructionStrategy strategy,
       Iterable<? extends Expression> subExpressions)  {
     this(em, kind);
-//    checkArgument(!Iterables.isEmpty(subExpressions));
     init(subExpressions);
     Expr[] exprs = convertChildrenToExpr();
 
     try {
-      // Get the z3 expression manager
       Context z3_ctx = exprManager.getTheoremProver().getZ3Context();
-      // Create the new expression
       setZ3Expression(strategy.apply(z3_ctx, exprs));
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
@@ -502,13 +533,10 @@ public class ExpressionImpl implements Expression {
   protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
       NullaryConstructionStrategy strategy)  {
     this(em, kind);
-    init();
 
     try {
       // Get the z3 expression manager
       Context z3_ctx = exprManager.getTheoremProver().getZ3Context();
-      
-      // Create the new expression
       setZ3Expression(strategy.apply(z3_ctx));
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
@@ -535,7 +563,11 @@ public class ExpressionImpl implements Expression {
       Context z3_ctx = exprManager.getTheoremProver().getZ3Context();
       
       // Create the new expression
-      setZ3Expression(strategy.apply(z3_ctx, expr1, expr2, expr3));
+      Expr expr = strategy.apply(z3_ctx, expr1, expr2, expr3);
+      setZ3Expression(expr);
+      
+      Sort sort = expr.getSort();
+      setType(exprManager.toType(sort));
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
     }
@@ -578,8 +610,6 @@ public class ExpressionImpl implements Expression {
     String actualName = uniquify ? Identifiers.uniquify(name) : name;
 
     this.name = actualName;
-    setConstant(false);
-    setIsVariable(true);
 
     try {
       // Get the z3 expression manager
@@ -589,6 +619,23 @@ public class ExpressionImpl implements Expression {
       setZ3Expression(strategy.apply(z3_ctx, actualName, type.getZ3Type()));
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
+    }
+  }
+  
+  protected ExpressionImpl(ExpressionManagerImpl em,
+      BoundVariableConstructionStrategy strategy, String name, Type itype,
+      boolean uniquify) {
+    this(em, Kind.BOUND, itype);
+    assert( type != null );
+
+    String actualName = uniquify ? Identifiers.uniquify(name) : name;
+    this.name = actualName;
+    
+    try {
+    	Context z3_ctx = em.getTheoremProver().getZ3Context();
+    	setZ3Expression(strategy.apply(z3_ctx, actualName, type.getZ3Type()));
+    } catch (Z3Exception e) {
+    	throw new TheoremProverException(e);
     }
   }
   
@@ -601,8 +648,6 @@ public class ExpressionImpl implements Expression {
     String actualName = uniquify ? Identifiers.uniquify(name) : name;
 
     this.name = actualName;
-    setConstant(true);
-    setIsVariable(false);
 
     try {
       // Get the z3 expression manager
@@ -614,183 +659,49 @@ public class ExpressionImpl implements Expression {
       throw new TheoremProverException(e);
     }
   }
-  
-  protected ExpressionImpl(ExpressionManagerImpl em,
-      BoundConstructionStrategy strategy, int index, Type itype)  {
-    this(em, Kind.BOUND, itype);
-    assert( type != null );
-    assert (exprManager != null);
 
-    try {
-      // Get the z3 expression manager
-      Context z3_ctx = exprManager.getTheoremProver().getZ3Context();
-      
-      // Create the new expression
-      setZ3Expression(strategy.apply(z3_ctx, index, type.getZ3Type()));
-    } catch (Z3Exception e) {
-      throw new TheoremProverException(e);
-    }
-  }
-
-  @Override
-  public BitVectorExpressionImpl asBitVector() {
-    Preconditions.checkState( isBitVector() );
-    return getExpressionManager().asBitVector(this);
-  }
-
-  @Override
-  public BooleanExpressionImpl asBooleanExpression() {
-    Preconditions.checkState( isBoolean() );
-    return getExpressionManager().asBooleanExpression((ExpressionImpl) this);
-  }
-
-  @Override
-  public IntegerExpressionImpl asIntegerExpression() {
-    Preconditions.checkState( isInteger() );
-    return getExpressionManager().asIntegerExpression(this);
-  }
-
-  @Override
-  public IntegerVariableImpl asIntegerVariable() {
-    Preconditions.checkState( isInteger() && isVariable() );
-      return getExpressionManager().asIntegerVariable(this);
-  }
-
-  @Override
-  public RationalExpressionImpl asRationalExpression() {
-    Preconditions.checkState( isRational() );
-      return getExpressionManager().asRationalExpression(this);
-  }
-
-  @Override
-  public RationalVariableImpl asRationalVariable() {
-    Preconditions.checkState( isRational() && isVariable() );
-      return getExpressionManager().asRationalVariable(this);
-  }
-
-  @Override
-  public FunctionExpression asFunctionExpression() {
-    Preconditions.checkState( isFunction() );
-      return getExpressionManager().asFunctionExpression(this);
-  }
-
-  @Override
-  public VariableExpressionImpl asVariable() {
-    Preconditions.checkState(isVariable());
-    return getExpressionManager().asVariable(this);
-  }
-
-  private Expr[] convertChildrenToExpr() {
-    Expr[] res = new Expr[children.size()];
-    
-    for (int i=0; i < res.length; i++) {
-      res[i] = children.get(i).getZ3Expression();
-    }
-    return res;
-  }
-
-  @Override
-  public BooleanExpressionImpl eq(Expression e) {
-  	ExpressionManagerImpl exprManager = getExpressionManager();
-    return exprManager.asBooleanExpression(exprManager.eq(this, e));
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if (obj instanceof Expression) {
-      return getZ3Expression().equals(
-          (getExpressionManager().importExpression((Expression) obj))
-              .getZ3Expression());
-      
-    }
-    return super.equals(obj);
-  }
-
-  @Override
-  public int getArity() {
-    return children.size();
-  }
-
-  @Override
-  public Expression getChild(int i) {
-    Preconditions.checkArgument(i >= 0 && i < getArity());
-    return getChildren().get(i);
-  }
-
-  @Override
-  public ImmutableList<? extends ExpressionImpl> getChildren() {
-    return children;
-  }
-  
-  @Override
-  public FunctionType getFuncDecl() {
-    return funcDecl;
-  }
-
-  /**
-   * Returns the z3 expression we are using
-   * 
-   * @return the expression
-   */
-  public Expr getZ3Expression() {
-    // FIXME: User could mutate Expr and cause it to get out of sync
-    // with kind, children, etc.
+  Expr getZ3Expression() {
     return z3_expr;
   }
-
-  /**
-   * Returns the expression manager.
-   */
-  @Override
-  public ExpressionManagerImpl getExpressionManager() {
-    return exprManager;
-  }
-
-/*  private void initChildren(IExpression first, IExpression... rest) {
-    initChildren(Lists.asList(first, rest));
-  }
-*/
-  /*
-   * public Expression simplify() { Context ctx =
-   * exprManager.getTheoremProver().getValidityChecker(); try { Expr z3_expr =
-   * em.simplify(getZ3Expression()); return new
-   * Expression(exprManager,z3_expr); } catch (Exception e) { throw new
-   * TheoremProverException(e); } }
-   */
-
-  @Override
-  public Kind getKind() {
-    return kind;
-  }
-
-  protected String getName() { return name; }
-
-  @Override
-  public Type getType() {
-    return type;
-  }
   
-  @Override
-  public GNode getNode() {
-    return sourceNode;
-  }
-  
-  @Override
-  public Expression setNode(GNode node) {
-    this.sourceNode = node;
-    return this;
-  }
-  
-  @Override
-  public int hashCode() {
-    return getZ3Expression().hashCode();
-  }
+  public String getName() { return name; }
 
-  private void init() {
+	private void setConstant(boolean constant) {
+	  this.constant = constant;
+	}
+
+	private void setConstantFromChildren() {
+	  setConstant(Iterables.all(children, new Predicate<ExpressionImpl>() {
+	    public boolean apply(ExpressionImpl expr) {
+	      return expr.isConstant();
+	    }
+	  }));
+	}
+	
+	private void setIsVariable(boolean b) {
+	  this.isVariable = b;
+	}
+	
+	private void setIsBound(boolean b) {
+	  this.isBound = b;
+	}
+
+	void setZ3Expression(Expr z3_expr) {
+	  this.z3_expr = z3_expr;
+	}
+
+	void setName(String name) { this.name = name; }
+
+	void setType(Type type) {
+	  this.type = getExpressionManager().importType(type);
+	}
+
+	private void init() {
     z3_expr = null;
     children = ImmutableList.of();
-    setConstant(false);
-    setIsVariable(false);
+    setConstant(kind.equals(Kind.CONSTANT));
+    setIsVariable(kind.equals(Kind.VARIABLE));
+    setIsBound(kind.equals(Kind.BOUND));
   }
 
   private void init(Expression first, Expression... rest) {
@@ -799,11 +710,10 @@ public class ExpressionImpl implements Expression {
 
   private void init(Iterable<? extends Expression> subExpressions) {
     initChildren(subExpressions);
-    // setExpressionManagerFromChildren();
     setConstantFromChildren();
   }
 
-  protected void initChildren(Iterable<? extends Expression> subExpressions) {
+  private void initChildren(Iterable<? extends Expression> subExpressions) {
     /*
      * TODO: Is there a reason we won't take an empty Iterable here? See
      * BooleanExpression for an example of why this is annoying
@@ -812,30 +722,128 @@ public class ExpressionImpl implements Expression {
      * the ExpressionManager in the constructors.
      */
 //    checkArgument(!Iterables.isEmpty(subExpressions));
-    children = new ImmutableList.Builder<ExpressionImpl>().addAll(getExpressionManager().importExpressions(
-        subExpressions)).build();
+    children = new ImmutableList.Builder<ExpressionImpl>().addAll(
+    		getExpressionManager().importExpressions(subExpressions)).build();
   }
 
-  /*
-   * protected void setExpressionManagerFromChildren() {
-   * Preconditions.checkState( children.size() > 0 );
-   * 
-   * // element 0 is guaranteed to exist, from the assertion above, // and to
-   * have a Z3 ExpressionManager, from toExpression. Expression firstExpr =
-   * children.get(0); final IExpressionManager em =
-   * firstExpr.getExpressionManager();
-   * 
-   * boolean emsMatch = Iterables.all(children, new Predicate<Expression>() {
-   * public boolean apply(Expression expr) { return
-   * expr.getExpressionManager() == em; }});
-   * 
-   * if (!emsMatch || !(em instanceof ExpressionManager)) { throw new
-   * TheoremProverException("Expression manager mismatch."); }
-   * 
-   * exprManager = (ExpressionManager) em; }
-   */
+  private Expr[] convertChildrenToExpr() {
+	  Expr[] res = new Expr[children.size()];
+	  
+	  for (int i=0; i < res.length; i++) {
+	    res[i] = children.get(i).getZ3Expression();
+	  }
+	  return res;
+	}
 
-  @Override
+	@Override
+	public BitVectorExpressionImpl asBitVector() {
+	  Preconditions.checkState( isBitVector() );
+	  return getExpressionManager().asBitVector(this);
+	}
+
+	@Override
+	public BooleanExpressionImpl asBooleanExpression() {
+	  Preconditions.checkState( isBoolean() );
+	  return getExpressionManager().asBooleanExpression((ExpressionImpl) this);
+	}
+
+	@Override
+	public IntegerExpressionImpl asIntegerExpression() {
+	  Preconditions.checkState( isInteger() );
+	  return getExpressionManager().asIntegerExpression(this);
+	}
+
+	@Override
+	public RationalExpressionImpl asRationalExpression() {
+	  Preconditions.checkState( isRational() );
+	    return getExpressionManager().asRationalExpression(this);
+	}
+
+	@Override
+	public FunctionExpression asFunctionExpression() {
+	  Preconditions.checkState( isFunction() );
+	    return getExpressionManager().asFunctionExpression(this);
+	}
+
+	@Override
+	public VariableExpressionImpl asVariable() {
+	  Preconditions.checkState(isVariable());
+	  return getExpressionManager().asVariable(this);
+	}
+
+	@Override
+	public BoundExpression asBound() {
+	  Preconditions.checkState(isBound());
+	  return getExpressionManager().asBoundExpression(this);
+	}
+
+	@Override
+	public BooleanExpressionImpl eq(Expression e) {
+		ExpressionManagerImpl exprManager = getExpressionManager();
+	  return exprManager.asBooleanExpression(exprManager.eq(this, e));
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		Preconditions.checkNotNull(z3_expr);
+	  if (obj instanceof Expression) {
+	  	Expr z3_expr_that = getExpressionManager()
+	  			.importExpression((Expression) obj).getZ3Expression();
+	  	if(z3_expr_that == null) return false;
+	    return z3_expr.equals(z3_expr_that);
+	    
+	  }
+	  return super.equals(obj);
+	}
+
+	@Override
+	public int getArity() {
+	  return children.size();
+	}
+
+	@Override
+	public Expression getChild(int i) {
+	  Preconditions.checkArgument(i >= 0 && i < getArity());
+	  return getChildren().get(i);
+	}
+
+	@Override
+	public ImmutableList<? extends ExpressionImpl> getChildren() {
+	  return children;
+	}
+
+	@Override
+	public ExpressionManagerImpl getExpressionManager() {
+	  return exprManager;
+	}
+
+	@Override
+	public Kind getKind() {
+	  return kind;
+	}
+
+	@Override
+	public Type getType() {
+	  return type;
+	}
+
+	@Override
+	public GNode getNode() {
+	  return sourceNode;
+	}
+
+	@Override
+	public Expression setNode(GNode node) {
+	  this.sourceNode = node;
+	  return this;
+	}
+
+	@Override
+	public int hashCode() {
+	  return getZ3Expression().hashCode();
+	}
+
+	@Override
   public final boolean isConstant() {
     return constant;
   }
@@ -845,68 +853,14 @@ public class ExpressionImpl implements Expression {
     return isVariable;
   }
 
-/*  private Kind kindOfZ3Expr(Expr e) {
-    if (e.isMinus()) {
-      return MINUS;
-    } else if (e.isMult()) {
-      return MULT;
-    } else if (e.isPlus()) {
-      return PLUS;
-    } else if (e.isPow()) {
-      return POW;
-    } else if (e.isUminus()) {
-      return UNARY_MINUS;
-    } else if (e.isVar()) {
-      return VARIABLE;
-    } else
-      throw new IllegalArgumentException("Unsupported kind (this is a bug).");
-  }
-*/
-  
   @Override
-  public FunctionExpression lambda(VariableExpression var) {
-    return getType().lambda(var, this);
-  }
-  
-  @Override
-  public FunctionExpression lambda(
-      Iterable<? extends VariableExpression> vars) {
-    return getType().lambda(vars, this);
-  }
+	public final boolean isBound() {
+	  return isBound;
+	}
 
-  @Override
+	@Override
   public BooleanExpression neq(Expression e) {
     return getExpressionManager().neq(this, e);
-  }
-
-  protected void setConstant(boolean constant) {
-    this.constant = constant;
-  }
-
-  protected void setConstantFromChildren() {
-    setConstant(Iterables.all(children, new Predicate<ExpressionImpl>() {
-      public boolean apply(ExpressionImpl expr) {
-        return expr.isConstant();
-      }
-    }));
-  }
-
-  protected void setZ3Expression(Expr z3_expr) {
-    this.z3_expr = z3_expr;
-  }
-
-  protected void setIsVariable(boolean b) {
-    this.isVariable = b;
-  }
-
-  protected void setName(String name) { this.name = name; }
-
-  protected void setType(Type type) {
-    this.type = getExpressionManager().importType(type);
-  }
-  
-  protected void setFuncDecl(FunctionType funcDecl) {
-    this.funcDecl = (FunctionDeclarator) funcDecl;
   }
 
   @Override
@@ -921,7 +875,19 @@ public class ExpressionImpl implements Expression {
   @Override
   public Expression subst(Iterable<? extends Expression> oldExprs,
       Iterable<? extends Expression> newExprs) {
-    return mkSubst(getExpressionManager(), this, oldExprs, newExprs);
+    Expression res = mkSubst(getExpressionManager(), this, oldExprs, newExprs);
+    res.setNode(getNode());
+    return res;
+  }
+  
+  @Override
+  public Expression simplify() {
+  	try {
+  		Expr z3_expr_simp = z3_expr.simplify();
+  		return new ExpressionImpl(getExpressionManager(), kind, z3_expr_simp, type);
+  	} catch (Z3Exception e) {
+  		throw new TheoremProverException(e);
+  	}
   }
 
   @Override

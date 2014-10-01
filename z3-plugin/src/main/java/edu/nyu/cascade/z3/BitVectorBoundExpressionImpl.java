@@ -9,16 +9,25 @@ import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 
-final class BitVectorVariableImpl extends VariableExpressionImpl
-    implements BitVectorExpression {
+final class BitVectorBoundExpressionImpl extends BoundExpressionImpl implements BitVectorExpression {
 
-  private BitVectorVariableImpl(ExpressionManagerImpl em, String name, BitVectorTypeImpl type, boolean fresh) {
+  private BitVectorBoundExpressionImpl(ExpressionManagerImpl em, String name, BitVectorTypeImpl type, boolean fresh) {
   	super(em,name,type,fresh);  
   }
   
-  static BitVectorVariableImpl create(ExpressionManagerImpl em, 
+  private BitVectorBoundExpressionImpl(ExpressionManagerImpl em, String name, int index, 
+  		BitVectorTypeImpl type, boolean fresh) {
+  	super(em,name,index,type,fresh);  
+  }
+  
+  static BitVectorBoundExpressionImpl create(ExpressionManagerImpl em, 
   		String name, BitVectorTypeImpl type, boolean fresh) {
-  	return new BitVectorVariableImpl (em,name,type,fresh);  
+  	return new BitVectorBoundExpressionImpl (em,name,type,fresh);  
+  }
+  
+  static BitVectorBoundExpressionImpl create(ExpressionManagerImpl em, 
+  		String name, int index, BitVectorTypeImpl type, boolean fresh) {
+  	return new BitVectorBoundExpressionImpl (em,name,index,type,fresh);  
   }
 
   @Override

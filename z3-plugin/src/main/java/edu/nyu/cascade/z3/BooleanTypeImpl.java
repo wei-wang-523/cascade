@@ -3,18 +3,19 @@ package edu.nyu.cascade.z3;
 import java.util.Arrays;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Z3Exception;
 
+import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.BooleanType;
 
-public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
+final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   @Override
   public BooleanExpressionImpl importExpression(
       Expression expression) {
@@ -30,11 +31,10 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
     }
   }
 
-
-  protected BooleanTypeImpl(ExpressionManagerImpl expressionManager) {
+  BooleanTypeImpl(ExpressionManagerImpl expressionManager) {
     super(expressionManager);
     try {
-      setZ3Type(expressionManager.getTheoremProver().getZ3Context().MkBoolSort());
+      setZ3Type(expressionManager.getTheoremProver().getZ3Context().mkBoolSort());
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
     }
@@ -136,90 +136,6 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   }
 
   @Override
-  public BooleanExpressionImpl exists(
-      Iterable<? extends Expression> vars,
-      Expression body) {
-    return BooleanExpressionImpl.mkExists(getExpressionManager(),vars, body, null, null);
-  }
-  
-  @Override
-  public BooleanExpressionImpl exists(
-      Iterable<? extends Expression> vars,
-      Expression body,
-      Iterable<? extends Expression> triggers) {
-    return BooleanExpressionImpl.mkExists(getExpressionManager(),vars, body, triggers, null);
-  }
-  
-  @Override
-  public BooleanExpressionImpl exists(
-      Iterable<? extends Expression> vars,
-      Expression body,
-      Iterable<? extends Expression> triggers,
-      Iterable<? extends Expression> noTriggers) {
-    return BooleanExpressionImpl.mkExists(getExpressionManager(),vars, body, triggers, noTriggers);
-  }
-
-  @Override
-  public BooleanExpressionImpl forall(
-      Iterable<? extends Expression> vars,
-      Expression body) {
-    return BooleanExpressionImpl.mkForall(getExpressionManager(),vars, body, null, null);
-  }
-  
-  @Override
-  public BooleanExpressionImpl forall(
-      Iterable<? extends Expression> vars,
-      Expression body,
-      Iterable<? extends Expression> triggers) {
-    return BooleanExpressionImpl.mkForall(getExpressionManager(),vars, body, triggers, null);
-  }
-  
-  @Override
-  public BooleanExpressionImpl forall(
-      Iterable<? extends Expression> vars,
-      Expression body,
-      Iterable<? extends Expression> triggers,
-      Iterable<? extends Expression> noTriggers) {
-    return BooleanExpressionImpl.mkForall(getExpressionManager(),vars, body, triggers, noTriggers);
-  }
-  
-  @Override
-  public BooleanExpressionImpl rewriteRule(Iterable<? extends VariableExpression> vars, 
-      Expression guard, Expression rule) {
-    return BooleanExpressionImpl.mkRewriteRule(getExpressionManager(), vars, guard, rule);
-  }
-  
-  @Override
-  public BooleanExpressionImpl rrRewrite(Expression head, Expression body, Iterable<? extends Expression> triggers) {
-    return BooleanExpressionImpl.mkRRRewrite(getExpressionManager(), head, body, triggers);
-  }
-  
-  @Override
-  public BooleanExpressionImpl rrRewrite(Expression head, Expression body) {
-    return BooleanExpressionImpl.mkRRRewrite(getExpressionManager(), head, body);
-  }
-  
-  @Override
-  public BooleanExpressionImpl rrReduction(Expression head, Expression body, Iterable<? extends Expression> triggers) {
-    return BooleanExpressionImpl.mkRRReduction(getExpressionManager(), head, body, triggers);
-  }
-  
-  @Override
-  public BooleanExpressionImpl rrReduction(Expression head, Expression body) {
-    return BooleanExpressionImpl.mkRRReduction(getExpressionManager(), head, body);
-  }
-  
-  @Override
-  public BooleanExpressionImpl rrDeduction(Expression head, Expression body, Iterable<? extends Expression> triggers) {
-    return BooleanExpressionImpl.mkRRDeduction(getExpressionManager(), head, body, triggers);
-  }
-  
-  @Override
-  public BooleanExpressionImpl rrDeduction(Expression head, Expression body) {
-    return BooleanExpressionImpl.mkRRDeduction(getExpressionManager(), head, body);
-  }
-
-  @Override
   public void addTrigger(Expression e, Expression p) {
     BooleanExpressionImpl e2 = BooleanExpressionImpl.valueOf(getExpressionManager(),e);
     e2.addTrigger(p);
@@ -247,8 +163,13 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   }
 
   @Override
-  public BooleanVariableImpl boundVariable(String name, boolean fresh) {
-    throw new UnsupportedOperationException("bound variable is not supported in z3.");
+  public BooleanBoundExpressionImpl boundVar(String name, boolean fresh) {
+    return BooleanBoundExpressionImpl.create(getExpressionManager(), name, fresh);
+  }
+  
+  @Override
+  public BooleanBoundExpressionImpl boundExpression(String name, int index, boolean fresh) {
+  	return BooleanBoundExpressionImpl.create(getExpressionManager(), name, index, fresh);
   }
   
   @Override
@@ -264,14 +185,131 @@ public final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   }
   
   @Override
-  public  BooleanExpressionImpl eq(Expression left, Expression right)  {
+  public BooleanExpressionImpl eq(Expression left, Expression right)  {
     return BooleanExpressionImpl.mkEq(getExpressionManager(), left, right);
   }
   
 	@Override
-	protected BooleanExpressionImpl create(Expr res, Expression oldExpr,
+	BooleanExpressionImpl createExpression(Expr res, Expression oldExpr,
 			Iterable<? extends ExpressionImpl> children) {
 		return BooleanExpressionImpl.create(getExpressionManager(), 
 				oldExpr.getKind(), res, oldExpr.getType(), children);
 	}
+
+	@Override
+  public BooleanExpression exists(Iterable<? extends Expression> vars,
+      Expression body) {
+	  return exists(vars, body, null);
+  }
+
+	@Override
+  public BooleanExpression exists(Iterable<? extends Expression> vars,
+      Expression body, Iterable<? extends Expression> triggers) {
+		 return exists(vars, body, triggers, null);
+  }
+
+	@Override
+  public BooleanExpression exists(Iterable<? extends Expression> vars,
+      Expression body, Iterable<? extends Expression> triggers,
+      Iterable<? extends Expression> noTriggers) {
+		final ExpressionManagerImpl em = getExpressionManager();
+		
+		boolean isVar = Iterables.all(vars, new Predicate<Expression>(){
+			@Override
+      public boolean apply(Expression var) {
+				try {
+	        return em.toZ3Expr(var).isVar();
+        } catch (Z3Exception e) {
+        	throw new TheoremProverException(e);
+        }
+      }
+		});
+		
+		if(isVar)	
+			return BooleanExpressionImpl.mkExists(em, vars, body, triggers, noTriggers);
+		else
+			return BooleanExpressionImpl.mkExistsConst(em, vars, body, triggers, noTriggers);			
+  }
+
+	@Override
+  public BooleanExpression forall(Iterable<? extends Expression> vars,
+      Expression body) {
+	  return forall(vars, body, null);
+  }
+
+	@Override
+  public BooleanExpression forall(Iterable<? extends Expression> vars, 
+  		Expression body, Iterable<? extends Expression> triggers) {
+ 		 return forall(vars, body, triggers, null);
+  }
+
+	@Override
+  public BooleanExpression forall(Iterable<? extends Expression> vars,
+      Expression body, Iterable<? extends Expression> triggers,
+      Iterable<? extends Expression> noTriggers) {
+		final ExpressionManagerImpl em = getExpressionManager();
+		
+		boolean isVar = Iterables.all(vars, new Predicate<Expression>(){
+			@Override
+      public boolean apply(Expression var) {
+				try {
+	        return em.toZ3Expr(var).isVar();
+        } catch (Z3Exception e) {
+        	throw new TheoremProverException(e);
+        }
+      }
+		});
+		
+		if(isVar)	
+			return BooleanExpressionImpl.mkForall(em, vars, body, triggers, noTriggers);
+		else 
+			return BooleanExpressionImpl.mkForallConst(em, vars, body, triggers, noTriggers);
+  }
+
+	@Override
+  public BooleanExpression rewriteRule(
+      Iterable<? extends Expression> vars, Expression guard,
+      Expression body) {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
+
+	@Override
+  public BooleanExpression rrRewrite(Expression head, Expression body,
+      Iterable<? extends Expression> triggers) {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
+
+	@Override
+  public BooleanExpression rrRewrite(Expression head, Expression body) {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
+
+	@Override
+  public BooleanExpression rrReduction(Expression head, Expression body,
+      Iterable<? extends Expression> triggers) {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
+
+	@Override
+  public BooleanExpression rrReduction(Expression head, Expression body) {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
+
+	@Override
+  public BooleanExpression rrDeduction(Expression head, Expression body,
+      Iterable<? extends Expression> triggers) {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
+
+	@Override
+  public BooleanExpression rrDeduction(Expression head, Expression body) {
+	  // TODO Auto-generated method stub
+	  return null;
+  }
 }

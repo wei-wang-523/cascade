@@ -24,7 +24,7 @@ import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.IOUtils;
 
-public final class TupleTypeImpl extends TypeImpl implements TupleType {
+final class TupleTypeImpl extends TypeImpl implements TupleType {
   
   private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, TupleTypeImpl>> typeCache = CacheBuilder
       .newBuilder().build(
@@ -64,7 +64,14 @@ public final class TupleTypeImpl extends TypeImpl implements TupleType {
     }
   }
 
-  static TupleTypeImpl valueOf(ExpressionManagerImpl em, Type t) {
+  @Override
+	TupleExpressionImpl createExpression(Expr res, Expression oldExpr,
+			Iterable<? extends ExpressionImpl> children) {
+		return TupleExpressionImpl.create(getExpressionManager(), 
+				oldExpr.getKind(), res, oldExpr.getType(), children);
+	}
+
+	static TupleTypeImpl valueOf(ExpressionManagerImpl em, Type t) {
     if (t instanceof TupleTypeImpl) {
       return (TupleTypeImpl) t;
     } else {
@@ -85,15 +92,15 @@ public final class TupleTypeImpl extends TypeImpl implements TupleType {
     
     try {
       Context z3_context = em.getTheoremProver().getZ3Context();
-      Symbol tname = z3_context.MkSymbol(typeName);
+      Symbol tname = z3_context.mkSymbol(typeName);
       Sort[] z3Types = new Sort[Iterables.size(types)];
       Symbol[] symbols = new Symbol[Iterables.size(types)];
       for (int i = 0; i < Iterables.size(types); i++) {
         z3Types[i] = em.toZ3Type(Iterables.get(types, i));
-        symbols[i] = z3_context.MkSymbol(typeName + "@" + i);
+        symbols[i] = z3_context.mkSymbol(typeName + "@" + i);
         sb.append(" \n                             (" + symbols[i] + " " + z3Types[i] + ")");
       }
-      setZ3Type(z3_context.MkTupleSort(tname, symbols, z3Types));
+      setZ3Type(z3_context.mkTupleSort(tname, symbols, z3Types));
       sb.append(")))");
       em.addToTypeCache(this);
       if(IOUtils.debugEnabled())
@@ -139,11 +146,6 @@ public final class TupleTypeImpl extends TypeImpl implements TupleType {
     return typeName;
   }
 
-  @Override
-  public VariableExpressionImpl boundVariable(String name, boolean fresh) {
-    throw new UnsupportedOperationException("bound variable is not supported in z3.");
-  }
-
 	@Override
   public Expression index(Expression tuple, int index) {
 	  return TupleExpressionImpl.mkTupleIndex(getExpressionManager(), tuple, index);
@@ -155,9 +157,12 @@ public final class TupleTypeImpl extends TypeImpl implements TupleType {
   }
 
 	@Override
-	protected TupleExpressionImpl create(Expr res, Expression oldExpr,
-			Iterable<? extends ExpressionImpl> children) {
-		return TupleExpressionImpl.create(getExpressionManager(), 
-				oldExpr.getKind(), res, oldExpr.getType(), children);
-	}
+  public TupleBoundExpressionImpl boundVar(String name, boolean fresh) {
+	  return TupleBoundExpressionImpl.create(getExpressionManager(), name, this, fresh);
+  }
+	
+	@Override
+  public TupleBoundExpressionImpl boundExpression(String name, int index, boolean fresh) {
+	  return TupleBoundExpressionImpl.create(getExpressionManager(), name, index, this, fresh);
+  }
 }

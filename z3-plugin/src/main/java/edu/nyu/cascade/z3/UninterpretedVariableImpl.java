@@ -1,11 +1,11 @@
 package edu.nyu.cascade.z3;
 
-import edu.nyu.cascade.prover.UninterpretedVariableExpression;
+import edu.nyu.cascade.prover.UninterpretedExpression;
 
-public class UninterpretedVariableImpl extends VariableExpressionImpl
-    implements UninterpretedVariableExpression {
+final class UninterpretedVariableImpl extends VariableExpressionImpl
+    implements UninterpretedExpression {
 
-  public static UninterpretedVariableImpl create(ExpressionManagerImpl exprManager,
+	static UninterpretedVariableImpl create(ExpressionManagerImpl exprManager,
       String name, UninterpretedTypeImpl type, boolean fresh) {
     return new UninterpretedVariableImpl(exprManager, name, type, fresh);
   }
@@ -18,10 +18,5 @@ public class UninterpretedVariableImpl extends VariableExpressionImpl
   @Override
   public UninterpretedTypeImpl getType() {
     return (UninterpretedTypeImpl) super.getType();
-  }
-  
-  @Override
-  public Kind getKind() {
-    return Kind.VARIABLE;
   }
 }

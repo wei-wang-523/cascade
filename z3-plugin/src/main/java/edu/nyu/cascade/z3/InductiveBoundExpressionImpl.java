@@ -6,17 +6,27 @@ import edu.nyu.cascade.prover.InductiveExpression;
 import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.Selector;
 
-final class InductiveVariableImpl extends VariableExpressionImpl
+final class InductiveBoundExpressionImpl extends BoundExpressionImpl
     implements InductiveExpression {
 	
-	static InductiveVariableImpl create(ExpressionManagerImpl exprManager,
+	static InductiveBoundExpressionImpl create(ExpressionManagerImpl em,
       String name, InductiveTypeImpl type, boolean fresh) {
-    return new InductiveVariableImpl(exprManager, name, type, fresh);
+    return new InductiveBoundExpressionImpl(em, name, type, fresh);
   }
 
-  private InductiveVariableImpl(ExpressionManagerImpl exprManager, String name,
+  private InductiveBoundExpressionImpl(ExpressionManagerImpl em, String name,
       InductiveTypeImpl type, boolean fresh) {
-    super(exprManager, name, type, fresh);
+    super(em, name, type, fresh);
+  }
+  
+	static InductiveBoundExpressionImpl create(ExpressionManagerImpl em,
+      String name, int index, InductiveTypeImpl type, boolean fresh) {
+    return new InductiveBoundExpressionImpl(em, name, index, type, fresh);
+  }
+
+  private InductiveBoundExpressionImpl(ExpressionManagerImpl em, String name,
+  		int index, InductiveTypeImpl type, boolean fresh) {
+    super(em, name, index, type, fresh);
   }
 
   @Override

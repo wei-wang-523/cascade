@@ -25,7 +25,7 @@ import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.IOUtils;
 
-public final class RecordTypeImpl extends TypeImpl implements RecordType {
+final class RecordTypeImpl extends TypeImpl implements RecordType {
   
   private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, RecordTypeImpl>> typeCache = CacheBuilder
       .newBuilder().build(
@@ -111,8 +111,8 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
         sb.append(" \n                             (" + Iterables.get(elemNames, i) + " " + z3Types[i] + ")");
       }
       Constructor[] cons = new Constructor[]{
-          z3_context.MkConstructor("mk-" + typeName, "is-" + typeName, symbols, z3Types, refs)};
-      setZ3Type(z3_context.MkDatatypeSort(typeName, cons));
+          z3_context.mkConstructor("mk-" + typeName, "is-" + typeName, symbols, z3Types, refs)};
+      setZ3Type(z3_context.mkDatatypeSort(typeName, cons));
       sb.append(")))");
       em.addToTypeCache(this);
       if(IOUtils.debugEnabled())
@@ -148,6 +148,16 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
   public RecordVariableImpl variable(String name, boolean fresh) {
     return RecordVariableImpl.create(getExpressionManager(), name, this, fresh);
   }
+  
+  @Override
+  public RecordBoundExpressionImpl boundVar(String name, boolean fresh) {
+    return RecordBoundExpressionImpl.create(getExpressionManager(), name, this, fresh);
+  }
+  
+  @Override
+  public RecordBoundExpressionImpl boundExpression(String name, int index, boolean fresh) {
+    return RecordBoundExpressionImpl.create(getExpressionManager(), name, index, this, fresh);
+  }
 
   @Override
   public String toString() {
@@ -166,11 +176,6 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
   }
 
   @Override
-  public VariableExpressionImpl boundVariable(String name, boolean fresh) {
-    throw new UnsupportedOperationException("bound variable is not supported in z3.");
-  }
-
-  @Override
   public Type select(String fieldName) {
     int i = elementNames.indexOf(fieldName);
     return elementTypes.get(i);
@@ -183,7 +188,7 @@ public final class RecordTypeImpl extends TypeImpl implements RecordType {
   }
 	
 	@Override
-	protected RecordExpressionImpl create(Expr res, Expression oldExpr,
+	protected RecordExpressionImpl createExpression(Expr res, Expression oldExpr,
 			Iterable<? extends ExpressionImpl> children) {
 		return RecordExpressionImpl.create(getExpressionManager(), 
 				oldExpr.getKind(), res, oldExpr.getType(), children);

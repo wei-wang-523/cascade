@@ -10,7 +10,7 @@ import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 
-public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
+final class ArrayTypeImpl extends TypeImpl implements ArrayType {
   private final Type indexType;
   private final Type elementType;
 
@@ -19,7 +19,14 @@ public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
     return new ArrayTypeImpl(exprManager, index, elem);
   }
   
-  static ArrayTypeImpl valueOf(
+  @Override
+	ArrayExpressionImpl createExpression(Expr res, Expression oldExpr,
+			Iterable<? extends ExpressionImpl> children) {
+		return ArrayExpressionImpl.create(getExpressionManager(), 
+				oldExpr.getKind(), res, oldExpr.getType(), children);
+	}
+
+	static ArrayTypeImpl valueOf(
       ExpressionManagerImpl exprManager, Type type) {
     Preconditions.checkArgument(type.isArrayType());
     if (type instanceof ArrayTypeImpl) {
@@ -38,8 +45,8 @@ public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
     try {
       Sort indexZ3Type = exprManager.toZ3Type(indexType);
       Sort elementZ3Type = exprManager.toZ3Type(elementType);
-      TheoremProverImpl.debugCall("arrayType(%s,%s)", indexZ3Type, elementZ3Type);
-      setZ3Type(exprManager.getTheoremProver().getZ3Context().MkArraySort(indexZ3Type, elementZ3Type));
+      setZ3Type(exprManager.getTheoremProver().getZ3Context()
+      		.mkArraySort(indexZ3Type, elementZ3Type));
     } catch (Exception e) {
       throw new TheoremProverException(e);
     }
@@ -56,10 +63,19 @@ public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
   }
 
   @Override
+	public ArrayBoundExpressionImpl boundVar(String name, boolean fresh) {
+	  return ArrayBoundExpressionImpl.create(getExpressionManager(), name, this, fresh);
+	}
+  
+  @Override
+	public ArrayBoundExpressionImpl boundExpression(String name, int index, boolean fresh) {
+	  return ArrayBoundExpressionImpl.create(getExpressionManager(), name, index, this, fresh);
+	}
+
+	@Override
   public Type getElementType() {
     return elementType;
   }
-
 
   @Override
   public Type getIndexType() {
@@ -74,11 +90,6 @@ public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
   @Override
   public String getName() {
     return toString();
-  }
-
-  @Override
-  public ArrayVariableImpl boundVariable(String name, boolean fresh) {
-    throw new UnsupportedOperationException("bound variable is not supported in z3.");
   }
   
   @Override
@@ -119,12 +130,5 @@ public final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 	@Override
 	public ArrayExpression storeAll(Expression expr, ArrayType type) {
 		return ArrayExpressionImpl.mkStoreAll(getExpressionManager(), expr, type);
-	}
-	
-	@Override
-	protected ArrayExpressionImpl create(Expr res, Expression oldExpr,
-			Iterable<? extends ExpressionImpl> children) {
-		return ArrayExpressionImpl.create(getExpressionManager(), 
-				oldExpr.getKind(), res, oldExpr.getType(), children);
 	}
 }

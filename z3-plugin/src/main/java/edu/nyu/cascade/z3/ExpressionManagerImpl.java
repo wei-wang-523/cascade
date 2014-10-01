@@ -33,9 +33,9 @@ import com.microsoft.z3.TupleSort;
 import com.microsoft.z3.UninterpretedSort;
 import com.microsoft.z3.Z3Exception;
 
-import edu.nyu.cascade.fds.StateExpression;
 import edu.nyu.cascade.prover.AbstractExpressionManager;
 import edu.nyu.cascade.prover.BooleanExpression;
+import edu.nyu.cascade.prover.BoundExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.FunctionExpression;
@@ -43,7 +43,6 @@ import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.UninterpretedExpression;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.BooleanType;
@@ -74,8 +73,9 @@ import edu.nyu.cascade.z3.InductiveTypeImpl.SelectorImpl;
  * @author <a href="mailto:cconway@cs.nyu.edu">Christopher Conway</a>
  * @author <a href="mailto:dejan@cs.nyu.edu">Dejan Jovanović</a>
  * @author <a href="mailto:mdeters@cs.nyu.edu">Morgan Deters</a>
+ * @author <a href="mailto:wwang1109@cs.nyu.edu">Wei Wang</a>
  */
-public class ExpressionManagerImpl extends AbstractExpressionManager {
+class ExpressionManagerImpl extends AbstractExpressionManager {
   
   /** The integer type */
   private final IntegerTypeImpl integerType;
@@ -103,7 +103,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   
   private static final ConcurrentMap<Expr, ExpressionImpl> exprCache = new MapMaker().makeMap();
   
-  protected ExpressionManagerImpl(TheoremProverImpl theoremProver)  {
+  ExpressionManagerImpl(TheoremProverImpl theoremProver)  {
     this.theoremProver = theoremProver;
     
     booleanType = new BooleanTypeImpl(this);
@@ -147,9 +147,9 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   }
 
   @Override
-  public FunctionDeclarator asFunctionType(Type t) {
+  public FunctionType asFunctionType(Type t) {
     Preconditions.checkArgument(t.isFunction());
-    return FunctionDeclarator.valueOf(this, importType(t));
+    return FunctionTypeImpl.valueOf(this, importType(t));
   }
 
   @Override
@@ -157,24 +157,11 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       Expression expression)  {
     return IntegerExpressionImpl.valueOf(this,importExpression(expression));
   }
-
-  
-  @Override
-  public IntegerVariableImpl asIntegerVariable(
-      Expression expression)  {
-    return IntegerVariableImpl.valueOf(this,importExpression(expression));
-  }
   
   @Override
   public RationalExpressionImpl asRationalExpression(
       Expression expression)  {
     return RationalExpressionImpl.valueOf(this,importExpression(expression));
-  }
-  
-  @Override
-  public RationalVariableImpl asRationalVariable(
-      Expression expression)  {
-    return RationalVariableImpl.valueOf(this,importExpression(expression));
   }
   
   @Override
@@ -190,7 +177,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   @Override
   public FunctionExpression asFunctionExpression(
       Expression expression) {
-    throw new UnsupportedOperationException("interpreted function expression is not supported in z3.");
+    return FunctionDeclarator.valueOf(this, importExpression(expression));
   }
   
   @Override
@@ -289,9 +276,9 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   }
 
   @Override
-  public FunctionDeclarator functionType(String fname, Iterable<? extends Type> argTypes, 
+  public FunctionType functionType(Iterable<? extends Type> argTypes, 
       Type range) {
-    return FunctionDeclarator.create(this, fname, argTypes, range);
+    return FunctionTypeImpl.create(this, argTypes, range);
   }
 
   @Override
@@ -306,11 +293,6 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
      */
   public TheoremProverImpl getTheoremProver() {
     return theoremProver;
-  }
-  
-  @Override
-  public ExpressionImpl boundExpression(int index, Type type) {
-    return ExpressionImpl.mkBound(this, index, type);
   }
   
   @Override
@@ -409,6 +391,12 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   }
 
   @Override
+	public BoundExpression asBoundExpression(Expression expression) {
+    Preconditions.checkArgument(expression.isBound());
+    return BoundExpressionImpl.valueOf(this,importExpression(expression));
+	}
+
+	@Override
   public InductiveExpressionImpl asInductive(Expression e) {
     Preconditions.checkArgument(e.isInductive());
     return InductiveExpressionImpl.valueOf(importExpression(e));
@@ -417,14 +405,14 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
   @Override
   public int valueOfIntegerConstant(Expression e) {
     Preconditions.checkArgument(e.isConstant() && (e.isInteger() || e.isBitVector()));
-    return ((BitVecNum) toZ3Expr(e)).BigInteger().intValue();
+    return ((BitVecNum) toZ3Expr(e)).getBigInteger().intValue();
   }
   
   @Override
   public boolean valueOfBooleanConstant(Expression e) {
     Preconditions.checkArgument(e.isConstant() && e.isBoolean());
     try {
-      int value = toZ3Expr(e).BoolValue().toInt();
+      int value = toZ3Expr(e).getBoolValue().toInt();
       if(value == 0) return true;
       else    return false;
     } catch (Z3Exception ex) {
@@ -467,7 +455,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     return UninterpretedExpressionImpl.valueOf(this,importExpression(e));
   }
   
-  protected TypeImpl importType(Type type) {
+  TypeImpl importType(Type type) {
 	  if (type instanceof TypeImpl && this.equals( type.getExpressionManager() )) {
 	    return (TypeImpl) type;
 	  } else if ((Type)type instanceof ArrayType) {
@@ -491,22 +479,21 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
 	  }
 	}
 
-	protected ExpressionImpl importExpression(Expression expr) {
+  ExpressionImpl importExpression(Expression expr) {
 	  Preconditions.checkNotNull(expr);
 	  if (expr instanceof ExpressionImpl
 	      && this.equals(expr.getExpressionManager())) {
 	    return (ExpressionImpl) expr;
-	  } else if (expr instanceof VariableExpression) {
+	  } else if (expr.isVariable()) {
 	    return VariableExpressionImpl.valueOf(this, expr);
-	  } else if (expr instanceof StateExpression) {
-	    // FIXME: Do we really need a special case for IStateExpression???
-	    return importExpression(((StateExpression) expr).toExpression());
+	  } else if (expr.isBound()) {
+	    return BoundExpressionImpl.valueOf(this, expr);
 	  } else {
 	    return importType(expr.getType()).importExpression(expr);
 	  }
 	}
 
-	protected Iterable<ExpressionImpl> importExpressions(
+  Iterable<ExpressionImpl> importExpressions(
 	    Iterable<? extends Expression> subExpressions) {
 	  return Iterables.transform(subExpressions,
 	      new Function<Expression, ExpressionImpl>() {
@@ -518,11 +505,11 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
 	      });
 	}
 
-	protected Expr toZ3Expr(Expression expr)  {
+  Expr toZ3Expr(Expression expr)  {
     return importExpression(expr).getZ3Expression();
   }
   
-  protected List<Expr> toZ3Exprs(
+  List<Expr> toZ3Exprs(
       Iterable<? extends Expression> subExpressions) {
     return Lists.newArrayList(Iterables.transform(subExpressions,
         new Function<Expression, Expr>() {
@@ -532,82 +519,125 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
         }));
   }
   
-  protected Sort toZ3Type(Type type) {
+  Sort toZ3Type(Type type) {
     return importType(type).getZ3Type();
   }
   
-  protected BooleanExpressionImpl toBooleanExpression(Expr e) throws TheoremProverException {
+  TypeImpl toType(Sort sort) {
+	  try {
+	    if( sort instanceof BoolSort) {
+	      return booleanType();
+	    } else if( sort instanceof com.microsoft.z3.IntSort) {
+	      return integerType();
+	    } else if( sort instanceof com.microsoft.z3.RealSort) {
+	      return rationalType();
+	    } else if ( sort instanceof com.microsoft.z3.ArraySort) {
+	      ArraySort arraySort = (ArraySort) sort;
+	      TypeImpl indexType = toType(arraySort.getDomain());
+	      TypeImpl elemType = toType(arraySort.getRange());
+	      return ArrayTypeImpl.create(this, indexType, elemType);
+	    } else if ( sort instanceof com.microsoft.z3.BitVecSort) {
+	      BitVecSort bvSort = (BitVecSort) sort;
+	      int size = (int) bvSort.getSize();
+	      return bitVectorType(size);
+	    } else if ( sort instanceof DatatypeSort) {
+	      TypeImpl resType = lookupType( sort.getName().toString() );
+	      if( resType == null ) {
+	        throw new TheoremProverException("Unknown datatype: " + sort.getName().toString() );
+	      }
+	      return resType;
+	    } else if ( sort instanceof UninterpretedSort) {
+	      TypeImpl resType = lookupType( sort.getName().toString() );
+	      if( resType == null ) {
+	        throw new TheoremProverException("Unknown datatype: " + sort.getName().toString() );
+	      }
+	      return resType;
+	    } else if ( sort instanceof TupleSort) {
+	      TypeImpl resType = lookupType( sort.getName().toString() );
+	      if( resType == null ) {
+	        throw new TheoremProverException("Unknown datatype: " + sort.getName().toString() );
+	      }
+	      return resType;
+	    } else {
+	      throw new UnsupportedOperationException("unexpected sort: " + sort);
+	    }
+	  } catch (Z3Exception e) {
+	    throw new TheoremProverException(e);
+	  }
+	}
+
+	BooleanExpressionImpl toBooleanExpression(Expr e) throws TheoremProverException {
 	  IOUtils.debug().indent().incr().pln(">> toBooleanExpression(" + e.toString() + ")");
 	  try {
-	    if (e.IsBVNOT() || e.IsNot()) {
-	      Preconditions.checkArgument(e.NumArgs() == 1);
-	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.NOT, e, toExpressionList(e.Args())));
-	    } else if (e.IsLE() || e.IsBVSLE() || e.IsBVULE()) {
-	      Preconditions.checkArgument(e.NumArgs() == 2);
-	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.LEQ, e, toExpressionList(e.Args())));
-	    } else if (e.IsLT() || e.IsBVSLT() || e.IsBVULT()) {
-	      Preconditions.checkArgument(e.NumArgs() == 2);
-	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.LT, e, toExpressionList(e.Args())));
-	    } else if (e.IsGE() || e.IsBVSGE() || e.IsBVUGE()) {
-	      Preconditions.checkArgument(e.NumArgs() == 2);
-	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.GEQ, e, toExpressionList(e.Args())));
-	    } else if (e.IsGT() || e.IsBVSGT() || e.IsBVUGT()) {
-	      Preconditions.checkArgument(e.NumArgs() == 2);
-	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.GT, e, toExpressionList(e.Args())));
-	    } else if (e.IsEq()) {
-	      Preconditions.checkArgument(e.NumArgs() == 2);
-	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.EQUAL, e, toExpressionList(e.Args())));
-	    } else if (e.IsAnd()) {
-	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.AND, e, toExpressionList(e.Args())));
-	    } else if (e.IsOr()) {
-	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.OR, e, toExpressionList(e.Args())));
-	    } else if (e.IsXor()) {
-	      Preconditions.checkArgument(e.NumArgs() == 2);
-	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.XOR, e, toExpressionList(e.Args())));
-	    } else if (e.IsImplies()) {
-	      Preconditions.checkArgument(e.NumArgs() == 2);
-	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.IMPLIES, e, toExpressionList(e.Args())));
-	    } else if (e.IsIff()) {
-	      Preconditions.checkArgument(e.NumArgs() == 2);
-	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.IFF, e, toExpressionList(e.Args())));
-	    } else if (e.IsBool() && e.IsConst()) {
-	      Preconditions.checkArgument(e.NumArgs() == 0);
-	      if(e.equals(getTheoremProver().getZ3Context().MkTrue()))
+	    if (e.isBVNOT() || e.isNot()) {
+	      Preconditions.checkArgument(e.getNumArgs() == 1);
+	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.NOT, e, toExpressionList(e.getArgs())));
+	    } else if (e.isLE() || e.isBVSLE() || e.isBVULE()) {
+	      Preconditions.checkArgument(e.getNumArgs() == 2);
+	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.LEQ, e, toExpressionList(e.getArgs())));
+	    } else if (e.isLT() || e.isBVSLT() || e.isBVULT()) {
+	      Preconditions.checkArgument(e.getNumArgs() == 2);
+	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.LT, e, toExpressionList(e.getArgs())));
+	    } else if (e.isGE() || e.isBVSGE() || e.isBVUGE()) {
+	      Preconditions.checkArgument(e.getNumArgs() == 2);
+	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.GEQ, e, toExpressionList(e.getArgs())));
+	    } else if (e.isGT() || e.isBVSGT() || e.isBVUGT()) {
+	      Preconditions.checkArgument(e.getNumArgs() == 2);
+	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.GT, e, toExpressionList(e.getArgs())));
+	    } else if (e.isEq()) {
+	      Preconditions.checkArgument(e.getNumArgs() == 2);
+	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.EQUAL, e, toExpressionList(e.getArgs())));
+	    } else if (e.isAnd()) {
+	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.AND, e, toExpressionList(e.getArgs())));
+	    } else if (e.isOr()) {
+	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.OR, e, toExpressionList(e.getArgs())));
+	    } else if (e.isXor()) {
+	      Preconditions.checkArgument(e.getNumArgs() == 2);
+	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.XOR, e, toExpressionList(e.getArgs())));
+	    } else if (e.isImplies()) {
+	      Preconditions.checkArgument(e.getNumArgs() == 2);
+	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.IMPLIES, e, toExpressionList(e.getArgs())));
+	    } else if (e.isIff()) {
+	      Preconditions.checkArgument(e.getNumArgs() == 2);
+	      return BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.IFF, e, toExpressionList(e.getArgs())));
+	    } else if (e.isBool() && e.isConst()) {
+	      Preconditions.checkArgument(e.getNumArgs() == 0);
+	      if(e.equals(getTheoremProver().getZ3Context().mkTrue()))
 	        return BooleanExpressionImpl.valueOf(this, tt());
 	      else
 	        return BooleanExpressionImpl.valueOf(this, ff());
-	    } else if (e.IsQuantifier()) {
+	    } else if (e.isQuantifier()) {
 	      Quantifier qtf = (Quantifier) e;
-	      int size = qtf.NumBound();
-	      boolean isForall = qtf.IsUniversal();
-	      Expr z3_body = qtf.Body();
-	      Symbol[] names = qtf.BoundVariableNames();
-	      Sort[] sorts = qtf.BoundVariableSorts();
+	      int size = qtf.getNumBound();
+	      boolean isForall = qtf.isUniversal();
+	      Expr z3_body = qtf.getBody();
+	      Symbol[] names = qtf.getBoundVariableNames();
+	      Sort[] sorts = qtf.getBoundVariableSorts();
 	      
-	      List<VariableExpression> vars = Lists.newArrayList();
+	      List<BoundExpression> vars = Lists.newArrayList();
 	      for(int i = 0; i < size; i++) {
-	        VariableExpression var = VariableExpressionImpl
-	            .valueOfVariable(this, names[i].toString(), toType(sorts[i])).asVariable();
+	      	BoundExpression var = BoundExpressionImpl
+	            .valueOfBound(this, names[i], toType(sorts[i]));
 	        vars.add(var);
 	      }
 	      
 	      BooleanExpression body = toBooleanExpression(z3_body);
 	      
 	      List<Expression> triggers = null;     
-	      if(qtf.NumPatterns() > 0) {
+	      if(qtf.getNumPatterns() > 0) {
 	        triggers = Lists.newArrayList();
-	        for(Pattern ptn : qtf.Patterns()) {
-	          Expr[] terms = ptn.Terms();
+	        for(Pattern ptn : qtf.getPatterns()) {
+	          Expr[] terms = ptn.getTerms();
 	          for(Expr term : terms)
 	            triggers.add(toExpression(term));
 	        }
 	      }
 	      
 	      List<Expression> noTriggers = null;     
-	      if(qtf.NumNoPatterns() > 0) {
+	      if(qtf.getNumNoPatterns() > 0) {
 	        noTriggers = Lists.newArrayList();
-	        for(Pattern nptn : qtf.NoPatterns()) {
-	          Expr[] terms = nptn.Terms();
+	        for(Pattern nptn : qtf.getNoPatterns()) {
+	          Expr[] terms = nptn.getTerms();
 	          for(Expr term : terms)
 	            noTriggers.add(toExpression(term));
 	        }
@@ -620,7 +650,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
 	      	return BooleanExpressionImpl.valueOf(this, 
 	      			exists(vars, body, triggers, noTriggers));
 	      
-	    } else if ( e.FuncDecl().Name() != null
+	    } else if ( e.getFuncDecl().getName() != null
 	          /* e.getKind() == edu.nyu.acsys.Z3.Kind.LAMBDA || 
 	           * e.getKind() == edu.nyu.acsys.Z3.Kind.APPLY 
 	           */ ) {
@@ -633,7 +663,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
 	  }
 	}
 
-	protected List<BooleanExpressionImpl> toBooleanExpressionList(Expr[] vars) {
+  List<BooleanExpressionImpl> toBooleanExpressionList(Expr[] vars) {
 	  List<Expr> args = Lists.newArrayList(vars);
 	  return Lists.transform(args, new Function<Expr, BooleanExpressionImpl>() {
 	    @Override
@@ -643,7 +673,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
 	  });
 	}
 
-	protected ExpressionImpl toExpression(Expr e) throws TheoremProverException {
+  ExpressionImpl toExpression(Expr e) throws TheoremProverException {
     IOUtils.debug().indent().incr().pln(">> toExpression(" + e.toString() + ")");
     
     if(exprCache.containsKey(e))  
@@ -652,80 +682,80 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     Expression res = null;
     
     try {
-      if ( e.IsAdd() ) {
-        res = rebuildExpression(Kind.PLUS, e, toExpressionList(e.Args()));
-      } else if ( e.IsSub() ) {
-        res = rebuildExpression(Kind.MINUS, e, toExpressionList(e.Args()));
-      } else if ( e.IsMul() ) {
-        res = rebuildExpression(Kind.MULT, e, toExpressionList(e.Args()));
-      } else if ( e.IsConst() ) {
-        res = VariableExpressionImpl.valueOfVariable(this, e, toType(e.Sort()));
-      } else if ( e.IsRatNum() ) {
+      if ( e.isAdd() ) {
+        res = rebuildExpression(Kind.PLUS, e, toExpressionList(e.getArgs()));
+      } else if ( e.isSub() ) {
+        res = rebuildExpression(Kind.MINUS, e, toExpressionList(e.getArgs()));
+      } else if ( e.isMul() ) {
+        res = rebuildExpression(Kind.MULT, e, toExpressionList(e.getArgs()));
+      } else if ( e.isConst() ) {
+        res = VariableExpressionImpl.valueOfVariable(this, e, toType(e.getSort()));
+      } else if ( e.isRatNum() ) {
         // FIXME: Could be an actual rational!
         res = new ExpressionImpl(this, Kind.CONSTANT, e, integerType());
-      } else if (e.IsBVNOT()) {
-        Preconditions.checkArgument(e.NumArgs() == 1);
-        res = rebuildExpression(Kind.BV_NOT, e, toExpressionList(e.Args()));
-      } else if( e.IsBVAdd() ) {
-        res = rebuildExpression(Kind.PLUS, e, toExpressionList(e.Args()));
-      } else if (e.IsBVMul()) { 
-        res = rebuildExpression(Kind.MULT, e, toExpressionList(e.Args()));
-      } else if (e.IsSelect()) {
-        Preconditions.checkArgument(e.NumArgs() == 2);
-        res = rebuildExpression(Kind.ARRAY_INDEX, e, toExpressionList(e.Args()));
-      } else if (e.IsStore()) {
-        Preconditions.checkArgument(e.NumArgs() == 3);
-        res = rebuildExpression(Kind.ARRAY_UPDATE, e, toExpressionList(e.Args()));
-      } else if (e.IsITE()) {
-        Preconditions.checkArgument(e.NumArgs() == 3);
-        res = rebuildExpression(Kind.IF_THEN_ELSE, e, toExpressionList(e.Args()));
-      } else if (e.IsBool()) {
+      } else if (e.isBVNOT()) {
+        Preconditions.checkArgument(e.getNumArgs() == 1);
+        res = rebuildExpression(Kind.BV_NOT, e, toExpressionList(e.getArgs()));
+      } else if( e.isBVAdd() ) {
+        res = rebuildExpression(Kind.PLUS, e, toExpressionList(e.getArgs()));
+      } else if (e.isBVMul()) { 
+        res = rebuildExpression(Kind.MULT, e, toExpressionList(e.getArgs()));
+      } else if (e.isSelect()) {
+        Preconditions.checkArgument(e.getNumArgs() == 2);
+        res = rebuildExpression(Kind.ARRAY_INDEX, e, toExpressionList(e.getArgs()));
+      } else if (e.isStore()) {
+        Preconditions.checkArgument(e.getNumArgs() == 3);
+        res = rebuildExpression(Kind.ARRAY_UPDATE, e, toExpressionList(e.getArgs()));
+      } else if (e.isITE()) {
+        Preconditions.checkArgument(e.getNumArgs() == 3);
+        res = rebuildExpression(Kind.IF_THEN_ELSE, e, toExpressionList(e.getArgs()));
+      } else if (e.isBool()) {
         res = (ExpressionImpl) toBooleanExpression(e);
-      } else if (e.IsBVNumeral()) {
-        int val = ((BitVecNum) e).Int();
-        int size = ((BitVecNum) e).SortSize();
+      } else if (e.isBVNumeral()) {
+        int val = ((BitVecNum) e).getInt();
+        int size = ((BitVecNum) e).getSortSize();
         res = BitVectorExpressionImpl.mkConstant(this, size, val);
-      } else if (e.IsIntNum()) {
-        int val = ((IntNum) e).Int();
+      } else if (e.isIntNum()) {
+        int val = ((IntNum) e).getInt();
         res = IntegerExpressionImpl.mkConstant(this, val);
-      } else if (e.IsBVConcat()) { 
-        Preconditions.checkArgument(e.NumArgs() >= 2);
-        res = rebuildExpression(Kind.BV_CONCAT, e, toExpressionList(e.Args()));
-      } else if (e.IsBVExtract()) {
-        Preconditions.checkArgument(e.NumArgs() == 1);
-        res = rebuildExpression(Kind.BV_EXTRACT, e, toExpressionList(e.Args()));
-      } else if (e.IsBVULE()) { 
-        Preconditions.checkArgument(e.NumArgs() == 2);
-        res = rebuildExpression(Kind.LT, e, toExpressionList(e.Args()));
-      } else if (e.IsBool()) {
+      } else if (e.isBVConcat()) { 
+        Preconditions.checkArgument(e.getNumArgs() >= 2);
+        res = rebuildExpression(Kind.BV_CONCAT, e, toExpressionList(e.getArgs()));
+      } else if (e.isBVExtract()) {
+        Preconditions.checkArgument(e.getNumArgs() == 1);
+        res = rebuildExpression(Kind.BV_EXTRACT, e, toExpressionList(e.getArgs()));
+      } else if (e.isBVULE()) { 
+        Preconditions.checkArgument(e.getNumArgs() == 2);
+        res = rebuildExpression(Kind.LT, e, toExpressionList(e.getArgs()));
+      } else if (e.isBool()) {
         res = toBooleanExpression(e);
       } else if (e instanceof DatatypeExpr) {
-        Type type = toType(((DatatypeExpr) e).Sort());
+        Type type = toType(((DatatypeExpr) e).getSort());
         if(type instanceof TupleTypeImpl) {
-          res = rebuildExpression(Kind.TUPLE, e, toExpressionList(e.Args()));
+          res = rebuildExpression(Kind.TUPLE, e, toExpressionList(e.getArgs()));
         } else if(type instanceof RecordTypeImpl) {
-          res = rebuildExpression(Kind.RECORD, e, toExpressionList(e.Args()));
+          res = rebuildExpression(Kind.RECORD, e, toExpressionList(e.getArgs()));
         } else if(type instanceof InductiveTypeImpl) {
-          res = rebuildExpression(Kind.DATATYPE_CONSTRUCT, e, toExpressionList(e.Args()));
+          res = rebuildExpression(Kind.DATATYPE_CONSTRUCT, e, toExpressionList(e.getArgs()));
         } else {
           throw new UnsupportedOperationException("Unexpected type: " + type
               + "\n of expression " + e);
         }
-      } else if (e.FuncDecl() != null) { 
-        FuncDecl func = e.FuncDecl();
+      } else if (e.getFuncDecl() != null) { 
+        FuncDecl func = e.getFuncDecl();
         if(func != null) { // func apply expression
-          Sort[] domains = func.Domain();
+          Sort[] domains = func.getDomain();
           if(domains.length == 1) { // might be tuple select or record select
-            Expression srcExpr = toExpression(e.Args()[0]);
+            Expression srcExpr = toExpression(e.getArgs()[0]);
             if(srcExpr.isTuple()) {
-              String funcName = func.Name().toString();
+              String funcName = func.getName().toString();
               int idx = Integer.parseInt(funcName.substring(funcName.lastIndexOf("@") + 1));
               res = srcExpr.asTuple().index(idx);
             } else if(srcExpr.isRecord()) {
-              String funcName = func.Name().toString();
+              String funcName = func.getName().toString();
               res = srcExpr.asRecord().select(funcName);
             } else if(srcExpr.isInductive()) {
-              String funcName = func.Name().toString();
+              String funcName = func.getName().toString();
               InductiveType type = srcExpr.getType().asInductive();
               Selector selector = null;
               for(Constructor con : type.getConstructors()) {
@@ -758,7 +788,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     }
   }
   
-  protected List<? extends ExpressionImpl> toExpressionList(Expr[] vars) {
+  List<? extends ExpressionImpl> toExpressionList(Expr[] vars) {
     List<Expr> args = Lists.newArrayList(vars);
     return Lists.transform(args, new Function<Expr, ExpressionImpl>() {
       @Override
@@ -767,12 +797,8 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       }
     });
   }
-  
-  protected FunctionDeclarator toFunctionDeclarator(FuncDecl func) {
-	  return FunctionDeclarator.create(this, func);
-	}
 
-	protected void addToTypeCache(TypeImpl type) {
+  void addToTypeCache(TypeImpl type) {
 	  try {
 	    Preconditions.checkArgument(!typeCache.get(this).containsKey(type.getName()));
 	    typeCache.get(this).put(type.getName(), type);
@@ -789,69 +815,18 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
 	  }
 	}
 
-	protected TypeImpl toType(Sort sort) {
-    try {
-      if( sort instanceof BoolSort) {
-        return booleanType();
-      } else if( sort instanceof com.microsoft.z3.IntSort) {
-        return integerType();
-      } else if( sort instanceof com.microsoft.z3.RealSort) {
-        return rationalType();
-      } else if ( sort instanceof com.microsoft.z3.ArraySort) {
-        ArraySort arraySort = (ArraySort) sort;
-        TypeImpl indexType = toType(arraySort.Domain());
-        TypeImpl elemType = toType(arraySort.Range());
-        return ArrayTypeImpl.create(this, indexType, elemType);
-      } else if ( sort instanceof com.microsoft.z3.BitVecSort) {
-        BitVecSort bvSort = (BitVecSort) sort;
-        int size = (int) bvSort.Size();
-        return bitVectorType(size);
-      } else if ( sort instanceof DatatypeSort) {
-        TypeImpl resType = lookupType( sort.Name().toString() );
-        if( resType == null ) {
-          throw new TheoremProverException("Unknown datatype: " + sort.Name().toString() );
-        }
-        return resType;
-      } else if ( sort instanceof UninterpretedSort) {
-        TypeImpl resType = lookupType( sort.Name().toString() );
-        if( resType == null ) {
-//          return UninterpretedTypeImpl.create(this, sort.Name().toString());
-          throw new TheoremProverException("Unknown datatype: " + sort.Name().toString() );
-        }
-        return resType;
-      } else if ( sort instanceof TupleSort) {
-        TypeImpl resType = lookupType( sort.Name().toString() );
-        if( resType == null ) {
-//        TupleSort tupleSort = (TupleSort) sort;
-//        List<FuncDecl> funcs = Lists.newArrayList(tupleSort.FieldDecls());
-//        List<Type> types = Lists.transform(funcs, new Function<FuncDecl, Type>() {
-//          @Override
-//          public Type apply(FuncDecl func) {
-//            try {
-//              return toType(func.Range());
-//            } catch (Z3Exception e) {
-//              throw new TheoremProverException(e);
-//            }
-//          }
-//        });
-//        return TupleTypeImpl.create(this, tupleSort.Name().toString(), types);
-          throw new TheoremProverException("Unknown datatype: " + sort.Name().toString() );
-        }
-        return resType;
-      } else {
-        throw new UnsupportedOperationException("unexpected sort: " + sort);
-      }
-    } catch (Z3Exception e) {
-      throw new TheoremProverException(e);
-    }
-  }
-  
-  private ExpressionImpl rebuildExpression(Kind kind, Expr expr, Iterable<? extends ExpressionImpl> args) {
+	private ExpressionImpl rebuildExpression(Kind kind, Expr expr, Iterable<? extends ExpressionImpl> args) {
 	  try {
-	    Type type = toType(expr.Sort());
+	    Type type = toType(expr.getSort());
 	    return new ExpressionImpl(this, kind, expr, type, args);
 	  } catch (Z3Exception e) {
 	    throw new TheoremProverException(e);
 	  }
 	}
+
+	@Override
+  public FunctionExpression functionDeclarator(String name,
+      FunctionType functionType, boolean fresh) {
+	  return FunctionDeclarator.create(this, name, functionType, fresh);
+  }
 }

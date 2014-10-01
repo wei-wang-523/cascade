@@ -1,24 +1,16 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>edu.nyu.cascade</groupId>
   <artifactId>z3-plugin</artifactId>
   <name>Cascade z3 plugin</name>
-  <version>0.0.2-SNAPSHOT</version>
-
   <description>
     A Z3 implementation of the Cascade theorem prover interface.
   </description>
-
-  <scm>
-    <connection>scm:svn:https://subversive.cims.nyu.edu/cascade/branches/wwang1109/trunk/z3-plugin</connection>
-    <developerConnection>scm:svn:https://subversive.cims.nyu.edu/cascade/branches/wwang1109/trunk/z3-plugin</developerConnection>
-  </scm>
 
   <repositories>
     <repository>
       <id>cascade-public-repo</id>
       <name>Cascade Public Repository</name>
-      <url>http://cs.nyu.edu/acsys/cascade/repository/</url>
+      <url>http://cs.nyu.edu/acsys/cascade-repository/</url>
     </repository>
   </repositories>
 
@@ -42,10 +34,10 @@
       <systemPath>${z3.jar}</systemPath>
     </dependency>
     <dependency>
-	  <groupId>com.google.guava</groupId>
-	  <artifactId>guava</artifactId>
-	  <version>14.0.1</version>
-	</dependency>            
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>18.0</version>
+    </dependency>            
   </dependencies>
 
   <build>
@@ -104,7 +96,6 @@
               <goal>test</goal>
             </goals>
             <configuration>
-<!--              <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm> -->
               <fork>always</fork>
             </configuration>
           </execution>
@@ -114,13 +105,6 @@
             <LD_LIBRARY_PATH>${z3.libdir}</LD_LIBRARY_PATH>
             <DYLD_LIBRARY_PATH>${z3.libdir}</DYLD_LIBRARY_PATH>
           </environmentVariables>
-          <!-- <systemProperties> -->
-          <!--   <property> -->
-          <!--     <name>java.library.path</name> -->
-          <!--     <value>${z3.libdir}</value> -->
-          <!--   </property> -->
-          <!-- </systemProperties> -->
-<!--          <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm> -->
           <fork>always</fork>
         </configuration>
       </plugin>

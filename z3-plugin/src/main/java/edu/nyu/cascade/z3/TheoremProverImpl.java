@@ -42,7 +42,7 @@ import edu.nyu.cascade.util.Preferences;
  */
 public class TheoremProverImpl implements TheoremProver {
 
-  public static class Provider implements TheoremProver.Provider {
+	public static class Provider implements TheoremProver.Provider {
 
     @Override
     public TheoremProver create() {
@@ -56,7 +56,7 @@ public class TheoremProverImpl implements TheoremProver {
 
     @Override
     public String getName() {
-      return "z3";
+      return Preferences.PROVER_Z3;
     }
 
     @SuppressWarnings("static-access")
@@ -88,40 +88,39 @@ public class TheoremProverImpl implements TheoremProver {
   private static final String OPTION_TP_STATS = "z3-stats";
   private static final String OPTION_PBQI = "z3-pbqi";
   private static final String OPTION_MBQI = "z3-mbqi";
-  private static long z3_time = 0;
   private static final Pattern p = Pattern.compile("(^|\\n|\\r\\n?)");
 
-  public static void debugCall(String string) {
+  protected static void debugCall(String string) {
     if (IOUtils.debugEnabled()) {
       IOUtils.debug().pln(prefixLinesWith(string, "Z3.API> ") + ";").flush();
     }
   }
 
-  public static void debugCall(String format, Object... objects) {
+  protected static void debugCall(String format, Object... objects) {
     if (IOUtils.debugEnabled()) {
       debugCall(String.format(format, objects));
     }
   }
 
-  public static void debugCommand(String string) {
+  protected static void debugCommand(String string) {
     if (IOUtils.debugEnabled()) {
       IOUtils.debug().pln(prefixLinesWith(string, "Z3> ") + ";").flush();
     }
   }
   
-  public static void z3FileCommand(String string) {
+  protected static void z3FileCommand(String string) {
     if(IOUtils.tpFileEnabled()) {
       IOUtils.tpFile().pln(string).flush();
     }
   }
 
-  public static void debugCommand(String format, Object... objects) {
+  protected static void debugCommand(String format, Object... objects) {
     if (IOUtils.debugEnabled()) {
       debugCommand(String.format(format, objects));
     }
   }
   
-  public static void z3FileCommand(String format, Object... objects) {
+  protected static void z3FileCommand(String format, Object... objects) {
     if (IOUtils.tpFileEnabled()) {
       z3FileCommand(String.format(format, objects));
     }
@@ -155,8 +154,6 @@ public class TheoremProverImpl implements TheoremProver {
 
   /** A list of asserted expressions. */
   private final List<BooleanExpression> assumptions;
-  
-  /* private final FlagsMut flags; */
 
   /**
    * This constructor is an escape hatch for subclasses to do initialization
@@ -168,7 +165,7 @@ public class TheoremProverImpl implements TheoremProver {
     settings = cfg;
     initializePreferences(settings);
     z3Context = new Context();
-    solver = z3Context.MkSolver();
+    solver = z3Context.mkSolver();
     exprManager = null;
     assumptions = Lists.newArrayList();
   }
@@ -176,7 +173,7 @@ public class TheoremProverImpl implements TheoremProver {
   /**
    * Construct a new Z3 theorem prover.
    */
-  public TheoremProverImpl() {    
+  protected TheoremProverImpl() {    
     // Create the z3 expression manager
     z3Context = null;
     
@@ -200,18 +197,17 @@ public class TheoremProverImpl implements TheoremProver {
 
   @Override
   public void assume(Iterable<? extends Expression> propositions) {
-    for( Expression e : propositions ) {
-      Preconditions.checkArgument(e.isBoolean());
-      assumptions.add(e.asBooleanExpression());
-    }
-  }
-
-  private void addAssumptions() throws Z3Exception {
-    for (Expression p : assumptions) {
-      Expr expr = getExpressionManager().toZ3Expr(p);
-      debugCommand("(assert " + expr.toString() + ")");
-      z3FileCommand("(assert " + expr.toString() + ")");
-      getSolver().Assert((BoolExpr) expr);
+    try {
+      for( Expression prop : propositions ) {
+        Preconditions.checkArgument(prop.isBoolean());
+        Expr assump = exprManager.toZ3Expr(prop);
+        debugCommand("(assert " + assump + ")");
+        z3FileCommand("(assert " + assump + ")");
+  	      getSolver().add((BoolExpr) assump);
+        assumptions.add(prop.asBooleanExpression());
+      }
+    } catch (Z3Exception e) {
+    	throw new TheoremProverException(e);
     }
   }
   
@@ -219,26 +215,26 @@ public class TheoremProverImpl implements TheoremProver {
   public SatResult<?> checkSat(Expression expr) {
     Preconditions.checkArgument(expr.isBoolean());
     try {
-      getSolver().Push();
+      getSolver().push();
       z3FileCommand("(push)");
-      addAssumptions();
-
-      Expr z3Expr = getExpressionManager().toZ3Expr(expr);
+      
+      Expr z3Expr = exprManager.toZ3Expr(expr);
+      Expr z3ExprSimp = z3Expr.simplify();
       
       if (IOUtils.debugEnabled()) {
         IOUtils.debug().pln(
-        		"Simplified: "
-        				+ z3Expr.Simplify()
-        				.toString()).flush();
+        		"Simplified: " + z3ExprSimp).flush();
       }
       
-      debugCommand("(assert " + z3Expr.Simplify().toString() + ")");
-      z3FileCommand("(assert " + z3Expr.Simplify().toString() + ")");
-      getSolver().Assert((BoolExpr) z3Expr);
+      debugCommand("(assert " + z3ExprSimp + ")");
+      z3FileCommand("(assert " + z3Expr + ")");
+      getSolver().add((BoolExpr) z3Expr);
 
       debugCommand("(check-sat)");
-      z3FileCommand("(check-sat)");      
-      Status z3SatResult = getSolver().Check();
+      z3FileCommand("(check-sat)");
+      long start = System.currentTimeMillis();
+      Status z3SatResult = getSolver().check();
+      IOUtils.stats().pln("Z3 took time: " + (System.currentTimeMillis() - start)/1000.0 + "s");
       IOUtils.debug().pln(z3SatResult.toString()).flush();
       SatResult.Type resultType = convertZ3SatResult(z3SatResult);
 
@@ -252,17 +248,17 @@ public class TheoremProverImpl implements TheoremProver {
          * so we catch any Exception in the model generation phase and
          * revert to using a counter-example.
          */
-        res = SatResult.valueOf(resultType, expr, assumptions, getSolver().Model().toString());
+        res = SatResult.valueOf(resultType, expr, assumptions, getSolver().getModel().toString());
       } else { // resultType = UNKNOWN
-        res = SatResult.valueOf(resultType, expr, assumptions, getSolver().ReasonUnknown()); 
+        res = SatResult.valueOf(resultType, expr, assumptions, getSolver().getReasonUnknown()); 
       }
 
       if (Preferences.isSet(OPTION_TP_STATS)) {
         IOUtils.out().flush();
-        IOUtils.out().println(getSolver().Statistics());
+        IOUtils.out().println(getSolver().getStatistics());
       }
       
-      getSolver().Pop();
+      getSolver().pop();
       z3FileCommand("(pop)");
 
       return res;
@@ -276,33 +272,26 @@ public class TheoremProverImpl implements TheoremProver {
     Preconditions.checkArgument(expr.isBoolean());
 
     try {
-      getSolver().Push();
+      getSolver().push();
       z3FileCommand("(push)");
       
-      addAssumptions();
-
-      final ExpressionManagerImpl exprManager = getExpressionManager();
       Expr z3Expr = exprManager.toZ3Expr(exprManager.not(expr));
+      Expr z3ExprSimp = z3Expr.simplify();
       
       if (IOUtils.debugEnabled()) {
       	IOUtils.debug().pln(
-      			"Simplified: "
-      					+ z3Expr.Simplify()
-        					.toString()).flush();
-      }      
-//      IOUtils.out().println(ManagementFactory.getRuntimeMXBean().getName());
+      			"Simplified: " + z3ExprSimp).flush();
+      }
       
-      debugCommand("(assert " + z3Expr.Simplify().toString() + ")");
-      z3FileCommand("(assert " + z3Expr.Simplify().toString() + ")");      
-      getSolver().Assert((BoolExpr) exprManager.toZ3Expr(exprManager.not(expr)));
+      debugCommand("(assert " + z3ExprSimp + ")");
+      z3FileCommand("(assert " + z3Expr + ")");
+      getSolver().add((BoolExpr) z3Expr);
       
       debugCommand("(check-sat)");
       z3FileCommand("(check-sat)");
-      long time = System.currentTimeMillis();
-      Status z3QueryResult = getSolver().Check();
-      time = System.currentTimeMillis() - time;
-      z3_time += time;
-      IOUtils.debug().pln("Z3 took time: " + z3_time/1000.0 + "s");
+      long start = System.currentTimeMillis();
+      Status z3QueryResult = getSolver().check();
+      IOUtils.stats().pln("Z3 took time: " + (System.currentTimeMillis() - start)/1000.0 + "s");
       IOUtils.debug().pln(z3QueryResult.toString());
       ValidityResult.Type resultType = convertZ3QueryResult(z3QueryResult);
 
@@ -316,17 +305,17 @@ public class TheoremProverImpl implements TheoremProver {
          * so we catch any Exception in the model generation phase and
          * revert to using a counter-example.
          */
-        res = ValidityResult.valueOf(resultType, expr, assumptions, getSolver().Model().toString());         
+        res = ValidityResult.valueOf(resultType, expr, assumptions, getSolver().getModel().toString());         
       } else { // resultType = UNKNOWN
-        res = ValidityResult.valueOf(resultType, expr, assumptions, getSolver().ReasonUnknown()); 
+        res = ValidityResult.valueOf(resultType, expr, assumptions, getSolver().getReasonUnknown()); 
       }
 
       if (Preferences.isSet(OPTION_TP_STATS)) {
         IOUtils.out().flush();
-        IOUtils.out().println(getSolver().Statistics());
+        IOUtils.out().println(getSolver().getStatistics());
       }
       
-      getSolver().Pop();
+      getSolver().pop();
       z3FileCommand("(pop)");
 
       return res;
@@ -337,11 +326,7 @@ public class TheoremProverImpl implements TheoremProver {
 
   @Override
   public void clearAssumptions() {
-    try {
-      assumptions.clear();
-    } catch (Exception e) {
-      throw new TheoremProverException(e);
-    }
+  	assumptions.clear();
   }
 
   private ValidityResult.Type convertZ3QueryResult(Status validResult) {
@@ -368,7 +353,6 @@ public class TheoremProverImpl implements TheoremProver {
    * Returns the cascade expression manager.
    */
   public ExpressionManagerImpl getExpressionManager() {
-    // Return the expression manager of this instance
     if (exprManager == null) {
       exprManager = new ExpressionManagerImpl(this);
     }
@@ -381,7 +365,7 @@ public class TheoremProverImpl implements TheoremProver {
    * @return the expression manager
    * @throws Z3Exception 
    */
-  public Context getZ3Context() throws Z3Exception {
+  protected Context getZ3Context() throws Z3Exception {
     if(z3Context == null) {
       System.loadLibrary("z3java");
     	z3Context = new Context();
@@ -394,36 +378,37 @@ public class TheoremProverImpl implements TheoremProver {
    * 
    * @return the expression manager
    */
-  protected Solver getSolver() {
-    if(solver == null) {
-      try {
-        Context ctx = getZ3Context();
-        solver = ctx.MkSolver();
-        if(settings != null) {
-          Params p = ctx.MkParams();
-          for(Entry<String, String> pair : settings.entrySet()) {
-            String key = pair.getKey();
-            String value = pair.getValue();
-            if(value.matches("-?\\d+(\\.\\d+)?")) { // is number
-            	int num = Integer.valueOf(value);
-            	p.Add(key, num);
-            } else if(value.equals("true") || value.equals("false")) {
-            	boolean bool = Boolean.valueOf(value);
-            	p.Add(key, bool);
-            } else {
-            	p.Add(key, ctx.MkSymbol(value));
-            }
+  private Solver getSolver() {
+  	if(solver != null) return solver;
+  	
+    try {
+      Context ctx = getZ3Context();
+      solver = ctx.mkSolver();
+      if(settings != null) {
+        Params p = ctx.mkParams();
+        for(Entry<String, String> pair : settings.entrySet()) {
+          String key = pair.getKey();
+          String value = pair.getValue();
+          if(value.matches("-?\\d+(\\.\\d+)?")) { // is number
+          	int num = Integer.valueOf(value);
+          	p.add(key, num);
+          } else if(value.equals("true") || value.equals("false")) {
+          	boolean bool = Boolean.valueOf(value);
+          	p.add(key, bool);
+          } else {
+          	p.add(key, ctx.mkSymbol(value));
           }
-          solver.setParameters(p);
         }
-      } catch (Z3Exception e) {
-        throw new TheoremProverException(e);
+        solver.setParameters(p);
       }
+      
+      return solver;
+    } catch (Z3Exception e) {
+      throw new TheoremProverException(e);
     }
-    return solver;
   }
   
-  protected HashMap<String, String> getSettings() {
+  private HashMap<String, String> getSettings() {
     if(settings == null) {
       settings = Maps.newHashMap();
     } 
@@ -456,6 +441,7 @@ public class TheoremProverImpl implements TheoremProver {
    * "time limit" <math>256n</math>. A value of 0 means no time limit.
    */
 
+  @Override
   public void setTimeLimit(int second) {
     try {
       getSettings().put("soft_timeout", Integer.toString(second));
@@ -464,7 +450,7 @@ public class TheoremProverImpl implements TheoremProver {
     }
   }
   
-  public void enableZ3Stats() {
+  private void enableZ3Stats() {
     try {
       getSettings().put("st", "true");
     } catch (Exception e) {
@@ -472,23 +458,7 @@ public class TheoremProverImpl implements TheoremProver {
     }
   }
   
-  public void enableZ3Trace(String s) {
-    try {
-      getSettings().put("trace", s);
-    } catch (Exception e) {
-      throw new TheoremProverException(e);
-    }
-  }
-  
-  public void enableZ3Debug(String s) {
-    try {
-      getSettings().put("debug", s);
-    } catch (Exception e) {
-      throw new TheoremProverException(e);
-    }
-  }
-  
-  public void enableZ3Pbqi() {
+  private void enableZ3Pbqi() {
     try{
       getSettings().put("mbqi", "false");
       getSettings().put("auto-config", "false");
@@ -497,7 +467,7 @@ public class TheoremProverImpl implements TheoremProver {
     }
   }
   
-  public void enableZ3Mbqi() {
+  private void enableZ3Mbqi() {
     try{
       getSettings().put("mbqi", "true");
     } catch (Exception e) {
@@ -534,19 +504,6 @@ public class TheoremProverImpl implements TheoremProver {
     } catch (Exception e) {
       throw new TheoremProverException(e);
     }
-  }
-
-  /** 
-   * FIXME: Flags are not supported in z3
-   */
-  public void setLogFile(File logFile) {
-    /* flags.setFlag(FLAG_DUMP_LOG, logFile.getAbsolutePath()); */
-    throw new UnsupportedOperationException("Not supported flag in Z3.");
-  } 
-
-  public void setQuantifierLimit(int limit) {
-    /* flags.setFlag(FLAG_QUANT_MAX_INST_LEVEL, limit); */
-    throw new UnsupportedOperationException("Not supported flag in Z3.");
   }
 
   ImmutableList<Option> getOptions() {

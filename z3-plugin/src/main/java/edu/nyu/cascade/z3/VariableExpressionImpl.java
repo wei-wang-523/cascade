@@ -21,7 +21,7 @@ import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
 
-public class VariableExpressionImpl extends ExpressionImpl implements
+class VariableExpressionImpl extends ExpressionImpl implements
     VariableExpression {
   private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, Expr>> varCache = CacheBuilder
       .newBuilder().build(
@@ -53,25 +53,15 @@ public class VariableExpressionImpl extends ExpressionImpl implements
 
   static ExpressionImpl valueOfVariable(
       ExpressionManagerImpl exprManager, final Expr expr, Type type) throws Z3Exception {
-    Preconditions.checkArgument(expr.IsConst());
-    Preconditions.checkArgument(exprManager.toType(expr.Sort()).equals( type ));
+    Preconditions.checkArgument(expr.isConst());
+    Preconditions.checkArgument(exprManager.toType(expr.getSort()).equals( type ));
 
-    VariableExpressionImpl result = new VariableExpressionImpl(exprManager,
-        VARIABLE, expr, expr.toString(), type);
-    result.setIsVariable(true);
-    return result;
+    return new VariableExpressionImpl(exprManager, expr, expr.toString(), type);
   }
   
-  static ExpressionImpl valueOfVariable(
-      ExpressionManagerImpl exprManager, final String str, Type type) throws Z3Exception {
-    VariableExpressionImpl result = new VariableExpressionImpl(exprManager, str, type, false);
-    result.setIsVariable(true);
-    return result;
-  }
-  
-  protected VariableExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
+  private VariableExpressionImpl(ExpressionManagerImpl exprManager,
       Expr expr, String name, Type type) {
-    super(exprManager, kind, expr, type);
+    super(exprManager, VARIABLE, expr, type);
     setName(name);
   }
   
@@ -88,11 +78,11 @@ public class VariableExpressionImpl extends ExpressionImpl implements
             return varCache.get(exprManager).get(name);
           }
           
-          StringBuilder sb = new StringBuilder().append(name);
-          TheoremProverImpl.z3FileCommand("(declare-const " + sb.toString() + " " + sort + ")");
-          TheoremProverImpl.debugCommand("(declare-const " + sb.toString() + " : " + sort + ")");
-          Expr res = ctx.MkConst(name, sort);
+          Expr res = ctx.mkConst(name, sort);
           varCache.get(exprManager).put(name, res);
+          
+          TheoremProverImpl.z3FileCommand("(declare-const " + res + " " + sort + ")");
+          TheoremProverImpl.debugCommand("(declare-const " + res + " " + sort + ")");
           return res;
         } catch (Z3Exception e) {
           throw new TheoremProverException(e);
@@ -116,5 +106,4 @@ public class VariableExpressionImpl extends ExpressionImpl implements
   public String getName() {
     return super.getName();
   }
-
 }

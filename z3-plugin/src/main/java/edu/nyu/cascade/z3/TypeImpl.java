@@ -10,9 +10,7 @@ import com.microsoft.z3.UninterpretedSort;
 import com.microsoft.z3.Z3Exception;
 
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.FunctionExpression;
 import edu.nyu.cascade.prover.TheoremProverException;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.AddableType;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.BitVectorType;
@@ -24,11 +22,13 @@ import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.MultiplicativeType;
 import edu.nyu.cascade.prover.type.RationalType;
 import edu.nyu.cascade.prover.type.RecordType;
+import edu.nyu.cascade.prover.type.ScalarType;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.prover.type.UninterpretedType;
+import edu.nyu.cascade.util.EqualsUtil;
 
-public abstract class TypeImpl implements Type {
+abstract class TypeImpl implements Type {
   static interface BinaryConstructionStrategy {
     Sort apply(Context Ctx, Expr arg1, Expr arg2);
   }
@@ -39,7 +39,6 @@ public abstract class TypeImpl implements Type {
   private Sort z3_type = null;
   private Sort z3_unresolved_datatype = null;
   private ExpressionManagerImpl em = null;
-//  private ExpressionImpl typeExpression;
 
   protected TypeImpl(ExpressionManagerImpl em, BinaryConstructionStrategy strategy,
       Expression expr1, Expression expr2) {
@@ -72,50 +71,60 @@ public abstract class TypeImpl implements Type {
     this.em = em;
   }
 
-  @Override
-  public boolean equals(Object obj) {
-    if(obj instanceof FunctionDeclarator) {
-      if(!(this instanceof FunctionDeclarator)) return false;
-      
-      FunctionDeclarator thisF = (FunctionDeclarator) this;
-      FunctionDeclarator thatF = (FunctionDeclarator) obj;
-      
-      if(thisF.getName().equals(thatF.getName()) && 
-          thisF.getArgTypes().equals(thatF.getArgTypes()) &&
-            thisF.getRangeType().equals(thatF.getRangeType()))
-        return true;
-      else
-        return false;
-    }
-    
-    if (obj instanceof TypeImpl) {
-      if(getZ3Type() != null)
-        return getZ3Type().equals(((TypeImpl) obj).getZ3Type());
-      else
-        return getZ3UnresolvedDatatype().equals(((TypeImpl) obj).getZ3UnresolvedDatatype());
-    }
-    return super.equals(obj);
-  }
-
-  public Sort getZ3Type() {
+  Sort getZ3Type() {
     return z3_type;
   }
   
-  public Sort getZ3UnresolvedDatatype() {
+  Sort getZ3UnresolvedDatatype() {
     return z3_unresolved_datatype;
   }
 
-  public abstract String getName();
+  void setZ3Type(Sort z3_type) {
+	  this.z3_type = z3_type;
+	}
+
+	void setZ3UnresolvedDatatype(UninterpretedSort z3_unresolved_datatype) {
+	  this.z3_unresolved_datatype = z3_unresolved_datatype;
+	}
+
+	abstract String getName();
   
-  @Override
+  abstract ExpressionImpl createExpression(Expr res, Expression oldExpr, 
+	Iterable<? extends ExpressionImpl> children) ;
+
+	@Override
+	public boolean equals(Object obj) {
+		if(this instanceof FunctionType) {
+			if(!(obj instanceof FunctionType)) return false;
+		}
+		
+	  if(obj instanceof FunctionType) {
+	    if(!(this instanceof FunctionType)) return false;
+	    
+	    FunctionType thisF = (FunctionType) this;
+	    FunctionType thatF = (FunctionType) obj;
+	    
+	    if(thisF.getName().equals(thatF.getName()) && 
+	    		EqualsUtil.areEqual(thisF.getArgTypes(), thatF.getArgTypes()) &&
+	          thisF.getRangeType().equals(thatF.getRangeType()))
+	      return true;
+	    else
+	      return false;
+	  }
+	  
+	  if (obj instanceof TypeImpl) {
+	    if(getZ3Type() != null)
+	      return getZ3Type().equals(((TypeImpl) obj).getZ3Type());
+	    else
+	      return getZ3UnresolvedDatatype().equals(((TypeImpl) obj).getZ3UnresolvedDatatype());
+	  }
+	  return super.equals(obj);
+	}
+
+	@Override
   public ExpressionManagerImpl getExpressionManager() {
     return em;
   }
-
-/*  @Override
-  public ExpressionImpl getTypeExpression() {
-    return typeExpression;
-  }*/
   
   @Override
   public int hashCode() {
@@ -152,42 +161,21 @@ public abstract class TypeImpl implements Type {
     }
   }
 
-  protected void setZ3Type(Sort z3_type) {
-    this.z3_type = z3_type;
-  }
-  
-  protected void setZ3UnresolvedDatatype(UninterpretedSort z3_unresolved_datatype) {
-    this.z3_unresolved_datatype = z3_unresolved_datatype;
-  }
-
-/*  protected void setTypeExpression(ExpressionImpl typeExpression) {
-    this.typeExpression = typeExpression;
-  }*/
-  
   @Override 
   public String toString() {
     return getZ3Type().toString();
   }
-  
-  @Override
-  public abstract VariableExpressionImpl variable(String name, boolean fresh);
 
-  @Override
-  public FunctionExpression lambda(
-      Iterable<? extends VariableExpression> vars, Expression body) {
-    throw new UnsupportedOperationException("lambda expression is not supported in z3");
+
+	@Override
+  public boolean isScalarType() {
+	  return this instanceof ScalarType;
   }
 
-  @Override
-  public FunctionExpression
-   lambda(
-      VariableExpression var,
-      Expression body) {
-    throw new UnsupportedOperationException("lambda expression is not supported in z3");
-  }
-  
-  TypeImpl subType(ExpressionManagerImpl exprManager, Expr expr) {
-    throw new UnsupportedOperationException();
+	@Override
+  public ScalarType asScalarType() {
+    Preconditions.checkState(isScalarType());
+    return (ScalarType)this;
   }
 
   @Override
@@ -332,7 +320,4 @@ public abstract class TypeImpl implements Type {
   public boolean isUninterpreted() {
     return this instanceof UninterpretedType;
   }
-  
-  abstract ExpressionImpl create(Expr res, Expression oldExpr, 
-  		Iterable<? extends ExpressionImpl> children) ;
 }

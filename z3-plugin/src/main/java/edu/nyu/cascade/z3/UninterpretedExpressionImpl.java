@@ -12,7 +12,7 @@ import edu.nyu.cascade.prover.UninterpretedExpression;
 import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.prover.type.Type;
 
-public final class UninterpretedExpressionImpl extends ExpressionImpl implements
+final class UninterpretedExpressionImpl extends ExpressionImpl implements
   UninterpretedExpression {
 
   static UninterpretedExpressionImpl create(ExpressionManagerImpl exprManager, Type type,
@@ -27,7 +27,7 @@ public final class UninterpretedExpressionImpl extends ExpressionImpl implements
           @Override
           public Expr apply(Context ctx) throws Z3Exception {
             UninterpretedSort sort = (UninterpretedSort) exprManager.toZ3Type(type);
-            return ctx.MkConst(name, sort);
+            return ctx.mkConst(name, sort);
           }
         });
     setType(type);
@@ -42,17 +42,12 @@ public final class UninterpretedExpressionImpl extends ExpressionImpl implements
   	super(em, kind, expr, type, children);
   }
   
-  protected static UninterpretedExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
+  static UninterpretedExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
       Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
   	Preconditions.checkArgument(type.isUninterpreted());
     return new UninterpretedExpressionImpl(em, kind, expr, type.asUninterpreted(), children);
   }
   
-  @Override
-  public UninterpretedTypeImpl getType() {
-    return (UninterpretedTypeImpl) super.getType();
-  }
-
   static UninterpretedExpressionImpl valueOf(ExpressionManagerImpl exprManager,
       ExpressionImpl expr) {
     Preconditions.checkArgument(expr.isUninterpreted());
@@ -62,4 +57,9 @@ public final class UninterpretedExpressionImpl extends ExpressionImpl implements
       return new UninterpretedExpressionImpl((ExpressionImpl) expr);
     }
   }
+
+	@Override
+	public UninterpretedTypeImpl getType() {
+	  return (UninterpretedTypeImpl) super.getType();
+	}
 }

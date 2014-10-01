@@ -1,22 +1,10 @@
 package edu.nyu.cascade.z3;
 
-import com.google.common.base.Preconditions;
-import edu.nyu.cascade.prover.ArrayVariableExpression;
+import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.Type;
 
-public final class ArrayVariableImpl
-    extends VariableExpressionImpl implements
-    ArrayVariableExpression {
-
-  static  ArrayVariableImpl create(
-      ExpressionManagerImpl exprManager, String name, TypeImpl indexType, TypeImpl elementType, boolean fresh) {
-    Preconditions.checkArgument(indexType.getExpressionManager().equals(
-        elementType.getExpressionManager()));
-    ArrayTypeImpl type = exprManager.arrayType(indexType, elementType);
-
-    return new ArrayVariableImpl(exprManager,name, type,fresh);
-  }
+final class ArrayVariableImpl extends VariableExpressionImpl implements ArrayExpression {
 
   static ArrayVariableImpl create(
       ExpressionManagerImpl exprManager, String name, ArrayTypeImpl type, boolean fresh) {

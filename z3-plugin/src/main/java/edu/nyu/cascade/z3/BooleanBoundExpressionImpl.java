@@ -5,15 +5,24 @@ import com.google.common.collect.ImmutableList;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 
-final class BooleanVariableImpl extends VariableExpressionImpl implements BooleanExpression {
+final class BooleanBoundExpressionImpl extends BoundExpressionImpl implements BooleanExpression {
 
-  private BooleanVariableImpl(ExpressionManagerImpl em, String name, boolean fresh) {
+  private BooleanBoundExpressionImpl(ExpressionManagerImpl em, String name, boolean fresh) {
     super(em, name, em.booleanType(), fresh);
   }
   
-  static BooleanVariableImpl create(
+  private BooleanBoundExpressionImpl(ExpressionManagerImpl em, String name, int index, boolean fresh) {
+    super(em, name, index, em.booleanType(), fresh);
+  }
+  
+  static BooleanBoundExpressionImpl create(
       ExpressionManagerImpl em, String name, boolean fresh) {
-	  return new BooleanVariableImpl(em, name, fresh);
+	  return new BooleanBoundExpressionImpl(em, name, fresh);
+  }
+  
+  static BooleanBoundExpressionImpl create(
+      ExpressionManagerImpl em, String name, int index, boolean fresh) {
+	  return new BooleanBoundExpressionImpl(em, name, index, fresh);
   }
 
   @Override

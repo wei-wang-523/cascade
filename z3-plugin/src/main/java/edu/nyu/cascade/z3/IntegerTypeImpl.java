@@ -15,7 +15,7 @@ import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.util.CacheException;
 
-public class IntegerTypeImpl extends TypeImpl implements IntegerType {
+final class IntegerTypeImpl extends TypeImpl implements IntegerType {
   
   private static final LoadingCache<ExpressionManagerImpl, IntegerTypeImpl> typeCache = CacheBuilder
       .newBuilder().build(
@@ -25,7 +25,7 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
             }
           });
 
-  public static IntegerTypeImpl getInstance(ExpressionManagerImpl expressionManager) {
+  static IntegerTypeImpl getInstance(ExpressionManagerImpl expressionManager) {
     try {
       return typeCache.get(expressionManager);
     } catch (ExecutionException e) {
@@ -33,27 +33,23 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
     }
   }
   
-  protected IntegerTypeImpl(ExpressionManagerImpl expressionManager) {
+  IntegerTypeImpl(ExpressionManagerImpl expressionManager) {
     super(expressionManager);
     try {
-      setZ3Type(expressionManager.getTheoremProver().getZ3Context().IntSort());
+      setZ3Type(expressionManager.getTheoremProver().getZ3Context().getIntSort());
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
     }
   }
 
-  protected IntegerTypeImpl(ExpressionManagerImpl expressionManager,
-      BinaryConstructionStrategy strategy, Expression expr1,
-      Expression expr2) {
-    super(expressionManager, strategy, expr1, expr2);
-  }
-
-  protected IntegerTypeImpl(ExpressionManagerImpl em, UnaryConstructionStrategy strategy,
-      Expression expr) {
-    super(em, strategy, expr);
-  }
-
   @Override
+	IntegerExpressionImpl createExpression(Expr res, Expression oldExpr,
+			Iterable<? extends ExpressionImpl> children) {
+		return IntegerExpressionImpl.create(getExpressionManager(), 
+				oldExpr.getKind(), res, oldExpr.getType(), children);
+	}
+
+	@Override
   public IntegerExpressionImpl add(
       Expression a,
       Expression b) {
@@ -115,35 +111,28 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
   }
   
   @Override
-  public BooleanExpression sgt(Expression a, 
-      Expression b) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException();
+  public BooleanExpression sgt(Expression a, Expression b) {
+    return gt(a, b);
   }
 
   @Override
-  public BooleanExpressionImpl leq(Expression a,
-      Expression b) {
+  public BooleanExpressionImpl leq(Expression a, Expression b) {
     return BooleanExpressionImpl.mkLeq(getExpressionManager(),a, b);
   }
   
   @Override
-  public BooleanExpression sleq(Expression a, 
-      Expression b) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException();
+  public BooleanExpression sleq(Expression a, Expression b) {
+    return sleq(a, b);
   }
 
   @Override
-  public BooleanExpressionImpl lt(Expression a,
-      Expression b) {
+  public BooleanExpressionImpl lt(Expression a, Expression b) {
     return BooleanExpressionImpl.mkLt(getExpressionManager(),a, b);
   }
 
   @Override
   public BooleanExpression slt(Expression a, Expression b) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException();
+    return lt(a, b);
   }
   
   @Override
@@ -183,11 +172,6 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
   }
 
   @Override
-  TypeImpl subType(ExpressionManagerImpl exprManager, Expr expr) {
-    throw new UnsupportedOperationException("Records not supported by Z3 yet (sorry!)");
-  }
-
-  @Override
   public IntegerVariableImpl variable(String name, boolean fresh) {
     return new IntegerVariableImpl(getExpressionManager(), name, this, fresh);
   }
@@ -198,14 +182,12 @@ public class IntegerTypeImpl extends TypeImpl implements IntegerType {
   }
 
   @Override
-  public IntegerVariableImpl boundVariable(String name, boolean fresh) {
-    throw new UnsupportedOperationException("bound variable is not supported in z3.");
+  public IntegerBoundExpressionImpl boundVar(String name, boolean fresh) {
+    return IntegerBoundExpressionImpl.create(getExpressionManager(), name, this, fresh);
   }
   
-	@Override
-	protected IntegerExpressionImpl create(Expr res, Expression oldExpr,
-			Iterable<? extends ExpressionImpl> children) {
-		return IntegerExpressionImpl.create(getExpressionManager(), 
-				oldExpr.getKind(), res, oldExpr.getType(), children);
-	}
+  @Override
+  public IntegerBoundExpressionImpl boundExpression(String name, int index, boolean fresh) {
+    return IntegerBoundExpressionImpl.create(getExpressionManager(), name, index, this, fresh);
+  }
 }

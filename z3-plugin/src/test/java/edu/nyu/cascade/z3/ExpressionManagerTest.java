@@ -5,10 +5,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.base.Function;
@@ -17,13 +17,14 @@ import com.google.common.collect.Lists;
 
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
+import edu.nyu.cascade.prover.BoundExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.FunctionExpression;
 import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Constructor;
-import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Selector;
@@ -115,6 +116,103 @@ public class ExpressionManagerTest {
 
     slice = exprManager.extract(bv, 6, 6);
     assertEquals(1, slice.getType().getSize());
+  }
+
+  @Test
+  public void testBitVectorExtend() {
+    VariableExpression bv = exprManager.variable("b",
+        exprManager.bitVectorType(8), true);
+    BitVectorExpression slice = exprManager.signedExtend(8, bv);
+    assertEquals(8, slice.getSize());
+
+    slice = exprManager.signedExtend(10, bv);
+    assertEquals(10, slice.getSize());
+
+    slice = exprManager.zeroExtend(10, bv);
+    assertEquals(10, slice.getSize());
+  }
+  
+  @Test
+  public void testBitVectorPlus() {
+  	Expression bv1 = exprManager.variable("bv1", 
+  			exprManager.bitVectorType(64), true);
+  	Expression bv2 = exprManager.bitVectorConstant(1, 32);
+  	
+  	BitVectorExpression sum = exprManager.bitVectorPlus(64, bv1, bv2);
+  	assertEquals(64, sum.getSize());
+  }
+  
+  @Test
+  public void testBitVectorMinus() {
+  	Expression bv1 = exprManager.variable("bv1", 
+  			exprManager.bitVectorType(64), true);
+  	Expression bv2 = exprManager.bitVectorConstant(1, 32);
+  	
+  	BitVectorExpression res = exprManager.bitVectorMinus(bv1, bv2);
+  	assertEquals(64, res.getSize());
+  }
+  
+  @Test
+  public void testBitVectorMult() {
+  	VariableExpression bv1 = exprManager.variable("bv1", 
+  			exprManager.bitVectorType(4), true);
+  	VariableExpression bv2 = exprManager.variable("bv2", 
+  			exprManager.bitVectorType(8), true);
+  	
+  	BitVectorExpression res = exprManager.bitVectorMult(4, bv1, bv2);
+  	assertEquals(4, res.getSize());
+  }
+  
+  @Test
+  public void testBitVectorShift() {
+  	VariableExpression bv1 = exprManager.variable("bv1", 
+  			exprManager.bitVectorType(8), true);
+  	BitVectorExpression bv2 = exprManager.bitVectorConstant(2);
+  	
+  	BitVectorExpression res = bv1.asBitVector().lshift(bv2);
+  	assertEquals(8, res.getSize());
+  	
+  	res = bv1.asBitVector().rshift(bv2);
+  	assertEquals(8, res.getSize());
+  	
+  	res = bv1.asBitVector().signedRshift(bv2);
+  	assertEquals(8, res.getSize());
+  }
+  
+  @Test
+  public void testBitVectorDivide() {
+  	VariableExpression bv1 = exprManager.variable("bv1", 
+  			exprManager.bitVectorType(8), true);
+  	BitVectorExpression bv2 = exprManager.bitVectorConstant(2);
+  	
+  	BitVectorExpression res = bv1.asBitVector().divides(bv2);
+  	assertEquals(8, res.asBitVector().getSize());
+  	
+  	res = bv1.asBitVector().signedDivides(bv2);
+  	assertEquals(8, res.asBitVector().getSize());
+  }
+  
+  @Test
+  public void testBitVectorRem() {
+  	VariableExpression bv1 = exprManager.variable("bv1", 
+  			exprManager.bitVectorType(8), true);
+  	BitVectorExpression bv2 = exprManager.bitVectorConstant(2);
+  	
+  	BitVectorExpression res = bv1.asBitVector().rems(bv2);
+  	assertEquals(8, res.asBitVector().getSize());
+  	
+  	res = bv1.asBitVector().signedRems(bv2);
+  	assertEquals(8, res.asBitVector().getSize());
+  }
+  
+  @Test
+  public void testBitVectorConcact() {
+  	VariableExpression bv1 = exprManager.variable("bv1", 
+  			exprManager.bitVectorType(8), true);
+  	BitVectorExpression bv2 = exprManager.bitVectorConstant(2);
+  	
+  	BitVectorExpression res = exprManager.concat(bv1, bv2);
+  	assertEquals(10, res.asBitVector().getSize());
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -224,7 +322,7 @@ public class ExpressionManagerTest {
 
   @Test
   public void testDatatype6() {
-    exprManager.integerVar("x", true);
+    exprManager.integerType().variable("x", true);
     Selector sel1 = exprManager.selector("val1", intType);
     Constructor constr1 = exprManager.constructor("mkT1", sel1);
     exprManager.dataType("x", constr1);
@@ -327,20 +425,18 @@ public class ExpressionManagerTest {
 
   @Test
   public void testForallExpr() {
-    VariableExpression x = exprManager.integerVar("x", true);
+    BoundExpression x = exprManager.integerType().boundVar("x", true);
     assertInvalid(exprManager.forall(ImmutableList.of(x), exprManager
         .greaterThan(x, exprManager.zero())));
   }
 
   @Test
   public void testForallExpr2() {
-    VariableExpression var_x = exprManager.integerVar("x", true);
-    VariableExpression var_y = exprManager.integerVar("y", true);
-
-    Expression x = exprManager.boundExpression(1, intType);
-    Expression y = exprManager.boundExpression(0, intType);
+  	BoundExpression x = intType.boundVar("x", true);
+  	BoundExpression y = intType.boundVar("y", true);
     
-    FunctionType f = exprManager.functionType("f", intType, intType);
+    FunctionExpression f = exprManager.functionDeclarator("f",
+    		exprManager.functionType(Collections.singletonList(intType), intType), true);
     
     Expression fx = exprManager.applyExpr(f, x);
     Expression fy = exprManager.applyExpr(f, y);
@@ -348,7 +444,7 @@ public class ExpressionManagerTest {
     // Using a trigger
     
     List<? extends Expression> triggers = ImmutableList.of(fx, fy);
-    BooleanExpression b = exprManager.forall(ImmutableList.of(var_x, var_y), x.eq(
+    BooleanExpression b = exprManager.forall(ImmutableList.of(x, y), x.eq(
         y).implies(fx.eq(fy)), triggers);
 
     assertValid(b);
@@ -362,30 +458,53 @@ public class ExpressionManagerTest {
       }}), b.getTriggers());
   }
 
+  
+  @Test
+  public void testForallExpr3() {
+  	BoundExpression x = intType.boundExpression("x", 1, true);
+  	BoundExpression y = intType.boundExpression("y", 0, true);
+    
+    FunctionExpression f = exprManager.functionDeclarator("f", 
+    		exprManager.functionType(intType, intType), true)
+    		.asFunctionExpression();
+    Expression fx = exprManager.applyExpr(f, x);
+    Expression fy = exprManager.applyExpr(f, y);
+
+    // Using a trigger
+    List<? extends Expression> triggers = ImmutableList.of(fx, fy);
+    BooleanExpression b = exprManager.forall(ImmutableList.of(x, y), x.eq(
+        y).implies(fx.eq(fy)), triggers);
+
+    assertValid(b);
+  }
+  
   @Test
   public void testFunctionApplication() {
-    // assume forall x : f(x) == x
-    VariableExpression x_var = exprManager.integerVar("x", true);
+    // assume forall x : f(x) == x    
+    BoundExpression x = intType.boundVar("x", true);
+
+    FunctionExpression f = exprManager.functionDeclarator("f",
+    		exprManager.functionType(Collections.singletonList(intType), intType), true);
     
-    Expression x = exprManager.boundExpression(0, intType);
-    FunctionType f = exprManager.functionType("f", intType, intType);
     Expression fx = exprManager.applyExpr(f, x);
-    Expression axiom = exprManager.forall(x_var, fx.eq(x)); // f(x) = x
+    Expression axiom = exprManager.forall(x, fx.eq(x)); // f(x) = x
     
     exprManager.getTheoremProver().assume(axiom);
     
     // check if f(y) == y
-    VariableExpression y = exprManager.integerVar("y", true);
+    VariableExpression y = exprManager.integerType().variable("y", true);
     Expression fy = exprManager.applyExpr(f, y);
     assertValid(fy.eq(y));
   }
 
   @Test
   public void testFunctionApplication2() {
-    VariableExpression x = exprManager.integerVar("x", true);
-    VariableExpression y = exprManager.integerVar("y", true);
+    VariableExpression x = intType.variable("x", true);
+    VariableExpression y = intType.variable("y", true);
 
-    FunctionType f = exprManager.functionType("f", intType, intType);
+    FunctionExpression f = exprManager.functionDeclarator("f",
+    		exprManager.functionType(Collections.singletonList(intType), intType), true);
+    
     Expression fx = exprManager.applyExpr(f, x);
     Expression fy = exprManager.applyExpr(f, y);
 
@@ -409,8 +528,7 @@ public class ExpressionManagerTest {
                                                                                 // ==
                                                                                 // (-1)
 
-    IntegerVariableImpl x = exprManager
-    		.asIntegerVariable(exprManager.integerVar("x", true));
+    IntegerVariableImpl x = exprManager.integerType().variable("x", true);
     assertValid(exprManager.eq(exprManager.plus(zero, x), x)); // 0
                                                                              // +
                                                                              // x
@@ -450,13 +568,6 @@ public class ExpressionManagerTest {
         one)); // -1 * -1 == 1
     assertValid(exprManager.eq(exprManager.minus(zero, x),
         exprManager.negate(x))); // 0 - x == -x
-  }
-
-  @Ignore
-  @Test
-  public void testLambda() {
-    VariableExpression x = exprManager.integerVar("x", true);
-    exprManager.lambda(x, x);
   }
 
   @SuppressWarnings("unchecked")
@@ -627,15 +738,14 @@ public class ExpressionManagerTest {
 
   @Test
   public void testVarIntegerExpression() {
-    VariableExpression x = exprManager.integerVar("x", true);
+    VariableExpression x = exprManager.integerType().variable("x", true);
     assertEquals(intType, x.getType());
   }
 
   @Test
   public void testVarIntegerExpression2() {
-    VariableExpression x = exprManager.integerVar("x", true);
-    VariableExpression x2 = exprManager
-        .integerVar("x", true);
+    VariableExpression x = exprManager.integerType().variable("x", true);
+    VariableExpression x2 = exprManager.integerType().variable("x", true);
     assertTrue (!x.equals(x2));
   }
 }

@@ -13,7 +13,7 @@ import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.RationalType;
 import edu.nyu.cascade.util.CacheException;
 
-public class RationalTypeImpl extends TypeImpl implements RationalType {
+final class RationalTypeImpl extends TypeImpl implements RationalType {
   
   private static final LoadingCache<ExpressionManagerImpl, RationalTypeImpl> typeCache = CacheBuilder
       .newBuilder().build(
@@ -23,7 +23,7 @@ public class RationalTypeImpl extends TypeImpl implements RationalType {
             }
           });
   
-  public static RationalTypeImpl getInstance(ExpressionManagerImpl expressionManager) {
+  static RationalTypeImpl getInstance(ExpressionManagerImpl expressionManager) {
     try {
       return typeCache.get(expressionManager);
     } catch (ExecutionException e) {
@@ -34,13 +34,13 @@ public class RationalTypeImpl extends TypeImpl implements RationalType {
   private RationalTypeImpl(ExpressionManagerImpl expressionManager) {
     super(expressionManager);
     try {
-      setZ3Type(expressionManager.getTheoremProver().getZ3Context().RealSort());
+      setZ3Type(expressionManager.getTheoremProver().getZ3Context().getRealSort());
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
     }
   }
   
-  protected RationalTypeImpl(ExpressionManagerImpl em, BinaryConstructionStrategy strategy,
+  RationalTypeImpl(ExpressionManagerImpl em, BinaryConstructionStrategy strategy,
       Expression lowerBound,
       Expression upperBound) {
     super(em, strategy,lowerBound, upperBound);
@@ -49,7 +49,6 @@ public class RationalTypeImpl extends TypeImpl implements RationalType {
   @Override
   public RationalExpressionImpl add(Expression first,
       Expression... rest) {
-    // TODO Auto-generated method stub
     throw new UnsupportedOperationException("RationalType.add(IExpression,IExpression...);");
   }
 
@@ -57,14 +56,14 @@ public class RationalTypeImpl extends TypeImpl implements RationalType {
   public RationalExpressionImpl add(Expression a,
       Expression b) {
     // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("RationalType.add(IExpression,IExpression);");
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public RationalExpressionImpl add(
       Iterable<? extends Expression> addends) {
     // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("RationalType.add(Iterable);");
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -189,18 +188,22 @@ public class RationalTypeImpl extends TypeImpl implements RationalType {
   }
 
   @Override
-  public Expression mult(
-      Iterable<? extends Expression> terms) {
+  public Expression mult(Iterable<? extends Expression> terms) {
     return RationalExpressionImpl.mkMult(getExpressionManager(),terms);
   }
 
   @Override
-  public RationalVariableImpl boundVariable(String name, boolean fresh) {
-    throw new UnsupportedOperationException("bound variable is not supported in z3.");
+  public RationalBoundExpressionImpl boundVar(String name, boolean fresh) {
+    return RationalBoundExpressionImpl.create(getExpressionManager(), name, this, fresh);
+  }
+  
+  @Override
+  public RationalBoundExpressionImpl boundExpression(String name, int index, boolean fresh) {
+    return RationalBoundExpressionImpl.create(getExpressionManager(), name, index, this, fresh);
   }
   
 	@Override
-	protected InductiveExpressionImpl create(Expr res, Expression oldExpr,
+	protected InductiveExpressionImpl createExpression(Expr res, Expression oldExpr,
 			Iterable<? extends ExpressionImpl> children) {
 		return InductiveExpressionImpl.create(getExpressionManager(), 
 				oldExpr.getKind(), res, oldExpr.getType(), children);

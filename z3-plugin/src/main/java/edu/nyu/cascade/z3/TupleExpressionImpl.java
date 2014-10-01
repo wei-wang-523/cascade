@@ -18,7 +18,7 @@ import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 
-public final class TupleExpressionImpl extends ExpressionImpl implements
+final class TupleExpressionImpl extends ExpressionImpl implements
     TupleExpression {
   static TupleExpressionImpl create(ExpressionManagerImpl exprManager, Type type,
       Expression first, Expression... rest) {
@@ -31,7 +31,23 @@ public final class TupleExpressionImpl extends ExpressionImpl implements
     return new TupleExpressionImpl(exprManager, type, elements);
   }
 
-  static TupleExpressionImpl mkUpdate(ExpressionManagerImpl exprManager,
+  static TupleExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
+	    Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
+		Preconditions.checkArgument(type.isTuple());
+	  return new TupleExpressionImpl(em, kind, expr, type.asTuple(), children);
+	}
+
+	static TupleExpressionImpl valueOf(ExpressionManagerImpl exprManager,
+	    ExpressionImpl expr) {
+	  Preconditions.checkArgument(expr.isTuple());
+	  if( expr instanceof TupleExpressionImpl ) {
+	    return (TupleExpressionImpl) expr;
+	  } else {
+	    return new TupleExpressionImpl((ExpressionImpl) expr);
+	  }
+	}
+
+	static TupleExpressionImpl mkUpdate(ExpressionManagerImpl exprManager,
       Expression tuple, final int index, Expression val) {
     Preconditions.checkArgument(tuple.isTuple());
     Preconditions.checkArgument(0 <= index
@@ -64,7 +80,7 @@ public final class TupleExpressionImpl extends ExpressionImpl implements
           @Override
           public Expr apply(Context ctx, Expr expr) {
               try {
-                return tupleSort.FieldDecls()[index].Apply(expr);
+                return tupleSort.getFieldDecls()[index].apply(expr);
               } catch (Z3Exception e) {
                 throw new TheoremProverException(e);
               }
@@ -89,7 +105,7 @@ public final class TupleExpressionImpl extends ExpressionImpl implements
           @Override
           public Expr apply(Context ctx, Expr[] args) {
             try {
-              return ((TupleSort) exprManager.toZ3Type(type)).MkDecl().Apply(args);
+              return ((TupleSort) exprManager.toZ3Type(type)).mkDecl().apply(args);
             } catch (Z3Exception e) {
               throw new TheoremProverException(e);
             }            
@@ -105,12 +121,6 @@ public final class TupleExpressionImpl extends ExpressionImpl implements
   private TupleExpressionImpl(ExpressionManagerImpl em, Kind kind, 
       Expr expr, TupleType type, Iterable<? extends ExpressionImpl> children) {
   	super(em, kind, expr, type, children);
-  }
-  
-  protected static TupleExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
-      Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
-  	Preconditions.checkArgument(type.isTuple());
-    return new TupleExpressionImpl(em, kind, expr, type.asTuple(), children);
   }
   
   @Override
@@ -131,15 +141,5 @@ public final class TupleExpressionImpl extends ExpressionImpl implements
   @Override
   public TupleExpressionImpl update(int index, Expression val) {
     return mkUpdate(getExpressionManager(), this, index, val);
-  }
-
-  static TupleExpressionImpl valueOf(ExpressionManagerImpl exprManager,
-      ExpressionImpl expr) {
-    Preconditions.checkArgument(expr.isTuple());
-    if( expr instanceof TupleExpressionImpl ) {
-      return (TupleExpressionImpl) expr;
-    } else {
-      return new TupleExpressionImpl((ExpressionImpl) expr);
-    }
   }
 }

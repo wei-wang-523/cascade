@@ -1,5 +1,7 @@
 package edu.nyu.cascade.z3;
 
+import static edu.nyu.cascade.prover.Expression.Kind.FUNCTION;
+
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
@@ -13,7 +15,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.MapMaker;
-import com.microsoft.z3.Expr;
 import com.microsoft.z3.FuncDecl;
 import com.microsoft.z3.Sort;
 import com.microsoft.z3.Z3Exception;
@@ -25,9 +26,10 @@ import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Identifiers;
 
-public class FunctionDeclarator extends TypeImpl
-    implements FunctionType {
+class FunctionDeclarator extends ExpressionImpl
+    implements FunctionExpression {
   
   private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, FunctionDeclarator>> funcCache = CacheBuilder
       .newBuilder().build(
@@ -38,10 +40,12 @@ public class FunctionDeclarator extends TypeImpl
           });
   
   static FunctionDeclarator create(final ExpressionManagerImpl exprManager, String name,
-      Iterable<? extends Type> argTypes, Type range) {
+      Iterable<? extends Type> argTypes, Type range, boolean fresh) {
     try {
-      if(funcCache.get(exprManager).containsKey(name)) 
-        return funcCache.get(exprManager).get(name);
+    	String funcName = fresh ? Identifiers.uniquify(name) : name;
+    	
+      if(funcCache.get(exprManager).containsKey(funcName)) 
+        return funcCache.get(exprManager).get(funcName);
       
       Iterable<TypeImpl> argTypes1 = Iterables.transform(argTypes,
           new Function<Type, TypeImpl>() {
@@ -52,70 +56,120 @@ public class FunctionDeclarator extends TypeImpl
       });
       
       TypeImpl rangeType = exprManager.importType(range);
-
-      FuncDecl funcDecl = exprManager.getTheoremProver().getZ3Context().MkFuncDecl(name, 
-          Iterables.toArray(Iterables.transform(argTypes, new Function<Type, Sort>() {
-        @Override
-        public Sort apply(Type type) {
-          return exprManager.importType(type).getZ3Type();
-        }
-      }), Sort.class), rangeType.getZ3Type());
       
-      if(IOUtils.debugEnabled())
-        TheoremProverImpl.debugCommand(funcDecl.toString().trim());
-      if(IOUtils.tpFileEnabled())
-        TheoremProverImpl.z3FileCommand(funcDecl.toString().trim());
-      
-      FunctionDeclarator func = new FunctionDeclarator(exprManager, name, argTypes1, rangeType, funcDecl);
-      funcCache.get(exprManager).put(name, func);
+      FunctionTypeImpl funcType = FunctionTypeImpl.create(exprManager, argTypes1, rangeType);
+      FunctionDeclarator func = new FunctionDeclarator(exprManager, funcName, funcType);
+      funcCache.get(exprManager).put(funcName, func);
       return func;
-    } catch (Z3Exception e) {
-      throw new TheoremProverException(e);
     } catch (ExecutionException e) {
       throw new CacheException(e);
     }
   }
   
-  static FunctionDeclarator create(final ExpressionManagerImpl exprManager, FuncDecl func) {
+  static FunctionDeclarator create(final ExpressionManagerImpl exprManager, String name,
+	    FunctionType functionType, boolean fresh) {
+	  try {
+	  	
+	  	String funcName = fresh ? Identifiers.uniquify(name) : name;
+	  	
+	    if(funcCache.get(exprManager).containsKey(funcName)) 
+	      return funcCache.get(exprManager).get(funcName);
+	    
+	    Iterable<TypeImpl> argTypes1 = Iterables.transform(functionType.getArgTypes(),
+	        new Function<Type, TypeImpl>() {
+	          @Override
+	          public TypeImpl apply(Type t) {
+	            return exprManager.importType(t);
+	          }
+	    });
+	    
+	    TypeImpl rangeType = exprManager.importType(functionType.getRangeType());
+	    
+	    FunctionTypeImpl funcType = FunctionTypeImpl.create(exprManager, argTypes1, rangeType);
+	    FunctionDeclarator func = new FunctionDeclarator(exprManager, funcName, funcType);
+	    funcCache.get(exprManager).put(funcName, func);
+	    return func;
+	  } catch (ExecutionException e) {
+	    throw new CacheException(e);
+	  }
+	}
+
+	static FunctionDeclarator create(final ExpressionManagerImpl exprManager, FuncDecl func) {
     try {
       String name = func.toString();
-      Sort[] argSorts = func.Domain();
+      Sort[] argSorts = func.getDomain();
       List<TypeImpl> argTypes = Lists.newArrayList();
       for(Sort argSort : argSorts)
         argTypes.add(exprManager.toType(argSort));
-      TypeImpl rangeType = exprManager.toType(func.Range());
-      return new FunctionDeclarator(exprManager, name, argTypes, rangeType, func);
+      TypeImpl rangeType = exprManager.toType(func.getRange());
+      FunctionTypeImpl funcType = FunctionTypeImpl.create(exprManager, argTypes, rangeType);
+      return new FunctionDeclarator(exprManager, name, funcType, func);
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
     }
   }
   
-  static FunctionDeclarator valueOf(
-      ExpressionManagerImpl exprManager, Type t) {
-    if (t instanceof FunctionDeclarator) {
-      return (FunctionDeclarator) t;
+  static FunctionExpression valueOf(ExpressionManagerImpl exprManager,
+	    ExpressionImpl e) {
+    if (e instanceof FunctionDeclarator) {
+      return (FunctionDeclarator) e;
     } else {
-      return create(exprManager, ((FunctionType) t).getName(), ((FunctionType) t).getArgTypes(),
-          ((FunctionType) t).getRangeType());
+      throw new IllegalArgumentException("Expression type: " + e.getClass());
     }
-  }
-  
-  private final ImmutableList<TypeImpl> argTypes;
-  private final TypeImpl rangeType;
-  public FuncDecl getFunc() {
-    return func;
-  }
+	}
 
+	private final ImmutableList<? extends Type> argTypes;
+  private final Type rangeType;
   private final String fname;
   private final FuncDecl func;
   
   private FunctionDeclarator(final ExpressionManagerImpl exprManager, String fname,
-      Iterable<? extends TypeImpl> argTypes, TypeImpl range, FuncDecl funcDecl) {
-    super(exprManager);
-    this.argTypes = ImmutableList.copyOf(argTypes);
-    this.rangeType = range;
+  		FunctionTypeImpl functionType, FuncDecl func) {
+  	super(exprManager, FUNCTION, functionType);
+    this.argTypes = functionType.getArgTypes();
+    this.rangeType = functionType.getRangeType();
     this.fname = fname;
-    this.func = funcDecl;
+    this.func = func;
+  }
+  
+  private FunctionDeclarator(final ExpressionManagerImpl exprManager, String fname,
+  		FunctionTypeImpl functionType) {
+  	super(exprManager, FUNCTION, functionType);
+    this.argTypes = functionType.getArgTypes();
+    this.rangeType = functionType.getRangeType();
+    this.fname = fname;
+    try {
+      this.func = exprManager.getTheoremProver().getZ3Context().mkFuncDecl(fname, 
+          Iterables.toArray(Iterables.transform(functionType.getArgTypes(), 
+          		new Function<Type, Sort>() {
+            @Override
+            public Sort apply(Type type) {
+              return exprManager.importType(type).getZ3Type();
+            }
+          }), Sort.class), 
+          exprManager.importType(functionType.getRangeType()).getZ3Type());
+      
+      if(IOUtils.debugEnabled())
+        TheoremProverImpl.debugCommand(func.toString().trim());
+      if(IOUtils.tpFileEnabled())
+        TheoremProverImpl.z3FileCommand(func.toString().trim());
+    } catch (Z3Exception e) {
+    	throw new TheoremProverException(e);
+    }
+  }
+  
+  FuncDecl getFunc() {
+	  return func;
+	}
+
+	@Override
+  public int hashCode() {
+  	return func.hashCode();
+  }
+  
+  @Override
+  public FunctionTypeImpl getType() {
+  	return (FunctionTypeImpl) super.getType();
   }
 
   @Override
@@ -129,11 +183,6 @@ public class FunctionDeclarator extends TypeImpl
     return ExpressionImpl.mkFunApply(getExpressionManager(), this,
         Lists.asList(arg1, otherArgs));
   }
-  
-  @Override
-  public Type getArgTypeAtIndex(int index) {
-    return argTypes.get(index);
-  }
 
   @Override
   public ImmutableList<? extends Type> getArgTypes() {
@@ -146,45 +195,36 @@ public class FunctionDeclarator extends TypeImpl
   }
 
   @Override
-  public Type getRangeType() {
-    return rangeType;
-  }
-
-  @Override
-  public DomainType getDomainType() {
-    return DomainType.FUNCTION;
-  }
-
-  @Override
   public String getName() {
     return fname;
   }
 
-  @Override
-  public VariableExpressionImpl boundVariable(String name, boolean fresh) {
-    throw new UnsupportedOperationException("bound variable is not supported in z3.");
+	@Override
+  public Type getRange() {
+	  return rangeType;
   }
-
+	
 	@Override
-  public VariableExpressionImpl variable(String name, boolean fresh) {
-		throw new UnsupportedOperationException("bound variable is not supported in z3.");
+  public boolean equals(Object obj) {
+    if (!(obj instanceof FunctionDeclarator)) return false; 
+    
+    FunctionDeclarator that = (FunctionDeclarator) obj;
+    return fname.equals(that.getName()) && func.equals(that.getFunc());
   }
-
+	
 	@Override
-	public Expression apply(FunctionExpression fun,
-			Iterable<? extends Expression> args) {
-  	throw new UnsupportedOperationException("z3 does not support it.");
-	}
-
-	@Override
-	public Expression apply(FunctionExpression fun, Expression arg1,
-			Expression... otherArgs) {
-  	throw new UnsupportedOperationException("z3 does not support it.");
-	}
-
-	@Override
-	protected ExpressionImpl create(Expr res, Expression oldExpr,
-			Iterable<? extends ExpressionImpl> children) {
-		throw new UnsupportedOperationException();
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(fname).append(": (");
+		
+		int index = 0;
+		for(Type argType : argTypes) {
+			sb.append(argType);
+			if(index + 1 < getArity()) sb.append(',');
+			index++;
+		}
+		
+		sb.append(") -> ").append(rangeType);
+		return sb.toString();
 	}
 }

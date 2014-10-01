@@ -17,7 +17,7 @@ import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.IOUtils;
 
-public final class UninterpretedTypeImpl extends TypeImpl implements UninterpretedType {
+final class UninterpretedTypeImpl extends TypeImpl implements UninterpretedType {
   private final String name;
   
   private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, UninterpretedTypeImpl>> typeCache = CacheBuilder
@@ -59,7 +59,7 @@ public final class UninterpretedTypeImpl extends TypeImpl implements Uninterpret
     
     try {
       TheoremProverImpl.debugCall("uninterpretedType");
-      setZ3Type(exprManager.getTheoremProver().getZ3Context().MkUninterpretedSort(name));
+      setZ3Type(exprManager.getTheoremProver().getZ3Context().mkUninterpretedSort(name));
       exprManager.addToTypeCache(this);
       if(IOUtils.debugEnabled())
         TheoremProverImpl.debugCommand("(declare-sort " + name + " 0)");
@@ -74,6 +74,16 @@ public final class UninterpretedTypeImpl extends TypeImpl implements Uninterpret
   public UninterpretedVariableImpl variable(String name, boolean fresh) {
     return UninterpretedVariableImpl.create(getExpressionManager(),name,this,fresh);
   }
+  
+  @Override
+  public UninterpretedBoundExpressionImpl boundVar(String name, boolean fresh) {
+    return UninterpretedBoundExpressionImpl.create(getExpressionManager(),name,this,fresh);
+  }
+  
+  @Override
+  public UninterpretedBoundExpressionImpl boundExpression(String name, int index, boolean fresh) {
+    return UninterpretedBoundExpressionImpl.create(getExpressionManager(),name,index,this,fresh);
+  }
 
   @Override
   public String toString() {
@@ -86,17 +96,12 @@ public final class UninterpretedTypeImpl extends TypeImpl implements Uninterpret
   }
 
   @Override
-  public VariableExpressionImpl boundVariable(String name, boolean fresh) {
-    throw new UnsupportedOperationException("bound variable is not supported in z3.");
-  }
-
-  @Override
   public DomainType getDomainType() {
     return DomainType.UNINTERPRETED;
   }
   
 	@Override
-	protected UninterpretedExpressionImpl create(Expr res, Expression oldExpr,
+	protected UninterpretedExpressionImpl createExpression(Expr res, Expression oldExpr,
 			Iterable<? extends ExpressionImpl> children) {
 		return UninterpretedExpressionImpl.create(getExpressionManager(), 
 				oldExpr.getKind(), res, oldExpr.getType(), children);

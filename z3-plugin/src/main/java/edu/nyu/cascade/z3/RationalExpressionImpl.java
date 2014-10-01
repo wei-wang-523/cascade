@@ -21,20 +21,18 @@ import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.RationalType;
 import edu.nyu.cascade.prover.type.Type;
 
-public class RationalExpressionImpl extends ExpressionImpl implements
+final class RationalExpressionImpl extends ExpressionImpl implements
     RationalExpression {
 
   static RationalExpressionImpl mkConstant(ExpressionManagerImpl em,
       final int numerator, final int denominator) {
-    RationalExpressionImpl e = new RationalExpressionImpl(em, CONSTANT,
+  	return new RationalExpressionImpl(em, CONSTANT,
         new NullaryConstructionStrategy() {
       @Override
       public Expr apply(Context ctx) throws Z3Exception {
-        return ctx.MkReal(numerator, denominator);
+        return ctx.mkReal(numerator, denominator);
       }
     });
-    e.setConstant(true);
-    return e;
   }
 
   static RationalExpressionImpl mkDivide(ExpressionManagerImpl exprManager,
@@ -46,7 +44,7 @@ public class RationalExpressionImpl extends ExpressionImpl implements
       @Override
       public Expr apply(Context ctx, Expr left, Expr right) 
           throws Z3Exception {
-        return ctx.MkDiv((ArithExpr)left, (ArithExpr)right);
+        return ctx.mkDiv((ArithExpr)left, (ArithExpr)right);
       }
     }, numerator, denominator);
   }
@@ -58,7 +56,7 @@ public class RationalExpressionImpl extends ExpressionImpl implements
       @Override
       public Expr apply(Context ctx, Expr left, Expr right)
           throws Z3Exception {
-        return ctx.MkSub(new ArithExpr[]{(ArithExpr) left, (ArithExpr) right});
+        return ctx.mkSub(new ArithExpr[]{(ArithExpr) left, (ArithExpr) right});
       }
     }, a, b);
   }
@@ -70,7 +68,7 @@ public class RationalExpressionImpl extends ExpressionImpl implements
       @Override
       public Expr apply(Context ctx, Expr left, Expr right)
           throws Z3Exception {
-        return ctx.MkMul(new ArithExpr[]{(ArithExpr) left, (ArithExpr) right});
+        return ctx.mkMul(new ArithExpr[]{(ArithExpr) left, (ArithExpr) right});
       }
     }, a, b);
   }
@@ -83,7 +81,7 @@ public class RationalExpressionImpl extends ExpressionImpl implements
       @Override
       public Expr apply(Context ctx, Expr[] args)
           throws Z3Exception {
-        return ctx.MkMul((ArithExpr[]) args);
+        return ctx.mkMul((ArithExpr[]) args);
       }  
     }, terms);
   }
@@ -95,7 +93,7 @@ public class RationalExpressionImpl extends ExpressionImpl implements
       @Override
       public Expr apply(Context ctx, Expr left, Expr right)
           throws Z3Exception {
-        return ctx.MkAdd(new ArithExpr[] {(ArithExpr) left, (ArithExpr) right});
+        return ctx.mkAdd(new ArithExpr[] {(ArithExpr) left, (ArithExpr) right});
       }
     }, a, b);
   }
@@ -108,7 +106,7 @@ public class RationalExpressionImpl extends ExpressionImpl implements
       @Override
       public Expr apply(Context ctx, Expr[] args)
           throws Z3Exception {
-        return ctx.MkAdd((ArithExpr[]) args);
+        return ctx.mkAdd((ArithExpr[]) args);
       }
     }, args);
   }
@@ -120,7 +118,7 @@ public class RationalExpressionImpl extends ExpressionImpl implements
       @Override
       public Expr apply(Context ctx, Expr left, Expr right)
           throws Z3Exception {
-        return ctx.MkPower((ArithExpr)left, (ArithExpr)right);
+        return ctx.mkPower((ArithExpr)left, (ArithExpr)right);
       }
     }, base, exp);
   }
@@ -131,7 +129,7 @@ public class RationalExpressionImpl extends ExpressionImpl implements
         new UnaryConstructionStrategy() {
       @Override
       public Expr apply(Context ctx, Expr left) throws Z3Exception {
-        return ctx.MkUnaryMinus((ArithExpr) left);
+        return ctx.mkUnaryMinus((ArithExpr) left);
       }
     }, a);
   }
@@ -141,17 +139,12 @@ public class RationalExpressionImpl extends ExpressionImpl implements
     return ((Type) t instanceof RationalType || (Type) t instanceof IntegerType);
   }
 
-  @Override
-  public RationalTypeImpl getType() {
-    return getExpressionManager().rationalType();
-  }
-
-  protected RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
+  RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
       UnaryConstructionStrategy strategy, Expression a) {
     super(exprManager, kind, strategy, a);
   }
 
-  private RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
+  RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
       NullaryConstructionStrategy strategy) {
     super(exprManager, kind, strategy);
     setType(exprManager.rationalType());
@@ -175,19 +168,24 @@ public class RationalExpressionImpl extends ExpressionImpl implements
   	super(em, kind, expr, type, children);
   }
   
-  protected static RationalExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
+  static RationalExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
       Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
   	Preconditions.checkArgument(type.isRational());
     return new RationalExpressionImpl(em, kind, expr, type.asRational(), children);
   }
 
-  public static RationalExpressionImpl valueOf(
+  static RationalExpressionImpl valueOf(
       ExpressionManagerImpl exprManager, Expression e) {
     if (e instanceof RationalExpressionImpl) {
       return (RationalExpressionImpl) e;
     } else {
       throw new IllegalArgumentException("RationalExpression.valueOf: " + e);
     }
+  }
+  
+  @Override
+  public RationalTypeImpl getType() {
+  	return getExpressionManager().rationalType();
   }
 
   @Override
@@ -234,13 +232,4 @@ public class RationalExpressionImpl extends ExpressionImpl implements
   public RationalExpressionImpl plus(Expression e) {
     return getType().add(this, e);
   }
-
-  /*
-   * public static RationalExpression mkMult( List<? extends
-   * IExpression> terms) { return new RationalExpression(MULT,
-   * new NaryConstructionStrategy() {
-   * 
-   * @Override public Expr apply(Context ctx, List<Expr> args) throws
-   * Exception { return em.multExpr(args); } }, terms); }
-   */
 }

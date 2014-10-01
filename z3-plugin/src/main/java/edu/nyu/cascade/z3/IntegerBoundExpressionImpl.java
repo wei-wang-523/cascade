@@ -7,14 +7,27 @@ import com.google.common.collect.Iterables;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.IntegerExpression;
-import edu.nyu.cascade.prover.type.Type;
 
-final class IntegerVariableImpl extends VariableExpressionImpl implements
+final class IntegerBoundExpressionImpl extends BoundExpressionImpl implements
     IntegerExpression {
-	
-  /** Create a new variable of an integer subtype (e.g., a range type). */
-  IntegerVariableImpl(ExpressionManagerImpl em, String name, Type type, boolean fresh) {
+
+  static IntegerBoundExpressionImpl create(ExpressionManagerImpl em, 
+  		String name, IntegerTypeImpl type, boolean fresh) {
+  	return new IntegerBoundExpressionImpl (em,name,type,fresh);  
+  }
+  
+  IntegerBoundExpressionImpl(ExpressionManagerImpl em, String name, IntegerTypeImpl type, boolean fresh) {
     super(em, name, type, fresh);
+  }
+  
+  static IntegerBoundExpressionImpl create(ExpressionManagerImpl em, 
+  		String name, int index, IntegerTypeImpl type, boolean fresh) {
+  	return new IntegerBoundExpressionImpl (em,name,index,type,fresh);  
+  }
+  
+  IntegerBoundExpressionImpl(ExpressionManagerImpl em, 
+  		String name, int index, IntegerTypeImpl type, boolean fresh) {
+    super(em, name, index, type, fresh);
   }
 
   @Override
@@ -67,7 +80,7 @@ final class IntegerVariableImpl extends VariableExpressionImpl implements
 		return getType().add(Iterables.concat(Collections.singletonList(this), rest));
 	}
 
-  @Override
+	@Override
   public IntegerExpression pow(Expression e) {
     return getType().pow(this, e);
   }

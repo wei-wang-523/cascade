@@ -16,7 +16,7 @@ import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
 
-public class BitVectorTypeImpl extends TypeImpl implements BitVectorType {  
+final class BitVectorTypeImpl extends TypeImpl implements BitVectorType {  
   private static final LoadingCache<ExpressionManagerImpl, LoadingCache<Integer, BitVectorTypeImpl>> cache = CacheBuilder
       .newBuilder().build(
           new CacheLoader<ExpressionManagerImpl, LoadingCache<Integer, BitVectorTypeImpl>>(){
@@ -59,7 +59,7 @@ public class BitVectorTypeImpl extends TypeImpl implements BitVectorType {
 
     try {
       setZ3Type(expressionManager
-          .getTheoremProver().getZ3Context().MkBitVecSort(size));
+          .getTheoremProver().getZ3Context().mkBitVecSort(size));
     } catch (Exception e) {
       throw new TheoremProverException(e);
     }
@@ -68,18 +68,24 @@ public class BitVectorTypeImpl extends TypeImpl implements BitVectorType {
   @Override
   public BitVectorExpressionImpl add(int size, Expression first,
       Expression... rest) {
-    return BitVectorExpressionImpl.mkPlus(getExpressionManager(), size, first, rest);
+  	ExpressionManagerImpl em = getExpressionManager();
+  	BitVectorExpressionImpl sum = BitVectorExpressionImpl.mkPlus(em, first, rest);
+  	return BitVectorExpressionImpl.typeConversion(em, size, sum);
   }
 
   @Override
   public BitVectorExpressionImpl add(int size, Expression a,
       Expression b) {
-    return BitVectorExpressionImpl.mkPlus(getExpressionManager(), size, a, b);
+  	ExpressionManagerImpl em = getExpressionManager();
+  	BitVectorExpressionImpl sum = BitVectorExpressionImpl.mkPlus(em, a, b);
+  	return BitVectorExpressionImpl.typeConversion(em, size, sum);
   }
 
   @Override
-  public BitVectorExpressionImpl add(int size, Iterable<? extends Expression> args) {
-    return BitVectorExpressionImpl.mkPlus(getExpressionManager(), size, args);
+  public BitVectorExpressionImpl add(int size, Iterable<? extends Expression> args) {  	
+  	ExpressionManagerImpl em = getExpressionManager();
+  	BitVectorExpressionImpl sum = BitVectorExpressionImpl.mkPlus(em, args);
+  	return BitVectorExpressionImpl.typeConversion(em, size, sum);
   }
 
   @Override
@@ -87,8 +93,7 @@ public class BitVectorTypeImpl extends TypeImpl implements BitVectorType {
       Expression b) {
     return BitVectorExpressionImpl.mkAnd(getExpressionManager(), a, b);
   }
-
-
+  
   @Override
   public BitVectorExpressionImpl bitwiseNand(Expression a,
       Expression b) {
@@ -219,27 +224,51 @@ public class BitVectorTypeImpl extends TypeImpl implements BitVectorType {
   }
 
   @Override
-  public BitVectorExpressionImpl mult(int size, Expression a,
+  public BitVectorExpression mult(int size, Expression a,
       Expression b) {
-    return BitVectorExpressionImpl.mkMult(getExpressionManager(), size, a, b);
+  	ExpressionManagerImpl em = getExpressionManager();
+  	BitVectorExpressionImpl product = BitVectorExpressionImpl.mkMult(em, a, b);
+  	return BitVectorExpressionImpl.typeConversion(em, size, product);
   }
 
   @Override
-  public BitVectorExpressionImpl subtract(Expression a,
+	public BitVectorExpression mult(int size, Expression first,
+			Expression... rest) {
+  	ExpressionManagerImpl em = getExpressionManager();
+  	BitVectorExpressionImpl product = BitVectorExpressionImpl.mkMult(em, first, rest);
+  	return BitVectorExpressionImpl.typeConversion(em, size, product);
+	}
+
+	@Override
+	public BitVectorExpression mult(int size, Iterable<? extends Expression> args) {
+		ExpressionManagerImpl em = getExpressionManager();
+  	BitVectorExpressionImpl product = BitVectorExpressionImpl.mkMult(em, args);
+  	return BitVectorExpressionImpl.typeConversion(em, size, product);
+	}
+
+	@Override
+  public BitVectorExpression subtract(Expression a,
       Expression b) {
-    return BitVectorExpressionImpl.mkMinus(getExpressionManager(),a, b);
+    return BitVectorExpressionImpl.mkMinus(
+    		getExpressionManager(), a, b);
   }
   
   @Override
-  public BitVectorExpressionImpl lshift(Expression a,
+  public BitVectorExpression lshift(Expression a,
       Expression b) {
-    return BitVectorExpressionImpl.mkLShift(getExpressionManager(),a, b);
+    return BitVectorExpressionImpl.mkLShift(getExpressionManager(), a, b);
   }
   
   @Override
-  public BitVectorExpressionImpl rshift(Expression a,
+  public BitVectorExpression rshift(Expression a,
       Expression b) {
-    return BitVectorExpressionImpl.mkRShift(getExpressionManager(),a, b);
+    return BitVectorExpressionImpl.mkRShift(getExpressionManager(), a, b);
+  }
+  
+  @Override
+  public BitVectorExpression signedRshift(Expression a,
+      Expression b) {
+    return BitVectorExpressionImpl.mkSRShift(getExpressionManager(), a, b);
   }
 
   @Override
@@ -248,18 +277,23 @@ public class BitVectorTypeImpl extends TypeImpl implements BitVectorType {
   }
 
   @Override
-  public BitVectorVariableImpl variable(String name, boolean fresh) {
+  public BitVectorExpression variable(String name, boolean fresh) {
     return BitVectorVariableImpl.create(getExpressionManager(), name, this, fresh);
   }
 
   @Override
-  public BitVectorExpressionImpl zero(int size) {
+  public BitVectorExpression zero(int size) {
     return constant(size,0);
   }
 
   @Override
-  public VariableExpressionImpl boundVariable(String name, boolean fresh) {
-    return BitVectorVariableImpl.create(getExpressionManager(), name, this, fresh);
+  public BitVectorBoundExpressionImpl boundVar(String name, boolean fresh) {
+    return BitVectorBoundExpressionImpl.create(getExpressionManager(), name, this, fresh);
+  }
+  
+  @Override
+  public BitVectorBoundExpressionImpl boundExpression(String name, int index, boolean fresh) {
+    return BitVectorBoundExpressionImpl.create(getExpressionManager(), name, index, this, fresh);
   }
 
 	@Override
@@ -298,7 +332,7 @@ public class BitVectorTypeImpl extends TypeImpl implements BitVectorType {
   }
 
 	@Override
-	protected BitVectorExpressionImpl create(Expr res, Expression oldExpr,
+	BitVectorExpressionImpl createExpression(Expr res, Expression oldExpr,
 			Iterable<? extends ExpressionImpl> children) {
 		return BitVectorExpressionImpl.create(getExpressionManager(), 
 				oldExpr.getKind(), res, oldExpr.getType(), children);
