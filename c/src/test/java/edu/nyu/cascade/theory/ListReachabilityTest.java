@@ -39,6 +39,7 @@ public class ListReachabilityTest {
   }
   
   @Test
+  @Ignore
   public void testAssumptions() throws TheoremProverException, ExpressionFactoryException {
     theoremProver.assume( listEncoding.getAssumptions() );
     assertTrue( theoremProver.checkValidity(listEncoding.tt()).isValid() );
@@ -52,6 +53,7 @@ public class ListReachabilityTest {
   }
   
   @Test
+  @Ignore
   public void testAssumptions3() throws TheoremProverException, ExpressionFactoryException {
     theoremProver.assume( listEncoding.getAssumptions() );
     ExpressionManager exprManager = listEncoding.getExpressionManager();
