@@ -279,6 +279,13 @@ public class MainTest {
   					"-fs", "--vari-cell"), false);
   	
   	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
+  			parserTest("--dry-run", "--seq"), false);
+  }
+
+    @Test
+	@Ignore
+	public void testDryRunPathBased() {
+  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
   			parserTest("--dry-run", "--path-based"), false);
   	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
   			parserTest("--dry-run", "--path-based", "--mode", "Partition"), false);
@@ -286,11 +293,8 @@ public class MainTest {
   	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
   			parserTest("--dry-run", "--path-based", "--lambda"), false);
   	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
-  			parserTest("--dry-run", "--path-based", "--mode", "Partition", "--lambda"), false);
-  	
-  	TestUtils.checkDirectoryRec(mini_programs_location, ctrlFileFilter,
-  			parserTest("--dry-run", "--seq"), false);
-  }
+  			parserTest("--dry-run", "--path-based", "--mode", "Partition", "--lambda"), false);	
+    }
   
   @Test
   @Ignore
