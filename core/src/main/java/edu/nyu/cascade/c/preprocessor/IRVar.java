@@ -1,6 +1,5 @@
 package edu.nyu.cascade.c.preprocessor;
 
-import edu.nyu.cascade.prover.Expression;
 import xtc.type.Type;
 /**
  * A class which maintains information about an expression (variable 
@@ -11,15 +10,9 @@ import xtc.type.Type;
  */
 
 public interface IRVar {
-	String toStringShort();
   String getName() ;
   Type getType() ;
   String getScopeName();
-	Expression getExpr();
-	
-	/** Check whether it has a heap tag or not */
-	boolean hasHeapTag();
-	
 	void setProperty(String id, Object o);
 	Object getProperty(String id);
 }

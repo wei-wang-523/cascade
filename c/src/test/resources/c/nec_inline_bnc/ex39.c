@@ -1,6 +1,5 @@
 /*-- from blast tacas 06 examplex --*/
-extern int __NONDET__();
-
+extern int __VERIFIER_nondet_int();
 
 int main(){
   
@@ -8,7 +7,7 @@ int main(){
   
   x = 0; y = 0;
 
-  while(__NONDET__()) {
+  while(__VERIFIER_nondet_int()) {
     x++; y++;
   }
   

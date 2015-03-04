@@ -16,7 +16,6 @@ import edu.nyu.cascade.ir.memory.MemoryVarSets;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.Type;
 
@@ -25,6 +24,7 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	private final ExpressionEncoding exprEncoding;
 	private final IRDataFormatter dataFormatter;
 	private final Type addrType, sizeType;
+	private final CType cTypeAnalyzer;
 	
 	private OrderLinearMemLayoutEncoding(ExpressionEncoding exprEncoding, 
 			IRDataFormatter dataFormatter) {
@@ -32,6 +32,7 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 		this.dataFormatter = dataFormatter;
 		addrType = dataFormatter.getAddressType();
 		sizeType = dataFormatter.getSizeType();
+		cTypeAnalyzer = exprEncoding.getCTypeAnalyzer();
 	}
 	
 	public static OrderLinearMemLayoutEncoding create(ExpressionEncoding exprEncoding, 
@@ -46,8 +47,6 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 		ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
 		
 		Map<Expression, xtc.type.Type> stVarsMap = varSets.getStackVarsMap();
-    
-		ExpressionManager exprManager = exprEncoding.getExpressionManager();
 		
 		try {
       
@@ -55,8 +54,9 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
       for (Entry<Expression, xtc.type.Type> stVarEntry : stVarsMap.entrySet()) {
       	Expression stVar = stVarEntry.getKey();
       	xtc.type.Type stVarType = stVarEntry.getValue();
+      	long stVarSize = cTypeAnalyzer.getSize(stVarType);
+      	if(stVarSize < 0) continue;
       	
-      	long stVarSize = CType.getSizeofType(stVarType);
       	Expression stVarSizeExpr = exprEncoding.integerConstant(stVarSize);
       	builder.add(
       			exprEncoding.notOverflow(stVar, stVarSizeExpr).asBooleanExpression());
@@ -71,29 +71,33 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
       }
       
       while (stVarItr.hasNext()) {
-        Entry<Expression, xtc.type.Type> stValEntry2 = stVarItr.next();
-        Expression stVal2 = stValEntry2.getKey();
-        xtc.type.Type stValType2 = stValEntry2.getValue();
+        Entry<Expression, xtc.type.Type> stVarEntry2 = stVarItr.next();
+        Expression stVar2 = stVarEntry2.getKey();
+        xtc.type.Type stVarType2 = stVarEntry2.getValue();
+        long stVarSize2 = cTypeAnalyzer.getSize(stVarType2);
+        if(stVarSize2 < 0) continue;
         
-        long stValSize2 = CType.getSizeofType(stValType2);
-        Expression stValSizeExpr2 = exprEncoding.integerConstant(stValSize2);
-        Expression stValBound2 = exprEncoding.plus(stVal2, stValSizeExpr2);
-        builder.add(exprManager.greaterThan(stackBound, stValBound2));       
-        stackBound = stVal2;
+        Expression stVarSizeExpr2 = exprEncoding.integerConstant(stVarSize2);
+        Expression stVarBound2 = exprEncoding.plus(stVar2, stVarSizeExpr2);
+        builder.add(
+        		exprEncoding.greaterThan(stackBound, stVarBound2).asBooleanExpression());       
+        stackBound = stVar2;
       }
       
       if(stackBound != null) {      	
       	Expression nullPtr = dataFormatter.getNullAddress();
       	if(sizeArr == null) {
-      		builder.add(exprManager.greaterThan(stackBound, nullPtr));
+      		builder.add(
+      				exprEncoding.greaterThan(stackBound, nullPtr).asBooleanExpression());
       	} else {
       		/* lastRegionBound = lastRegion != 0 ? lastRegion + size[lastRegion] : 0; */
-          Expression heapBound = exprManager.ifThenElse(
-              lastRegion.neq(nullPtr),
-              exprEncoding.plus(lastRegion, sizeArr.index(lastRegion)),
-              nullPtr);
+          Expression heapBound = lastRegion.neq(nullPtr)
+          		.ifThenElse(
+          				exprEncoding.plus(lastRegion, sizeArr.index(lastRegion)),
+          				nullPtr);
           
-          builder.add(exprManager.greaterThan(stackBound, heapBound));
+          builder.add(
+          		exprEncoding.greaterThan(stackBound, heapBound).asBooleanExpression());
       	}
       }
 		} catch (TheoremProverException e) {
@@ -111,23 +115,22 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 		Preconditions.checkArgument(ptr.getType().equals(addrType));
 		Preconditions.checkArgument(size.getType().equals(sizeType));
 		
-		ExpressionManager exprManager = exprEncoding.getExpressionManager();
-		
 		try {
 			Expression lastRegionBound = exprEncoding.plus(lastRegion, sizeArr.index(lastRegion));
 	    Expression ptrBound = exprEncoding.plus(ptr, size);
-	    
 	    Expression nullPtr = dataFormatter.getNullAddress();
 	    
-	    return exprManager.implies(
-	    		ptr.neq(nullPtr),
-	    		exprManager.and(
-	    				exprManager.lessThanOrEqual(ptr, ptrBound), // not over flow but size could be zero
-//	    				exprManager.lessThan(ptr, ptrBound),
-	    				exprManager.or(
-	    						lastRegion.eq(nullPtr), // last region is null (not allocated)
-	    						exprManager.lessThanOrEqual(lastRegionBound, ptr)  // larger than the last allocated region
-	    						)));
+	    BooleanExpression notNull = ptr.neq(nullPtr);
+	    BooleanExpression validMalloc = exprEncoding.and(
+	    		exprEncoding.lessThanOrEqual(ptr, ptrBound), // not over flow but size could be zero
+	    		exprEncoding.or(
+  						lastRegion.eq(nullPtr), // last region is null (not allocated)
+  						exprEncoding.lessThanOrEqual(lastRegionBound, ptr)  // larger than the last allocated region
+  						)).asBooleanExpression();
+	    
+	    return notNull.and(validMalloc);
+		    
+//		    return notNull.implies(validMalloc);
 		} catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
     }
@@ -146,8 +149,6 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 		
     Map<Expression, xtc.type.Type> stVarsMap = varSets.getStackVarsMap();
     Collection<Expression> hpRegs = varSets.getHeapRegions();
-    
-    ExpressionManager exprManager = exprEncoding.getExpressionManager();
 		
 		try {
 	    /* TODO: Check the scope of local variable, this will be unsound to take 
@@ -157,7 +158,7 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	    for( Entry<Expression, xtc.type.Type> stVarEntry : stVarsMap.entrySet() ) {
 	    	Expression stVar = stVarEntry.getKey();
 	    	xtc.type.Type stVarType = stVarEntry.getValue();
-	    	long stVarSize = CType.getSizeofType(stVarType);
+	    	long stVarSize = cTypeAnalyzer.getSize(stVarType);
 	    	Expression stVarSizeExpr = exprEncoding.integerConstant(stVarSize);
 	    	disjs.add(
 	    			exprEncoding.within(stVar, stVarSizeExpr, ptr).asBooleanExpression());
@@ -170,10 +171,10 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	    for( Expression hpReg : hpRegs ) {
 	      Expression hpRegSizeExpr = sizeArr.index(hpReg);
 	      disjs.add(
-	          exprManager.and(
+	      		exprEncoding.and(
 	              hpReg.neq(nullPtr),
 	              hpRegSizeExpr.neq(sizeZro),
-	              exprEncoding.within(hpReg, hpRegSizeExpr, ptr)));
+	              exprEncoding.within(hpReg, hpRegSizeExpr, ptr)).asBooleanExpression());
 	    }
 		} catch (TheoremProverException e) {
       throw new ExpressionFactoryException(e);
@@ -194,8 +195,6 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 		
     Map<Expression, xtc.type.Type> stVarsMap = varSets.getStackVarsMap();
     Collection<Expression> hpRegs = varSets.getHeapRegions();
-		
-    ExpressionManager exprManager = exprEncoding.getExpressionManager();
     
 		try {
 	    
@@ -203,7 +202,7 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	    for( Entry<Expression, xtc.type.Type> stVarEntry : stVarsMap.entrySet() ) {
 	    	Expression stVar = stVarEntry.getKey();
 	    	xtc.type.Type stVarType = stVarEntry.getValue();
-	    	long stVarSize = CType.getSizeofType(stVarType);
+	    	long stVarSize = cTypeAnalyzer.getSize(stVarType);
 	    	Expression stVarSizeExpr = exprEncoding.integerConstant(stVarSize);
 	    	disjs.add(
 	    			exprEncoding.within(stVar, stVarSizeExpr, ptr, size).asBooleanExpression());
@@ -217,10 +216,10 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
         Expression hpRegSizeExpr = sizeArr.index(hpReg);
         
         disjs.add(
-            exprManager.and(
+        		exprEncoding.and(
                 hpReg.neq(nullPtr), 
                 hpRegSizeExpr.neq(sizeZro),
-                exprEncoding.within(hpReg, hpRegSizeExpr, ptr, size)));
+                exprEncoding.within(hpReg, hpRegSizeExpr, ptr, size)).asBooleanExpression());
       }
 		} catch (TheoremProverException e) {
 	    throw new ExpressionFactoryException(e);
@@ -230,16 +229,13 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	}
 	
 	@Override
-	public BooleanExpression validFree(ArrayExpression sizeArr, Expression ptr) {
-		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(addrType));
-		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(sizeType));
-		Preconditions.checkArgument(ptr.getType().equals(addrType));
-    Expression size = sizeArr.index(ptr);
+	public BooleanExpression validFree(ArrayExpression markArr, Expression region) {
+		Preconditions.checkArgument(markArr.getType().getIndexType().equals(addrType));
+		Preconditions.checkArgument(markArr.getType().getElementType().isBoolean());
+		Preconditions.checkArgument(region.getType().equals(addrType));
         
-    Expression nullPtr = dataFormatter.getNullAddress();
-    Expression sizeZro = dataFormatter.getSizeZero();
-    
-    ExpressionManager exprManager = exprEncoding.getExpressionManager();
-    return exprManager.or(ptr.eq(nullPtr), exprManager.greaterThan(size, sizeZro));
+		BooleanExpression mark = markArr.index(region).asBooleanExpression();
+		BooleanExpression tt = mark.getType().asBooleanType().tt();
+		return mark.eq(tt);
 	}
 }

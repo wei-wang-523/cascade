@@ -22,7 +22,6 @@ import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
-import edu.nyu.cascade.util.IOUtils;
 
 final class TupleTypeImpl extends TypeImpl implements TupleType {
   
@@ -103,10 +102,8 @@ final class TupleTypeImpl extends TypeImpl implements TupleType {
       setZ3Type(z3_context.mkTupleSort(tname, symbols, z3Types));
       sb.append(")))");
       em.addToTypeCache(this);
-      if(IOUtils.debugEnabled())
-        TheoremProverImpl.debugCommand("(declare-datatypes " + sb.toString() + ")");
-      if(IOUtils.tpFileEnabled())
-        TheoremProverImpl.z3FileCommand("(declare-datatypes " + sb.toString() + ")");
+      
+      TheoremProverImpl.z3FileCommand("(declare-datatypes " + sb.toString() + ")");
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
     }

@@ -1,8 +1,9 @@
+extern int __VERIFIER_nondet_int();
 /*
   fn1 returns a positive value less than n.
 */
 int fn1(int n) {
-  int ret = __NONDET__();
+  int ret = __VERIFIER_nondet_int();
   ASSUME(0 <= ret);
   ASSUME(ret < n);
   return ret;

@@ -6,10 +6,13 @@ import xtc.type.Type;
 
 import com.google.common.collect.ImmutableSet;
 
+import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.ir.type.IRType;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.prover.VariableExpression;
+import edu.nyu.cascade.util.Pair;
 
 /**
  * An encoding of program expressions.
@@ -23,16 +26,6 @@ import edu.nyu.cascade.prover.ExpressionManager;
  */
 
 public interface ExpressionEncoding {
-  /**
-   * Extends variable() to also generate a backward binding from the result
-   * Expression to the source declaration, which can be queried using
-   * sourceVarOfBinding(). A source variable will always be fresh.
-   *
-   * @param qName the qualified name of the variable (e.g., "P.x")
-   * @param type the type of the variable
-   * @return a variable in the encoding
-   */
-  Expression addSourceVariable(String qName, IRType type) ;
   
   /**
    * Add <code>assumption</code> to be asserted as axioms in backend solver
@@ -65,17 +58,6 @@ public interface ExpressionEncoding {
    * @return a boolean-encoded expression
    */
   Expression and(Iterable<? extends Expression> conjuncts) ;
-
-  /**
-   * Get the expression associated with the source variable with qualified name
-   * <code>qName</code>. A qualified name is of the form " <code>P.x</code>"
-   * where <code>P</code> is a scope identifier (e.g., a process name) and
-   * <code>x</code> is the declared name of the variable.
-   * 
-   * @param qName the fully-qualified name of the variable.
-   * @return a variable in the encoding
-   */
-  Expression bindingForSourceVar(String qName);
 
   /**
    * The bitwise AND of the given expressions.
@@ -138,6 +120,15 @@ public interface ExpressionEncoding {
    * @return an integer-encoded expression with given size
    */
   Expression castToInteger(Expression e, int size) ;
+  
+  /**
+   * The conversion of the given expression to an integer, according to the
+   * conversion rule of the underlying encoding.
+   * 
+   * @param e an integer-encoded expression
+   * @return an integer-encoded expression with given size
+   */
+  Expression castToInteger(Expression e, int size, boolean signed) ;
   
   /**
    * The conversion of the given expression to a pointer, according to the
@@ -279,6 +270,11 @@ public interface ExpressionEncoding {
    * expression encoding.
    */
   ExpressionManager getExpressionManager();
+  
+  /**
+   * Get C type analyzer
+   */
+  CType getCTypeAnalyzer();
 
   /**
    * The underlying integer encoding.
@@ -413,10 +409,10 @@ public interface ExpressionEncoding {
   /** 
    * An encoded character constant.
    * 
-   * @param c the long number
+   * @param c the int number
    * @return an integer-encoded expression
    */
-  Expression characterConstant(long c) ;
+  Expression characterConstant(int c) ;
   
   /** 
    * An encoded integer constant.
@@ -732,30 +728,6 @@ public interface ExpressionEncoding {
   Expression signedRshift(Expression lhs, Expression rhs) ;
 
   /**
-   * Look up the name of the source variable associated with the encoded variable.
-   * 
-   * @param var a variable in the encoding
-   * @return the name of the source variable
-   */
-  String sourceVarForBinding(Expression var);
-
-  /**
-   * A named constant. Creates a constant in the encoding, if it doesn't already
-   * exist. If a constant with the same name already exists, it will be returned
-   * if <code>fresh</code> is false; a new constant will be created if
-   * <code>fresh</code> is true.
-   * 
-   * @param name
-   *          the name of the constant
-   * @param t
-   *          the type of the constant
-   * @param fresh
-   *          if true, the constant is guaranteed to be unique in the encoding;
-   * @return an expression of in the encoding of type <code>t</code>
-   */
-  Expression symbolicConstant(String name, IRType t, boolean fresh);
-
-  /**
    * Convert a boolean expression to a <code>BooleanExpression</code>.
    *    
    * @param e a boolean-encoded expression
@@ -767,20 +739,17 @@ public interface ExpressionEncoding {
    * The boolean expression <code>true</code>.
    */
   Expression tt() ;
-
-  /**
-   * Looks up the type of a source variable.
-   * 
-   * @param qName the fully-qualified name of the variable
-   * @return the source type of the variable
-   */
-  IRType typeForSourceVar(String qName);
   
   /**
    * An expression with unary minus
    */
   Expression uminus(Expression expr);
 
+  /**
+   * An expression with unary minus
+   */
+  Expression uplus(Expression expr);
+  
   /**
    * An array write.
    * 
@@ -812,19 +781,6 @@ public interface ExpressionEncoding {
    * <code>integerConstant(0)</code> in some implementations.
    */
   Expression zero() ;
-  
-  /**
-   * Get the word size
-   */
-  int getWordSize() ;
-
-  /**
-   * Cast @param src expression to @param targetType
-   */
-  Expression castExpression(Expression src, Type targetType) ;
-
-  
-  Expression componentSelect(Expression lhs, Expression rhs);
   
   /**
    * The pointer addition of the given expressions. 
@@ -931,12 +887,25 @@ public interface ExpressionEncoding {
    */
 	Expression boundExpression(String name, int index, IRType type, boolean fresh);
 
-	Expression castToOffset(Expression expr);
-
 	/**
 	 * Get the unknown expression for <code>type</code>
 	 * @param type
 	 * @return
 	 */
-	Expression unknown(Type type);
+	Expression unknown(xtc.type.Type type);
+	
+	/**
+	 * Convert the type of <code>lhs</code> and <code>rhs</code> with type <code>lhsType
+	 * </code> and <code>rhsType</code> for arithmetic computation
+	 * @return
+	 */
+	Pair<Expression, Expression> arithTypeConversion(Expression lhs, Expression rhs,
+			Type lhsType, Type rhsType);
+
+	/**
+	 * Generate the corresponding rval-binding
+	 * @param lvalBinding
+	 * @return
+	 */
+	VariableExpression getRvalBinding(Expression lvalBinding);
 }

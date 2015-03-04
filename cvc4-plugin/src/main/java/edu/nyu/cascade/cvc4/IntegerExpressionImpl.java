@@ -279,7 +279,7 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 
   @Override
   public BooleanExpressionImpl lessThanOrEqual(Expression e) {
-    return BooleanExpressionImpl.mkEq(getExpressionManager(), this, e);
+    return BooleanExpressionImpl.mkLeq(getExpressionManager(), this, e);
   }
 
   @Override

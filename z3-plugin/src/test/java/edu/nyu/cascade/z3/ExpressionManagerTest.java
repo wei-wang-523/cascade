@@ -735,6 +735,14 @@ public class ExpressionManagerTest {
         .getType()
         .getElementTypes());
   }
+  
+  @Test
+  public void testEqBool() {
+	BooleanExpression tt = exprManager.tt();
+	BooleanExpression var = exprManager.booleanType().variable("x", true);
+	assertSat(var.eq(tt));
+	assertInvalid(var.eq(tt));
+  }
 
   @Test
   public void testVarIntegerExpression() {

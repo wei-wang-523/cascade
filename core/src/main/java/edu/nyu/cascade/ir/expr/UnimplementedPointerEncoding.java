@@ -148,30 +148,6 @@ public class UnimplementedPointerEncoding<T extends Expression> implements Point
   }
 
 	@Override
-  public boolean isSyncEncoding() {
-	  // TODO Auto-generated method stub
-	  return false;
-  }
-
-	@Override
-  public boolean isLinearEncoding() {
-	  // TODO Auto-generated method stub
-	  return false;
-  }
-
-	@Override
-  public SyncPointerEncoding<? extends Expression, ? extends Expression> asSyncPointerEncoding() {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
-  public LinearPointerEncoding<? extends Expression> asLinearPointerEncoding() {
-	  // TODO Auto-generated method stub
-	  return null;
-  }
-
-	@Override
   public T variable(String name, IRType type, boolean fresh) {
 	  // TODO Auto-generated method stub
 	  return null;

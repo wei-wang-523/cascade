@@ -19,7 +19,6 @@ import com.microsoft.z3.Symbol;
 
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.BooleanType;
 import edu.nyu.cascade.prover.type.ComparableType;
 import edu.nyu.cascade.prover.type.Type;
@@ -45,16 +44,15 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
     return new BooleanExpressionImpl(exprManager, Kind.AND,
         new NaryConstructionStrategy() {
           @Override
-          public Expr apply(Context ctx, Expr[] args)
-              throws Z3Exception {
-            BoolExpr[] bool_args = Arrays.copyOf(args, args.length, BoolExpr[].class);
-            return ctx.mkAnd(bool_args);
+          public Expr apply(Context ctx, Expr[] args) throws Z3Exception {
+        		BoolExpr[] bool_args = Arrays.copyOf(args, args.length, BoolExpr[].class);
+        		return ctx.mkAnd(bool_args);
           }
         }, args);
   }
 
   // TODO: Give this method package scope (requires move of bv classes)
-  public static BooleanExpressionImpl mkBvGeq(ExpressionManagerImpl exprManager,
+  static BooleanExpressionImpl mkBvGeq(ExpressionManagerImpl exprManager,
       Expression a, Expression b) {
     Preconditions.checkArgument(a.isBitVector());
     Preconditions.checkArgument(b.isBitVector());
@@ -72,7 +70,7 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
         }, a, b);
   }
   
-  public static BooleanExpressionImpl mkBvSGeq(ExpressionManagerImpl exprManager,
+  static BooleanExpressionImpl mkBvSGeq(ExpressionManagerImpl exprManager,
       Expression a, Expression b) {
     Preconditions.checkArgument(a.isBitVector());
     Preconditions.checkArgument(b.isBitVector());
@@ -91,7 +89,7 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
   }
 
   // TODO: Give this method package scope (requires move of bv classes)
-  public static BooleanExpressionImpl mkBvGt(ExpressionManagerImpl exprManager,
+  static BooleanExpressionImpl mkBvGt(ExpressionManagerImpl exprManager,
       Expression a, Expression b) {
     Preconditions.checkArgument(a.isBitVector());
     Preconditions.checkArgument(b.isBitVector());
@@ -109,7 +107,7 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
         }, a, b);
   }
   
-  public static BooleanExpressionImpl mkBvSGt(ExpressionManagerImpl exprManager,
+  static BooleanExpressionImpl mkBvSGt(ExpressionManagerImpl exprManager,
       Expression a, Expression b) {
     Preconditions.checkArgument(a.isBitVector());
     Preconditions.checkArgument(b.isBitVector());
@@ -238,13 +236,9 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
         new BinderTriggersConstructionStrategy() {
           @Override
           public Expr apply(Context ctx, Expr[] vars, Expr body, 
-              Expr[] pattern, Expr[] noPattern, Symbol quantifierID, Symbol skolemID) {
-            try {
-              Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(pattern) } : null;
-              return ctx.mkExists(vars, body, 1, ptns, noPattern, quantifierID, skolemID);
-            } catch (Z3Exception e) {
-              throw new TheoremProverException(e);
-            }
+              Expr[] pattern, Expr[] noPattern, Symbol quantifierID, Symbol skolemID) throws Z3Exception {
+            Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(pattern) } : null;
+            return ctx.mkExists(vars, body, 1, ptns, noPattern, quantifierID, skolemID);
           }
     }, vars, body, triggers, noTriggers);
     if(triggers != null) e.setTriggers(triggers);
@@ -264,13 +258,9 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 					@Override
           public Expr apply(Context ctx, Sort[] sorts, Symbol[] names,
               Expr body, Expr[] pattern, Expr[] noPatter, Symbol quantifierID,
-              Symbol skolemID) {
-						try {
-							Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(pattern) } : null;
-              return ctx.mkExists(sorts, names, body, 1, ptns, noPatter, quantifierID, skolemID);
-            } catch (Z3Exception e) {
-              throw new TheoremProverException(e);
-            }
+              Symbol skolemID) throws Z3Exception {
+						Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(pattern) } : null;
+            return ctx.mkExists(sorts, names, body, 1, ptns, noPatter, quantifierID, skolemID);
           }
     }, vars, body, triggers, noTriggers);
     if(triggers != null) e.setTriggers(triggers);
@@ -300,13 +290,9 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
         new BinderTriggersConstructionStrategy() {
           @Override
           public Expr apply(Context ctx, Expr[] vars, Expr body, 
-              Expr[] pattern, Expr[] noPatter, Symbol quantifierID, Symbol skolemID) {
-            try {
-              Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(pattern) } : null;
-              return ctx.mkForall(vars, body, 1, ptns, noPatter, quantifierID, skolemID);
-            } catch (Z3Exception e) {
-              throw new TheoremProverException(e);
-            }
+              Expr[] pattern, Expr[] noPatter, Symbol quantifierID, Symbol skolemID) throws Z3Exception {
+            Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(pattern) } : null;
+            return ctx.mkForall(vars, body, 1, ptns, noPatter, quantifierID, skolemID);
           }
         }, vars, body, triggers, noTriggers);
     if(triggers != null) e.setTriggers(triggers);
@@ -326,13 +312,9 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 					@Override
           public Expr apply(Context ctx, Sort[] sorts, Symbol[] names,
               Expr body, Expr[] pattern, Expr[] noPatter, Symbol quantifierID,
-              Symbol skolemID) {
-						try {
-							Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(pattern) } : null;
-              return ctx.mkForall(sorts, names, body, 1, ptns, noPatter, quantifierID, skolemID);
-            } catch (Z3Exception e) {
-              throw new TheoremProverException(e);
-            }
+              Symbol skolemID) throws Z3Exception {
+						Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(pattern) } : null;
+            return ctx.mkForall(sorts, names, body, 1, ptns, noPatter, quantifierID, skolemID);
           }
     }, vars, body, triggers, noTriggers);
     if(triggers != null) e.setTriggers(triggers);

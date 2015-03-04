@@ -83,46 +83,7 @@ public class CSymbolTable implements SymbolTable {
       copyScope(file, xtcSymbolTable, newXtcSymbolTable);
       xtcSymbolTable.exit();
       newXtcSymbolTable.exit();
-    }
-    
-  }
-  
-  /**
-   * Used for function-inline, nest the function scope <code>scope</code> under current calling scope
-   * of <code>xtcSymbolTable</code>
-   * @param file
-   * @param scope
-   * @param xtcSymbolTable
-   */
-  public static void copyFunctionScope(Scope scope, CSymbolTable symbolTable) {
-    String scopeName = scope.getName();
-    Preconditions.checkArgument(scopeName.equals(symbolTable.getCurrentScope().getName()));
-    
-    IOUtils.debug().pln("Visiting scope: '" + scopeName + "'");
-    
-    
-    /* Rip all the symbols in the scope. */
-    Iterator<String> symbolIter = scope.symbols();
-    while( symbolIter.hasNext() ) {
-      String name = symbolIter.next();
-      IRVarInfo varInfo = (IRVarInfo) scope.lookupLocally(name);
-      assert( varInfo != null );
-      IOUtils.debug().pln("Symbol: '" + name + "'" + " binding: " + varInfo);
-      Scope newScope = symbolTable.getCurrentScope();
-      IRVarInfo varInfoPrime = VarInfoFactory.cloneVarInfoToScope(varInfo, newScope);
-      newScope.define(name, varInfoPrime);
-    }
-    
-    /* Recursively descend through nested scopes. */
-    Iterator<String> scopeIter = scope.nested();
-    while( scopeIter.hasNext() ) {
-      Scope nested = scope.getNested(scopeIter.next() );
-      assert( nested != null ); 
-      symbolTable.enter(nested.getName());
-      copyFunctionScope(nested, symbolTable);
-      symbolTable.exit();
-    }
-    
+    } 
   }
   
   private final SymbolTable symbolTable;
@@ -294,6 +255,11 @@ public class CSymbolTable implements SymbolTable {
   @Override
   public void undefine(String name) {
     symbolTable.undefine(name);
+  }
+  
+  @Override
+  public void mark(Node node) {
+  	symbolTable.mark(node);
   }
   
   @Override

@@ -1,37 +1,15 @@
 package edu.nyu.cascade.z3;
 
-import java.util.concurrent.ExecutionException;
-
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Z3Exception;
 
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.RationalType;
-import edu.nyu.cascade.util.CacheException;
 
 final class RationalTypeImpl extends TypeImpl implements RationalType {
-  
-  private static final LoadingCache<ExpressionManagerImpl, RationalTypeImpl> typeCache = CacheBuilder
-      .newBuilder().build(
-          new CacheLoader<ExpressionManagerImpl, RationalTypeImpl>(){
-            public RationalTypeImpl load(ExpressionManagerImpl expressionManager) {
-              return new RationalTypeImpl(expressionManager);
-            }
-          });
-  
-  static RationalTypeImpl getInstance(ExpressionManagerImpl expressionManager) {
-    try {
-      return typeCache.get(expressionManager);
-    } catch (ExecutionException e) {
-      throw new CacheException(e);
-    }
-  }
 
-  private RationalTypeImpl(ExpressionManagerImpl expressionManager) {
+  RationalTypeImpl(ExpressionManagerImpl expressionManager) {
     super(expressionManager);
     try {
       setZ3Type(expressionManager.getTheoremProver().getZ3Context().getRealSort());

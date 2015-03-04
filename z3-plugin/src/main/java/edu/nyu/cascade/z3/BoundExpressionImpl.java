@@ -34,7 +34,7 @@ class BoundExpressionImpl extends ExpressionImpl implements BoundExpression {
   BoundExpressionImpl(final ExpressionManagerImpl exprManager, String name, final int index, Type type, boolean fresh)  {
   	super(exprManager, new BoundVariableConstructionStrategy() {
       @Override
-      public Expr apply(Context ctx, String name, Sort sort) {
+      public Expr apply(Context ctx, String name, Sort sort) throws Z3Exception {
         /* TODO: see if var is already defined. There's a bug in lookupVar
          * bc it's second parameter is a output parameter. Need to change
          * the API so that it only takes the name.
@@ -46,8 +46,6 @@ class BoundExpressionImpl extends ExpressionImpl implements BoundExpression {
           Expr bound = ctx.mkBound(index, sort);
           boundCache.get(exprManager).put(name, bound);
           return bound;
-        } catch (Z3Exception e) {
-          throw new TheoremProverException(e);
         } catch (ExecutionException e) {
           throw new CacheException(e);
         }
@@ -59,7 +57,7 @@ class BoundExpressionImpl extends ExpressionImpl implements BoundExpression {
   BoundExpressionImpl(final ExpressionManagerImpl exprManager, String name, Type type, boolean fresh)  {
   	super(exprManager, new BoundVariableConstructionStrategy() {
       @Override
-      public Expr apply(Context ctx, String name, Sort sort) {
+      public Expr apply(Context ctx, String name, Sort sort) throws Z3Exception {
         /* TODO: see if var is already defined. There's a bug in lookupVar
          * bc it's second parameter is a output parameter. Need to change
          * the API so that it only takes the name.
@@ -71,8 +69,6 @@ class BoundExpressionImpl extends ExpressionImpl implements BoundExpression {
           Expr bound = ctx.mkConst(name, sort);
           boundCache.get(exprManager).put(name, bound);
           return bound;
-        } catch (Z3Exception e) {
-          throw new TheoremProverException(e);
         } catch (ExecutionException e) {
           throw new CacheException(e);
         }

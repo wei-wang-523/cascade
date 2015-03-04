@@ -5,7 +5,6 @@ import static edu.nyu.cascade.prover.Expression.Kind.CONSTANT;
 import static edu.nyu.cascade.prover.Expression.Kind.IF_THEN_ELSE;
 import static edu.nyu.cascade.prover.Expression.Kind.NULL_EXPR;
 import static edu.nyu.cascade.prover.Expression.Kind.VARIABLE;
-import xtc.tree.GNode;
 
 import java.util.List;
 
@@ -49,7 +48,7 @@ import edu.nyu.cascade.util.Identifiers;
 public class ExpressionImpl implements Expression {
   
   static interface ArrayStoreAllConstructionStrategy {
-    Expr apply(ExprManager em, edu.nyu.acsys.CVC4.Type type, Expr expr);
+    Expr apply(ExprManager em, edu.nyu.acsys.CVC4.ArrayType type, Expr expr);
   }
   
   static interface BinaryConstructionStrategy {
@@ -240,10 +239,10 @@ public class ExpressionImpl implements Expression {
   private boolean isVariable;
   
   private boolean isBoundVariable;
+  
+  private boolean isHoareLogic;
 
   private TypeImpl type;
-  
-  private GNode sourceNode;
   
   /** The name of a variable expression. <code>null</code> if the expression
    * is not a variable. */
@@ -260,7 +259,6 @@ public class ExpressionImpl implements Expression {
       children = ImmutableList.of();
     }
     setType(e.getType());
-    setNode(e.getNode());
   }
   
   /*
@@ -281,7 +279,6 @@ public class ExpressionImpl implements Expression {
           }
         }));
     setType(expr.getType());
-    setNode(expr.getNode());
   }
 
   private ExpressionImpl(ExpressionManagerImpl em, Kind kind) {
@@ -689,17 +686,6 @@ public class ExpressionImpl implements Expression {
   }
   
   @Override
-  public GNode getNode() {
-    return sourceNode;
-  }
-  
-  @Override
-  public Expression setNode(GNode node) {
-    this.sourceNode = node;
-    return this;
-  }
-  
-  @Override
   public int hashCode() {
     return getCvc4Expression().hashCode();
   }
@@ -774,6 +760,11 @@ public class ExpressionImpl implements Expression {
   void setType(Type type) {
     this.type = getExpressionManager().importType(type);
   }
+  
+  @Override
+  public void setHoareLogic(boolean bool) {
+  	this.isHoareLogic = bool;
+  }
 
   @Override
   public Expression subst(Expression oldExpr, Expression newExpr) {
@@ -787,9 +778,7 @@ public class ExpressionImpl implements Expression {
   @Override
   public Expression subst(Iterable<? extends Expression> oldExprs,
       Iterable<? extends Expression> newExprs) {
-    Expression res = mkSubst(getExpressionManager(), this, oldExprs, newExprs);
-    res.setNode(getNode());
-    return res;
+    return mkSubst(getExpressionManager(), this, oldExprs, newExprs);
   }
   
   @Override
@@ -921,4 +910,9 @@ public class ExpressionImpl implements Expression {
   public boolean isBound() {
 	  return isBoundVariable;
   }
+	
+	@Override
+	public boolean isHoareLogic() {
+		return isHoareLogic;
+	}
 }

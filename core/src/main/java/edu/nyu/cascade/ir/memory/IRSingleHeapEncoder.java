@@ -27,4 +27,6 @@ public interface IRSingleHeapEncoder {
 	void addFreshAddress(Expression lval, IRVarInfo info);
 	
 	void addFreshRegion(Expression region);
+
+	void reset();
 }

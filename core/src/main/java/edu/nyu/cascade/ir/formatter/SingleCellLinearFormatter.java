@@ -1,11 +1,9 @@
 package edu.nyu.cascade.ir.formatter;
 
-import com.google.common.base.Preconditions;
-
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.prover.ArrayExpression;
+import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 
 /**
@@ -15,12 +13,10 @@ import edu.nyu.cascade.prover.type.Type;
  *
  */
 
-public class SingleCellLinearFormatter implements IRDataFormatter {
-
-	private final ExpressionEncoding encoding;
+public final class SingleCellLinearFormatter extends AbstractDataFormatter {
 	
 	private SingleCellLinearFormatter(ExpressionEncoding encoding) {
-		this.encoding = encoding;
+		super(encoding);
 	}
 	
 	public static SingleCellLinearFormatter create(ExpressionEncoding encoding) {
@@ -28,34 +24,24 @@ public class SingleCellLinearFormatter implements IRDataFormatter {
 	}
 	
 	@Override
-	public Type getAddressType() {
-		return encoding.getPointerEncoding().getType();
-	}
-
-	@Override
 	public Type getValueType() {
-		return encoding.getIntegerEncoding().getType();
+		return encoding.getExpressionManager().bitVectorType(
+				encoding.getCTypeAnalyzer().getWordSize());
+	}
+	
+	@Override
+	public Expression castToSize(Expression size) {
+		return encoding.castToInteger(size, getSizeType().asBitVectorType().getSize());
 	}
 
 	@Override
-	public Expression getNullAddress() {
-		return encoding.getPointerEncoding().getNullPtr();
-	}
-
-	@Override
-	public ArrayExpression updateMemoryArray(ArrayExpression memory, Expression index,
-	    Expression value) {
-		if(value.isBoolean()) value = encoding.castToInteger(value);
-		if(!value.getType().equals(getValueType())) {
-			if(getValueType().isBitVectorType())
-				value = encoding.castToInteger(value, getValueType().asBitVectorType().getSize());				
-		}
-		return memory.update(index, value);
-	}
-
-	@Override
-	public Expression indexMemoryArray(ArrayExpression memory, Expression index) {
+	public Expression indexMemoryArray(ArrayExpression memory, Expression index, xtc.type.Type idxType) {
 		return memory.index(index);
+	}
+	
+	@Override
+	public Expression getSizeZero() {
+		return getSizeType().asBitVectorType().constant(0);
 	}
 
 	/**
@@ -63,68 +49,35 @@ public class SingleCellLinearFormatter implements IRDataFormatter {
 	 */
 	@Override
 	public Expression getUnknownValue(xtc.type.Type type) {
-		return encoding.getIntegerEncoding().unknown(getValueType());
+		int size = getValueType().asBitVectorType().getSize();
+		return encoding.getIntegerEncoding().unknown(size);
+	}
+
+	@Override
+	public Type getArrayElemType(long width) {
+		if(encoding.getCTypeAnalyzer().getWordSize() == width)
+			return getValueType();
+		else
+			return getAddressType();
 	}
 	
-	@Override
-  public Type getSizeType() {
-	  return getValueType();
+  @Override
+  protected ArrayExpression updateScalarInMem(ArrayExpression memory, xtc.type.Type idxType,
+  		Expression index, Expression value) {
+  	return memory.update(index, value);
   }
 
 	@Override
-	public Type getArrayElemType(xtc.type.Type type) {
-		Preconditions.checkNotNull(type);
-		xtc.type.Type cleanType = type.resolve();
-		return cleanType.isPointer() || cleanType.isArray() ? 
-				getAddressType() : getValueType();
-	}
-	
-	@Override
-	public ArrayType getMemoryArrayType() {
-		return encoding.getExpressionManager()
-				.arrayType(getAddressType(), getValueType());
-	}
+  public BooleanExpression memorySet(ArrayExpression memory, Expression region,
+      Expression size, Expression value) {
+		// FIXME: single cell linear format is unsound for memory set
+		return encoding.tt().asBooleanExpression();
+  }
 
 	@Override
-	public ArrayType getSizeArrayType() {
-		return encoding.getExpressionManager()
-				.arrayType(getAddressType(), getSizeType());
-	}
-
-	@Override
-	public Expression getSizeZero() {
-		return encoding.getIntegerEncoding().zero();
-	}
-	
-	@Override
-	public ArrayExpression updateSizeArray(ArrayExpression sizeArr,
-			Expression index, Expression value) {
-		return sizeArr.update(index, value);
-	}
-
-	@Override
-	public Expression indexSizeArray(ArrayExpression sizeArr, Expression index) {
-		return sizeArr.index(index);
-	}
-	
-	@Override
-	public Expression getFreshPtr(String name, boolean fresh) {
-		return encoding.getPointerEncoding().freshPtr(name, fresh);
-	}
-	
-	@Override
-	public Expression getBase(Expression ptr) {
-		return ptr;
-	}
-
-	@Override
-	public Expression cast(Expression index, Expression value) {
-		if(value.isBoolean()) value = encoding.castToInteger(value);
-		if(!value.getType().equals(getValueType())) {
-			if(getValueType().isBitVectorType())
-				value = encoding.castToInteger(value, getValueType().asBitVectorType().getSize());				
-		}
-		
-		return value;
+	public BooleanExpression memoryCopy(ArrayExpression destMemory, ArrayExpression srcMemory,
+			Expression destRegion, Expression srcRegion, Expression size) {
+		// FIXME: single cell linear format is unsound for memory copy
+		return encoding.tt().asBooleanExpression();
 	}
 }

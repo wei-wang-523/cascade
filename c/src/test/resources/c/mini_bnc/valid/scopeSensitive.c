@@ -1,3 +1,9 @@
+typedef long unsigned int size_t;
+extern void *malloc (size_t __size) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__malloc__)) ;
+extern void *calloc (size_t __nmemb, size_t __size)
+__attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__malloc__)) ;
+extern int __VERIFIER_nondet_int();
+
 int * a;
 int n;
 
@@ -6,7 +12,6 @@ int test(){
   int i;
   
   for (i = 0; i < n; ++i) {
-    
     a[i] = 0;		
   }
   
@@ -16,7 +21,7 @@ int test(){
 
 int main(){
 	
-  n = __NONDET__();
+  n = __VERIFIER_nondet_int();
 	
   if (n <= 0 || n >= 1024){
     n=5;
@@ -24,11 +29,9 @@ int main(){
   } else {
     a = (int *) malloc(n * sizeof(int)); // region_0
   }
-  ASSUME(a != (int *) 0);
-  
   
   test();
-  
+  free(a);
   return 1;
 }
 

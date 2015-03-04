@@ -14,14 +14,13 @@ import edu.nyu.acsys.CVC4.ExprManager;
 import edu.nyu.acsys.CVC4.vectorExpr;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.FunctionExpression;
-import edu.nyu.cascade.prover.BoundExpression;
 import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.Type;
 
 final class FunctionExpressionImpl extends ExpressionImpl implements FunctionExpression {
 
   static FunctionExpressionImpl create(ExpressionManagerImpl exprManager, 
-  		Iterable<BoundExpression> vars, Expression body) {
+  		Iterable<Expression> vars, Expression body) {
 		return new FunctionExpressionImpl(exprManager, vars, body);
 	}
   
@@ -61,7 +60,7 @@ final class FunctionExpressionImpl extends ExpressionImpl implements FunctionExp
   }
   
   private FunctionExpressionImpl(ExpressionManagerImpl exprManager,
-      Iterable<? extends BoundExpression> vars, Expression body) {
+      Iterable<? extends Expression> vars, Expression body) {
     super(exprManager, LAMBDA, new BinderConstructionStrategy() {
       @Override
       public Expr apply(ExprManager em, List<Expr> vars, Expr body) {

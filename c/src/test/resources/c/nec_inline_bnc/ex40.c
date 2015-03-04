@@ -1,10 +1,10 @@
-extern int __NONDET__();
+extern int __VERIFIER_nondet_int();
 
 extern char x[100], y[100];
 extern int i,j,k;
 
 int mainFunc() {  
-	k = __NONDET__();
+	k = __VERIFIER_nondet_int();
 	
 	i = 0;
 	while(x[i] != 0){ // valid(x[i]), after 100 iter

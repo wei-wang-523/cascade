@@ -6,23 +6,26 @@ package edu.nyu.cascade.ir.path;
  */
 
 import java.util.Collection;
+import java.util.List;
 
 import xtc.tree.Node;
+import xtc.type.EnumeratorT;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
+import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.ir.IRVarInfo;
-import edu.nyu.cascade.ir.expr.BooleanEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
+import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.state.StateExpression;
-import edu.nyu.cascade.ir.state.StateExpressionClosure;
 import edu.nyu.cascade.ir.state.StateFactory;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.util.ReservedFunction;
 
 public class SimplePathEncoding extends AbstractPathEncoding {
+	
   public static <Mem extends Expression> SimplePathEncoding create(
       ExpressionEncoder encoder) {
     return new SimplePathEncoding(encoder);
@@ -38,137 +41,157 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   }
   
 	@Override
-  public StateExpression declare(StateExpression preState, StateExpressionClosure lval) {		
-    Node varNode = lval.getOutput().getNode();
-    assert(varNode.hasName("SimpleDeclarator"));
-    String name = varNode.getString(0);
-    IRVarInfo info = (IRVarInfo) getExpressionEncoder().getCurrentScope().lookup(name);
+  public StateExpression declare(StateExpression preState, Expression lval, Node sourceNode) {
+    StateFactory<?> stateFactory = getStateFactory();
+    StateExpression currState = preState;
     
-    StateExpression currState = preState.copy();
-    currState = getMemoryModel().declare(currState, lval.eval(currState), info);
+    String name = sourceNode.getString(0);
+    IRVarInfo info = (IRVarInfo) getExpressionEncoder().getCurrentScope().lookup(name);
+    stateFactory.addStackVar(currState, lval, info);
+    xtc.type.Type type = info.getXtcType();
+    
+    if(type.hasEnum()) {
+    	ExpressionEncoding encoding = getExpressionEncoding();
+    	Expression derefLval = stateFactory.deref(preState, lval, sourceNode);
+    	
+      Collection<BooleanExpression> assump = Lists.newArrayList();
+    	for(EnumeratorT enumerator : type.toEnum().getMembers()) {
+    		int val = enumerator.getConstant().bigIntValue().intValue();
+    		Expression constExpr = encoding.integerConstant(val);
+    		assump.add(derefLval.eq(constExpr));
+    	}
+    	
+    	currState.addConstraint(encoding.or(assump).asBooleanExpression());
+    }
+    
     return currState;
   }
 	
 	@Override
-	public StateExpression declareEnum(StateExpression preState, StateExpressionClosure ... rvals) {
-		StateExpression currState = preState.copy();
-		Collection<Expression> rvalExprs = Lists.newArrayListWithCapacity(rvals.length);
-		for(StateExpressionClosure rval : rvals) {
-			Expression rvalExpr = rval.eval(currState);
-			rvalExprs.add(rvalExpr);
-		}
-		
-		Expression distinctAssump = getExpressionEncoding().distinct(rvalExprs);
-		
-    if(!preState.hasConstraint()) {
-    	currState.setConstraint(distinctAssump.asBooleanExpression());
-    } else {
-	    ExpressionManager exprManager = getExpressionManager();
-    	BooleanExpression pc = preState.getConstraint();
-    	BooleanExpression pcPrime = exprManager.ifThenElse(pc, distinctAssump,
-    			exprManager.ff()).asBooleanExpression();
-    	currState.setConstraint(pcPrime);
-    }
+	public StateExpression declareVarArray(StateExpression preState, Expression lval, Node sourceNode,
+			Expression rval) {
+    StateFactory<?> stateFactory = getStateFactory();
+    StateExpression currState = preState;
+    String name = sourceNode.getString(0);
+    IRVarInfo info = (IRVarInfo) getExpressionEncoder().getCurrentScope().lookup(name);
+    stateFactory.addStackVarArray(currState, lval, rval, info, sourceNode);
     return currState;
 	}
+	
+	@Override
+  public StateExpression init(StateExpression preState, Expression lval, Node lNode, 
+  		Expression rval, Node rNode) {
+    StateFactory<?> stateFactory = getStateFactory();
+    StateExpression currState = preState;
+    stateFactory.assign(currState, lval, lNode, rval, rNode);
+    return currState;
+  }
   
   @Override
-  public StateExpression alloc(StateExpression preState, StateExpressionClosure lval,
-  		StateExpressionClosure rval) {
-  	StateExpression currState = preState.copy();
-    currState = getMemoryModel().alloc(currState, lval.eval(currState), rval.eval(currState));
+  public StateExpression malloc(StateExpression preState, Expression lval, Node lNode,
+  		Expression rval) {
+    StateFactory<?> stateFactory = getStateFactory();
+    StateExpression currState = preState;
+  	stateFactory.malloc(currState, lval, rval, lNode);
+    return currState;
+  }
+  
+  @Override
+  public StateExpression calloc(StateExpression preState, Expression lval, Node lNode,
+  		Expression nitem, Expression size) {
+    StateFactory<?> stateFactory = getStateFactory();
+    StateExpression currState = preState;
+  	stateFactory.calloc(currState, lval, nitem, size, lNode);
+    return currState;
+  }
+  
+  @Override
+  public StateExpression alloca(StateExpression preState, Expression lval, Node lNode,
+  		Expression rval) {
+    StateFactory<?> stateFactory = getStateFactory();
+    StateExpression currState = preState;
+  	stateFactory.alloca(currState, lval, rval, lNode);
     return currState;
   }
 
   @Override
-  public StateExpression assign(StateExpression preState,
-  		StateExpressionClosure var, StateExpressionClosure val) {
-  	StateExpression currState = preState.copy();
-    currState = getMemoryModel().assign(currState, var.eval(currState), val.eval(currState));
+  public StateExpression assign(StateExpression preState, 
+  		Expression lval, Node lNode, Expression rval, Node rNode) {
+    StateFactory<?> stateFactory = getStateFactory();
+    StateExpression currState = preState;
+  	stateFactory.assign(currState, lval, lNode, rval, rNode);
     return currState;
   }
 
   @Override
-  public StateExpression assume(StateExpression preState, StateExpressionClosure expr) {
-    BooleanEncoding<?> booleanEncoding = getExpressionEncoding().getBooleanEncoding();
-    Preconditions.checkArgument(booleanEncoding.getType().equals(expr.getOutputType()));
-    
-    StateExpression currState = preState.copy();
-    
-    Expression exprPrime = expr.eval(currState);
-    
-    if(!preState.hasConstraint()) {
-    	currState.setConstraint(exprPrime.asBooleanExpression());
-    } else {
-	    ExpressionManager exprManager = getExpressionManager();
-    	BooleanExpression pc = preState.getConstraint();
-    	BooleanExpression pcPrime = exprManager.ifThenElse(pc, exprPrime,
-    			exprManager.ff()).asBooleanExpression();
-    	currState.setConstraint(pcPrime);
-    }
+  public StateExpression assume(StateExpression preState, Expression expr, boolean isGuard) {
+    Preconditions.checkArgument(expr.isBoolean());
+    StateExpression currState = preState;
+  	
+    if(isGuard) 	currState.addGuard(expr.asBooleanExpression());
+    else 					currState.addConstraint(expr.asBooleanExpression());
     return currState;
   }
 
   @Override
   public StateExpression emptyState() {
     StateExpression memState = getStateFactory().freshState();
-    BooleanExpression pc = getExpressionManager().tt();
-    memState.setConstraint(pc);
+    BooleanExpression tt = getExpressionManager().tt();
+    memState.setGuard(tt);
     return memState;
   }
 
   @Override
-  public StateExpression free(StateExpression preState, StateExpressionClosure ptr) {
-  	StateExpression currState = preState.copy();
-    currState = getMemoryModel().free(currState, ptr.eval(currState));
+  public StateExpression free(StateExpression preState, Expression region, Node pNode) {
+    StateFactory<?> stateFactory = getStateFactory();
+    StateExpression currState = preState;
+    
+  	stateFactory.free(currState, region, pNode);
     return currState;
   }
 
   @Override
-  public StateExpression havoc(StateExpression preState, StateExpressionClosure lval) {
-  	StateExpression currState = preState.copy();
-    currState = getMemoryModel().havoc(currState, lval.eval(currState));
+  public StateExpression havoc(StateExpression preState, Expression lval, Node lNode) {
+    StateFactory<?> stateFactory = getStateFactory();
+    StateExpression currState = preState;
+    
+  	Expression rval = stateFactory
+  			.getDataFormatter().getUnknownValue(CType.getType(lNode));
+  	
+  	stateFactory.assign(currState, lval, lNode, rval, null);
     return currState;
   }
   
   @Override
   public StateExpression noop(Collection<StateExpression> preStates) {
+  	Preconditions.checkArgument(!preStates.isEmpty());
   	if(preStates.size() == 1) return preStates.iterator().next();
     return getStateFactory().resolvePhiNode(preStates);
   }
-
+  
   @Override
-	public StateExpression call(StateExpression preState, String func, StateExpressionClosure... operands) {
+  public StateExpression call(StateExpression preState, String funcName, Node funcNode,
+  		List<Expression> args, List<Node> argNodes) {
+  	StateFactory<?> stateFactory = getStateFactory();
+  	
+  	if(funcName.equals(ReservedFunction.MEMSET)) {
+  		Expression region = args.get(0);
+  		Expression value = args.get(1);
+  		Expression size = args.get(2);
+  		BooleanExpression memset = stateFactory.applyMemset(preState, 
+  				region, size, value, argNodes.get(0));
+  		preState.addConstraint(memset);
+  	}
+  	
+  	else if(funcName.equals(ReservedFunction.MEMCOPY)) {
+  		Expression destRegion = args.get(0);
+  		Expression srcRegion = args.get(1);
+  		Expression size = args.get(2);
+  		BooleanExpression memcpy = stateFactory.applyMemcpy(preState, destRegion, 
+  				srcRegion, size, argNodes.get(0), argNodes.get(1));
+  		preState.addConstraint(memcpy);
+  	}
+  	
   	return preState;
-	}
-
-	@Override
-  final protected BooleanExpression assertionToBoolean(StateExpression preState,
-      StateExpressionClosure bool) {
-    Preconditions.checkArgument( bool.getOutputType().isBoolean() );
-    StateExpression currState = preState.copy();
-    
-    ExpressionManager exprManager = getExpressionManager();
-    BooleanExpression memorySafe = getStateFactory().getDisjointAssumption(preState)
-    		.asBooleanExpression();
-    
-    BooleanExpression assumption = currState.hasConstraint() ? 
-    		currState.getConstraint().and(memorySafe) : memorySafe;
-    		
-    Expression boolExpr = bool.eval(currState);
-    Expression res = exprManager.implies(assumption, boolExpr);
-    Expression resCleanup = getStateFactory().cleanup(currState, res);
-    return resCleanup.asBooleanExpression();
-  }
-
-  @Override
-  final protected BooleanExpression pathToBoolean(StateExpression preState) {    
-    BooleanExpression memorySafe = getStateFactory().getDisjointAssumption(preState)
-    		.asBooleanExpression();
-    
-    Expression pc = preState.getConstraint();
-    Expression res = memorySafe.and(pc);
-    Expression resCleanup = getStateFactory().cleanup(preState, res);
-    return resCleanup.asBooleanExpression();
   }
 }

@@ -1,9 +1,7 @@
 package edu.nyu.cascade.c.preprocessor.steensgaard;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -11,9 +9,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
-import edu.nyu.cascade.c.CScopeAnalyzer;
-import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IRVar;
+import edu.nyu.cascade.c.preprocessor.steensgaard.ValueType.ValueTypeKind;
 import edu.nyu.cascade.util.UnionFind;
 import edu.nyu.cascade.util.UnionFind.Partition;
 
@@ -26,6 +23,10 @@ class UnionFindECR {
 
   static UnionFindECR create() {
     return new UnionFindECR();
+  }
+  
+  void reset() {
+  	uf.reset();
   }
 
   /**
@@ -72,8 +73,11 @@ class UnionFindECR {
   void join(ECR e1, ECR e2) {
     ValueType t1 = getType(e1);
     ValueType t2 = getType(e2);
-    union(e1, e2);
-    ECR root = (ECR) e1.findRoot();
+    Collection<ECR> pending1 = getPendings(e1);
+    Collection<ECR> pending2 = getPendings(e2);
+    
+    uf.union(e1, e2);
+    ECR root = findRoot(e1);
     
     switch(t1.getKind()) {
 		case BOTTOM: {
@@ -81,45 +85,27 @@ class UnionFindECR {
 			
 			switch(t2.getKind()) {
 			case BOTTOM: {
-				Set<ECR> pendings = Sets.newHashSet();
-				
-				if(e1.hasPending()) {
-					pendings.addAll(e1.getPending());
-        }
-				
-        if(e2.hasPending()) {
-        	pendings.addAll(e2.getPending());
-        }
-        
-        addPendings(root, pendings);
+				Collection<ECR> pendings = Sets.newHashSet();
+				pendings.addAll(pending1);
+        pendings.addAll(pending2);        
+        root.addPendings(pendings);
 				break;
 			}
 			default:
-				if(e1.hasPending()) {
-          for(ECR x : e1.getPending()) {
-            union(root, x);
-          }
-        }
+				for(ECR x : pending1) join(root, x);
         break;
 			}
 			break;
 		}
 		
 		default: {
-			root.setType(t1);
-			
 			switch(t2.getKind()) {
 			case BOTTOM:
-				if(e2.hasPending()) {
-          for(ECR x : e2.getPending()) {
-            union(root, x);
-          }
-        }
+				root.setType(t1);
+				for(ECR x : pending2) join(root, x);
 				break;
 			default: {
-				ValueType rootType = root.getType();
 				ValueType t = unify(t1, t2);
-				t.setAddress(rootType.getAddress());
 				root.setType(t);
 				break;
 			}
@@ -133,14 +119,12 @@ class UnionFindECR {
    * Set the type of the ECR @param e to @param type
    */
   void setType(ECR e, ValueType type) { 
-    ECR root = (ECR) e.findRoot();
+    ECR root = findRoot(e);
     root.setType(type);
-    if(root.hasPending()) {
-      for(ECR x : root.getPending()) {
-        join(root, x);
-      }
-      root.cleanPending();
+    for(ECR x : root.getPendings()) {
+      join(root, x);
     }
+    root.clearPending();
   }
   
   /**
@@ -148,7 +132,7 @@ class UnionFindECR {
    * @param e
    */
   ValueType getType(ECR e) {
-    ECR root = (ECR) e.findRoot();
+    ECR root = findRoot(e);
     return root.getType();
   }
   
@@ -176,25 +160,78 @@ class UnionFindECR {
   Collection<IRVar> getEquivClass(ECR key) {
   	return uf.getEquivClass(key);
   }
+
+	ECR getLoc(ECR ecr) {
+		ValueType ecrType = getType(ecr);
+		switch(ecrType.getKind()) {
+		case BOTTOM:
+			ValueType newRefType = ValueType.ref(ECR.createBottom(), ECR.createBottom());
+			setType(ecr, newRefType);
+			return newRefType.asRef().getLocation();
+		case REF:
+			return ecrType.asRef().getLocation();
+		default:
+			throw new IllegalArgumentException();
+		}
+	}
 	
-	private void addPendings(ECR ecr, Collection<ECR> newPendings) {
-	  ECR root = (ECR) ecr.findRoot();
-	  root.addPending(newPendings);
+	ECR getFunc(ECR ecr) {
+		ValueType ecrType = getType(ecr);
+		switch(ecrType.getKind()) {
+		case BOTTOM:
+			ValueType newRefType = ValueType.ref(ECR.createBottom(), ECR.createBottom());
+			setType(ecr, newRefType);
+			return newRefType.asRef().getFunction();
+		case REF:
+			return ecrType.asRef().getFunction();
+		default:
+			throw new IllegalArgumentException();
+		}
 	}
-
-	private void addPending(ECR ecr, ECR newPending) {
-		addPendings(ecr, Collections.singleton(newPending));
-	}
-
-	/**
-	 * Union two ecrs, and always attach an initial var to the root ecr.
-	 * We need it to pick the name of representative var, and also get 
-	 * final snapshot(map) of the points-to relation of the analysis of
-	 * all program variables, of course, null will be not acceptable to 
-	 * be the key of the map.
-	 */
-	private void union(ECR e1, ECR e2) {
-	  uf.union(e1, e2);
+	
+	void assign(ECR lhs, ECR rhs) {
+	  ValueType lhs_type = getType(lhs);
+	  ValueType rhs_type = getType(rhs);
+	  
+	  ValueTypeKind lKind = lhs_type.getKind();
+	  ValueTypeKind rKind = rhs_type.getKind();
+	  
+	  switch(lKind) {
+		case BOTTOM: {
+			switch(rKind) {
+			case REF: {
+				setType(lhs, rhs_type);
+				break;
+			}
+			default:
+				break;
+			}
+			break;
+		}
+		case REF: {
+			switch(rKind) {
+			case BOTTOM: {
+				setType(rhs, lhs_type);
+				break;
+			}
+			case REF: {
+			  ECR lhsLoc = lhs_type.asRef().getLocation();
+			  ECR rhsLoc = rhs_type.asRef().getLocation();
+			  cjoin(lhsLoc, rhsLoc);
+			  
+			  ECR lhsFunc = lhs_type.asRef().getFunction();
+			  ECR rhsFunc = rhs_type.asRef().getFunction();			  
+			  cjoin(lhsFunc, rhsFunc);
+				break;
+			}
+			default:
+				break;
+			}
+			break;
+		}
+		default:
+			break;
+	  }
 	}
 
 	/**
@@ -220,25 +257,16 @@ class UnionFindECR {
 	      join(function_1, function_2);
 	    }
 	    
-	    xtc.type.Type xtcType1 = locType1.getXtcType();
-	    xtc.type.Type xtcType2 = locType2.getXtcType();
-	    
-	    String scopeName1 = locType1.getScopeName();
-	    String scopeName2 = locType2.getScopeName();
-	    
-	    if(xtcType1.equals(xtcType2) && scopeName1.equals(scopeName2)) break;
-	    
-	    xtc.type.Type xtcType = CType.getBottomType(xtcType1, xtcType2);
-
-	    String scopeName = CScopeAnalyzer.getTopScope(scopeName1, scopeName2);
-	    
-	    t1 = ValueType.ref(location_1, function_1, xtcType, scopeName);	    
+	    t1 = ValueType.ref(location_1, function_1);	    
 	    break;
 	  }
 	  
 	  case LAMBDA: {
-	    Iterator<ECR> args_itr_1 = t1.asLambda().getOperands().iterator();
-	    Iterator<ECR> args_itr_2 = t2.asLambda().getOperands().iterator();
+	    Collection<ECR> args1 = t1.asLambda().getParams();
+	    Collection<ECR> args2 = t2.asLambda().getParams();
+	    
+	    Iterator<ECR> args_itr_1 = args1.iterator();
+	    Iterator<ECR> args_itr_2 = args2.iterator();
 	    while(args_itr_1.hasNext() && args_itr_2.hasNext()) {
 	      ECR arg_1 = args_itr_1.next();
 	      ECR arg_2 = args_itr_2.next();
@@ -246,10 +274,27 @@ class UnionFindECR {
 	        join(arg_1, arg_2);
 	      }
 	    }
+	    
+	    // For unifying incompatible lambda types, force the first type
+	    // as the lambda type with variable arg-types
+	    if(args_itr_2.hasNext()) {
+	    	t1.asLambda().addParamECR(args_itr_2.next());
+	    }
+	    
+	    join(t1.asLambda().getRet(), t2.asLambda().getRet());
 	    break;
 	  }
 	  default: break;
 	  }
 	  return t1;
+	}
+	
+	private Collection<ECR> getPendings(ECR ecr) {
+		return findRoot(ecr).getPendings();
+	}
+
+	private void addPending(ECR ecr, ECR newPending) {
+		ECR root = findRoot(ecr);
+		root.addPending(newPending);
 	}
 }

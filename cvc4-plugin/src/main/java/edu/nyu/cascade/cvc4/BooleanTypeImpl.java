@@ -251,7 +251,11 @@ final class BooleanTypeImpl extends TypeImpl implements BooleanType {
   
   @Override
   public  BooleanExpressionImpl eq(Expression left, Expression right)  {
-    return BooleanExpressionImpl.mkEq(getExpressionManager(), left, right);
+	  if(left.isBoolean()) {
+		  return BooleanExpressionImpl.mkIff(getExpressionManager(), left, right);
+	  } else {
+		  return BooleanExpressionImpl.mkEq(getExpressionManager(), left, right);
+	  }
   }
   
 	@Override

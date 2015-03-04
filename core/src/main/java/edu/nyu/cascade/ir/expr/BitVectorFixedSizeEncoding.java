@@ -2,13 +2,9 @@ package edu.nyu.cascade.ir.expr;
 
 import java.math.BigInteger;
 
-import xtc.tree.GNode;
-import xtc.tree.Node;
-
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -84,7 +80,7 @@ public class BitVectorFixedSizeEncoding extends
   }
 	
 	@Override
-  public BitVectorExpression characterConstant(long c) {
+  public BitVectorExpression characterConstant(int c) {
 		return getExpressionManager().bitVectorConstant(c, getType().getSize());
   }
 
@@ -194,6 +190,13 @@ public class BitVectorFixedSizeEncoding extends
 		Preconditions.checkArgument(size == getType().getSize());
 		return i;
   }
+	
+	@Override
+  public BitVectorExpression ofInteger(BitVectorExpression i, int size, boolean isSigned) {
+		Preconditions.checkArgument(i.getType().equals(getType()));
+		Preconditions.checkArgument(size == getType().getSize());
+		return i;
+  }
 
 	@Override
   public BitVectorExpression one() {
@@ -250,12 +253,12 @@ public class BitVectorFixedSizeEncoding extends
 
 	@Override
   public BitVectorExpression unknown() {
-	  return unknown(getType());
+	  return intEncoding.unknown();
   }
 
 	@Override
-  public BitVectorExpression unknown(Type type) {
-	  return intEncoding.unknown(type);
+  public BitVectorExpression unknown(long size) {
+	  return intEncoding.unknown(size);
   }
 
 	@Override
@@ -266,6 +269,11 @@ public class BitVectorFixedSizeEncoding extends
 	@Override
   public BitVectorExpression uminus(BitVectorExpression expr) {
 	  return intEncoding.uminus(typeConversion(expr));
+  }
+	
+	@Override
+  public BitVectorExpression uplus(BitVectorExpression expr) {
+	  return intEncoding.uplus(typeConversion(expr));
   }
 
 	@Override
@@ -321,19 +329,6 @@ public class BitVectorFixedSizeEncoding extends
 		int exprSize = bvExpr.getSize(), size = getType().getSize();
 		
 		if(exprSize == size)	return bvExpr;
-		
-		if(bvExpr.getNode() != null) {
-			Node srcNode = bvExpr.getNode();
-			if(CType.hasType(srcNode)) {
-				xtc.type.Type srcType = CType.getType(srcNode);
-				if(CType.isUnsigned(srcType)) {
-					return bvExpr.zeroExtend(size)
-							.setNode(GNode.cast(srcNode)).asBitVector();
-				}
-			}
-			return bvExpr.signExtend(size)
-					.setNode(GNode.cast(srcNode)).asBitVector();
-		}
-		return bvExpr.signExtend(size);
+		return bvExpr.zeroExtend(size);
 	}
 }

@@ -1,10 +1,14 @@
 package edu.nyu.cascade.ir.state;
 
+import java.util.Collection;
 import java.util.Map;
+
+import com.google.common.collect.Multimap;
 
 import xtc.util.SymbolTable.Scope;
 import edu.nyu.cascade.prover.BooleanExpression;
-import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.VariableExpression;
 
 /**
  * Program state tuple <memory, size, constraint, guard>
@@ -37,18 +41,18 @@ public interface StateExpression {
   BooleanExpression getConstraint();
   
   void setConstraint(BooleanExpression constraint);
-  
-  boolean hasSameType(StateExpression state);
 
 	Object setProperty(String key, Object val);
 	
-	boolean hasConstraint();
-	
-	boolean hasGuard();
-	
-	void addConstraint(BooleanExpression constraint, BooleanExpression tt, BooleanExpression ff);
+	void addConstraint(BooleanExpression constraint);
 	
 	void addGuard(BooleanExpression guard);
+	
+	/**
+	 * Used for path-based encoding, add guard of pre-state to current state
+	 * @param preGuard
+	 */
+	void addPreGuard(BooleanExpression preGuard);
 
 	BooleanExpression getGuard();
 	
@@ -57,25 +61,34 @@ public interface StateExpression {
 	boolean hasProperty(String label);
 
 	Object getProperty(String label);
-
+	
+	void addAssertion(String label, BooleanExpression assertion);
+	
+	Multimap<String, BooleanExpression> getAssertions();
+	
 	void setProperties(Map<String, Object> props);
 
 	Map<String, Object> getProperties();
 
 	String toStringShort();
 
-	Type[] getElemTypes();
+	void addVar(VariableExpression variable);
+	void addVars(Collection<VariableExpression> variables);
+	Collection<VariableExpression> getVars();
 	
-  /**
-   * Create a clone of itself to keep clean of side-effect caused by 
-   * following operations. Used in the <code>SimplePathEncoding</code> to 
-   * analyze statements. Otherwise, the side-effect caused of the expression 
-   * evaluation will change the
-   * input state, which might also be the input state of other statements
-   *  (e.g. in ite-branch), the side-effect of the if-branch 
-   * statements will affect the analysis of else-branch statements
-   * @param state
-   * @return
-   */
-	StateExpression copy();
+	void addRegion(VariableExpression region);
+	void addRegions(Collection<VariableExpression> regions);
+	Collection<VariableExpression> getRegions();
+	
+	void setAssertions(Multimap<String, BooleanExpression> assertions);
+
+	void setMemTracker(Expression expr);
+	
+	Expression getMemTracker();
+
+	Map<Expression, Expression> getHoareValues();
+	
+	void setHoareValues(Map<Expression, Expression> hoareValues);
+	
+	void updateHoareValue(Expression key, Expression Value);
 }

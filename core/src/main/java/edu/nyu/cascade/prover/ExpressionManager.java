@@ -993,11 +993,21 @@ public interface ExpressionManager {
    * @param expr
    */
   boolean valueOfBooleanConstant(Expression expr);
-  
+
   /**
-   * Get a set of variables
-   * @return a set of variables
+   * Create a lambda expression
+   * @param arg
+   * @param body
+   * @return
    */
-  Collection<Expression> getVariables();
+	FunctionExpression lambda(Expression arg, Expression body);
+
+	/**
+	 * Create a lambda expression
+	 * @param args
+	 * @param body
+	 * @return
+	 */
+	FunctionExpression lambda(Collection<Expression> args, Expression body);
 
 }

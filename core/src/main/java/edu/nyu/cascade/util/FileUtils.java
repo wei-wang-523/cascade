@@ -13,6 +13,7 @@ public class FileUtils {
   private static final String[] CONTROL_FILE_SUFFIXES = { ".ctrl" };
   
   protected static final String RESOURCES_DIRECTORY = "META-INF";
+  protected static final String DUMP_DIRECTORY = "out";
 
   private static final Joiner PATH_JOINER = Joiner.on(File.separator);
   
@@ -52,6 +53,12 @@ public class FileUtils {
   
   public static String resourcePath(String... pathComponents) {
     return path(RESOURCES_DIRECTORY, pathComponents);
+  }
+  
+  public static File createDumpDir(String dir) {
+  	File outDir = new File(path(System.getProperty("user.dir"), DUMP_DIRECTORY, dir));
+		if(!outDir.exists()) outDir.mkdirs();
+		return outDir;
   }
 
   public static File absoluteResourcePath(String... pathComponents) {

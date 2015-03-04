@@ -1,3 +1,4 @@
+extern int __VERIFIER_nondet_int();
 
 int main(){
    int a[5];
@@ -6,7 +7,7 @@ int main(){
    int i;
 
 
-   while(__NONDET__()){
+   while(__VERIFIER_nondet_int()){
 
       if (len==4)
          len =0;

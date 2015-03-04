@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.google.common.base.Preconditions;
 
+import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.ir.type.IRType;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -31,6 +32,8 @@ public abstract class AbstractTypeEncoding<E extends Expression> implements Type
   }
 
   public ExpressionManager getExpressionManager() { return exprManager; }
+  
+  public CType getCTypeAnalyzer() { return CType.getInstance(); }
   
   @Override
   public Type getType() {

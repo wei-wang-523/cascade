@@ -50,6 +50,10 @@ public class ExpressionManagerTest {
   private void assertValid(Expression b) {
     assertTrue (theoremProver.checkValidity(b).isValid());
   }
+  
+  private void assume(Expression b) {
+  	theoremProver.assume(b);
+  }
 
   @Before
   public void setUp() {
@@ -68,8 +72,8 @@ public class ExpressionManagerTest {
     assertEquals(intType, arrayType.getIndexType());
     assertEquals(intType, arrayType.getElementType());
   }
-
-  @Test(expected = IllegalArgumentException.class)
+  
+  @Test
   public void testArrayType2() {
     // Cannot create a CVC array with boolean elements
     ArrayType arrayType2 = exprManager.arrayType(
@@ -462,6 +466,21 @@ public class ExpressionManagerTest {
 
     assertValid(x.eq(y).implies(fx.eq(fy)));
   }
+  
+  @Test
+  public void testFunctionApplication3() {
+  	BoundExpression x = intType.boundVar("x", true);
+  	BoundExpression y = intType.boundVar("y", true);
+
+    FunctionExpression f = exprManager.functionDeclarator("f", 
+    		exprManager.functionType(intType, intType), true)
+    		.asFunctionExpression();
+    FunctionExpression f1 = 
+    		((ExpressionManagerImpl) exprManager).lambda(x, x);
+    
+    assume(f.eq(f1));
+    assertValid(f.apply(y).eq(y));
+  }
 
   @Test
   public void testIntegerConstants() {
@@ -608,6 +627,14 @@ public class ExpressionManagerTest {
     BooleanExpression tt = exprManager.tt();
     assertSat(tt);
     assertValid(tt);
+  }
+  
+  @Test
+  public void testEqBool() {
+	BooleanExpression tt = exprManager.tt();
+	BooleanExpression var = exprManager.booleanType().variable("x", true);
+	assertSat(var.eq(tt));
+	assertInvalid(var.eq(tt));
   }
 
   @Test

@@ -17,6 +17,20 @@ import edu.nyu.cascade.prover.type.Type;
 final class ArrayExpressionImpl
     extends ExpressionImpl implements ArrayExpression {
   
+  static ArrayExpressionImpl mkStoreAll(
+      ExpressionManagerImpl exprManager, Expression expr,
+      Type arrayType) {
+    Preconditions.checkArgument(expr.getType().equals(arrayType.asArrayType().getElementType()));
+    return new ArrayExpressionImpl(exprManager, ARRAY_STORE_ALL,
+        new ArrayStoreAllConstructionStrategy() {
+					@Override
+          public Expr apply(ExprManager em, edu.nyu.acsys.CVC4.ArrayType type,
+              Expr expr) {
+	          return em.mkConst(new ArrayStoreAll(type, expr));
+          }
+        }, arrayType, expr);
+  }
+	
   static ArrayExpressionImpl mkUpdate(
       ExpressionManagerImpl exprManager, Expression array,
       Expression index, Expression value) {
@@ -45,21 +59,6 @@ final class ArrayExpressionImpl
         }, array, index);
     result.setType(array.asArray().getElementType());
     return result;
-  }
-  
-  static ArrayExpressionImpl mkStoreAll(
-      ExpressionManagerImpl exprManager, Expression expr,
-      Type arrayType) {
-    Preconditions.checkArgument(expr.getType().equals(arrayType.asArrayType().getElementType()));
-    return new ArrayExpressionImpl(exprManager, ARRAY_STORE_ALL,
-        new ArrayStoreAllConstructionStrategy() {
-          @Override
-          public Expr apply(ExprManager em, edu.nyu.acsys.CVC4.Type type, Expr expr) {
-            edu.nyu.acsys.CVC4.ArrayType arrayType = new edu.nyu.acsys.CVC4.ArrayType(type);
-            ArrayStoreAll arrayStoreAll = new ArrayStoreAll(arrayType, expr);
-            return em.mkConst(arrayStoreAll);
-          }
-        }, arrayType, expr);
   }
 
   private final Type indexType;

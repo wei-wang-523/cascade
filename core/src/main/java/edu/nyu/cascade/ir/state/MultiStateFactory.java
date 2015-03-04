@@ -2,20 +2,25 @@ package edu.nyu.cascade.ir.state;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.HashMultimap;
+import javax.annotation.Nullable;
+
+import xtc.tree.Node;
+
 import com.google.common.collect.Iterables;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 
+import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
@@ -24,9 +29,10 @@ import edu.nyu.cascade.ir.memory.IRPartitionHeapEncoder;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.ExpressionManager;
-import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.prover.VariableExpression;
+import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.util.Pair;
+import edu.nyu.cascade.util.Preferences;
 
 public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 
@@ -36,11 +42,17 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 	private PreProcessor<T> labelAnalyzer;
 	
   @Inject
-	MultiStateFactory(ExpressionEncoding encoding, IRDataFormatter formatter, IRPartitionHeapEncoder parHeapEncoder) {
+	MultiStateFactory(ExpressionEncoding encoding, IRDataFormatter formatter, 
+			IRPartitionHeapEncoder parHeapEncoder) {
 	  super(encoding, formatter);
 	  singleStateFactory = createSingle(encoding, formatter);
 	  heapEncoder = parHeapEncoder;
   }
+  
+	@Override
+	public void reset() {
+		heapEncoder.reset();
+	}
 	
 	@SuppressWarnings("unchecked")
 	@Override
@@ -50,82 +62,123 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 	
 	@Override
 	public MultiStateExpression freshState() {
-	  return MultiStateExpression.create();
+	  MultiStateExpression freshState = MultiStateExpression.create();
+	  freshState.setMemTracker(getDataFormatter().getSizeZero());
+	  return freshState;
 	}
 	
 	@Override
-	public StateExpression addStackVar(StateExpression state, Expression lval, IRVarInfo info) {
-		Preconditions.checkArgument(state.isMultiple());
-		Preconditions.checkNotNull(lval.getNode());
+	public void addStackVar(StateExpression state, Expression lval, IRVarInfo info) {
+		if(!info.isStatic()) state.addVar(lval.asVariable());
+       
+		Node node = info.getDeclarationNode();
+		labelAnalyzer.addStackVar(lval, node);
 		
-		labelAnalyzer.addStackVar(lval);
+		T rep = labelAnalyzer.getRep(node);
 		
-		xtc.type.Type lvalType = info.getXtcType().resolve();
-		T rep;
-		
-		if(lvalType.isArray() || lvalType.isStruct() || lvalType.isArray()) {
-			/* The address should belongs to the group it points-to, where to reason
-			 * about disjointness */
-	  	rep = labelAnalyzer.getPointsToRep(lval.getNode());
-		} else {
-			rep = labelAnalyzer.getRep(lval.getNode());
+		xtc.type.Type lvalType = info.getXtcType();
+
+		/* The address should belongs to the group it points-to, where to reason
+		 * about disjointness */
+		if(!(CType.isScalar(lvalType) || lvalType.resolve().isFunction())) {
+	  	rep = labelAnalyzer.getPointsToLoc(rep);
 		}
   	
-		heapEncoder.addFreshAddress(labelAnalyzer.getRepId(rep), lval, info);
-		
-		updateStateWithRep(state.asMultiple(), rep);
-		
-		return state;
+		for(T fillInRep : labelAnalyzer.getFillInReps(rep)) {
+			updateStateWithRep(state.asMultiple(), fillInRep);
+			heapEncoder.addFreshAddress(labelAnalyzer.getRepId(fillInRep), lval, info);
+		}
 	}
 
 	@Override
-	public Expression eval(Expression expr, StateExpression stateVar,
-	    StateExpression state) {
-		Pair<List<Expression>, List<Expression>> substPair =
-				getSubstElemsPair(stateVar, state);
-		List<Expression> fromExprs = substPair.fst();
-		List<Expression> toExprs = substPair.snd();
+	public void addStackVarArray(StateExpression state, Expression lval,
+			Expression rval, IRVarInfo info, Node sourceNode) {
+		if(!info.isStatic()) state.addVar(lval.asVariable());
 		
-		if(fromExprs.isEmpty()) return expr;
+		labelAnalyzer.addStackVar(lval, sourceNode);
 		
-		return expr.subst(fromExprs, toExprs);
+		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(sourceNode));
+		Map<String, SingleStateExpression> stateMap = state.asMultiple().getStateMap();
+		
+		for(T rep : labelAnalyzer.getFillInReps(ptrRep)) {
+			updateStateWithRep(state.asMultiple(), rep);
+			String label = labelAnalyzer.getRepId(rep);
+			SingleStateExpression singleState = stateMap.get(label);
+			singleStateFactory.updateSizeState(singleState, lval, rval, sourceNode);
+			heapEncoder.addFreshRegion(label, lval);
+		}
+		
+		state.addConstraint(applyValidMalloc(state, lval, rval, sourceNode));
 	}
 
 	@Override
-	public StateExpression resolvePhiNode(Collection<StateExpression> preStates) {		
+	public Expression lookupSize(StateExpression state, Expression ptr, Node node) {		
+		T rep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(node));
+		String label = labelAnalyzer.getRepId(rep);
+		Map<String, SingleStateExpression> stateMap = state.asMultiple().getStateMap();
+		SingleStateExpression singleState = stateMap.get(label);
+		return getDataFormatter().indexSizeArray(singleState.getSize(), ptr);
+	}
+
+	@Override
+	public StateExpression resolvePhiNode(Collection<StateExpression> preStates) {
 		/* Build the joined state */
-		MultiStateExpression resState = joinPreStates(preStates, null);
+  	Iterable<BooleanExpression> preGuards = Iterables.transform(preStates, pickGuard);
+		MultiStateExpression joinState = joinPreStates(preStates, preGuards);
   	
 		/* Set the constraint and guard */
 		BooleanExpression joinConstraint = joinConstraints(preStates);
-		resState.setConstraint(joinConstraint);
+		joinState.setConstraint(joinConstraint);
 		BooleanExpression joinGuard = joinGuards(preStates);
-		resState.setGuard(joinGuard);
-		return resState;
+		joinState.setGuard(joinGuard);
+		
+		/* Set the memory tracker */
+		joinMemTrackers(joinState, preStates);
+		
+		return joinState;
+	}
+  
+	@Override
+	public BooleanExpression applyMemset(StateExpression state, Expression region, 
+			Expression size, Expression value, Node ptrNode) {
+		T srcRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
+		
+		MultiStateExpression multiState = state.asMultiple();
+		updateStateWithRep(multiState, srcRep);
+		
+		String srcRepId = labelAnalyzer.getRepId(srcRep);
+		SingleStateExpression singleState = multiState.getStateMap().get(srcRepId);
+		
+    return singleStateFactory.applyMemset(singleState, region, size, value, ptrNode);
 	}
 	
-  @Override
-  public Expression cleanup(StateExpression state, Expression expr) {
-  	Preconditions.checkArgument(state.isMultiple());
-		Map<String, SingleStateExpression> stateMap = state.asMultiple().getStateMap();
-		Collection<Expression> sizeVars = Lists.newArrayListWithCapacity(stateMap.size());
-		Collection<Expression> sizeConsts = Lists.newArrayListWithCapacity(stateMap.size());
-		for(SingleStateExpression subState : stateMap.values()) {
-			Pair<Expression, Expression> pair = singleStateFactory.getCleanSizeSubstPair(subState);
-			sizeVars.add(pair.fst());
-			sizeConsts.add(pair.snd());
-		}
-		return expr.subst(sizeVars, sizeConsts);
-  }
+	@Override
+	public BooleanExpression applyMemcpy(StateExpression state, Expression destRegion, 
+			Expression srcRegion, Expression size, Node destNode, Node srcNode) {
+		T destRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(destNode));
+		T srcRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(srcNode));
+		
+		MultiStateExpression multiState = state.asMultiple();
+		
+		updateStateWithRep(multiState, destRep);
+		updateStateWithRep(multiState, srcRep);
+		
+		String destLabel = labelAnalyzer.getRepId(destRep);
+		String srcLabel = labelAnalyzer.getRepId(srcRep);
+		SingleStateExpression destState = multiState.getStateMap().get(destLabel);
+		SingleStateExpression srcState = multiState.getStateMap().get(srcLabel);
+		
+		ArrayExpression destMem = destState.getMemory();
+		ArrayExpression srcMem = srcState.getMemory();
+		
+		IRDataFormatter formatter = getDataFormatter();
+		return formatter.memoryCopy(destMem, srcMem, destRegion, srcRegion, size);
+	}
 
 	@Override
-	public Expression applyValidMalloc(StateExpression state, Expression ptr, Expression size) {
-		Preconditions.checkArgument(state.isMultiple());
-		Preconditions.checkNotNull(ptr.getNode());
-		
-		T ptrRep = labelAnalyzer.getPointsToRep(ptr.getNode());
-		T srcRep = labelAnalyzer.getSrcRep(ptrRep);
-		
+	public BooleanExpression applyValidMalloc(StateExpression state, Expression ptr, 
+			Expression size, Node pNode) {
+		T srcRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(pNode));		
 		String srcRepId = labelAnalyzer.getRepId(srcRep);
 		
 		MultiStateExpression multiState = state.asMultiple();
@@ -133,76 +186,187 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 		
     /* Get the related size array */
 		SingleStateExpression singleState = multiState.getStateMap().get(srcRepId);
-		ArrayExpression sizeArr = singleState.getElement(1).asArray();
+		ArrayExpression sizeArr = singleState.getSize();
 		
     return heapEncoder.validMalloc(srcRepId, sizeArr, ptr, size);
 	}
 
 	@Override
-	public BooleanExpression applyValidFree(StateExpression state, Expression ptr) {
-		Preconditions.checkArgument(state.isMultiple());
-		Preconditions.checkNotNull(ptr.getNode());
+	public BooleanExpression applyValidFree(StateExpression state, Expression region, Node ptrNode) {
+		T srcRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
 		
-		T ptrRep = labelAnalyzer.getPointsToRep(ptr.getNode());
-		T srcRep = labelAnalyzer.getSrcRep(ptrRep);
+		MultiStateExpression multiState = state.asMultiple();
+		updateStateWithRep(multiState, srcRep);
 		
+    /* Get the related size array */
 		String srcRepId = labelAnalyzer.getRepId(srcRep);
+		SingleStateExpression singleState = multiState.getStateMap().get(srcRepId);
+		ArrayExpression markArr = singleState.getMark();
+		
+		BooleanExpression predicate = heapEncoder.validFree(markArr, region);
+		return predicate;
+	}
+
+	@Override
+	public BooleanExpression validAccess(StateExpression state, Expression ptr, Node ptrNode) {
+		T srcRep = labelAnalyzer.getRep(ptrNode);
+		
+		xtc.type.Type ptrType = CType.getType(ptrNode);
+		if(!CType.isScalar(ptrType)) {
+			/* The address should belongs to the group it points-to, where to reason
+			 * about disjointness */
+			srcRep = labelAnalyzer.getPointsToLoc(srcRep);
+		}
 		
 		MultiStateExpression multiState = state.asMultiple();
 		updateStateWithRep(multiState, srcRep);
 		
-    /* Get the related size array */
+		/* Get the related size array */
+		String srcRepId = labelAnalyzer.getRepId(srcRep);
 		SingleStateExpression singleState = multiState.getStateMap().get(srcRepId);
-		ArrayExpression sizeArr = singleState.getElement(1).asArray();
+		ArrayExpression sizeArr = singleState.getSize();
 		
-  	return heapEncoder.validFree(sizeArr, ptr);
+		BooleanExpression predicate = getExpressionManager().or(
+				heapEncoder.validMemAccess(srcRepId, sizeArr, ptr));
+		return predicate;
 	}
 
 	@Override
-	public Expression validAccess(StateExpression state, Expression ptr) {
-		Preconditions.checkNotNull(ptr.getNode());
-		Preconditions.checkArgument(state.isMultiple());
+	public BooleanExpression validAccessRange(StateExpression state, Expression ptr,
+	    Expression size, Node ptrNode) {
+		T srcRep = labelAnalyzer.getRep(ptrNode);
 		
-		T ptrRep = labelAnalyzer.getPointsToRep(ptr.getNode());
-		T srcRep = labelAnalyzer.getSrcRep(ptrRep);
-		
-    String srcRepId = labelAnalyzer.getRepId(srcRep);
+		xtc.type.Type ptrType = CType.getType(ptrNode);
+		if(!CType.isScalar(ptrType)) {
+			/* The address should belongs to the group it points-to, where to reason
+			 * about disjointness */
+			srcRep = labelAnalyzer.getPointsToLoc(srcRep);
+		}
 		
 		MultiStateExpression multiState = state.asMultiple();
 		updateStateWithRep(multiState, srcRep);
 		
-    /* Get the related size array */
+		/* Get the related size array */
+		String srcRepId = labelAnalyzer.getRepId(srcRep);
 		SingleStateExpression singleState = multiState.getStateMap().get(srcRepId);
-		ArrayExpression sizeArr = singleState.getElement(1).asArray();
-		
-	  return getExpressionEncoding().or(heapEncoder.validMemAccess(srcRepId, sizeArr, ptr));
+		ArrayExpression sizeArr = singleState.getSize();
+	
+		BooleanExpression predicate = getExpressionManager().or(
+				heapEncoder.validMemAccess(srcRepId, sizeArr, ptr, size));
+		return predicate;
 	}
 
 	@Override
-	public Expression validAccessRange(StateExpression state, Expression ptr,
-	    Expression size) {
-		Preconditions.checkNotNull(ptr.getNode());
-		Preconditions.checkArgument(state.isMultiple());
+	public void malloc(StateExpression state, Expression ptr,
+	    Expression size, Node ptrNode) {
+		VariableExpression region = createFreshRegion();
+		state.addRegion(region);
+		BooleanExpression tt = getExpressionEncoding().tt().asBooleanExpression();
+		updateMemState(state, ptr, ptrNode, region, null);
+		updateSizeStateWithAlloc(state, region, size, ptrNode);
+		updateMarkState(state, region, tt, ptrNode);
+		plusRegionSize(state, size);
+		state.addConstraint(applyValidMalloc(state, region, size, ptrNode));
+	}
+	
+	@Override
+	public void calloc(StateExpression state, Expression ptr, Expression nitem,
+	    Expression size, Node ptrNode) {
+		Expression multSize = getExpressionEncoding().times(nitem, size);
+		VariableExpression region = createFreshRegion();
+		state.addRegion(region);
+		BooleanExpression tt = getExpressionEncoding().tt().asBooleanExpression();
+		updateMemState(state, ptr, ptrNode, region, null);
+		updateSizeStateWithAlloc(state, region, multSize, ptrNode);
+		updateMarkState(state, region, tt, ptrNode);
+		plusRegionSize(state, multSize);
+		state.addConstraint(applyValidMalloc(state, region, multSize, ptrNode));
+		state.addConstraint(applyMemset(state, region, multSize, 
+				getExpressionEncoding().characterConstant(0),
+				ptrNode));
+	}
+	
+	@Override
+	public void alloca(StateExpression state, Expression ptr,
+	    Expression size, Node ptrNode) {
+		VariableExpression region = createFreshRegion();
+		state.addRegion(region);
+		updateMemState(state, ptr, ptrNode, region, null);
+		updateSizeStateWithAlloc(state, region, size, ptrNode);
+		state.addConstraint(applyValidMalloc(state, region, size, ptrNode));
+	}
+	
+	@Override
+	public void propagateState(StateExpression cleanState, StateExpression stateArg) {
+		Collection<Expression> fromElems = Lists.newArrayList();
+		Collection<Expression> toElems = Lists.newArrayList();
 		
-		T ptrRep = labelAnalyzer.getPointsToRep(ptr.getNode());
-		T srcRep = labelAnalyzer.getSrcRep(ptrRep);
+		getSubstElemsPair(cleanState, stateArg, fromElems, toElems);
+		substitute(cleanState, fromElems, toElems);
 		
-    String srcRepId = labelAnalyzer.getRepId(srcRep);
+		cleanState.addPreGuard(stateArg.getGuard());
+		cleanState.addConstraint(stateArg.getConstraint());
 		
+		propagateAssertions(stateArg, cleanState);		
+		propagateMemTracker(stateArg, cleanState);
+		propagateNewSubState(stateArg, cleanState);
+	}
+
+	@Override
+	public MultiStateExpression copy(StateExpression state) {
 		MultiStateExpression multiState = state.asMultiple();
-		updateStateWithRep(multiState, srcRep);
 		
-    /* Get the related size array */
-		SingleStateExpression singleState = multiState.getStateMap().get(srcRepId);
-		ArrayExpression sizeArr = singleState.getElement(1).asArray();
+		Map<String, SingleStateExpression> stateMapCopy = Maps.newHashMap();
 		
-	  return getExpressionEncoding().or(heapEncoder.validMemAccess(srcRepId, sizeArr, ptr, size));
+		for(Entry<String, SingleStateExpression> entry : multiState.getStateMap().entrySet()) {
+			stateMapCopy.put(entry.getKey(), singleStateFactory.copy(entry.getValue()));
+		}
+		
+		MultiStateExpression newState = MultiStateExpression.create(stateMapCopy);
+		
+		newState.setProperties(state.getProperties());
+		newState.setConstraint(state.getConstraint());
+		newState.setGuard(state.getGuard());
+  	
+		newState.addVars(state.getVars());
+		newState.addRegions(state.getRegions());
+		newState.setAssertions(state.getAssertions());
+		newState.setMemTracker(state.getMemTracker());
+		return newState;
 	}
-
+	
 	@Override
-	public Expression getDisjointAssumption(StateExpression state) {
-		Preconditions.checkArgument(state.isMultiple());
+	public void substitute(StateExpression state,
+			Collection<? extends Expression> vars, Collection<? extends Expression> freshVars) {
+		substState(state, vars, freshVars);
+		substConstraintGuard(state, vars, freshVars);
+		substAssertions(state, vars, freshVars);
+		substMemTracker(state, vars, freshVars);
+	}
+	
+	@Override
+	public Collection<BooleanExpression> getAssumptions() {
+		return Collections.emptyList();
+	}
+	
+	@Override
+	protected void updateMarkState(StateExpression state,
+			Expression region, BooleanExpression mark, Node ptrNode) {
+		MultiStateExpression multiState = state.asMultiple();
+		Map<String, SingleStateExpression> stateMap = multiState.getStateMap();
 		
+		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
+		
+		for(T rep : labelAnalyzer.getFillInReps(ptrRep)) {
+			updateStateWithRep(multiState, rep);
+			String label = labelAnalyzer.getRepId(rep);
+			SingleStateExpression singleState = stateMap.get(label);
+			singleStateFactory.updateMarkState(singleState, region, mark, ptrNode);
+		}
+	}
+	
+	@Override
+	protected BooleanExpression getDisjointAssumption(StateExpression state) {
 		Map<String, SingleStateExpression> stateMap = state.asMultiple().getStateMap();
 		
 		Collection<Expression> preDisjoints = Lists.newArrayListWithCapacity(stateMap.size());
@@ -210,245 +374,154 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 		for(Entry<String, SingleStateExpression> entry : stateMap.entrySet()) {
 			String label = entry.getKey();
 			SingleStateExpression subState = entry.getValue();
-			ArrayExpression sizeArr = subState.getElement(1).asArray();
+			ArrayExpression sizeArr = subState.getSize();
 			preDisjoints.addAll(heapEncoder.disjointMemLayout(label, sizeArr));
 		}
 		
 		return getExpressionManager().and(preDisjoints);		
 	}
-	
-  /** The only new info is the fresh sub-states generated during visiting expressions
-	 * like deference or function calls 
-	 */
-	@Override
-	public void propagateNewInfo(StateExpression fromState, StateExpression toState) {
-		propagateNewSubState(fromState, toState);
-	}
 
 	@Override
-	public StateExpression alloc(StateExpression state, Expression ptr,
-	    Expression size) {
-		Expression region = createFreshRegion(ptr);
-		MultiStateExpression statePrime = updateMemState(state, ptr, region);
-		MultiStateExpression statePrime2 = updateSizeStateWithAlloc(statePrime, ptr, region, size);
-  	return statePrime2;
-	}
-
-	@Override
-  public MultiStateExpression updateMemState(StateExpression state,
-      Expression memIdx, Expression memVal) {
-		Preconditions.checkNotNull(memIdx.getNode());
-		Preconditions.checkArgument(state.isMultiple());
-
-		MultiStateExpression statePrime = state.copy().asMultiple();
-		Map<String, SingleStateExpression> statePrimeMap = statePrime.getStateMap();
-		
-		T rep = labelAnalyzer.getRep(memIdx.getNode());
-		String label = labelAnalyzer.getRepId(rep);
-		updateStateWithRep(statePrime, rep);
-		
-		SingleStateExpression singleState = statePrimeMap.get(label);
-		SingleStateExpression singleStatePrime = singleStateFactory
-	  		.updateMemState(singleState, memIdx, memVal);
-		
-		statePrimeMap.put(label, singleStatePrime);
-		
-	  return statePrime;
-  }
-
-	@Override
-  public MultiStateExpression updateSizeState(StateExpression state,
-      Expression sizeIdx, Expression sizeVal) {
-		Preconditions.checkNotNull(sizeIdx.getNode());
-		Preconditions.checkArgument(state.isMultiple());
-		
-		MultiStateExpression statePrime = state.copy().asMultiple();
-		
-		T ptrRep = labelAnalyzer.getPointsToRep(sizeIdx.getNode());
-		String regLabel = labelAnalyzer.getRepId(ptrRep);
-		
-		updateStateWithRep(statePrime, ptrRep);
-		
-		Map<String, SingleStateExpression> statePrimeMap = statePrime.getStateMap();
-		
-		SingleStateExpression singleState = statePrimeMap.get(regLabel);
-		SingleStateExpression singleStatePrime = singleStateFactory
-	  		.updateSizeState(singleState, sizeIdx, sizeVal);
-		
-		statePrimeMap.put(regLabel, singleStatePrime);
-		
-		return statePrime;
-  }
-
-	@Override
-  public Expression deref(StateExpression state, Expression index) {
-		Preconditions.checkNotNull(index.getNode());
-		Preconditions.checkArgument(state.isMultiple());
-		
-		T rep = labelAnalyzer.getRep(index.getNode());
-		String label = labelAnalyzer.getRepId(rep);
-		
-		updateStateWithRep(state.asMultiple(), rep);
+	protected Expression getSizeOfRegion(StateExpression state, Expression region, Node ptrNode) {
+		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
+		String label = labelAnalyzer.getRepId(ptrRep);
 		
 		Map<String, SingleStateExpression> stateMap = state.asMultiple().getStateMap();
-		
 		SingleStateExpression singleState = stateMap.get(label);
-		return singleStateFactory.deref(singleState, index);
-  }
-	
-	@Override
-	public StateExpression scopeOptimize(StateExpression preState, 
-			StateExpression postState) {
-		Preconditions.checkArgument(preState.isMultiple());
-		Preconditions.checkArgument(postState.isMultiple());
-		return postState;
-	}
-	
-	@Override
-	public StateExpression propagateState(StateExpression cleanState,
-	    StateExpression stateVar, StateExpression stateArg) {
-		 StateExpression statePrime = substitute(cleanState, stateArg);
-		 propagateProperties(stateArg, statePrime);
-		 propagateNewSubState(stateArg, statePrime);
-		 return statePrime;
+		
+		ArrayExpression sizeArr = singleState.getSize();
+		return getDataFormatter().indexSizeArray(sizeArr, region);
 	}
 	
   @Override
-	protected void propagateProperties(StateExpression fromState,
-	    StateExpression toState) {
-		Preconditions.checkArgument(fromState.isMultiple());
-		Preconditions.checkArgument(toState.isMultiple());
+	protected void updateMemState(StateExpression state,
+	    Expression index, Node idxNode, Expression value, @Nullable Node valNode) {
+		T rep = labelAnalyzer.getRep(idxNode);
 		
-		/* Propagate fromState guard to toState */
-	  if(fromState.hasGuard()) {
-	  	BooleanExpression fromGuard = fromState.getGuard();
-	  	toState.addGuard(fromGuard);
-	  }
+		/* The address should belongs to the group it points-to, where to reason
+		 * about disjointness */
+		xtc.type.Type idxType = CType.getType(idxNode);
+		if(!CType.isScalar(idxType)) rep = labelAnalyzer.getPointsToLoc(rep);
 		
-	  /* Propagate fromState constraint to toState */
-	  if(fromState.hasConstraint()) {
-	  	BooleanExpression fromConstraint = fromState.getConstraint();
-	  	ExpressionManager exprManager = getExpressionManager();
-	  	toState.addConstraint(fromConstraint, exprManager.tt(), exprManager.ff());
-	  }
-	}
-
-	@Override
-	protected MultiStateExpression updateSizeStateWithAlloc(StateExpression state,
-	    Expression ptr, Expression region, Expression size) {
-		Preconditions.checkNotNull(ptr.getNode());
-		Preconditions.checkArgument(state.isMultiple());
+		MultiStateExpression multiState = state.asMultiple();
+		Map<String, SingleStateExpression> stateMap = multiState.getStateMap();
 		
-  	MultiStateExpression multiState = state.asMultiple();
-		Map<String, SingleStateExpression> statePrimeMap = multiState.getStateMap(); 
-		
-		T ptrRep = labelAnalyzer.getPointsToRep(ptr.getNode());
-		String label2 = labelAnalyzer.getRepId(ptrRep);
-		updateStateWithRep(multiState, ptrRep);
-		
-		labelAnalyzer.addAllocRegion(ptrRep, region);
-		
-		SingleStateExpression singleState2 = statePrimeMap.get(label2);
-		SingleStateExpression singleStatePrime2 = singleStateFactory.updateSizeState(singleState2, region, size);
-		statePrimeMap.put(label2, singleStatePrime2);
-		
-		heapEncoder.addFreshRegion(label2, region);
-		
-  	return multiState;
-	}
-
-	@Override
-	protected Pair<List<Expression>, List<Expression>> getSubstElemsPair(
-			StateExpression fromState, StateExpression toState, boolean fetchFreshMap) {
-		Preconditions.checkArgument(fromState.isMultiple());
-		Preconditions.checkArgument(toState.isMultiple());
-		
-		Map<String, SingleStateExpression> fromMap = fetchFreshMap ? 
-				fromState.asMultiple().getFreshStateMap() : fromState.asMultiple().getStateMap();
-		Map<String, SingleStateExpression> toMap = toState.asMultiple().getStateMap();
-	  Collection<String> commonNames = Sets.intersection(toMap.keySet(), fromMap.keySet());
-	  
-	  if(commonNames.isEmpty())
-	  	return Pair.of(Collections.<Expression>emptyList(), Collections.<Expression>emptyList());
-	  
-	  List<Expression> fromExpr = Lists.newArrayList();
-	  List<Expression> toExpr = Lists.newArrayList();
-	  
-		for(String label : commonNames) {
-			/* Get substitution pair of size array and memory elements */
-			Pair<List<Expression>, List<Expression>> sustElemsPair = 
-					singleStateFactory.getSubstElemsPair(fromMap.get(label), toMap.get(label));
-			
-			fromExpr.addAll(sustElemsPair.fst());
-			toExpr.addAll(sustElemsPair.snd());
+		if(!(	Preferences.isSet(Preferences.OPTION_FIELD_SENSITIVE) ||
+					Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE))) {						
+			updateStateWithRep(multiState, rep);
+			String label = labelAnalyzer.getRepId(rep);
+			SingleStateExpression singleState = stateMap.get(label);
+			singleStateFactory.updateMemState(singleState, index, idxNode, value, valNode);
+			return;
 		}
 		
-		return Pair.of(fromExpr, toExpr);
-	}
-
-	/** Return empty pair */
-	@Override
-	protected Pair<List<Expression>, List<Expression>> getSubstPredicatesPair(
-			StateExpression fromState, StateExpression toState) {
-		return Pair.of(Collections.<Expression>emptyList(), Collections.<Expression>emptyList());
-	}
-
-	@Override
-	protected MultiStateExpression doSubstitute(StateExpression state,
-			final Collection<Expression> fromElems, 
-			final Collection<Expression> toElems,
-			Collection<Expression> fromPredicates, 
-			Collection<Expression> toPredicates) {
-		Preconditions.checkArgument(state.isMultiple());
+		Map<Range<Long>, T> fieldMap = labelAnalyzer.getStructMap(rep);
 		
-		if(fromElems.isEmpty()) return state.asMultiple();
+		if(fieldMap.isEmpty()) {
+			String label = labelAnalyzer.getRepId(rep);
+			updateStateWithRep(multiState, rep);
+			SingleStateExpression singleState = stateMap.get(label);
+			if(!idxType.isStruct()) {
+				singleStateFactory.updateMemState(singleState, index, idxNode, value, valNode);
+			} else {
+				CType cTypeAnalyzer = getCTypeAnalyzer();
+				long range =  cTypeAnalyzer.getSize(idxType);
+				singleStateFactory.updateStructInMemState(singleState, index, value, range);
+			}
+		} else {			
+			ExpressionEncoding encoding = getExpressionEncoding();
+			
+			for(Entry<Range<Long>, T> fieldEntry : fieldMap.entrySet()) {
+				T fieldRep = labelAnalyzer.getPointsToLoc(fieldEntry.getValue());
+				String fieldLabel = labelAnalyzer.getRepId(fieldRep);
+				updateStateWithRep(multiState, fieldRep);
+				SingleStateExpression singleState = stateMap.get(fieldLabel);
+				
+				long offset = fieldEntry.getKey().lowerEndpoint();
+				Expression offExpr = encoding.integerConstant(offset);
+				Expression indexOff = encoding.plus(index, offExpr);
+				Expression valueOff = encoding.plus(value, offExpr);
+				
+				long range = fieldEntry.getKey().upperEndpoint() - offset;
+				singleStateFactory.updateStructInMemState(singleState, indexOff, valueOff, range);
+			}
+		}
+	}
+
+	@Override
+	protected void updateSizeState(StateExpression state,
+	    Expression region, Expression sizeVal, Node ptrNode) {
+		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
+		MultiStateExpression multiState = state.asMultiple();
+		Map<String, SingleStateExpression> stateMap = multiState.getStateMap();
+		
+		for(T rep : labelAnalyzer.getFillInReps(ptrRep)) {
+			updateStateWithRep(multiState, rep);
+			String label = labelAnalyzer.getRepId(rep);
+			SingleStateExpression singleState = stateMap.get(label);
+			singleStateFactory.updateSizeState(singleState, region, sizeVal, ptrNode);
+		}
+	}
+
+	@Override
+	protected void updateSizeStateWithAlloc(StateExpression state,
+	    Expression region, Expression size, Node ptrNode) {
+		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
+		MultiStateExpression multiState = state.asMultiple();
+		Map<String, SingleStateExpression> stateMap = multiState.getStateMap(); 
+		
+		labelAnalyzer.addAllocRegion(region, ptrNode);
+		
+		for(T rep : labelAnalyzer.getFillInReps(ptrRep)) {
+			updateStateWithRep(multiState, rep);
+			String label = labelAnalyzer.getRepId(rep);
+			SingleStateExpression singleState = stateMap.get(label);
+			singleStateFactory.updateSizeState(singleState, region, size, ptrNode);
+			heapEncoder.addFreshRegion(label, region);
+		}
+	}
+
+	@Override
+	protected void substState(StateExpression state,
+			Collection<? extends Expression> fromElems, Collection<? extends Expression> toElems) {
+		if(fromElems.isEmpty()) return;
 		
 		/* Substitution for every sub-state */
 		Map<String, SingleStateExpression> stateMap = state.asMultiple().getStateMap();
-		Map<String, SingleStateExpression> statePrimeMap = Maps.newHashMap(stateMap);
 		
 		for(String name : stateMap.keySet()) {
-			SingleStateExpression singleState = statePrimeMap.get(name);
-			
-			 /* Substitute state elements */
-	    Iterable<Expression> newElems = Iterables.transform(singleState.getElements(), 
-	    		new Function<Expression, Expression>() {
-	    	@Override
-	    	public Expression apply(Expression elem) {
-	    		return elem.subst(fromElems, toElems);
-	    	}
-	    });
-	    
-	    SingleStateExpression singleStatePrime = SingleStateExpression.create(
-	    		singleState.getName(), newElems);
-	    
-	    singleStateFactory.copyProperties(singleState, singleStatePrime);
-    	
-			statePrimeMap.put(name, singleStatePrime);
+			SingleStateExpression singleState = stateMap.get(name);
+			singleStateFactory.substState(singleState, fromElems, toElems);
 		}
+	}
+
+	@Override
+	protected void propagateMemSafetyPredicates(StateExpression fromState,
+	    StateExpression toState) {
+	}
+
+	@Override
+	protected void getSubstElemsPair(
+			StateExpression fromState, StateExpression toState,
+			Collection<Expression> fromElems, Collection<Expression> toElems) {
+		Map<String, SingleStateExpression> fromMap = fromState.asMultiple().getStateMap();
+		Map<String, SingleStateExpression> toMap = toState.asMultiple().getStateMap();
+	  Collection<String> commonNames = Sets.intersection(toMap.keySet(), fromMap.keySet());
+	  
+	  if(commonNames.isEmpty()) return;
+	  
+	  /* Get substitution pair of size array and memory elements */
+		for(String label : commonNames)			
+			singleStateFactory.getSubstElemsPair(
+					fromMap.get(label), toMap.get(label), fromElems, toElems);
 		
-		Map<String, SingleStateExpression> freshStateMap = state.asMultiple().getFreshStateMap();
-		Map<String, SingleStateExpression> freshStatePrimeMap = Maps.newHashMap(freshStateMap);
-		MultiStateExpression statePrime = MultiStateExpression.create(freshStatePrimeMap, statePrimeMap);
-		
-		/* Copy properties */
-		statePrime.setProperties(state.getProperties());
-		
-    /* Substitute constraint */
-    if(state.hasConstraint()) {
-    	BooleanExpression pc = state.getConstraint();
-    	BooleanExpression pcPrime = pc.subst(fromElems, toElems).asBooleanExpression();
-    	statePrime.setConstraint(pcPrime);
-    }
-    
-    /* Substitute guards */
-    if(state.hasGuard()) {
-    	BooleanExpression guard = state.getGuard();
-    	BooleanExpression guardPrime = guard.subst(fromElems, toElems).asBooleanExpression();
-    	statePrime.setGuard(guardPrime);
-    }
-		
-		return statePrime;
+	}
+	
+	@Override
+	protected void getSubstPredicatesPair(
+			StateExpression fromState, StateExpression toState,
+			Collection<Expression> fromPredicates, Collection<Expression> toPredicates) {
+		// TODO Auto-generated method stub
 	}
 
 	/** <code>preGuards</code> is useless for multi-state */
@@ -456,17 +529,24 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 	protected MultiStateExpression joinPreStates(Iterable<StateExpression> preStates,
 			Iterable<BooleanExpression> preGuards) {
 		
-		/* Initialize state map and fresh state map of result state */
-		
-		Multimap<String, Pair<StateExpression, BooleanExpression>> resFreshStateGuardMap = 
-				HashMultimap.create();
-		Multimap<String, Pair<StateExpression, BooleanExpression>> resStateGuardMap =
-				HashMultimap.create();
-		
-		/* Build fresh state map and state map */
+		/* Collect all names */
+		Collection<String> elemNames = Sets.newHashSet();
 		
 		for(StateExpression preState : preStates) {
-			BooleanExpression guard = preState.getGuard();
+			elemNames.addAll(preState.asMultiple().getStateMap().keySet());
+		}
+		
+		if(elemNames.isEmpty()) return MultiStateExpression.create();
+		
+		/* Initialize state map of result state */
+		
+		Multimap<String, Pair<StateExpression, BooleanExpression>> resStateGuardMap =
+				LinkedHashMultimap.create();
+		
+		/* Build state map */
+		Iterator<BooleanExpression> preGuardItr = preGuards.iterator();
+		for(StateExpression preState : preStates) {
+			BooleanExpression guard = preGuardItr.next();
 			
 			Map<String, SingleStateExpression> preStateMap = preState.asMultiple().getStateMap();
 			
@@ -475,28 +555,13 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 				StateExpression preElemState = entry.getValue();
 				resStateGuardMap.put(elemName, Pair.of(preElemState, guard));
 			}
-			
-			Map<String, SingleStateExpression> preFreshStateMap = preState.asMultiple().getFreshStateMap();
-			
-			for(Entry<String, SingleStateExpression> entry : preFreshStateMap.entrySet()) {
-				String elemName = entry.getKey();
-				StateExpression preElemState = entry.getValue();
-				resFreshStateGuardMap.put(elemName, Pair.of(preElemState, guard));
-			}
 		}
+		
+		/* build res state map */
 		
 		int preStateSize = Iterables.size(preStates);
 		
-		/* build res state map and res fresh state map */
-		/* Collect all names */
-		Collection<String> elemNames = Sets.newHashSet();
-		
-		for(StateExpression preState : preStates) {
-			elemNames.addAll(preState.asMultiple().getStateMap().keySet());
-		}
-		
 		Map<String, SingleStateExpression> resStateMap = Maps.newHashMapWithExpectedSize(elemNames.size());
-		Map<String, SingleStateExpression> resFreshStateMap = Maps.newHashMapWithExpectedSize(elemNames.size());
 		
 		for(String elemName : elemNames) {
 			
@@ -512,7 +577,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 		  	}
 		  	
 		  	if(preElemWithGuards.size() < preStateSize) { // set default case
-		  		Type[] elemTypes = preElemStates.get(0).asSingle().getElemTypes();
+		  		ArrayType[] elemTypes = preElemStates.get(0).asSingle().getElemTypes();
 		  		preElemStates.add(0, singleStateFactory.freshSingleState(elemName, elemTypes));
 		  		preElemGuards.add(0, null); // this guard will be ignored in join pre-states
 		  	}
@@ -520,103 +585,48 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 				SingleStateExpression singleState = singleStateFactory.joinPreStates(preElemStates, preElemGuards);
 				resStateMap.put(elemName, singleState);
 			}
-			
-			{ /* build res fresh state map */
-				Collection<Pair<StateExpression, BooleanExpression>> preElemWithGuards = 
-						resFreshStateGuardMap.get(elemName);
-				
-		  	List<StateExpression> preElemStates = Lists.newArrayListWithCapacity(preStateSize);
-		  	List<BooleanExpression> preElemGuards = Lists.newArrayListWithCapacity(preStateSize);
-		  	
-		  	for(Pair<StateExpression, BooleanExpression> pair : preElemWithGuards) {
-		  		preElemStates.add(pair.fst()); preElemGuards.add(pair.snd());
-		  	}
-		  	
-		  	if(preElemWithGuards.size() < preStateSize) { // set default case
-		  		Type[] elemTypes = preElemStates.get(0).asSingle().getElemTypes();
-		  		preElemStates.add(0, singleStateFactory.freshSingleState(elemName, elemTypes));
-		  		preElemGuards.add(0, null); // this guard will be ignored in join pre-states
-		  	}
-				
-				SingleStateExpression singleState = singleStateFactory.joinPreStates(preElemStates, preElemGuards);
-				resFreshStateMap.put(elemName, singleState);
-			}
 		}
 		
 		/* build res multi-state with constraint and guard */
 		
-		return MultiStateExpression.create(resFreshStateMap, resStateMap);
+		return MultiStateExpression.create(resStateMap);
+	}
+
+	@Override
+	protected Expression dereference(StateExpression state, Expression index, Node indexNode) {
+		T rep = labelAnalyzer.getRep(indexNode);
+		String label = labelAnalyzer.getRepId(rep);
+		
+		updateStateWithRep(state.asMultiple(), rep);
+		
+		Map<String, SingleStateExpression> stateMap = state.asMultiple().getStateMap();
+		SingleStateExpression singleState = stateMap.get(label);
+		xtc.type.Type indexType = CType.getType(indexNode);
+		return getDataFormatter().indexMemoryArray(singleState.getMemory(), index, indexType);
+	}
+
+	@Override
+	protected void substSafetyPredicates(StateExpression state,
+			Collection<? extends Expression> fromElems, Collection<? extends Expression> toElems) {
+	  // TODO Auto-generated method stub
 	}
 
 	/**
-	 * Propagate the new labels in <code>fromState</code> which are not in the <code>
-	 * toState</code> into the <code>toState</code>
-	 * @param fromState
-	 * @param toState
-	 */
-	void propagateNewSubState(StateExpression fromState, StateExpression toState) {
-		Preconditions.checkArgument(fromState.isMultiple());
-		Preconditions.checkArgument(toState.isMultiple());
-		
-		Map<String, SingleStateExpression> fromMap = fromState.asMultiple().getStateMap();
-		Map<String, SingleStateExpression> toMap = toState.asMultiple().getStateMap();
-		
-		Collection<String> newSubStateNamesInFromState = Sets.newHashSet(fromMap.keySet());
-		newSubStateNamesInFromState.removeAll(toMap.keySet());
-		
-		if(newSubStateNamesInFromState.isEmpty()) return;
-		
-		Map<String, SingleStateExpression> fromFreshMap = fromState.asMultiple().getFreshStateMap();
-		Map<String, SingleStateExpression> toFreshMap = toState.asMultiple().getFreshStateMap();
-		
-		for(String label : newSubStateNamesInFromState) {
-			toMap.put(label, fromMap.get(label));
-			toFreshMap.put(label, fromFreshMap.get(label));
-		}
-	}
-
-	private MultiStateExpression substitute(StateExpression state,
-			StateExpression stateArg) {
-		
-		/* Collection substitution state elements and predicates */
-		Pair<List<Expression>, List<Expression>> substElemsPair = 
-				getSubstElemsPair(state, stateArg, true);
-		Pair<List<Expression>, List<Expression>> substPredsPair =
-				getSubstPredicatesPair(state, stateArg);
-		
-		MultiStateExpression statePrime = doSubstitute(state, 
-				substElemsPair.fst(),
-				substElemsPair.snd(), 
-				substPredsPair.fst(), 
-				substPredsPair.snd());
-	  
-	  return statePrime;
-	}
-
-	/**
-   * Check an element state of <code>rep</code> is contained in <code>state</code>.
-   * If not, add it to the state map, and thus update <code>state</code>
+   * Check an element state of <code>rep</code> is contained in <code>multiState</code>.
+   * If not, add it to the state map, and thus <code>multiState</code> get changed
    * 
-   * @param state
+   * @param multiState
    * @param rep
    * @return <code>state</code> has been updated
    */
-	private boolean updateStateWithRep(MultiStateExpression state, T rep) {
-  	Map<String, SingleStateExpression> stateMap = state.getStateMap();
+	private boolean updateStateWithRep(MultiStateExpression multiState, T rep) {
+  	Map<String, SingleStateExpression> stateMap = multiState.getStateMap();
   	String label = labelAnalyzer.getRepId(rep);
-  	
-  	SingleStateExpression singleState;
 	  if(stateMap.containsKey(label)) return false;
 	  
-	  xtc.type.Type ptrRepType = labelAnalyzer.getRepType(rep);
-	  
-	  Map<String, SingleStateExpression> freshStateMap = state.getFreshStateMap();
-	  
-	  singleState = singleStateFactory.freshSingleState(label, ptrRepType);
-	  
-	  freshStateMap.put(label, singleState);
-	  stateMap.put(label, singleState);
-	  
+	  long width = labelAnalyzer.getRepTypeWidth(rep);
+  	SingleStateExpression singleState = singleStateFactory.freshSingleState(label, width);
+	  stateMap.put(label, singleState);	  
 	  return false;
   }
 }

@@ -11,10 +11,10 @@ import java.net.URISyntaxException;
 
 import org.junit.Test;
 
+import xtc.lang.CParser;
 import xtc.parser.ParseError;
 import xtc.parser.Result;
 import edu.nyu.cascade.util.FileUtils;
-import edu.nyu.cascade.c.CParser;
 
 public class ParserTest {
   private static final String programs_path = "c";

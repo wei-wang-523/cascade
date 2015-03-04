@@ -1,10 +1,5 @@
 package edu.nyu.cascade.z3;
 
-import java.util.concurrent.ExecutionException;
-
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
 import com.microsoft.z3.Expr;
 import com.microsoft.z3.Z3Exception;
@@ -13,25 +8,8 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.IntegerType;
-import edu.nyu.cascade.util.CacheException;
 
 final class IntegerTypeImpl extends TypeImpl implements IntegerType {
-  
-  private static final LoadingCache<ExpressionManagerImpl, IntegerTypeImpl> typeCache = CacheBuilder
-      .newBuilder().build(
-          new CacheLoader<ExpressionManagerImpl, IntegerTypeImpl>(){
-            public IntegerTypeImpl load(ExpressionManagerImpl expressionManager) {
-              return new IntegerTypeImpl(expressionManager);
-            }
-          });
-
-  static IntegerTypeImpl getInstance(ExpressionManagerImpl expressionManager) {
-    try {
-      return typeCache.get(expressionManager);
-    } catch (ExecutionException e) {
-      throw new CacheException(e);
-    }
-  }
   
   IntegerTypeImpl(ExpressionManagerImpl expressionManager) {
     super(expressionManager);

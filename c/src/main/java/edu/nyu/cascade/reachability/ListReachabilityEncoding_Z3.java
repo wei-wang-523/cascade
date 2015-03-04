@@ -62,12 +62,12 @@ public class ListReachabilityEncoding_Z3 extends ListReachabilityEncoding {
   
   public static ListReachabilityEncoding_Z3 create(
       ExpressionManager exprManager) throws ExpressionFactoryException {
-    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, WORD_SIZE);
+    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(exprManager);
-    PointerEncoding<Expression> tupleEncoding = new UnimplementedPointerEncoding<Expression>();
+    PointerEncoding<Expression> pointerEncoding = new UnimplementedPointerEncoding<Expression>();
     
-    return new ListReachabilityEncoding_Z3(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
+    return new ListReachabilityEncoding_Z3(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
   }
   
   private ListReachabilityEncoding_Z3(

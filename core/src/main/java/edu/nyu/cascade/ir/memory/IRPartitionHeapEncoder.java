@@ -19,11 +19,13 @@ public interface IRPartitionHeapEncoder {
 	BooleanExpression validMalloc(String key,
       ArrayExpression sizeArr, Expression ptr, Expression size);	
 
-	BooleanExpression validFree(ArrayExpression sizeArr, Expression ptr);
+	BooleanExpression validFree(ArrayExpression markArr, Expression ptr);
 	
 	ImmutableSet<BooleanExpression> validMemAccess(
 			String key, ArrayExpression sizeArr, Expression ptr);
 	
 	ImmutableSet<BooleanExpression> validMemAccess(
 			String key, ArrayExpression sizeArr, Expression ptr, Expression size);
+
+	void reset();
 }

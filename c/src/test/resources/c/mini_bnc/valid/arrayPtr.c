@@ -1,3 +1,8 @@
+typedef long unsigned int size_t;
+extern void *malloc (size_t __size) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__malloc__)) ;
+extern void *calloc (size_t __nmemb, size_t __size)
+__attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__malloc__)) ;
+
 int main()
 {
   int B[3][2] = {0, 1};
@@ -14,5 +19,7 @@ int main()
   C[1] = (int*) malloc(sizeof(int));
   *(C[0]) = 2;
   
+  free(C[0]);
+  free(C[1]);
   return 1;
 }

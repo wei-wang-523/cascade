@@ -44,11 +44,10 @@ class BoundVariableExpressionImpl extends ExpressionImpl implements BoundExpress
           
           if(type.isDatatype()) {
             DatatypeType dtt = new DatatypeType(type);
-            TheoremProverImpl.tpFileCommand("(declare-const " + bound + " " + dtt.getDatatype().getName() + ")");
-            TheoremProverImpl.debugCommand("(declare-const " + bound + " " + dtt.getDatatype().getName() + ")");
+            String dtName = dtt.getDatatype().getName();
+            TheoremProverImpl.cvc4FileCommand("(declare-const ", bound, " " + dtName + ")");
           } else {
-          	TheoremProverImpl.tpFileCommand("(declare-const " + bound + " ", type, ")");
-            TheoremProverImpl.debugCommand("(declare-const " + bound + " ", type, ")");
+          	TheoremProverImpl.cvc4FileCommand("(declare-const ", bound, type, ")");
           }
           return bound;
         } catch (ExecutionException e) {

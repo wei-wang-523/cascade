@@ -4,7 +4,6 @@ import static edu.nyu.cascade.prover.Expression.Kind.APPLY;
 import static edu.nyu.cascade.prover.Expression.Kind.CONSTANT;
 import static edu.nyu.cascade.prover.Expression.Kind.VARIABLE;
 import static edu.nyu.cascade.prover.Expression.Kind.IF_THEN_ELSE;
-import xtc.tree.GNode;
 
 import java.util.List;
 
@@ -56,7 +55,7 @@ class ExpressionImpl implements Expression {
   }
   
   static interface ArrayStoreAllConstructionStrategy {
-    Expr apply(Context ctx, Sort type, Expr expr);
+    Expr apply(Context ctx, Sort type, Expr expr) throws Z3Exception;
   }
   
   static interface FuncApplyConstructionStrategy {
@@ -66,13 +65,13 @@ class ExpressionImpl implements Expression {
   static interface BinderTriggersConstructionStrategy {
     Expr apply(Context ctx, Expr[] names, Expr body, 
         Expr[] pattern, Expr[] noPatter, 
-        Symbol quantifierID, Symbol skolemID);
+        Symbol quantifierID, Symbol skolemID) throws Z3Exception;
   }
   
   static interface BinderTriggersDeBruijnConstructionStrategy {
     Expr apply(Context ctx, Sort[] sorts, Symbol[] names, Expr body, 
         Expr[] pattern, Expr[] noPatter, 
-        Symbol quantifierID, Symbol skolemID);
+        Symbol quantifierID, Symbol skolemID) throws Z3Exception;
   }
 
   static interface NaryConstructionStrategy {
@@ -100,7 +99,7 @@ class ExpressionImpl implements Expression {
   }
   
   static interface ConstantConstructionStrategy {
-    Expr apply(Context ctx, String name, Sort type) throws Z3Exception;
+    Expr apply(Context ctx, String name, Sort type);
   }
 
 	static ExpressionImpl mkFunApply(
@@ -211,10 +210,10 @@ class ExpressionImpl implements Expression {
   private boolean isVariable;
   
   private boolean isBound;
+  
+  private boolean isHoareLogic;
 
   private TypeImpl type;
-  
-  private GNode sourceNode;
   
   /** The name of a variable expression. <code>null</code> if the expression
    * is not a variable. */
@@ -241,7 +240,6 @@ class ExpressionImpl implements Expression {
       children = ImmutableList.of();
     }
     setType(e.getType());
-    setNode(e.getNode());
   }
   
   /*
@@ -265,7 +263,6 @@ class ExpressionImpl implements Expression {
           }
         }));
     setType(expr.getType());
-    setNode(expr.getNode());
   }
 
   protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
@@ -828,17 +825,6 @@ class ExpressionImpl implements Expression {
 	}
 
 	@Override
-	public GNode getNode() {
-	  return sourceNode;
-	}
-
-	@Override
-	public Expression setNode(GNode node) {
-	  this.sourceNode = node;
-	  return this;
-	}
-
-	@Override
 	public int hashCode() {
 	  return getZ3Expression().hashCode();
 	}
@@ -875,9 +861,7 @@ class ExpressionImpl implements Expression {
   @Override
   public Expression subst(Iterable<? extends Expression> oldExprs,
       Iterable<? extends Expression> newExprs) {
-    Expression res = mkSubst(getExpressionManager(), this, oldExprs, newExprs);
-    res.setNode(getNode());
-    return res;
+    return mkSubst(getExpressionManager(), this, oldExprs, newExprs);
   }
   
   @Override
@@ -888,6 +872,16 @@ class ExpressionImpl implements Expression {
   	} catch (Z3Exception e) {
   		throw new TheoremProverException(e);
   	}
+  }
+  
+  @Override
+  public void setHoareLogic(boolean bool) {
+  	this.isHoareLogic = bool;
+  }
+  
+  @Override
+  public boolean isHoareLogic() {
+  	return isHoareLogic;
   }
 
   @Override

@@ -1,11 +1,6 @@
 package edu.nyu.cascade.cvc4;
 
-import java.util.concurrent.ExecutionException;
-
 import com.google.common.base.Preconditions;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
 
 import edu.nyu.acsys.CVC4.Expr;
@@ -13,27 +8,10 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.type.IntegerType;
-import edu.nyu.cascade.util.CacheException;
 
 class IntegerTypeImpl extends TypeImpl implements IntegerType {
   
-  private static final LoadingCache<ExpressionManagerImpl, IntegerTypeImpl> typeCache = CacheBuilder
-      .newBuilder().build(
-          new CacheLoader<ExpressionManagerImpl, IntegerTypeImpl>(){
-            public IntegerTypeImpl load(ExpressionManagerImpl expressionManager) {
-              return new IntegerTypeImpl(expressionManager);
-            }
-          });
-
-  static IntegerTypeImpl getInstance(ExpressionManagerImpl expressionManager) {
-    try {
-      return typeCache.get(expressionManager);
-    } catch (ExecutionException e) {
-      throw new CacheException(e);
-    }
-  }
-  
-  private IntegerTypeImpl(ExpressionManagerImpl expressionManager) {
+	IntegerTypeImpl(ExpressionManagerImpl expressionManager) {
     super(expressionManager);
     setCVC4Type(expressionManager
         .getTheoremProver()

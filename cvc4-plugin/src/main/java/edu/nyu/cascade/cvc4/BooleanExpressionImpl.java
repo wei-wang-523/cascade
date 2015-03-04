@@ -51,7 +51,7 @@ class BooleanExpressionImpl extends ExpressionImpl implements BooleanExpression 
   }
 
   // TODO: Give this method package scope (requires move of bv classes)
-  public static BooleanExpressionImpl mkBvGeq(ExpressionManagerImpl exprManager,
+  static BooleanExpressionImpl mkBvGeq(ExpressionManagerImpl exprManager,
       Expression a, Expression b) {
     Preconditions.checkArgument(a.isBitVector());
     Preconditions.checkArgument(b.isBitVector());
@@ -70,7 +70,7 @@ class BooleanExpressionImpl extends ExpressionImpl implements BooleanExpression 
         }, a, b);
   }
   
-  public static BooleanExpressionImpl mkBvSGeq(ExpressionManagerImpl exprManager,
+  static BooleanExpressionImpl mkBvSGeq(ExpressionManagerImpl exprManager,
       Expression a, Expression b) {
     Preconditions.checkArgument(a.isBitVector());
     Preconditions.checkArgument(b.isBitVector());
@@ -90,7 +90,7 @@ class BooleanExpressionImpl extends ExpressionImpl implements BooleanExpression 
   }
 
   // TODO: Give this method package scope (requires move of bv classes)
-  public static BooleanExpressionImpl mkBvGt(ExpressionManagerImpl exprManager,
+  static BooleanExpressionImpl mkBvGt(ExpressionManagerImpl exprManager,
       Expression a, Expression b) {
     Preconditions.checkArgument(a.isBitVector());
     Preconditions.checkArgument(b.isBitVector());
@@ -109,7 +109,7 @@ class BooleanExpressionImpl extends ExpressionImpl implements BooleanExpression 
         }, a, b);
   }
   
-  public static BooleanExpressionImpl mkBvSGt(ExpressionManagerImpl exprManager,
+  static BooleanExpressionImpl mkBvSGt(ExpressionManagerImpl exprManager,
       Expression a, Expression b) {
     Preconditions.checkArgument(a.isBitVector());
     Preconditions.checkArgument(b.isBitVector());

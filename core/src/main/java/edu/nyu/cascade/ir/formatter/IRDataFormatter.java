@@ -1,6 +1,9 @@
 package edu.nyu.cascade.ir.formatter;
 
+import javax.annotation.Nullable;
+
 import edu.nyu.cascade.prover.ArrayExpression;
+import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
@@ -21,7 +24,7 @@ public interface IRDataFormatter {
 	
 	Type getSizeType();
 	
-	Type getArrayElemType(xtc.type.Type type);
+	Type getArrayElemType(long width);
 	
 	Expression getNullAddress();
 	
@@ -31,9 +34,16 @@ public interface IRDataFormatter {
 	
 	ArrayType getSizeArrayType();
 	
-	ArrayExpression updateMemoryArray(ArrayExpression memory, Expression index, Expression value);
+	ArrayType getMarkArrayType();
 	
-	Expression indexMemoryArray(ArrayExpression memory, Expression index);
+	ArrayExpression updateMemoryArray(ArrayExpression memory, 
+			Expression index, xtc.type.Type idxType,
+			Expression value, @Nullable xtc.type.Type valType);
+	
+	ArrayExpression updateStructInMemoryArray(ArrayExpression memory,
+			Expression index, Expression value, long range);
+	
+	Expression indexMemoryArray(ArrayExpression memory, Expression index, xtc.type.Type idxType);
 	
 	ArrayExpression updateSizeArray(ArrayExpression sizeArr, Expression index, Expression value);
 	
@@ -43,7 +53,11 @@ public interface IRDataFormatter {
 	
 	Expression getFreshPtr(String regionName, boolean fresh);
 
-	Expression getBase(Expression ptr);
+	Expression castToSize(Expression value);
 	
-	Expression cast(Expression index, Expression value);
+	BooleanExpression memorySet(ArrayExpression memory, 
+			Expression region, Expression size, Expression value);
+	
+	BooleanExpression memoryCopy(ArrayExpression destMemory, ArrayExpression srcMemory,
+			Expression destRegion, Expression srcRegion, Expression size);
 }

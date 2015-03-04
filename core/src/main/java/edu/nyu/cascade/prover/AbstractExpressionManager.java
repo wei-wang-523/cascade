@@ -1,22 +1,17 @@
 package edu.nyu.cascade.prover;
 
-import java.util.Collection;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-
 import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.Type;
 
 public abstract class AbstractExpressionManager implements ExpressionManager {
-  
-  private final Collection<Expression> variableSet = Sets.newLinkedHashSet();
   
   @Override
   public void addTrigger(Expression e, Expression p) {
@@ -558,37 +553,26 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
   public VariableExpression variable(String name,
       Type type, boolean fresh) {
   	Preconditions.checkArgument(type.isScalarType());
-  	Expression res = type.asScalarType().variable(name, fresh);
-    variableSet.add(res);
-    return res.asVariable();
+  	return type.asScalarType().variable(name, fresh).asVariable();
   }
   
   @Override
   public Expression boundVar(String name,
       Type type, boolean fresh) {
   	Preconditions.checkArgument(type.isScalarType());
-  	Expression res = type.asScalarType().boundVar(name, fresh);
-    variableSet.add(res);
-    return res;
+  	return type.asScalarType().boundVar(name, fresh);
   }
   
   @Override
   public Expression boundExpression(String name, int index,
       Type type, boolean fresh) {
   	Preconditions.checkArgument(type.isScalarType());
-  	Expression res = type.asScalarType().boundExpression(name, index, fresh);
-    variableSet.add(res);
-    return res;
+  	return type.asScalarType().boundExpression(name, index, fresh);
   }
 
   @Override
   public IntegerExpression zero() {
     return constant(0);
-  }
-  
-  @Override
-  public Collection<Expression> getVariables() {
-    return variableSet;
   }
   
   @Override

@@ -23,7 +23,6 @@ import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
-import edu.nyu.cascade.util.IOUtils;
 
 final class RecordTypeImpl extends TypeImpl implements RecordType {
   
@@ -115,10 +114,8 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
       setZ3Type(z3_context.mkDatatypeSort(typeName, cons));
       sb.append(")))");
       em.addToTypeCache(this);
-      if(IOUtils.debugEnabled())
-        TheoremProverImpl.debugCommand("(declare-datatypes " + sb.toString() + ")");
-      if(IOUtils.tpFileEnabled())
-        TheoremProverImpl.z3FileCommand("(declare-datatypes " + sb.toString() + ")");
+      
+      TheoremProverImpl.z3FileCommand("(declare-datatypes " + sb.toString() + ")");
     } catch (Z3Exception e) {
       throw new TheoremProverException(e);
     }

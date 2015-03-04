@@ -4,8 +4,8 @@ import java.math.BigInteger;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentMap;
 
 import org.apache.commons.cli.Option;
 
@@ -14,8 +14,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
+import com.google.common.collect.MapMaker;
 import edu.nyu.acsys.CVC4.ArrayStoreAll;
 import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.acsys.CVC4.Integer;
@@ -47,9 +46,9 @@ import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
-import edu.nyu.cascade.prover.type.Type.DomainType;
 import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.util.Identifiers;
+
 /**
  * Implements the expression manager interface on top of cvc4.
  * 
@@ -81,24 +80,19 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
    * to reconstruct from the bottom up, e.g., in the case where a 
    * datatype value is passed back up from CVC4 in a counter-example.
    */
-  private final Map<String,InductiveTypeImpl> inductiveTypeCache;
+  private final ConcurrentMap<String,InductiveTypeImpl> inductiveTypeCache = new MapMaker().makeMap();
   
   protected ExpressionManagerImpl(TheoremProverImpl theoremProver)  {
     this.theoremProver = theoremProver;
-    
     booleanType = new BooleanTypeImpl(this);
-
-    integerType = IntegerTypeImpl.getInstance(this);
-    rationalType = RationalTypeImpl.getInstance(this);
-
-    inductiveTypeCache = Maps.newHashMap();
+    integerType = new IntegerTypeImpl(this);
+    rationalType = new RationalTypeImpl(this);
   }
 
   /** NOTE: CVC will not create arrays with boolean elements.
    *  TODO: Wrap ('a,boolean) arrays as ('a -> boolean) functions? */
   @Override
   public ArrayTypeImpl arrayType(Type index, Type elem)  {
-    Preconditions.checkArgument(!DomainType.BOOLEAN.equals(elem.getDomainType()));
     return ArrayTypeImpl.create(this, index, elem);
   }
   
@@ -553,13 +547,15 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     });
   }
   
-	FunctionExpression lambda(
-      Collection<BoundExpression> args, Expression body) {
+	@Override
+	public FunctionExpression lambda(
+      Collection<Expression> args, Expression body) {
     return FunctionExpressionImpl.create(this, args, body);
   }
 	
-	FunctionExpression lambda(
-      BoundExpression arg, Expression body) {
+	@Override
+	public FunctionExpression lambda(
+      Expression arg, Expression body) {
     return FunctionExpressionImpl.create(this, Collections.singletonList(arg), body);
   }
 	
@@ -664,7 +660,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       return new ExpressionImpl(this, Kind.CONSTANT, e, integerType());
     } 
     else if ( e.getKind() == edu.nyu.acsys.CVC4.Kind.LAMBDA ) {
-    	Collection<BoundExpression> args = Lists.newArrayList();
+    	Collection<Expression> args = Lists.newArrayList();
     	for(int i = 0; i < e.getNumChildren()-1; i++)
     		args.add(BoundVariableExpressionImpl.valueOf(this, toExpression(e.getChild(i))));
       Expression body = toExpression(e.getChild((int) e.getNumChildren()-1));

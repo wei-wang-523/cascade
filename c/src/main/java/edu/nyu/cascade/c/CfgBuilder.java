@@ -3,18 +3,22 @@ package edu.nyu.cascade.c;
 import static edu.nyu.cascade.util.IOUtils.debug;
 import static edu.nyu.cascade.util.IOUtils.debugC;
 import static edu.nyu.cascade.util.IOUtils.debugEnabled;
-import hidden.org.codehaus.plexus.interpolation.util.StringUtils;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import xtc.Limits;
 import xtc.tree.*;
 import xtc.type.*;
+import xtc.type.Type.Tag;
+import xtc.util.SingletonIterator;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -24,7 +28,6 @@ import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.IRLocations;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.SymbolTable;
-import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
 import edu.nyu.cascade.ir.impl.BasicBlock;
 import edu.nyu.cascade.ir.impl.CaseGuard;
 import edu.nyu.cascade.ir.impl.ControlFlowGraph;
@@ -49,7 +52,11 @@ import edu.nyu.cascade.util.ReservedFunction;
  * <code>xtc.tree.Visitor</code> for more information.
  */
 public class CfgBuilder extends Visitor {
-  
+	
+	public static final String STRING_VAR_PREFIX = "CASCADE.string";
+	public static final String RETURN_VAR_PREFIX = "CASCADE.return";
+	public static final String COND_VAR_PREFIX = "CASCADE.cond";
+	
   /**
    * Retrieve the CFGs from the given parse tree, using the given symbol table
    * and expression manager.
@@ -63,16 +70,8 @@ public class CfgBuilder extends Visitor {
    * @return A <code>Map</code> from declaration nodes to CFGs.
    */
   @SuppressWarnings("unchecked")
-  public static Map<Node, IRControlFlowGraph> getCfgs(SymbolTable symbolTable, CAnalyzer cAnalyzer,
-      Node ast) {
-    return (Map<Node, IRControlFlowGraph>) new CfgBuilder(symbolTable, cAnalyzer).dispatch(ast);
-  }
-  
-  public static CExpression analyze(SymbolTable symbolTable, CAnalyzer cAnalyzer, Node node) {
-  	cAnalyzer.analyze(node, symbolTable.getOriginalSymbolTable());
-  	CfgBuilder cfgBuilder = new CfgBuilder(symbolTable, cAnalyzer);
-  	cfgBuilder.isCollectStmts = false;
-  	return (CExpression) cfgBuilder.dispatch(node);
+  public static Map<Node, IRControlFlowGraph> getCfgs(SymbolTable symbolTable, Node ast) {
+    return (Map<Node, IRControlFlowGraph>) new CfgBuilder(symbolTable).dispatch(ast);
   }
 
   /**
@@ -85,17 +84,38 @@ public class CfgBuilder extends Visitor {
     private final CExpression caseExpr;
     private final List<CaseGuard> caseGuards;
     private boolean hasDefault;
+    private final List<Statement> caseExprSideEffectStmts;
+    private final Map<GNode, BasicBlock> labelStmtMap;
 
     public Scope(BasicBlock entry, BasicBlock exit) {
       this(entry, exit, null);
     }
 
     public Scope(BasicBlock entry, BasicBlock exit, CExpression caseExpr) {
+    	this(entry, exit, null, Collections.<Statement>emptyList());
+    }
+    
+    public Scope(BasicBlock entry, BasicBlock exit, CExpression caseExpr, List<Statement> sideEffectStmts) {
       this.entry = entry;
       this.exit = exit;
       this.caseExpr = caseExpr;
       this.caseGuards = Lists.newArrayList();
+      this.caseExprSideEffectStmts = ImmutableList.copyOf(sideEffectStmts);
       this.hasDefault = false;
+      this.labelStmtMap = Maps.newHashMap();
+    }
+    
+    public void registerLabelStmt(GNode labelNode, BasicBlock labelStmt) {
+    	labelStmtMap.put(labelNode, labelStmt);
+    }
+    
+    public BasicBlock getLabelStmt(GNode labelNode) {
+    	Preconditions.checkArgument(labelStmtMap.containsKey(labelNode));
+    	return labelStmtMap.get(labelNode);
+    }
+    
+    public List<Statement> getSideEffectStatements() {
+    	return caseExprSideEffectStmts;
     }
 
     public CExpression getCaseExpr() {
@@ -127,15 +147,707 @@ public class CfgBuilder extends Visitor {
     }
   }
   
-  private static final Predicate<Node> isMalloc = new Predicate<Node>() {
-  	@Override
-  	public boolean apply(Node node) {
-  		if(node.hasName("CastExpression")) node = node.getNode(1);
-  		if(!node.hasName("FunctionCall")) return false;
-  		String funcName = node.getNode(0).getString(0);
-  		return ReservedFunction.MALLOC.equals(funcName);
-  	}
-  };
+  /** The saved state of the initializer. */
+  static class State {
+  	public GNode 	 identifier;
+    public Type    base;
+    public Type    element;
+    public boolean top;
+    public long    index;
+    public long    size;
+
+    public State(GNode identifier, Type base, Type element, boolean top, long index, long size) {
+    	this.identifier = identifier;
+      this.base    = base;
+      this.element = element;
+      this.top     = top;
+      this.index   = index;
+      this.size    = size;
+    }
+  }
+
+  /** The semantic information contained in an initializer. */
+  public class Initializer {
+  	/** The source node */ 
+  	private GNode srcNode;
+  	
+  	/** The initialize target */
+  	private GNode identifier;
+
+    /** The overall initializer list. */
+    private GNode node;
+
+    /** The overall type. */
+    private Type type;
+
+    /** The current base type. */
+    private Type base;
+
+    /** The current element type. */
+    private Type element;
+
+    /** The flag for whether the initializer is top-level. */
+    private boolean top;
+
+    /** The current index into aggregate types. */
+    private long index;
+
+    /** The size of aggregate types. */
+    private long size;
+
+    /** The count of a top-level array's elements. */
+    private long count;
+
+    /** The stack of processing states. */
+    private List<State> states;
+
+    /**
+     * Create a new initializer.  The specified node must represent an
+     * initializer list.
+     *
+     * @param identifier
+     * @param node The node.
+     * @param type The type.
+     */
+    public Initializer(GNode srcNode, GNode identifier, GNode node, Type type) {
+    	this.srcNode 	 = srcNode;
+    	this.identifier = identifier;
+      this.node      = node;
+      this.type      = type;
+      this.base      = type.resolve();
+      switch (this.base.tag()) {
+      case ARRAY:
+        this.element = base.toArray().getType();
+        this.top     = true;
+        this.size    = getSize(base);
+        break;
+      case STRUCT:
+      case UNION:
+        this.element = null;
+        this.top     = false;
+        this.size    = getSize(base);
+        break;
+      default:
+        this.element = base;
+        this.top     = true;
+        this.size    = 1;
+      }
+      this.index     = -1;
+      this.count     = 0;
+      states         = new ArrayList<State>();
+    }
+
+    /**
+     * Create a new nested initializer.  The specified node must
+     * represent an initializer list.  Both types must have been
+     * resolved.  The element type may be <code>null</code>.
+     *
+     * @param identifier The initialize target
+     * @param node The node.
+     * @param base The base type.
+     * @param element The element type.
+     */
+    Initializer(GNode srcNode, GNode identifier, GNode node, Type base, Type element) {
+    	this.srcNode 	 = srcNode;
+    	this.identifier = identifier;
+      this.node      = node;
+      this.type      = base;
+      this.base      = base;
+      this.element   = element;
+      this.top       = false;
+      this.size      = (base == element) ? 1 : getSize(base);
+      this.index     = -1;
+      this.count     = 0;
+      states         = new ArrayList<State>();
+    }
+
+    /**
+     * Process the initializer.  This method processes this
+     * initializer, reporting any errors and returning the processed
+     * type.  The processed type generally is the same as the type
+     * provided to this class' constructor.  However, if this
+     * intializer's type is a top-level incomplete array, it is
+     * updated with the actual size.
+     *
+     * @return The processed type.
+     */
+    public void process(boolean isStatic) {
+    	
+    	if(null != node) {
+    		
+    		// Initialize the left-hand as the initializer
+    		if(!node.hasName("InitializerList")) {
+      		Type rightType = CType.getType(node);
+      		
+      		// Take care of braced string literals here.
+      		if ((cop.isString(base) || cop.isWideString(base)) && 
+      				(cop.isString(rightType) || cop.isString(rightType)) && 
+      				rightType.hasConstant()) {
+      			
+      			long length = rightType.resolve().toArray().getLength();
+      			String stringVal = ((StringReference) rightType.getShape()).getLiteral();
+      			
+      			for(int index = 0; index <= length; index++) {
+      				if (! designation(null)) return;
+      		
+      				char c = index < length ? stringVal.charAt(index) : '\u0000';
+      				String charLiteral = new StringBuilder().append('\'').append(c).append('\'').toString();
+      				final GNode initializer = GNode.create("CharacterConstant", charLiteral);
+      				cop.typeCharacter(charLiteral).mark(initializer);
+      				symbolTable.mark(initializer);
+      				
+      				final CExpression left = recurseOnExpression(getId());
+      				final CExpression right = recurseOnExpression(initializer);
+      				Statement initStmt = Statement.initialize(srcNode, left, right);
+      				addStatement(initStmt, isStatic);
+      			}
+      			
+      			return;
+      		} 
+      		
+    			final CExpression left = recurseOnExpression(getId());
+          final CExpression right = recurseOnExpression(node);
+    			Statement initStmt = Statement.initialize(srcNode, left, right);
+    			addStatement(initStmt, isStatic);
+      		return;
+    		}
+    		
+    		// Iterate over the initializer list entries.
+        final int num = node.size();
+        for (int cursor = 0; cursor < num; cursor++) {
+          // Get the entry and its children.
+          final GNode entry       = node.getGeneric(cursor);
+          final GNode designation = entry.getGeneric(0);
+          final GNode initializer = entry.getGeneric(1);
+
+          // Process the designation.
+          if (! designation(designation)) {
+            return;
+          }
+
+          // Process the intializer.
+          if (initializer.hasName("InitializerList")) {
+          	GNode id = getId();
+            switch (element.tag()) {
+            case BOOLEAN:
+            case INTEGER:
+            case FLOAT:
+            case POINTER: {
+              new Initializer(srcNode, id, initializer, element, element).process(isStatic);
+            } break;
+            case ARRAY: {
+              new Initializer(srcNode, id, initializer, element, element.resolve().toArray().getType()).process(isStatic);
+            } break;
+            default:
+              new Initializer(srcNode, id, initializer, element, null).process(isStatic);
+            }
+
+          } else {
+          	
+            // Determine the right hand type.
+          	final Type rightType = CType.getType(initializer);
+
+            // Try to initialize the left-hand type with the right-hand
+            // type.
+            loop: while (true) {
+              if (isInitializable(element, rightType)) {
+                // Process the assignment and string size for any warnings.
+              	final CExpression left = recurseOnExpression(getId());
+                final CExpression right = recurseOnExpression(initializer);
+                
+              	Statement initStmt = Statement.initialize(srcNode, left, right);
+              	addStatement(initStmt, isStatic);
+                break;
+              }
+
+              switch (element.tag()) {
+              case ARRAY: {
+                // Initialize the array's elements.
+                push(element);
+              } break;
+
+              case STRUCT:
+              case UNION: {
+                if (0 == element.toTagged().getMemberCount()) {
+                  // Continue with the next subobject.
+                  if (! designation(null)) {
+                  	return;
+                  }
+
+                } else {
+                  // Initialize the struct/union members.
+                  push(element);
+                }
+              } break;
+
+              default:
+                // The assignment fails.
+                // Process the assignment and string size for any warnings.
+              	final CExpression left = recurseOnExpression(getId());
+                final CExpression right = recurseOnExpression(initializer);
+                
+              	Statement initStmt = Statement.initialize(srcNode, left, right);
+              	addStatement(initStmt, isStatic);
+                break loop;
+              }
+            }
+          }
+        }
+    	}
+    	
+    	// Try to initialize the left-hand with default value zero
+      while(true) {
+      	if (! designation(null)) {
+        	return;
+        }
+    		
+    		// Determine the right hand type.
+
+      	GNode id = getId();
+        switch (element.tag()) {
+        case BOOLEAN:
+        case INTEGER:
+        case FLOAT:
+        case POINTER: {
+      		GNode initializer = GNode.create("IntegerConstant", String.valueOf(0));
+      		cop.typeInteger(String.valueOf(0)).mark(initializer);
+          new Initializer(srcNode, id, initializer, element, element).process(isStatic);
+        } break;
+        case ARRAY: {
+          new Initializer(srcNode, id, null, element, element.resolve().toArray().getType()).process(isStatic);
+        } break;
+        default:
+          new Initializer(srcNode, id, null, element, null).process(isStatic);
+        }
+      }
+    }
+
+    /**
+     * Process the specified designation.  This method updates the
+     * internal state to reflect the designation.
+     *
+     * @param designation The designation, which may be
+     *   <code>null</code>.
+     * @return <code>false</code> if the designation contains an
+     *   error.
+     */
+    private boolean designation(GNode designation) {    	
+      if (null == designation) {
+        while (true) {
+          index++;
+
+          if ((-1 == size) || (index < size)) {
+            // We have an object to initialize.
+            if (base.hasStructOrUnion()) {
+            	if(base.toTagged().getMemberCount() == -1) return false;
+            	
+              // Set the element type for struct/union types.
+              element = base.toTagged().getMember((int)index);
+            } else {
+            	if ((! hasSize(type)) &&
+            			(0 == states.size()) &&
+            			top) {
+            		// We are processing an initializer list that is not
+            		// nested and has an incomplete array as its type.
+            		// Therefore, we record the maximum size.
+            		count = Math.max(count, index+1);
+            		return false;
+            	}
+            }
+
+            // Done.
+            return true;
+
+          } else {
+            // We are done with the base type.
+            if (0 == states.size()) {
+              // Done.
+              return false;
+
+            } else {
+              // Continue with the encapsulating type.
+              pop();
+            }
+          }
+        }
+
+      } else {
+        // Clear the saved states.  We are starting with the overall
+        // type.
+        if (0 != states.size()) {
+          final State state = states.get(0);
+          identifier = state.identifier;
+          base    = state.base;
+          element = state.element;
+          top     = state.top;
+          index   = state.index;
+          size    = state.size;
+          states.clear();
+        }
+        if (base.isArray()) push(base);
+
+        // Process the designators.
+        final Iterator<Object> iter;
+        if (designation.hasName("Designation")) {
+          iter = designation.iterator();
+        } else {
+          iter = new SingletonIterator<Object>(designation);
+        }
+
+        while (iter.hasNext()) {
+          final GNode designator = GNode.cast(iter.next());
+
+          if (designator.hasName("ObsoleteFieldDesignation") ||
+              ".".equals(designator.getString(0))) {
+            // A struct/union field.
+            if (! base.hasStructOrUnion()) {
+              return false;
+            }
+
+            // Extract the field name.
+            String name = designator.hasName("ObsoleteFieldDesignation") ?
+              designator.getString(0) : designator.getGeneric(1).getString(0);
+
+            // Find the field.
+            if (! lookup(name)) {
+              return false;
+            }
+            
+          } else {
+            // An array index.  Make sure the base type is an array.
+            if (! base.isArray()) {
+              return false;
+            }
+
+            // Determine the index types.
+            final Type t1 = CType.getType(designator.getNode(1));
+            final Type t2 = (3 == designator.size()) ?
+            		CType.getType(designator.getNode(2)) : null;
+
+            // Make sure that the indices are constant integers.
+            if ((! cop.isIntegral(t1)) ||
+                ((null != t2) && (! cop.isIntegral(t2)))) {
+              return false;
+
+            } else if ((! t1.hasConstant()) ||
+                       ((null != t2) && (! t2.hasConstant()))) {
+              return false;
+
+            }
+
+            // Make sure that the indices are neither too small nor
+            // too large and that the range is not empty.
+            final BigInteger i1 = t1.getConstant().bigIntValue();
+            final BigInteger i2 = 
+              (null == t2) ? null : t2.getConstant().bigIntValue();
+
+            // Test: i1 < 0, i2 < 0
+            if ((i1.compareTo(BigInteger.ZERO) < 0) ||
+                ((null != i2) && (i2.compareTo(BigInteger.ZERO) < 0))) {
+              return false;
+
+              // Test: i1 > ARRAY_MAX, i2 > ARRAY_MAX
+            } else if ((i1.compareTo(Limits.ARRAY_MAX) > 0) ||
+                       ((null != i2) && (i2.compareTo(Limits.ARRAY_MAX) > 0))) {
+              return false;
+
+              // Test: i2 < i1
+            } else if ((null != i2) && (i2.compareTo(i1) < 0)) {
+              return false;
+
+            }
+
+            // Make sure that the array index is within the array
+            // bounds.
+            final long max = (null == i2) ? i1.longValue() : i2.longValue();
+            if ((-1 < size) && (max >= size)) {
+              return false;
+            }
+
+            if ((! hasSize(type)) && (0 == states.size()) && top) {
+              // We are processing an initializer list that is not
+              // nested and has an incomplete array as its type.
+              // Therefore, we record the maximum size.
+              count = Math.max(count, max+1);
+            }
+
+            // Update the current index.
+            index = max;
+          }
+
+          // Prepare for the next designator.
+          if (iter.hasNext()) push(element);
+        }
+
+        // Done.
+        return true;
+      }
+    }
+    
+    private GNode getId() {
+    	switch(base.tag()) {
+    	case ARRAY: {
+    		GNode idxNode = GNode.create("IntegerConstant", String.valueOf(index));
+    		cop.typeInteger(String.valueOf(index)).mark(idxNode);
+    		
+    		GNode id = GNode.create("SubscriptExpression", identifier, idxNode);
+    		element.mark(id); 
+    		return id;
+    	}
+    	case STRUCT:
+    	case UNION: {
+    		GNode id = GNode.create("DirectComponentSelection", identifier, element.getName());
+    		element.mark(id);
+    		return id;
+    	}
+    	default: 
+    		return identifier;
+    	}
+    }
+
+    /**
+     * Look up the specified field.  The current base type must be a
+     * struct or union type.
+     *
+     * @return <code>true</code> if the field was found.
+     */
+    private boolean lookup(String name) {
+      index = -1;
+
+      for (VariableT member : base.toStructOrUnion().getMembers()) {
+        if (member.hasName()) {
+          index++;
+          if (member.hasName(name)) {
+            element = member;
+            return true;
+          }
+
+        } else if (! member.hasWidth()) {
+          index++;
+          element = member.resolve();
+          push(element);
+
+          if (lookup(name)) return true;
+
+          pop();
+        }
+      }
+
+      return false;
+    }
+
+    /**
+     * Make the specified type the current type.  The type must have
+     * been resolved.
+     *
+     * @param type The type.
+     */
+    private void push(Type type) {
+
+      State state = new State(identifier, base, element, top, index, size);
+      states.add(state);
+      base        = type;
+      switch (type.tag()) {
+      case ARRAY:
+        identifier = getId();
+        element    = type.resolve().toArray().getType();
+        break;
+      case STRUCT:
+      case UNION:
+      	identifier = getId();
+        element    = type.toTagged().getMember(0);
+        break;
+      default:
+        element   = type;
+      }
+      top         = false;
+      index       = 0;
+      size        = getSize(type);
+    }
+
+    /** Restore the previous type and its processing state. */
+    private void pop() {
+
+      assert 0 != states.size() : "Empty initializer type stack";
+
+      final State state = states.remove(states.size()-1);
+      identifier = state.identifier;
+      base    = state.base;
+      element = state.element;
+      top     = state.top;
+      index   = state.index;
+      size    = state.size;
+    }
+
+    /**
+     * Convert this initializer as a string.  This method returns a
+     * string representing the array/struct/union designation of the
+     * current initializer state.
+     *
+     * @return This initializer as a string.
+     */
+    public String toString() {
+      final StringBuilder buf = new StringBuilder();
+
+      for (State state : states) {
+        if (state.base != state.element) {
+          if (state.base.isArray()) {
+            buf.append('[');
+            buf.append(state.index);
+            buf.append(']');
+
+          } else if (state.base.hasStructOrUnion()) {
+            final VariableT m = state.base.toTagged().
+              getMember((int)state.index).toVariable();
+            if (m.hasName()) {
+              buf.append('.');
+              buf.append(m.getName());
+            } else {
+              buf.append(".<anon>");
+            }
+          }
+        }
+      }
+
+      if ((base != element) && (-1 != index)) {
+        if (base.isArray()) {
+          buf.append('[');
+          buf.append(index);
+          buf.append(']');
+
+        } else if (base.hasStructOrUnion()) {
+          final VariableT m = base.toTagged().
+            getMember((int)index).toVariable();
+          if (m.hasName()) {
+            buf.append('.');
+            buf.append(m.getName());
+          } else {
+            buf.append(".<anon>");
+          }
+        }
+      }
+
+      // Cover the base case.
+      if ((base == element) && (0 == states.size())) buf.append("<obj>");
+
+      return buf.toString();
+    }
+
+    /**
+     * Determine whether the specified type has a size.  Only arrays
+     * without a length do not have a size.  This method is
+     * effectively static.
+     *
+     * @param type The type.
+     * @return <code>true</code> if the type has a size.
+     */
+    private boolean hasSize(Type type) {
+      return (! type.hasTag(Tag.ARRAY)) ||
+        type.resolve().toArray().hasLength();
+    }
+
+    /**
+     * Determine the size of the specified type.  For scalars, this
+     * method returns 1.  For unions, this method returns 1 if the
+     * union has any accessible members and 0 otherwise.  For structs,
+     * this method returns the number of accessible members.  For
+     * arrays, it returns the size if known and -1 otherwise.  This
+     * method is effectively static.
+     *
+     * @param type The type.
+     * @return The type's size.
+     */
+    private long getSize(Type type) {
+      switch (type.tag()) {
+      case ARRAY:
+        return type.resolve().toArray().getLength();
+      case STRUCT:
+        return type.toTagged().getMemberCount();
+      case UNION:
+        return 0 < type.toTagged().getMemberCount() ? 1 : 0;
+      default:
+        return 1;
+      }
+    }
+
+    /**
+     * Determine whether the specified left-hand type can be initialized
+     * from the specified right-hand type.
+     *
+     * @param t1 The left-hand type.
+     * @param t2 The right-hand type.
+     * @return <code>true</code> if the left-hand type can be
+     *   initialized by the right-hand type.
+     */
+    private boolean isInitializable(Type t1, Type t2) {
+      if (t1.hasError() || t2.hasError()) return true;
+
+      final Type r1     = t1.resolve();
+      final Type r2     = cop.pointerize(t2);
+
+      switch (r1.tag()) {
+      case BOOLEAN:
+      case INTEGER:
+      case FLOAT: {
+        if (r1.isBoolean()) {
+          // Booleans can be assigned from scalar operands.
+          return cop.isScalar(r2);
+        } else {
+          // All other arithmetic types can only be assigned from
+          // arithmetic types.  GCC also allows assignments from
+          // pointers.
+          return cop.isArithmetic(r2) || (r2.isPointer());
+        }
+      }
+
+      case STRUCT:
+      case UNION: {
+        // A struct or union can only be assigned from another struct or
+        // union of compatible type.
+        return cop.equal(r1, r2);
+      }
+
+      case ARRAY: {
+        // An array can only be assigned in an initializer and only if
+        // the left-hand type is a (wide) C string and the right-hand
+        // type is a matching C string constant.
+        return (t2.hasConstant() &&
+                ((cop.isString(r1) && cop.isString(t2)) ||
+                 (cop.isWideString(r1) && cop.isWideString(t2))));
+      }
+
+      case POINTER: {
+        if (r2.isPointer()) {
+          final Type pt1  = r1.toPointer().getType(); // PointedTo, PTResolved
+          final Type pt2  = r2.toPointer().getType();
+
+          final Type ptr1 = pt1.resolve();
+          final Type ptr2 = pt2.resolve();
+
+          if (cop.hasQualifiers(pt1, pt2) &&
+              (cop.equal(ptr1, ptr2) || ptr1.isVoid() || ptr2.isVoid())) {
+            return true;
+          } else {
+            return true;
+          }
+
+        } else if (t2.hasConstant() && t2.getConstant().isNull()) {
+          return true;
+
+        } else if (cop.isIntegral(t2)) {
+          return true;
+
+        } else {
+          return false;
+        }
+      }
+
+      default:
+        return (r1.isInternal() && r2.isInternal() &&
+                r1.toInternal().getName().equals(r2.toInternal().getName()));
+      }
+    }
+  }
   
   private BasicBlock currentBlock;
   private List<Statement> postStatements, appendStatements;
@@ -154,25 +866,24 @@ public class CfgBuilder extends Visitor {
    * visitor returns.
    */
   private int expressionDepth;
-  private ControlFlowGraph currentCfg;
+  private ControlFlowGraph currentCfg, globalCfg;
+  private CExpression returnExpr;
+  
+  /**
+   * The static encoding environment for encoding static initializer
+   */
+  private boolean staticEnv = false;
 
 	private final SymbolTable symbolTable;
 	private final Map<Node, ControlFlowGraph> cfgs;
   private final Deque<Scope> scopes;
-  private final CAnalyzer cAnalyzer;
   private final Map<Pair<String, ControlFlowGraph>, BasicBlock> labeledBlocks;
+  private final xtc.type.C cop = CType.getInstance().c();
   
-  /**
-   * It is true if CFG-builder is used to collect statements, otherwise,
-   * CFG-builder is used to analyze commands in the control file
-   */
-  private boolean isCollectStmts = true;
-  
-  private CfgBuilder(SymbolTable symbolTable, CAnalyzer cAnalyzer) {
+  private CfgBuilder(SymbolTable symbolTable) {
     this.symbolTable = symbolTable;
-    this.cAnalyzer = cAnalyzer;
     alignments = Lists.newLinkedList();
-    cfgs = Maps.newHashMap();
+    cfgs = Maps.newLinkedHashMap();
     scopes = Lists.newLinkedList();
     labeledBlocks = Maps.newHashMap();
   }
@@ -204,27 +915,72 @@ public class CfgBuilder extends Visitor {
    * is 0 (meaning, this is a top-level statement, we flush the post-statement
    * queue.
    */
-  private void addStatement(Statement stmt) {
-  	if(!isCollectStmts) return;
+  private void addStatement(Statement stmt) {  	
+  	addStatement(stmt, false);
+  }
+  
+  private void addStatement(Statement stmt, boolean isStatic) {
+  	boolean isGlobal = currentCfg.getName().equals(Identifiers.GLOBAL_CFG);
+  	if((isStatic && !isGlobal) || staticEnv) {
+  		globalCfg.getExit().addStatement(stmt);
+  		return;
+  	}
   	
     postStatements.add(stmt);
-    postStatements.addAll(appendStatements);
-    appendStatements.clear();
     if (expressionDepth == 0) {
       flushPostStatements();
     }
   }
+  
+  /** Append the append-statements accumulated to the post-statements. */
+  private void flushAppendStatements() {
+  	if(appendStatements.isEmpty()) return;
+    postStatements.addAll(appendStatements);
+    appendStatements.clear();
+  }
 
 	/** Append the post-statements accumulated to the current block. */
   private void flushPostStatements() {
+  	flushAppendStatements();
     addAndFlushPostStatements(currentBlock);
+  }
+  
+  private void buildEdgeWithGuardSideEffect(BasicBlock src, 
+  		Guard ifBranch, BasicBlock ifBlock, 
+  		Guard elseBranch, BasicBlock elseBlock) {
+  	if(appendStatements.isEmpty()) {
+  		currentCfg.addEdge(src, ifBranch, ifBlock);
+  		currentCfg.addEdge(src, elseBranch, elseBlock);
+  	} else {
+  		BasicBlock sideEffectIfBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+  		BasicBlock sideEffectElseBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+  		sideEffectIfBlock.addStatements(appendStatements);
+  		sideEffectElseBlock.addStatements(appendStatements);
+  		currentCfg.addEdge(src, ifBranch, sideEffectIfBlock);
+  		currentCfg.addEdge(src, elseBranch, sideEffectElseBlock);
+  		currentCfg.addEdge(sideEffectIfBlock, ifBlock);
+  		currentCfg.addEdge(sideEffectElseBlock, elseBlock);
+  		appendStatements.clear();
+  	}
+  }
+  
+  private void buildCaseEdgeWithGuardSideEffect(BasicBlock src, IRBooleanExpression guard, BasicBlock labelStmt) {
+  	List<Statement> sideEffectStmts = getCaseExprSideEffectStmts();
+  	if(sideEffectStmts.isEmpty()) {
+  		currentCfg.addEdge(src, guard, labelStmt);
+  	} else {
+  		BasicBlock sideEffectBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+  		sideEffectBlock.addStatements(sideEffectStmts);
+  		currentCfg.addEdge(src, guard, sideEffectBlock);
+  		currentCfg.addEdge(sideEffectBlock, labelStmt);
+  	}
+  	
   }
 
   /** Append the post-statements accumulated to all given blocks. This is necessary
    * to make sure effects appear along all branches. E.g., the side effects of an 
    * "if" test will appear at the beginning of both the "then" and "else" blocks. */
-  private void addAndFlushPostStatements(BasicBlock first, BasicBlock... rest) {
-    // TODO: What about prestatements (like ++i)?
+  private void addAndFlushPostStatements(BasicBlock first, BasicBlock... rest) {    
     if (postStatements.isEmpty())
       return;
 
@@ -259,9 +1015,10 @@ public class CfgBuilder extends Visitor {
   }
 
   /** Enter a case scope bracketed by the given blocks, guarded by the given expression. */
-  private void pushScope(BasicBlock entry, BasicBlock exit, CExpression caseExpr) {
-    Scope s = new Scope(entry, exit, caseExpr);
+  private void pushSwitchScope(BasicBlock entry, BasicBlock exit, CExpression caseExpr) {
+    Scope s = new Scope(entry, exit, caseExpr, appendStatements);
     scopes.addFirst(s);
+    appendStatements.clear();
   }
   
   /** SymbolTable enters a nested scope. */
@@ -272,6 +1029,18 @@ public class CfgBuilder extends Visitor {
   /** SymbolTable exit a nested scope. */
   private void exitScope() {
     symbolTable.setScope(symbolTable.getCurrentScope().getParent());
+  }
+  
+  /** Get the side-effect statements for case expression. Used to flush them into
+   * every label statement
+   */
+  private List<Statement> getCaseExprSideEffectStmts() {
+    for (Scope s : scopes) {
+      if (s.getCaseExpr() != null) {
+        return s.getSideEffectStatements();
+      }
+    }
+    return null;
   }
 
   /** Find the smallest enclosing non-case scope. Used to resolve continue
@@ -365,7 +1134,24 @@ public class CfgBuilder extends Visitor {
       }
     }
   }
-
+  
+  private void registerLabelStmt(GNode labelNode, BasicBlock labelStmt) {
+    for(Scope s : scopes) {
+      if(s.getCaseExpr() != null) {
+        s.registerLabelStmt(labelNode, labelStmt);
+      }
+    }
+  }
+  
+  private BasicBlock getLabelStmt(GNode labelNode) {
+    for(Scope s : scopes) {
+      if(s.getCaseExpr() != null) {
+        return s.getLabelStmt(labelNode);
+      }
+    }
+    return null;
+  }
+  
   private CExpression recurseOnExpression(Node node) {
     expressionDepth++;
     CExpression e = (CExpression) dispatch(node);
@@ -373,283 +1159,65 @@ public class CfgBuilder extends Visitor {
     return e;
   }
   
-  private Node defineReturnVarNode(String funcName, Node func) {
-    String varName = Identifiers.uniquify(Identifiers.RETURN_VAR_PREFIX + '_' + funcName);
-    Location loc = func.getLocation();
-    Type type = lookupType(func);
-    type = type.annotate().shape(new DynamicReference(varName,type));
+  private Node defineCondVarNode(Location loc) {
+  	String varName = Identifiers.uniquify(COND_VAR_PREFIX);
+  	Type varType = NumberT.INT.annotate().shape(false, varName);
+  	
+  	Node varDeclareNode = GNode.create("SimpleDeclarator", varName);
+  	varDeclareNode.setLocation(loc);
+  	varType.mark(varDeclareNode);
+  	symbolTable.mark(varDeclareNode);
+  	
+  	createAuxVarBinding(varDeclareNode, COND_VAR_PREFIX);
+  	
+  	Node varNode = GNode.create("PrimaryIdentifier", varName);
+  	varNode.setLocation(loc);
+  	varType.mark(varNode);
+  	symbolTable.mark(varNode);
+  	
+  	return varNode;
+  }
+  
+  private Node defineReturnVarNode(String funcName, Type retType, Location loc) {
+    String varName = null == funcName ? Identifiers.uniquify(RETURN_VAR_PREFIX) : 
+    	Identifiers.uniquify(RETURN_VAR_PREFIX + '_' + funcName);
+    Type varType = retType.annotate().shape(false, varName);
     
-    GNode varDeclareNode = GNode.create("SimpleDeclarator", varName);
+    Node varDeclareNode = GNode.create("SimpleDeclarator", varName);
     varDeclareNode.setLocation(loc);
-    type.mark(varDeclareNode);
-    cAnalyzer.processExpression(varDeclareNode);
-    createAuxVarBinding(varDeclareNode, Identifiers.RETURN_VAR_PREFIX);
+    varType.mark(varDeclareNode);
+    symbolTable.mark(varDeclareNode);
     
-    GNode varNode = GNode.create("PrimaryIdentifier", varName);
+    createAuxVarBinding(varDeclareNode, RETURN_VAR_PREFIX);
+    
+    Node varNode = GNode.create("PrimaryIdentifier", varName);
     varNode.setLocation(loc);
-    type.mark(varNode);
-    //FIXME: process(varNode) sometimes attach root scope
-    cAnalyzer.processExpression(varNode);
+    varType.mark(varNode);
+    symbolTable.mark(varNode);
     
     return varNode; 
   }
 
-  private Node defineStringVarNode(Node stringVar) {
-  	String varName = Identifiers.uniquify(Identifiers.STRING_VAR_PREFIX);
-  	Location loc = stringVar.getLocation();
-  	Type type = lookupType(stringVar);
-  	type = redefineArrayType(type);
-    type = type.annotate().shape(new DynamicReference(varName, type));
-  	
-    GNode varDeclareNode = GNode.create("SimpleDeclarator", varName);
-    varDeclareNode.setLocation(loc);
-    type.mark(varDeclareNode);
-    cAnalyzer.processExpression(varDeclareNode);
-    createAuxVarBinding(varDeclareNode, Identifiers.STRING_VAR_PREFIX);
-    
-    GNode varNode = GNode.create("PrimaryIdentifier", varName);
-    varNode.setLocation(loc);
-    type.mark(varNode);
-    cAnalyzer.processExpression(varNode);
-    return varNode; 
-  }
-  
-  private Type redefineArrayType(Type type) {
-		Preconditions.checkArgument(type.resolve().isArray());
-		ArrayT arrayType = type.resolve().toArray().copy();
-		arrayType.setLength(arrayType.getLength() + 1);
-		Reference shape = type.getShape();
-		return arrayType.annotate().shape(shape);
-	}
-
-	private Type redefineStringType(Type type) {
-		Preconditions.checkArgument(type.hasShape());
-		Preconditions.checkArgument(type.getShape().isString());
-		Preconditions.checkArgument(type.resolve().isArray());
-		ArrayT arrayType = type.resolve().toArray().copy();
-		arrayType.setLength(arrayType.getLength() + 1);
+	private Node defineStringVarNode(GNode stringConst) {
+		String varName = Identifiers.uniquify(STRING_VAR_PREFIX);
 		
-		Reference shape = type.getShape();
-		String literal =  ((StringReference) shape).getLiteral();
-		StringBuilder sb = new StringBuilder();
-		if(literal != null) sb.append(literal);
-		sb.append('\u0000');
-		
-		Reference newShape = new StringReference(sb.toString(), arrayType);
-		return arrayType.annotate().shape(newShape);
+	  Node stringVar = GNode.create("SimpleDeclarator", varName);
+	  stringVar.setLocation(stringConst.getLocation());
+	  Type right = CType.getType(stringConst);
+	  final ArrayT left = right.resolve().toArray().copy();
+    left.resolve().toArray().
+    setLength(right.resolve().toArray().getLength() + 1);
+    left.annotate().shape(false, varName).mark(stringVar);
+    symbolTable.mark(stringVar);
+	  
+	  createAuxVarBinding(stringVar, STRING_VAR_PREFIX);
+	  
+	  Node varNode = GNode.create("PrimaryIdentifier", varName);
+	  varNode.setLocation(stringVar.getLocation());
+	  left.mark(varNode);
+    symbolTable.mark(varNode);
+	  return varNode; 
 	}
-
-	private Type lookupType(Node node) {
-    Type type = null;
-    if(!node.hasProperty(CType.TYPE)) {
-      type = symbolTable.lookupType(node.getString(0));
-    } else {
-      type = CType.getType(node);
-    }
-    if (type == null)
-      throw new ExpressionFactoryException("Type not found: " + node);
-    return type;
-  }
-  
-  private Statement getValidMallocStmt(Node node, Node lhsNode, Node sizeNode) {
-	  GNode funcNode = GNode.create("PrimaryIdentifier", ReservedFunction.FUN_VALID_MALLOC);
-	  GNode argList = GNode.create("ExpressionList", lhsNode, sizeNode);
-	  GNode validMallocNode = GNode.create("FunctionCall", funcNode, argList);
-	  Location loc = node.getLocation();
-	  funcNode.setLocation(loc);
-	  validMallocNode.setLocation(loc);
-	  cAnalyzer.processExpression(validMallocNode);
-	  return Statement.assumeStmt(validMallocNode, expressionOf(validMallocNode));
-	}
-
-	private void memoryCheck(Node node) {
-    if(!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) return;
-    
-    GNode funcNode = GNode.create("PrimaryIdentifier", ReservedFunction.FUN_VALID);
-    GNode addrNode = GNode.create("AddressExpression", node);
-    GNode argList = GNode.create("ExpressionList", addrNode);
-    GNode validNode = GNode.create("FunctionCall", funcNode, argList);
-    Location loc = node.getLocation();
-    funcNode.setLocation(loc);
-    validNode.setLocation(loc);
-    cAnalyzer.processExpression(validNode);
-    Statement res = Statement.assertStmt(validNode, expressionOf(validNode));
-    res.addPostLabel(ReservedFunction.FUN_VALID);
-    addStatement(res);
-  }
-  
-  /** Create a copy of <code>node</code>, return null if
-   * node is null 
-   */
-  private GNode createCopy(GNode node) {
-  	if(node == null) return node;
-  	
-  	GNode freshNode = GNode.create(node);
-  	for(String label : node.properties()) { // copy properties
-  		freshNode.setProperty(label, node.getProperty(label));
-  	}
-  	freshNode.setLocation(node.getLocation()); // copy location
-  	return freshNode;
-  }
-  
-  private CExpression processAssignment(GNode srcNode, Node lhsNode, String assignOperator, Node rhsNode) {
-    if(rhsNode.hasName("StringConstant")) {
-    	/* Initialize string into char array */
-    	GNode initListNode = getInitListNodeForString(GNode.cast(rhsNode));
-    	Type lhsType = CType.getType(lhsNode).resolve();
-    	if(lhsType.isArray()) {
-    		rhsNode = initListNode;
-    	} else {
-    		/* Get a fresh declared string_var node */
-      	CExpression strConst = recurseOnExpression(rhsNode);
-      	Node strVarNode = strConst.getSourceNode();
-    		processCompoundAssign(srcNode, strVarNode, initListNode);
-      	rhsNode = strVarNode;
-    	}
-    }
-    
-    if(rhsNode.hasName("InitializerList"))
-    	return processCompoundAssign(srcNode, lhsNode, rhsNode);
-    
-    if(isMalloc.apply(rhsNode)) 
-    	return processMallocAssign(srcNode, lhsNode, rhsNode);
-    else
-    	return processScalarAssign(srcNode, lhsNode, assignOperator, rhsNode);
-  }
-  
-  private CExpression processMallocAssign(GNode srcNode, Node lhsNode, Node rhsNode) {
-  	CExpression lhsExpr = recurseOnExpression(lhsNode);
-  	CExpression rhsExpr = recurseOnExpression(rhsNode);
-  	
-  	Node rhsNodePrime = rhsExpr.getSourceNode();
-  	Node sizeNode = rhsNodePrime.getNode(1).getNode(0);
-  	CExpression sizeExpr = recurseOnExpression(sizeNode);
-    
-		Statement resultStmt = Statement.alloc(srcNode, lhsExpr, sizeExpr);
-		Statement validMalloc = getValidMallocStmt(srcNode, lhsNode, sizeNode);
-		
-		addStatement(resultStmt);
-		addStatement(validMalloc);
-		return lhsExpr;
-  }
-  
-  private CExpression processScalarAssign(GNode srcNode, Node lhsNode, String assignOperator, Node rhsNode) {
-  	CExpression lhsExpr = recurseOnExpression(lhsNode);
-  	CExpression rhsExpr = recurseOnExpression(rhsNode);
-  	/* The assignment operator may be one of +=, -=, et al., in which case the
-     * rhs is the whole statement, e.g., x += y becomes something like (assign x
-     * (x += y)) instead of (assign x (x+y)), because replacing the operator
-     * here would be a PITA. It's up to the expression visitor to turn that into
-     * an addition.
-     */
-    if (!"=".equals(assignOperator)) rhsExpr = expressionOf(srcNode);
-    
-    Statement resultStmt = Statement.assign(srcNode, lhsExpr, rhsExpr);
-    addStatement(resultStmt);
-  	return lhsExpr;
-  }
-  
-  private CExpression processCompoundAssign(GNode srcNode, Node lhsNode, Node rhsNode) {
-  	CExpression lhsExpr = recurseOnExpression(lhsNode);
-  	Type lhsType = CType.getType(lhsNode).resolve();
-  	if(lhsType.isArray()) {
-  		processArrayAssign(srcNode, lhsNode, rhsNode);
-  	} else if(lhsType.isStruct()) {
-  		processStructAssign(srcNode, lhsNode, rhsNode);
-  	}
-  	return lhsExpr;
-  }
-  
-  private void processStructAssign(GNode srcNode, Node lhsNode, Node rhsNode) {
-  	StructT structType = CType.getType(lhsNode).resolve().toStruct();
-  	assert(structType.getMemberCount() == rhsNode.size());
-  	Iterator<Object> itr = rhsNode.iterator();
-  	for(VariableT member : structType.getMembers()) {
-  		String field = member.getName();
-  		GNode compSelect = GNode.create("DirectComponentSelection", lhsNode, field);
-  		compSelect.setLocation(srcNode.getLocation());
-  		cAnalyzer.processExpression(compSelect);
-  		Node fieldInitializerListEntry = (Node) itr.next();
-  		processAssignment(srcNode, compSelect, "=", fieldInitializerListEntry.getNode(1));
-  	}
-  }
-  
-  private void processArrayAssign(GNode srcNode, Node lhsNode, Node rhsNode) {
-  	ArrayT arrayType = CType.getType(lhsNode).resolve().toArray();
-  	List<CExpression> args = flattenInitializerList(arrayType, rhsNode);
-  	GNode castArrayNode = castArrayNode(lhsNode);
-  	int index = 0;
-  	for(CExpression arg : args) {
-  		GNode idxNode = GNode.create("IntegerConstant", String.valueOf(index++));
-  		GNode currNode = GNode.create("AdditiveExpression", castArrayNode, "+", idxNode);
-  		GNode lhsNodePrime = GNode.create("IndirectionExpression", currNode);
-  		cAnalyzer.processExpression(lhsNodePrime);
-  		CExpression currLhsExpr = recurseOnExpression(lhsNodePrime);
-  		cAnalyzer.processExpression(arg.getSourceNode());
-  		Statement assignStmt = Statement.assign(srcNode, currLhsExpr, arg);
-  		addStatement(assignStmt);
-  	}
-  }
-  
-  private List<CExpression> flattenInitializerList(Type type, Node rhsNode) {
-  	Preconditions.checkArgument(rhsNode.hasName("InitializerList"));
-  	Preconditions.checkArgument(type.isArray());
-  	ArrayT arrayType = type.toArray();
-  	List<CExpression> rhsExprs = Lists.newArrayList();
-  	for(Object entry : rhsNode) {
-  		assert(entry instanceof Node);
-  		Node entryNode = (Node) entry;
-  		assert(entryNode.hasName("InitializerListEntry"));
-  		Node valueNode = entryNode.getNode(1);
-  		if(valueNode.hasName("InitializerList")) {
-  			rhsExprs.addAll(flattenInitializerList(arrayType.getType(), valueNode));
-  		} else {
-  			rhsExprs.add(recurseOnExpression(valueNode));
-  		}
-  	}
-  	if(!arrayType.hasLength()) return rhsExprs;
-  	
-  	long size = CType.getArraySize(arrayType);
-  	if(size < rhsExprs.size()) return rhsExprs.subList(0, (int) size);
-  	
-  	Type cellType = CType.getCellType(arrayType);
-  	while(size > rhsExprs.size()) {
-  		Node defaultNode = null;
-  		if(cellType.isNumber()) {
-  			switch(cellType.toNumber().getKind()) {
-				case CHAR:
-					defaultNode = GNode.create("CharacterConstant", String.valueOf('\u0000'));
-					break;
-				case INT:
-					defaultNode = GNode.create("IntegerConstant", String.valueOf(0));
-					break;
-				case LONG:
-					defaultNode = GNode.create("LongConstant", String.valueOf(0));
-					break;
-				default:
-					throw new IllegalArgumentException("Unknown default value for type " + cellType.getName());
-  			}
-  		}
-  		CExpression defaultExpr = recurseOnExpression(defaultNode);
-  		rhsExprs.add(defaultExpr);
-  	}
-  	return rhsExprs;
-  }
-  
-  private GNode castArrayNode(Node lhsNode) {
-  	Type baseType = CType.getCellType(CType.getType(lhsNode).resolve());
-  	String baseTypeName = StringUtils.capitalizeFirstLetter(baseType.toString());
-  	GNode typeNameNode = 
-  			GNode.create("TypeName", 
-  					GNode.create("SpecifierQualifierList", GNode.create(baseTypeName)), 
-  					GNode.create("AbstractDeclarator", 
-  							GNode.create("Pointer", GNode.create("TypeQualifierList"), null), null));
-  	GNode castNode = 
-  			GNode.create("CastExpression", typeNameNode, lhsNode);
-  	castNode.setLocation(lhsNode.getLocation());
-  	cAnalyzer.processExpression(castNode);
-  	return castNode;
-  }
   
   private void createAuxVarBinding(Node node, String label) {
   	String name = node.getString(0);
@@ -658,10 +1226,18 @@ public class CfgBuilder extends Visitor {
   					+ symbolTable);
   	
   	assert(!symbolTable.isDefined(name));
-  	Type type = CType.getType(node);
+  	
+    Type type = CType.getType(node);
+    String scopeName = symbolTable.getCurrentScope().getQualifiedName();
   	IRVarInfo binding = VarInfoFactory.createVarInfoWithType(
-  			CType.getScopeName(node), name, type);
-  	binding.setProperty(Identifiers.HOARE_VAR, true);
+  			scopeName, name, type);
+  	
+  	if(CType.isScalar(type)) {
+  		binding.enableLogicLabel();
+  	} else {
+  		binding.disableLogicLabel();
+  	}
+  	
   	binding.setDeclarationNode(node);
   	binding.setProperty(Identifiers.AUXLABEL, label);
   	symbolTable.define(name, binding);
@@ -671,33 +1247,13 @@ public class CfgBuilder extends Visitor {
   	Statement declareStmt = Statement.declare(node, resExpr);
   	addStatement(declareStmt);
   }
-
-	private GNode getInitListNodeForString(GNode node) {
-	  // pick the content to create a node for initialization
-	  Location loc = node.getLocation();
-	  Type newType = redefineStringType(lookupType(node));
-	  Reference shape = newType.getShape();
-	  assert(shape.isString());
-	  String content = ((StringReference) shape).getLiteral();
-	
-	  xtc.util.Pair<Object> operands = null;
-	  for(int i=0; i<content.length(); i++) {
-	    char c = content.charAt(i);
-	    // Here, we translate the single character to the char with ASCII code.
-	    StringBuilder sb = new StringBuilder().append('\'').append(c).append('\'');
-	    GNode charConst = GNode.create("CharacterConstant", sb.toString());
-	    charConst.setLocation(loc);
-	    GNode initEntry = GNode.create("InitializerListEntry", null, charConst);
-	    initEntry.setLocation(node.getLocation());
-	    if(i == 0)    operands = new xtc.util.Pair<Object>(initEntry);
-	    else          operands = operands.append(new xtc.util.Pair<Object>(initEntry));
-	  }
-	  
-	  GNode initListNode = GNode.createFromPair("InitializerList", operands);
-	  cAnalyzer.processExpression(initListNode);
-	  return initListNode;
-	}
-
+  
+  private void updateCurrentBlock(BasicBlock block) {
+    /* Add the statements to the current block */
+    flushPostStatements();
+    currentBlock = block;
+  }
+  
 	@Override
   public Object unableToVisit(Node node) {
     IOUtils
@@ -707,16 +1263,65 @@ public class CfgBuilder extends Visitor {
         .flush();
     return node;
   }
+	
+	private boolean isZero(Node node) {
+		Type type = CType.getType(node);
+		if(!type.hasConstant())		return false;
+		Constant constant = type.getConstant();
+		if(!constant.isNumber())	return false;
+		
+  	switch(constant.getKind()) {
+		case BIG_INTEGER:
+			return constant.bigIntValue().equals(BigInteger.ZERO);
+		case DOUBLE:
+			return constant.doubleValue() == 0;
+		case INTEGER:
+			return constant.longValue() == 0;
+		default:
+			return false;
+  	}
+	}
+	
+	private boolean isOne(Node node) {
+		Type type = CType.getType(node);
+		if(!type.hasConstant())		return false;
+		Constant constant = type.getConstant();
+		if(!constant.isNumber())	return false;
+		
+  	switch(constant.getKind()) {
+		case BIG_INTEGER:
+			return constant.bigIntValue().equals(BigInteger.ONE);
+		case DOUBLE:
+			return constant.doubleValue() == 1;
+		case INTEGER:
+			return constant.longValue() == 1;
+		default:
+			return false;
+  	}
+	}
 
   public CExpression visitAdditiveExpression(GNode node) {
     /* recurse on operands to tease out any side-effecting expressions */
     CExpression lhsExpr = recurseOnExpression(node.getNode(0));
     CExpression rhsExpr = recurseOnExpression(node.getNode(2));
     
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, lhsExpr.getSourceNode());
-    freshNode.set(2, rhsExpr.getSourceNode());
-    return expressionOf(freshNode);
+    Node lhsNode = lhsExpr.getSourceNode();
+    Node rhsNode = rhsExpr.getSourceNode();
+    
+    String op = node.getString(1);
+    
+    if("+".equals(op)) {
+    	if(isZero(lhsNode))	return rhsExpr;
+    	if(isZero(rhsNode))	return lhsExpr;
+    }
+
+    if("-".equals(op)) {
+    	if(isZero(rhsNode))	return lhsExpr;
+    }
+    
+    node.set(0, lhsNode);
+    node.set(2, rhsNode);
+    return expressionOf(node);
   }
   
   public CExpression visitMultiplicativeExpression(GNode node) {
@@ -724,23 +1329,37 @@ public class CfgBuilder extends Visitor {
     CExpression lhsExpr = recurseOnExpression(node.getNode(0));
     CExpression rhsExpr = recurseOnExpression(node.getNode(2));
     
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, lhsExpr.getSourceNode());
-    freshNode.set(2, rhsExpr.getSourceNode());
-    return expressionOf(freshNode);
+    Node lhsNode = lhsExpr.getSourceNode();
+    Node rhsNode = rhsExpr.getSourceNode();
+    
+    String op = node.getString(1);
+    
+    if("*".equals(op)) {
+    	if(isOne(lhsNode))	return rhsExpr;
+    	if(isOne(rhsNode))	return lhsExpr;
+    }
+
+    if("/".equals(op)) {
+    	if(isOne(rhsNode))	return lhsExpr;
+    }
+    
+    node.set(0, lhsNode);
+    node.set(2, rhsNode);
+    return expressionOf(node);
   }
 
-  public CExpression visitAddressExpression(GNode node) {
-  	CExpression fstExpr = recurseOnExpression(node.getNode(0));
+  public CExpression visitAddressExpression(GNode node) 
+  		throws CfgBuilderException {
+  	CExpression opExpr = recurseOnExpression(node.getNode(0));
   	
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, fstExpr.getSourceNode());
-    if(fstExpr.getSourceNode().hasName("PrimaryIdentifier")) {
-    	String name = fstExpr.getSourceNode().getString(0);
+    if(opExpr.getSourceNode().hasName("PrimaryIdentifier")) {
+    	String name = opExpr.getSourceNode().getString(0);
     	IRVarInfo info = symbolTable.lookup(name);
-    	info.setProperty(Identifiers.HOARE_VAR, false);
+    	info.disableLogicLabel();
     }
-    return expressionOf(freshNode);
+    
+  	node.set(0, opExpr.getSourceNode());
+    return expressionOf(node);
   }
 
   public CExpression visitAssignmentExpression(GNode node) {
@@ -756,56 +1375,65 @@ public class CfgBuilder extends Visitor {
       IOUtils.debugC(rhsNode).pln().flush();
     }
     
-    return processAssignment(node, lhsNode, assignOperator, rhsNode);
+    CExpression lhsExpr = recurseOnExpression(lhsNode);
+    CExpression rhsExpr = recurseOnExpression(rhsNode);
+    
+    /* The assignment operator may be one of +=, -=, et al., in which case the
+     * rhs is the whole statement, e.g., x += y becomes something like (assign x
+     * (x += y)) instead of (assign x (x+y)), because replacing the operator
+     * here would be a PITA. It's up to the expression visitor to turn that into
+     * an addition.
+     */
+    if (!"=".equals(assignOperator)) rhsExpr = expressionOf(node);
+    addStatement(Statement.assign(node, lhsExpr, rhsExpr));
+    
+    return lhsExpr;
   }
 
 	public CExpression visitBitwiseAndExpression(GNode node) {
     CExpression lhsExpr = recurseOnExpression(node.getNode(0));
     CExpression rhsExpr = recurseOnExpression(node.getNode(1));
     
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, lhsExpr.getSourceNode());
-    freshNode.set(1, rhsExpr.getSourceNode());
-    return expressionOf(freshNode);
+    node.set(0, lhsExpr.getSourceNode());
+    node.set(1, rhsExpr.getSourceNode());
+    return expressionOf(node);
   }
 	
 	public CExpression visitBitwiseNegationExpression(GNode node) {
     CExpression srcExpr = recurseOnExpression(node.getNode(0));
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, srcExpr.getSourceNode());
-    return expressionOf(freshNode);
+    node.set(0, srcExpr.getSourceNode());
+    return expressionOf(node);
   }
   
   public CExpression visitBitwiseOrExpression(GNode node) {
     CExpression lhsExpr = recurseOnExpression(node.getNode(0));
     CExpression rhsExpr = recurseOnExpression(node.getNode(1));
     
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, lhsExpr.getSourceNode());
-    freshNode.set(1, rhsExpr.getSourceNode());
-    return expressionOf(freshNode);
+    node.set(0, lhsExpr.getSourceNode());
+    node.set(1, rhsExpr.getSourceNode());
+    return expressionOf(node);
   }
   
   public CExpression visitBitwiseXorExpression(GNode node) {
     CExpression lhsExpr = recurseOnExpression(node.getNode(0));
     CExpression rhsExpr = recurseOnExpression(node.getNode(1));
     
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, lhsExpr.getSourceNode());
-    freshNode.set(1, rhsExpr.getSourceNode());
-    return expressionOf(freshNode);
+    node.set(0, lhsExpr.getSourceNode());
+    node.set(1, rhsExpr.getSourceNode());
+    return expressionOf(node);
   }
 
   public void visitBreakStatement(GNode node) {
     debug().loc(node).p(' ').indent().pln("break").flush();
     /* Add a skip as an anchor for the source line. */
-    currentBlock.addStatement(Statement.skip(node));
+    addStatement(Statement.skip(node));
     currentCfg.addEdge(currentBlock, getBreakTarget());
 
     /* This block will be a repository for dead code! 
      * TODO: Detect and eliminate vestigial blocks?
      */
-    currentBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+    BasicBlock newBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+    updateCurrentBlock(newBlock);
   }
 
   public void visitCaseLabel(GNode node) {
@@ -824,21 +1452,19 @@ public class CfgBuilder extends Visitor {
 
     CExpression valExpr = recurseOnExpression(val);
     CaseGuard guard = new CaseGuard(getCaseExpression(), valExpr);
-    currentCfg.addEdge(getSwitchEntry(), guard, currentBlock);
+    this.buildCaseEdgeWithGuardSideEffect(getSwitchEntry(), guard, currentBlock);
+//    currentCfg.addEdge(getSwitchEntry(), guard, currentBlock);
     addCaseGuard(guard);
   }
 
-  public CExpression visitCastExpression(GNode node) {
-    if(isMalloc.apply(node.getNode(1)))  return recurseOnExpression(node.getNode(1));
-    
+  public CExpression visitCastExpression(GNode node) {    
     CExpression typeExpr = recurseOnExpression(node.getNode(0));
     CExpression opExpr = recurseOnExpression(node.getNode(1));
-//    addStatement(Statement.cast(node, typeExpr, opExpr));
     
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, typeExpr.getSourceNode());
-    freshNode.set(1, opExpr.getSourceNode());
-    return expressionOf(freshNode); // (int *)p;
+    node.set(0, typeExpr.getSourceNode());
+    node.set(1, opExpr.getSourceNode());
+    
+    return expressionOf(node);
   }
 
   public CExpression visitCharacterConstant(GNode node) {
@@ -846,15 +1472,41 @@ public class CfgBuilder extends Visitor {
   }
   
   public CExpression visitConditionalExpression(GNode node) {
-  	CExpression condExpr = recurseOnExpression(node.getNode(0));
-  	CExpression trueExpr = recurseOnExpression(node.getNode(1));
-  	CExpression falseExpr = recurseOnExpression(node.getNode(2));
+  	Node varNode = defineCondVarNode(node.getLocation());
+  	CExpression varExpr = recurseOnExpression(varNode);
   	
-  	GNode freshNode = createCopy(node);
-  	freshNode.set(0, condExpr.getSourceNode());
-  	freshNode.set(1, trueExpr.getSourceNode());
-  	freshNode.set(2, falseExpr.getSourceNode());
-    return expressionOf(freshNode);
+  	xtc.util.SymbolTable.Scope currentScope = symbolTable.getCurrentScope();
+    BasicBlock entryBlock = currentCfg.newSwitchBlock(node.getLocation(), currentScope);
+    BasicBlock ifBlock = currentCfg.newBlock(currentScope);
+    BasicBlock elseBlock = currentCfg.newBlock(currentScope);
+    BasicBlock exitBlock = currentCfg.newBlock(currentScope);
+
+    currentCfg.addEdge(currentBlock, entryBlock);
+    
+    updateCurrentBlock(entryBlock);
+    
+    CExpression condExpr = recurseOnExpression(node.getNode(0));
+    
+    Guard ifBranch = Guard.create(condExpr);
+    Guard elseBranch = ifBranch.negate();
+    
+    buildEdgeWithGuardSideEffect(currentBlock, ifBranch, ifBlock, elseBranch, elseBlock);
+    
+    updateCurrentBlock(ifBlock);
+    CExpression trueExpr = recurseOnExpression(node.getNode(1));
+    addStatement(Statement.assign(node, varExpr, trueExpr));
+    closeCurrentBlock(exitBlock);
+
+    updateCurrentBlock(elseBlock);
+    CExpression falseExpr = recurseOnExpression(node.getNode(2));
+    addStatement(Statement.assign(node, varExpr, falseExpr));
+    closeCurrentBlock(exitBlock);
+    updateCurrentBlock(exitBlock);
+    
+  	node.set(0, condExpr.getSourceNode());
+  	node.set(1, trueExpr.getSourceNode());
+  	node.set(2, falseExpr.getSourceNode());
+    return varExpr;
   }
 
   public void visitCommaExpression(GNode node) {
@@ -880,14 +1532,15 @@ public class CfgBuilder extends Visitor {
   public void visitContinueStatement(GNode node) {
     debug().loc(node).indent().pln("continue").flush();
     /* Add a skip as an anchor for the source line. */
-    currentBlock.addStatement(Statement.skip(node));
+    addStatement(Statement.skip(node));
     currentCfg.addEdge(currentBlock, getLoopEntry());
 
     /*
      * This block will be a repository for dead code! 
      * TODO: Detect and eliminate vestigial blocks?
      */
-    currentBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+    BasicBlock newBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+    updateCurrentBlock(newBlock);
   }
 
   public void visitDeclaration(GNode node) {
@@ -911,22 +1564,6 @@ public class CfgBuilder extends Visitor {
     		dispatch((Node) o); flushPostStatements();
       }
     }
-  }
-  
-  public void visitEnumerationTypeDefinition(GNode node) {
-  	GNode enumList = node.getGeneric(2);
-  	if(enumList != null)  {
-  		List<CExpression> enumExprList = visitEnumeratorList(enumList);
-  		addStatement(Statement.declareEnum(node, enumExprList));
-  	}
-  }
-  
-  public List<CExpression> visitEnumeratorList(GNode node) {
-  	List<CExpression> enumList = Lists.newArrayListWithCapacity(node.size());
-    for (Object elem : node) {
-      enumList.add(recurseOnExpression((Node) elem));
-    }
-    return enumList;
   }
   
   public CExpression visitEnumerator(GNode node) {
@@ -955,7 +1592,8 @@ public class CfgBuilder extends Visitor {
         .flush();
 
     IRBooleanExpression guard = new DefaultCaseGuard(node, getCaseGuards());
-    currentCfg.addEdge(getSwitchEntry(), guard, currentBlock);
+    buildCaseEdgeWithGuardSideEffect(getSwitchEntry(), guard, currentBlock);
+//    currentCfg.addEdge(getSwitchEntry(), guard, currentBlock);
     setHasDefault();
   }
 
@@ -963,10 +1601,9 @@ public class CfgBuilder extends Visitor {
     CExpression lhsExpr = recurseOnExpression(node.getNode(0));
     CExpression rhsExpr = recurseOnExpression(node.getNode(2));
     
-  	GNode freshNode = createCopy(node);
-  	freshNode.set(0, lhsExpr.getSourceNode());
-  	freshNode.set(2, rhsExpr.getSourceNode());
-    return expressionOf(freshNode);
+    node.set(0, lhsExpr.getSourceNode());
+    node.set(2, rhsExpr.getSourceNode());
+    return expressionOf(node);
   }
 
   public List<CExpression> visitExpressionList(GNode node) {
@@ -986,18 +1623,71 @@ public class CfgBuilder extends Visitor {
   /* Do-nothing implementation to make errors from header files go away. */
   public CExpression visitFunctionDeclarator(GNode node) {
     // TODO: Something
-    return expressionOf(node);
+    return recurseOnExpression(node.getNode(0));
+  }
+  
+  public CExpression visitAttributedDeclarator(GNode node) {
+  	return recurseOnExpression(node.getNode(1));
   }
   
   public CExpression visitArrayDeclarator(GNode node) {
-    Node declareNode = node.getNode(0);
-    return recurseOnExpression(declareNode);
+    Node declareNode = CAnalyzer.getDeclaredId(node);
+    Type type = CType.getType(declareNode);
+    if(!CType.isVarLengthArray(type))	
+    	return recurseOnExpression(declareNode);
+    
+    // array with variable length
+    Node sizeNode = getSizeNode(node, CType.getType(declareNode));
+    CExpression resExpr = expressionOf(declareNode);
+    CExpression sizeExpr = expressionOf(sizeNode);
+    
+    String name = declareNode.getString(0);
+    debug().pln(
+        "Looking up binding for variable: " + name + " in symbol table "
+            + symbolTable);
+    assert (symbolTable.isDefined(name));
+    
+    /* attach type and scope properties to node */
+  	symbolTable.mark(declareNode);
+    IRVarInfo varInfo = symbolTable.lookup(name);
+    		
+    varInfo.setDeclarationNode(declareNode);
+    varInfo.disableLogicLabel();
+    
+    Statement declareStmt = Statement.declareVarArray(node, resExpr, sizeExpr);    
+    addStatement(declareStmt, varInfo.isStatic());
+    
+    Node primaryId = GNode.create("PrimaryIdentifier", name);
+    primaryId.setLocation(node.getLocation());
+    type.mark(primaryId);
+    symbolTable.mark(primaryId);
+    return expressionOf(primaryId);
   }
   
-  @SuppressWarnings("unchecked")
-  public CExpression visitFunctionCall(GNode node) {
-    Preconditions.checkArgument(node.getNode(0).hasName("PrimaryIdentifier"));
-    Node funNode = node.getNode(0);
+  private Node getSizeNode(Node node, Type type) {
+  	Location loc = node.getLocation();
+  	if(!type.resolve().isArray()) {
+  		long size = CType.getInstance().getSize(type);
+      Node sizeNode = GNode.create("IntegerConstant", String.valueOf(size));
+      sizeNode.setLocation(loc);	cop.typeInteger(String.valueOf(size)).mark(sizeNode);
+      return sizeNode;
+  	}
+  	
+  	Type cellType = type.resolve().toArray().getType();
+  	Node cellNode = node.getNode(0);
+  	Node lengthNode = node.getNode(2);	
+  	recurseOnExpression(lengthNode);
+  	
+  	Node cellSizeNode = getSizeNode(cellNode, cellType);
+  	Node sizeNode = GNode.create("MultiplicativeExpression", cellSizeNode, "*", lengthNode);
+  	sizeNode.setLocation(loc);	CType.getType(cellSizeNode).mark(sizeNode);
+  	
+  	return sizeNode;
+  }
+  
+  
+  public CExpression visitFunctionCall(GNode node) throws CfgBuilderException {
+  	Node funNode = node.getNode(0);
     Node argList = node.getNode(1);
 
     if (debugEnabled()) {
@@ -1015,147 +1705,108 @@ public class CfgBuilder extends Visitor {
       debug().pln(')').flush();
     }
     
-    String funcName = funNode.getString(0);
+    String funcName = CAnalyzer.toFunctionName(funNode);
+    Location loc = node.getLocation();
     
-    /*
-     *  For special functions like "malloc" and "free", we treat them differently
-     *  1) malloc: just return the expression, do not add statement wait for the 
-     *  visitAssignmentExpression to do that, since in malloc(x), we just know 
-     *  the size "x", but the regionName cannot be known until return to the assign
-     *  statement as y = malloc(x). Then we could add alloc(y, x)) by calling the 
-     *  internal function alloc(...).
-     *  2) free: could add statement directly as free(x)
-     *  3) for others non-reserved functions, add functionCall statement, we'll 
-     *  do the real calling as pick the cfg of the function in the RunProcessor
+    recurseOnExpression(funNode);
+    @SuppressWarnings("unchecked")
+    List<CExpression> argExprs = (List<CExpression>) dispatch(argList);
+   
+    /* For non-reserved functions, add functionCall statement, we'll do the
+     * real calling as pick the cfg of the function in the RunProcessor
      */
   	
     if(ReservedFunction.FUN_FORALL.equals(funcName)
     		|| ReservedFunction.FUN_EXISTS.equals(funcName)
-    		|| ReservedFunction.MALLOC.equals(funcName) 
     		|| ReservedFunction.FUN_IMPLIES.equals(funcName)
-    		|| ReservedFunction.FUN_VALID.equals(funcName)
+    		|| ReservedFunction.FUN_VALID_ACCESS.equals(funcName)
     		|| ReservedFunction.FUN_VALID_MALLOC.equals(funcName)
     		|| ReservedFunction.FUN_VALID_FREE.equals(funcName)) {
     	return expressionOf(node);
     }
+  	
+		if(ReservedFunction.MALLOC.equals(funcName)) {
+			Type retType = ReservedFunction.getSignature(funcName).getReturnType();
+			Node returnNode = defineReturnVarNode(funcName, retType, loc);
+			CExpression returnExpr = recurseOnExpression(returnNode);
+			addStatement(Statement.malloc(node, returnExpr, argExprs.get(0)));
+			return returnExpr;
+		}
+		
+		if(ReservedFunction.CALLOC.equals(funcName)) {
+			Type retType = ReservedFunction.getSignature(funcName).getReturnType();
+			Node returnNode = defineReturnVarNode(funcName, retType, loc);
+			CExpression returnExpr = recurseOnExpression(returnNode);
+			addStatement(Statement.calloc(node, returnExpr, argExprs.get(0), argExprs.get(1)));
+			return returnExpr;
+		}
+		
+		if(ReservedFunction.ALLOCA.equals(funcName) || ReservedFunction.BUILTIN_ALLOCA.equals(funcName)) {
+			Type retType = ReservedFunction.getSignature(funcName).getReturnType();
+			Node returnNode = defineReturnVarNode(funcName, retType, loc);
+			CExpression returnExpr = recurseOnExpression(returnNode);
+			addStatement(Statement.alloca(node, returnExpr, argExprs.get(0)));
+			return returnExpr;
+		}
     
-    List<CExpression> argExprs = (List<CExpression>) dispatch(argList);
-  		
 		if(ReservedFunction.FREE.equals(funcName)) {
-      GNode funcNode = GNode.create("PrimaryIdentifier", ReservedFunction.FUN_VALID_FREE);
-      GNode validFreeNode = GNode.create("FunctionCall", funcNode, argList);
-      Location loc = node.getLocation();
-      funcNode.setLocation(loc);
-      validFreeNode.setLocation(loc);
-      cAnalyzer.processExpression(validFreeNode);
-      addStatement(Statement.assertStmt(validFreeNode, expressionOf(validFreeNode)));
       addStatement(Statement.free(node, argExprs.get(0)));
       return expressionOf(node);
     }
 		
-		if(ReservedFunction.EXIT.equals(funcName)) {
-    	addStatement(Statement.returnStmt(node, argExprs.get(0)));
-    	currentCfg.addEdge(currentBlock, currentCfg.getExit());
+		if(ReservedFunction.EXIT.equals(funcName) || ReservedFunction.ABORT.equals(funcName)) {
+    	currentCfg.addEdge(currentBlock, globalCfg.getExit());
     	return expressionOf(node);
     }
+		
+		if(ReservedFunction.VERIFIER_ASSUME.equals(funcName)) {
+			addStatement(Statement.assumeStmt(node, argExprs.get(0), false));
+			return expressionOf(node);
+    } 
 		
 		if(ReservedFunction.ANNO_ASSERT.equals(funcName)) {
 			if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION)) {
 				addStatement(Statement.assertStmt(node, argExprs.get(0)));
-			} else {
-				CExpression funExpr = expressionOf(funNode);
-	  		addStatement(Statement.functionCall(node, funExpr, argExprs));
 			}
 			return expressionOf(node);
     } 
 
 		if(ReservedFunction.ANNO_ASSUME.equals(funcName)) {
 			if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION)) {
-				addStatement(Statement.assumeStmt(node, argExprs.get(0)));
-			} else {
-				CExpression funExpr = expressionOf(funNode);
-	  		addStatement(Statement.functionCall(node, funExpr, argExprs));
+				addStatement(Statement.assumeStmt(node, argExprs.get(0), false));
 			}
 			return expressionOf(node);
     } 
 
 		if(ReservedFunction.ANNO_INVARIANT.equals(funcName)) {
 			if(Preferences.isSet(Preferences.OPTION_INLINE_ANNOTATION)) {
-				addStatement(Statement.assumeStmt(node, argExprs.get(0)));
+				addStatement(Statement.assumeStmt(node, argExprs.get(0), false));
 				addStatement(Statement.assertStmt(node, argExprs.get(0)));
-			} else {
-				CExpression funExpr = expressionOf(funNode);
-	  		addStatement(Statement.functionCall(node, funExpr, argExprs));
 			}
 			return expressionOf(node);
     }
-
-  	/*
-    // [chris 1/8/2010] FIXME: avoid a lookup on the function name, since it
-    // will probably return null
-    if( funNode.hasName("PrimaryIdentifier") ) {
-      funExpr = CExpression.create(funNode,symbolTable.getCurrentScope());
-    } else {
-      funExpr = recurseOnExpression(funNode);
-    }*/
 		
-    if(lookupType(node).isVoid()) { // void return type of function
-    	
-  		/* Isolate function call into a fresh block */
-  		
-      BasicBlock funcBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
-      currentCfg.addEdge(currentBlock, funcBlock);
-      flushPostStatements(); // Add the statements to the current block
-      
-      currentBlock = funcBlock;
-      
+		if(ReservedFunction.MEMSET.equals(funcName) 
+				|| ReservedFunction.MEMCOPY.equals(funcName)) {
+			CExpression funExpr = expressionOf(funNode);
+  		addStatement(Statement.functionCall(node, funExpr, null, argExprs));
+			return argExprs.get(0);
+		}		
+    
+  	Type retType = CType.getType(node).resolve();
+  	if(!retType.isVoid()) {
+  		Node returnNode = defineReturnVarNode(funcName, retType, loc);
+  		CExpression returnExpr = recurseOnExpression(returnNode);
       CExpression funExpr = expressionOf(funNode);
-      Statement stmt = Statement.functionCall(node, funExpr, argExprs);
-      stmt.setProperty(Identifiers.STMTFUNC, true);
-      stmt.setProperty(Identifiers.FUNCNAME, funcName);
-      
-      if(argExprs != null)	stmt.setProperty(Identifiers.ARGUMENTS, argExprs);
-      
+      Statement stmt = Statement.functionCall(node, funExpr, returnExpr, argExprs);
       addStatement(stmt);
-      
-      BasicBlock freshBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
-      currentCfg.addEdge(currentBlock, freshBlock);
-      flushPostStatements(); // Add the statements to the current block
-      currentBlock = freshBlock;
-      
-      return expressionOf(node);
-    }
-    
-  	Node returnNode = defineReturnVarNode(funcName, node);
-  	
-		/* Isolate function call into a fresh block */
-		
-    BasicBlock funcBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
-    currentCfg.addEdge(currentBlock, funcBlock);
-    flushPostStatements(); // Add the statements to the current block
-    
-    currentBlock = funcBlock;
-    
-    GNode assignNode = GNode.create("AssignmentExpression", returnNode, "=", node);
-    cAnalyzer.processExpression(assignNode);
-    assignNode.setLocation(node.getLocation());      
-    CExpression returnExpr = recurseOnExpression(returnNode);
-    CExpression funCallExpr = expressionOf(node);
-    Statement stmt = Statement.assign(assignNode, returnExpr, funCallExpr);
-    stmt.setProperty(Identifiers.STMTFUNCASSIGN, true);
-    stmt.setProperty(Identifiers.FUNCNAME, funcName);
-    
-    if(argExprs != null)	stmt.setProperty(Identifiers.ARGUMENTS, argExprs);
-  	
-    addStatement(stmt);
-  	
-    BasicBlock freshBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
-    currentCfg.addEdge(currentBlock, freshBlock);
-    flushPostStatements(); // Add the statements to the current block
-    currentBlock = freshBlock;
-    
-  	return returnExpr;
-  	
+      return returnExpr;
+  	} else {
+      CExpression funExpr = expressionOf(funNode);
+      Statement stmt = Statement.functionCall(node, funExpr, null, argExprs);
+      addStatement(stmt);
+      return funExpr;
+  	}
   }
 
   public void visitDoStatement(GNode node) {
@@ -1165,7 +1816,7 @@ public class CfgBuilder extends Visitor {
     if (debugEnabled()) {
       debug().loc(node).p(' ');
       pushAlign();
-      debug().p(" while(");
+      debug().p(" do(");
       IOUtils.debugC(test).pln(")").incr().flush();
     }
     
@@ -1177,27 +1828,25 @@ public class CfgBuilder extends Visitor {
     currentCfg.addEdge(currentBlock, entryBlock);
     
     pushScope(entryBlock, exitBlock);
+    updateCurrentBlock(entryBlock);
     
-    currentBlock = entryBlock;
+    currentCfg.addEdge(currentBlock, bodyBlock);
+    
+    updateCurrentBlock(bodyBlock);
+    dispatch(body);
     
     CExpression testExpr = recurseOnExpression(test);
-    
-    /* Add the statements to the current block */
-    flushPostStatements();
 
     Guard ifBranch = Guard.create(testExpr);
     Guard elseBranch = ifBranch.negate();
     
-    currentCfg.addEdge(currentBlock, ifBranch, bodyBlock);
-    currentCfg.addEdge(currentBlock, elseBranch, exitBlock);
-    
-    currentBlock = bodyBlock;
-    dispatch(body);
-    
-    currentCfg.addEdge(currentBlock, entryBlock);
+    buildEdgeWithGuardSideEffect(currentBlock, ifBranch, entryBlock, elseBranch, exitBlock);
+//    currentCfg.addEdge(currentBlock, ifBranch, entryBlock);
+//    currentCfg.addEdge(currentBlock, elseBranch, exitBlock);
     
     closeCurrentBlock(entryBlock);  // close the loop
-    currentBlock = exitBlock;  // exit the loop
+    
+    updateCurrentBlock(exitBlock);  // exit the loop
     popScope();
 
     if( debugEnabled() ) {
@@ -1217,6 +1866,7 @@ public class CfgBuilder extends Visitor {
   	List<Statement> preAppendStatements = appendStatements;
   	int preExpressionDepth = expressionDepth;
   	ControlFlowGraph preCfg = currentCfg;
+  	CExpression preReturnExpr = returnExpr;  	
   	
   	/* Analyze current function definition */
     final GNode returnType = node.getGeneric(1);
@@ -1230,18 +1880,20 @@ public class CfgBuilder extends Visitor {
      */
     enterScope(node);
     
+    recurseOnExpression(identifier);
+    
     currentCfg = new ControlFlowGraph(node, functionName, symbolTable
         .getCurrentScope());
-    currentBlock = currentCfg.getEntry();
+    updateCurrentBlock(currentCfg.getEntry());
     addStatement(Statement.scopeEnt(node));
     
-    currentBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+    BasicBlock block = currentCfg.newBlock(symbolTable.getCurrentScope());
+    currentCfg.addEdge(currentBlock, block);
+    updateCurrentBlock(block);
     
     flushScopes();
-    pushScope(currentBlock, currentCfg.getExit());
+    pushScope(currentCfg.getEntry(), currentCfg.getExit());
     
-    currentCfg.addEdge(currentCfg.getEntry(), currentBlock);
-
     if (debugEnabled()) {
       debug().loc(node).p(' ');
       pushAlign();
@@ -1258,7 +1910,6 @@ public class CfgBuilder extends Visitor {
       parameters = parameters.getGeneric(0);
     }
     
-    cAnalyzer.processExpression(parameters);
     if (parameters != null) {
       for (Object o : parameters) {
         assert (o instanceof Node);
@@ -1267,16 +1918,27 @@ public class CfgBuilder extends Visitor {
         dispatch(((Node) o).getNode(1));
       }
     }
-
+    
+    Type retType = symbolTable.lookupType(functionName).deannotate()
+    		.toFunction().getResult();
+    if(!retType.isVoid()) {
+    	Node retNode = defineReturnVarNode(functionName, retType, node.getLocation());
+    	returnExpr = expressionOf(retNode);
+    }
+    
     /* recurse on the function body */
     final GNode body = node.getGeneric(4);
     dispatch(body);
     
     currentCfg.addEdge(currentBlock, currentCfg.getExit());
+    updateCurrentBlock(currentCfg.getExit());
     
-    currentBlock = currentCfg.getExit();
+    if(!retType.isVoid()) {
+    	Statement retStmt = Statement.returnStmt(node, returnExpr);
+    	addStatement(retStmt);
+    }
     
-    addStatement(Statement.scopeExit(symbolTable.getCurrentScope().getName()));
+    addStatement(Statement.scopeExit(functionName));
     
     cfgs.put(node, currentCfg);
 
@@ -1285,6 +1947,8 @@ public class CfgBuilder extends Visitor {
       debug().decr().pln("} // end function").flush().reset();
       currentCfg.format(debug());
     }
+    
+    flushPostStatements();
     exitScope();
     
     /* Pop global info */
@@ -1293,6 +1957,7 @@ public class CfgBuilder extends Visitor {
     postStatements = prePostStatements;
     appendStatements = preAppendStatements;
     expressionDepth = preExpressionDepth;
+    returnExpr = preReturnExpr;
   }
 
   public void visitGotoStatement(GNode node) {
@@ -1309,7 +1974,8 @@ public class CfgBuilder extends Visitor {
     }
     BasicBlock labelBlock = labeledBlocks.get(key);
     currentCfg.addEdge(currentBlock, labelBlock);
-    currentBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+    BasicBlock newBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+    updateCurrentBlock(newBlock);
   }
   
   public void visitIfElseStatement(GNode node) {
@@ -1331,23 +1997,19 @@ public class CfgBuilder extends Visitor {
     BasicBlock exitBlock = currentCfg.newBlock(currScope);
 
     currentCfg.addEdge(currentBlock, entryBlock);
-    
-    currentBlock = entryBlock;
+    updateCurrentBlock(entryBlock);
     
     CExpression testExpr = recurseOnExpression(test);
-
-    /* Add the location of the conditional test to the current block */
-    entryBlock.addLocation(testExpr.getLocation());
-    /* Add the statements to the current block */
-    addAndFlushPostStatements(currentBlock);
     
     Guard ifBranch = Guard.create(testExpr);
     Guard elseBranch = ifBranch.negate();
     
-    currentCfg.addEdge(currentBlock, ifBranch, ifBlock);
-    currentCfg.addEdge(currentBlock, elseBranch, elseBlock);
+    buildEdgeWithGuardSideEffect(currentBlock, ifBranch, ifBlock, elseBranch, elseBlock);
     
-    currentBlock = ifBlock;
+//    currentCfg.addEdge(currentBlock, ifBranch, ifBlock);
+//    currentCfg.addEdge(currentBlock, elseBranch, elseBlock);
+    
+    updateCurrentBlock(ifBlock);
     dispatch(ifPart);
     closeCurrentBlock(exitBlock);
 
@@ -1356,15 +2018,19 @@ public class CfgBuilder extends Visitor {
       debug().p(' ').decr().indent().pln("else").incr().flush();
     }
     
-    currentBlock = elseBlock;
+    updateCurrentBlock(elseBlock);
     dispatch(elsePart);
     closeCurrentBlock(exitBlock);
-    currentBlock = exitBlock;
+    updateCurrentBlock(exitBlock);
 
     if( debugEnabled() ) {
     popAlign();
     debug().decr().pln("}").flush();
     }
+  }
+  
+  public void visitEmptyStatement(GNode node) {
+  	return;
   }
 
   public void visitIfStatement(GNode node) {
@@ -1381,26 +2047,21 @@ public class CfgBuilder extends Visitor {
     BasicBlock exitBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
 
     currentCfg.addEdge(currentBlock, entryBlock);
-    
-    currentBlock = entryBlock;
+    updateCurrentBlock(entryBlock);
     
     CExpression testExpr = recurseOnExpression(test);
-
-    /* Add the location of the conditional test to the current block */
-    entryBlock.addLocation(testExpr.getLocation());
-    /* Add the statements to the current block */
-    addAndFlushPostStatements(currentBlock);
     
     Guard ifBranch = Guard.create(testExpr);
     Guard elseBranch = ifBranch.negate();
     
-    currentCfg.addEdge(currentBlock, ifBranch, ifBlock);
-    currentCfg.addEdge(currentBlock, elseBranch, exitBlock);
+    buildEdgeWithGuardSideEffect(currentBlock, ifBranch, ifBlock, elseBranch, exitBlock);
+//    currentCfg.addEdge(currentBlock, ifBranch, ifBlock);
+//    currentCfg.addEdge(currentBlock, elseBranch, exitBlock);
 
-    currentBlock = ifBlock;
+    updateCurrentBlock(ifBlock);
     dispatch(ifPart);
     closeCurrentBlock(exitBlock);
-    currentBlock = exitBlock;
+    updateCurrentBlock(exitBlock);
 
     debug().decr().flush();
   }
@@ -1412,33 +2073,30 @@ public class CfgBuilder extends Visitor {
   }
 
   public CExpression visitIndirectionExpression(GNode node) {
-  	memoryCheck(node);
-    CExpression fstExpr = recurseOnExpression(node.getNode(0));
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, fstExpr.getSourceNode());
-    return expressionOf(freshNode);
+    CExpression opExpr = recurseOnExpression(node.getNode(0));
+    node.set(0, opExpr.getSourceNode());
+    return expressionOf(node);
   }
 
   public void visitInitializedDeclarator(GNode node) {
-    Node varNode = node.getNode(1);
-    CExpression varExpr = recurseOnExpression(varNode);
-    Object val = node.get(4);
-    if(val == null) return;
-    /* If there is an initializer, add as an assignment statement */
-    processAssignment(node, varExpr.getSourceNode(), "=", (Node)val);
-  }
-
-  public List<CExpression> visitInitializerList(GNode node) {
-    List<CExpression> subExprList = Lists.newArrayListWithCapacity(node.size());
-    for (Object elem : node) {
-      CExpression subExpr = recurseOnExpression((Node) elem);
-      subExprList.add(subExpr);
-    }
-    return subExprList;
-  }
-
-  public CExpression visitInitializerListEntry(GNode node) {
-    return expressionOf(node.getNode(1));
+    GNode declarator = (GNode) node.getNode(1);
+    final GNode  identifier  = CAnalyzer.getDeclaredId(declarator);
+    Type varType = symbolTable.lookupType(identifier.getString(0));
+    varType.mark(identifier);
+    
+    boolean isStatic = symbolTable.lookup(identifier.getString(0)).isStatic();
+  	CExpression varExpr = recurseOnExpression(declarator);
+    
+    if(node.get(4) == null && !isStatic) return;
+  	if(Tag.FUNCTION.equals(varType.tag())) return; // no initialization for function
+    
+  	boolean oldStaticEnv = staticEnv;
+  	staticEnv = isStatic;
+  	
+  	new Initializer(node, GNode.cast(varExpr.getSourceNode()), 
+  			node.getGeneric(4), varType).process(isStatic);
+  	
+  	staticEnv = oldStaticEnv;
   }
   
   public CExpression visitIntegerConstant(GNode node) {
@@ -1454,7 +2112,7 @@ public class CfgBuilder extends Visitor {
     Node stmt = node.getNode(1);
     
     BasicBlock labelStmt;
-
+    
     if(label.hasName("NamedLabel")) {
       String labelName = label.getString(0);
       Pair<String, ControlFlowGraph> key = Pair.of(labelName, currentCfg);
@@ -1475,67 +2133,116 @@ public class CfgBuilder extends Visitor {
       setCaseGuard(caseBranch);
       labelStmt = currentCfg.newLabelBlock(node.getLocation(), 
       		symbolTable.getCurrentScope());
-      currentCfg.addEdge(currentBlock, caseBranch, labelStmt);
+      buildCaseEdgeWithGuardSideEffect(currentBlock, caseBranch, labelStmt);
+      
+      // register label stmt for close previous unclosed case
+      registerLabelStmt(node, labelStmt);
     } else if(label.hasName("DefaultLabel")) {
       setHasDefault();
       IRBooleanExpression guard = new DefaultCaseGuard(node, getCaseGuards());
       labelStmt = currentCfg.newLabelBlock(node.getLocation(), 
       		symbolTable.getCurrentScope());
-      currentCfg.addEdge(currentBlock, guard, labelStmt);
+      buildCaseEdgeWithGuardSideEffect(currentBlock, guard, labelStmt);
+      
+      // register label stmt for close previous unclosed case
+      registerLabelStmt(node, labelStmt);
     } else {
     	labelStmt = currentCfg.newLabelBlock(node.getLocation(), 
       		symbolTable.getCurrentScope());
     }
     
-    currentBlock = labelStmt;
+    updateCurrentBlock(labelStmt);
     dispatch(stmt);
   }
 
   public CExpression visitLogicalAndExpression(GNode node) {
-    /* Deal with side-effects */
-    CExpression lhsExpr = recurseOnExpression(node.getNode(0));
-    CExpression rhsExpr = recurseOnExpression(node.getNode(1));
+  	Node varNode = defineCondVarNode(node.getLocation());
+  	CExpression varExpr = recurseOnExpression(varNode);
+  	
+  	xtc.util.SymbolTable.Scope currentScope = symbolTable.getCurrentScope();
+    BasicBlock entryBlock = currentCfg.newSwitchBlock(node.getLocation(), currentScope);
+    BasicBlock ifBlock = currentCfg.newBlock(currentScope);
+    BasicBlock elseBlock = currentCfg.newBlock(currentScope);
+    BasicBlock exitBlock = currentCfg.newBlock(currentScope);
+
+    currentCfg.addEdge(currentBlock, entryBlock);
     
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, lhsExpr.getSourceNode());
-    freshNode.set(1, rhsExpr.getSourceNode());
-    return expressionOf(freshNode);
-  }
-
-  /* NEWADD: visitLogicalOrExpression */
-  public CExpression visitLogicalOrExpression(GNode node) {
-    /* Deal with side-effects */
+    updateCurrentBlock(entryBlock);
     CExpression lhsExpr = recurseOnExpression(node.getNode(0));
-    CExpression rhsExpr = recurseOnExpression(node.getNode(1));
+    
+    Guard elseBranch = Guard.create(lhsExpr);
+    Guard ifBranch = elseBranch.negate();
+    
+		currentCfg.addEdge(currentBlock, ifBranch, ifBlock);
+		currentCfg.addEdge(currentBlock, elseBranch, elseBlock);
+    
+    updateCurrentBlock(ifBlock);
+    addStatement(Statement.assign(node, varExpr, lhsExpr));
+    closeCurrentBlock(exitBlock);
 
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, lhsExpr.getSourceNode());
-    freshNode.set(1, rhsExpr.getSourceNode());
-    return expressionOf(freshNode);
+    updateCurrentBlock(elseBlock);
+    CExpression rhsExpr = recurseOnExpression(node.getNode(1));
+    addStatement(Statement.assign(node, varExpr, rhsExpr));
+    closeCurrentBlock(exitBlock);
+    updateCurrentBlock(exitBlock);
+    
+    node.set(0, lhsExpr.getSourceNode());
+    node.set(1, rhsExpr.getSourceNode());
+    return varExpr;
+  }
+  
+  public CExpression visitLogicalOrExpression(GNode node) {
+  	Node varNode = defineCondVarNode(node.getLocation());
+  	CExpression varExpr = recurseOnExpression(varNode);
+  	
+  	xtc.util.SymbolTable.Scope currentScope = symbolTable.getCurrentScope();
+    BasicBlock entryBlock = currentCfg.newSwitchBlock(node.getLocation(), currentScope);
+    BasicBlock ifBlock = currentCfg.newBlock(currentScope);
+    BasicBlock elseBlock = currentCfg.newBlock(currentScope);
+    BasicBlock exitBlock = currentCfg.newBlock(currentScope);
+
+    currentCfg.addEdge(currentBlock, entryBlock);
+    
+    updateCurrentBlock(entryBlock);
+    CExpression lhsExpr = recurseOnExpression(node.getNode(0));
+    
+    Guard ifBranch = Guard.create(lhsExpr);
+    Guard elseBranch = ifBranch.negate();
+    
+		currentCfg.addEdge(currentBlock, ifBranch, ifBlock);
+		currentCfg.addEdge(currentBlock, elseBranch, elseBlock);
+    
+    updateCurrentBlock(ifBlock);
+    addStatement(Statement.assign(node, varExpr, lhsExpr));
+    closeCurrentBlock(exitBlock);
+
+    updateCurrentBlock(elseBlock);
+    CExpression rhsExpr = recurseOnExpression(node.getNode(1));
+    addStatement(Statement.assign(node, varExpr, rhsExpr));
+    closeCurrentBlock(exitBlock);
+    updateCurrentBlock(exitBlock);
+    
+    node.set(0, lhsExpr.getSourceNode());
+    node.set(1, rhsExpr.getSourceNode());
+    return varExpr;
   }
 
   public CExpression visitLogicalNegationExpression(GNode node) {
-    CExpression fstExpr = recurseOnExpression(node.getNode(0));
-    
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, fstExpr.getSourceNode());
-    return expressionOf(freshNode);
+    CExpression srcExpr = recurseOnExpression(node.getNode(0));
+    node.set(0, srcExpr.getSourceNode());
+    return expressionOf(node);
   }
 
   public CExpression visitSizeofExpression(GNode node) {
-    CExpression fstExpr = recurseOnExpression(node.getNode(0));
-
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, fstExpr.getSourceNode());
-    return expressionOf(freshNode);
+    CExpression srcExpr = recurseOnExpression(node.getNode(0));
+    node.set(0, srcExpr.getSourceNode());
+    return expressionOf(node);
   }
 
   public CExpression visitTypeName(GNode node) {
-    CExpression fstExpr = recurseOnExpression(node.getNode(0));
-
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, fstExpr.getSourceNode());
-    return expressionOf(freshNode);
+    CExpression srcExpr = recurseOnExpression(node.getNode(0));
+    node.set(0, srcExpr.getSourceNode());
+    return expressionOf(node);
   }
 
   public CExpression visitSpecifierQualifierList(GNode node) {
@@ -1543,21 +2250,15 @@ public class CfgBuilder extends Visitor {
   }
 
   public CExpression visitDirectComponentSelection(GNode node) {
-    memoryCheck(node);
-    CExpression fstExpr = recurseOnExpression(node.getNode(0));
-    
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, fstExpr.getSourceNode());
-    return expressionOf(freshNode);
+    CExpression srcExpr = recurseOnExpression(node.getNode(0));
+    node.set(0, srcExpr.getSourceNode());
+    return expressionOf(node);
   }
 
   public CExpression visitIndirectComponentSelection(GNode node) {
-  	memoryCheck(node);
-    CExpression fstExpr = recurseOnExpression(node.getNode(0));
-    
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, fstExpr.getSourceNode());
-    return expressionOf(freshNode);
+    CExpression srcExpr = recurseOnExpression(node.getNode(0));
+    node.set(0, srcExpr.getSourceNode());
+    return expressionOf(node);
   }
   
   public CExpression visitPostdecrementExpression(GNode node) {
@@ -1570,14 +2271,16 @@ public class CfgBuilder extends Visitor {
       IOUtils.debugC(opNode).p(" - 1").pln().flush();
     }
 
+    Type type = CType.getType(node);
+    
     CExpression opExpr = recurseOnExpression(opNode);
-    GNode oneNode = GNode.create("IntegerConstant", "1");    
-    GNode decNode = GNode.create("AdditiveExpression", opNode, "-", oneNode);
-    GNode assignNode = GNode.create("AssignmentExpression", opExpr.getSourceNode(), "=", decNode);
-    oneNode.setLocation(loc);
-    decNode.setLocation(loc);
-    assignNode.setLocation(loc);
-    cAnalyzer.processExpression(assignNode);
+    Node oneNode = GNode.create("IntegerConstant", "1");    
+    Node decNode = GNode.create("AdditiveExpression", opNode, "-", oneNode);
+    Node assignNode = GNode.create("AssignmentExpression", opExpr.getSourceNode(), "=", decNode);
+    oneNode.setLocation(loc); cop.typeInteger("1").mark(oneNode);
+    decNode.setLocation(loc); type.mark(decNode);
+    assignNode.setLocation(loc); type.mark(assignNode);
+    
     Statement stmt = Statement.assign(assignNode, opExpr, CExpression.create(decNode, opExpr.getScope()));
     if(expressionDepth == 0)       addStatement(stmt);
     else                           appendStatements.add(stmt);
@@ -1594,15 +2297,17 @@ public class CfgBuilder extends Visitor {
       IOUtils.debugC(opNode).p(" := ");
       IOUtils.debugC(opNode).p(" + 1").pln().flush();
     }
+    
+    Type type = CType.getType(node);
 
     CExpression opExpr = recurseOnExpression(opNode);
-    GNode oneNode = GNode.create("IntegerConstant", "1");    
-    GNode incNode = GNode.create("AdditiveExpression", opNode, "+", oneNode);
-    GNode assignNode = GNode.create("AssignmentExpression", opExpr.getSourceNode(), "=", incNode);
-    oneNode.setLocation(loc);
-    incNode.setLocation(loc);
-    assignNode.setLocation(loc);
-    cAnalyzer.processExpression(assignNode);
+    Node oneNode = GNode.create("IntegerConstant", "1");    
+    Node incNode = GNode.create("AdditiveExpression", opNode, "+", oneNode);
+    Node assignNode = GNode.create("AssignmentExpression", opExpr.getSourceNode(), "=", incNode);
+    oneNode.setLocation(loc); cop.typeInteger("1").mark(oneNode);
+    incNode.setLocation(loc); type.mark(incNode);
+    assignNode.setLocation(loc); type.mark(assignNode);
+    
     Statement stmt = Statement.assign(assignNode, opExpr, CExpression.
         create(incNode, opExpr.getScope()));
     if(expressionDepth == 0)       addStatement(stmt);
@@ -1621,14 +2326,16 @@ public class CfgBuilder extends Visitor {
       IOUtils.debugC(opNode).p(" - 1").pln().flush();
     }
 
+    Type type = CType.getType(node);
+    
     CExpression opExpr = recurseOnExpression(opNode);
-    GNode oneNode = GNode.create("IntegerConstant", "1");    
-    GNode decNode = GNode.create("AdditiveExpression", opNode, "-", oneNode);
-    GNode assignNode = GNode.create("AssignmentExpression", opExpr.getSourceNode(), "=", decNode);
-    oneNode.setLocation(loc);
-    decNode.setLocation(loc);
-    assignNode.setLocation(loc);
-    cAnalyzer.processExpression(assignNode);  
+    Node oneNode = GNode.create("IntegerConstant", "1");    
+    Node decNode = GNode.create("AdditiveExpression", opNode, "-", oneNode);
+    Node assignNode = GNode.create("AssignmentExpression", opExpr.getSourceNode(), "=", decNode);
+    oneNode.setLocation(loc); cop.typeInteger("1").mark(oneNode);
+    decNode.setLocation(loc); type.mark(decNode);
+    assignNode.setLocation(loc); type.mark(assignNode);
+    
     addStatement(Statement.assign(assignNode, opExpr, CExpression
         .create(decNode, opExpr.getScope())));
 
@@ -1644,40 +2351,46 @@ public class CfgBuilder extends Visitor {
       IOUtils.debugC(opNode).p(" := ");
       IOUtils.debugC(opNode).p(" + 1").pln().flush();
     }
-
+    
+    Type type = CType.getType(node);
+    
     CExpression opExpr = recurseOnExpression(opNode);
-    GNode oneNode = GNode.create("IntegerConstant", "1");
-    GNode incNode = GNode.create("AdditiveExpression", opNode, "+", oneNode);
-    GNode assignNode = GNode.create("AssignmentExpression", opExpr.getSourceNode(), "=", incNode);
-    oneNode.setLocation(loc);
-    incNode.setLocation(loc);
-    assignNode.setLocation(loc);
-    cAnalyzer.processExpression(assignNode);
-    addStatement(Statement.assign(node, opExpr, CExpression
+    Node oneNode = GNode.create("IntegerConstant", "1");
+    Node incNode = GNode.create("AdditiveExpression", opNode, "+", oneNode);
+    Node assignNode = GNode.create("AssignmentExpression", opExpr.getSourceNode(), "=", incNode);
+    oneNode.setLocation(loc); cop.typeInteger("1").mark(oneNode);
+    incNode.setLocation(loc); type.mark(incNode);
+    assignNode.setLocation(loc); type.mark(assignNode);
+    
+    addStatement(Statement.assign(assignNode, opExpr, CExpression
         .create(incNode, opExpr.getScope())));
 
     return opExpr; // return the *prior value* of the operand
   } 
   
   public CExpression visitPointerDeclarator(GNode node) {
-    return recurseOnExpression(node.getNode(1));
+  	return recurseOnExpression(node.getNode(1));
   }
 
   public CExpression visitPrimaryIdentifier(GNode node) {
+  	symbolTable.mark(node);
     return expressionOf(node);
   }
 
-  public CExpression visitSimpleDeclarator(GNode node) {
+  public CExpression visitSimpleDeclarator(GNode node) {  	
     String name = node.getString(0);
     debug().pln(
         "Looking up binding for variable: " + name + " in symbol table "
             + symbolTable);
     assert (symbolTable.isDefined(name));
-    assert (symbolTable.getCurrentScope().equals(symbolTable.lookupScope(name)));
     
     /* attach type and scope properties to node */
-    cAnalyzer.processExpression(node);
+  	symbolTable.mark(node);
     IRVarInfo varInfo = symbolTable.lookup(name);
+    
+    /* Declared symbol, skip declare statement (for duplicated function declarators */
+    if(varInfo.isDeclared()) return expressionOf(node);
+    		
     varInfo.setDeclarationNode(node);
     
     Type type = varInfo.getXtcType();
@@ -1686,22 +2399,22 @@ public class CfgBuilder extends Visitor {
     if(type.isAlias() && type.toAlias().getName().equals(name))
     	return expressionOf(node);
     
-    // FIXME: array, struct and union type variables are also Hoare variable
-    if(!(type.resolve().isArray() || type.resolve().isStruct() || type.resolve().isUnion())) {
-    	varInfo.setProperty(Identifiers.HOARE_VAR, true);
+    // FIXME: array, struct and union type variables are also Hoare variable ?
+    if(CType.isScalar(type) || type.resolve().isFunction()) {
+    	varInfo.enableLogicLabel();
     } else {
-    	varInfo.setProperty(Identifiers.HOARE_VAR, false);
+    	varInfo.disableLogicLabel();
     }
     
     CExpression resExpr = expressionOf(node);
     Statement declareStmt = Statement.declare(node, resExpr);
-    addStatement(declareStmt);
     
-    GNode primaryId = GNode.create("PrimaryIdentifier", name);
+    addStatement(declareStmt, varInfo.isStatic());
+    
+    Node primaryId = GNode.create("PrimaryIdentifier", name);
     primaryId.setLocation(node.getLocation());
-    for(String label : node.properties()) {
-    	primaryId.setProperty(label, node.getProperty(label));
-    }
+    type.mark(primaryId);
+    symbolTable.mark(primaryId);
     return expressionOf(primaryId);
   }
 
@@ -1709,10 +2422,9 @@ public class CfgBuilder extends Visitor {
     CExpression lhsExpr = recurseOnExpression(node.getNode(0));
     CExpression rhsExpr = recurseOnExpression(node.getNode(2));
     
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, lhsExpr.getSourceNode());
-    freshNode.set(2, rhsExpr.getSourceNode());
-    return expressionOf(freshNode);
+    node.set(0, lhsExpr.getSourceNode());
+    node.set(2, rhsExpr.getSourceNode());
+    return expressionOf(node);
   }
 
   public void visitReturnStatement(GNode node) {
@@ -1735,19 +2447,20 @@ public class CfgBuilder extends Visitor {
        * NOTE: there may be reachable statements after a return statement in the
        * CFG. For example, "return i++" will be dismantled to "return i; i++".
        */
-      addStatement(Statement.returnStmt(node, val));
-    } else {
-    	addStatement(Statement.returnStmt(node));
+      addStatement(Statement.assign(node, returnExpr, val));
     }
     currentCfg.addEdge(currentBlock, currentCfg.getExit());
-    currentBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+    BasicBlock newBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+    updateCurrentBlock(newBlock);
   }
   
-  public CExpression visitStringConstant(GNode node) {
-    /* Newly-defined string variable node */
-    Node stringVarNode = defineStringVarNode(node);
-    CExpression stringVarExpr = recurseOnExpression(stringVarNode);
-    return stringVarExpr;
+	public CExpression visitStringConstant(GNode node) {
+  	Node stringVarNode = defineStringVarNode(node);
+  	CExpression stringVar = expressionOf(stringVarNode);
+  	GNode identifier = GNode.cast(stringVarNode);
+  	Type varType = CType.getType(stringVarNode);
+  	new Initializer(node, identifier, node, varType).process(false);
+  	return stringVar;
   }
 
   public void visitSwitchStatement(GNode node) {
@@ -1765,51 +2478,56 @@ public class CfgBuilder extends Visitor {
         .incr()
         .flush();
 
-    CExpression testExpr = recurseOnExpression(test);
-
     // TODO: handle side effects in test expression
     // Create side-effect block and duplicate for every case?
 
     BasicBlock entryBlock = currentCfg.newSwitchBlock(node.getLocation(), 
             symbolTable.getCurrentScope());
-    BasicBlock bodyBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
     BasicBlock exitBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
 
-    pushScope(entryBlock, exitBlock, testExpr);
     currentCfg.addEdge(currentBlock, entryBlock);
-    currentBlock = entryBlock;
-    currentCfg.addEdge(currentBlock, bodyBlock);
-
+    CExpression testExpr = recurseOnExpression(test);
+    
+    pushSwitchScope(entryBlock, exitBlock, testExpr);
+    
+    updateCurrentBlock(entryBlock);
+    
+    BasicBlock preUnclosedCaseBlock = null;
+    
     for(Object o : body) {
-      if(o != null) {
-      	if(!(o instanceof GNode)) {
-      		if(o instanceof LineMarker) {
-      			o = ((LineMarker) o).getNode();
-      		} else {
-      			throw new ExpressionFactoryException("What hell is " + o + "?");
-      		}
+      if(o == null) continue;
+      if(!(o instanceof Node)) {
+      	assert(o instanceof LineMarker);
+      	o = ((LineMarker) o).getNode();
+      }
+      Node node_o = (Node) o;
+      if(node_o.hasName("LabeledStatement")) {
+      	updateCurrentBlock(entryBlock);
+      	dispatch(node_o);
+      	if(preUnclosedCaseBlock != null) {
+      		BasicBlock labelStmt = getLabelStmt(GNode.cast(node_o));
+      		currentCfg.addEdge(preUnclosedCaseBlock, labelStmt);
       	}
-      	Node node_o = (Node) o;
-        if(node_o.hasName("LabeledStatement")) {
-          currentBlock = bodyBlock;
-          dispatch(node_o);
-          if(hasDefault())  // FIXME: how about add break in default case
-            closeCurrentBlock(exitBlock);          
-        } else if(node_o.hasName("BreakStatement")) {
-          dispatch(node_o);
-          closeCurrentBlock(exitBlock);
-        } else {
-          dispatch(node_o);
-        }
+      	
+      	if(hasDefault())  // FIXME: how about add break in default case
+      		closeCurrentBlock(exitBlock);
+      	else
+      		preUnclosedCaseBlock = currentBlock;
+      } else if(node_o.hasName("BreakStatement")) {
+      	dispatch(node_o);
+      	closeCurrentBlock(exitBlock);
+      	preUnclosedCaseBlock = null;
+      } else {
+      	dispatch(node_o);
+      	preUnclosedCaseBlock = currentBlock;
       }
     }
 
-    currentBlock = exitBlock;
+    updateCurrentBlock(exitBlock);
 
     if (!hasDefault()) {
       IRBooleanExpression guard = new DefaultCaseGuard(node, getCaseGuards());
-
-      currentCfg.addEdge(bodyBlock, guard, exitBlock);
+      buildCaseEdgeWithGuardSideEffect(entryBlock, guard, exitBlock);
     }
 
     popScope();
@@ -1818,16 +2536,20 @@ public class CfgBuilder extends Visitor {
   }
 
   public CExpression visitSubscriptExpression(GNode node) {
-  	memoryCheck(node);
     CExpression baseExpr = recurseOnExpression(node.getNode(0));
     CExpression idxExpr = recurseOnExpression(node.getNode(1));
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, baseExpr.getSourceNode());
-    freshNode.set(1, idxExpr.getSourceNode());
-    return expressionOf(freshNode);
+    
+    node.set(0, baseExpr.getSourceNode());
+    node.set(1, idxExpr.getSourceNode());
+    return expressionOf(node);
   }
   
   public CExpression visitShiftExpression(GNode node) {
+    CExpression lhsExpr = recurseOnExpression(node.getNode(0));
+    CExpression rhsExpr = recurseOnExpression(node.getNode(2));
+    
+    node.set(0, lhsExpr.getSourceNode());
+    node.set(2, rhsExpr.getSourceNode());
     return expressionOf(node);
   }
 
@@ -1838,6 +2560,7 @@ public class CfgBuilder extends Visitor {
     /* build global cfg for global statements */
     currentCfg = new ControlFlowGraph(n, Identifiers.GLOBAL_CFG, symbolTable
         .rootScope());
+    globalCfg = currentCfg;
     
     if (debugEnabled()) {
       debug().loc(n).p(' ');
@@ -1850,8 +2573,9 @@ public class CfgBuilder extends Visitor {
     appendStatements = Lists.newArrayList();
     expressionDepth = 0;
     
-    currentBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
-    currentCfg.addEdge(currentCfg.getEntry(), currentBlock);
+    BasicBlock newBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
+    currentCfg.addEdge(currentCfg.getEntry(), newBlock);
+    updateCurrentBlock(newBlock);
     
     for (Object o : n) {
       dispatch((Node) o);
@@ -1865,12 +2589,16 @@ public class CfgBuilder extends Visitor {
     return cfgs;
   }
 
+  public CExpression visitUnaryPlusExpression(GNode node) {
+    CExpression opExpr = recurseOnExpression(node.getNode(0));
+    node.set(0, opExpr.getSourceNode());
+    return expressionOf(node);
+  }
+  
   public CExpression visitUnaryMinusExpression(GNode node) {
-    CExpression fstExpr = recurseOnExpression(node.getNode(0));
-    
-    GNode freshNode = createCopy(node);
-    freshNode.set(0, fstExpr.getSourceNode());
-    return expressionOf(freshNode);
+    CExpression opExpr = recurseOnExpression(node.getNode(0));
+    node.set(0, opExpr.getSourceNode());
+    return expressionOf(node);
   }
 
   public void visitWhileStatement(GNode node) {
@@ -1884,36 +2612,28 @@ public class CfgBuilder extends Visitor {
       IOUtils.debugC(test).pln(")").incr().flush();
     }
     
-    BasicBlock initBlock = currentCfg.newLoopInitBlock(symbolTable.getCurrentScope());
     BasicBlock entryBlock = currentCfg.newLoopBlock(node.getLocation(), symbolTable.getCurrentScope());
-    BasicBlock bodyBlock = currentCfg.newBlock(symbolTable.getScope(body));
-    BasicBlock loopExitBlock = currentCfg.newLoopExitBlock(symbolTable.getCurrentScope());
+    BasicBlock bodyBlock = symbolTable.hasScope(body) ?
+    		currentCfg.newBlock(symbolTable.getScope(body)) : currentCfg.newBlock(symbolTable.getCurrentScope());
     BasicBlock exitBlock = currentCfg.newLoopExitBlock(symbolTable.getCurrentScope());
 
-    pushScope(initBlock, loopExitBlock);
+    pushScope(entryBlock, exitBlock);
+    currentCfg.addEdge(currentBlock, entryBlock);
+    updateCurrentBlock(entryBlock);
     
-    currentCfg.addEdge(currentBlock, initBlock);
-    
-  	currentBlock = initBlock;
     CExpression testExpr = recurseOnExpression(test);
     Guard ifBranch = Guard.create(testExpr);
     Guard elseBranch = ifBranch.negate();
     
-    currentCfg.addEdge(currentBlock, entryBlock);
+    buildEdgeWithGuardSideEffect(currentBlock, ifBranch, bodyBlock, elseBranch, exitBlock);
+//    currentCfg.addEdge(currentBlock, ifBranch, bodyBlock);
+//    currentCfg.addEdge(currentBlock, elseBranch, exitBlock);
     
-    currentBlock = entryBlock;
-    flushPostStatements(); // Add the statements to the current block
-    
-    currentCfg.addEdge(currentBlock, ifBranch, bodyBlock);
-    currentCfg.addEdge(currentBlock, elseBranch, loopExitBlock);
-    
-    currentBlock = bodyBlock;
+    updateCurrentBlock(bodyBlock);
     dispatch(body);
     
-    currentCfg.addEdge(loopExitBlock, exitBlock);
-    
     closeCurrentBlock(entryBlock); // close the loop
-    currentBlock = exitBlock;
+    updateCurrentBlock(exitBlock);
     popScope();
     
     if( debugEnabled() ) {
@@ -1955,32 +2675,35 @@ public class CfgBuilder extends Visitor {
   	
     currentCfg.addEdge(currentBlock, initBlock);
   	
-    currentBlock = initBlock;   
+    updateCurrentBlock(initBlock);   
     dispatch(init);
     
     currentCfg.addEdge(currentBlock, entryBlock);
     
-    currentBlock = entryBlock;
-    CExpression testExpr = recurseOnExpression(test);
-    flushPostStatements();
+    updateCurrentBlock(entryBlock);
     
-    Guard ifBranch = Guard.create(testExpr);
-    Guard elseBranch = ifBranch.negate();
+    if(test != null) {
+    	CExpression testExpr = recurseOnExpression(test);
+    	
+    	Guard ifBranch = Guard.create(testExpr);
+    	Guard elseBranch = ifBranch.negate();
     
-    currentCfg.addEdge(currentBlock, ifBranch, bodyBlock);
-    currentCfg.addEdge(currentBlock, elseBranch, loopExitBlock);
+    	buildEdgeWithGuardSideEffect(currentBlock, ifBranch, bodyBlock, elseBranch, loopExitBlock);
+    } else {
+    	currentCfg.addEdge(currentBlock, bodyBlock);
+    }
     
-    currentBlock = bodyBlock;
+    updateCurrentBlock(bodyBlock);
     dispatch(body);
     currentCfg.addEdge(currentBlock, incrBlock);
-    currentBlock = incrBlock;
+    updateCurrentBlock(incrBlock);
     dispatch(incr);    
 
     currentCfg.addEdge(currentBlock, entryBlock);
     currentCfg.addEdge(loopExitBlock, exitBlock);
     
     closeCurrentBlock(entryBlock); // close the loop
-    currentBlock = exitBlock;
+    updateCurrentBlock(exitBlock);
     popScope();
 
     if( debugEnabled() ) {

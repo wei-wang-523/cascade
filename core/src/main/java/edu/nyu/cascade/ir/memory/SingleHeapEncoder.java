@@ -9,8 +9,7 @@ import edu.nyu.cascade.ir.memory.layout.IROrderMemLayoutEncoding;
 import edu.nyu.cascade.ir.memory.layout.IRSoundMemLayoutEncoding;
 import edu.nyu.cascade.ir.memory.layout.OrderLinearMemLayoutEncoding;
 import edu.nyu.cascade.ir.memory.layout.SoundLinearMemLayoutEncoding;
-import edu.nyu.cascade.ir.memory.layout.SoundSyncMemLayoutEncoding;
-import edu.nyu.cascade.ir.memory.safety.AbstractMemSafetyEncoding.Strategy;
+import edu.nyu.cascade.ir.memory.safety.Strategy;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -21,7 +20,7 @@ public class SingleHeapEncoder implements IRSingleHeapEncoder{
 	private final IROrderMemLayoutEncoding orderMemEncoding;
 	private final ExpressionEncoding encoding;
 	private final IRDataFormatter dataFormatter;
-	private final MemoryVarSets memVarSets;
+	private MemoryVarSets memVarSets;
 	
 	private SingleHeapEncoder(ExpressionEncoding encoding, 
 			IRDataFormatter dataFormatter,
@@ -38,22 +37,24 @@ public class SingleHeapEncoder implements IRSingleHeapEncoder{
 			IRDataFormatter dataFormatter,
 			Strategy strategy) {
 		switch(strategy) {
-		case ORDER_LINEAR: {
+		case ORDER: {
 			IROrderMemLayoutEncoding memLayout = OrderLinearMemLayoutEncoding
     			.create(encoding, dataFormatter);
 			return new SingleHeapEncoder(encoding, dataFormatter, null, memLayout);
 		}
-		case SOUND_LINEAR: {
+		case SOUND: {
 			IRSoundMemLayoutEncoding memLayout = SoundLinearMemLayoutEncoding
 					.create(encoding, dataFormatter);
 			return new SingleHeapEncoder(encoding, dataFormatter, memLayout, null);
 		}
-		default: {
-			IRSoundMemLayoutEncoding memLayout = SoundSyncMemLayoutEncoding
-					.create(encoding, dataFormatter);
-			return new SingleHeapEncoder(encoding, dataFormatter, memLayout, null);
+		default: 
+			throw new IllegalArgumentException("Unknown strategy: " + strategy);
 		}
-		}
+	}
+	
+	@Override
+	public void reset() {
+		memVarSets = new MemoryVarSets(encoding);
 	}
 
 	@Override
@@ -69,7 +70,10 @@ public class SingleHeapEncoder implements IRSingleHeapEncoder{
 
 	@Override
   public BooleanExpression validMalloc(ArrayExpression sizeArr, Expression ptr,
-      Expression size) {		
+      Expression size) {
+		
+		size = dataFormatter.castToSize(size);
+		
 		if(soundMemEncoding != null) {
 			return soundMemEncoding.validMalloc(memVarSets, sizeArr, ptr, size);
 		} else {
@@ -88,11 +92,11 @@ public class SingleHeapEncoder implements IRSingleHeapEncoder{
   }
 
 	@Override
-  public BooleanExpression validFree(ArrayExpression sizeArr, Expression ptr) {
+  public BooleanExpression validFree(ArrayExpression markArr, Expression ptr) {
 		if(soundMemEncoding != null) {
-			return soundMemEncoding.validFree(sizeArr, ptr);
+			return soundMemEncoding.validFree(markArr, ptr);
 		} else {
-			return orderMemEncoding.validFree(sizeArr, ptr);
+			return orderMemEncoding.validFree(markArr, ptr);
 		}
   }
 
@@ -107,7 +111,9 @@ public class SingleHeapEncoder implements IRSingleHeapEncoder{
 
 	@Override
   public ImmutableSet<BooleanExpression> validMemAccess(
-      ArrayExpression sizeArr, Expression ptr, Expression size) {		
+      ArrayExpression sizeArr, Expression ptr, Expression size) {
+		size = dataFormatter.castToSize(size);
+		
 		if(soundMemEncoding != null)
 			return soundMemEncoding.validMemAccess(memVarSets, sizeArr, ptr, size);
 		else

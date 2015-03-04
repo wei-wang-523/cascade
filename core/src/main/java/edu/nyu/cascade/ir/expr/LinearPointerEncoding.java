@@ -116,24 +116,4 @@ implements PointerEncoding<T> {
   public T freshPtr(String name, boolean fresh) {
 	  return encoding.variable(name, getType(), fresh);
   }
-
-	@Override
-  public boolean isSyncEncoding() {
-	  return false;
-  }
-
-	@Override
-  public boolean isLinearEncoding() {
-	  return true;
-  }
-
-	@Override
-  public SyncPointerEncoding<? extends Expression, ? extends Expression> asSyncPointerEncoding() {
-	  throw new UnsupportedOperationException();
-  }
-
-	@Override
-  public LinearPointerEncoding<T> asLinearPointerEncoding() {
-	  return this;
-  }
 }

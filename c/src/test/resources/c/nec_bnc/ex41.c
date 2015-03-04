@@ -1,12 +1,12 @@
-extern int __NONDET__();
+extern int __VERIFIER_nondet_int();
   
 extern char x[101], y[101], z[201];
 int from,to,i,j,k;
 
 void mainFunc() {  
-  from = __NONDET__();
-  to = __NONDET__();
-  k = __NONDET__();
+  from = __VERIFIER_nondet_int();
+  to = __VERIFIER_nondet_int();
+  k = __VERIFIER_nondet_int();
 
   i = from;
   j = 0;

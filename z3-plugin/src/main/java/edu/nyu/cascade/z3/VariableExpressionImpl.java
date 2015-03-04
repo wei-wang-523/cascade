@@ -16,14 +16,13 @@ import com.microsoft.z3.Z3Exception;
 import com.microsoft.z3.Sort;
 
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
 
 class VariableExpressionImpl extends ExpressionImpl implements
     VariableExpression {
-  private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, Expr>> varCache = CacheBuilder
+  static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, Expr>> varCache = CacheBuilder
       .newBuilder().build(
           new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, Expr>>(){
             public ConcurrentMap<String, Expr> load(ExpressionManagerImpl expressionManager) {
@@ -68,7 +67,7 @@ class VariableExpressionImpl extends ExpressionImpl implements
   protected VariableExpressionImpl(final ExpressionManagerImpl exprManager, String name, Type type, boolean fresh) {
     super(exprManager, new VariableConstructionStrategy() {
       @Override
-      public Expr apply(Context ctx, String name, Sort sort) {
+      public Expr apply(Context ctx, String name, Sort sort) throws Z3Exception {
         /* TODO: see if var is already defined. There's a bug in lookupVar
          * bc it's second parameter is a output parameter. Need to change
          * the API so that it only takes the name.
@@ -81,11 +80,8 @@ class VariableExpressionImpl extends ExpressionImpl implements
           Expr res = ctx.mkConst(name, sort);
           varCache.get(exprManager).put(name, res);
           
-          TheoremProverImpl.z3FileCommand("(declare-const " + res + " " + sort + ")");
-          TheoremProverImpl.debugCommand("(declare-const " + res + " " + sort + ")");
+          TheoremProverImpl.z3FileCommand("(declare-const ", res, sort, ")");
           return res;
-        } catch (Z3Exception e) {
-          throw new TheoremProverException(e);
         } catch (ExecutionException e) {
           throw new CacheException(e);
         }

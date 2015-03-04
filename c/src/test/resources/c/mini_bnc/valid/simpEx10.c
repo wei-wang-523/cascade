@@ -1,3 +1,8 @@
+typedef long unsigned int size_t;
+extern void *malloc (size_t __size) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__malloc__)) ;
+extern void *calloc (size_t __nmemb, size_t __size)
+__attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__malloc__)) ;
+
 struct _addr {
 	unsigned char len;
 	unsigned char dat[16];
@@ -13,13 +18,13 @@ int main(Addr *addr, Buffer *buf)
 {
 	addr = (Addr *)malloc(sizeof(Addr));
 	buf = (Buffer *)malloc(sizeof(Buffer));
-	ASSUME(addr);
 	ASSUME(addr->len >= 0 && addr->len < 16);
 	ASSUME(addr->len <= 16);
-    int i = (int) addr->len;
-	ASSERT(i >= 0 && i <= addr->len && 
-		   implies(
-				   i > 0 && i <= addr-> len, 
-				   valid(&addr->dat[i - 1])));
-	return 0;
+  
+  for(int idx =0; idx < addr->len; idx++) {
+    addr->dat[idx-1] = 'c';
+  }
+  free(addr);
+  free(buf);
+  return 0;
 }

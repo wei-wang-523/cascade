@@ -1,3 +1,8 @@
+typedef long unsigned int size_t;
+extern void *malloc (size_t __size) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__malloc__)) ;
+extern void *calloc (size_t __nmemb, size_t __size)
+__attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__malloc__)) ;
+
 int main() {
 	
 	int flag;
@@ -8,10 +13,9 @@ int main() {
 	} else {
 		a = (int *) malloc(5 * sizeof(int));
 	}
-	ASSUME(a);
 	
-	ASSERT(valid(&a[0]));
-	
+	a[0] = 1;
+  free(a);
 	return 1;
 }
 

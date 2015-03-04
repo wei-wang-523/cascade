@@ -1,7 +1,6 @@
 package edu.nyu.cascade.prover;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 
 public class ValidityResult<T> extends QueryResult<ValidityResult.Type> {
   public static enum Type {
@@ -14,10 +13,9 @@ public class ValidityResult<T> extends QueryResult<ValidityResult.Type> {
 
   public static <T> ValidityResult<T> valueOf(Type result,
       Expression phi,
-      Iterable<? extends BooleanExpression> assumptions,
-      Iterable<? extends Expression> counterExample) {
+      Iterable<? extends BooleanExpression> assumptions) {
     Preconditions.checkArgument(!Type.VALID.equals(result));
-    return new ValidityResult<T>(result, phi, assumptions, counterExample);
+    return new ValidityResult<T>(result, phi, assumptions);
   }
   
   public static <T> ValidityResult<T> valueOf(Type result,
@@ -33,9 +31,8 @@ public class ValidityResult<T> extends QueryResult<ValidityResult.Type> {
   }
 
   private ValidityResult(Type result, Expression phi,
-      Iterable<? extends BooleanExpression> assumptions,
-      Iterable<? extends Expression> counterExample) {
-    super(result, phi, assumptions, counterExample);
+      Iterable<? extends BooleanExpression> assumptions) {
+    super(result, phi, assumptions);
   }
   
   private ValidityResult(Type result, Expression phi,
@@ -54,24 +51,5 @@ public class ValidityResult<T> extends QueryResult<ValidityResult.Type> {
   
   public boolean isUnknown() {
     return Type.UNKNOWN.equals(getType());
-  }
-
-  /**
-   * When <code>isValid()</code> returns <code>false</code>, gives an
-   * inconsistent set of assertions that are implied by the assumptions and the
-   * formula. E.g., for the formula <code>x > 0 ∧ x = 1 ∧ x < 0</code>,
-   * <code>getCounterExample()</code> might return the set
-   * <code>{ x > 0, x < 0 }</code>.
-   */
-  public ImmutableList<BooleanExpression> getCounterExample() {
-    return getCertificate();
-  }
-  
-  public String getCounterExampleToString() {
-  	StringBuilder sb = new StringBuilder();
-  	for(BooleanExpression bool : getCertificate()) {
-  		sb.append(bool).append('\n');
-  	}
-  	return sb.toString();
   }
 }

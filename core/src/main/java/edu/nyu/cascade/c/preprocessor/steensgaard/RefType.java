@@ -3,14 +3,10 @@ package edu.nyu.cascade.c.preprocessor.steensgaard;
 class RefType extends ValueType {
 	
 	private final ECR loc, func;
-	private final xtc.type.Type xtcType;
-	private final String scopeName;
 	
-	RefType(ECR loc, ECR func, xtc.type.Type xtcType, String scopeName) {
+	RefType(ECR loc, ECR func) {
 		this.loc = loc;
 		this.func = func;
-		this.xtcType = xtcType;
-		this.scopeName = scopeName;
 	}
 	
   @Override
@@ -43,13 +39,5 @@ class RefType extends ValueType {
 	
 	ECR getFunction() {
 		return func;
-	}
-	
-	xtc.type.Type getXtcType() {
-		return xtcType;
-	}
-	
-	String getScopeName() {
-		return scopeName;
 	}
 }

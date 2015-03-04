@@ -7,23 +7,22 @@ import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.FunctionExpression;
-import edu.nyu.cascade.prover.VariableExpression;
 
 public interface IRMemSafetyEncoding {
 
-	Expression validMalloc(Expression ptr, Expression size);
+	BooleanExpression validMalloc(Expression ptr, Expression size);
 	
-	BooleanExpression validFree(ArrayExpression sizeArr, Expression ptr);
+	BooleanExpression validFree(ArrayExpression markArr, Expression region);
 
 	PredicateClosure suspend(Expression func, Expression expr, Expression... vars);
 
 	void initMemSafetyPredicates(SingleLambdaStateExpression state);
 
 	void updateStackMemSafetyPredicates(SingleLambdaStateExpression state,
-			VariableExpression ptrExpr, VariableExpression sizeExpr);
+			Expression lval, Expression lvalSize);
 
 	void updateHeapMemSafetyPredicates(SingleLambdaStateExpression state,
-			VariableExpression ptrExpr, VariableExpression sizeExpr);
+			Expression hpRegExpr, Expression hpRegSize);
 
 	/** Propagate the memory safety predicates of <code>fromState</code>
 	 * to <code>toState</code>
@@ -32,16 +31,16 @@ public interface IRMemSafetyEncoding {
 	 */
 	void propagateSafetyPredicates(SingleLambdaStateExpression fromState, SingleLambdaStateExpression toState);
 
-	/**
-	 * Refresh the safety properties related to <code>state</code> with
-	 * <code>fromLabels</code> to <code>toLabels</code>
-	 * @param state
-	 * @param fromLabels
-	 * @param toLabels
-	 */
-	void refreshDuplicateLabels(SingleLambdaStateExpression state,
-      Collection<VariableExpression> fromLabels,
-      Collection<VariableExpression> toLabels);
+//	/**
+//	 * Refresh the safety properties related to <code>state</code> with
+//	 * <code>fromLabels</code> to <code>toLabels</code>
+//	 * @param state
+//	 * @param fromLabels
+//	 * @param toLabels
+//	 */
+//	void refreshDuplicateLabels(SingleLambdaStateExpression state,
+//      Collection<VariableExpression> fromLabels,
+//      Collection<VariableExpression> toLabels);
 	
 	Collection<String> getExprPropNames();
 
@@ -59,8 +58,8 @@ public interface IRMemSafetyEncoding {
 	Expression applyUpdatedPredicate(SingleLambdaStateExpression state, 
 			FunctionExpression predicate,
       Collection<Expression> args);
-
-	Expression getInitBoolValue(Expression key);
+	
+	Collection<BooleanExpression> getAssumptions();
 	
 	PredicateClosure getValidAccess(SingleLambdaStateExpression state);
 	

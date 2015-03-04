@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-
+  
   <xsd:annotation>
     <xsd:documentation xml:lang="en">
       Control file schema for Cascade verification engine.
@@ -9,19 +9,19 @@
       Updated by Wei Wang (wwang1109@cs.nyu.edu)
     </xsd:documentation>
   </xsd:annotation>
-
+  
   <xsd:element name="controlFile">
     <xsd:annotation>
       <xsd:documentation>
-        A control file describes a sequence of "runs", each of which identifies a 
+        A control file describes a sequence of "runs", each of which identifies a
         unique path through the source code, with associated annotations.
         The control file begins by identifying the source files involved and, optionally,
-        the theory that will be used in interpreting any annotations. 
+        the theory that will be used in interpreting any annotations.
       </xsd:documentation>
     </xsd:annotation>
     <xsd:complexType>
       <xsd:sequence>
-
+        
         <!-- SourceFile declarations -->
         <xsd:element maxOccurs="unbounded" name="sourceFile">
           <xsd:complexType>
@@ -29,7 +29,7 @@
             <xsd:attribute name="id" type="xsd:positiveInteger" />
           </xsd:complexType>
         </xsd:element>
-
+        
         <!-- theory declarations -->
         <xsd:element maxOccurs="1" minOccurs="0" name="theory">
           <xsd:complexType>
@@ -39,24 +39,24 @@
             <xsd:attribute name="qname" type="xsd:string" />
           </xsd:complexType>
         </xsd:element>
-
+        
         <!-- Run declarations -->
         <xsd:element maxOccurs="unbounded" name="run">
           <xsd:complexType>
             <xsd:sequence>
               <xsd:element maxOccurs="1" minOccurs="0"
-              	name="startPosition" type="position" />
+              name="startPosition" type="position" />
               <xsd:element maxOccurs="unbounded" minOccurs="0"
-                name="wayPoint" type="position" />
+              name="wayPoint" type="position" />
               <xsd:element maxOccurs="1" minOccurs="0"
-              	name="endPosition" type="position" />
+              name="endPosition" type="position" />
             </xsd:sequence>
           </xsd:complexType>
         </xsd:element>
       </xsd:sequence>
     </xsd:complexType>
   </xsd:element>
-
+  
   <xsd:complexType name="position">
     <xsd:annotation>
       <xsd:documentation>A position in the source code, as identified by a file id and line number,         with optional attached annotations.</xsd:documentation>
@@ -76,29 +76,29 @@
     <xsd:attribute name="fileId" type="xsd:positiveInteger" />
     <xsd:attribute name="line" type="xsd:positiveInteger" />
     <!--
-    <xsd:attribute name="column" type="xsd:positiveInteger"  />
-    -->
+     <xsd:attribute name="column" type="xsd:positiveInteger"  />
+     -->
     <xsd:attribute name="insert" type="insertionType" default="before" />
   </xsd:complexType>
-
+  
   <xsd:complexType name="callPoint">
     <xsd:sequence>
-	  <xsd:element maxOccurs="1" minOccurs="0" name="startPosition" type="position" />
+      <xsd:element maxOccurs="1" minOccurs="0" name="startPosition" type="position" />
       <xsd:element maxOccurs="unbounded" minOccurs="0" name="wayPoint" type="position" />
       <xsd:element maxOccurs="1" minOccurs="0" name="endPosition" type="position" />
     </xsd:sequence>
     <xsd:attribute name="funcName" type="xsd:string" />
     <xsd:attribute name="column" type="xsd:positiveInteger" />
   </xsd:complexType>
-
+  
   <xsd:complexType name="loopPoint">
     <xsd:sequence>
-	  <xsd:element maxOccurs="1" minOccurs="0" name="invariant" type="xsd:string" />
+      <xsd:element maxOccurs="1" minOccurs="0" name="invariant" type="xsd:string" />
       <xsd:element maxOccurs="unbounded" minOccurs="0" name="wayPoint" type="position" />
     </xsd:sequence>
     <xsd:attribute name="iterTimes" type="xsd:integer" default="0" />
   </xsd:complexType>
-
+  
   <xsd:simpleType name="insertionType">
     <xsd:annotation>
       <xsd:documentation>
@@ -107,9 +107,9 @@
       </xsd:documentation>
     </xsd:annotation>
     <xsd:restriction base="xsd:string">
-        <xsd:enumeration value="before" />
-        <xsd:enumeration value="after" />
+      <xsd:enumeration value="before" />
+      <xsd:enumeration value="after" />
     </xsd:restriction>
   </xsd:simpleType>
-
+  
 </xsd:schema>

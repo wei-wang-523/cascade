@@ -1,36 +1,13 @@
 package edu.nyu.cascade.cvc4;
 
-import java.util.concurrent.ExecutionException;
-
 import com.google.common.base.Preconditions;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-
 import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.type.RationalType;
-import edu.nyu.cascade.util.CacheException;
 
 class RationalTypeImpl extends TypeImpl implements RationalType {
-  private static final LoadingCache<ExpressionManagerImpl, RationalTypeImpl> typeCache = CacheBuilder
-      .newBuilder().build(
-          new CacheLoader<ExpressionManagerImpl, RationalTypeImpl>(){
-            public RationalTypeImpl load(ExpressionManagerImpl expressionManager) {
-              return new RationalTypeImpl(expressionManager);
-            }
-          });
-  
-  static RationalTypeImpl getInstance(ExpressionManagerImpl expressionManager) {
-    try {
-      return typeCache.get(expressionManager);
-    } catch (ExecutionException e) {
-      throw new CacheException(e);
-    }
-  }
-
-  private RationalTypeImpl(ExpressionManagerImpl expressionManager) {
+  RationalTypeImpl(ExpressionManagerImpl expressionManager) {
     super(expressionManager);
     setCVC4Type(expressionManager
         .getTheoremProver()

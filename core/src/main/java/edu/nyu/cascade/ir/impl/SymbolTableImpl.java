@@ -100,6 +100,11 @@ public class SymbolTableImpl implements SymbolTable {
   public boolean hasScope(Node node) {
     return node.hasProperty(SCOPE);
   }
+  
+  @Override
+  public void mark(Node node) {
+  	xtcSymbolTable.mark(node);
+  }
 
   @Override
   public boolean isDefined(String name) {

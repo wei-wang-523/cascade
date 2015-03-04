@@ -1,5 +1,6 @@
 package edu.nyu.cascade.util;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -61,6 +62,9 @@ public class IOUtils {
   
   /** Set to true iff tpFile is enabled. */
   private static boolean tpFileFlag = false;
+  
+  /** Set to true iff trace is enabled. */
+  private static boolean traceFlag = false; 
 
   /** Set to true iff the user has specifically enabled output on stdout */
   private static boolean userEnabledOut = false;
@@ -82,6 +86,12 @@ public class IOUtils {
   
   /** Cascade's tp-file stream. */
   private static PrintStream tpFile;
+  
+  /** Cascade's graph-xml-file stream */
+  private static PrintStream traceXmlFile;
+  
+  /** Cascade's trace-file Printer */
+  private static Printer traceFilePrinter;
 
   /** Cascade's stdout Printer. */
   private static Printer outPrinter;
@@ -140,7 +150,19 @@ public class IOUtils {
    * returns a null printer. */
   public static Printer tpFile() {
     return tpFileFlag ? tpFilePrinter : NULL_PRINTER;
-  }  
+  }
+  
+  /** Return the trace-file stream, if traceFlag is enabled. Otherwise,
+   *   returna a null stream. */
+  public static Printer traceFile() {
+  	return traceFlag ? traceFilePrinter : NULL_PRINTER;
+  }
+  
+  /** Return the trace-xml-file stream, if traceFlag is enabled. Otherwise,
+   *   returna a null stream. */
+  public static PrintStream traceXmlFileStream() {
+  	return traceFlag ? traceXmlFile : NULL_PRINT_STREAM;
+  }
 
   /** Returns true iff debugging is enabled. */
   public static boolean debugEnabled() {
@@ -174,7 +196,7 @@ public class IOUtils {
   public static PrintStream tpFileStream() {
     return tpFileFlag ? tpFile: NULL_PRINT_STREAM;
   }
-
+  
   /** Disables debugging output. Also disables output to stdout and stderr,
       if they have not been explicitly enabled by a call to 
       <code>enableOut()</code> or <code>enableErr()</code>. */
@@ -204,6 +226,14 @@ public class IOUtils {
   public static void disableOut() {
     outFlag = false;
     userEnabledOut = false;
+  }
+  
+  public static void disableTrace() {
+  	if(traceFlag) {
+  		traceFlag = false;
+  		traceFilePrinter.flush().close();
+  		traceXmlFile.close();
+  	}
   }
 
   /** Enables debugging output. Also enables output on stdout and stderr, 
@@ -236,7 +266,25 @@ public class IOUtils {
     userEnabledOut = true;
   }
 
-  /** Returns the stderr stream, if output to stderr is enabled. Otherwise,
+  public static void enableTrace(File file) {
+  	traceFlag = true;
+  	File dumpDir = FileUtils.createDumpDir(file.getName());
+  	File witnessFile = FileUtils.filePath(dumpDir, "witness.out");
+  	File witnessXmlFile = FileUtils.filePath(dumpDir, "witness.graphml");
+  	
+  	try {
+  		if (!witnessFile.exists()) witnessFile.createNewFile();
+  		if (!witnessXmlFile.exists()) witnessXmlFile.createNewFile();
+  		
+  		traceFilePrinter = new Printer(new PrintStream(witnessFile));
+  		traceXmlFile = new PrintStream(witnessXmlFile);
+  		
+  	} catch (IOException e) {
+			throw new RuntimeException("Unexpected witness dumping exception", e);
+		}
+	}
+
+	/** Returns the stderr stream, if output to stderr is enabled. Otherwise,
       returns a null stream. */
   public static PrintStream err() {
     return errFlag ? err : NULL_PRINT_STREAM;

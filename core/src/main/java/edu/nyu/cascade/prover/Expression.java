@@ -2,8 +2,6 @@ package edu.nyu.cascade.prover;
 
 import java.util.List;
 
-import xtc.tree.GNode;
-
 import edu.nyu.cascade.prover.type.Type;
 
 /**
@@ -327,11 +325,11 @@ public interface Expression {
   
   /** Returns the node of this expression.
    */
-  GNode getNode();
+//  GNode getNode();
   
   /** Set the node of this expression.
    */
-  Expression setNode(GNode node);
+//  Expression setNode(GNode node);
 
   /**
    * Returns whether the expression is a constant in it's domain (true, false,
@@ -384,4 +382,7 @@ public interface Expression {
   boolean isUninterpreted();
 
   Expression simplify();
+
+	void setHoareLogic(boolean bool);
+	boolean isHoareLogic();
 }
