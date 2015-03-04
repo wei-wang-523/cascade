@@ -1,7 +1,0 @@
-<controlFile>
-  <sourceFile name="dirSel.c" id="1" />
-  <run>
-    <startPosition fileId="1" line="6" />
-    <endPosition fileId="1" line="10" />
-  </run>
-</controlFile>

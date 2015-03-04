@@ -1,7 +1,0 @@
-|| [i : [1..3]] ::
-[
-    local y: [0..1] where y = 1;
-    m_0: if forall i : [1..3]. y[i]=1 then noncritical;
-    m_1: if exists i : [1..3]. y[i]=1 then noncritical;
-    m_2:
-]

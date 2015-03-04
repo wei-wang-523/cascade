@@ -352,7 +352,7 @@ public class SteensgaardCFS implements PreProcessor<ECR> {
 	
 	@Override
 	public ECR getRep(Node node) {
-		return uf.findRoot(ecrChecker.toRval(node));
+		return uf.findRoot(ecrEncoder.toRval(node));
 	}
 
 	@Override

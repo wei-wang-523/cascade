@@ -1,7 +1,0 @@
-<controlFile>
-  <sourceFile name="multiMalloc.c" id="1" />
-  <run>
-    <startPosition fileId="1" line="9" />
-    <endPosition fileId="1" line="15" />
-  </run>
-</controlFile>

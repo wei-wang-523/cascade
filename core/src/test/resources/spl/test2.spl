@@ -1,9 +1,0 @@
-local y : [0..1] where y=1;
-
-P1::
-[
-    l_0: loop forever do [
-        l_1: request y;
-        release y;
-    ]
-]

@@ -1,7 +1,0 @@
-<controlFile>
-  <sourceFile name="failPartition.c" id="1" />
-  <run>
-    <startPosition fileId="1" line="1" />
-    <endPosition fileId="1" line="15" />
-  </run>
-</controlFile>
