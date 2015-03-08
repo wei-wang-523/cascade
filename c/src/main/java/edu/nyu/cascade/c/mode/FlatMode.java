@@ -13,6 +13,7 @@ import edu.nyu.cascade.ir.formatter.IRDataFormatter;
 import edu.nyu.cascade.ir.memory.IRSingleHeapEncoder;
 import edu.nyu.cascade.ir.memory.SingleHeapEncoder;
 import edu.nyu.cascade.ir.memory.safety.AbstractMemSafetyEncoding;
+import edu.nyu.cascade.ir.memory.safety.AbstractStmtMemSafetyEncoding;
 import edu.nyu.cascade.ir.memory.safety.IRMemSafetyEncoding;
 import edu.nyu.cascade.ir.memory.safety.Strategy;
 import edu.nyu.cascade.ir.state.AbstractStateFactory;
@@ -40,7 +41,9 @@ public class FlatMode extends AbstractMode {
   	IRDataFormatter formatter = getFormatter(encoding);
   	
   	if(Preferences.isSet(Preferences.OPTION_LAMBDA)) {
-  		IRMemSafetyEncoding memSafetyEncoding = AbstractMemSafetyEncoding.getInstance(encoding, formatter, strategy);
+  		IRMemSafetyEncoding memSafetyEncoding = Preferences.isSet(Preferences.OPTION_STMT) ? 
+  				AbstractStmtMemSafetyEncoding.getInstance(encoding, formatter, strategy) :
+  					AbstractMemSafetyEncoding.getInstance(encoding, formatter, strategy);
   		
       stateFactory = AbstractStateFactory.createSingleLambda(encoding, formatter, memSafetyEncoding);
   	} else {

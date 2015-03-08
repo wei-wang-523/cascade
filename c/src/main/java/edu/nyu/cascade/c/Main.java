@@ -253,6 +253,10 @@ public class Main {
               .withDescription("Enable lambda encoding.") //
               .create())
       .addOption(
+          OptionBuilder.withLongOpt(Preferences.OPTION_STMT_LAMBDA) //
+              .withDescription("Enable statement based lambda encoding.") //
+              .create())
+      .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_HOARE) //
               .withDescription("Enable hoare encoding (treate stack variables without & op as pure logic variable .") //
               .create())              

@@ -128,7 +128,10 @@ public class Preferences {
   public static final String OPTION_MODE = "mode";
   
   /** Enable the lambda encoding */
-	public static final String OPTION_LAMBDA = "lambda";  
+	public static final String OPTION_LAMBDA = "lambda"; 
+	
+  /** Enable the statement lambda encoding */
+	public static final String OPTION_STMT = "stmt"; 
 	
   /** ------------- Theorem prover: z3, cvc4 ---------------- */
 	public static final String PROVER_Z3 = "z3";
