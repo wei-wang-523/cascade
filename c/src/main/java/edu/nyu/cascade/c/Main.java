@@ -253,7 +253,7 @@ public class Main {
               .withDescription("Enable lambda encoding.") //
               .create())
       .addOption(
-          OptionBuilder.withLongOpt(Preferences.OPTION_STMT_LAMBDA) //
+          OptionBuilder.withLongOpt(Preferences.OPTION_STMT) //
               .withDescription("Enable statement based lambda encoding.") //
               .create())
       .addOption(
