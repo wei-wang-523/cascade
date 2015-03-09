@@ -275,7 +275,7 @@ class ECREncoder extends Visitor {
 
     public ECR visitCastExpression(GNode node) {
     	Pair<GNode, Location> key = Pair.of(node, node.getLocation());
-    	if(opECRMap.containsKey(key)) return opECRMap.get(node);
+    	if(opECRMap.containsKey(key)) return opECRMap.get(key);
     	
     	ECR srcECR = encodeECR(node.getNode(1));
     	Type targetType = CType.getType(node);
@@ -617,7 +617,7 @@ class ECREncoder extends Visitor {
 	 */
 	private ECR getOpECR(GNode node, ECR leftECR, ECR rightECR) {
 		Pair<GNode, Location> key = Pair.of(node, node.getLocation());
-		if(opECRMap.containsKey(node)) return opECRMap.get(node);
+		if(opECRMap.containsKey(key)) return opECRMap.get(key);
 		
 		ECR resECR = ECR.createBottom();
 		opECRMap.put(key, resECR);
