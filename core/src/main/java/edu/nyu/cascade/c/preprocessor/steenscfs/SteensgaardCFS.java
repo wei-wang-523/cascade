@@ -29,6 +29,7 @@ import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
+import edu.nyu.cascade.util.Preferences;
 
 /**
  * A class which implements Bjarne Steensgaard's alias analysis algorithm.
@@ -322,6 +323,8 @@ public class SteensgaardCFS implements PreProcessor<ECR> {
 	@Override
 	public long getRepTypeWidth(ECR ecr) {
 		long defaultWidth = CType.getInstance().getWidth(CType.getUnitType());
+		if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) return defaultWidth;
+		
 		long ptrWidth = CType.getInstance().getWidth(new PointerT(CType.getVoidType()));
 		
 		switch(ecr.getType().getKind()) {

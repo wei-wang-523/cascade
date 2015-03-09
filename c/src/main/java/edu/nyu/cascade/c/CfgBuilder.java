@@ -294,7 +294,7 @@ public class CfgBuilder extends Visitor {
       				String charLiteral = new StringBuilder().append('\'').append(c).append('\'').toString();
       				final GNode initializer = GNode.create("CharacterConstant", charLiteral);
       				cop.typeCharacter(charLiteral).mark(initializer);
-      				symbolTable.mark(initializer);
+      				initializer.setLocation(srcNode.getLocation());
       				
       				final CExpression left = recurseOnExpression(getId());
       				final CExpression right = recurseOnExpression(initializer);
@@ -592,12 +592,14 @@ public class CfgBuilder extends Visitor {
     		
     		GNode id = GNode.create("SubscriptExpression", identifier, idxNode);
     		element.mark(id); 
+    		id.setLocation(srcNode.getLocation());
     		return id;
     	}
     	case STRUCT:
     	case UNION: {
     		GNode id = GNode.create("DirectComponentSelection", identifier, element.getName());
     		element.mark(id);
+    		id.setLocation(srcNode.getLocation());
     		return id;
     	}
     	default: 

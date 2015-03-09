@@ -36,7 +36,7 @@ public abstract class AbstractMode implements Mode {
   		return MultiCellLinearFormatter.create(encoding);
   	
   	if(Preferences.isSet(Preferences.OPTION_VARI_CELL))
-  			return VariCellLinearFormatter.create(encoding);
+  		return VariCellLinearFormatter.create(encoding);
   	
   	return SingleCellLinearFormatter.create(encoding);
 	}
