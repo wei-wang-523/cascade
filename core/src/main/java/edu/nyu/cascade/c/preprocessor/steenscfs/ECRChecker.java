@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import xtc.tree.GNode;
-import xtc.tree.Location;
 import xtc.tree.Node;
 import xtc.tree.VisitingException;
 import xtc.tree.Visitor;
@@ -44,7 +43,7 @@ class ECRChecker extends Visitor {
   /**
    * Store all the ECRs for operation node
    */
-  private final Map<Pair<GNode, Location>, ECR> opECRMap;
+  private final Map<Pair<GNode, String>, ECR> opECRMap;
   
   @SuppressWarnings("unused")
   private class LvalVisitor extends Visitor {
@@ -360,7 +359,7 @@ class ECRChecker extends Visitor {
 	}
 	
 	private ECR lookupOpECR(GNode opNode) {
-		Pair<GNode, Location> key = Pair.of(opNode, opNode.getLocation());
+		Pair<GNode, String> key = Pair.of(opNode, CType.getScopeName(opNode));
 		assert(opECRMap.containsKey(key));
 		return opECRMap.get(key);
 	}

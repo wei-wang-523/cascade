@@ -411,6 +411,7 @@ public class CfgBuilder extends Visitor {
         case POINTER: {
       		GNode initializer = GNode.create("IntegerConstant", String.valueOf(0));
       		cop.typeInteger(String.valueOf(0)).mark(initializer);
+      		symbolTable.mark(initializer);
           new Initializer(srcNode, id, initializer, element, element).process(isStatic);
         } break;
         case ARRAY: {
@@ -589,10 +590,13 @@ public class CfgBuilder extends Visitor {
     	case ARRAY: {
     		GNode idxNode = GNode.create("IntegerConstant", String.valueOf(index));
     		cop.typeInteger(String.valueOf(index)).mark(idxNode);
+    		idxNode.setLocation(srcNode.getLocation());
+    		symbolTable.mark(idxNode);
     		
     		GNode id = GNode.create("SubscriptExpression", identifier, idxNode);
-    		element.mark(id); 
+    		element.mark(id);
     		id.setLocation(srcNode.getLocation());
+    		symbolTable.mark(id);
     		return id;
     	}
     	case STRUCT:
@@ -600,6 +604,7 @@ public class CfgBuilder extends Visitor {
     		GNode id = GNode.create("DirectComponentSelection", identifier, element.getName());
     		element.mark(id);
     		id.setLocation(srcNode.getLocation());
+    		symbolTable.mark(id);
     		return id;
     	}
     	default: 
@@ -1155,6 +1160,7 @@ public class CfgBuilder extends Visitor {
   }
   
   private CExpression recurseOnExpression(Node node) {
+    if(!symbolTable.hasScope(node)) symbolTable.mark(node);
     expressionDepth++;
     CExpression e = (CExpression) dispatch(node);
     expressionDepth--;
@@ -1671,7 +1677,9 @@ public class CfgBuilder extends Visitor {
   	if(!type.resolve().isArray()) {
   		long size = CType.getInstance().getSize(type);
       Node sizeNode = GNode.create("IntegerConstant", String.valueOf(size));
-      sizeNode.setLocation(loc);	cop.typeInteger(String.valueOf(size)).mark(sizeNode);
+      sizeNode.setLocation(loc);	
+      cop.typeInteger(String.valueOf(size)).mark(sizeNode);
+      symbolTable.mark(sizeNode);
       return sizeNode;
   	}
   	
@@ -1682,7 +1690,9 @@ public class CfgBuilder extends Visitor {
   	
   	Node cellSizeNode = getSizeNode(cellNode, cellType);
   	Node sizeNode = GNode.create("MultiplicativeExpression", cellSizeNode, "*", lengthNode);
-  	sizeNode.setLocation(loc);	CType.getType(cellSizeNode).mark(sizeNode);
+  	sizeNode.setLocation(loc);	
+  	CType.getType(cellSizeNode).mark(sizeNode);
+  	symbolTable.mark(sizeNode);
   	
   	return sizeNode;
   }
@@ -2069,9 +2079,12 @@ public class CfgBuilder extends Visitor {
   }
 
   CExpression expressionOf(Node node) {
-  	return symbolTable.hasScope(node) ? 
-  			CExpression.create(node, symbolTable.getScope(node)) :
-  				CExpression.create(node, symbolTable.getCurrentScope());
+  	if(symbolTable.hasScope(node)) {
+  		return CExpression.create(node, symbolTable.getScope(node));
+  	} else {
+  		symbolTable.mark(node);
+  		return CExpression.create(node, symbolTable.getCurrentScope());
+  	}
   }
 
   public CExpression visitIndirectionExpression(GNode node) {
@@ -2279,9 +2292,9 @@ public class CfgBuilder extends Visitor {
     Node oneNode = GNode.create("IntegerConstant", "1");    
     Node decNode = GNode.create("AdditiveExpression", opNode, "-", oneNode);
     Node assignNode = GNode.create("AssignmentExpression", opExpr.getSourceNode(), "=", decNode);
-    oneNode.setLocation(loc); cop.typeInteger("1").mark(oneNode);
-    decNode.setLocation(loc); type.mark(decNode);
-    assignNode.setLocation(loc); type.mark(assignNode);
+    oneNode.setLocation(loc); cop.typeInteger("1").mark(oneNode); symbolTable.mark(oneNode);
+    decNode.setLocation(loc); type.mark(decNode); symbolTable.mark(decNode);
+    assignNode.setLocation(loc); type.mark(assignNode); symbolTable.mark(assignNode);
     
     Statement stmt = Statement.assign(assignNode, opExpr, CExpression.create(decNode, opExpr.getScope()));
     if(expressionDepth == 0)       addStatement(stmt);
@@ -2306,9 +2319,9 @@ public class CfgBuilder extends Visitor {
     Node oneNode = GNode.create("IntegerConstant", "1");    
     Node incNode = GNode.create("AdditiveExpression", opNode, "+", oneNode);
     Node assignNode = GNode.create("AssignmentExpression", opExpr.getSourceNode(), "=", incNode);
-    oneNode.setLocation(loc); cop.typeInteger("1").mark(oneNode);
-    incNode.setLocation(loc); type.mark(incNode);
-    assignNode.setLocation(loc); type.mark(assignNode);
+    oneNode.setLocation(loc); cop.typeInteger("1").mark(oneNode); symbolTable.mark(oneNode);
+    incNode.setLocation(loc); type.mark(incNode); symbolTable.mark(incNode);
+    assignNode.setLocation(loc); type.mark(assignNode); symbolTable.mark(assignNode);
     
     Statement stmt = Statement.assign(assignNode, opExpr, CExpression.
         create(incNode, opExpr.getScope()));
@@ -2334,9 +2347,9 @@ public class CfgBuilder extends Visitor {
     Node oneNode = GNode.create("IntegerConstant", "1");    
     Node decNode = GNode.create("AdditiveExpression", opNode, "-", oneNode);
     Node assignNode = GNode.create("AssignmentExpression", opExpr.getSourceNode(), "=", decNode);
-    oneNode.setLocation(loc); cop.typeInteger("1").mark(oneNode);
-    decNode.setLocation(loc); type.mark(decNode);
-    assignNode.setLocation(loc); type.mark(assignNode);
+    oneNode.setLocation(loc); cop.typeInteger("1").mark(oneNode); symbolTable.mark(oneNode);
+    decNode.setLocation(loc); type.mark(decNode); symbolTable.mark(decNode);
+    assignNode.setLocation(loc); type.mark(assignNode); symbolTable.mark(assignNode);
     
     addStatement(Statement.assign(assignNode, opExpr, CExpression
         .create(decNode, opExpr.getScope())));
@@ -2360,9 +2373,9 @@ public class CfgBuilder extends Visitor {
     Node oneNode = GNode.create("IntegerConstant", "1");
     Node incNode = GNode.create("AdditiveExpression", opNode, "+", oneNode);
     Node assignNode = GNode.create("AssignmentExpression", opExpr.getSourceNode(), "=", incNode);
-    oneNode.setLocation(loc); cop.typeInteger("1").mark(oneNode);
-    incNode.setLocation(loc); type.mark(incNode);
-    assignNode.setLocation(loc); type.mark(assignNode);
+    oneNode.setLocation(loc); cop.typeInteger("1").mark(oneNode); symbolTable.mark(oneNode);
+    incNode.setLocation(loc); type.mark(incNode); symbolTable.mark(incNode);
+    assignNode.setLocation(loc); type.mark(assignNode); symbolTable.mark(assignNode);
     
     addStatement(Statement.assign(assignNode, opExpr, CExpression
         .create(incNode, opExpr.getScope())));

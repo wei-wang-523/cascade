@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import xtc.tree.GNode;
-import xtc.tree.Location;
 import xtc.tree.Node;
 import xtc.tree.VisitingException;
 import xtc.tree.Visitor;
@@ -55,7 +54,7 @@ class ECREncoder extends Visitor {
    * their references names (variable names) and scope names
    */
   private final Map<Pair<String, String>, ECR> ecrMap = Maps.newHashMap();
-  private final Map<Pair<GNode, Location>, ECR> opECRMap = Maps.newHashMap();
+  private final Map<Pair<GNode, String>, ECR> opECRMap = Maps.newHashMap();
   
   @SuppressWarnings("unused")
   private class LvalVisitor extends Visitor {
@@ -274,7 +273,7 @@ class ECREncoder extends Visitor {
     }
 
     public ECR visitCastExpression(GNode node) {
-    	Pair<GNode, Location> key = Pair.of(node, node.getLocation());
+    	Pair<GNode, String> key = Pair.of(node, CType.getScopeName(node));
     	if(opECRMap.containsKey(key)) return opECRMap.get(key);
     	
     	ECR srcECR = encodeECR(node.getNode(1));
@@ -444,7 +443,7 @@ class ECREncoder extends Visitor {
   	return ecrMap;
   }
   
-  Map<Pair<GNode, Location>, ECR> getOpECRMap() {
+  Map<Pair<GNode, String>, ECR> getOpECRMap() {
   	return opECRMap;
   }
   
@@ -616,7 +615,7 @@ class ECREncoder extends Visitor {
 	 * @return
 	 */
 	private ECR getOpECR(GNode node, ECR leftECR, ECR rightECR) {
-		Pair<GNode, Location> key = Pair.of(node, node.getLocation());
+		Pair<GNode, String> key = Pair.of(node, CType.getScopeName(node));
 		if(opECRMap.containsKey(key)) return opECRMap.get(key);
 		
 		ECR resECR = ECR.createBottom();
