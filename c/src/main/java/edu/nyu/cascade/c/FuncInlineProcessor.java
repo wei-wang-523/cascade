@@ -9,7 +9,6 @@ import java.util.Map.Entry;
 import xtc.tree.GNode;
 import xtc.tree.Node;
 import xtc.type.FunctionT;
-import xtc.type.NumberT;
 import xtc.type.Type;
 import xtc.type.Type.Tag;
 import xtc.util.SymbolTable.Scope;
@@ -45,6 +44,7 @@ public class FuncInlineProcessor<T> {
   private final SymbolTable symbolTable;
   private final PreProcessor<T> preprocessor;
   private final int effortLevel;
+  private final xtc.type.C cop = CType.getInstance().c();
 	
   private FuncInlineProcessor(
       Map<Node, IRControlFlowGraph> cfgs,
@@ -221,9 +221,10 @@ public class FuncInlineProcessor<T> {
       
     	for(int j = 0; i< argSize; i++, j++) {
     		GNode offsetNode = GNode.create("IntegerConstant", String.valueOf(j));
-    		NumberT.INT.mark(offsetNode);
+    		cop.typeInteger(String.valueOf(j)).mark(offsetNode); symbolTable.mark(offsetNode);
+    		
     		GNode primaryIdPrime = GNode.create("AdditiveExpression", primaryId, "+", offsetNode);
-    		paramType.mark(primaryIdPrime); symbolTable.mark(primaryId);
+    		paramType.mark(primaryIdPrime); symbolTable.mark(primaryIdPrime);
     		
     		IRExpressionImpl param = CExpression.create(primaryIdPrime, symbolTable.getCurrentScope());
     		IRExpressionImpl arg = (IRExpressionImpl) args.get(i);
@@ -444,6 +445,7 @@ public class FuncInlineProcessor<T> {
 			GNode ptrToNode = GNode.create("IndirectionExpression", funNode);
 			ptrToNode.setLocation(funNode.getLocation());
 			funType.toPointer().getType().mark(ptrToNode);
+			symbolTable.mark(ptrToNode);
 			
 			String scopeName = CType.getScopeName(funNode);
 			ptrToNode.setProperty(Identifiers.SCOPE, scopeName);
