@@ -415,20 +415,10 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
 
     public Expression visitIntegerConstant(GNode node) {
-    	CType cTypeAnalyzer = encoding.getCTypeAnalyzer();
-    	
-      String numStr = node.getString(0);
-      Type srcType = cTypeAnalyzer.typeInteger(numStr);
-      
-      boolean isUnsigned = CType.isUnsigned(srcType);
+      Type srcType = CType.getType(node);
       Expression value = encoding.integerConstant(
       		srcType.getConstant().bigIntValue());
-      
-      Type targetType = CType.getType(node);
-      int size = (int) cTypeAnalyzer.getWidth(targetType);
-      
-      Expression valuePrime = encoding.castToInteger(value, size, !isUnsigned);
-      return valuePrime;
+      return value;
     }
 
     public Expression visitLogicalAndExpression(GNode node) {
