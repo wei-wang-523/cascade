@@ -15,6 +15,8 @@ public interface RunProcessor {
 	void init();
 	
 	void init(String label);
+
+	void preprocess();
 	
   /**
 	 * Process reachability checking in CFG to visit block with <code>label</code>

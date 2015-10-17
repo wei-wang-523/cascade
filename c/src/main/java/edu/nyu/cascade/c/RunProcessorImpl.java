@@ -188,15 +188,18 @@ class RunProcessorImpl implements RunProcessor {
 	}
 
 	@Override
+	public void preprocess() {
+		if(preprocessor == null) return;
+		if(!mode.hasPreprocessor()) return;
+		preprocessor.analysis(globalCFG);
+		for(IRControlFlowGraph cfg : cfgs)	preprocessor.analysis(cfg);
+		preprocessor.initChecker();		
+	}
+
+	@Override
 	public void init() {
 		CfgProcessor.simplifyCFG(globalCFG);
 		for(IRControlFlowGraph cfg : cfgs)	CfgProcessor.simplifyCFG(cfg);
-		
-		if(preprocessor == null) return;
-		
-		preprocessor.analysis(globalCFG);
-		for(IRControlFlowGraph cfg : cfgs)	preprocessor.analysis(cfg);
-		preprocessor.initChecker();
 	}
 	
 	@Override
@@ -204,11 +207,5 @@ class RunProcessorImpl implements RunProcessor {
 		CfgProcessor.simplifyCFG(globalCFG, label);
 		
 		for(IRControlFlowGraph cfg : cfgs)	CfgProcessor.simplifyCFG(cfg, label);
-		
-		if(!mode.hasPreprocessor()) return;
-		
-		preprocessor.analysis(globalCFG);
-		for(IRControlFlowGraph cfg : cfgs)	preprocessor.analysis(cfg);
-		preprocessor.initChecker();
 	}
 }

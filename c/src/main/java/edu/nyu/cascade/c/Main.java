@@ -87,7 +87,9 @@ public class Main {
   private static final String OPTION_NO_THREADS = "no-threads";
   private static final String OPTION_PARSEC = "parsec";
   private static final String OPTION_PARSE_ONLY = "parse-only";
+  private static final String OPTION_CFG_ONLY = "cfg-only";
   private static final String OPTION_DRY_RUN = "dry-run";
+  private static final String OPTION_PTR_ANALYSIS_ONLY = "ptr-analysis-only";
   private static final String OPTION_DEBUG = "debug";
   private static final String OPTION_STATS = "stats";
   private static final String OPTION_FEASIBILITY = "feasibility";
@@ -132,6 +134,9 @@ public class Main {
       		.create()) //
       .addOption(OptionBuilder.withLongOpt(OPTION_NO_THREADS) //
           .withDescription("Run all sub-processes in a single thread") //
+          .create()) //
+      .addOption(OptionBuilder.withLongOpt(OPTION_CFG_ONLY) //
+          .withDescription("Build and simplify cfg, then quit") //
           .create()) //
       .addOption(OptionBuilder.withLongOpt(OPTION_PARSEC) //
           .withDescription("Parse input as C source file") //
@@ -267,7 +272,11 @@ public class Main {
       .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE) //
               .withDescription("Enable cell based field sensitive pointer analysis.") //
-              .create("cfs"));
+              .create("cfs"))
+      .addOption(
+	  OptionBuilder.withLongOpt(OPTION_PTR_ANALYSIS_ONLY) //
+	      .withDescription("Run pointer analysis only") //
+	      .create("ptr"));
           
   public static void main(String[] args) throws IOException, ParseException, TheoremProverException {
     IOUtils.enableOut();
@@ -739,6 +748,16 @@ public class Main {
   	String label = Preferences.getString(Preferences.OPTION_REACHABILITY);
     
   	runProcessor.init(label);
+
+  	if (Preferences.isSet(OPTION_CFG_ONLY)) return;
+  	
+  	runProcessor.preprocess();
+
+	if( Preferences.isSet(OPTION_PTR_ANALYSIS_ONLY)) {
+	    safeResult = SafeResult.unknown("Pointer analysis only");
+	    printResult(0, funcInline, IOUtils.outPrinter());
+	    return;
+	}
     
     /* Merge graph and function inline */
     runProcessor.prepare(mainCfg);
@@ -836,6 +855,16 @@ public class Main {
       	Preferences.getString(Preferences.OPTION_FUNC_INLINE) : "all-inline";
     
     runProcessor.init();
+
+    if (Preferences.isSet(OPTION_CFG_ONLY)) return;
+    
+    runProcessor.preprocess();
+    
+    if( Preferences.isSet(OPTION_PTR_ANALYSIS_ONLY)) {
+	safeResult = SafeResult.unknown("Pointer analysis only");
+	printResult(0, funcInline, IOUtils.outPrinter());
+	return;
+    }
     
     /* Merge graph and function inline */
     runProcessor.prepare(mainCfg);
