@@ -535,7 +535,15 @@ class ECREncoder extends Visitor {
 		ValueType structType = ValueType.struct(locType.getSize(), locType.getParent());
 		
 		locType = uf.unify(locType, structType); // Ensure locType is struct type
-		uf.setType(loc, locType);
+		// The type set to loc might not be locType. Since loc could be with bottom type
+		// and associated with ccjoin or cjoin pending, the type change could trigger the
+		// pending resolving process and would change the type set to loc (could be ref)
+		uf.setType(loc, locType); 
+		
+		if(uf.getType(loc).isSimple()) {
+			uf.expand(loc, Size.createForType(fieldType));
+			return srcECR;
+		}
 		
 		RangeMap<Long, ECR> fieldMap = locType.asStruct().getFieldMap();
 		long size = CType.getInstance().getSize(fieldType);

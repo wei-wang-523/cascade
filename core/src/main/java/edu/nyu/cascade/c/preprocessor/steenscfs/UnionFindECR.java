@@ -480,6 +480,7 @@ class UnionFindECR {
 			union(structECR, elemLoc);
 			unionType = unionType == null ? elemLocType : unify(unionType, elemLocType);
 		}
+		unionType = unionType == null ? ValueType.bottom() : unionType;
 		setType(structECR, unionType);
 		return unionType;
 	}
