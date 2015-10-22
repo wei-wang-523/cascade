@@ -178,8 +178,10 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   		Expression region = args.get(0);
   		Expression value = args.get(1);
   		Expression size = args.get(2);
+  		Node regionNode = argNodes.get(0);
+  		stateFactory.setValidAccessRange(preState, region, size, regionNode);
   		BooleanExpression memset = stateFactory.applyMemset(preState, 
-  				region, size, value, argNodes.get(0));
+  				region, size, value, regionNode);
   		preState.addConstraint(memset);
   	}
   	

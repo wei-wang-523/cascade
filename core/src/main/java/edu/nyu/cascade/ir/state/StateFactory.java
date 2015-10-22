@@ -191,6 +191,8 @@ public interface StateFactory<T> {
 	
 	void setValidAccess(StateExpression preState, Expression lhsExpr, Node lNode);
 	
+	void setValidAccessRange(StateExpression preState, Expression lhsExpr, Expression sizeExpr, Node lNode);
+	
 	void setValidFree(StateExpression preState, Expression regionExpr, Node ptrNode);
 	
 	BooleanExpression stateToBoolean(StateExpression state);

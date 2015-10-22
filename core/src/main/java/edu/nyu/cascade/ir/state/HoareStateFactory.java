@@ -317,6 +317,20 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 	}
 
 	@Override
+	public void setValidAccessRange(StateExpression pre, Expression lhsExpr,
+	    Expression sizeExpr, Node lNode) {
+		if(!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) return;
+		if(lhsExpr.isHoareLogic()) return;
+		
+		BooleanExpression validAccess = validAccessRange(pre, lhsExpr, sizeExpr, lNode);
+		BooleanExpression tt = stateFactory.getExpressionManager().tt();
+		if(validAccess.equals(tt)) return;
+		
+		BooleanExpression assertion = stateToBoolean(pre).implies(validAccess);
+		pre.addAssertion(Identifiers.VALID_DEREF, assertion);
+	}
+
+	@Override
 	public void setValidFree(StateExpression pre, Expression regionExpr,
 	    Node ptrNode) {
 		if(!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) return;

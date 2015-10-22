@@ -137,6 +137,19 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 	}
 	
 	@Override
+	public void setValidAccessRange(StateExpression pre, Expression lhsExpr,
+			Expression sizeExpr, Node lNode) {
+		if(!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) return;
+		BooleanExpression validAccessRange = validAccessRange(pre, lhsExpr, sizeExpr, lNode);
+		BooleanExpression tt = getExpressionManager().tt();
+		if(validAccessRange.equals(tt)) return;
+		
+		BooleanExpression assumption = stateToBoolean(pre);
+		BooleanExpression assertion = assumption.implies(validAccessRange);
+		pre.addAssertion(Identifiers.VALID_DEREF, assertion);
+	}
+	
+	@Override
 	public void setValidFree(StateExpression pre, Expression regionExpr, 
 			Node ptrNode) {
 		if(!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) return;
