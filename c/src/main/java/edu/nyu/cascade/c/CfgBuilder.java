@@ -877,10 +877,15 @@ public class CfgBuilder extends Visitor {
   private CExpression returnExpr;
   
   /**
+   * The label for statement as expression and the expression.
+   */
+  private boolean isStmtAsExpr = false;
+  
+  /**
    * The static encoding environment for encoding static initializer
    */
   private boolean staticEnv = false;
-
+  
 	private final SymbolTable symbolTable;
 	private final Map<Node, ControlFlowGraph> cfgs;
   private final Deque<Scope> scopes;
@@ -1523,18 +1528,38 @@ public class CfgBuilder extends Visitor {
     }
   }
   
-  public void visitCompoundStatement(GNode node) {
-  	if(symbolTable.hasScope(node)) {
+  public CExpression visitCompoundStatement(GNode node) {
+  	final boolean stmtexpr = isStmtAsExpr;
+  	isStmtAsExpr = false;
+  	
+  	boolean hasScope = symbolTable.hasScope(node);
+  	if(hasScope) {
     	enterScope(node);
-      for (Object o : node) {
-        dispatch((Node) o);
-      }
-      exitScope();
-    } else {
-      for (Object o : node) {
-        dispatch((Node) o);
+    }
+
+  	CExpression result = null;
+    final int size = node.size();
+    for (int i=0; i<size; i++) {
+      Object o = dispatch((Node)node.get(i));
+
+      if ((size-2 == i) && (o instanceof CExpression)) {
+        // If the last statement (i.e., the child before the trailing
+        // annotations) is an expression statement, capture that
+        // expression's type.
+        result = (CExpression)o;
       }
     }
+  	
+  	if(hasScope) {
+  		exitScope();
+  	}
+  	
+    return stmtexpr ? result : null;
+  }
+  
+  public CExpression visitStatementAsExpression(GNode node) {
+  	isStmtAsExpr = true;
+  	return recurseOnExpression(node.getNode(0));
   }
 
   public void visitContinueStatement(GNode node) {
@@ -1623,9 +1648,10 @@ public class CfgBuilder extends Visitor {
     return subExprList;
   }
 
-  public void visitExpressionStatement(GNode node) {
-    dispatch(node.getNode(0));
+  public CExpression visitExpressionStatement(GNode node) {
+    CExpression result = recurseOnExpression(node.getNode(0));
     flushPostStatements();
+    return result;
   }
 
   /* Do-nothing implementation to make errors from header files go away. */
