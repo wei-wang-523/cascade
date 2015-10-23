@@ -11,6 +11,7 @@ import xtc.tree.Node;
 import xtc.tree.VisitingException;
 import xtc.tree.Visitor;
 import xtc.type.Type;
+import xtc.type.VoidT;
 import xtc.type.Type.Tag;
 import xtc.util.SymbolTable.Scope;
 
@@ -21,6 +22,7 @@ import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.SymbolTable;
+import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.ReservedFunction;
@@ -335,6 +337,42 @@ class ECRChecker extends Visitor {
 	
 	ECR getFunctionECR(String functionName) {
 	  return lookup(functionName, CScopeAnalyzer.getRootScopeName());
+	}
+	
+	/**
+	 * Create region ECR for the expression <code>region</code>
+	 * @param region
+	 * @param ptrNode
+	 * @return
+	 */
+	void createRegionVar(Expression region, Node ptrNode) {
+		String name = region.asVariable().getName();
+		String scopeName = CType.getScopeName(ptrNode);
+		ECR ptrECR = rvalVisitor.encodeECR(ptrNode);
+		ECR regionECR = uf.findRoot(uf.getLoc(ptrECR));
+		
+		VarImpl regionVar = new VarImpl(name, VoidT.TYPE, scopeName, regionECR);
+		uf.add(regionVar);
+	}
+	
+	void addStackVar(Expression lval, Node lvalNode) {
+		createVar(lval, lvalNode);
+		
+		Type type = CType.getType(lvalNode).resolve();
+		if(type.isArray() || type.isUnion() || type.isStruct())
+			createRegionVar(lval, lvalNode);
+	}
+	
+	private void createVar(Expression lval, Node lvalNode) {
+		String name =  lval.asVariable().getName();
+		String scopeName = CType.getScopeName(lvalNode);
+		Type type = CType.getType(lvalNode).resolve();
+		if(type.isFunction())
+			type = CType.getInstance().pointerize(type);
+			
+		ECR lvalECR = rvalVisitor.encodeECR(lvalNode);
+		VarImpl var = new VarImpl(name, type, scopeName, lvalECR);
+		uf.add(var);
 	}
 
 	private ECR getComponent(ECR srcECR, long offset) {

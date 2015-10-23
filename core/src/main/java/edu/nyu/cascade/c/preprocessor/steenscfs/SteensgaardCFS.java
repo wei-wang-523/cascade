@@ -18,9 +18,9 @@ import xtc.type.PointerT;
 import xtc.type.Type;
 import edu.nyu.cascade.c.CAnalyzer;
 import edu.nyu.cascade.c.CType;
-import edu.nyu.cascade.c.preprocessor.ValueFlowGraph;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
+import edu.nyu.cascade.c.preprocessor.ValueFlowGraph;
 import edu.nyu.cascade.ir.IRBasicBlock;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.IREdge;
@@ -54,7 +54,7 @@ public class SteensgaardCFS implements PreProcessor<ECR> {
   public static SteensgaardCFS create(SymbolTable symbolTable) {
     return new SteensgaardCFS(symbolTable);
   }
-  
+
   @Override
   public ValueFlowGraph<ECR> valueFlowAnalysis(IRControlFlowGraph cfg) {
   	ValueFlowGraph<ECR>	currentVFG = new ValueFlowGraph<ECR>(cfg.getName());
@@ -281,6 +281,7 @@ public class SteensgaardCFS implements PreProcessor<ECR> {
 		  	}
 	  		break;
 		  }
+		  case FREE:
 		  case ASSERT:
 		  case ASSUME: {
 		  	Node src = stmt.getOperand(0).getSourceNode();
@@ -355,7 +356,7 @@ public class SteensgaardCFS implements PreProcessor<ECR> {
 	
 	@Override
 	public ECR getRep(Node node) {
-		return uf.findRoot(ecrEncoder.toRval(node));
+		return uf.findRoot(ecrChecker.toRval(node));
 	}
 
 	@Override
@@ -363,7 +364,7 @@ public class SteensgaardCFS implements PreProcessor<ECR> {
 		if(!IOUtils.debugEnabled()) return;
 		
 		/* The freshRegionVar should have the same scope and type as place holder */
-		ecrEncoder.createRegionVar(region, ptrNode);
+		ecrChecker.createRegionVar(region, ptrNode);
 		IOUtils.debug().pln(displaySnapShot());
 	}
 
@@ -371,7 +372,7 @@ public class SteensgaardCFS implements PreProcessor<ECR> {
 	public void addStackVar(Expression lval, Node lvalNode) {
 		if(!IOUtils.debugEnabled()) return;
 		
-		ecrEncoder.addStackVar(lval, lvalNode);
+		ecrChecker.addStackVar(lval, lvalNode);
 		IOUtils.debug().pln(displaySnapShot());
 	}
 	
@@ -384,7 +385,7 @@ public class SteensgaardCFS implements PreProcessor<ECR> {
 	  
 	  for(Entry<ECR, Collection<IRVar>> entry : snapShot.entrySet()) {
 	  	ECR ecr = entry.getKey();
-	  	
+	  	if(uf.getType(ecr).isLambda()) continue;
 	  	Collection<IRVar> vars = entry.getValue();
 	  	if(!vars.isEmpty()) {
 	  		sb.append("Partition ").append(ecr.getId()).append(": ");

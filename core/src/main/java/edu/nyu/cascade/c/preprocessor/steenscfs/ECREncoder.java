@@ -18,7 +18,6 @@ import xtc.type.FunctionT;
 import xtc.type.NumberT;
 import xtc.type.PointerT;
 import xtc.type.Type;
-import xtc.type.VoidT;
 import xtc.type.Type.Tag;
 import xtc.util.SymbolTable.Scope;
 
@@ -35,13 +34,12 @@ import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.SymbolTable;
-import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.ReservedFunction;
 import edu.nyu.cascade.util.ReservedFunction.Sig;
 
-class ECREncoder extends Visitor {
+public class ECREncoder extends Visitor {
   	
   private final UnionFindECR uf;
   private final SymbolTable symbolTable;
@@ -455,30 +453,6 @@ class ECREncoder extends Visitor {
   ECR getFunctionECR(String functionName) {
   	return ecrMap.get(Pair.of(functionName, CScopeAnalyzer.getRootScopeName()));
   }
-  
-	/**
-	 * Create region ECR for the expression <code>region</code>
-	 * @param region
-	 * @param ptrNode
-	 * @return
-	 */
-	void createRegionVar(Expression region, Node ptrNode) {
-		String name = region.asVariable().getName();
-		String scopeName = CType.getScopeName(ptrNode);
-		ECR ptrECR = rvalVisitor.encodeECR(ptrNode);
-		ECR regionECR = uf.findRoot(uf.getLoc(ptrECR));
-		
-		VarImpl regionVar = new VarImpl(name, VoidT.TYPE, scopeName, regionECR);
-		uf.add(regionVar);
-	}
-	
-	void addStackVar(Expression lval, Node lvalNode) {
-		createVar(lval, lvalNode);
-		
-		Type type = CType.getType(lvalNode).resolve();
-		if(type.isArray() || type.isUnion() || type.isStruct())
-			createRegionVar(lval, lvalNode);
-	}
 	
 	ValueType getLamdaType(Type type) {
 		Preconditions.checkArgument(type.resolve().isFunction());
@@ -537,7 +511,7 @@ class ECREncoder extends Visitor {
 		locType = uf.unify(locType, structType); // Ensure locType is struct type
 		// The type set to loc might not be locType. Since loc could be with bottom type
 		// and associated with ccjoin or cjoin pending, the type change could trigger the
-		// pending resolving process and would change the type set to loc (could be ref)
+		// pending resolving process and would change the type set to loc (could be simple)
 		uf.setType(loc, locType); 
 		
 		if(uf.getType(loc).isSimple()) {
@@ -550,18 +524,6 @@ class ECREncoder extends Visitor {
 		Range<Long> range = Range.closedOpen(offset, offset + size);
 		normalize(loc, fieldType, range, fieldMap);
 		return fieldMap.get(offset);
-	}
-
-	private void createVar(Expression lval, Node lvalNode) {
-		String name =  lval.asVariable().getName();
-		String scopeName = CType.getScopeName(lvalNode);
-		Type type = CType.getType(lvalNode).resolve();
-		if(type.isFunction())
-			type = CType.getInstance().pointerize(type);
-			
-		ECR lvalECR = rvalVisitor.encodeECR(lvalNode);
-		VarImpl var = new VarImpl(name, type, scopeName, lvalECR);
-		uf.add(var);
 	}
 
 	private ECR getConstant() {

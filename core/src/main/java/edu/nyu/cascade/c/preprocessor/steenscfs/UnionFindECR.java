@@ -466,14 +466,23 @@ class UnionFindECR {
 		
 		// join components
 		Collection<ECR> elems = structT.getFieldMap().asMapOfRanges().values();
+		Collection<ECR> cjoins = Sets.newHashSet();
+		Collection<Pair<Size,ECR>> ccjoins = Sets.newHashSet();
 		
 		for(ECR elem : elems) {			
 			ECR elemLoc = getLoc(elem);
 			ValueType elemLocType = getType(elemLoc);
 			Parent parent = elemLocType.getParent().removeECR(structECR);
 			elemLocType.setParent(parent);
+			
+			if(!ECRCache.add(elemLoc)) continue; // ECRCache has elemLoc
+			
+			cjoins.addAll(getCjoins(elemLoc));
+			elemLoc.clearCCjoins(ccjoins);
+			ccjoins.addAll(getCCjoins(elemLoc));
+			elemLoc.clearCCjoins(ccjoins);
+			
 			if(elemLocType.isStruct()) {
-				if(!ECRCache.add(elemLoc)) continue; // ECRCache has elemLoc
 				elemLocType = collapseStruct(elemLoc, elemLocType.asStruct(), ECRCache);
 			}
 			
@@ -481,7 +490,15 @@ class UnionFindECR {
 			unionType = unionType == null ? elemLocType : unify(unionType, elemLocType);
 		}
 		unionType = unionType == null ? ValueType.bottom() : unionType;
+		
 		setType(structECR, unionType);
+		ECR root = findRoot(structECR);
+		
+  	for(Pair<Size, ECR> cjoinPair : ccjoins)
+  		ccjoin(cjoinPair.fst(), root, cjoinPair.snd());
+  	
+  	for(ECR joinECR : cjoins)	cjoin(root, joinECR);
+		
 		return unionType;
 	}
 
