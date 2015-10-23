@@ -48,6 +48,15 @@ public interface StateFactory<T> {
 	BooleanExpression validAccess(StateExpression state, Expression ptr, 
 			Node ptrNode);
 
+	/**
+	 * This function is used for memset function call (for now). <code>ptr</code>
+	 * is the returned pointer of memset. Here we actually checks
+	 * if [ptr, ptr+size) are valid access with the region pointed by
+	 * <code>ptr</code>. Thus in multi-lambda encoding, the partition we need to
+	 * check the predicate is not the partition of <code>ptrNode</code>, but the
+	 * partition pointed by it.
+	 * @return
+	 */
 	BooleanExpression validAccessRange(StateExpression state, Expression ptr,
       Expression size, Node ptrNode);
 	

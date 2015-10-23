@@ -231,12 +231,14 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	    Expression size, Node ptrNode) {
 		T srcRep = labelAnalyzer.getRep(ptrNode);
 		
-		xtc.type.Type ptrType = CType.getType(ptrNode);
-		if(!CType.isScalar(ptrType)) {
-			/* The address should belongs to the group it points-to, where to reason
-			 * about disjointness */
-			srcRep = labelAnalyzer.getPointsToLoc(srcRep);
-		}
+//		xtc.type.Type ptrType = CType.getType(ptrNode);
+//		if(!CType.isScalar(ptrType)) {
+//			/* The address should belongs to the group it points-to, where to reason
+//			 * about disjointness */
+//			srcRep = labelAnalyzer.getPointsToLoc(srcRep);
+//		}
+		
+		srcRep = labelAnalyzer.getPointsToLoc(srcRep);
 		
 		MultiLambdaStateExpression multiState = state.asMultiLambda();
 		updateStateWithRep(multiState, srcRep);

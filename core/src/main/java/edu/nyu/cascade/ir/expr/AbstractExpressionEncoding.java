@@ -1178,13 +1178,13 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   	if(isInteger(base1)) {
   		Expression baseBound1 = plus(base1, size1);
   		Expression baseBound2 = plus(base2, size2);
-  		return and(lessThanOrEqual(base1, base2), lessThan(baseBound2, baseBound1));
+  		return and(lessThanOrEqual(base1, base2), lessThanOrEqual(baseBound2, baseBound1));
   	} else {
   		PointerEncoding<? extends Expression> pe = getPointerEncoding();
   		IntegerEncoding<? extends Expression> ie = getIntegerEncoding();
   		Expression baseBound1 = pointerPlus_(pe, ie, base1, size1);
   		Expression baseBound2 = pointerPlus_(pe, ie, base2, size2);
-  		return and(pointerLessThanOrEqual_(pe, base1, base2), pointerLessThan_(pe, baseBound2, baseBound1));
+  		return and(pointerLessThanOrEqual_(pe, base1, base2), pointerLessThanOrEqual_(pe, baseBound2, baseBound1));
   	}
   }
   
