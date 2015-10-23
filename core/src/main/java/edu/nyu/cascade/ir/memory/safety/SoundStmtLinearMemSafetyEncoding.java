@@ -90,7 +90,7 @@ public class SoundStmtLinearMemSafetyEncoding extends AbstractStmtMemSafetyEncod
 		
 	  BooleanExpression mark = markArr.index(region).asBooleanExpression();
 		BooleanExpression tt = mark.getType().asBooleanType().tt();
-	  return mark.eq(tt);
+	  return region.eq(formatter.getNullAddress()).or(mark.eq(tt));
 	}
 	
 	@Override

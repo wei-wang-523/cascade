@@ -53,7 +53,8 @@ public abstract class AbstractDataFormatter implements IRDataFormatter {
 
 	@Override
 	public Expression indexSizeArray(ArrayExpression sizeArr, Expression index) {
-		return sizeArr.index(index);
+		return encoding.ifThenElse(index.eq(getNullAddress()), getSizeZero(),
+				sizeArr.index(index));
 	}
 	
 	@Override
