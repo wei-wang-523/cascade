@@ -252,6 +252,7 @@ public class Steensgaard implements PreProcessor<ECR> {
 	  sb.append('\n').append("The result of Steensgaard analysis:\n");
 	  for(Entry<ECR, Collection<IRVar>> entry : snapShot.entrySet()) {
 	  	ECR ecr = entry.getKey();
+	  	if(uf.getType(ecr).isLambda()) continue;
 	  	Collection<IRVar> vars = entry.getValue();
 	  	if(!vars.isEmpty()) {
 	  		sb.append("Partition ").append(ecr.getId());

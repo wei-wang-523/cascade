@@ -370,7 +370,7 @@ public class SteensgaardFS implements PreProcessor<ECR> {
 	  
 	  for(Entry<ECR, Collection<IRVar>> entry : snapShot.entrySet()) {
 	  	ECR ecr = entry.getKey();
-	  	
+	  	if(uf.getType(ecr).isLambda()) continue;
 	  	Collection<IRVar> vars = entry.getValue();
 	  	if(!vars.isEmpty()) {
 	  		sb.append("Partition ").append(ecr.getId()).append(": ");
