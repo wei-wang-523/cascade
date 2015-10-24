@@ -2,6 +2,7 @@ package edu.nyu.cascade.c;
 
 import edu.nyu.cascade.prover.SatResult;
 import edu.nyu.cascade.prover.ValidityResult;
+import edu.nyu.cascade.util.IOUtils;
 
 public class SafeResult {
 	enum SafeResultType {
@@ -34,7 +35,9 @@ public class SafeResult {
 	
 	public static SafeResult unknown(String unknownReason) {
 		SafeResult res = new SafeResult(SafeResultType.UNKNOWN);
-		res.setFailReason(unknownReason);
+		if(IOUtils.debugEnabled()) {
+			res.setFailReason(unknownReason);
+		}
 		return res;
 	}
 	
