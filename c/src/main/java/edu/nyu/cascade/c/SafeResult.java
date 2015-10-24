@@ -5,8 +5,8 @@ import edu.nyu.cascade.prover.ValidityResult;
 
 public class SafeResult {
 	enum SafeResultType {
-		SAFE,
-		UNSAFE,
+		TRUE,
+		FALSE,
 		UNKNOWN
 	}
 	
@@ -20,16 +20,16 @@ public class SafeResult {
 	public static SafeResult valueOf(ValidityResult<?> result) {
 		switch(result.getType()) {
 		case INVALID:
-			return new SafeResult(SafeResultType.UNSAFE);
+			return new SafeResult(SafeResultType.FALSE);
 		case UNKNOWN:
 			return new SafeResult(SafeResultType.UNKNOWN);
 		default:
-			return new SafeResult(SafeResultType.SAFE);
+			return new SafeResult(SafeResultType.TRUE);
 		}
 	}
 	
 	public static SafeResult valid() {
-		return new SafeResult(SafeResultType.SAFE);
+		return new SafeResult(SafeResultType.TRUE);
 	}
 	
 	public static SafeResult unknown(String unknownReason) {
@@ -41,11 +41,11 @@ public class SafeResult {
 	public static SafeResult valueOf(SatResult<?> result) {
 		switch(result.getType()) {
 		case SAT:
-			return new SafeResult(SafeResultType.UNSAFE);
+			return new SafeResult(SafeResultType.FALSE);
 		case UNKNOWN:
 			return new SafeResult(SafeResultType.UNKNOWN);
 		default:
-			return new SafeResult(SafeResultType.SAFE);
+			return new SafeResult(SafeResultType.TRUE);
 		}
 	}
 	
@@ -54,11 +54,11 @@ public class SafeResult {
 	}
 	
 	public boolean isSafe() {
-		return type.equals(SafeResultType.SAFE);
+		return type.equals(SafeResultType.TRUE);
 	}
 	
 	public boolean isUnsafe() {
-		return type.equals(SafeResultType.UNSAFE);
+		return type.equals(SafeResultType.FALSE);
 	}
 	
 	public boolean isUnknown() {

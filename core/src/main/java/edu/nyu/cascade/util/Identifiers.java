@@ -36,9 +36,9 @@ public class Identifiers {
 	public static final String ITERTIMES = "iterTimes";	
 	
 	/** The attached memory check assertion */
-  public static final String VALID_DEREF = "p_valid-deref";
-  public static final String VALID_FREE = "p_valid-free";
-  public static final String VALID_MEMORY_TRACE = "p_valid-memtrack";
+  public static final String VALID_DEREF = "valid-deref";
+  public static final String VALID_FREE = "valid-free";
+  public static final String VALID_MEMORY_TRACE = "valid-memtrack";
 	
 	public static enum IdType {
     DEFAULT,
