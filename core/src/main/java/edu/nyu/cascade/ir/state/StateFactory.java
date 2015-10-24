@@ -35,6 +35,13 @@ public interface StateFactory<T> {
 	 * Initialize the <code>region</code> of memory with <code>size</code> 
 	 * to be <code>value</code>
 	 */
+	BooleanExpression applyMemset(StateExpression state, Expression region, 
+			Expression size, int value, Node ptrNode);
+	
+	/**
+	 * Initialize the <code>region</code> of memory with <code>size</code> 
+	 * to be <code>value</code>
+	 */
 	BooleanExpression applyMemcpy(StateExpression state, Expression destRegion, 
 			Expression srcRegion, Expression size, Node destNode, Node srcNode);
 	

@@ -112,6 +112,12 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 			Expression size, Expression value, Node ptrNode) {
 		return stateFactory.applyMemset(state, region, size, value, ptrNode);
 	}
+	
+	@Override
+	public BooleanExpression applyMemset(StateExpression state, Expression region, 
+			Expression size, int value, Node ptrNode) {
+		return stateFactory.applyMemset(state, region, size, value, ptrNode);
+	}
 
 	@Override
 	public BooleanExpression applyMemcpy(StateExpression state, Expression destRegion, 

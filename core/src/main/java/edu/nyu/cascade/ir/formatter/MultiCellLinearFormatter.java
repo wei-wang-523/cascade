@@ -99,6 +99,24 @@ public final class MultiCellLinearFormatter extends AbstractDataFormatter {
 	}
 
 	@Override
+	public BooleanExpression memorySet(ArrayExpression memory,
+			Expression region, Expression size, int value) {
+		int cellSize = memory.getType().getElementType().asBitVectorType().getSize();
+		
+		// Extract the the low 8 bit of value
+		Expression valueToChar = encoding.castToInteger(encoding.integerConstant(value), cellSize);
+		
+		Expression idxVar = getSizeType().asBitVectorType().boundVar(QF_IDX_NAME, true);
+		Expression idxWithinRrange = encoding.and(
+				encoding.greaterThanOrEqual(idxVar, getSizeZero()),
+				encoding.lessThan(idxVar, size));
+		Expression setToValue = memory.index(encoding.pointerPlus(region, idxVar)).eq(valueToChar);
+		
+		return encoding.forall(idxVar, 
+				encoding.implies(idxWithinRrange, setToValue)).asBooleanExpression();
+	}
+	
+	@Override
 	public BooleanExpression memoryCopy(ArrayExpression destMemory, ArrayExpression srcMemory,
 			Expression destRegion, Expression srcRegion, Expression size) {		
 		Expression idxVar = getSizeType().asBitVectorType().boundVar(QF_IDX_NAME, true);

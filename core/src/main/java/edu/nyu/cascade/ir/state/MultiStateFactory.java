@@ -149,8 +149,22 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 		String srcRepId = labelAnalyzer.getRepId(srcRep);
 		SingleStateExpression singleState = multiState.getStateMap().get(srcRepId);
 		
-    return singleStateFactory.applyMemset(singleState, region, size, value, ptrNode);
+		return singleStateFactory.applyMemset(singleState, region, size, value, ptrNode);
 	}
+	  
+	@Override
+	public BooleanExpression applyMemset(StateExpression state, Expression region, 
+			Expression size, int value, Node ptrNode) {
+		T srcRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
+		
+		MultiStateExpression multiState = state.asMultiple();
+		updateStateWithRep(multiState, srcRep);
+		
+		String srcRepId = labelAnalyzer.getRepId(srcRep);
+		SingleStateExpression singleState = multiState.getStateMap().get(srcRepId);
+		
+		return singleStateFactory.applyMemset(singleState, region, size, value, ptrNode);
+	}	
 	
 	@Override
 	public BooleanExpression applyMemcpy(StateExpression state, Expression destRegion, 

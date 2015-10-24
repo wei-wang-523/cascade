@@ -58,6 +58,9 @@ public interface IRDataFormatter {
 	BooleanExpression memorySet(ArrayExpression memory, 
 			Expression region, Expression size, Expression value);
 	
+	BooleanExpression memorySet(ArrayExpression memory, 
+			Expression region, Expression size, int value);
+	
 	BooleanExpression memoryCopy(ArrayExpression destMemory, ArrayExpression srcMemory,
 			Expression destRegion, Expression srcRegion, Expression size);
 }

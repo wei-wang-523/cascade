@@ -85,15 +85,44 @@ public class VariCellLinearFormatter extends AbstractDataFormatter {
 	public BooleanExpression memorySet(ArrayExpression memory,
 			Expression region, Expression size, Expression value) {
 		int cellSize = memory.getType().getElementType().asBitVectorType().getSize();
-		
+		int byteSize = CType.getInstance().getByteSize();
 		// Extract the the low 8 bit of value
-		Expression valueToChar = encoding.castToInteger(value, cellSize);
+		Expression valueToChar = encoding.castToInteger(value, byteSize);
+		Expression valueInCellSize = null;
+		for(int i = 0; i < cellSize/byteSize; ++i) {
+			if(valueInCellSize == null)
+				valueInCellSize = valueToChar;
+			else
+				valueInCellSize = valueToChar.asBitVector().concat(valueInCellSize);
+		}
 		
 		Expression idxVar = getSizeType().asBitVectorType().boundVar(QF_IDX_NAME, true);
 		Expression idxWithinRrange = encoding.and(
 				encoding.greaterThanOrEqual(idxVar, getSizeZero()),
 				encoding.lessThan(idxVar, size));
-		Expression setToValue = memory.index(encoding.pointerPlus(region, idxVar)).eq(valueToChar);
+		Expression setToValue = memory.index(encoding.pointerPlus(region, idxVar)).eq(valueInCellSize);
+		
+		return encoding.forall(idxVar, 
+				encoding.implies(idxWithinRrange, setToValue)).asBooleanExpression();
+	}
+	
+	@Override
+	public BooleanExpression memorySet(ArrayExpression memory,
+			Expression region, Expression size, int value) {
+		int cellSize = memory.getType().getElementType().asBitVectorType().getSize();
+		int byteSize = CType.getInstance().getByteSize();
+		while(cellSize >= byteSize) {
+			byteSize += byteSize;
+			value = value << byteSize + value;
+		}
+		
+		Expression valueInCellSize = encoding.castToInteger(
+				encoding.integerConstant(value), cellSize);
+		Expression idxVar = getSizeType().asBitVectorType().boundVar(QF_IDX_NAME, true);
+		Expression idxWithinRrange = encoding.and(
+				encoding.greaterThanOrEqual(idxVar, getSizeZero()),
+				encoding.lessThan(idxVar, size));
+		Expression setToValue = memory.index(encoding.pointerPlus(region, idxVar)).eq(valueInCellSize);
 		
 		return encoding.forall(idxVar, 
 				encoding.implies(idxWithinRrange, setToValue)).asBooleanExpression();

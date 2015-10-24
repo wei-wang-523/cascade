@@ -131,6 +131,13 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	}
 	
 	@Override
+	public BooleanExpression applyMemset(StateExpression state, Expression region,
+			Expression size, int value, Node ptrNode) {
+		return singleStateFactory.applyMemset(
+				state.asSingleLambda().getSingleState(), region, size, value, ptrNode);
+	}
+	
+	@Override
 	public BooleanExpression applyMemcpy(StateExpression state, Expression destRegion,
 			Expression srcRegion, Expression size, Node destNode, Node srcNode) {
 		return singleStateFactory.applyMemcpy(

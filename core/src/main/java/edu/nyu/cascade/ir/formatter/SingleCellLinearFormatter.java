@@ -61,18 +61,25 @@ public final class SingleCellLinearFormatter extends AbstractDataFormatter {
 			return getAddressType();
 	}
 	
-  @Override
-  protected ArrayExpression updateScalarInMem(ArrayExpression memory, xtc.type.Type idxType,
-  		Expression index, Expression value) {
-  	return memory.update(index, value);
-  }
+	@Override
+	protected ArrayExpression updateScalarInMem(ArrayExpression memory,
+			xtc.type.Type idxType, Expression index, Expression value) {
+		return memory.update(index, value);
+	}
 
 	@Override
-  public BooleanExpression memorySet(ArrayExpression memory, Expression region,
-      Expression size, Expression value) {
+	public BooleanExpression memorySet(ArrayExpression memory, Expression region,
+			Expression size, Expression value) {
 		// FIXME: single cell linear format is unsound for memory set
 		return encoding.tt().asBooleanExpression();
-  }
+	}
+	
+	@Override
+	public BooleanExpression memorySet(ArrayExpression memory, Expression region,
+			Expression size, int value) {
+		// FIXME: single cell linear format is unsound for memory set
+		return encoding.tt().asBooleanExpression();
+	}
 
 	@Override
 	public BooleanExpression memoryCopy(ArrayExpression destMemory, ArrayExpression srcMemory,

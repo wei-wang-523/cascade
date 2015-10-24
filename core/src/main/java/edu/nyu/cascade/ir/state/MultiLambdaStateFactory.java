@@ -123,7 +123,7 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	public MultiLambdaStateExpression resolvePhiNode(Collection<StateExpression> preStates) {
 		
 		/* Build the joined state */
-  	Iterable<BooleanExpression> preGuards = Iterables.transform(preStates, pickGuard);
+		Iterable<BooleanExpression> preGuards = Iterables.transform(preStates, pickGuard);
 		MultiLambdaStateExpression joinState = joinPreStates(preStates, preGuards);
   	
 		/* Set the constraint and guard */
@@ -141,14 +141,48 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	public BooleanExpression applyMemset(StateExpression state, Expression region,
 			Expression size, Expression value, Node ptrNode) {
 		T srcRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));		
+//		MultiLambdaStateExpression multiState = state.asMultiLambda();
+//		
+//		updateStateWithRep(multiState, srcRep);
+//		
+//		String label = labelAnalyzer.getRepId(srcRep);
+//		SingleLambdaStateExpression singleState = multiState.getStateMap().get(label);
+//		
+//		return singleStateFactory.applyMemset(singleState, region, size, value, ptrNode);
+		
 		MultiLambdaStateExpression multiState = state.asMultiLambda();
+		Collection<T> fillInReps = labelAnalyzer.getFillInReps(srcRep);
 		
-		updateStateWithRep(multiState, srcRep);
+		Collection<BooleanExpression> predicates = Lists.newArrayList();
+		for(T fillInRep : fillInReps) {
+			updateStateWithRep(multiState, fillInRep);
+			
+			String label = labelAnalyzer.getRepId(fillInRep);
+			SingleLambdaStateExpression singleState = multiState.getStateMap().get(label);
+			BooleanExpression predicate = singleStateFactory.applyMemset(singleState, region, size, value, null);
+			predicates.add(predicate);
+		}
+		return getExpressionEncoding().and(predicates).asBooleanExpression();
+	}
+	
+	@Override
+	public BooleanExpression applyMemset(StateExpression state, Expression region,
+			Expression size, int value, Node ptrNode) {
+		T srcRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
 		
-		String label = labelAnalyzer.getRepId(srcRep);
-		SingleLambdaStateExpression singleState = multiState.getStateMap().get(label);
+		MultiLambdaStateExpression multiState = state.asMultiLambda();
+		Collection<T> fillInReps = labelAnalyzer.getFillInReps(srcRep);
 		
-		return singleStateFactory.applyMemset(singleState, region, size, value, ptrNode);
+		Collection<BooleanExpression> predicates = Lists.newArrayList();
+		for(T fillInRep : fillInReps) {
+			updateStateWithRep(multiState, fillInRep);
+			
+			String label = labelAnalyzer.getRepId(fillInRep);
+			SingleLambdaStateExpression singleState = multiState.getStateMap().get(label);
+			BooleanExpression predicate = singleStateFactory.applyMemset(singleState, region, size, value, null);
+			predicates.add(predicate);
+		}
+		return getExpressionEncoding().and(predicates).asBooleanExpression();
 	}
 
 	@Override

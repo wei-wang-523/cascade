@@ -179,9 +179,19 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   		Expression value = args.get(1);
   		Expression size = args.get(2);
   		Node regionNode = argNodes.get(0);
+  		Node valueNode = argNodes.get(1);
   		stateFactory.setValidAccessRange(preState, region, size, regionNode);
-  		BooleanExpression memset = stateFactory.applyMemset(preState, 
-  				region, size, value, regionNode);
+  		
+  		xtc.type.Type valueNodeType = CType.getType(valueNode);
+  		BooleanExpression memset;
+  		if(valueNodeType.hasConstant()) {
+  			// The value constant must be less than 256
+  			int valueConstant = (int) valueNodeType.getConstant().longValue();
+  			memset = stateFactory.applyMemset(preState, region, size, valueConstant, regionNode);
+  		} else {
+  			memset = stateFactory.applyMemset(preState, region, size, value, regionNode);
+  		}
+
   		preState.addConstraint(memset);
   	}
   	
