@@ -23,6 +23,9 @@ public interface IRMemSafetyEncoding {
 
 	void updateHeapMemSafetyPredicates(SingleLambdaStateExpression state,
 			Expression hpRegExpr, Expression hpRegSize);
+	
+	void freeUpdateHeapMemSafetyPredicates(SingleLambdaStateExpression state,
+			Expression ptrExpr, Expression sizeExpr);
 
 	/** Propagate the memory safety predicates of <code>fromState</code>
 	 * to <code>toState</code>

@@ -281,10 +281,12 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	}
 
 	@Override
-	protected void updateSizeState(StateExpression state, 
+	protected void updateSizeStateWithFree(StateExpression state, 
 			Expression region, Expression size, Node ptrNode) {
-		SingleStateExpression singleState = state.asSingleLambda().getSingleState();
-		singleStateFactory.updateSizeState(singleState, region, size, ptrNode);
+		SingleLambdaStateExpression lambdaState = state.asSingleLambda();
+		deleteHeapRegInfo(lambdaState, region);
+		SingleStateExpression singleState = lambdaState.getSingleState();
+		singleStateFactory.updateSizeStateWithFree(singleState, region, size, ptrNode);
 	}
 	
 	@Override
@@ -300,7 +302,7 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	    Expression region, Expression size, Node ptrNode) {
 		SingleLambdaStateExpression lambdaState = state.asSingleLambda();
 		SingleStateExpression singleState = lambdaState.getSingleState();
-		singleStateFactory.updateSizeState(singleState, region, size, ptrNode);
+		singleStateFactory.updateSizeStateWithFree(singleState, region, size, ptrNode);
   	addHeapRegInfo(lambdaState, region);
 	}
 	
@@ -421,6 +423,12 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		ArrayExpression sizeArr = lambdaState.getSingleState().getSize();
 		Expression hpRegSize = sizeArr.index(hpRegExpr);
 	  memSafetyEncoding.updateHeapMemSafetyPredicates(lambdaState, hpRegExpr, hpRegSize);
+	}
+	
+	void deleteHeapRegInfo(SingleLambdaStateExpression lambdaState, Expression hpRegExpr) {
+		ArrayExpression sizeArr = lambdaState.getSingleState().getSize();
+		Expression hpRegSize = sizeArr.index(hpRegExpr);
+		memSafetyEncoding.freeUpdateHeapMemSafetyPredicates(lambdaState, hpRegExpr, hpRegSize);
 	}
 	
 	/**

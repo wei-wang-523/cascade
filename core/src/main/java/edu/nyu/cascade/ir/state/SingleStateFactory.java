@@ -260,7 +260,7 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 	
 	/** <code>ptrNode</code> is not used here*/
 	@Override
-	protected void updateSizeState(StateExpression state, 
+	protected void updateSizeStateWithFree(StateExpression state, 
 			Expression region, Expression size, Node ptrNode) {
 		SingleStateExpression singleState = state.asSingle();
 		IRDataFormatter formatter = getDataFormatter();

@@ -489,7 +489,7 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	}
 
 	@Override
-	protected void updateSizeState(StateExpression state,
+	protected void updateSizeStateWithFree(StateExpression state,
 	    Expression region, Expression sizeVal, Node ptrNode) {
 		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
 		MultiLambdaStateExpression multiLambdaState = state.asMultiLambda();
@@ -499,7 +499,7 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 			updateStateWithRep(multiLambdaState, fillInRep);
 			String label = labelAnalyzer.getRepId(fillInRep);
 			SingleLambdaStateExpression singleState = stateMap.get(label);
-			singleStateFactory.updateSizeState(singleState, region, sizeVal, ptrNode);
+			singleStateFactory.updateSizeStateWithFree(singleState, region, sizeVal, ptrNode);
 		}
 	}
 

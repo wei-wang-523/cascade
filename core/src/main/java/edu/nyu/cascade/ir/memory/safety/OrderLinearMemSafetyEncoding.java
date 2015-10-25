@@ -4,9 +4,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.formatter.IRDataFormatter;
 import edu.nyu.cascade.ir.memory.safety.AbstractMemSafetyEncoding.SafetyPredicate.Kind;
@@ -130,6 +132,16 @@ public class OrderLinearMemSafetyEncoding extends AbstractMemSafetyEncoding {
 //		replaceLabelsInSafetyPredicate(Kind.STACK_ORDERED, state, labels, substLabels);
 //		replaceLabelsInSafetyPredicate(Kind.HEAP_ORDERED, state, labels, substLabels);
 //	}
+
+	@Override
+	public void freeUpdateHeapMemSafetyPredicates(
+			SingleLambdaStateExpression state, Expression ptrExpr,
+			Expression sizeExpr) {
+		if(Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
+			updateHeapFunValidAccessFree(state, ptrExpr, sizeExpr);
+			updateHeapFunValidAccessRangeFree(state, ptrExpr, sizeExpr);
+		}
+	}
 
 	@Override
 	public void propagateSafetyPredicates(SingleLambdaStateExpression fromState,
@@ -312,6 +324,23 @@ public class OrderLinearMemSafetyEncoding extends AbstractMemSafetyEncoding {
 		state.putSafetyPredicateClosure(propName, valid_access_closure_prime);
 	}
 	
+	private void updateStackFunValidAccessRange(SingleLambdaStateExpression state, 
+			Expression ptrExpr, Expression sizeExpr) {
+		String propName = SafetyPredicate.Kind.VALID_ACCESS_RANGE.name();
+		PredicateClosure valid_access_range_closure = state.getSafetyPredicateClosure(propName);
+		
+		Expression func = valid_access_range_closure.getUninterpretedFunc();
+		Expression body = valid_access_range_closure.getBodyExpr();
+		Expression[] vars = valid_access_range_closure.getVars();
+		
+		assert(vars.length == 2);
+		Expression bodyPrime = encoding.or(
+				encoding.within(ptrExpr, sizeExpr, vars[0], vars[1]), body);
+		
+		PredicateClosure valid_access_range_closure_prime = suspend(func, bodyPrime, vars);
+		state.putSafetyPredicateClosure(propName, valid_access_range_closure_prime);
+	}
+
 	private void updateHeapFunValidAccess(SingleLambdaStateExpression state, 
 			Expression ptrExpr, Expression sizeExpr) {
 		String propName = SafetyPredicate.Kind.VALID_ACCESS.name();
@@ -333,23 +362,6 @@ public class OrderLinearMemSafetyEncoding extends AbstractMemSafetyEncoding {
 		state.putSafetyPredicateClosure(propName, valid_access_closure_prime);
 	}
 	
-	private void updateStackFunValidAccessRange(SingleLambdaStateExpression state, 
-			Expression ptrExpr, Expression sizeExpr) {
-		String propName = SafetyPredicate.Kind.VALID_ACCESS_RANGE.name();
-		PredicateClosure valid_access_range_closure = state.getSafetyPredicateClosure(propName);
-		
-		Expression func = valid_access_range_closure.getUninterpretedFunc();
-		Expression body = valid_access_range_closure.getBodyExpr();
-		Expression[] vars = valid_access_range_closure.getVars();
-		
-		assert(vars.length == 2);
-		Expression bodyPrime = encoding.or(
-				encoding.within(ptrExpr, sizeExpr, vars[0], vars[1]), body);
-		
-		PredicateClosure valid_access_range_closure_prime = suspend(func, bodyPrime, vars);
-		state.putSafetyPredicateClosure(propName, valid_access_range_closure_prime);
-	}
-	
 	private void updateHeapFunValidAccessRange(SingleLambdaStateExpression state, 
 			Expression ptrExpr, Expression sizeExpr) {
 		String propName = SafetyPredicate.Kind.VALID_ACCESS_RANGE.name();
@@ -365,6 +377,42 @@ public class OrderLinearMemSafetyEncoding extends AbstractMemSafetyEncoding {
 						ptrExpr.neq(formatter.getNullAddress()),
 						sizeExpr.neq(formatter.getSizeZero()),
 						encoding.within(ptrExpr, sizeExpr, vars[0], vars[1])), body);
+		
+		PredicateClosure valid_access_range_closure_prime = suspend(func, bodyPrime, vars);
+		state.putSafetyPredicateClosure(propName, valid_access_range_closure_prime);
+	}
+
+	private void updateHeapFunValidAccessFree(SingleLambdaStateExpression state, 
+			Expression ptrExpr, Expression sizeExpr) {
+		String propName = SafetyPredicate.Kind.VALID_ACCESS.name();
+		PredicateClosure valid_access_closure = state.getSafetyPredicateClosure(propName);
+		
+		Expression func = valid_access_closure.getUninterpretedFunc();
+		Expression body = valid_access_closure.getBodyExpr();
+		Expression[] vars = valid_access_closure.getVars();
+		
+		assert(vars.length == 1);
+		Expression bodyPrime = encoding.and(
+				body,
+				encoding.not(encoding.within(ptrExpr, sizeExpr, vars[0])));
+		
+		PredicateClosure valid_access_closure_prime = suspend(func, bodyPrime, vars[0]);
+		state.putSafetyPredicateClosure(propName, valid_access_closure_prime);
+	}
+	
+	private void updateHeapFunValidAccessRangeFree(SingleLambdaStateExpression state, 
+			Expression ptrExpr, Expression sizeExpr) {
+		String propName = SafetyPredicate.Kind.VALID_ACCESS_RANGE.name();
+		PredicateClosure valid_access_range_closure = state.getSafetyPredicateClosure(propName);
+		
+		Expression func = valid_access_range_closure.getUninterpretedFunc();
+		Expression body = valid_access_range_closure.getBodyExpr();
+		Expression[] vars = valid_access_range_closure.getVars();
+		
+		assert(vars.length == 2);
+		Expression bodyPrime = encoding.and(
+				body,
+				encoding.not(encoding.within(ptrExpr, sizeExpr, vars[0], vars[1])));
 		
 		PredicateClosure valid_access_range_closure_prime = suspend(func, bodyPrime, vars);
 		state.putSafetyPredicateClosure(propName, valid_access_range_closure_prime);

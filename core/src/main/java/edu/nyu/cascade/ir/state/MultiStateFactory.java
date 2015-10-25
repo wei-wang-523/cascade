@@ -104,7 +104,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 			updateStateWithRep(state.asMultiple(), rep);
 			String label = labelAnalyzer.getRepId(rep);
 			SingleStateExpression singleState = stateMap.get(label);
-			singleStateFactory.updateSizeState(singleState, lval, rval, sourceNode);
+			singleStateFactory.updateSizeStateWithFree(singleState, lval, rval, sourceNode);
 			heapEncoder.addFreshRegion(label, lval);
 		}
 		
@@ -463,7 +463,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 	}
 
 	@Override
-	protected void updateSizeState(StateExpression state,
+	protected void updateSizeStateWithFree(StateExpression state,
 	    Expression region, Expression sizeVal, Node ptrNode) {
 		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
 		MultiStateExpression multiState = state.asMultiple();
@@ -473,7 +473,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 			updateStateWithRep(multiState, rep);
 			String label = labelAnalyzer.getRepId(rep);
 			SingleStateExpression singleState = stateMap.get(label);
-			singleStateFactory.updateSizeState(singleState, region, sizeVal, ptrNode);
+			singleStateFactory.updateSizeStateWithFree(singleState, region, sizeVal, ptrNode);
 		}
 	}
 
@@ -490,7 +490,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 			updateStateWithRep(multiState, rep);
 			String label = labelAnalyzer.getRepId(rep);
 			SingleStateExpression singleState = stateMap.get(label);
-			singleStateFactory.updateSizeState(singleState, region, size, ptrNode);
+			singleStateFactory.updateSizeStateWithFree(singleState, region, size, ptrNode);
 			heapEncoder.addFreshRegion(label, region);
 		}
 	}

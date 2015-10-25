@@ -98,7 +98,7 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 	public void free(StateExpression state, Expression region, Node ptrNode) {
     minusRegionSize(state, region, ptrNode);
     Expression sizeZro = formatter.getSizeZero();
-    updateSizeState(state, region, sizeZro, ptrNode);
+    updateSizeStateWithFree(state, region, sizeZro, ptrNode);
     BooleanExpression ff = getExpressionEncoding().ff().asBooleanExpression();
     updateMarkState(state, region, ff, ptrNode);
 	}
@@ -232,7 +232,7 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 	abstract protected void updateMemState(StateExpression state, 
   		Expression index, Node idxNode, Expression value, @Nullable Node valNode);
 	
-	abstract protected void updateSizeState(StateExpression state, 
+	abstract protected void updateSizeStateWithFree(StateExpression state, 
   		Expression region, Expression sizeVal, Node ptrNode);
 	
 	abstract protected void updateMarkState(StateExpression state,

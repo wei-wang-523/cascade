@@ -257,4 +257,12 @@ public class SoundStmtLinearMemSafetyEncoding extends AbstractStmtMemSafetyEncod
 		Expression func = disjoint_closure.getUninterpretedFunc();
 		state.registerPredicate(func, ptrExpr, sizeExpr);
 	}
+
+	@Override
+	public void freeUpdateHeapMemSafetyPredicates(
+			SingleLambdaStateExpression state, Expression ptrExpr,
+			Expression sizeExpr) {
+		// TODO Auto-generated method stub
+		
+	}
 }

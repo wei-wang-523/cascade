@@ -267,4 +267,12 @@ public class OrderStmtLinearMemSafetyEncoding extends AbstractStmtMemSafetyEncod
 		state.registerPredicate(stack_order_func, ptrBound);
 		state.registerPredicate(heap_order_func, ptrExpr);
 	}
+
+	@Override
+	public void freeUpdateHeapMemSafetyPredicates(
+			SingleLambdaStateExpression state, Expression ptrExpr,
+			Expression sizeExpr) {
+		// TODO Auto-generated method stub
+		
+	}
 }
