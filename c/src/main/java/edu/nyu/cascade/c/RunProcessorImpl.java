@@ -142,8 +142,8 @@ class RunProcessorImpl implements RunProcessor {
 		
 		IRTraceNode traceEntry = formulaEncoder.getErrorTrace(cfg);
 		traceFactory.dumpTrace(traceEntry, IOUtils.traceFile());
-		
-		TraceGraphMLBuilder gmlBuilder = new TraceGraphMLBuilder();
+		String file = cfg.getSourceNode().getLocation().file;
+		TraceGraphMLBuilder gmlBuilder = new TraceGraphMLBuilder(file);
 		JAXBElement<?> gml = gmlBuilder.analyzeTrace(traceEntry);
 		gmlBuilder.dumpXmlTrace(gml, IOUtils.traceXmlFileStream());
 	}

@@ -7,7 +7,6 @@ import javax.xml.bind.JAXBElement;
 
 import xtc.tree.Location;
 import xtc.tree.Node;
-
 import com.google.common.collect.Lists;
 
 import edu.nyu.cascade.c.CType;
@@ -28,16 +27,19 @@ import edu.nyu.cascade.util.Identifiers;
 public class TraceGraphMLBuilder {
 	private final ObjectFactory objectFactory;
 	private final List<Object> graphElems = Lists.newArrayList();
+	private final String srcFile;
+//	private CPrinter cp = new CPrinter(printer);
 	
-	public TraceGraphMLBuilder() {
+	public TraceGraphMLBuilder(String file) {
 		this.objectFactory = new ObjectFactory();
+		this.srcFile = file;
 	}
 	
 	public JAXBElement<?> analyzeTrace(IRTraceNode entryTraceNode) {
 		MLNode entry = MLNode.createEntry();
 		addNode(entry);
 		analyzeIRMLNode(entryTraceNode, entry);
-		return build();
+		return build(srcFile);
 	}
 	
 	public void dumpXmlTrace(JAXBElement<?> traceGraphML, OutputStream outputStream) {
@@ -50,14 +52,13 @@ public class TraceGraphMLBuilder {
 			MLNode post = MLNode.create();
 			MLEdge edge = MLEdge.create(pre, post);
 			
-			edge.setSourceCode(stmt.toString());
-			
 			Node srcNode = stmt.getSourceNode();
+			edge.setSourceCode(stmt.toString());
 			
 			if(srcNode != null) {
 				Location loc = srcNode.getLocation();
 				edge.setOriginLine(loc.line);
-				edge.setOriginFile(loc.file);
+				edge.setOriginOffset(loc.column);
 			}
 			
 			switch(stmt.getType()) {
@@ -71,6 +72,13 @@ public class TraceGraphMLBuilder {
 			case ASSUME: {
 				Expression traceExpr = traceNode.getTraceExpr(stmt);
 				edge.setAssumption(traceExpr.toString());
+				break;
+			}
+			case FREE: {
+				Expression traceExpr = traceNode.getTraceExpr(stmt);
+				StringBuilder sb = new StringBuilder();
+				sb.append(stmt.getOperand(0)).append('=').append(traceExpr);
+				edge.setAssumption(sb.toString());
 				break;
 			}
 			case FUNC_ENT: {
@@ -101,18 +109,19 @@ public class TraceGraphMLBuilder {
 		}
 	}
 	
-	private JAXBElement<GraphmlType> build() {
+	private JAXBElement<GraphmlType> build(String srcFile) {
 		GraphmlType graphmlType = objectFactory.createGraphmlType();
 		List<KeyType> keys = graphmlType.getKey();
 		
 		keys.add(getKeyType("assumption", "assumption", KeyForType.EDGE, KeyTypeType.STRING));
 		keys.add(getKeyType("sourcecode", "sourcecode", KeyForType.EDGE, KeyTypeType.STRING));
 		keys.add(getKeyType("sourcecodeLanguage", "sourcecodelang", KeyForType.GRAPH, KeyTypeType.STRING));
-		keys.add(getKeyType("tokenSet", "tokens", KeyForType.EDGE, KeyTypeType.STRING));
-		keys.add(getKeyType("originTokenSet", "origintokens", KeyForType.EDGE, KeyTypeType.STRING));
+//		keys.add(getKeyType("tokenSet", "tokens", KeyForType.EDGE, KeyTypeType.STRING));
+//		keys.add(getKeyType("originTokenSet", "origintokens", KeyForType.EDGE, KeyTypeType.STRING));
 		keys.add(getKeyType("negativeCase", "negated", KeyForType.EDGE, KeyTypeType.STRING, String.valueOf(false)));
-		keys.add(getKeyType("lineNumberInOrigin", "originline", KeyForType.EDGE, KeyTypeType.INT));
+		keys.add(getKeyType("startline", "startline", KeyForType.EDGE, KeyTypeType.INT));
 		keys.add(getKeyType("originFileName", "originfile", KeyForType.EDGE, KeyTypeType.STRING, "&lt;command-line&gt;"));
+		keys.add(getKeyType("control", "control", KeyForType.EDGE, KeyTypeType.STRING));
 		keys.add(getKeyType("nodeType", "nodetype", KeyForType.NODE, KeyTypeType.STRING, "path"));
 		keys.add(getKeyType("isFrontierNode", "frontier", KeyForType.NODE, KeyTypeType.BOOLEAN, String.valueOf(false)));
 		keys.add(getKeyType("isViolationNode", "violation", KeyForType.NODE, KeyTypeType.BOOLEAN, String.valueOf(false)));
@@ -121,7 +130,7 @@ public class TraceGraphMLBuilder {
 		keys.add(getKeyType("enterFunction", "enterFunction", KeyForType.EDGE, KeyTypeType.STRING));
 		keys.add(getKeyType("returnFromFunction", "returnFrom", KeyForType.EDGE, KeyTypeType.STRING));
 		
-		GraphType graphType = buildGraphType();
+		GraphType graphType = buildGraphType(srcFile);
 		graphmlType.getGraphOrData().add(graphType);
 		return objectFactory.createGraphml(graphmlType);
 	}
@@ -156,7 +165,7 @@ public class TraceGraphMLBuilder {
   	return keyType;
 	}
 	
-	private GraphType buildGraphType() {
+	private GraphType buildGraphType(String srcFile) {
 		GraphType graphType = objectFactory.createGraphType();
 		graphType.setEdgedefault(GraphEdgedefaultType.DIRECTED);
 		
@@ -165,6 +174,12 @@ public class TraceGraphMLBuilder {
 		dataType.setContent("C");
 		
 		graphElems.add(0, dataType);
+		
+		DataType srcFileType = objectFactory.createDataType();
+		srcFileType.setKey("originfile");
+		srcFileType.setContent(srcFile);
+		
+		graphElems.add(1, srcFileType);
 		graphType.getDataOrNodeOrEdge().addAll(graphElems);
 		return graphType;
 	}

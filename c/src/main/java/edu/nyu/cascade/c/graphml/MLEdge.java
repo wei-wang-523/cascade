@@ -13,12 +13,13 @@ import edu.nyu.cascade.graphml.jaxb.ObjectFactory;
 public class MLEdge {
 
 	private static final String SOURCE_CODE = "sourcecode";
-	private static final String TOKENS = "tokens";
-	private static final String ORIGIN_FILE = "originfile";
-	private static final String ORIGIN_TOKENS = "origintokens";
+//	private static final String TOKENS = "tokens";
+//	private static final String ORIGIN_FILE = "originfile";
+	private static final String ORIGIN_OFFSET = "originoffset";
 	private static final String ORIGIN_LINE = "originline";
 	private static final String ASSUMPTION = "assumption";
 	private static final String NEGATED = "negated";
+	private static final String SCOPE = "assumption.scope";
 	private static final String ENTER_FUNC = "enterFunction";
 	private static final String EXIT_FUNC = "returnFromFunction";
 	
@@ -40,20 +41,24 @@ public class MLEdge {
 		properties.put(SOURCE_CODE, srcCode);
 	}
 	
-	public void setTokens(String tokens) {
-		properties.put(TOKENS, tokens);
+	public void setScope(String scope) {
+		properties.put(SCOPE, scope);
 	}
 	
-	public void setOriginFile(String file) {
-		properties.put(ORIGIN_FILE, file);
-	}
+//	public void setTokens(String tokens) {
+//		properties.put(TOKENS, tokens);
+//	}
 	
-	public void setOriginTokens(String tokens) {
-		properties.put(ORIGIN_TOKENS, tokens);
-	}
+//	public void setOriginFile(String file) {
+//		properties.put(ORIGIN_FILE, file);
+//	}
 	
 	public void setOriginLine(int line) {
 		properties.put(ORIGIN_LINE, line);
+	}
+	
+	public void setOriginOffset(int offset) {
+		properties.put(ORIGIN_OFFSET, offset);
 	}
 	
 	public void setAssumption(String assumption) {
