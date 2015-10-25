@@ -159,7 +159,7 @@ public abstract class AbstractPathEncoding implements PathEncoding {
     ExpressionEncoder encoder = getExpressionEncoder();
     Expression regionExpr = ptr.toExpression(pre, encoder);
     stateFactory.setValidFree(pre, regionExpr, ptr.getSourceNode());
-    
+    updateTraceExpression(ptr.getSourceNode(), regionExpr);
     return free(pre, regionExpr, ptr.getSourceNode());
   }
 
