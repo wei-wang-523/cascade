@@ -1191,7 +1191,7 @@ public class CfgBuilder extends Visitor {
   	return varNode;
   }
   
-  private Node defineReturnVarNode(String funcName, Type retType, Location loc) {
+  private GNode defineReturnVarNode(String funcName, Type retType, Location loc) {
     String varName = null == funcName ? Identifiers.uniquify(RETURN_VAR_PREFIX) : 
     	Identifiers.uniquify(RETURN_VAR_PREFIX + '_' + funcName);
     Type varType = retType.annotate().shape(false, varName);
@@ -1203,15 +1203,10 @@ public class CfgBuilder extends Visitor {
     
     createAuxVarBinding(varDeclareNode, RETURN_VAR_PREFIX);
     
-    Node varNode = GNode.create("PrimaryIdentifier", varName);
+    GNode varNode = GNode.create("PrimaryIdentifier", varName);
     varNode.setLocation(loc);
     varType.mark(varNode);
     symbolTable.mark(varNode);
-    
-    if(!ReservedFunction.isReserved(funcName)) {
-    	// initialize the un-reserved function's return value to be zero.
-    	new Initializer(varDeclareNode, varDeclareNode, null, varType).process(false);
-    }
     return varNode; 
   }
 
@@ -1961,10 +1956,13 @@ public class CfgBuilder extends Visitor {
       }
     }
     
-    Type retType = symbolTable.lookupType(functionName).deannotate()
-    		.toFunction().getResult();
+    Type funcType = symbolTable.lookupType(functionName);
+    Type retType =funcType.deannotate().toFunction().getResult();
     if(!retType.isVoid()) {
-    	Node retNode = defineReturnVarNode(functionName, retType, node.getLocation());
+    	GNode retNode = defineReturnVarNode(functionName, retType, node.getLocation());
+//     assert(!ReservedFunction.isReserved(functionName));
+      // initialize the function's return value to be zero.
+      new Initializer(retNode, retNode, null, retType).process(false);
     	returnExpr = expressionOf(retNode);
     }
     
