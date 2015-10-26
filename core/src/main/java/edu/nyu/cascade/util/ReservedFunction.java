@@ -33,6 +33,8 @@ public class ReservedFunction {
   public static final String ANNO_INVARIANT = "INVARIANT";
   
   public static final String VERIFIER_ASSUME = "__VERIFIER_assume";
+  public static final String VERIFIER_nondet_int = "__VERIFIER_nondet_int";
+  public static final String VERIFIER_nondet_pointer = "__VERIFIER_nondet_pointer";
   
   public static final String FUN_VALID_ACCESS = "valid";
   public static final String FUN_VALID_MALLOC = "valid_malloc";
@@ -110,5 +112,10 @@ public class ReservedFunction {
   	.put(FUN_EXISTS,
   			Sig.of(BooleanT.TYPE, BooleanT.TYPE))
   	.put(VERIFIER_ASSUME,
-  			Sig.of(BooleanT.TYPE, BooleanT.TYPE)).build();
+  			Sig.of(BooleanT.TYPE, BooleanT.TYPE))
+  	.put(VERIFIER_nondet_int,
+  			Sig.of(VoidT.TYPE, NumberT.INT))
+  	.put(VERIFIER_nondet_pointer,
+  			Sig.of(VoidT.TYPE, PointerT.TO_VOID))  			
+  	.build();
 }

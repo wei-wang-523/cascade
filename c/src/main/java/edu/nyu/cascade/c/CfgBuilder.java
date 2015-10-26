@@ -1196,7 +1196,7 @@ public class CfgBuilder extends Visitor {
     	Identifiers.uniquify(RETURN_VAR_PREFIX + '_' + funcName);
     Type varType = retType.annotate().shape(false, varName);
     
-    Node varDeclareNode = GNode.create("SimpleDeclarator", varName);
+    GNode varDeclareNode = GNode.create("SimpleDeclarator", varName);
     varDeclareNode.setLocation(loc);
     varType.mark(varDeclareNode);
     symbolTable.mark(varDeclareNode);
@@ -1208,6 +1208,10 @@ public class CfgBuilder extends Visitor {
     varType.mark(varNode);
     symbolTable.mark(varNode);
     
+    if(!ReservedFunction.isReserved(funcName)) {
+    	// initialize the un-reserved function's return value to be zero.
+    	new Initializer(varDeclareNode, varDeclareNode, null, varType).process(false);
+    }
     return varNode; 
   }
 
