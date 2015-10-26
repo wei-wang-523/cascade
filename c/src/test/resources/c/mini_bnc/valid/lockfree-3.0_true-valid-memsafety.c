@@ -27,6 +27,6 @@ int main()
   while (i < 2) {
     push(); i++;
   }
-  ASSERT(1 == 0);
+//  ASSERT(1 == 0);
   return 0;
 }
