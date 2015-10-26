@@ -22,6 +22,7 @@ import com.google.common.collect.MapMaker;
 
 import edu.nyu.acsys.CVC4.Exception;
 import edu.nyu.acsys.CVC4.Expr;
+import edu.nyu.acsys.CVC4.Integer;
 import edu.nyu.acsys.CVC4.Options;
 import edu.nyu.acsys.CVC4.SExpr;
 import edu.nyu.acsys.CVC4.ExprManager;
@@ -326,7 +327,16 @@ public class TheoremProverImpl implements TheoremProver {
 	public Expression evaluate(Expression expr) {
 		Expr cvc4Expr = exprManager.toCvc4Expr(expr);
   	Expr evalCvc4Expr = getSmtEngine().getValue(cvc4Expr);
-  	return exprManager.toExpression(evalCvc4Expr);
+  	edu.nyu.acsys.CVC4.Kind cvc4Kind = evalCvc4Expr.getKind();
+  	if (cvc4Kind == edu.nyu.acsys.CVC4.Kind.CONST_BITVECTOR) {
+  			Integer val = evalCvc4Expr.getConstBitVector().getValue();
+  	  return exprManager.constant(val.getLong());
+  	} else if (cvc4Kind == edu.nyu.acsys.CVC4.Kind.CONST_BOOLEAN) {
+  		boolean val = evalCvc4Expr.getConstBoolean();
+  		return val ? exprManager.tt() : exprManager.ff();
+  	} else {
+  		return exprManager.toExpression(evalCvc4Expr);
+  	}
 	}
 
   /**
