@@ -402,9 +402,13 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
     		DEFAULT_STATE_NAME, false);
     ArrayExpression sizeVar = formatter.getSizeArrayType().variable(DEFAULT_SIZE_VARIABLE_NAME + 
     		DEFAULT_STATE_NAME, false);
-    sizeVar = sizeVar.update(formatter.getNullAddress(), formatter.getSizeZero());
     ArrayExpression markVar = formatter.getMarkArrayType().variable(DEFAULT_MARK_VARIABLE_NAME +
     		DEFAULT_STATE_NAME, false);
+    
+    ExpressionEncoding encoding = getExpressionEncoding();
+    encoding.addAssumption(sizeVar.index(formatter.getNullAddress()).eq(formatter.getSizeZero()));
+    encoding.addAssumption(markVar.index(formatter.getNullAddress()).eq(encoding.tt()));
+    
     return SingleStateExpression.create(DEFAULT_STATE_NAME, memVar, sizeVar, markVar);
 	}
 
@@ -416,9 +420,14 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 	  				DEFAULT_MEMORY_VARIABLE_NAME + labelName, false);
 	  ArrayExpression sizeVar = formatter.getSizeArrayType().variable(
 	  		DEFAULT_SIZE_VARIABLE_NAME + labelName, false);
-	  sizeVar = sizeVar.update(formatter.getNullAddress(), formatter.getSizeZero());
+    getExpressionEncoding().addAssumption(sizeVar.index(formatter.getNullAddress()).eq(formatter.getSizeZero()));
 	  ArrayExpression markVar = formatter.getMarkArrayType().variable(
 	  		DEFAULT_MARK_VARIABLE_NAME + labelName, false);
+	  
+    ExpressionEncoding encoding = getExpressionEncoding();
+    encoding.addAssumption(sizeVar.index(formatter.getNullAddress()).eq(formatter.getSizeZero()));
+    encoding.addAssumption(markVar.index(formatter.getNullAddress()).eq(encoding.tt()));
+    
 	  return SingleStateExpression.create(labelName, memVar, sizeVar, markVar);
 	}
 	

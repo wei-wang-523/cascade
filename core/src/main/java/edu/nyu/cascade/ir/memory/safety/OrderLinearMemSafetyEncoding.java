@@ -66,7 +66,7 @@ public class OrderLinearMemSafetyEncoding extends AbstractMemSafetyEncoding {
 		
 	  BooleanExpression mark = markArr.index(region).asBooleanExpression();
 		BooleanExpression tt = mark.getType().asBooleanType().tt();
-	  return region.eq(formatter.getNullAddress()).or(mark.eq(tt));
+		return mark.eq(tt);
 	}
 
 	@Override
