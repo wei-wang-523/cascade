@@ -251,7 +251,7 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		MultiLambdaStateExpression multiState = state.asMultiLambda();
 		updateStateWithRep(multiState, srcRep);
 		
-		if(labelAnalyzer.isAccessTypeSafe(srcRep)) return getExpressionManager().tt();
+//		if(labelAnalyzer.isAccessTypeSafe(srcRep)) return getExpressionManager().tt();
 				
 		String label = labelAnalyzer.getRepId(srcRep);
 		SingleLambdaStateExpression singleState = multiState.getStateMap().get(label);
