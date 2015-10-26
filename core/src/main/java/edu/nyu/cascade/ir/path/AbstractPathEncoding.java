@@ -11,6 +11,7 @@ import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
+import edu.nyu.cascade.ir.impl.Guard;
 import edu.nyu.cascade.ir.state.StateExpression;
 import edu.nyu.cascade.ir.state.StateFactory;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -28,6 +29,7 @@ public abstract class AbstractPathEncoding implements PathEncoding {
   private final StateFactory<?> stateFactory;
 	
   private Expression traceExpression;
+  private boolean isEdgeNegated;
 
   protected AbstractPathEncoding(ExpressionEncoder encoder) {
     this.encoder = encoder;
@@ -106,11 +108,11 @@ public abstract class AbstractPathEncoding implements PathEncoding {
     updateTraceExpression(lhs.getSourceNode(), rhsExpr);
     return assign(pre, lhsExpr, lhs.getSourceNode(), rhsExpr, rhs.getSourceNode());
   }
-
+  
   @Override
   public StateExpression assume(StateExpression pre, IRExpression b, boolean isGuard) throws PathFactoryException {
   	Expression guard = b.toBoolean(pre, getExpressionEncoder());
-  	updateTraceExpression(null, guard);
+  	updateEdgeTraceExpression(b, guard);
     return assume(pre, guard, isGuard);
   }
   
@@ -259,19 +261,28 @@ public abstract class AbstractPathEncoding implements PathEncoding {
   public Expression getTraceExpression() {
   	return traceExpression;
   }
+  
+  @Override
+  public boolean isEdgeNegated() {
+  	return isEdgeNegated;
+  }
 	
 	private void updateTraceExpression(Node lNode, Expression rvalExpr) {
 		if(!Preferences.isSet(Preferences.OPTION_TRACE)) return;
-		if(lNode == null) {
-			traceExpression = rvalExpr;
-		} else {
-	    ExpressionEncoding encoding = encoder.getEncoding();
-			xtc.type.Type idxType = CType.getType(lNode);
-			boolean isUnsigned = CType.isUnsigned(idxType);
+	  ExpressionEncoding encoding = encoder.getEncoding();
+	  xtc.type.Type idxType = CType.getType(lNode);
+		boolean isUnsigned = CType.isUnsigned(idxType);
 			
-			CType cTypeAnalyzer = encoding.getCTypeAnalyzer();
-			int size = (int) cTypeAnalyzer.getWidth(idxType);
-			traceExpression = encoding.castToInteger(rvalExpr, size, !isUnsigned);
+		CType cTypeAnalyzer = encoding.getCTypeAnalyzer();
+		int size = (int) cTypeAnalyzer.getWidth(idxType);
+		traceExpression = encoding.castToInteger(rvalExpr, size, !isUnsigned);
+	}
+
+	private void updateEdgeTraceExpression(IRExpression b, Expression guard) {
+		if(!Preferences.isSet(Preferences.OPTION_TRACE)) return;
+		traceExpression = guard;
+		if(b instanceof Guard) {
+			isEdgeNegated = ((Guard) b).isNegated();
 		}
 	}
 }

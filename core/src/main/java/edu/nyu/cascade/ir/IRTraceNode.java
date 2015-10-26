@@ -31,4 +31,8 @@ public interface IRTraceNode {
 	Expression getTraceExpr(IRStatement stmt);
 
 	void addLabels(Collection<String> preLabels);
+
+	void isNegate(IRStatement stmt, boolean isNegate);
+
+	boolean isEdgeNegated(IRStatement stmt);
 }

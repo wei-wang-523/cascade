@@ -74,4 +74,8 @@ public interface PathEncoding    {
 	
 	/** Get the trace expression annotation for counter-example generation */
 	Expression getTraceExpression();
+	
+	/** Get the information about a condition edge is negated or not for
+	 *  counter-example generation */
+	boolean isEdgeNegated();
 }
