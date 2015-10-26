@@ -420,7 +420,6 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 	  				DEFAULT_MEMORY_VARIABLE_NAME + labelName, false);
 	  ArrayExpression sizeVar = formatter.getSizeArrayType().variable(
 	  		DEFAULT_SIZE_VARIABLE_NAME + labelName, false);
-    getExpressionEncoding().addAssumption(sizeVar.index(formatter.getNullAddress()).eq(formatter.getSizeZero()));
 	  ArrayExpression markVar = formatter.getMarkArrayType().variable(
 	  		DEFAULT_MARK_VARIABLE_NAME + labelName, false);
 	  

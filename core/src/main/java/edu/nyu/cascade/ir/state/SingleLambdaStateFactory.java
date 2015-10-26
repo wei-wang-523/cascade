@@ -421,13 +421,13 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	
 	void addHeapRegInfo(SingleLambdaStateExpression lambdaState, Expression hpRegExpr) {
 		ArrayExpression sizeArr = lambdaState.getSingleState().getSize();
-		Expression hpRegSize = sizeArr.index(hpRegExpr);
+		Expression hpRegSize = getDataFormatter().indexSizeArray(sizeArr, hpRegExpr);
 	  memSafetyEncoding.updateHeapMemSafetyPredicates(lambdaState, hpRegExpr, hpRegSize);
 	}
 	
 	void deleteHeapRegInfo(SingleLambdaStateExpression lambdaState, Expression hpRegExpr) {
 		ArrayExpression sizeArr = lambdaState.getSingleState().getSize();
-		Expression hpRegSize = sizeArr.index(hpRegExpr);
+		Expression hpRegSize = getDataFormatter().indexSizeArray(sizeArr, hpRegExpr);
 		memSafetyEncoding.freeUpdateHeapMemSafetyPredicates(lambdaState, hpRegExpr, hpRegSize);
 	}
 	
