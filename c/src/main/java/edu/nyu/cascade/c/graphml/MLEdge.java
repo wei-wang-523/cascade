@@ -18,7 +18,7 @@ public class MLEdge {
 	private static final String ORIGIN_OFFSET = "originoffset";
 	private static final String ORIGIN_LINE = "originline";
 	private static final String ASSUMPTION = "assumption";
-	private static final String NEGATED = "negated";
+	private static final String CONTROL = "control";
 	private static final String SCOPE = "assumption.scope";
 	private static final String ENTER_FUNC = "enterFunction";
 	private static final String EXIT_FUNC = "returnFromFunction";
@@ -45,14 +45,6 @@ public class MLEdge {
 		properties.put(SCOPE, scope);
 	}
 	
-//	public void setTokens(String tokens) {
-//		properties.put(TOKENS, tokens);
-//	}
-	
-//	public void setOriginFile(String file) {
-//		properties.put(ORIGIN_FILE, file);
-//	}
-	
 	public void setOriginLine(int line) {
 		properties.put(ORIGIN_LINE, line);
 	}
@@ -65,10 +57,6 @@ public class MLEdge {
 		properties.put(ASSUMPTION, assumption);
 	}
 	
-	public void setNegate() {
-		properties.put(NEGATED, true);
-	}
-	
 	public void setEnterFunc(String funcName) {
 		properties.put(ENTER_FUNC, funcName);
 	}
@@ -76,6 +64,10 @@ public class MLEdge {
 	public void setExitFunc(String funcName) {
 		properties.put(EXIT_FUNC, funcName);
 	}
+	
+	public void setCondition(boolean edgeNegated) {
+	  properties.put(CONTROL, edgeNegated ? "condition-false" : "condition-true");
+  }
 	
 	public EdgeType toEdgeType(ObjectFactory factory) {
 		EdgeType edgeType = factory.createEdgeType();

@@ -389,7 +389,9 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
   	
   	IRStatement assumeStmt = Statement.assumeStmt(edge.getSourceNode(), edge.getGuard(), true);
   	StateExpression currState = encodeStatement(assumeStmt, preStateClone);
-  	attachTraceExprToEdge(factory, edge, assumeStmt, pathEncoding.getTraceExpression());
+  	attachTraceExprToEdge(factory, edge, assumeStmt,
+  			pathEncoding.getTraceExpression(),
+  			pathEncoding.isEdgeNegated());
   	
   	if(!runIsValid.isSafe())	return Pair.of(false, currState);
   	
@@ -901,11 +903,12 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 	}
 
 	private void attachTraceExprToEdge(TraceFactory factory, IREdge<?> edge,
-			IRStatement stmt, Expression traceExpr) {
+			IRStatement stmt, Expression traceExpr, boolean isNegate) {
 		if(!Preferences.isSet(Preferences.OPTION_TRACE)) return;
 		IRTraceNode traceNode = factory.getTraceNode(edge);
 		traceNode.addStatements(Collections.singleton(stmt));
 		traceNode.setStmtTraceExpr(stmt, traceExpr);
+		traceNode.isNegate(stmt, isNegate);
 	}
 
 	private void processTraceNode(TraceFactory factory, IRBasicBlock block) {

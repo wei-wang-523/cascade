@@ -55,23 +55,23 @@ public class TraceGraphMLBuilder {
 			Node srcNode = stmt.getSourceNode();
 			edge.setSourceCode(stmt.toString());
 			
-			if(srcNode != null) {
-				Location loc = srcNode.getLocation();
-				edge.setOriginLine(loc.line);
-				edge.setOriginOffset(loc.column);
-			}
+			assert(srcNode != null);
+			Location loc = srcNode.getLocation();
+			edge.setOriginLine(loc.line);
+			edge.setOriginOffset(loc.column);
 			
 			switch(stmt.getType()) {
 			case ASSIGN: {
 				Expression traceExpr = traceNode.getTraceExpr(stmt);
 				StringBuilder sb = new StringBuilder();
-				sb.append(stmt.getOperand(0)).append('=').append(traceExpr);
+				sb.append(stmt.getOperand(0)).append(" == ").append('(').append(traceExpr).append(')');
 				edge.setAssumption(sb.toString());
 				break;
 			}
 			case ASSUME: {
-				Expression traceExpr = traceNode.getTraceExpr(stmt);
-				edge.setAssumption(traceExpr.toString());
+//				Expression traceExpr = traceNode.getTraceExpr(stmt);
+//				edge.setAssumption(traceExpr.toString());
+				edge.setCondition(traceNode.isEdgeNegated(stmt));
 				break;
 			}
 			case FREE: {
