@@ -273,6 +273,7 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 	protected void updateMarkState(StateExpression state, 
 			Expression region, BooleanExpression mark, Node ptrNode) {
 		SingleStateExpression singleState = state.asSingle();
+		// FIXME: update size array only if region is not nullptr
 		ArrayExpression markPrime = singleState.getMark().update(region, mark);
 	  singleState.setMark(markPrime);
 	}
@@ -284,6 +285,7 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 		Preconditions.checkNotNull(heapEncoder);
 		
 		SingleStateExpression singleState = state.asSingle();
+		//FIXME: update size array only if region is not nullptr
 		IRDataFormatter formatter = getDataFormatter();
 	  ArrayExpression sizePrime = formatter.updateSizeArray(
 	  		singleState.getSize(), region, size);
@@ -400,8 +402,10 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
     		DEFAULT_STATE_NAME, false);
     ArrayExpression sizeVar = formatter.getSizeArrayType().variable(DEFAULT_SIZE_VARIABLE_NAME + 
     		DEFAULT_STATE_NAME, false);
+    sizeVar = sizeVar.update(formatter.getNullAddress(), formatter.getSizeZero());
     ArrayExpression markVar = formatter.getMarkArrayType().variable(DEFAULT_MARK_VARIABLE_NAME +
     		DEFAULT_STATE_NAME, false);
+    markVar = markVar.update(formatter.getNullAddress(), getExpressionEncoding().tt());
     return SingleStateExpression.create(DEFAULT_STATE_NAME, memVar, sizeVar, markVar);
 	}
 
@@ -413,8 +417,10 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 	  				DEFAULT_MEMORY_VARIABLE_NAME + labelName, false);
 	  ArrayExpression sizeVar = formatter.getSizeArrayType().variable(
 	  		DEFAULT_SIZE_VARIABLE_NAME + labelName, false);
+	  sizeVar = sizeVar.update(formatter.getNullAddress(), formatter.getSizeZero());
 	  ArrayExpression markVar = formatter.getMarkArrayType().variable(
 	  		DEFAULT_MARK_VARIABLE_NAME + labelName, false);
+	  markVar = markVar.update(formatter.getNullAddress(), getExpressionEncoding().tt());
 	  return SingleStateExpression.create(labelName, memVar, sizeVar, markVar);
 	}
 	
