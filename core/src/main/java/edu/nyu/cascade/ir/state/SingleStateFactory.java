@@ -405,7 +405,6 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
     sizeVar = sizeVar.update(formatter.getNullAddress(), formatter.getSizeZero());
     ArrayExpression markVar = formatter.getMarkArrayType().variable(DEFAULT_MARK_VARIABLE_NAME +
     		DEFAULT_STATE_NAME, false);
-    markVar = markVar.update(formatter.getNullAddress(), getExpressionEncoding().tt());
     return SingleStateExpression.create(DEFAULT_STATE_NAME, memVar, sizeVar, markVar);
 	}
 
@@ -420,7 +419,6 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 	  sizeVar = sizeVar.update(formatter.getNullAddress(), formatter.getSizeZero());
 	  ArrayExpression markVar = formatter.getMarkArrayType().variable(
 	  		DEFAULT_MARK_VARIABLE_NAME + labelName, false);
-	  markVar = markVar.update(formatter.getNullAddress(), getExpressionEncoding().tt());
 	  return SingleStateExpression.create(labelName, memVar, sizeVar, markVar);
 	}
 	
