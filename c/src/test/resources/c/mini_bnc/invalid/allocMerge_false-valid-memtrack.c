@@ -13,6 +13,7 @@ typedef struct foo{
 
 int main(int flag){
 	foo_t * a, *b;
+  int* p;
 	
 	if(flag > 0) {
 		a = (foo_t*)malloc(sizeof(foo_t));
@@ -27,11 +28,12 @@ int main(int flag){
   
 	{
 		a->z = (int*)malloc(sizeof(int) * 5);
+    p = a->z;
     free(a);
 	}
 	
 	{
-		free(a->z);
+		free(p);
 	}
 	return 1;
 }
