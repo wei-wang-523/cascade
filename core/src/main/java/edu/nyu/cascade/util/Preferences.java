@@ -143,6 +143,10 @@ public class Preferences {
 	/** ------------- The 64bits machine ---------------------- */
 	public static final String OPTION_M64 = "m64";
 	
+	/** -- The pointer arithmetic optimization of cfs-pointer-analysis -- */
+	public static final String OPTION_CFS_POINTER_ARITH = "cfs-ptrArith";
+	
+	
 	/** ------------ The magic iteration times ---------------- */
 	public static final List<Integer> MEM_MAGIC_ITER_TIMES = Lists.newArrayList(0, 1, 6, 12, 17, 21, 40, 80, 100, 200);
 	public static final List<Integer> REACH_MAGIC_ITER_TIMES = Lists.newArrayList(1, 6, 12, 17, 21, 40, 80, 100, 200, 400, 1024);
