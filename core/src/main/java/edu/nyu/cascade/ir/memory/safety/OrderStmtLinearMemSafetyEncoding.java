@@ -272,7 +272,45 @@ public class OrderStmtLinearMemSafetyEncoding extends AbstractStmtMemSafetyEncod
 	public void freeUpdateHeapMemSafetyPredicates(
 			SingleLambdaStateExpression state, Expression ptrExpr,
 			Expression sizeExpr) {
-		// TODO Auto-generated method stub
+		if(Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
+			updateHeapFunValidAccessFree(state, ptrExpr, sizeExpr);
+			updateHeapFunValidAccessRangeFree(state, ptrExpr, sizeExpr);
+		}
+	}
+	
+	private void updateHeapFunValidAccessFree(SingleLambdaStateExpression state, 
+			Expression ptrExpr, Expression sizeExpr) {
+		String propName = SafetyPredicate.Kind.VALID_ACCESS.name();
+		PredicateClosure valid_access_closure = state.getSafetyPredicateClosure(propName);
 		
+		Expression func = valid_access_closure.getUninterpretedFunc();
+		Expression body = valid_access_closure.getBodyExpr();
+		Expression[] vars = valid_access_closure.getVars();
+		
+		assert(vars.length == 1);
+		Expression bodyPrime = encoding.and(
+				body,
+				encoding.not(encoding.within(ptrExpr, sizeExpr, vars[0])));
+		
+		PredicateClosure valid_access_closure_prime = suspend(func, bodyPrime, vars[0]);
+		state.putSafetyPredicateClosure(propName, valid_access_closure_prime);
+	}
+	
+	private void updateHeapFunValidAccessRangeFree(SingleLambdaStateExpression state, 
+			Expression ptrExpr, Expression sizeExpr) {
+		String propName = SafetyPredicate.Kind.VALID_ACCESS_RANGE.name();
+		PredicateClosure valid_access_range_closure = state.getSafetyPredicateClosure(propName);
+		
+		Expression func = valid_access_range_closure.getUninterpretedFunc();
+		Expression body = valid_access_range_closure.getBodyExpr();
+		Expression[] vars = valid_access_range_closure.getVars();
+		
+		assert(vars.length == 2);
+		Expression bodyPrime = encoding.and(
+				body,
+				encoding.not(encoding.within(ptrExpr, sizeExpr, vars[0], vars[1])));
+		
+		PredicateClosure valid_access_range_closure_prime = suspend(func, bodyPrime, vars);
+		state.putSafetyPredicateClosure(propName, valid_access_range_closure_prime);
 	}
 }
