@@ -1961,8 +1961,8 @@ public class CfgBuilder extends Visitor {
     if(!retType.isVoid()) {
     	GNode retNode = defineReturnVarNode(functionName, retType, node.getLocation());
 //     assert(!ReservedFunction.isReserved(functionName));
-      // initialize the function's return value to be zero.
-      new Initializer(retNode, retNode, null, retType).process(false);
+      // initialize the function's return value to be zero: sv-comp fix the bug
+//      new Initializer(retNode, retNode, null, retType).process(false);
     	returnExpr = expressionOf(retNode);
     }
     
