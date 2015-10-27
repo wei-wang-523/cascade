@@ -20,7 +20,6 @@ import edu.nyu.cascade.c.CAnalyzer;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
-import edu.nyu.cascade.c.preprocessor.ValueFlowGraph;
 import edu.nyu.cascade.ir.IRBasicBlock;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.IREdge;
@@ -53,21 +52,6 @@ public class SteensgaardCFS implements PreProcessor<ECR> {
   
   public static SteensgaardCFS create(SymbolTable symbolTable) {
     return new SteensgaardCFS(symbolTable);
-  }
-
-  @Override
-  public ValueFlowGraph<ECR> valueFlowAnalysis(IRControlFlowGraph cfg) {
-  	ValueFlowGraph<ECR>	currentVFG = new ValueFlowGraph<ECR>(cfg.getName());
-		final Collection<IRBasicBlock> topologicSeq = 
-				Lists.reverse(cfg.topologicalSeq(cfg.getEntry()));
-		
-		for(IRBasicBlock block : topologicSeq) {			
-			for(IRStatement stmt : block.getStatements()) 
-				valueFlowAnalysis(currentVFG, stmt);
-		}
-		
-		currentVFG.format(IOUtils.outPrinter().flush());
-		return currentVFG;
   }
   
 	@Override
@@ -179,29 +163,7 @@ public class SteensgaardCFS implements PreProcessor<ECR> {
 		    heapAssign(rangeSize, lhsECR);
 		    break;
 		  }
-		  case CALL: {
-	//	  	Node funcNode = stmt.getOperand(0).getSourceNode();
-	//		  String funcName = funcNode.getString(0);
-	//		  if(funcName.equals(ReservedFunction.MEMSET)) {
-	//		  	Node src = stmt.getOperand(1).getSourceNode();
-	//		  	ECR srcECR = ecrEncoder.encodeECR(src);
-	//		  	ECR locECR = uf.getLoc(srcECR);
-	//				uf.collapse(locECR);
-	//		  	break;
-	//		  }
-	//		  
-	//		  if(funcName.equals(ReservedFunction.MEMCOPY)) {
-	//		  	Node dest = stmt.getOperand(1).getSourceNode();
-	//		  	Node src = stmt.getOperand(2).getSourceNode();
-	//		  	ECR srcECR = ecrEncoder.encodeECR(src);
-	//		  	ECR destECR = ecrEncoder.encodeECR(dest);
-	//		  	ECR locSrcECR = uf.getLoc(srcECR);
-	//		  	ECR locDestECR = uf.getLoc(destECR);
-	//		  	uf.collapse(locSrcECR);
-	//		  	uf.collapse(locDestECR);
-	//		  	break;
-	//		  }
-			  
+		  case CALL: {			  
 		  	Node funcNode = stmt.getOperand(0).getSourceNode();
 		  	ECR funcECR = ecrEncoder.toRval(funcNode);
 		  	assert (null != funcECR);
@@ -494,59 +456,5 @@ public class SteensgaardCFS implements PreProcessor<ECR> {
 		
 		uf.join(rhsLoc, lhsLoc);
 		uf.join(rhsFunc, lhsFunc);
-	}
-
-	private void valueFlowAnalysis(ValueFlowGraph<ECR> VFG, IRStatement stmt) {
-		IOUtils.debug().pln("Value Flow Analysis: " + stmt.getLocation() + ": " + stmt);
-	  switch (stmt.getType()) {
-	  case INIT: {
-	  	Node lhsNode = stmt.getOperand(0).getSourceNode();
-	    Node rhsNode = stmt.getOperand(1).getSourceNode();
-			
-	    ECR lhsECR = ecrChecker.toRval(lhsNode);
-	    ECR rhsECR = ecrChecker.toRval(rhsNode);
-	    
-	    addValueFlowEdge(VFG, rhsECR, stmt, lhsECR);
-			break;
-	  }
-	  case RETURN: {
-	  	String functionName = currentCFG.getName();
-	    ECR funcECR = ecrChecker.getFunctionECR(functionName);
-			LambdaType funcType = uf.getType(uf.getFunc(uf.getLoc(funcECR))).asLambda();
-	    ECR retECR = funcType.getRet();
-	    
-	  	Node srcNode = stmt.getOperand(0).getSourceNode();
-	  	ECR srcECR = ecrChecker.toRval(srcNode);
-	  	
-	  	addValueFlowEdge(VFG, srcECR, stmt, retECR);
-	  	break;
-	  }
-	  case ASSIGN: {
-	    Node lhsNode = stmt.getOperand(0).getSourceNode();
-	    Node rhsNode = stmt.getOperand(1).getSourceNode();
-	
-	    ECR lhsECR = ecrChecker.toRval(lhsNode);
-	    
-	    /* Resolve the syntax sugar of assign function to a function pointer */
-	    Type rhsType = CType.getType(rhsNode);
-	    boolean isFuncType = rhsType.resolve().isFunction();
-	    ECR rhsECR = isFuncType ? ecrChecker.toLval(rhsNode) : ecrChecker.toRval(rhsNode);
-	    
-	    addValueFlowEdge(VFG, rhsECR, stmt, lhsECR);
-	    break;
-	  }
-	  default:
-	  }
-	}
-
-	private void addValueFlowEdge(ValueFlowGraph<ECR> VFG, 
-			ECR srcECR, IRStatement stmt, ECR destECR) {
-		VFG.addEdge(srcECR, stmt, destECR);
-		if(uf.getType(srcECR).isSimple() 
-				&& uf.getType(destECR).isSimple()) {
-			ECR srcLocECR = uf.getLoc(srcECR);
-			ECR destLocECR = uf.getLoc(destECR);
-			addValueFlowEdge(VFG, srcLocECR, stmt, destLocECR);
-		}
 	}
 }

@@ -197,10 +197,10 @@ public class ECREncoder extends Visitor {
     	Node rhsNode = node.getNode(2);
     	ECR lhsECR = encodeECR(lhsNode);
     	ECR rhsECR = encodeECR(rhsNode);
-    	
-    	Type type = CType.getType(node);
-
+ 
     	if(Preferences.isSet(Preferences.OPTION_CFS_POINTER_ARITH)) {
+      	Type type = CType.getType(node);
+      	//TODO: add pointer-arith pending
       	if(type.resolve().isPointer()) {
       		//TODO: swap lhs and rhs if lhs is constant and rhs is pointer
       		Type lhsType = CType.getType(lhsNode);
@@ -221,6 +221,7 @@ public class ECREncoder extends Visitor {
       		}
       	}
     	}
+    	
     	return getOpECR(node, lhsECR, rhsECR);
     }
     

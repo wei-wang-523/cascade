@@ -80,14 +80,6 @@ public interface PreProcessor<T> {
 	boolean isAccessTypeSafe(T rep);
 
 	/**
-	 * Perform value-flow analysis on <code>CFG</code>,
-	 * return the value flow graph
-	 * @param CFG
-	 * @return VFG
-	 */
-	ValueFlowGraph<T> valueFlowAnalysis(IRControlFlowGraph CFG);
-
-	/**
 	 * Initialize partition checker
 	 */
 	void initChecker();

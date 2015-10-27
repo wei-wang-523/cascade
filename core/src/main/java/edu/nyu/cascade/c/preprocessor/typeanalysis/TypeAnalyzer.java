@@ -18,7 +18,6 @@ import com.google.common.collect.Sets;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.c.preprocessor.IRVar;
-import edu.nyu.cascade.c.preprocessor.ValueFlowGraph;
 import edu.nyu.cascade.ir.IRBasicBlock;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.IREdge;
@@ -199,11 +198,6 @@ public class TypeAnalyzer implements PreProcessor<FSType> {
 	@Override
 	public boolean isAccessTypeSafe(FSType rep) {
 		return false;
-	}
-
-	@Override
-	public ValueFlowGraph<FSType> valueFlowAnalysis(IRControlFlowGraph CFG) {
-		throw new UnsupportedOperationException();
 	}
 
 	@Override

@@ -20,7 +20,6 @@ import edu.nyu.cascade.c.CAnalyzer;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
-import edu.nyu.cascade.c.preprocessor.ValueFlowGraph;
 import edu.nyu.cascade.ir.IRBasicBlock;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.IREdge;
@@ -416,11 +415,6 @@ public class SteensgaardFS implements PreProcessor<ECR> {
 			return true;
 		}
 		}
-	}
-	
-	@Override
-	public ValueFlowGraph<ECR> valueFlowAnalysis(IRControlFlowGraph CFG) {
-		throw new UnsupportedOperationException();
 	}
 
 	private void collectFieldReps(Collection<ECR> reps, ECR rep) {

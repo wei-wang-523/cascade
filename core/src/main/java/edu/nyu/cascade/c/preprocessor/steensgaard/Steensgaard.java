@@ -16,7 +16,6 @@ import xtc.tree.Node;
 import xtc.type.Type;
 import edu.nyu.cascade.c.CAnalyzer;
 import edu.nyu.cascade.c.CType;
-import edu.nyu.cascade.c.preprocessor.ValueFlowGraph;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.c.preprocessor.steensgaard.ValueType.ValueTypeKind;
@@ -342,11 +341,6 @@ public class Steensgaard implements PreProcessor<ECR> {
 	@Override
 	public boolean isAccessTypeSafe(ECR rep) {
 		return false;
-	}
-	
-	@Override
-	public ValueFlowGraph<ECR> valueFlowAnalysis(IRControlFlowGraph CFG) {
-		throw new UnsupportedOperationException();
 	}
 
 	private void heapAssign(ECR lhs) {
