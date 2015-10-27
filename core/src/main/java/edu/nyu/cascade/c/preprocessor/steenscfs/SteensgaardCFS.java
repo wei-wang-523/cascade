@@ -294,6 +294,7 @@ public class SteensgaardCFS implements PreProcessor<ECR> {
 	
 	@Override
 	public void initChecker() {
+		uf.clearPointerArithmetic();
 		ecrChecker = ECRChecker.create(uf, symbolTable, ecrEncoder);
 	}
 

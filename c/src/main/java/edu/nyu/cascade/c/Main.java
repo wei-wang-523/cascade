@@ -274,9 +274,13 @@ public class Main {
               .withDescription("Enable cell based field sensitive pointer analysis.") //
               .create("cfs"))
       .addOption(
-	  OptionBuilder.withLongOpt(OPTION_PTR_ANALYSIS_ONLY) //
-	      .withDescription("Run pointer analysis only") //
-	      .create("ptr"));
+          OptionBuilder.withLongOpt(Preferences.OPTION_CFS_POINTER_ARITH) //
+              .withDescription("Enable optimization of pointer arithmetic in cfs pointer analysis.") //
+              .create())              
+      .addOption(
+      		OptionBuilder.withLongOpt(OPTION_PTR_ANALYSIS_ONLY) //
+      				.withDescription("Run pointer analysis only") //
+      				.create("ptr"));
           
   public static void main(String[] args) throws IOException, ParseException, TheoremProverException {
     IOUtils.enableOut();

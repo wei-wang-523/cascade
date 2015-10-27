@@ -7,10 +7,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.SetMultimap;
@@ -18,12 +21,18 @@ import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.c.preprocessor.steenscfs.ValueType.ValueTypeKind;
+import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.UnionFind;
 import edu.nyu.cascade.util.UnionFind.Partition;
 
-class UnionFindECR {
-  final UnionFind<IRVar> uf;
+public class UnionFindECR {
+  private final UnionFind<IRVar> uf;
+  /**
+   * Record the pointer arithmetic pending joins if the numeric operand
+   * is a constant
+   */
+  private final Map<Pair<ECR, Long>, Pair<ECR, Long>> ptrAriJoins = Maps.newHashMap();
   
   private UnionFindECR () {
     uf = UnionFind.create();
@@ -450,6 +459,10 @@ class UnionFindECR {
 		return getType(structECR);
 	}
 	
+	void ptrAri(ECR resLocECR, long size, ECR lhsLocECR, long shift) {
+		ptrAriJoins.put(Pair.of(resLocECR, size), Pair.of(lhsLocECR, shift));
+	}
+
 	/**
 	 * Collapse <code>structECR</code> by merge it 
 	 * with all its element ECRs, and set its type
@@ -744,4 +757,79 @@ class UnionFindECR {
 		
 		return unify(t1, t2);
 	}
+
+	void clearPointerArithmetic() {
+	  if(ptrAriJoins.isEmpty()) return;
+	  for(Entry<Pair<ECR, Long>, Pair<ECR, Long>> cell : ptrAriJoins.entrySet()) {
+	  	ECR resECR = findRoot(cell.getKey().fst());
+	  	final ECR origECR = findRoot(cell.getValue().fst());
+	  	long shift = cell.getValue().snd();
+	  	if(shift >= 0) { 
+	  		// TODO: could do more precise analysis here.
+	  		collapse(origECR, resECR); continue;
+	  	}
+
+	  	ValueType origType = getType(origECR);
+	  	Parent parent = origType.getParent();
+	  	if(parent.getECRs().isEmpty()) {
+	  		// TODO: could do more precise analysis here.
+	  		collapse(origECR, resECR); continue;
+	  	}
+	  	
+	  	for(ECR parentECR : parent.getECRs()) {
+	  		ValueType parentType = getType(parentECR);
+	  		if(!parentType.isStruct()) {
+	  			IOUtils.errPrinter().pln("WARNING: non-struct parent");
+	  			join(parentECR, origECR);
+	  			continue;
+	  		}
+	  		
+	  		Map<Range<Long>, ECR> fieldMap =
+	  				parentType.asStruct().getFieldMap().asMapOfRanges();
+	  		Entry<Range<Long>, ECR> fieldRange = Iterables.find(
+	  				fieldMap.entrySet(),
+	  				new Predicate<Entry<Range<Long>, ECR>>() {
+	  					@Override
+	  					public boolean apply(Entry<Range<Long>, ECR> input) {
+	  						return origECR.equals(getLoc(input.getValue()));
+	  					}
+	  				});
+	  		long low = fieldRange.getKey().lowerEndpoint() + shift;
+	  		Size parentSize = parentType.getSize();
+		  	long size = cell.getKey().snd();
+	  		if(low == 0 && (parentSize.isBottom()
+	  				|| parentSize.isNumber() && parentSize.getValue() == size)) {
+	  			join(parentECR, resECR);
+	  			continue;
+	  		}
+	  		
+	  		collapse(origECR, resECR);
+	  	}
+	  }
+  }
+	
+	void collapse(ECR e1, ECR e2) {
+		ECR root = join(e1, e2);
+		
+  	// Parent is stored at the points-to loc of 
+  	Parent parent = getType(root).getParent();
+  	Collection<ECR> parentECRs = ImmutableList.copyOf(parent.getECRs());
+  	
+		for(ECR ecr : parentECRs) {
+			ValueType ecrType = getType(ecr);
+			if(ecrType.isStruct())	
+				collapseStruct(ecr, ecrType.asStruct());
+		}
+  	
+		enableOp(root);
+	}
+
+	boolean containsPtrAritJoin(ECR locECR, long size) {
+		return ptrAriJoins.containsKey(Pair.of(locECR, size));
+	}
+	
+	void replacePtrAriJoin(ECR freshLocECR, long freshSize, ECR locECR, long size) {
+	  Pair<ECR, Long> value = ptrAriJoins.remove(Pair.of(locECR, size));
+	  ptrAriJoins.put(Pair.of(freshLocECR, freshSize), value);
+  }
 }

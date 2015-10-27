@@ -36,6 +36,7 @@ import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Pair;
+import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.ReservedFunction;
 import edu.nyu.cascade.util.ReservedFunction.Sig;
 
@@ -196,6 +197,30 @@ public class ECREncoder extends Visitor {
     	Node rhsNode = node.getNode(2);
     	ECR lhsECR = encodeECR(lhsNode);
     	ECR rhsECR = encodeECR(rhsNode);
+    	
+    	Type type = CType.getType(node);
+
+    	if(Preferences.isSet(Preferences.OPTION_CFS_POINTER_ARITH)) {
+      	if(type.resolve().isPointer()) {
+      		//TODO: swap lhs and rhs if lhs is constant and rhs is pointer
+      		Type lhsType = CType.getType(lhsNode);
+      		Type rhsType = CType.getType(rhsNode);
+      		if(lhsType.resolve().isPointer() && rhsType.hasConstant()) {
+      			ECR resECR = createPointerECR(type);
+      			opECRMap.put(Pair.of(node, CType.getScopeName(node)), resECR);
+      			
+      			long val = rhsType.getConstant().longValue();
+      			boolean positive = "+".equals(node.getString(1));
+      			long shift = positive ? val : -val;
+      			long size = cTypeAnalyzer.getSize(type.resolve().toPointer().getType());
+      			
+      			ECR lhsLocECR = uf.getLoc(lhsECR);
+      			ECR resLocECR = uf.getLoc(resECR);
+      			uf.ptrAri(resLocECR, size, lhsLocECR, shift);
+      			return resECR;
+      		}
+      	}
+    	}
     	return getOpECR(node, lhsECR, rhsECR);
     }
     
@@ -275,10 +300,11 @@ public class ECREncoder extends Visitor {
     	if(opECRMap.containsKey(key)) return opECRMap.get(key);
     	
     	ECR srcECR = encodeECR(node.getNode(1));
+    	Type srcType = CType.getType(node.getNode(1));
     	Type targetType = CType.getType(node);
-    	pointerCast(srcECR, targetType);
-    	opECRMap.put(key, srcECR);
-    	return srcECR;
+    	ECR castECR = pointerCast(srcECR, srcType, targetType);
+    	opECRMap.put(key, castECR);
+    	return castECR;
     }
     
     public ECR visitCharacterConstant(GNode node) {
@@ -530,6 +556,17 @@ public class ECREncoder extends Visitor {
 		return ECR.createBottom();
 	}
 	
+	private ECR createPointerECR(Type type) {
+		Preconditions.checkArgument(type.resolve().isPointer());
+		Type ptr2Type = type.resolve().toPointer().getType();
+		BlankType blankType = ValueType.blank(Size.createForType(ptr2Type), Parent.getBottom());
+		ECR blankECR = ECR.create(blankType);
+		SimpleType refType = ValueType.simple(blankECR, ECR.createBottom(),
+				Size.createForType(type), Parent.getBottom());
+		ECR ptrECR = ECR.create(refType);
+		return ptrECR;
+	}
+	
 	private ECR createECR(Type type) {
 		type = type.resolve();
 		
@@ -684,15 +721,29 @@ public class ECREncoder extends Visitor {
 		return addrECR;
 	}
   
-	private void pointerCast(ECR e, Type type) {
-		if(!type.resolve().isPointer()) return;
-		if(uf.getType(e).isBottom()) return;
+	private ECR pointerCast(ECR e, Type srcType, Type targetType) {
+		if(!targetType.resolve().isPointer()) return e;
+		if(uf.getType(e).isBottom()) return e;
 		
 		final ECR locECR = uf.getLoc(e);
+		Type ptr2Type = targetType.resolve().toPointer().getType();
+		long freshPtr2Size = cTypeAnalyzer.getSize(ptr2Type);
 		
-		Type ptr2Type = type.resolve().toPointer().getType();
-		long ptr2Size = CType.getInstance().getSize(ptr2Type);
-		uf.expand(locECR, Size.create(ptr2Size));
+		if(Preferences.isSet(Preferences.OPTION_CFS_POINTER_ARITH)) {
+			long srcPtr2Size = srcType.resolve().isPointer() ?
+					cTypeAnalyzer.getSize(srcType.resolve().toPointer().getType()) : 0;
+			if(uf.containsPtrAritJoin(locECR, srcPtr2Size)) {
+				// Create a fresh reference ECR to replace the one 
+				// created for pointer arithmetic operations.
+				// Sample code: (typeof(*msg) *)((char *)__mptr - (size_t)&((typeof(*msg) *)0)->list)
+				ECR freshECR = createPointerECR(targetType);
+				ECR freshLocECR = uf.getLoc(freshECR);
+				uf.replacePtrAriJoin(freshLocECR, freshPtr2Size, locECR, srcPtr2Size);
+				return freshECR;
+			}
+		}
+		
+		uf.expand(locECR, Size.create(freshPtr2Size));
 		
 		ValueType locType = uf.getType(locECR);
 		for(ECR parent : locType.getParent().getECRs()) {
@@ -711,8 +762,9 @@ public class ECREncoder extends Visitor {
 			
 			Range<Long> range = entry.getKey();
 			long offset = range.lowerEndpoint();
-			Range<Long> newRange = Range.closedOpen(offset, offset + ptr2Size);
+			Range<Long> newRange = Range.closedOpen(offset, offset + freshPtr2Size);
 			normalize(parent, ptr2Type, newRange, fieldRangeMap);
 		}
+		return e;
 	}
 }
