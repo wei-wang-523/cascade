@@ -244,7 +244,6 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 			@Override
       public void apply(StateExpression state) throws PathFactoryException {
 				if(!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) return;
-				
 				StateFactory<?> stateFactory = pathEncoding.getStateFactory();
 				ExpressionManager exprManager = pathEncoding.getExpressionManager();
 				

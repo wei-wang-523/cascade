@@ -225,6 +225,7 @@ public class ECREncoder extends Visitor {
     	return getOpECR(node, lhsECR, rhsECR);
     }
     
+    
     public ECR visitShiftExpression(GNode node) {
     	Node lhsNode = node.getNode(0);
     	Node rhsNode = node.getNode(2);
@@ -538,7 +539,7 @@ public class ECREncoder extends Visitor {
 		locType = uf.unify(locType, structType); // Ensure locType is struct type
 		// The type set to loc might not be locType. Since loc could be with bottom type
 		// and associated with ccjoin or cjoin pending, the type change could trigger the
-		// pending resolving process and would change the type set to loc (could be simple)
+		// pending resolving process and would change the type set to loc (could be ref)
 		uf.setType(loc, locType); 
 		
 		if(uf.getType(loc).isSimple()) {

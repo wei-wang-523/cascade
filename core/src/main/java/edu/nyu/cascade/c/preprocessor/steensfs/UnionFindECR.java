@@ -408,20 +408,16 @@ class UnionFindECR {
   	if(type.isStruct())
   		type = collapseStruct(ecr, type.asStruct());
 
-  	Collection<ECR> parentECRs = Sets.newHashSet(
-				       type.getParent().getECRs());
-  	if(!type.isBottom()) type.setParent(Parent.getTop());
-
-	if(!type.isObject()){
-	    ValueType objType = ValueType.object(
-						 createBottomLocFunc(), 
-						 Size.getTop(), 
-						 Parent.getTop());
-	    
-	    ValueType unifyType = unify(type, objType);
-	    setType(ecr, unifyType);
-  	}
-	
+  	Collection<ECR> parentECRs = type.getParent().getECRs();
+  	
+  	ValueType objType = ValueType.object(
+  			createBottomLocFunc(), 
+  			Size.getTop(), 
+  			Parent.getTop());
+  	
+  	ValueType unifyType = unify(type, objType);
+  	setType(ecr, unifyType);
+  	
   	for(ECR parentECR : parentECRs)	collapse(parentECR);
   }
 
