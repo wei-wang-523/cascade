@@ -1206,13 +1206,7 @@ public class CfgBuilder extends Visitor {
     Node varNode = GNode.create("PrimaryIdentifier", varName);
     varNode.setLocation(loc);
     varType.mark(varNode);
-    symbolTable.mark(varNode);
-    
-    if(!ReservedFunction.isReserved(funcName)) {
-    	// initialize the un-reserved function's return value to be zero.
-    	new Initializer(varDeclareNode, varDeclareNode, null, varType).process(false);
-    }
-    
+    symbolTable.mark(varNode);    
     return varNode; 
   }
 
