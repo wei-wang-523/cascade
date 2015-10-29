@@ -349,7 +349,7 @@ public class Main {
   }
 
   public String getCopy() {
-    return "Copyright 2007-2009, New York University";
+    return "Copyright 2007-2016, New York University";
   }
 
   public String getName() {
@@ -357,7 +357,7 @@ public class Main {
   }
 
   public String getVersion() {
-    return "0.1 (experimental)";
+    return "2.0";
   }
 
   public void init() {
