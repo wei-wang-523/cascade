@@ -7,6 +7,7 @@ import javax.xml.bind.JAXBElement;
 
 import xtc.tree.Location;
 import xtc.tree.Node;
+
 import com.google.common.collect.Lists;
 
 import edu.nyu.cascade.c.CType;
@@ -22,6 +23,7 @@ import edu.nyu.cascade.graphml.jaxb.ObjectFactory;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.IRTraceNode;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 
 public class TraceGraphMLBuilder {
@@ -55,26 +57,35 @@ public class TraceGraphMLBuilder {
 			Node srcNode = stmt.getSourceNode();
 			edge.setSourceCode(stmt.toString());
 			
+			String scope = "";
 			if(srcNode != null) { // exit statement without src node
 				Location loc = srcNode.getLocation();
 				edge.setOriginLine(loc.line);
 				edge.setOriginOffset(loc.column);
+				scope = CType.getScopeName(srcNode);
 			}
 			switch(stmt.getType()) {
+			case DECLARE: {
+				xtc.type.Type type = CType.getType(srcNode);
+				if(type.resolve().isFunction()) continue;
+			}
 			case ASSIGN: {
 				Expression traceExpr = traceNode.getTraceExpr(stmt);
 				StringBuilder sb = new StringBuilder();
 				sb.append(stmt.getOperand(0)).append(" == ").append('(').append(traceExpr).append(')');
 				edge.setAssumption(sb.toString());
+				edge.setAssumptionScope(scope);
 				break;
 			}
 			case ASSUME: {
 //				Expression traceExpr = traceNode.getTraceExpr(stmt);
 //				edge.setAssumption(traceExpr.toString());
 				if(traceNode.isEdge(stmt)) {
+					edge.setSourceCode(IOUtils.formatC(srcNode));
 					edge.setCondition(traceNode.isEdgeNegated(stmt));
 				} else {
 					edge.setAssumption(traceNode.getTraceExpr(stmt).toString());
+					edge.setAssumptionScope(scope);
 				}
 				break;
 			}
@@ -83,6 +94,7 @@ public class TraceGraphMLBuilder {
 				StringBuilder sb = new StringBuilder();
 				sb.append(stmt.getOperand(0)).append('=').append(traceExpr);
 				edge.setAssumption(sb.toString());
+				edge.setAssumptionScope(scope);
 				break;
 			}
 			case FUNC_ENT: {

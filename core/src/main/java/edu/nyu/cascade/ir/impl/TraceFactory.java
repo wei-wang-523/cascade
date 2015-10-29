@@ -66,4 +66,8 @@ public class TraceFactory {
 	public void filterCounterExample(ExpressionManager exprManager, IRTraceNode entry) {
 		entry.filterSuccessor(exprManager);
 	}
+
+	public boolean hasEncodeBlock(IRBasicBlock block) {
+		return blockCache.containsKey(block);
+	}
 }

@@ -84,4 +84,8 @@ public class MLEdge {
 		
 		return edgeType;
 	}
+
+	public void setAssumptionScope(String scope) {
+		properties.put(SCOPE, scope);
+	}
 }

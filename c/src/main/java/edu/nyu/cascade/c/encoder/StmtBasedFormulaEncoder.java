@@ -322,6 +322,7 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 			@Override
 			public void encode(IREdge<?> edge) {
 				if(!Preferences.isSet(Preferences.OPTION_TRACE)) return;
+				IOUtils.debugStream().println("Encoding: " + edge);
 				IRBasicBlock srcBlock = edge.getSource();
 				IRTraceNode srcNode = traceFactory.getTraceNode(srcBlock);
 				IRTraceNode edgeNode = traceFactory.hasEncodeEdge(edge) ? 
@@ -333,12 +334,23 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 			@Override
 			public void encode(IRBasicBlock block) {
 				if(!Preferences.isSet(Preferences.OPTION_TRACE)) return;
+				IOUtils.debugStream().println("Encoding: " + block);
+				if(traceFactory.hasEncodeBlock(block)) {
+					IOUtils.err().println("Encodede: " + block);
+					for(IREdge<?> edge : cfg.getOutgoingEdges(block)) {
+						if(traceFactory.hasEncodeEdge(edge)) {
+							traceFactory.eraseEncodeEdge(edge);
+							IOUtils.err().println("Erase: " + edge);
+						}
+					}
+				}
 				IRTraceNode traceNode = traceFactory.create(block);
 				for(IREdge<?> edge : cfg.getIncomingEdges(block)) {
 					if(traceFactory.hasEncodeEdge(edge)) {
 						IRTraceNode edgeNode = traceFactory.getTraceNode(edge);
 						edgeNode.addSuccessor(traceNode);
 						traceFactory.eraseEncodeEdge(edge);
+						IOUtils.debugStream().println("Erase: " + edge);
 					}
 				}
 			}
