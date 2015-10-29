@@ -57,12 +57,10 @@ public class TraceGraphMLBuilder {
 			Node srcNode = stmt.getSourceNode();
 			edge.setSourceCode(stmt.toString());
 			
-			String scope = "";
 			if(srcNode != null) { // exit statement without src node
 				Location loc = srcNode.getLocation();
 				edge.setOriginLine(loc.line);
 				edge.setOriginOffset(loc.column);
-				scope = CType.getScopeName(srcNode);
 			}
 			switch(stmt.getType()) {
 			case DECLARE: {
@@ -74,7 +72,6 @@ public class TraceGraphMLBuilder {
 				StringBuilder sb = new StringBuilder();
 				sb.append(stmt.getOperand(0)).append(" == ").append('(').append(traceExpr).append(')');
 				edge.setAssumption(sb.toString());
-				edge.setAssumptionScope(scope);
 				break;
 			}
 			case ASSUME: {
@@ -85,7 +82,6 @@ public class TraceGraphMLBuilder {
 					edge.setCondition(traceNode.isEdgeNegated(stmt));
 				} else {
 					edge.setAssumption(traceNode.getTraceExpr(stmt).toString());
-					edge.setAssumptionScope(scope);
 				}
 				break;
 			}
@@ -94,7 +90,6 @@ public class TraceGraphMLBuilder {
 				StringBuilder sb = new StringBuilder();
 				sb.append(stmt.getOperand(0)).append('=').append(traceExpr);
 				edge.setAssumption(sb.toString());
-				edge.setAssumptionScope(scope);
 				break;
 			}
 			case FUNC_ENT: {
