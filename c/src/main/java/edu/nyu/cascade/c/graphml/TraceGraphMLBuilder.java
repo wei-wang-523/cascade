@@ -20,6 +20,7 @@ import edu.nyu.cascade.graphml.jaxb.KeyForType;
 import edu.nyu.cascade.graphml.jaxb.KeyType;
 import edu.nyu.cascade.graphml.jaxb.KeyTypeType;
 import edu.nyu.cascade.graphml.jaxb.ObjectFactory;
+import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.IRTraceNode;
 import edu.nyu.cascade.prover.Expression;
@@ -63,6 +64,18 @@ public class TraceGraphMLBuilder {
 				edge.setOriginOffset(loc.column);
 			}
 			switch(stmt.getType()) {
+			case INIT: {
+	    	IRExpression rhs = stmt.getOperand(1);
+	    	if(rhs.getSourceNode().hasName("CharacterConstant")) {
+	    		String c = rhs.getSourceNode().getString(0);
+	    		if(c.charAt(1) == '\u0000') {
+	    			StringBuilder sb = new StringBuilder();
+	    			sb.append(stmt.getOperand(0)).append(" := ''");
+	    			edge.setSourceCode(sb.toString());
+	    		}
+	    	}
+	    	break;
+			}
 			case DECLARE: {
 				xtc.type.Type type = CType.getType(srcNode);
 				if(type.resolve().isFunction()) continue;
