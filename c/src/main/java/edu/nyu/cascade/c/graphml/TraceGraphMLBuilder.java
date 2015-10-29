@@ -79,6 +79,7 @@ public class TraceGraphMLBuilder {
 			case DECLARE: {
 				xtc.type.Type type = CType.getType(srcNode);
 				if(type.resolve().isFunction()) continue;
+				break;
 			}
 			case ASSIGN: {
 				Expression traceExpr = traceNode.getTraceExpr(stmt);
