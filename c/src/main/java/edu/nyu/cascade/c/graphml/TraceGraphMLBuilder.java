@@ -71,7 +71,11 @@ public class TraceGraphMLBuilder {
 			case ASSUME: {
 //				Expression traceExpr = traceNode.getTraceExpr(stmt);
 //				edge.setAssumption(traceExpr.toString());
-				edge.setCondition(traceNode.isEdgeNegated(stmt));
+				if(traceNode.isEdge(stmt)) {
+					edge.setCondition(traceNode.isEdgeNegated(stmt));
+				} else {
+					edge.setAssumption(traceNode.getTraceExpr(stmt).toString());
+				}
 				break;
 			}
 			case FREE: {
