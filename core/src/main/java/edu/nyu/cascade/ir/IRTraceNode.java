@@ -35,4 +35,6 @@ public interface IRTraceNode {
 	void isNegate(IRStatement stmt, boolean isNegate);
 
 	boolean isEdgeNegated(IRStatement stmt);
+	
+	boolean isEdge(IRStatement stmt);
 }

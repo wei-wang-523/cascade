@@ -109,6 +109,11 @@ public class TraceNode implements IRTraceNode {
   }
 	
 	@Override
+	public boolean isEdge(IRStatement stmt) {
+		return edgeStmtMap.containsKey(stmt);
+	}
+	
+	@Override
 	public void isNegate(IRStatement stmt, boolean isNegate) {
 		edgeStmtMap.put(stmt, isNegate);
 	}
