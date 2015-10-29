@@ -33,6 +33,7 @@ class ECRChecker extends Visitor {
   private final UnionFindECR uf;
   private final SymbolTable symbolTable;
   private final CType cTypeAnalyzer = CType.getInstance();
+  private final ECREncoder ecrEncoder;
   private final LvalVisitor lvalVisitor = new LvalVisitor();
   private final RvalVisitor rvalVisitor = new RvalVisitor();
   
@@ -321,6 +322,7 @@ class ECRChecker extends Visitor {
   	this.symbolTable = symbolTable;
   	this.ecrMap = ecrEncoder.getECRMap();
   	this.opECRMap = ecrEncoder.getOpECRMap();
+  	this.ecrEncoder = ecrEncoder;
   }
   
   static ECRChecker create(UnionFindECR uf, SymbolTable symbolTable, ECREncoder ecrEncoder) {
@@ -398,8 +400,13 @@ class ECRChecker extends Visitor {
 	
 	private ECR lookupOpECR(GNode opNode) {
 		Pair<GNode, String> key = Pair.of(opNode, CType.getScopeName(opNode));
-		assert(opECRMap.containsKey(key));
-		return opECRMap.get(key);
+		if(opECRMap.containsKey(key)) {
+			return opECRMap.get(key);
+		} else {
+			// Call ecrEncoder only for the nodes generated for function inline.
+			// Only for var_arg initialization.
+			return ecrEncoder.toRval(opNode);
+		}
 	}
 	
 	private ECR lookup(String id, String scopeName) {
