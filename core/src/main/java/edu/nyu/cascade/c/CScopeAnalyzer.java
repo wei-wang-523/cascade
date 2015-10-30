@@ -9,6 +9,7 @@ package edu.nyu.cascade.c;
 //import edu.nyu.cascade.util.IOUtils;
 
 public final class CScopeAnalyzer {
+	private static String FUNCTION_WRAPPER = "function(";
 	
 //	private static Deque<String> scopeStack = Queues.newArrayDeque();
 //	private static Map<String, Deque<Long>> scopeMap = Maps.newHashMap();
@@ -41,5 +42,19 @@ public final class CScopeAnalyzer {
 	 */
 	public static String getRootScopeName() {
 		return "";
+	}
+	
+	/**
+	 * De-qualified scope name
+	 */
+	public static String getCurrentScopeName(String scopeName) {
+		int lastIndexOfDot = scopeName.lastIndexOf('.') + 1;
+		String currentScopeName = scopeName.substring(lastIndexOfDot);
+		if(currentScopeName.startsWith(FUNCTION_WRAPPER)) {
+			int startIndex = FUNCTION_WRAPPER.length();
+			int endIndex = currentScopeName.length() - 1;
+			currentScopeName = currentScopeName.substring(startIndex, endIndex);
+		}
+		return currentScopeName;
 	}
 }

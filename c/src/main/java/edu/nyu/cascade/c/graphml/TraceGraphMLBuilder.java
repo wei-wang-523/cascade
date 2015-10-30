@@ -10,6 +10,7 @@ import xtc.tree.Node;
 
 import com.google.common.collect.Lists;
 
+import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.graphml.jaxb.DataType;
 import edu.nyu.cascade.graphml.jaxb.DefaultType;
@@ -78,6 +79,11 @@ public class TraceGraphMLBuilder {
 				StringBuilder sb = new StringBuilder();
 				sb.append(stmt.getOperand(0)).append(" == ").append('(').append(traceExpr).append(')');
 				edge.setAssumption(sb.toString());
+				// Only set assumption scope for initialization for sv_comp benchmark:
+				// ldv-regression/rule60_list2.c_false-unreach-call_1.i
+				String qualifiedScopeName = CType.getScopeName(stmt.getOperand(0).getSourceNode());
+				String scopeName = CScopeAnalyzer.getCurrentScopeName(qualifiedScopeName);
+				edge.setAssumptionScope(scopeName);
 	    	break;
 			}
 			case DECLARE: {
@@ -120,13 +126,17 @@ public class TraceGraphMLBuilder {
 				break;
 			}
 			case FUNC_ENT: {
-				String funcName = CType.getScopeName(srcNode);
+				String scopeName = CType.getScopeName(srcNode);
+				String funcName = CScopeAnalyzer.getCurrentScopeName(scopeName);
 				edge.setEnterFunc(funcName);
 				break;
 			}
-			case FUNC_EXIT:
-				edge.setExitFunc((String) stmt.getProperty(Identifiers.SCOPE));
+			case FUNC_EXIT: {
+				String scopeName = (String) stmt.getProperty(Identifiers.SCOPE);
+				String funcName = CScopeAnalyzer.getCurrentScopeName(scopeName);
+				edge.setExitFunc(funcName);
 				break;
+			}
 			default:
 				break;
 			}
@@ -152,6 +162,7 @@ public class TraceGraphMLBuilder {
 		List<KeyType> keys = graphmlType.getKey();
 		
 		keys.add(getKeyType("assumption", "assumption", KeyForType.EDGE, KeyTypeType.STRING));
+		keys.add(getKeyType("assumption.scope", "assumption.scope", KeyForType.EDGE, KeyTypeType.STRING));
 		keys.add(getKeyType("sourcecode", "sourcecode", KeyForType.EDGE, KeyTypeType.STRING));
 		keys.add(getKeyType("sourcecodeLanguage", "sourcecodelang", KeyForType.GRAPH, KeyTypeType.STRING));
 //		keys.add(getKeyType("tokenSet", "tokens", KeyForType.EDGE, KeyTypeType.STRING));
