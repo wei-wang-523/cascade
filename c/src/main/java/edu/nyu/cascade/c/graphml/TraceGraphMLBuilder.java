@@ -74,6 +74,10 @@ public class TraceGraphMLBuilder {
 	    			edge.setSourceCode(sb.toString());
 	    		}
 	    	}
+				Expression traceExpr = traceNode.getTraceExpr(stmt);
+				StringBuilder sb = new StringBuilder();
+				sb.append(stmt.getOperand(0)).append(" == ").append('(').append(traceExpr).append(')');
+				edge.setAssumption(sb.toString());
 	    	break;
 			}
 			case DECLARE: {
