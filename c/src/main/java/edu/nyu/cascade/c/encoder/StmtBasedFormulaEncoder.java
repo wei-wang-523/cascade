@@ -336,11 +336,9 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 				if(!Preferences.isSet(Preferences.OPTION_TRACE)) return;
 				IOUtils.debugStream().println("Encoding: " + block);
 				if(traceFactory.hasEncodeBlock(block)) {
-					IOUtils.err().println("Encodede: " + block);
 					for(IREdge<?> edge : cfg.getOutgoingEdges(block)) {
 						if(traceFactory.hasEncodeEdge(edge)) {
 							traceFactory.eraseEncodeEdge(edge);
-							IOUtils.err().println("Erase: " + edge);
 						}
 					}
 				}

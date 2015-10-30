@@ -106,8 +106,17 @@ public class TraceGraphMLBuilder {
 			case FREE: {
 				Expression traceExpr = traceNode.getTraceExpr(stmt);
 				StringBuilder sb = new StringBuilder();
-				sb.append(stmt.getOperand(0)).append('=').append(traceExpr);
+				sb.append(stmt.getOperand(0)).append(" == ").append('(').append(traceExpr).append(')');
 				edge.setAssumption(sb.toString());
+				break;
+			}
+			case CALL: {
+				if(!CType.getType(srcNode).resolve().isVoid()) {
+					Expression traceExpr = traceNode.getTraceExpr(stmt);
+					StringBuilder sb = new StringBuilder();
+					sb.append(stmt.getOperand(1)).append(" == ").append('(').append(traceExpr).append(')');
+					edge.setAssumption(sb.toString());
+				}
 				break;
 			}
 			case FUNC_ENT: {
