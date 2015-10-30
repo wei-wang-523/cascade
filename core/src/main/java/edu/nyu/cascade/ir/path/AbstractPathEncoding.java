@@ -70,7 +70,7 @@ public abstract class AbstractPathEncoding implements PathEncoding {
 	  Expression lvalExpr = lval.toLval(pre, encoder);	  
 	  Expression rvalExpr = rval.toExpression(pre, encoder);
 	  
-	  updateTraceExpression(lNode, rvalExpr);
+	  updateTraceExpression(lNode, rvalExpr, rNode);
 	  return init(pre, lvalExpr, lNode, rvalExpr, rNode);
   }
 	
@@ -105,7 +105,7 @@ public abstract class AbstractPathEncoding implements PathEncoding {
     Expression rhsExpr = rhs.toExpression(pre, encoder);
     stateFactory.setValidAccess(pre, lhsExpr, lhs.getSourceNode());
     
-    updateTraceExpression(lhs.getSourceNode(), rhsExpr);
+    updateTraceExpression(lhs.getSourceNode(), rhsExpr, rhs.getSourceNode());
     return assign(pre, lhsExpr, lhs.getSourceNode(), rhsExpr, rhs.getSourceNode());
   }
   
@@ -266,15 +266,22 @@ public abstract class AbstractPathEncoding implements PathEncoding {
   public boolean isEdgeNegated() {
   	return isEdgeNegated;
   }
-	
+  
 	private void updateTraceExpression(Node lNode, Expression rvalExpr) {
 		if(!Preferences.isSet(Preferences.OPTION_TRACE)) return;
 	  ExpressionEncoding encoding = encoder.getEncoding();
+	  xtc.type.Type idxType = CType.getType(lNode);			
+		int size = (int) encoding.getCTypeAnalyzer().getWidth(idxType);
+		traceExpression = encoding.castToInteger(rvalExpr, size);
+	}
+	
+	private void updateTraceExpression(Node lNode, Expression rvalExpr, Node rNode) {
+		if(!Preferences.isSet(Preferences.OPTION_TRACE)) return;
+	  ExpressionEncoding encoding = encoder.getEncoding();
 	  xtc.type.Type idxType = CType.getType(lNode);
-		boolean isUnsigned = CType.isUnsigned(idxType);
+	  boolean isUnsigned = rNode != null && CType.isUnsigned(CType.getType(rNode));
 			
-		CType cTypeAnalyzer = encoding.getCTypeAnalyzer();
-		int size = (int) cTypeAnalyzer.getWidth(idxType);
+		int size = (int) encoding.getCTypeAnalyzer().getWidth(idxType);
 		traceExpression = encoding.castToInteger(rvalExpr, size, !isUnsigned);
 	}
 

@@ -420,7 +420,7 @@ public interface ExpressionEncoding {
    * @param c the BigInteger number
    * @return an integer-encoded expression
    */
-  Expression integerConstant(BigInteger c) ;
+  Expression integerConstant(BigInteger c, long size) ;
   
   /**
    * A shortcut for <code>not(castToBoolean(e))</code>.

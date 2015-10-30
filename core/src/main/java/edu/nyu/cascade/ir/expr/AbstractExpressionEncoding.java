@@ -826,8 +826,8 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   }
 	
 	@Override
-  public Expression integerConstant(BigInteger c) {
-    return getIntegerEncoding().constant(c);
+  public Expression integerConstant(BigInteger c, long size) {
+    return getIntegerEncoding().constant(c, size);
   }
 	
   @Override

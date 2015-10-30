@@ -85,8 +85,8 @@ public class BitVectorFixedSizeEncoding extends
   }
 
 	@Override
-  public BitVectorExpression constant(BigInteger c) {
-		return getExpressionManager().bitVectorConstant(c, getType().getSize());
+  public BitVectorExpression constant(BigInteger c, long size) {
+		return getExpressionManager().bitVectorConstant(c, (int) size);
   }
 
 	@Override

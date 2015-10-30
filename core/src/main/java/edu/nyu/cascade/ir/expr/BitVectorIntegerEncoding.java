@@ -15,7 +15,6 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
-import edu.nyu.cascade.util.IOUtils;
 
 public class BitVectorIntegerEncoding extends
     AbstractTypeEncoding<BitVectorExpression> implements
@@ -71,28 +70,9 @@ public class BitVectorIntegerEncoding extends
   }
   
   @Override
-  public BitVectorExpression constant(BigInteger c) {
-  	ExpressionManager exprManager = getExpressionManager();
-  	CType cTypeAnalyzer = getCTypeAnalyzer();
-  	
-  	int cWidth = c.bitLength();
-  	
-  	int longlongWidth = (int) cTypeAnalyzer.getWidth(NumberT.LONG_LONG);
-  	int longWidth = (int) cTypeAnalyzer.getWidth(NumberT.LONG);
-  	int intWidth = (int) cTypeAnalyzer.getWidth(NumberT.INT);
-  	
-  	if(cWidth > longlongWidth) {
-  		IOUtils.errPrinter().pln("Constant is too large to be supported " + c.toString());
-  		return exprManager.bitVectorConstant(c, longlongWidth);
-  	} 
-  	
-  	if(cWidth > longWidth)
-  		return exprManager.bitVectorConstant(c, longlongWidth);
-  	
-  	if(cWidth > intWidth)
-  		return exprManager.bitVectorConstant(c, longWidth);
-  	
-  	return exprManager.bitVectorConstant(c, intWidth);
+  public BitVectorExpression constant(BigInteger c, long size) {
+  	ExpressionManager exprManager = getExpressionManager();  	
+  	return exprManager.bitVectorConstant(c, (int) size);
   }
 
   @Override
