@@ -417,7 +417,8 @@ class CExpressionEncoder implements ExpressionEncoder {
     public Expression visitIntegerConstant(GNode node) {
       Type srcType = CType.getType(node);
       Expression value = encoding.integerConstant(
-      		srcType.getConstant().bigIntValue());
+      		srcType.getConstant().bigIntValue(), 
+      		CType.getInstance().getWidth(srcType));
       return value;
     }
 
