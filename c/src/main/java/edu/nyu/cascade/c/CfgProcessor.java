@@ -10,7 +10,9 @@ import xtc.tree.GNode;
 import xtc.tree.Node;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -55,7 +57,15 @@ public class CfgProcessor {
 		IRBasicBlock entry = funcCfg.getEntry();
 		IRBasicBlock currBlock = entry;
 		
-		while(currBlock.getStatements().isEmpty()) {
+		Predicate<IRStatement> isDeclareStmt = new Predicate<IRStatement>(){
+			@Override
+      public boolean apply(IRStatement stmt) {
+	      return StatementType.DECLARE.equals(stmt.getType()) || 
+						StatementType.DECLARE_VAR_ARRAY.equals(stmt.getType());
+      }
+		};
+		
+		while(!Iterables.any(currBlock.getStatements(), isDeclareStmt)) {
 			Collection<? extends IRBasicBlock> succs = funcCfg.getSuccessors(currBlock);
 			assert(succs.size() == 1);
 			currBlock = succs.iterator().next();
@@ -83,10 +93,11 @@ public class CfgProcessor {
 	  Preconditions.checkNotNull(funcCfg.getExit());
 	  
 	  IRBasicBlock lastBlock = funcCfg.getExit();
-	  for(IRStatement stmt : lastBlock.getStatements()) {
+	  for(IRStatement stmt : lastBlock.getStatements().reverse()) {
 	  	if(stmt.getType().equals(RETURN)) {
 	      IRExpressionImpl lExpr = (IRExpressionImpl) callStmt.getOperand(1);
 	      IRExpressionImpl rExpr = (IRExpressionImpl) stmt.getOperand(0);
+	      if(lExpr.getSourceNode().equals(rExpr.getSourceNode()))	return;
 	      Node assignNode = GNode.create("AssignmentExpression", 
 	          lExpr.getSourceNode(), "=", rExpr.getSourceNode());
 	      assignNode.setLocation(callStmt.getSourceNode().getLocation());

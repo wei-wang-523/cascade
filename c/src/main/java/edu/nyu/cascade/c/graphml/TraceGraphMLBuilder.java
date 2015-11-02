@@ -82,7 +82,7 @@ public class TraceGraphMLBuilder {
 				// Only set assumption scope for initialization for sv_comp benchmark:
 				// ldv-regression/rule60_list2.c_false-unreach-call_1.i
 				String qualifiedScopeName = CType.getScopeName(stmt.getOperand(0).getSourceNode());
-				String scopeName = CScopeAnalyzer.getCurrentScopeName(qualifiedScopeName);
+				String scopeName = CScopeAnalyzer.getLastScopeName(qualifiedScopeName);
 				edge.setAssumptionScope(scopeName);
 	    	break;
 			}
@@ -127,13 +127,13 @@ public class TraceGraphMLBuilder {
 			}
 			case FUNC_ENT: {
 				String scopeName = CType.getScopeName(srcNode);
-				String funcName = CScopeAnalyzer.getCurrentScopeName(scopeName);
+				String funcName = CScopeAnalyzer.getLastScopeName(scopeName);
 				edge.setEnterFunc(funcName);
 				break;
 			}
 			case FUNC_EXIT: {
 				String scopeName = (String) stmt.getProperty(Identifiers.SCOPE);
-				String funcName = CScopeAnalyzer.getCurrentScopeName(scopeName);
+				String funcName = CScopeAnalyzer.getLastScopeName(scopeName);
 				edge.setExitFunc(funcName);
 				break;
 			}

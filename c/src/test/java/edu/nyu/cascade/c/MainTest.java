@@ -262,9 +262,25 @@ public class MainTest {
   
   @Test
 //  @Ignore
-  public void testMiniBenchmark() {
+  public void testCFSMiniBenchmark() {
   	final Tester<File> SoundTester = parserTestTimeout("--inline-anno", "--iter-times", 
   			"10", "-m32", "--vari-cell", "--lambda", "--memory-check", "--hoare", "-cfs");
+  	
+  	File invalid_location = new File(mini_programs_location, "invalid");
+  	File valid_location = new File(mini_programs_location, "valid");
+  	
+    TestUtils.checkDirectoryRec(invalid_location, falseDerefFileFilter, SoundTester, false);
+    TestUtils.checkDirectoryRec(invalid_location, falseFreeFileFilter, SoundTester, false);
+    TestUtils.checkDirectoryRec(invalid_location, falseMemtrackFileFilter, SoundTester, false);
+    TestUtils.checkDirectoryRec(invalid_location, falseAssertFileFilter, SoundTester, false);
+    TestUtils.checkDirectoryRec(valid_location, cFileFilter, SoundTester, false);
+  }
+  
+  @Test
+  //@Ignore
+  public void testCFSCSMiniBenchmark() {
+  	final Tester<File> SoundTester = parserTestTimeout("--inline-anno", "--iter-times", 
+  			"10", "-m32", "--vari-cell", "--lambda", "--memory-check", "--hoare", "-cfscs");
   	
   	File invalid_location = new File(mini_programs_location, "invalid");
   	File valid_location = new File(mini_programs_location, "valid");

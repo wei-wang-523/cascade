@@ -69,10 +69,11 @@ public class CfgBuilder extends Visitor {
    *          node.
    * @return A <code>Map</code> from declaration nodes to CFGs.
    */
-  @SuppressWarnings("unchecked")
-  public static Map<Node, IRControlFlowGraph> getCfgs(SymbolTable symbolTable, Node ast) {
-    return (Map<Node, IRControlFlowGraph>) new CfgBuilder(symbolTable).dispatch(ast);
-  }
+    @SuppressWarnings("unchecked")
+	public static Map<Node, IRControlFlowGraph> getCfgs(SymbolTable symbolTable, Node ast,
+							    FunctionCallGraph funcGraph) {
+	return (Map<Node, IRControlFlowGraph>) new CfgBuilder(symbolTable, funcGraph).dispatch(ast);
+    }
 
   /**
    * A Scope is either a loop or a switch statement. We distinguish the two by
@@ -891,13 +892,15 @@ public class CfgBuilder extends Visitor {
   private final Deque<Scope> scopes;
   private final Map<Pair<String, ControlFlowGraph>, BasicBlock> labeledBlocks;
   private final xtc.type.C cop = CType.getInstance().c();
+  private final FunctionCallGraph callGraph;
   
-  private CfgBuilder(SymbolTable symbolTable) {
+  private CfgBuilder(SymbolTable symbolTable, FunctionCallGraph callGraph) {
     this.symbolTable = symbolTable;
     alignments = Lists.newLinkedList();
     cfgs = Maps.newLinkedHashMap();
     scopes = Lists.newLinkedList();
     labeledBlocks = Maps.newHashMap();
+  	this.callGraph = callGraph;
   }
 
   /** Align the debug output with the last seen tab stop. */
@@ -1761,7 +1764,13 @@ public class CfgBuilder extends Visitor {
     		|| ReservedFunction.FUN_VALID_FREE.equals(funcName)) {
     	return expressionOf(node);
     }
-  	
+
+    if(funcName != null && // not-null function name
+    		symbolTable.rootScope().isDefined(funcName) && // globally defined
+    		symbolTable.lookupType(funcName).resolve().isFunction()) { // globally defined function.
+    	callGraph.addCallEdge(currentCfg.getName(), funcName);
+    }
+    
 		if(ReservedFunction.MALLOC.equals(funcName)) {
 			Type retType = ReservedFunction.getSignature(funcName).getReturnType();
 			Node returnNode = defineReturnVarNode(funcName, retType, loc);
@@ -1826,7 +1835,7 @@ public class CfgBuilder extends Visitor {
 		if(ReservedFunction.MEMSET.equals(funcName) 
 				|| ReservedFunction.MEMCOPY.equals(funcName)) {
 			CExpression funExpr = expressionOf(funNode);
-  		addStatement(Statement.functionCall(node, funExpr, null, argExprs));
+  		addStatement(Statement.functionCall(node, funExpr, argExprs.get(0), argExprs));
 			return argExprs.get(0);
 		}		
     
@@ -1922,7 +1931,7 @@ public class CfgBuilder extends Visitor {
     currentCfg = new ControlFlowGraph(node, functionName, symbolTable
         .getCurrentScope());
     updateCurrentBlock(currentCfg.getEntry());
-    addStatement(Statement.scopeEnt(node));
+    addStatement(Statement.scopeEnt(node, currentCfg.getName()));
     
     BasicBlock block = currentCfg.newBlock(symbolTable.getCurrentScope());
     currentCfg.addEdge(currentBlock, block);
@@ -1975,7 +1984,7 @@ public class CfgBuilder extends Visitor {
     	addStatement(retStmt);
     }
     
-    addStatement(Statement.scopeExit(functionName));
+    addStatement(Statement.scopeExit(node, functionName));
     
     cfgs.put(node, currentCfg);
 

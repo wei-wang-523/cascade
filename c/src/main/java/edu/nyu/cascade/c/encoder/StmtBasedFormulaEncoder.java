@@ -840,7 +840,7 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 		case HAVOC:
 			return pathEncoding.havoc(prefix, stmt.getOperand(0));
 		case FUNC_ENT:
-			String scopeName = CType.getScopeName(stmt.getSourceNode());
+			String scopeName = (String) stmt.getProperty(Identifiers.SCOPE);
 			CScopeAnalyzer.pushScope(scopeName);
 			break;
 		case FUNC_EXIT:

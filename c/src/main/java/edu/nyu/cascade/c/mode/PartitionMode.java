@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.c.preprocessor.steenscfs.SteensgaardCFS;
+import edu.nyu.cascade.c.preprocessor.steenscfscs.SteensgaardCFSCS;
 import edu.nyu.cascade.c.preprocessor.steensfs.SteensgaardFS;
 import edu.nyu.cascade.c.preprocessor.steensgaard.Steensgaard;
 import edu.nyu.cascade.ir.SymbolTable;
@@ -80,7 +81,9 @@ public class PartitionMode extends AbstractMode {
 			preProcessor = SteensgaardFS.create(symbolTable);
 		} else if(Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE)) {
 			preProcessor = SteensgaardCFS.create(symbolTable);
-		} else {
+		} else if(Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE)) {
+			preProcessor = SteensgaardCFSCS.create(symbolTable);
+    } else {
 			preProcessor = Steensgaard.create(symbolTable);
 		}
 		

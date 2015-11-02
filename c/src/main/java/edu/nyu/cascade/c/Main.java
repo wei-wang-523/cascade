@@ -63,6 +63,7 @@ import edu.nyu.cascade.util.CommandTokenizer;
 import edu.nyu.cascade.util.CommandTokenizer.ArgList;
 import edu.nyu.cascade.util.FileUtils;
 import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.PipedInputProcess;
 import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.StatsTimer;
@@ -273,13 +274,21 @@ public class Main {
               .withDescription("Enable cell based field sensitive pointer analysis.") //
               .create("cfs"))
       .addOption(
+          OptionBuilder.withLongOpt(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE) //
+              .withDescription("Enable cell based field sensitive pointer analysis.") //
+              .create("cfscs"))              
+      .addOption(
           OptionBuilder.withLongOpt(Preferences.OPTION_CFS_POINTER_ARITH) //
               .withDescription("Enable optimization of pointer arithmetic in cfs pointer analysis.") //
               .create())              
       .addOption(
       		OptionBuilder.withLongOpt(OPTION_PTR_ANALYSIS_ONLY) //
       				.withDescription("Run pointer analysis only") //
-      				.create("ptr"));
+      				.create("ptr"))
+  		.addOption(
+  				OptionBuilder.withLongOpt(Preferences.OPTION_INLINE_MALLOC) //
+  						.withDescription("Inline malloc function") //
+  						.create());
           
   public static void main(String[] args) throws IOException, ParseException, TheoremProverException {
     IOUtils.enableOut();
@@ -618,7 +627,10 @@ public class Main {
     
     xtc.util.SymbolTable xtcSymbolTable = cAnalyzer.analyze(ast);
     symbolTable = CSymbolTable.create(file, symbolTableFactory, xtcSymbolTable);
-    Map<Node, IRControlFlowGraph> currCfgs = CfgBuilder.getCfgs(symbolTable, ast);
+    FunctionCallGraph callGraph = new FunctionCallGraph();
+    Map<Node, IRControlFlowGraph> currCfgs = CfgBuilder.getCfgs(symbolTable, ast, callGraph);
+  	FuncInlineProcessor<?> funcInliner = FuncInlineProcessor.create(symbolTable);
+  	funcInliner.inlineMalloc(currCfgs, callGraph);
     cfgs.putAll(currCfgs);
   }
   
@@ -694,7 +706,7 @@ public class Main {
           		new Predicate<IRControlFlowGraph>(){
           	@Override
           	public boolean apply(IRControlFlowGraph cfg) {
-          		return cfg.getName().equals("main");
+          		return cfg.getName().equals(Identifiers.MAIN);
           	}
           }, null);
         	

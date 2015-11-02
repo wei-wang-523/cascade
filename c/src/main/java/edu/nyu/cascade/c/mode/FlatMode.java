@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.c.preprocessor.steenscfs.SteensgaardCFS;
+import edu.nyu.cascade.c.preprocessor.steenscfscs.SteensgaardCFSCS;
 import edu.nyu.cascade.c.preprocessor.steensfs.SteensgaardFS;
 import edu.nyu.cascade.c.preprocessor.steensgaard.Steensgaard;
 import edu.nyu.cascade.ir.SymbolTable;
@@ -79,6 +80,9 @@ public class FlatMode extends AbstractMode {
 		
 		if(Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE))
 			return SteensgaardCFS.create(symbolTable);
+		
+		if(Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE))
+			return SteensgaardCFSCS.create(symbolTable);
 			
 		return Steensgaard.create(symbolTable);
   }
