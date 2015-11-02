@@ -5,7 +5,6 @@ import java.util.Map;
 
 import com.google.common.collect.Multimap;
 
-import xtc.util.SymbolTable.Scope;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.VariableExpression;
@@ -31,12 +30,6 @@ public interface StateExpression {
 	boolean isMultiple();
 	
 	boolean isLambda();
-  
-  void setScope(Scope scope);
-  
-  Scope getScope();
-  
-  boolean hasScope();
   
   BooleanExpression getConstraint();
   

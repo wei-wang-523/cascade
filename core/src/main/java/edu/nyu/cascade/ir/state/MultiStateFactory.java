@@ -421,7 +421,8 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 		Map<String, SingleStateExpression> stateMap = multiState.getStateMap();
 		
 		if(!(	Preferences.isSet(Preferences.OPTION_FIELD_SENSITIVE) ||
-					Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE))) {						
+					Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE) ||
+					Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE))) {						
 			updateStateWithRep(multiState, rep);
 			String label = labelAnalyzer.getRepId(rep);
 			SingleStateExpression singleState = stateMap.get(label);

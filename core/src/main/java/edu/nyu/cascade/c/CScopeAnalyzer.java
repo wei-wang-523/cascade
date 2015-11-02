@@ -1,39 +1,46 @@
 package edu.nyu.cascade.c;
 
-//import java.util.Deque;
-//import java.util.Map;
-//
-//import com.google.common.collect.Maps;
-//import com.google.common.collect.Queues;
-//
-//import edu.nyu.cascade.util.IOUtils;
+import java.util.List;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Identifiers;
 
 public final class CScopeAnalyzer {
 	private static String FUNCTION_WRAPPER = "function(";
+	private static String ROOT_SCOPE = "";
 	
-//	private static Deque<String> scopeStack = Queues.newArrayDeque();
-//	private static Map<String, Deque<Long>> scopeMap = Maps.newHashMap();
-//	private static long id = 0;
+	private static List<String> scopeStack = Lists.newArrayList(ROOT_SCOPE);
+	private static String lastScope = "";
 
 	public static void reset() {
-//		id = 0;
-//		scopeStack.clear();
-//		scopeMap.clear();
+		scopeStack.clear();
+		scopeStack.add(ROOT_SCOPE);
 	}
 	
 	public static void popScope() {
-//		String scopeName = scopeStack.pop();
-//		long currId = scopeMap.get(scopeName).pop();
-//		IOUtils.debug().pln("Pop " + scopeName + currId);
+		lastScope = scopeStack.remove(0);
+		IOUtils.debug().pln("Pop " + lastScope);
 	}
 	
 	public static void pushScope(String scopeName) {
-//		scopeStack.push(scopeName);
-//		if(!scopeMap.containsKey(scopeName)) {
-//			scopeMap.put(scopeName, Queues.<Long>newArrayDeque());
-//		};
-//		scopeMap.get(scopeName).push(++id);
-//		IOUtils.debug().pln("Push " + scopeName + id);
+		scopeStack.add(0, scopeName);
+		IOUtils.debug().pln("Push " + scopeName);
+	}
+	
+	public static String getCurrentScope() {
+		Preconditions.checkArgument(!scopeStack.isEmpty());
+		return scopeStack.get(0);
+	}
+	
+	public static String getLastScope() {
+		return lastScope;
+	}
+	
+	public static ImmutableList<String> getScopes() {
+		return ImmutableList.copyOf(scopeStack);
 	}
 	
 	/**
@@ -41,14 +48,14 @@ public final class CScopeAnalyzer {
 	 * @return empty string
 	 */
 	public static String getRootScopeName() {
-		return "";
+		return ROOT_SCOPE;
 	}
 	
 	/**
 	 * De-qualified scope name
 	 */
-	public static String getCurrentScopeName(String scopeName) {
-		int lastIndexOfDot = scopeName.lastIndexOf('.') + 1;
+	public static String getLastScopeName(String scopeName) {
+		int lastIndexOfDot = scopeName.lastIndexOf(Identifiers.SCOPE_INFIX) + 1;
 		String currentScopeName = scopeName.substring(lastIndexOfDot);
 		if(currentScopeName.startsWith(FUNCTION_WRAPPER)) {
 			int startIndex = FUNCTION_WRAPPER.length();

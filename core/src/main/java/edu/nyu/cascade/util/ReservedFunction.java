@@ -79,7 +79,7 @@ public class ReservedFunction {
   	.put(MEMSET, 
   			Sig.of(PointerT.TO_VOID, PointerT.TO_VOID, IntegerT.CHAR, NumberT.U_LONG))
   	.put(MEMCOPY, 
-  			Sig.of(PointerT.TO_VOID, PointerT.TO_VOID, PointerT.TO_VOID, NumberT.U_LONG))		
+  			Sig.of(PointerT.TO_VOID, PointerT.TO_VOID, PointerT.TO_VOID, NumberT.U_LONG))
   	.put(MALLOC, 
   			Sig.of(PointerT.TO_VOID, NumberT.U_LONG))
   	.put(CALLOC, 
@@ -114,8 +114,8 @@ public class ReservedFunction {
   	.put(VERIFIER_ASSUME,
   			Sig.of(BooleanT.TYPE, BooleanT.TYPE))
   	.put(VERIFIER_nondet_int,
-  			Sig.of(VoidT.TYPE, NumberT.INT))
+  			Sig.of(NumberT.INT, VoidT.TYPE))
   	.put(VERIFIER_nondet_pointer,
-  			Sig.of(VoidT.TYPE, PointerT.TO_VOID))  			
+  			Sig.of(PointerT.TO_VOID, VoidT.TYPE))
   	.build();
 }

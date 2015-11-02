@@ -175,11 +175,11 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   	StateFactory<?> stateFactory = getStateFactory();
   	
   	if(funcName.equals(ReservedFunction.MEMSET)) {
-  		Expression region = args.get(0);
-  		Expression value = args.get(1);
-  		Expression size = args.get(2);
-  		Node regionNode = argNodes.get(0);
-  		Node valueNode = argNodes.get(1);
+  		Expression region = args.get(1);
+  		Expression value = args.get(2);
+  		Expression size = args.get(3);
+  		Node regionNode = argNodes.get(1);
+  		Node valueNode = argNodes.get(2);
   		stateFactory.setValidAccessRange(preState, region, size, regionNode);
   		
   		xtc.type.Type valueNodeType = CType.getType(valueNode);
@@ -196,11 +196,13 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   	}
   	
   	else if(funcName.equals(ReservedFunction.MEMCOPY)) {
-  		Expression destRegion = args.get(0);
-  		Expression srcRegion = args.get(1);
-  		Expression size = args.get(2);
+  		Expression destRegion = args.get(1);
+  		Expression srcRegion = args.get(2);
+  		Expression size = args.get(3);
+  		Node destNode = argNodes.get(1);
+  		Node srcNode = argNodes.get(2);
   		BooleanExpression memcpy = stateFactory.applyMemcpy(preState, destRegion, 
-  				srcRegion, size, argNodes.get(0), argNodes.get(1));
+  				srcRegion, size, destNode, srcNode);
   		preState.addConstraint(memcpy);
   	}
   	

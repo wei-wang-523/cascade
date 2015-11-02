@@ -270,7 +270,7 @@ public abstract class AbstractPathEncoding implements PathEncoding {
 	private void updateTraceExpression(Node lNode, Expression rvalExpr) {
 		if(!Preferences.isSet(Preferences.OPTION_TRACE)) return;
 	  ExpressionEncoding encoding = encoder.getEncoding();
-	  xtc.type.Type idxType = CType.getType(lNode);			
+	  xtc.type.Type idxType = CType.getType(lNode);
 		int size = (int) encoding.getCTypeAnalyzer().getWidth(idxType);
 		traceExpression = encoding.castToInteger(rvalExpr, size);
 	}

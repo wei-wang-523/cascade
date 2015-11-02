@@ -445,7 +445,8 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		if(!CType.isScalar(idxType)) rep = labelAnalyzer.getPointsToLoc(rep);
 		
 		if(!(	Preferences.isSet(Preferences.OPTION_FIELD_SENSITIVE) ||
-					Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE))) {			
+					Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE) ||
+					Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE))) {			
 			updateStateWithRep(multiLambdaState, rep);
 			String label = labelAnalyzer.getRepId(rep);
 			SingleLambdaStateExpression singleState = stateMap.get(label);

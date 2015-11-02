@@ -21,6 +21,8 @@ public class Identifiers {
 	/** The name for global control flow graph (cfg-builder) */
   public static final String GLOBAL_CFG = "globalCfg";
   
+	public static final String MAIN = "main";
+  
 	/** The elements associated with state expression or variable sets in pointer analysis */
 	public static final String SCOPE = "scope";
 	

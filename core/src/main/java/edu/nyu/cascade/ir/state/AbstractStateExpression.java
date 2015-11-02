@@ -3,8 +3,6 @@ package edu.nyu.cascade.ir.state;
 import java.util.Collection;
 import java.util.Map;
 
-import xtc.util.SymbolTable.Scope;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
@@ -15,7 +13,6 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.VariableExpression;
-import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 
 
@@ -217,21 +214,6 @@ public abstract class AbstractStateExpression implements StateExpression {
   final public BooleanExpression getConstraint() {
   	return constraint;
   }
-  
-  @Override
-  final public boolean hasScope() {
-  	return properties.containsKey(Identifiers.SCOPE);
-  }
-
-	@Override
-	final public void setScope(Scope _scope) {
-		properties.put(Identifiers.SCOPE, _scope);
-	}
-
-	@Override
-	final public Scope getScope() {
-		return (Scope) properties.get(Identifiers.SCOPE);
-	}
 
 	@Override
   final public Object setProperty(String key, Object val) {

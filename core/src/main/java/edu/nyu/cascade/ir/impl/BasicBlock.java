@@ -257,7 +257,11 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
   
   @Override
   public BasicBlock clone() {
-  	BasicBlock newBlock = new BasicBlock(type, statements);
+  	ImmutableList.Builder<IRStatement> stmtBuilder = ImmutableList.builder();
+  	for(IRStatement stmt : statements) {
+  		stmtBuilder.add(stmt.clone());
+  	}
+  	BasicBlock newBlock = new BasicBlock(type, stmtBuilder.build());
   	newBlock.updateLocations();
   	newBlock.scope = scope;
   	newBlock.swichBlock = swichBlock;

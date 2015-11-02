@@ -24,8 +24,6 @@ import static edu.nyu.cascade.ir.IRStatement.StatementType.FUNC_ENT;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.FUNC_EXIT;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.DECLARE_VAR_ARRAY;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +35,7 @@ import xtc.tree.Node;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.base.Preconditions;
@@ -96,10 +95,6 @@ public class Statement implements IRStatement {
     return new Statement(sourceNode, AWAIT, expr);
   }
 
-  public static Statement create(Node sourceNode) {
-    return new Statement(sourceNode);
-  }
-
   public static Statement critical(Node sourceNode) {
     return new Statement(sourceNode, CRITICAL_SECTION);
   }
@@ -146,12 +141,14 @@ public class Statement implements IRStatement {
     return new Statement(sourceNode, RETURN);
   }
   
-  public static Statement scopeEnt(Node sourceNode) {
-  	return new Statement(sourceNode, FUNC_ENT);
+  public static Statement scopeEnt(Node sourceNode, String scopeName) {
+  	Statement stmt = new Statement(sourceNode, FUNC_ENT);
+  	stmt.setProperty(Identifiers.SCOPE, scopeName);
+  	return stmt;
   }
   
-  public static Statement scopeExit(String scopeName) {
-  	Statement stmt = new Statement(null, FUNC_EXIT);
+  public static Statement scopeExit(Node sourceNode, String scopeName) {
+  	Statement stmt = new Statement(sourceNode, FUNC_EXIT);
   	stmt.setProperty(Identifiers.SCOPE, scopeName);
   	return stmt;
   }
@@ -177,29 +174,6 @@ public class Statement implements IRStatement {
   
   private final Map<String, Object> properties;
   
-  protected Statement(Node sourceNode) {
-    this(sourceNode, null);
-  }
-  
-  protected Statement(IRLocation loc, StatementType type) {
-    this.type = type;
-    this.location = loc;
-    this.preLabels = Collections.emptySet();
-    this.postLabels = Collections.emptySet();
-    this.properties = Maps.newHashMap();
-  }
-  
-  protected Statement(Node sourceNode, StatementType type,
-      IRExpression... operands) {
-    this.sourceNode = sourceNode;
-    this.type = type;
-    this.operands = ImmutableList.copyOf(Arrays.asList(operands));
-    this.location = IRLocations.ofNode(sourceNode);
-    this.preLabels = Sets.newHashSet();
-    this.postLabels = Sets.newHashSet();
-    this.properties = Maps.newHashMap();
-  }
-  
   protected Statement(Node sourceNode, StatementType type,
       List<? extends IRExpression> operands) {
     this.sourceNode = sourceNode;
@@ -209,6 +183,20 @@ public class Statement implements IRStatement {
     this.preLabels = Sets.newHashSet();
     this.postLabels = Sets.newHashSet();
     this.properties = Maps.newHashMap();
+  }
+  
+  protected Statement(Node sourceNode, StatementType type,
+      IRExpression... operands) {
+    this(sourceNode, type, Lists.newArrayList(operands));
+  }
+  
+  @Override
+  public IRStatement clone() {
+  	Statement copy = new Statement(sourceNode, type, operands);
+  	copy.properties.putAll(properties);
+  	copy.preLabels.addAll(preLabels);
+  	copy.postLabels.addAll(postLabels);
+  	return copy;
   }
   
   @Override
@@ -386,10 +374,10 @@ public class Statement implements IRStatement {
       return "skip";
     
     case FUNC_ENT:
-    	return "enter (" + CType.getScopeName(sourceNode) + ")";
+    	return "enter " + getProperty(Identifiers.SCOPE);
     
     case FUNC_EXIT:
-    	return "exit (" + getProperty(Identifiers.SCOPE) + ")";
+    	return "exit " + getProperty(Identifiers.SCOPE);
     	
     default:
       return sourceNode.getName();

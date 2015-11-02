@@ -116,4 +116,6 @@ public interface IRStatement {
 	Object getProperty(String name);
 	boolean hasProperty(String name);
 	boolean hasLocation();
+	
+	IRStatement clone();
 }
