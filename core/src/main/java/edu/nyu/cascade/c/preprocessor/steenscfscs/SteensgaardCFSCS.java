@@ -171,10 +171,8 @@ public class SteensgaardCFSCS implements PreProcessor<ECR> {
 		  case MALLOC: {
 		    Node lhs = stmt.getOperand(0).getSourceNode();
 		    Type lhsType = CType.getType(lhs);
-		    long rangeSize = CType.getInstance().getSize(lhsType);
-		    ECR lhsECR = ecrEncoder.toRval(lhs);
-		    
-		    heapAssign(rangeSize, lhsECR);
+		    ECR lhsECR = ecrEncoder.toRval(lhs);		    
+		    heapAssign(lhsType, lhsECR);
 		    break;
 		  }
 		  case CALL: {
@@ -375,11 +373,11 @@ public class SteensgaardCFSCS implements PreProcessor<ECR> {
 		}
 	}
 
-	private void heapAssign(long size, ECR lhs) {
-		Size rangeSize = Size.create(size);
+	private void heapAssign(Type lhsType, ECR lhs) {
+		Size rangeSize = Size.createForType(lhsType);
 		
-		ValueType lhsType = uf.getType(lhs);
-		Size lhsSize = lhsType.getSize();
+		ValueType lhsECRType = uf.getType(lhs);
+		Size lhsSize = lhsECRType.getSize();
 		if(!Size.isLessThan(rangeSize, lhsSize)) {
 			uf.expand(lhs, rangeSize);
 		}

@@ -78,11 +78,8 @@ abstract class ValueType {
 	  return simple(pair.fst(), pair.snd(), size, parent, op);
   }
 	
-  static ValueType lam(ECR ret, 
-  		List<ECR> args, 
-  		Size size, 
-  		Parent parent) {
-    return new LambdaType(ret, args, size, parent);
+  static ValueType lam(ECR ret, List<ECR> args, Parent parent) {
+    return new LambdaType(ret, args, parent);
   }
 	
 	boolean isBottom() {

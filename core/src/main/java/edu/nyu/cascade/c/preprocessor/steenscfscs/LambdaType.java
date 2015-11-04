@@ -9,13 +9,11 @@ import edu.nyu.cascade.util.EqualsUtil;
 class LambdaType extends ValueType {
 	private final List<ECR> params;
 	private final ECR ret;
-	private final Size size;
 	private Parent parent;
 	
-	LambdaType(ECR ret, List<ECR> args, Size size, Parent parent) {
+	LambdaType(ECR ret, List<ECR> args, Parent parent) {
 		this.params = Lists.newArrayList(args);
 		this.ret = ret;
-		this.size = size;
 		this.parent = parent;
 	}
 
@@ -40,7 +38,7 @@ class LambdaType extends ValueType {
 	
 	@Override
 	Size getSize() {
-		return size;
+		return Size.getBot();
 	}
 
 	@Override

@@ -57,8 +57,9 @@ class Size {
 	 * @param size
 	 * @return
 	 */
-	static Size create(long size) {
+	private static Size create(long size) {
 		Preconditions.checkArgument(size >= 0);
+		if(size == 0) return getBot();
 		if(map.containsKey(size)) return map.get(size);
 		Size res = new Size(Kind.NUMBER);
 		res.value = size;
@@ -73,7 +74,13 @@ class Size {
 	 */
 	static Size createForType(Type type) {
 		Preconditions.checkNotNull(type);
-		return create(CType.getInstance().getSize(type));
+		switch(type.tag()) {
+		case FUNCTION:
+		case VOID:
+			return getBot();
+		default:
+			return create(CType.getInstance().getSize(type));
+		}
 	}
 	
 	/**

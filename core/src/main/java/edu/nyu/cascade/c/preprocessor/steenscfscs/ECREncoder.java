@@ -524,8 +524,7 @@ public class ECREncoder extends Visitor {
 		}
 		
 		ECR retECR = ECR.createBottom();
-		ValueType lambdaType = ValueType.lam(retECR, paramECRs, 
-				Size.createForType(funcType), Parent.getBottom());
+		ValueType lambdaType = ValueType.lam(retECR, paramECRs, Parent.getBottom());
 		return lambdaType;
 	}
 	
@@ -609,7 +608,16 @@ public class ECREncoder extends Visitor {
 			size = Size.getBot();
 		}
 		
-		BlankType varType = ValueType.blank(size, Parent.getBottom());
+		ValueType varType;
+		if(type.isPointer()) {
+			Type ptr2Type = type.resolve().toPointer().getType();
+			BlankType blankType = ValueType.blank(Size.createForType(ptr2Type), Parent.getBottom());
+			ECR blankECR = ECR.create(blankType);
+			varType = ValueType.simple(blankECR, ECR.createBottom(),
+					Size.createForType(type), Parent.getBottom());
+		} else {
+			varType =	ValueType.blank(size, Parent.getBottom());
+		}
 	  
 		ECR varECR = ECR.create(varType);
 		if(type.isInternal())	return varECR;
@@ -743,9 +751,12 @@ public class ECREncoder extends Visitor {
   private ECR createFieldECR(Range<Long> range, Type type, ECR srcECR) {
 		type = type.resolve();
 		
-  	Size size = CType.isScalar(type) ? Size.createForType(type) : Size.getBot();
-	  BlankType fieldType = ValueType.blank(size, Parent.create(uf.findRoot(srcECR)));
-		ECR fieldECR = ECR.create(fieldType);
+		Parent parent = Parent.create(uf.findRoot(srcECR));
+  	Size size = Size.createForType(type);
+  	ECR fieldECR = type.isPointer() ? createPointerECR(type) :
+  		ECR.create(ValueType.blank(size, Parent.getBottom()));
+  	ValueType fieldType = uf.getType(fieldECR);
+  	fieldType.setParent(parent);
 		
 		SimpleType addrType = ValueType.simple(
 				fieldECR, 
@@ -782,7 +793,7 @@ public class ECREncoder extends Visitor {
 			}
 		}
 		
-		uf.expand(locECR, Size.create(freshPtr2Size));
+		uf.expand(locECR, Size.createForType(ptr2Type));
 		
 		ValueType locType = uf.getType(locECR);
 		for(ECR parent : locType.getParent().getECRs()) {

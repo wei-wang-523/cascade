@@ -387,7 +387,7 @@ public class UnionFindECR {
 			ECR ret2 = t2.asLambda().getRet();
 			ECR ret = join(ret1, ret2);
 			
-			return ValueType.lam(ret, params, size, parent);
+			return ValueType.lam(ret, params, parent);
 		}
 		}
 	}

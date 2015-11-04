@@ -80,9 +80,8 @@ abstract class ValueType {
 	
   static ValueType lam(ECR ret, 
   		List<ECR> args, 
-  		Size size, 
   		Parent parent) {
-    return new LambdaType(ret, args, size, parent);
+    return new LambdaType(ret, args, parent);
   }
 	
 	boolean isBottom() {
