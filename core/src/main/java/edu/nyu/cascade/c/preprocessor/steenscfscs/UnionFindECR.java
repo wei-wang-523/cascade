@@ -6,9 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import xtc.type.PointerT;
-import xtc.type.Type;
-
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
@@ -22,7 +19,6 @@ import com.google.common.collect.RangeMap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
-import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.c.preprocessor.steenscfscs.ValueType.ValueTypeKind;
 import edu.nyu.cascade.util.IOUtils;
@@ -37,10 +33,6 @@ public class UnionFindECR {
    * is a constant
    */
   private final Map<Pair<ECR, Long>, Pair<ECR, Long>> ptrAriJoins = Maps.newHashMap();
-  /**
-   * Track the pointer cast pending joins
-   */
-  private final Map<Pair<ECR, Type>, Pair<ECR, Type>> ptrCastJoins = Maps.newHashMap();
   
   private UnionFindECR () {
     uf = UnionFind.create();
@@ -470,10 +462,6 @@ public class UnionFindECR {
 	void ptrAri(ECR resLocECR, long size, ECR lhsLocECR, long shift) {
 		ptrAriJoins.put(Pair.of(resLocECR, size), Pair.of(lhsLocECR, shift));
 	}
-	
-	void ptrCast(ECR targetECR, Type targetType, ECR srcECR, Type srcType) {
-		ptrCastJoins.put(Pair.of(targetECR, targetType), Pair.of(srcECR, srcType));
-	}
 
 	/**
 	 * Collapse <code>structECR</code> by merge it 
@@ -844,126 +832,4 @@ public class UnionFindECR {
 	  Pair<ECR, Long> value = ptrAriJoins.remove(Pair.of(locECR, size));
 	  ptrAriJoins.put(Pair.of(freshLocECR, freshSize), value);
   }
-	
-	boolean containsPtrCastJoin(ECR targetECR, Type targetType) {
-		return ptrCastJoins.containsKey(Pair.of(targetECR, targetType));
-	}
-	
-	void addPtrCastJoin(ECR srcECR, Type srcPtr2Type,
-			ECR targetECR, Type targetPtr2Type) {
-		ptrCastJoins.put(Pair.of(targetECR, targetPtr2Type), 
-				Pair.of(srcECR, srcPtr2Type));
-	}
-	
-	ECR deref(ECR ecr, Type type) {
-		ECR locECR = getLoc(ecr);
-		expand(locECR, Size.createForType(type));
-		
-		Pair<ECR, Type> pair = Pair.of(ecr, type);
-		if(!ptrCastJoins.containsKey(pair)) {
-			return locECR;
-		}
-		
-		// Find the source ECR
-		Pair<ECR, Type> srcPair = pair;
-		while(ptrCastJoins.containsKey(srcPair)) {
-			srcPair = ptrCastJoins.get(srcPair);
-		}
-		
-		ECR srcECR = srcPair.fst();
-		final ECR srcLocECR = getLoc(srcECR);
-		ValueType srcLocType = getType(srcLocECR);
-		
-		for(ECR parent : srcLocType.getParent().getECRs()) {
-			ValueType parentType = getType(parent);
-			if(!parentType.isStruct()) continue;
-			
-			RangeMap<Long, ECR> fieldRangeMap = parentType.asStruct().getFieldMap();
-			Entry<Range<Long>, ECR> entry = Iterables.find(
-					fieldRangeMap.asMapOfRanges().entrySet(), 
-					new Predicate<Entry<Range<Long>, ECR>>() {
-						@Override
-						public boolean apply(Entry<Range<Long>, ECR> entry) {
-							return getLoc(entry.getValue()).equals(srcLocECR);
-						}
-					});
-			
-			Range<Long> range = entry.getKey();
-			long offset = range.lowerEndpoint();
-			long size = CType.getInstance().getSize(type);
-			Range<Long> newRange = Range.closedOpen(offset, offset + size);
-			normalize(parent, new PointerT(type), newRange, fieldRangeMap);
-		}
-		
-		join(locECR, srcLocECR);
-		return locECR;
-	}
-	
-  /**
-	 * Side-effecting predicate that modifies mapping <code>m</code>
-	 * to be compatible with access of structure element with <code>fieldType</code>
-	 * <code>range</code>, where <code>parent</code> is the parent for the newly 
-	 * created ECR
-	 * @return
-	 */
-	 void normalize(ECR srcECR, Type fieldType, Range<Long> range, 
-			RangeMap<Long, ECR> fieldMap) {
-		
-		if(fieldMap.asMapOfRanges().containsKey(range)) return;
-		
-		RangeMap<Long, ECR> subMap = fieldMap.subRangeMap(range);
-		Map<Range<Long>, ECR> subMapRanges = subMap.asMapOfRanges();
-		
-		if(subMapRanges.isEmpty()) {
-			ECR ecr = createFieldECR(range, fieldType, srcECR);
-			fieldMap.put(range, ecr);
-			return;
-		}
-		
-		Range<Long> span = subMap.span();
-		fieldMap.remove(span);
-		
-		Range<Long> newRange = subMap.span().span(range);
-		
-		Iterator<ECR> elemECRItr = subMapRanges.values().iterator();
-		ECR joinECR = elemECRItr.next();
-		while(elemECRItr.hasNext()) joinECR = cjoin(elemECRItr.next(), joinECR);
-//		uf.collapse(joinECR);
-		
-		fieldMap.put(newRange, joinECR);
-		return;
-	}
-	 
-		/**
-		 * Create a field ECR with <code>xtcType</code>, <code>scopeName</code>,
-		 * and <code>parent</code>. If <code>xtcType</code> is scalar, this
-		 * method creates a single field ECR, otherwise, two ECRs will be created,
-		 * one for the field and the other for the region it points to. For the
-		 * field ECR, whose address ECR will be the same as the address attached
-		 * with the ECR of <code>parent</code>.
-		 * 
-		 * @param range
-		 * @param type
-		 * @param srcECR
-		 * @return
-		 */
-	  private ECR createFieldECR(Range<Long> range, Type type, ECR srcECR) {
-			type = type.resolve();
-			
-	  	Size size = CType.isScalar(type) ? Size.createForType(type) : Size.getBot();
-		  BlankType fieldType = ValueType.blank(size, Parent.create(findRoot(srcECR)));
-			ECR fieldECR = ECR.create(fieldType);
-			
-			SimpleType addrType = ValueType.simple(
-					fieldECR, 
-					ECR.createBottom(), 
-					Size.createForType(new PointerT(type)), 
-					Parent.getBottom());
-			
-			ECR addrECR = ECR.create(addrType);
-			
-			StructType srcType = getType(srcECR).asStruct();
-			srcType.getFieldMap().put(range, addrECR);
-			return addrECR;
-		}
 }

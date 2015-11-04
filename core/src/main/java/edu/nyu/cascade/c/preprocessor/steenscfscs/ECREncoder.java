@@ -608,17 +608,7 @@ public class ECREncoder extends Visitor {
 			size = Size.getBot();
 		}
 		
-		ValueType varType;
-		if(type.isPointer()) {
-			Type ptr2Type = type.resolve().toPointer().getType();
-			BlankType blankType = ValueType.blank(Size.createForType(ptr2Type), Parent.getBottom());
-			ECR blankECR = ECR.create(blankType);
-			varType = ValueType.simple(blankECR, ECR.createBottom(),
-					Size.createForType(type), Parent.getBottom());
-		} else {
-			varType =	ValueType.blank(size, Parent.getBottom());
-		}
-	  
+		ValueType varType = ValueType.blank(size, Parent.getBottom());
 		ECR varECR = ECR.create(varType);
 		if(type.isInternal())	return varECR;
 		
@@ -753,10 +743,7 @@ public class ECREncoder extends Visitor {
 		
 		Parent parent = Parent.create(uf.findRoot(srcECR));
   	Size size = Size.createForType(type);
-  	ECR fieldECR = type.isPointer() ? createPointerECR(type) :
-  		ECR.create(ValueType.blank(size, Parent.getBottom()));
-  	ValueType fieldType = uf.getType(fieldECR);
-  	fieldType.setParent(parent);
+  	ECR fieldECR = ECR.create(ValueType.blank(size, parent));
 		
 		SimpleType addrType = ValueType.simple(
 				fieldECR, 
