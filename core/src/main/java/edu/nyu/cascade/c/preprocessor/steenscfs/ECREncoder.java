@@ -704,8 +704,8 @@ public class ECREncoder extends Visitor {
   private ECR createFieldECR(Range<Long> range, Type type, ECR srcECR) {
 		type = type.resolve();
 		Parent parent = Parent.create(uf.findRoot(srcECR));
-  	Size size = Size.createForType(type);
-  	ECR fieldECR = ECR.create(ValueType.blank(size, parent));
+		Size size = CType.isScalar(type) ? Size.createForType(type) : Size.getBot();
+		ECR fieldECR = ECR.create(ValueType.blank(size, parent));
 		
 		SimpleType addrType = ValueType.simple(
 				fieldECR, 
