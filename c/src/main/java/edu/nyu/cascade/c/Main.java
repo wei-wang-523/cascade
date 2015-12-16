@@ -325,6 +325,8 @@ public class Main {
   private Map<Node, IRControlFlowGraph> cfgs;
   
   private SafeResult safeResult;
+  
+  private double aliastime;
 
   @Inject
   private Main(SymbolTableFactory symbolTableFactory) {
@@ -580,6 +582,10 @@ public class Main {
   		 .append(String.valueOf(runTime/1000.0))
   		 .append('s')
   		 .append('\n');
+  	out.append("Points-to-analysis took ")
+  		.append(String.valueOf(aliastime/1000.0))
+  		.append('s')
+  		.append('\n');
   	out.flush();
   }
 
@@ -869,7 +875,10 @@ public class Main {
     
   	if (Preferences.isSet(OPTION_CFG_ONLY)) return;
     
+  	
+  	long preTime = StatsTimer.cascadeElapseTime();
     runProcessor.preprocess();
+    aliastime = StatsTimer.cascadeElapseTime() - preTime;
     
     if (Preferences.isSet(OPTION_PTR_ANALYSIS_ONLY)) return;
     
