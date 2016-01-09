@@ -343,7 +343,7 @@ public class SteensgaardCFS implements PreProcessor<ECR> {
 		buildSnapShot();
 		
 	  StringBuilder sb = new StringBuilder().append('\n')
-	  		.append("The result of field-sensitive Steensgaard analysis:\n");
+	  		.append("The result of cell-based field-sensitive Steensgaard analysis:\n");
 	  
 	  for(Entry<ECR, Collection<IRVar>> entry : snapShot.entrySet()) {
 	  	ECR ecr = entry.getKey();
