@@ -75,15 +75,6 @@ public class FlatMode extends AbstractMode {
 	@Override
   public PreProcessor<?> buildPreprocessor(SymbolTable symbolTable) {
 //	  throw new UnsupportedOperationException("Flat mode doesn't have preprocessor.");
-		if(Preferences.isSet(Preferences.OPTION_FIELD_SENSITIVE))
-			return SteensgaardFS.create(symbolTable);
-		
-		if(Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE))
-			return SteensgaardCFS.create(symbolTable);
-		
-		if(Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE))
-			return SteensgaardCFSCS.create(symbolTable);
-			
-		return Steensgaard.create(symbolTable);
+		return null;
   }
 }

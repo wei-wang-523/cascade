@@ -152,7 +152,7 @@ class RunProcessorImpl implements RunProcessor {
 	public void reset() {
 		formulaEncoder.reset();
 		traceFactory.reset();
-		preprocessor.reset();
+		if(preprocessor != null)	preprocessor.reset();
 	}
 	
 	private boolean pathBasedNormalization(IRControlFlowGraph mainCFG) {
