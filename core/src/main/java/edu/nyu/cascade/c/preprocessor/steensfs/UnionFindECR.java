@@ -590,7 +590,9 @@ class UnionFindECR {
 	 * @param structT
 	 */
 	private ValueType collapseStruct(ECR structECR, StructType structT) {		
-		return collapseStruct(structECR, structT, Sets.<ECR>newHashSet(structECR));
+		collapseStruct(structECR, structT, Sets.<ECR>newHashSet(structECR));
+		ensureSimObj(structECR, Size.getTop());
+		return getType(structECR);
 	}
 
 	/**
@@ -604,35 +606,53 @@ class UnionFindECR {
 	 * @return object type with size Top
 	 */
 	private ValueType collapseStruct(ECR structECR, StructType structT, Collection<ECR> ECRCache) {
-		// join components when promote structure to object
+		// Ensure collapsed type to be simple	
+		ValueType unionType = null;
 		
+		// join components
 		Collection<ECR> elems = structT.getFieldMap().asMapOfRanges().values();
-		ValueType unionType = ValueType.object(
-				createBottomLocFunc(), 
-				Size.getTop(), 
-				structT.getParent());
+		Collection<ECR> cjoins = Sets.newHashSet();
+		Collection<Pair<Size,ECR>> ccjoins = Sets.newHashSet();
 		
-		for(ECR elem : elems) {
+		for(ECR elem : elems) {			
 			ECR elemLoc = getLoc(elem);
 			ValueType elemLocType = getType(elemLoc);
 			Parent parent = elemLocType.getParent().removeECR(structECR);
 			elemLocType.setParent(parent);
 			
+			if(!ECRCache.add(elemLoc)) continue; // ECRCache has elemLoc
+			
+			cjoins.addAll(getCjoins(elemLoc));
+			elemLoc.clearCCjoins(ccjoins);
+			ccjoins.addAll(getCCjoins(elemLoc));
+			elemLoc.clearCCjoins(ccjoins);
+			
 			if(elemLocType.isStruct()) {
-				if(!ECRCache.add(elemLoc)) continue; // ECRCache has elemLoc
 				elemLocType = collapseStruct(elemLoc, elemLocType.asStruct(), ECRCache);
 			}
 			
 			union(structECR, elemLoc);
-			unionType = unify(unionType, elemLocType);
+			unionType = unionType == null ? elemLocType : unify(unionType, elemLocType);
 		}
+		unionType = unionType == null ? ValueType.bottom() : unionType;
+		
 		setType(structECR, unionType);
+		ECR root = findRoot(structECR);
+		
+		for(Pair<Size, ECR> cjoinPair : ccjoins) {
+			ccjoin(cjoinPair.fst(), root, cjoinPair.snd());
+		}
+		
+		for(ECR joinECR : cjoins) {
+			cjoin(root, joinECR);
+		}
+		
 		return unionType;
 	}
 
 	/**
 	 * Create a pair of location ECR and function ECR, both 
-	 * with bottome type 
+	 * with bottom type 
 	 * 
 	 * @return
 	 */

@@ -183,7 +183,8 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	public void addStackVar(StateExpression state, Expression lval, IRVarInfo info) {
 		if(!info.isStatic()) state.addVar(lval.asVariable());
 		SingleLambdaStateExpression lambdaState = state.asSingleLambda();
-		int size = (int) getCTypeAnalyzer().getWidth(info.getXtcType());
+		xtc.type.Type lvalType = info.getXtcType();
+		long size = getCTypeAnalyzer().getSize(lvalType);
 		Expression lvalSize = getExpressionEncoding().integerConstant(size);
 		addStackVar(lambdaState, lval, lvalSize);
 	}
