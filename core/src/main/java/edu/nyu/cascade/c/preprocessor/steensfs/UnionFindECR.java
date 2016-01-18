@@ -19,6 +19,7 @@ import com.google.common.collect.Sets;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.c.preprocessor.steensfs.Offset.Kind;
 import edu.nyu.cascade.c.preprocessor.steensfs.ValueType.ValueTypeKind;
+import edu.nyu.cascade.util.FieldRangeMap;
 import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.UnionFind;
 import edu.nyu.cascade.util.UnionFind.Partition;

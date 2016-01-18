@@ -4,6 +4,7 @@ import java.util.List;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.RangeMap;
 
+import edu.nyu.cascade.util.FieldRangeMap;
 import edu.nyu.cascade.util.Pair;
 
 abstract class ValueType {

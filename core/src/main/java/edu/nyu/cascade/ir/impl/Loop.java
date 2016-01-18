@@ -82,7 +82,7 @@ public class Loop {
 	
 	public Collection<IREdge<? extends IRBasicBlock>> getBackEdges() {
 		if(backEdges == null) {
-			backEdges = Lists.newArrayList(
+			backEdges = Lists.<IREdge<? extends IRBasicBlock>>newArrayList(
 					Iterables.filter(cfg.getIncomingEdges(loopHeader), 
 							new Predicate<IREdge<?>>() {
 						@Override

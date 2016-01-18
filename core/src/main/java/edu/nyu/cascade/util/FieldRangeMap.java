@@ -1,4 +1,4 @@
-package edu.nyu.cascade.c.preprocessor.steenscfs;
+package edu.nyu.cascade.util;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -8,7 +8,7 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.TreeRangeMap;
 
-class FieldRangeMap<K extends Comparable<?>, V> implements RangeMap<K, V> {
+public class FieldRangeMap<K extends Comparable<?>, V> implements RangeMap<K, V> {
 	private TreeRangeMap<K, V> treeRangeMap;
 	
 	private FieldRangeMap() {
@@ -100,5 +100,11 @@ class FieldRangeMap<K extends Comparable<?>, V> implements RangeMap<K, V> {
 	@Override
 	public String toString() {
 		return treeRangeMap.toString();
+	}
+
+	@Override
+	public Map<Range<K>, V> asDescendingMapOfRanges() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }
