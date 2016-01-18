@@ -74,7 +74,6 @@ public class FlatMode extends AbstractMode {
 
 	@Override
   public PreProcessor<?> buildPreprocessor(SymbolTable symbolTable) {
-//	  throw new UnsupportedOperationException("Flat mode doesn't have preprocessor.");
 		return null;
   }
 }

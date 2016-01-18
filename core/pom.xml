@@ -5,8 +5,9 @@
   <version>0.0.3-SNAPSHOT</version>
 
   <description>
-    The core Cascade library provides generic interfaces to first-order theorem provers
-    and program analysis, as well as utilities used throughout the Cascade platform.
+    The core Cascade library provides generic interfaces to first-order 
+    theorem provers and program analysis, as well as utilities used throughout
+    the Cascade platform.
   </description>
 
   <parent>
@@ -17,25 +18,25 @@
   </parent>
   
   <dependencies>
- 	 <dependency>
-       <groupId>com.google.code.findbugs</groupId>
-       <artifactId>jsr305</artifactId>
-       <version>3.0.0</version>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+      <version>3.0.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>18.0</version>
+      <version>19.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.inject.extensions</groupId>
       <artifactId>guice-assistedinject</artifactId>
-      <version>3.0</version>
+      <version>4.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.inject</groupId>
       <artifactId>guice</artifactId>
-      <version>3.0</version>
+      <version>4.0</version>
     </dependency>
     <!-- Intended for injection during testing, but creates a cyclic dependency -->
   </dependencies>

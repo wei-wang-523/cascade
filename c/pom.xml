@@ -20,17 +20,17 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>18.0</version>
+      <version>19.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.inject.extensions</groupId>
       <artifactId>guice-assistedinject</artifactId>
-      <version>3.0</version>
+      <version>4.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.inject</groupId>
       <artifactId>guice</artifactId>
-      <version>3.0</version>
+      <version>4.0</version>
     </dependency>
     <dependency>
       <groupId>edu.nyu.cascade</groupId>
@@ -110,7 +110,7 @@
         <version>1.6</version>
         <executions>
           <execution>
-          	<id>control</id>
+            <id>control</id>
             <goals>
               <goal>xjc</goal>
             </goals>
@@ -127,7 +127,7 @@
              <configuration>
                <schemaFiles>graphml.xsd</schemaFiles>
                <packageName>edu.nyu.cascade.graphml.jaxb</packageName>
-               <clearOutputDir>false</clearOutputDir>
+	       <clearOutputDir>false</clearOutputDir>
              </configuration>
           </execution>
         </executions>
