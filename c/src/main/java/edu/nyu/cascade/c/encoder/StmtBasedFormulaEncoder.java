@@ -19,7 +19,6 @@ import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.CScopeAnalyzer;
-import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.SafeResult;
 import edu.nyu.cascade.ir.IRBasicBlock;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
@@ -1005,6 +1004,7 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 		return true;
 	}
 	
+	@SuppressWarnings("unused")
 	private boolean isFilter(Map<IREdge<?>, StateExpression> edgeSrcStateMap, IREdge<?> edge) 
 			throws PathFactoryException {
 		if(edge.getGuard() == null) return false;

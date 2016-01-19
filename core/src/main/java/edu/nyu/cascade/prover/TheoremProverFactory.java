@@ -6,7 +6,6 @@ import java.util.ServiceLoader;
 import java.util.Set;
 
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -253,18 +252,17 @@ public class TheoremProverFactory {
       been called.
   */
 
-  @SuppressWarnings("static-access")
   public static ImmutableList<Option> getOptions() {
     if( !discoverCalled ) {
       discover();
     }
 
     ImmutableList.Builder<Option> listBuilder = ImmutableList.builder();
-    listBuilder.add(OptionBuilder.withLongOpt(OPTION_PROVER) //
+    listBuilder.add(Option.builder().longOpt(OPTION_PROVER) //
         .hasArg() //
-        .withArgName("NAME") //
-        .withDescription("Enable the named theorem prover plugin") //
-        .create());
+        .argName("NAME") //
+        .desc("Enable the named theorem prover plugin") //
+        .build());
     for (TheoremProver.Provider tp : allProviders) {
     	listBuilder.addAll(tp.getOptions());
     }

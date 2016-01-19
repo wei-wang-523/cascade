@@ -3,9 +3,6 @@ package edu.nyu.cascade.c.mode;
 import com.google.inject.Inject;
 
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
-import edu.nyu.cascade.c.preprocessor.steenscfs.SteensgaardCFS;
-import edu.nyu.cascade.c.preprocessor.steenscfscs.SteensgaardCFSCS;
-import edu.nyu.cascade.c.preprocessor.steensfs.SteensgaardFS;
 import edu.nyu.cascade.c.preprocessor.steensgaard.Steensgaard;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.ir.expr.BitVectorExpressionEncoding;
@@ -73,7 +70,9 @@ public class FlatMode extends AbstractMode {
   }
 
 	@Override
-  public PreProcessor<?> buildPreprocessor(SymbolTable symbolTable) {
-		return null;
-  }
+	public PreProcessor<?> buildPreprocessor(SymbolTable symbolTable) {
+		PreProcessor<?> preProcessor = Steensgaard.create(symbolTable);
+		stateFactory.setLabelAnalyzer(preProcessor);
+		return preProcessor;
+	}
 }
