@@ -309,7 +309,7 @@ public class SteensgaardFS implements PreProcessor<ECR> {
 		long defaultWidth = CType.getInstance().getWidth(CType.getUnitType());
 		if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) return defaultWidth;
 
-		long ptrWidth = CType.getInstance().getWidth(new PointerT(CType.getVoidType()));
+		long ptrWidth = CType.getInstance().getWidth(PointerT.TO_VOID);
 		
 		switch(ecr.getType().getKind()) {
 		// structure's cell type is pointer (not the size of structure)

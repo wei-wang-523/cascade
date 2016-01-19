@@ -85,15 +85,7 @@ public class ECREncoder extends Visitor {
     	
     	String currScope = CScopeAnalyzer.getCurrentScope();
     	Triple<String, String, String> key = Triple.of(id, scopeName, currScope);
-    	if(ecrMap.containsKey(key)) return ecrMap.get(key);
-    	
-//    	Iterator<String> scopeItr = CScopeAnalyzer.getScopes().iterator();
-//    	while(scopeItr.hasNext()) {
-//    		String parentScope = scopeItr.next();
-//    		Triple<String, String, String> parentKey = Triple.of(id, scopeName, parentScope);
-//      	if(ecrMap.containsKey(parentKey))	return ecrMap.get(parentKey);
-//    	}
-    	
+    	if(ecrMap.containsKey(key)) return ecrMap.get(key);    	
     	
     	ECR addrECR = createECR(type);
   		ecrMap.put(key, addrECR);
@@ -166,10 +158,6 @@ public class ECREncoder extends Visitor {
     	if(ecrMap.containsKey(lastKey))	return ecrMap.get(lastKey);
     	
     	throw new PreProcessorException("Invalid ECR");
-//    	Type type = varInfo.getXtcType();
-//    	ECR addrECR = createECR(type);
-//  		ecrMap.put(key, addrECR);
-//  		return addrECR;
     }
     
     public ECR visitSubscriptExpression(GNode node) {
