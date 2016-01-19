@@ -1209,7 +1209,7 @@ public class CfgBuilder extends Visitor {
     Node varNode = GNode.create("PrimaryIdentifier", varName);
     varNode.setLocation(loc);
     varType.mark(varNode);
-    symbolTable.mark(varNode);    
+    symbolTable.mark(varNode);
     return varNode; 
   }
 

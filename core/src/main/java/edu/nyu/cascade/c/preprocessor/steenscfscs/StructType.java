@@ -1,5 +1,8 @@
 package edu.nyu.cascade.c.preprocessor.steenscfscs;
 
+import java.util.Map.Entry;
+
+import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 
 class StructType extends ValueType {
@@ -12,9 +15,13 @@ class StructType extends ValueType {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder().append("STRUCT (")
-				.append(size).append(", ")
-				.append(fieldMap).append(", ")
-				.append(parent).append(')');
+				.append(size).append(", ");
+		for(Entry<Range<Long>, ECR> entry : fieldMap.asMapOfRanges().entrySet() ) {
+				sb.append(entry.getKey()).append(":").append(
+						(ECR) ((ECR) entry.getValue().findRoot()).getType().asSimple().getLoc().findRoot())
+						.append(", ");
+		}
+		sb.append(parent).append(')');
 		
 		return sb.toString();
 	}

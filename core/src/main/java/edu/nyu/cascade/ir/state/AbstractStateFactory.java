@@ -345,7 +345,7 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 	
 	void plusRegionSize(StateExpression state, Expression size) {
 		if(!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) return;
-		
+
 		Expression memTracker = state.getMemTracker();		
 		size = formatter.castToSize(size);
 		memTracker = encoding.plus(memTracker, size);
@@ -354,6 +354,13 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 	
 	void minusRegionSize(StateExpression state, Expression region, Node ptrNode) {
 		if(!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) return;
+		if(Preferences.isSet(Preferences.OPTION_TWOROUND_MEMCHECK)) {
+			if(Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
+				Expression size = getSizeOfRegion(state, region, ptrNode);
+				state.addConstraint(encoding.neq(size,
+						formatter.getSizeZero()).asBooleanExpression());
+			}
+		}
 		
 		Expression size = getSizeOfRegion(state, region, ptrNode);
 		Expression regionSizeTracker = state.getMemTracker();

@@ -287,7 +287,11 @@ public class Main {
 	.addOption(Option.builder()
 		   .longOpt(Preferences.OPTION_INLINE_MALLOC) //
 		   .desc("Inline malloc function") //
-		   .build());
+		   .build())
+	.addOption(Option.builder()
+			.longOpt(Preferences.OPTION_TWOROUND_MEMCHECK) //
+			.desc("Two round memory check") //
+  			.build());;
     
     public static void main(String[] args) 
 	throws IOException, ParseException, TheoremProverException {
@@ -312,18 +316,13 @@ public class Main {
     
     /** The runtime. */
     protected final Runtime runtime;
-    private TheoremProver theoremProver;
-    
-    private final Map<File, Node> asts;
-    
-    private final SymbolTableFactory symbolTableFactory;
-    
-    private SymbolTable symbolTable;
-  
-    private CAnalyzer cAnalyzer;
-    
+    private TheoremProver theoremProver;    
+    private final Map<File, Node> asts;    
+    private final SymbolTableFactory symbolTableFactory;    
+    private SymbolTable symbolTable;  
+    private CAnalyzer cAnalyzer;    
     private Map<Node, IRControlFlowGraph> cfgs;
-    
+    private FunctionCallGraph callGraph;
     private SafeResult safeResult;
     
     interface EncodingStrategy {
@@ -341,6 +340,7 @@ public class Main {
 	
 	asts = Maps.newHashMap();
 	cfgs = Maps.newLinkedHashMap();
+	callGraph = new FunctionCallGraph();
     }
     
     private void failOnError(String msg) {
@@ -631,7 +631,6 @@ public class Main {
 	
 	xtc.util.SymbolTable xtcSymbolTable = cAnalyzer.analyze(ast);
 	symbolTable = CSymbolTable.create(file, symbolTableFactory, xtcSymbolTable);
-	FunctionCallGraph callGraph = new FunctionCallGraph();
 	Map<Node, IRControlFlowGraph> currCfgs = CfgBuilder.getCfgs(symbolTable, ast, callGraph);
   	FuncInlineProcessor<?> funcInliner = FuncInlineProcessor.create(symbolTable);
   	funcInliner.inlineMalloc(currCfgs, callGraph);
@@ -717,7 +716,7 @@ public class Main {
 		    
 		    Mode mode = AbstractMode.getMode(theoremProver);
 		    
-		    RunProcessor runProcessor = RunProcessorImpl.create(mode, symbolTable, cfgs);
+		    RunProcessor runProcessor = RunProcessorImpl.create(mode, symbolTable, cfgs, callGraph);
 		    
 		    if (Preferences.isSet(Preferences.OPTION_TRACE)) IOUtils.enableTrace(file);
 		    

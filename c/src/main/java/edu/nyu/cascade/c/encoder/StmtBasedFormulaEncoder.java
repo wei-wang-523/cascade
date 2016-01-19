@@ -246,6 +246,29 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 				StateFactory<?> stateFactory = pathEncoding.getStateFactory();
 				ExpressionManager exprManager = pathEncoding.getExpressionManager();
 				
+				if(Preferences.isSet(Preferences.OPTION_TWOROUND_MEMCHECK)) {
+					if(!Preferences.isSet(Preferences.OPTION_MEMTRACK)) return;
+					Expression memTracker = state.getMemTracker().simplify();
+					BooleanExpression assumption = stateFactory.stateToBoolean(state).simplify().asBooleanExpression();
+					Expression sizeZero = stateFactory.getDataFormatter().getSizeZero();
+					
+					BooleanExpression queryIsZero = assumption.implies(memTracker.eq(sizeZero));
+					ValidityResult<?> isZero = pathEncoding.checkAssertion(queryIsZero);
+					if(isZero.isValid()) return; // No memory leak
+					
+					runIsValid = SafeResult.valueOf(isZero);
+					BooleanExpression queryIsPositive = assumption.implies(
+							exprManager.signedGreaterThanOrEqual(memTracker, sizeZero));
+					ValidityResult<?> isPositive = pathEncoding.checkAssertion(queryIsPositive);
+					
+					if(isPositive.isValid()) { // Memory Leak
+						runIsValid.setFailReason(Identifiers.VALID_MEMORY_TRACE);
+					} else {
+						runIsValid.setFailReason(Identifiers.VALID_FREE);
+					}
+					return;
+				}
+				
 				Expression memory_no_leak = stateFactory.applyMemoryTrack(state);
 				if(memory_no_leak.equals(exprManager.tt())) return;
 				
@@ -896,6 +919,10 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 		pathEncoding.reset();
 		
 		StateExpression postCond = getPostCondition(preCondition, stmt);
+		
+		if(Preferences.isSet(Preferences.OPTION_TWOROUND_MEMCHECK)) {
+			if(Preferences.isSet(Preferences.OPTION_MEMTRACK)) return postCond;
+		}
 		
 		for(Entry<String, BooleanExpression> entry : postCond.getAssertions().entries()) {
 			ValidityResult<?> result = pathEncoding.checkAssertion(entry.getValue());

@@ -8,8 +8,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-
 import xtc.tree.GNode;
 import xtc.tree.Node;
 import xtc.tree.VisitingException;
@@ -22,9 +20,7 @@ import xtc.type.Type.Tag;
 import xtc.util.SymbolTable.Scope;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
@@ -123,20 +119,16 @@ public class ECREncoder extends Visitor {
     	Node baseNode = node.getNode(0);
       ECR baseECR = rvalVisitor.encodeECR(baseNode);
       Type baseType = CType.getType(baseNode).resolve().toPointer().getType();
-      Type fieldType = CType.getType(node);
       String fieldName = node.getString(1);
-      long offset = cTypeAnalyzer.getOffset(baseType, fieldName);
-      return getComponent(baseECR, offset, fieldType);
+      return getComponent(baseECR, baseType, fieldName);
     }
     
     public ECR visitDirectComponentSelection(GNode node) {
     	Node baseNode = node.getNode(0);
       ECR baseECR = encodeECR(baseNode);
       Type baseType = CType.getType(baseNode);
-      Type fieldType = CType.getType(node);
       String fieldName = node.getString(1);
-  		long offset = cTypeAnalyzer.getOffset(baseType, fieldName);
-      return getComponent(baseECR, offset, fieldType);
+      return getComponent(baseECR, baseType, fieldName);
     }
     
     public ECR visitPrimaryIdentifier(GNode node) throws PreProcessorException {
@@ -205,11 +197,9 @@ public class ECREncoder extends Visitor {
     	Node lhsNode = node.getNode(0);
     	Node rhsNode = node.getNode(2);
     	ECR lhsECR = encodeECR(lhsNode);
-    	ECR rhsECR = encodeECR(rhsNode);
 
     	if(Preferences.isSet(Preferences.OPTION_CFS_POINTER_ARITH)) {
-      	Type type = CType.getType(node);
-      	//TODO: add pointer-arith pending
+    		Type type = CType.getType(node);
       	if(type.resolve().isPointer()) {
       		//TODO: swap lhs and rhs if lhs is constant and rhs is pointer
       		Type lhsType = CType.getType(lhsNode);
@@ -220,19 +210,19 @@ public class ECREncoder extends Visitor {
       					Triple.of(node, CType.getScopeName(node), CScopeAnalyzer.getCurrentScope());
       			opECRMap.put(key, resECR);
       			
+      			long targetSize = cTypeAnalyzer.getSize(type.resolve().toPointer().getType());
+      			long srcSize = cTypeAnalyzer.getSize(lhsType.resolve().toPointer().getType());
+      			
       			long val = rhsType.getConstant().longValue();
       			boolean positive = "+".equals(node.getString(1));
-      			long shift = positive ? val : -val;
-      			long size = cTypeAnalyzer.getSize(type.resolve().toPointer().getType());
-      			
-      			ECR lhsLocECR = uf.getLoc(lhsECR);
-      			ECR resLocECR = uf.getLoc(resECR);
-      			uf.ptrAri(resLocECR, size, lhsLocECR, shift);
+      			long shift = (positive ? val : -val) * srcSize;
+      			uf.ptrAri(resECR, targetSize, lhsECR, srcSize, shift);
       			return resECR;
       		}
       	}
     	}
     	
+    	ECR rhsECR = encodeECR(rhsNode);
     	return getOpECR(node, lhsECR, rhsECR);
     }
     
@@ -470,11 +460,15 @@ public class ECREncoder extends Visitor {
   }
   
   ECR toRval(Node node) {
-  	return rvalVisitor.encodeECR(node);
+  	ECR ecr = rvalVisitor.encodeECR(node);
+  	uf.addSourceECR(ecr);
+  	return ecr;
   }
 
   ECR toLval(Node node) {
-  	return lvalVisitor.encodeECR(node);
+  	ECR ecr = lvalVisitor.encodeECR(node);
+  	uf.addSourceECR(ecr);
+  	return ecr;
   }
 	
   Map<Triple<String, String, String>, ECR> getECRMap() {
@@ -529,7 +523,11 @@ public class ECREncoder extends Visitor {
 		return locECR;
 	}
 
-	private ECR getComponent(ECR srcECR, long offset, Type fieldType) {		
+	private ECR getComponent(ECR srcECR, Type baseType, String fieldName) {	
+		Preconditions.checkArgument(baseType.hasTag(Tag.STRUCT) || baseType.hasTag(Tag.UNION));
+		long offset = cTypeAnalyzer.getOffset(baseType, fieldName);
+    Type fieldType = baseType.toStructOrUnion().lookup(fieldName);
+		
 		ECR loc = uf.getLoc(srcECR);
 		ValueType locType = uf.getType(loc);
 		
@@ -546,7 +544,8 @@ public class ECREncoder extends Visitor {
 			return srcECR;
 		}
 		
-		ValueType structType = ValueType.struct(locType.getSize(), locType.getParent());
+		Size structSize = Size.createForType(baseType);
+		ValueType structType = ValueType.struct(structSize, locType.getParent());
 		
 		locType = uf.unify(locType, structType); // Ensure locType is struct type
 		// The type set to loc might not be locType. Since loc could be with bottom type
@@ -560,9 +559,9 @@ public class ECREncoder extends Visitor {
 		}
 		
 		RangeMap<Long, ECR> fieldMap = locType.asStruct().getFieldMap();
-		long size = CType.getInstance().getSize(fieldType);
+		long size = cTypeAnalyzer.getSize(fieldType);
 		Range<Long> range = Range.closedOpen(offset, offset + size);
-		normalize(loc, fieldType, range, fieldMap);
+		uf.normalize(loc, fieldType, range, fieldMap);
 		return fieldMap.get(offset);
 	}
 
@@ -657,6 +656,8 @@ public class ECREncoder extends Visitor {
   	uf.ccjoin(Size.getBot(), rightECR, resECR);
   	
   	// Parent is stored at the points-to loc of 
+  	if(Preferences.isSet(Preferences.OPTION_CFS_POINTER_ARITH)) return resECR;
+  	
   	Parent parent = uf.getType(uf.getLoc(resECR)).getParent();
   	Collection<ECR> parentECRs = ImmutableList.copyOf(parent.getECRs());
   	
@@ -670,126 +671,36 @@ public class ECREncoder extends Visitor {
   	return resECR;
 	}
 	
-  /**
-	 * Side-effecting predicate that modifies mapping <code>m</code>
-	 * to be compatible with access of structure element with <code>fieldType</code>
-	 * <code>range</code>, where <code>parent</code> is the parent for the newly 
-	 * created ECR
-	 * 
-	 * @param srcECR
-	 * @param fieldType
-	 * @param range
-	 * @param fieldMap
-	 * @return
-	 */
-	private void normalize(
-			ECR srcECR, 
-			Type fieldType, 
-			Range<Long> range, 
-			RangeMap<Long, ECR> fieldMap) {
+  private ECR pointerCast(ECR srcECR, Type srcType, Type targetType) {
+		if(!targetType.resolve().isPointer()) return srcECR;
+		if(uf.getType(srcECR).isBottom()) return srcECR;
 		
-		if(fieldMap.asMapOfRanges().containsKey(range)) return;
+		ECR targetECR = createPointerECR(targetType);
+		Type targetPtr2Type = targetType.resolve().toPointer().getType().resolve();
+		long targetPtr2Size = targetPtr2Type.isVoid() ?
+				0 : cTypeAnalyzer.getSize(targetPtr2Type);
 		
-		RangeMap<Long, ECR> subMap = fieldMap.subRangeMap(range);
-		Map<Range<Long>, ECR> subMapRanges = subMap.asMapOfRanges();
-		
-		if(subMapRanges.isEmpty()) {
-			ECR ecr = createFieldECR(range, fieldType, srcECR);
-			fieldMap.put(range, ecr);
-			return;
+		if(!Preferences.isSet(Preferences.OPTION_CFS_POINTER_ARITH)) {
+			uf.smash(srcECR, targetECR, targetPtr2Size);
+			return srcECR;
 		}
 		
-		Range<Long> span = subMap.span();
-		fieldMap.remove(span);
-		
-		Range<Long> newRange = subMap.span().span(range);
-		
-		Iterator<ECR> elemECRItr = subMapRanges.values().iterator();
-		ECR joinECR = elemECRItr.next();
-		while(elemECRItr.hasNext()) joinECR = uf.cjoin(elemECRItr.next(), joinECR);
-//		uf.collapse(joinECR);
-		
-		fieldMap.put(newRange, joinECR);
-		return;
-	}
-	
-	/**
-	 * Create a field ECR with <code>xtcType</code>, <code>scopeName</code>,
-	 * and <code>parent</code>. If <code>xtcType</code> is scalar, this
-	 * method creates a single field ECR, otherwise, two ECRs will be created,
-	 * one for the field and the other for the region it points to. For the
-	 * field ECR, whose address ECR will be the same as the address attached
-	 * with the ECR of <code>parent</code>.
-	 * 
-	 * @param range
-	 * @param type
-	 * @param srcECR
-	 * @return
-	 */
-  private ECR createFieldECR(Range<Long> range, Type type, ECR srcECR) {
-		type = type.resolve();
-		
-		Parent parent = Parent.create(uf.findRoot(srcECR));
-		Size size = CType.isScalar(type) ? Size.createForType(type) : Size.getBot();
-		ECR fieldECR = ECR.create(ValueType.blank(size, parent));
-		
-		SimpleType addrType = ValueType.simple(
-				fieldECR, 
-				ECR.createBottom(), 
-				Size.createForType(new PointerT(type)), 
-				Parent.getBottom());
-		
-		ECR addrECR = ECR.create(addrType);
-		
-		StructType srcType = uf.getType(srcECR).asStruct();
-		srcType.getFieldMap().put(range, addrECR);
-		return addrECR;
-	}
-  
-	private ECR pointerCast(ECR e, Type srcType, Type targetType) {
-		if(!targetType.resolve().isPointer()) return e;
-		if(uf.getType(e).isBottom()) return e;
-		
-		final ECR locECR = uf.getLoc(e);
-		Type ptr2Type = targetType.resolve().toPointer().getType();
-		long freshPtr2Size = cTypeAnalyzer.getSize(ptr2Type);
-		
-		if(Preferences.isSet(Preferences.OPTION_CFS_POINTER_ARITH)) {
-			long srcPtr2Size = srcType.resolve().isPointer() ?
-					cTypeAnalyzer.getSize(srcType.resolve().toPointer().getType()) : 0;
-			if(uf.containsPtrAritJoin(locECR, srcPtr2Size)) {
-				// Create a fresh reference ECR to replace the one 
-				// created for pointer arithmetic operations.
-				// Sample code: (typeof(*msg) *)((char *)__mptr - (size_t)&((typeof(*msg) *)0)->list)
-				ECR freshECR = createPointerECR(targetType);
-				ECR freshLocECR = uf.getLoc(freshECR);
-				uf.replacePtrAriJoin(freshLocECR, freshPtr2Size, locECR, srcPtr2Size);
-				return freshECR;
+		long srcPtr2Size = 0;
+		if(srcType.resolve().isPointer()) {
+			Type srcPtr2Type = srcType.resolve().toPointer().getType();
+			if(!srcPtr2Type.isVoid()) {
+				srcPtr2Size = cTypeAnalyzer.getSize(srcPtr2Type);
 			}
 		}
-		
-		uf.expand(locECR, Size.createForType(ptr2Type));
-		
-		ValueType locType = uf.getType(locECR);
-		for(ECR parent : locType.getParent().getECRs()) {
-			ValueType parentType = uf.getType(parent);
-			if(!parentType.isStruct()) continue;
-			
-			RangeMap<Long, ECR> fieldRangeMap = parentType.asStruct().getFieldMap();
-			Entry<Range<Long>, ECR> entry = Iterables.find(
-					fieldRangeMap.asMapOfRanges().entrySet(), 
-					new Predicate<Entry<Range<Long>, ECR>>() {
-						@Override
-						public boolean apply(Entry<Range<Long>, ECR> entry) {
-							return uf.getLoc(entry.getValue()).equals(locECR);
-						}
-					});
-			
-			Range<Long> range = entry.getKey();
-			long offset = range.lowerEndpoint();
-			Range<Long> newRange = Range.closedOpen(offset, offset + freshPtr2Size);
-			normalize(parent, ptr2Type, newRange, fieldRangeMap);
+
+		if(uf.containsPtrAritJoin(srcECR, srcPtr2Size)) {
+			/* Replace the one created for pointer arithmetic operations.
+			 * Sample code: (typeof(*msg) *)((char *)__mptr - (size_t)&((typeof(*msg) *)0)->list)
+			 */
+			uf.replacePtrAriJoin(targetECR, targetPtr2Size, srcECR, srcPtr2Size);
+		} else {
+			uf.ptrCast(targetECR, targetPtr2Size, srcECR, srcPtr2Size);
 		}
-		return e;
+		return targetECR;
 	}
 }

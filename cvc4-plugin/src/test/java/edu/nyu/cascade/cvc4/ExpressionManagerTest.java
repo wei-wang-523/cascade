@@ -12,6 +12,11 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.nyu.acsys.CVC4.Expr;
+import edu.nyu.acsys.CVC4.ExprManager;
+import edu.nyu.acsys.CVC4.FunctionType;
+import edu.nyu.acsys.CVC4.Kind;
+import edu.nyu.acsys.CVC4.vectorExpr;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.BoundExpression;
@@ -27,6 +32,7 @@ import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type.DomainType;
+import edu.nyu.cascade.util.IOUtils;
 
 public class ExpressionManagerTest {
   private TheoremProverImpl theoremProver;
@@ -422,6 +428,44 @@ public class ExpressionManagerTest {
     assertInvalid(exprManager.forall(ImmutableList.of(x), exprManager
         .greaterThan(x, exprManager.zero())));
   }
+  
+  @Test
+  public void testCVC4Expr() {
+  	ExprManager em = exprManager.getTheoremProver().getCvc4ExprManager();
+  	Expr p = em.mkBoundVar("p", em.integerType());
+  	FunctionType funcType = em.mkFunctionType(em.integerType(), em.booleanType());
+  	Expr isGood = em.mkVar("f", funcType);
+  	Expr body = em.mkExpr(Kind.APPLY_UF, isGood, p);
+  	vectorExpr varList = new vectorExpr();
+  	varList.add(p);
+  	Expr boundVarList = em.mkExpr(Kind.BOUND_VAR_LIST, varList);
+  	Expr qTerm = em.mkExpr(Kind.EXISTS, boundVarList, body);
+  	
+  	FunctionType funcType2 = em.mkFunctionType(em.integerType(), em.booleanType());
+  	Expr isBad = em.mkVar("g", funcType2);
+  	Expr body2 = em.mkExpr(Kind.APPLY_UF, isBad, p);
+  	Expr qTerm2 = em.mkExpr(Kind.EXISTS, boundVarList, body2);
+  	
+  	IOUtils.err().println(exprManager.getTheoremProver().getSmtEngine().checkSat(qTerm));
+  	IOUtils.err().println(exprManager.getTheoremProver().getSmtEngine().checkSat(qTerm2));
+  }
+  
+  @Test
+  public void testCVC4Expr2() {
+  	ExprManager em = exprManager.getTheoremProver().getCvc4ExprManager();
+  	Expr p = em.mkBoundVar("p", em.integerType());
+  	Expr q = em.mkBoundVar("q", em.integerType());
+  	vectorExpr varList = new vectorExpr();
+  	varList.add(p); varList.add(q);
+  	
+  	Expr boundVarList = em.mkExpr(Kind.BOUND_VAR_LIST, varList);
+  	Expr body = em.mkExpr(Kind.NOT, em.mkExpr(Kind.EQUAL, p, q));
+  	Expr op = em.mkExpr(Kind.LAMBDA, boundVarList, body);
+  	
+  	Expr y = em.mkVar("y", em.integerType());
+  	Expr a = em.mkExpr(Kind.APPLY_UF, op, y, y);
+  	IOUtils.err().println(exprManager.getTheoremProver().getSmtEngine().checkSat(a));
+  }  
 
   @Test
   public void testForallExpr2() {

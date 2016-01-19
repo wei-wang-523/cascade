@@ -28,6 +28,7 @@ import edu.nyu.cascade.ir.path.SimplePathEncoding;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
+import edu.nyu.cascade.util.ReservedFunction;
 /**
  * A processor for control file runs. It is statement-based.
  * For loop point and function call point, we handle them separately.
@@ -36,11 +37,11 @@ import edu.nyu.cascade.util.Preferences;
  * into the original graph.
  */
 class RunProcessorImpl implements RunProcessor {
-
     private RunProcessorImpl(
 			     Mode mode,
 			     SymbolTable symbolTable,
-			     Map<Node, IRControlFlowGraph> cfgMap) {
+			     Map<Node, IRControlFlowGraph> cfgMap,
+			     FunctionCallGraph callGraph) {
 	this.mode = mode;
 	this.traceFactory = new TraceFactory();
 	
@@ -63,17 +64,22 @@ class RunProcessorImpl implements RunProcessor {
 	    BlockBasedFormulaEncoder.create(SimplePathEncoding.create(encoder), traceFactory) :
 	    StmtBasedFormulaEncoder.create(SimplePathEncoding.create(encoder), traceFactory);
 	funcProcessor = FuncInlineProcessor.create(cfgMap, symbolTable, preprocessor);
+	withNoMemAlloc = 
+	    callGraph.getCallers(ReservedFunction.MALLOC).isEmpty() &&
+	    callGraph.getCallers(ReservedFunction.CALLOC).isEmpty();
     }
     
     static RunProcessorImpl create(
 				   Mode mode,
 				   SymbolTable symbolTable,
-				   Map<Node, IRControlFlowGraph> cfgs) {
-  	return new RunProcessorImpl(mode, symbolTable, cfgs);
+				   Map<Node, IRControlFlowGraph> cfgs,
+				   FunctionCallGraph callGraph) {
+  	return new RunProcessorImpl(mode, symbolTable, cfgs, callGraph);
     }
     
     private final IRControlFlowGraph globalCFG;
     private final List<IRControlFlowGraph> cfgs;
+    private final boolean withNoMemAlloc;
     private final FormulaEncoder formulaEncoder;
     private final FuncInlineProcessor<?> funcProcessor;
     private final PreProcessor<?> preprocessor;
@@ -107,13 +113,28 @@ class RunProcessorImpl implements RunProcessor {
     
     @Override
 	public SafeResult processAssertion(IRControlFlowGraph mainCFG, 
-					   LoopInfo loopInfo, int iterTime) throws RunProcessorException {
+					   LoopInfo loopInfo, int iterTime) 
+	throws RunProcessorException {
 	try {
 	    /* Set the iteration time */
 	    formulaEncoder.setIterTimes(iterTime);
 	    
-	    formulaEncoder.encode(mainCFG, loopInfo);
-	    return formulaEncoder.runIsValid();
+	    if(Preferences.isSet(Preferences.OPTION_TWOROUND_MEMCHECK)) {
+		if(!withNoMemAlloc) {
+		    Preferences.set(Preferences.OPTION_MEMTRACK);
+		    formulaEncoder.encode(mainCFG, loopInfo);
+		    SafeResult result = formulaEncoder.runIsValid();
+		    if(result.isUnsafe()) return result;
+			        
+		    reset();
+		}
+		Preferences.clearPreference(Preferences.OPTION_MEMTRACK);
+		formulaEncoder.encode(mainCFG, loopInfo);
+		return formulaEncoder.runIsValid();
+	    } else {
+		formulaEncoder.encode(mainCFG, loopInfo);
+		return formulaEncoder.runIsValid();
+	    }
 	    
 	} catch (PathFactoryException e) {
 	    throw new RunProcessorException(e);
@@ -152,7 +173,7 @@ class RunProcessorImpl implements RunProcessor {
 	public void reset() {
 	formulaEncoder.reset();
 	traceFactory.reset();
-	if(preprocessor != null)	preprocessor.reset();
+	if(preprocessor != null) preprocessor.reset();
     }
     
     private boolean pathBasedNormalization(IRControlFlowGraph mainCFG) {

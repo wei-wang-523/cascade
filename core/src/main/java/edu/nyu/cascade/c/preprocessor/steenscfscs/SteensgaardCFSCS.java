@@ -22,8 +22,10 @@ import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRBasicBlock;
+import edu.nyu.cascade.ir.IRBooleanExpression;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.IREdge;
+import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.prover.Expression;
@@ -103,8 +105,12 @@ public class SteensgaardCFSCS implements PreProcessor<ECR> {
 			for(IRStatement stmt : block.getStatements()) analysis(stmt);
 			
 			for(IREdge<?> outgoing : cfg.getOutgoingEdges(block)) {
-				if(null != outgoing.getGuard()) 
+				if(null != outgoing.getGuard()) {
+					IRBooleanExpression guard = outgoing.getGuard();
+					Node srcNode = guard.getSourceNode();
+					IOUtils.debug().pln("Preprocess: " + srcNode.getLocation() + ": " + guard);
 					ecrEncoder.toRval(outgoing.getGuard().getSourceNode());
+				}
 			}
 		}
 	}
@@ -183,6 +189,20 @@ public class SteensgaardCFSCS implements PreProcessor<ECR> {
 		  	if (funcName != null) { // Function call	  		
 		  		if(ReservedFunction.isReserved(funcName)) {
 		  			IOUtils.debug().pln("Reserved function call: " + funcName);
+		  			if(ReservedFunction.MEMCOPY.equals(funcName)) {
+		  				Node lhs = stmt.getOperand(2).getSourceNode();
+		  				Node rhs = stmt.getOperand(3).getSourceNode();
+		  				ECR lhsECR = ecrEncoder.toRval(lhs);
+		  				ECR rhsECR = ecrEncoder.toRval(rhs);
+		  				simpleAssign(PointerT.TO_VOID, lhsECR, rhsECR);
+		  			} else {
+		  				Iterator<IRExpression> itr = stmt.getOperands().iterator();
+		  				itr.next(); // function
+		  				while(itr.hasNext()) {
+		  					IRExpression operand = itr.next();
+		  					ecrEncoder.toRval(operand.getSourceNode());
+		  				}
+		  			}
 		  			break;
 		  		}
 		  		
@@ -211,7 +231,7 @@ public class SteensgaardCFSCS implements PreProcessor<ECR> {
 	
 	@Override
 	public void initChecker() {
-		uf.clearPointerArithmetic();
+		uf.cleanup();
 		ecrChecker = ECRChecker.create(uf, symbolTable, ecrEncoder);
 	}
 
@@ -299,7 +319,7 @@ public class SteensgaardCFSCS implements PreProcessor<ECR> {
 		buildSnapShot();
 		
 	  StringBuilder sb = new StringBuilder().append('\n')
-	  		.append("The result of cell-based field-sensitive context-sensitive(partial) Steensgaard analysis:\n");
+	  		.append("The result of cell-based field-sensitive and (partial) context-sensitive Steensgaard analysis:\n");
 	  
 	  for(Entry<ECR, Collection<IRVar>> entry : snapShot.entrySet()) {
 	  	ECR ecr = entry.getKey();

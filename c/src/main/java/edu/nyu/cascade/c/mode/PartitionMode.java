@@ -83,7 +83,7 @@ public class PartitionMode extends AbstractMode {
 			preProcessor = SteensgaardCFS.create(symbolTable);
 		} else if(Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE)) {
 			preProcessor = SteensgaardCFSCS.create(symbolTable);
-    } else {
+		} else {
 			preProcessor = Steensgaard.create(symbolTable);
 		}
 		

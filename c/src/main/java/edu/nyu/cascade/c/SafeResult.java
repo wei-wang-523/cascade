@@ -32,6 +32,10 @@ public class SafeResult {
 	public static SafeResult valid() {
 		return new SafeResult(SafeResultType.TRUE);
 	}
+
+	public static SafeResult invalid() {
+		return new SafeResult(SafeResultType.FALSE);
+	}
 	
 	public static SafeResult unknown(String unknownReason) {
 		SafeResult res = new SafeResult(SafeResultType.UNKNOWN);

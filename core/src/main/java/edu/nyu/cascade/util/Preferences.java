@@ -85,7 +85,6 @@ public class Preferences {
   /** Enable cell-based field sensitive pointer analysis */
   public static final String OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE = "cell-field-sensitive-context-sensitive";
   
-  
   /** -------------- memory layout encoding ----------------- */
  
   /** Memory layout encoding: sound (no assume an order between regions), 
@@ -151,6 +150,12 @@ public class Preferences {
 
 	/** -- Inline malloc functions in CFG -- */
 	public static final String OPTION_INLINE_MALLOC = "inline-malloc";
+	
+	/** -- Memory leak check -- */
+	public static final String OPTION_MEMTRACK = "memtrack";
+	
+	/** -- Two round of memory check -- */
+	public static final String OPTION_TWOROUND_MEMCHECK = "two-round-check";
 	
 	/** ------------ The magic iteration times ---------------- */
 	public static final List<Integer> MEM_MAGIC_ITER_TIMES = Lists.newArrayList(0, 1, 6, 12, 17, 21, 40, 80, 100, 200);

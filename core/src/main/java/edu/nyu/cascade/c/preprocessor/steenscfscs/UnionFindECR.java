@@ -6,23 +6,32 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import xtc.type.PointerT;
+import xtc.type.Type;
+
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Table;
+import com.google.common.collect.Table.Cell;
 
+import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.IRVar;
 import edu.nyu.cascade.c.preprocessor.steenscfscs.ValueType.ValueTypeKind;
 import edu.nyu.cascade.util.FieldRangeMap;
-import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.UnionFind;
 import edu.nyu.cascade.util.UnionFind.Partition;
@@ -33,9 +42,21 @@ public class UnionFindECR {
    * Record the pointer arithmetic pending joins if the numeric operand
    * is a constant
    */
-  private final Map<Pair<ECR, Long>, Pair<ECR, Long>> ptrAriJoins = Maps.newHashMap();
+  private final Table<Pair<ECR, Long>, Pair<ECR, Long>, Long> ptrAriJoins =
+  		HashBasedTable.create();
+  /**
+   * Track the pointer cast pending joins
+   */
+  private final Map<Pair<ECR, Long>, Pair<ECR, Long>> ptrCastJoins = Maps.newHashMap();
+  /**
+   * Track the source ecr (created for nodes as operands of statement)
+   */
+  private final Collection<ECR> sourceECRs = Sets.newHashSet();
   
-  private UnionFindECR () {
+  private Multimap<Pair<ECR, ECR>, Range<Long>> missingMatches = HashMultimap.create();
+	private Map<ECR, ECR> missingAlign = Maps.newHashMap();
+
+	private UnionFindECR () {
     uf = UnionFind.create();
   }
 
@@ -45,6 +66,11 @@ public class UnionFindECR {
   
   void reset() {
   	uf.reset();
+  	ptrAriJoins.clear();
+  	ptrCastJoins.clear();
+  	sourceECRs.clear();
+  	missingMatches.clear();
+  	missingAlign.clear();
   }
   
   /**
@@ -433,7 +459,7 @@ public class UnionFindECR {
   ECR getLoc(ECR srcECR) {
 		ensureSimple(srcECR);
 		ValueType type = getType(srcECR);
-		return type.asSimple().getLoc();
+		return findRoot(type.asSimple().getLoc());
 	}
 	
 	ECR getFunc(ECR srcECR) {
@@ -460,8 +486,498 @@ public class UnionFindECR {
 		return getType(structECR);
 	}
 	
-	void ptrAri(ECR resLocECR, long size, ECR lhsLocECR, long shift) {
-		ptrAriJoins.put(Pair.of(resLocECR, size), Pair.of(lhsLocECR, shift));
+	void ptrAri(ECR targetECR, long targetSize, ECR srcECR, long srcSize,
+			long shift) {
+		Pair<ECR, Long> targetPair = Pair.of(targetECR, targetSize);
+		Pair<ECR, Long> srcPair = Pair.of(srcECR, srcSize);
+		if(ptrCastJoins.containsKey(srcPair)) {
+			Pair<ECR, Long> rootPair = ptrCastJoins.get(srcPair);
+			if(!sourceECRs.contains(srcPair.fst())) {
+				ptrCastJoins.remove(srcPair);
+			}
+			ptrAriJoins.put(targetPair, rootPair, shift);
+		} else {
+			ptrAriJoins.put(targetPair, srcPair, shift);
+		}
+	}
+	
+	void ptrCast(ECR targetECR, long targetSize, ECR srcECR, long srcSize) {
+		Pair<ECR, Long> targetKey = Pair.of(targetECR, targetSize);
+		Pair<ECR, Long> srcKey = Pair.of(srcECR, srcSize);
+		if(ptrCastJoins.containsKey(srcKey)) {
+			ptrCastJoins.put(targetKey, ptrCastJoins.get(srcKey));
+			
+			if(!sourceECRs.contains(srcKey.fst())) {
+				ptrCastJoins.remove(srcKey);
+			}
+		} else {
+			ptrCastJoins.put(targetKey, srcKey);
+		}
+	}
+
+	void addSourceECR(ECR ecr) {
+		sourceECRs.add(ecr);
+	}
+
+	void ensureSimple(ECR e) {
+		ValueType type = getType(e);
+		
+		switch(type.getKind()) {
+		case BOTTOM: {  	
+	  	ValueType simType = ValueType.simple(
+	  			createBottomLocFunc(), 
+	  			Size.getBot(), 
+	  			Parent.getBottom());
+	  	setType(e, simType);	  	
+			return;
+		}
+		case BLANK: {
+			BlankType blankType = type.asBlank();
+	  	ValueType simType = ValueType.simple(
+	  			createBottomLocFunc(), 
+	  			blankType.getSize(), 
+	  			blankType.getParent());
+	  	setType(e, simType);
+			return;
+		}
+		case SIMPLE: {
+			return;
+		}
+		case STRUCT: {
+			collapseStruct(e, type.asStruct());
+			return;
+		}
+		default: // lambda
+			throw new IllegalArgumentException("Invalid type " + type.getKind());
+		}
+	}
+
+	private void collapse(ECR e1, ECR e2) {
+		ECR root = join(e1, e2);
+		
+		// Parent is stored at the points-to loc of 
+		Parent parent = getType(root).getParent();
+		Collection<ECR> parentECRs = ImmutableList.copyOf(parent.getECRs());
+		
+		for(ECR ecr : parentECRs) {
+			ValueType ecrType = getType(ecr);
+			if(ecrType.isStruct())	
+				collapseStruct(ecr, ecrType.asStruct());
+		}
+		
+		enableOp(root);
+	}
+
+	boolean containsPtrAritJoin(ECR locECR, long size) {
+		return ptrAriJoins.containsRow(Pair.of(locECR, size));
+	}
+
+	void replacePtrAriJoin(ECR freshECR, long freshSize, ECR oldECR, long oldSize) {
+		Pair<ECR, Long> oldKey = Pair.of(oldECR, oldSize);
+		Pair<ECR, Long> freshKey = Pair.of(freshECR, freshSize);
+	  Entry<Pair<ECR, Long>, Long> entry =
+	  		ptrAriJoins.row(oldKey).entrySet().iterator().next();
+	  Pair<ECR, Long> targetKey = entry.getKey();
+	  long value = ptrAriJoins.remove(oldKey, targetKey);
+	  ptrAriJoins.put(freshKey, targetKey, value);
+	}
+	 
+	void cleanup() {
+		boolean changed;
+		do {
+			changed = false;
+			changed |= clearPtrCast(); 
+			changed |= clearPointerArithmetic();
+		} while(changed);
+		
+		for(Cell<Pair<ECR, Long>, Pair<ECR, Long>, Long> cell : ptrAriJoins.cellSet()) {
+	  	ECR srcLocECR = getLoc(cell.getColumnKey().fst());
+	  	ECR targetLocECR = getLoc(cell.getRowKey().fst());
+	  	collapse(targetLocECR, srcLocECR);
+		}
+		ptrAriJoins.clear();
+		
+		for(Entry<Pair<ECR, Long>, Pair<ECR, Long>> cell : ptrCastJoins.entrySet()) {
+			Pair<ECR, Long> targetPair = cell.getKey();
+			ECR targetECR = findRoot(targetPair.fst());	  	
+	  	long targetSize = cell.getKey().snd();
+	  	Pair<ECR, Long> sourcePair = cell.getValue();
+	  	ECR srcECR = findRoot(sourcePair.fst());
+	  	smash(srcECR, targetECR, targetSize);
+		}
+		ptrCastJoins.clear();
+	}
+	
+	void smash(ECR srcECR, ECR targetECR, long targetSize) {	
+		ECR srcLocECR = getLoc(srcECR);
+		ECR targetLocECR = getLoc(targetECR);
+		join(targetLocECR, srcLocECR);
+		
+		ValueType srcLocType = getType(srcLocECR);
+		for(ECR parent : srcLocType.getParent().getECRs()) {
+			ValueType parentType = getType(parent);
+			if(!parentType.isStruct()) continue;
+				
+			for(Range<Long> range : getFieldInterval(parentType, srcLocECR)) {
+				long offset = range.lowerEndpoint();
+				Range<Long> newRange = Range.closedOpen(offset, offset + targetSize);
+				addField(parentType.asStruct(), targetECR, newRange);
+			}
+		}
+	}
+	
+	void normalize(ECR srcECR, Type fieldType, Range<Long> range, 
+			RangeMap<Long, ECR> fieldMap) {
+		
+		if(fieldMap.asMapOfRanges().containsKey(range)) return;
+		
+		RangeMap<Long, ECR> subMap = fieldMap.subRangeMap(range);
+		Map<Range<Long>, ECR> subMapRanges = subMap.asMapOfRanges();
+		
+		if(subMapRanges.isEmpty()) {
+			ECR ecr = createFieldECR(range, fieldType, srcECR);
+			fieldMap.put(range, ecr);
+			return;
+		}
+		
+		Range<Long> span = subMap.span();
+		fieldMap.remove(span);
+		
+		Range<Long> newRange = subMap.span().span(range);
+		
+		Iterator<ECR> elemECRItr = subMapRanges.values().iterator();
+		ECR joinECR = elemECRItr.next();
+		while(elemECRItr.hasNext()) joinECR = cjoin(elemECRItr.next(), joinECR);
+//		uf.collapse(joinECR);
+		
+		fieldMap.put(newRange, joinECR);
+		return;
+	}
+	
+	/**
+	 * Create a field ECR with <code>xtcType</code>, <code>scopeName</code>,
+	 * and <code>parent</code>. If <code>xtcType</code> is scalar, this
+	 * method creates a single field ECR, otherwise, two ECRs will be created,
+	 * one for the field and the other for the region it points to. For the
+	 * field ECR, whose address ECR will be the same as the address attached
+	 * with the ECR of <code>parent</code>.
+	 * 
+	 * @param range
+	 * @param type
+	 * @param srcECR
+	 * @return
+	 */
+  private ECR createFieldECR(Range<Long> range, Type type, ECR srcECR) {
+		Parent parent = Parent.create(findRoot(srcECR));
+  	Size size = CType.isScalar(type) ? Size.createForType(type) : Size.getBot();
+  	ECR fieldECR = ECR.create(ValueType.blank(size, parent));
+		
+		SimpleType addrType = ValueType.simple(
+				fieldECR, 
+				ECR.createBottom(), 
+				Size.createForType(new PointerT(type)), 
+				Parent.getBottom());
+		
+		ECR addrECR = ECR.create(addrType);
+		
+		StructType srcType = getType(srcECR).asStruct();
+		srcType.getFieldMap().put(range, addrECR);
+		return addrECR;
+	}
+
+	private boolean clearPointerArithmetic() {
+		int origSize = ptrAriJoins.size();
+	  List<Cell<Pair<ECR, Long>, Pair<ECR, Long>, Long>> worklist =
+	  		Lists.newArrayList(ptrAriJoins.cellSet());
+	  ptrAriJoins.clear();
+	  while(!worklist.isEmpty()) {
+	  	Cell<Pair<ECR, Long>, Pair<ECR, Long>, Long> cell = worklist.remove(0);
+	  	Pair<ECR, Long> targetPair = cell.getRowKey();
+	  	Pair<ECR, Long> srcPair = cell.getColumnKey();
+	  	assert(!ptrCastJoins.containsKey(srcPair));
+	  	
+	  	ECR targetECR = findRoot(targetPair.fst());
+	  	ECR srcECR = findRoot(srcPair.fst());
+	  	
+	  	ECR srcLocECR = getLoc(srcECR);
+	  	
+	  	long targetSize = targetPair.snd();
+
+	  	long shift = cell.getValue();
+	  	
+	  	Multimap<Pair<ECR, ECR>, Range<Long>> missingMatch = HashMultimap.create();
+  		boolean success =
+  				processCast(targetECR, srcLocECR, Range.closedOpen(shift, shift + targetSize), missingMatch);
+  		if(!success) {
+  			ptrAriJoins.put(targetPair, srcPair, shift);
+  			missingMatch.clear();
+  		} else {
+  			missingMatches.putAll(missingMatch);
+  		}
+	  }
+	  return ptrAriJoins.size() != origSize;
+  }
+	
+	private boolean  clearPtrCast() {
+		int origSize = ptrCastJoins.size();
+	  List<Entry<Pair<ECR, Long>, Pair<ECR, Long>>> worklist =
+	  		Lists.newArrayList(ptrCastJoins.entrySet());
+	  ptrCastJoins.clear();
+	  
+	  while(!worklist.isEmpty()) {
+	  	Entry<Pair<ECR, Long>, Pair<ECR, Long>> cell = worklist.remove(0);
+	  	Pair<ECR, Long> targetPair = cell.getKey();
+	  	Pair<ECR, Long> srcPair = cell.getValue();
+	  	ECR targetECR = targetPair.fst(), srcECR = srcPair.fst();
+	  	
+	  	ECR targetLocECR = getLoc(targetECR), srcLocECR = getLoc(srcECR);
+			ValueType srcLocType = getType(srcLocECR);
+	  	long targetSize = targetPair.snd();
+	  	
+  		Size srcLocSize = srcLocType.getSize();
+  		if(srcLocSize.isBottom()) {
+  			join(targetLocECR, srcLocECR); continue;
+  		}
+	  	
+	  	Multimap<Pair<ECR, ECR>, Range<Long>> missingMatch = HashMultimap.create();
+	  	boolean success = processCast(targetECR, srcLocECR, Range.closedOpen((long) 0, targetSize), missingMatch);
+	  	if(!success) {
+	  		ptrCastJoins.put(targetPair, srcPair); 
+	  	} else {
+	  		missingMatches.putAll(missingMatch);
+	  	}
+	  }
+	  
+	  return ptrCastJoins.size() != origSize;
+	}
+	
+	private boolean processCast(ECR targetECR, ECR srcLocECR, Range<Long> targetRange,
+			Multimap<Pair<ECR, ECR>, Range<Long>> missingMatch) {
+		boolean match = mathincWithinSrcECR(targetECR, srcLocECR, targetRange);
+		if(match) return true;
+		
+		ValueType srcLocType = getType(srcLocECR);
+		Parent srcLocParent = srcLocType.getParent();
+		if(srcLocParent.isBottom()) {
+			missingMatch.put(Pair.of(targetECR, srcLocECR), targetRange);
+			return false;
+		}
+		
+		boolean matchAny = false;
+		for(ECR parent : srcLocParent.getECRs()) {
+			// Only find the matching parent to cast. If the parent size is 
+			// not compatible with targetSize, then skip.
+			// FIXME: not sound for pointer analysis!
+			ValueType parentType = getType(parent);
+			Iterable<Range<Long>> fieldIntervals = getFieldInterval(parentType, srcLocECR);
+			boolean matchParent = false;
+			Collection<Pair<ECR, Range<Long>>> outofSizeParents = Lists.newArrayList();
+			
+			for(Range<Long> fieldInterval : fieldIntervals) {
+				long low = fieldInterval.lowerEndpoint();
+				long targetLower = targetRange.lowerEndpoint();
+				long targetUpper = targetRange.upperEndpoint();
+				Range<Long> fieldTargetRange = Range.closedOpen(low + targetLower, low + targetUpper);
+				boolean matchInterval = mathincWithinSrcECR(targetECR, parent, fieldTargetRange);
+				if(!matchInterval) outofSizeParents.add(Pair.of(parent, fieldTargetRange));
+				matchParent |= matchInterval;
+			}
+			
+			// If fails matching, check its grandparents
+			for(Pair<ECR, Range<Long>> pair : outofSizeParents) {
+				matchParent |= processCast(targetECR, pair.fst(), pair.snd(), missingMatch);
+			}
+			
+			matchAny |= matchParent;
+		}
+		return matchAny;
+	}
+	
+	private boolean mathincWithinSrcECR(
+			ECR targetECR, ECR srcLocECR, Range<Long> range) {
+		Preconditions.checkArgument(!getType(srcLocECR).isBottom());
+		ValueType srcLocType = getType(srcLocECR);
+		ECR targetLocECR = getLoc(targetECR);
+		long low = range.lowerEndpoint();
+		if(low < 0) return false;
+		
+		final long high = range.upperEndpoint();
+		
+		if(srcLocType.isSimple())	{
+			Size srcLocSize = srcLocType.getSize();
+			if(srcLocSize.isTop()) return false;
+			long srcSize = srcLocSize.getValue();
+			if(srcSize < high) return false;
+			
+			join(targetLocECR, srcLocECR);
+			return true;
+		} 
+		
+		else if(srcLocType.isBlank()) {
+			Size srcLocSize = srcLocType.getSize();
+			assert(!srcLocSize.isBottom());
+			if(srcLocSize.isTop()) return false;
+			long srcSize = srcLocSize.getValue();
+			if(srcSize < high) return false;
+			
+			if(low == 0 && high == srcSize) {
+				join(targetLocECR, srcLocECR);
+				return true;
+			}
+			
+			join(targetLocECR, srcLocECR);
+			return true;
+		} 
+		
+		else { // srcLocType is structure type
+			Size srcLocSize = srcLocType.getSize();
+			assert(!srcLocSize.isBottom());
+			if(srcLocSize.isTop()) {
+				boolean targetLocWithinSrcLoc =
+						Iterables.any(srcLocType.asStruct().getFieldMap().asMapOfRanges().keySet(), 
+								new Predicate<Range<Long>>() {
+									@Override
+                  public boolean apply(Range<Long> range) {
+	                  return range.upperEndpoint() >= high;
+                  }
+						});
+				if(!targetLocWithinSrcLoc) return false;
+				
+				addFieldIfAlign(srcLocType.asStruct(), targetECR, range);
+				return true;
+			} else {
+				long srcSize = srcLocSize.getValue();
+				if(srcSize < high) return false;
+				
+				if(low == 0 && srcSize == high) {
+					join(srcLocECR, targetLocECR);
+					return true;
+				}
+				
+				addFieldIfAlign(srcLocType.asStruct(), targetECR, range);
+				return true;
+			}
+		}
+	}
+	
+	private void addFieldIfAlign(StructType structT, ECR fieldAddrECR, Range<Long> fieldInterval) {
+		RangeMap<Long, ECR> fieldMap = structT.getFieldMap();
+		Map<Range<Long>, ECR> spanMap = fieldMap.subRangeMap(fieldInterval).asMapOfRanges();
+		if(spanMap.isEmpty()) {
+			fieldMap.put(fieldInterval, fieldAddrECR); return;
+		}
+		ECR fieldECR = getLoc(fieldAddrECR);
+		
+		for(Entry<Range<Long>, ECR> fieldEntry : spanMap.entrySet()) {
+			ValueType fieldType = getType(fieldECR);
+			Range<Long> spanFieldInterval = fieldEntry.getKey();
+			ECR spanFieldAddrECR = fieldEntry.getValue();
+			ECR spanFieldECR = getLoc(spanFieldAddrECR);
+			ValueType spanFieldType = getType(spanFieldECR);
+			if(spanFieldInterval.equals(fieldInterval)) {
+				join(spanFieldECR, fieldECR);
+			} else if(spanFieldInterval.encloses(fieldInterval)) {
+				long low = fieldInterval.lowerEndpoint() - spanFieldInterval.lowerEndpoint();
+				long high = fieldInterval.upperEndpoint() - spanFieldInterval.lowerEndpoint();
+				Range<Long> subFieldInterval = Range.closedOpen(low, high);
+				
+				if(spanFieldType.isBlank()) {
+					StructType structFieldType = ValueType.struct(spanFieldType.getSize(), spanFieldType.getParent());
+					addFieldIfAlign(structFieldType, fieldAddrECR, subFieldInterval);
+					setType(spanFieldECR, structFieldType);
+				} else if(spanFieldType.isStruct()) {
+					addFieldIfAlign(spanFieldType.asStruct(), fieldAddrECR, subFieldInterval);
+				} else {
+					missingAlign.put(spanFieldECR, fieldECR);
+				}
+			} else if(fieldInterval.encloses(spanFieldInterval)) {
+				long low = spanFieldInterval.lowerEndpoint() - fieldInterval.lowerEndpoint();
+				long high = spanFieldInterval.upperEndpoint() - fieldInterval.lowerEndpoint();
+				Range<Long> subFieldRange = Range.closedOpen(low, high);
+				
+				if(fieldType.isBlank()) {
+					StructType structFieldType = ValueType.struct(fieldType.getSize(), fieldType.getParent());
+					addFieldIfAlign(structFieldType, spanFieldAddrECR, subFieldRange);
+					setType(fieldECR, structFieldType);
+				} else if(fieldType.isStruct()) {
+					addFieldIfAlign(fieldType.asStruct(), spanFieldAddrECR, subFieldRange);
+				} else {
+					missingAlign.put(spanFieldECR, fieldECR);
+				}
+			} else {
+				missingAlign.put(spanFieldECR, fieldECR);
+			}
+		}
+	}
+
+  private void addField(StructType structT, ECR fieldAddrECR, Range<Long> fieldInterval) {
+		RangeMap<Long, ECR> fieldMap = structT.getFieldMap();
+		Map<Range<Long>, ECR> spanMap = fieldMap.subRangeMap(fieldInterval).asMapOfRanges();
+		if(spanMap.isEmpty()) {
+			fieldMap.put(fieldInterval, fieldAddrECR); return;
+		}
+		
+		ECR fieldECR = getLoc(fieldAddrECR);
+		ValueType fieldType = getType(fieldECR);
+		
+		for(Entry<Range<Long>, ECR> fieldEntry : spanMap.entrySet()) {
+			Range<Long> spanFieldInterval = fieldEntry.getKey();
+			ECR spanFieldAddrECR = fieldEntry.getValue();
+			ECR spanFieldECR = getLoc(spanFieldAddrECR);
+			ValueType spanFieldType = getType(spanFieldECR);
+			if(spanFieldInterval.encloses(fieldInterval)) {
+				long low = fieldInterval.lowerEndpoint() - spanFieldInterval.lowerEndpoint();
+				long high = fieldInterval.upperEndpoint() - spanFieldInterval.lowerEndpoint();
+				Range<Long> subFieldInterval = Range.closedOpen(low, high);
+				 
+				if(spanFieldType.isBlank()) {
+					StructType structFieldType = ValueType.struct(spanFieldType.getSize(), spanFieldType.getParent());
+					addField(structFieldType, fieldAddrECR, subFieldInterval);
+					setType(spanFieldECR, structFieldType);
+				} else if(spanFieldType.isStruct()) {
+					addField(spanFieldType.asStruct(), fieldAddrECR, subFieldInterval);
+				} else {
+					join(spanFieldECR, fieldECR);
+				}
+			} else if(fieldInterval.encloses(spanFieldInterval)) {
+				long low = spanFieldInterval.lowerEndpoint() - fieldInterval.lowerEndpoint();
+				long high = spanFieldInterval.upperEndpoint() - fieldInterval.lowerEndpoint();
+				Range<Long> subFieldRange = Range.closedOpen(low, high);
+
+				if(fieldType.isBlank()) {
+					StructType structFieldType = ValueType.struct(fieldType.getSize(), fieldType.getParent());
+					addField(structFieldType, spanFieldAddrECR, subFieldRange);
+					setType(fieldECR, structFieldType);
+				} else if(fieldType.isStruct()) {
+					addField(fieldType.asStruct(), spanFieldAddrECR, subFieldRange);
+				} else {
+					join(spanFieldECR, fieldECR);
+				}
+			} else {
+				join(spanFieldECR, fieldECR);
+			}
+		}
+	}
+	
+	private Iterable<Range<Long>> getFieldInterval(ValueType parentType, final ECR fieldECR) {
+		RangeMap<Long, ECR> fieldRangeMap = parentType.asStruct().getFieldMap();
+		Iterable<Entry<Range<Long>, ECR>> entries = Iterables.filter(
+				fieldRangeMap.asMapOfRanges().entrySet(), 
+				new Predicate<Entry<Range<Long>, ECR>>() {
+					@Override
+					public boolean apply(Entry<Range<Long>, ECR> entry) {
+						return getLoc(entry.getValue()).equals(fieldECR);
+					}
+				});
+		
+		Iterable<Range<Long>> entryKeys = Iterables.transform(entries,
+				new Function<Entry<Range<Long>, ECR>, Range<Long>>() {
+					@Override
+          public Range<Long> apply(Entry<Range<Long>, ECR> input) {
+	          return input.getKey();
+          }
+		});
+		return entryKeys;
 	}
 
 	/**
@@ -603,39 +1119,6 @@ public class UnionFindECR {
 		return fieldMap;
 	}
 
-	void ensureSimple(ECR e) {
-		ValueType type = getType(e);
-		
-		switch(type.getKind()) {
-		case BOTTOM: {  	
-	  	ValueType simType = ValueType.simple(
-	  			createBottomLocFunc(), 
-	  			Size.getBot(), 
-	  			Parent.getBottom());
-	  	setType(e, simType);	  	
-			return;
-		}
-		case BLANK: {
-			BlankType blankType = type.asBlank();
-	  	ValueType simType = ValueType.simple(
-	  			createBottomLocFunc(), 
-	  			blankType.getSize(), 
-	  			blankType.getParent());
-	  	setType(e, simType);
-			return;
-		}
-		case SIMPLE: {
-			return;
-		}
-		case STRUCT: {
-			collapseStruct(e, type.asStruct());
-			return;
-		}
-		default: // lambda
-			throw new IllegalArgumentException("Invalid type " + type.getKind());
-		}
-	}
-
 	/**
 	 * Swap <code>t1</code> and <code>t2</code> if <code> kind(t1) > kind(t2) 
 	 * </code>
@@ -758,79 +1241,4 @@ public class UnionFindECR {
 		
 		return unify(t1, t2);
 	}
-
-	void clearPointerArithmetic() {
-	  if(ptrAriJoins.isEmpty()) return;
-	  for(Entry<Pair<ECR, Long>, Pair<ECR, Long>> cell : ptrAriJoins.entrySet()) {
-	  	ECR resECR = findRoot(cell.getKey().fst());
-	  	final ECR origECR = findRoot(cell.getValue().fst());
-	  	long shift = cell.getValue().snd();
-	  	if(shift >= 0) { 
-	  		// TODO: could do more precise analysis here.
-	  		collapse(origECR, resECR); continue;
-	  	}
-
-	  	ValueType origType = getType(origECR);
-	  	Parent parent = origType.getParent();
-	  	if(parent.getECRs().isEmpty()) {
-	  		// TODO: could do more precise analysis here.
-	  		collapse(origECR, resECR); continue;
-	  	}
-	  	
-	  	for(ECR parentECR : parent.getECRs()) {
-	  		ValueType parentType = getType(parentECR);
-	  		if(!parentType.isStruct()) {
-	  			IOUtils.errPrinter().pln("WARNING: non-struct parent");
-	  			join(parentECR, origECR);
-	  			continue;
-	  		}
-	  		
-	  		Map<Range<Long>, ECR> fieldMap =
-	  				parentType.asStruct().getFieldMap().asMapOfRanges();
-	  		Entry<Range<Long>, ECR> fieldRange = Iterables.find(
-	  				fieldMap.entrySet(),
-	  				new Predicate<Entry<Range<Long>, ECR>>() {
-	  					@Override
-	  					public boolean apply(Entry<Range<Long>, ECR> input) {
-	  						return origECR.equals(getLoc(input.getValue()));
-	  					}
-	  				});
-	  		long low = fieldRange.getKey().lowerEndpoint() + shift;
-	  		Size parentSize = parentType.getSize();
-		  	long size = cell.getKey().snd();
-	  		if(low == 0 && (parentSize.isBottom()
-	  				|| parentSize.isNumber() && parentSize.getValue() == size)) {
-	  			join(parentECR, resECR);
-	  			continue;
-	  		}
-	  		
-	  		collapse(origECR, resECR);
-	  	}
-	  }
-  }
-	
-	void collapse(ECR e1, ECR e2) {
-		ECR root = join(e1, e2);
-		
-  	// Parent is stored at the points-to loc of 
-  	Parent parent = getType(root).getParent();
-  	Collection<ECR> parentECRs = ImmutableList.copyOf(parent.getECRs());
-  	
-		for(ECR ecr : parentECRs) {
-			ValueType ecrType = getType(ecr);
-			if(ecrType.isStruct())	
-				collapseStruct(ecr, ecrType.asStruct());
-		}
-  	
-		enableOp(root);
-	}
-
-	boolean containsPtrAritJoin(ECR locECR, long size) {
-		return ptrAriJoins.containsKey(Pair.of(locECR, size));
-	}
-	
-	void replacePtrAriJoin(ECR freshLocECR, long freshSize, ECR locECR, long size) {
-	  Pair<ECR, Long> value = ptrAriJoins.remove(Pair.of(locECR, size));
-	  ptrAriJoins.put(Pair.of(freshLocECR, freshSize), value);
-  }
 }
