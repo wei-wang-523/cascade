@@ -1,0 +1,38 @@
+module edu.nyu.cascade.specs.Symbols(SrcSymbols);
+
+modify SrcSymbols;
+
+String SymbolCharacters +=
+    <IMPLIES>	"-->" 
+  / <IFF>	"<-->" 
+  / <ENTAILS>	"==>" 
+  / <CONGRUENT>	"<==>" 
+
+  / <PREVIOUSLY> "(-)"
+  / <SOFAR>	"[-]"
+  / <ONCE>	"<->"
+
+  / <NEXT>	"()"
+  / <HENCEFORTH> "[]"
+  / <EVENTUALLY> "<>"
+  / <Start> ...
+  ;
+
+void IMPLIES   = void:"-->":Symbol ; 
+void IFF       = void:"<-->":Symbol ; 
+void ENTAILS   = void:"==>":Symbol ; 
+void CONGRUENT = void:"<==>":Symbol ; 
+
+void NEXT       = void:"()":Symbol ;
+void HENCEFORTH = void:"[]":Symbol ;
+void EVENTUALLY = void:"<>":Symbol ;
+void PREVIOUSLY = void:"(-)":Symbol ;
+void SOFAR      = void:"[-]":Symbol ;
+void ONCE       = void:"<->":Symbol ;
+
+
+/* Emacs Local Variables: */
+/* Emacs mode: java */
+/* Emacs compile-command: "ant -f ../../../../../../../../build.xml -emacs" */
+/* Emacs indent-tabs-mode: nil */
+/* Emacs End: */

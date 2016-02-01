@@ -21,6 +21,7 @@ int foo(int * a, int * b, int n){
   for (i=0; i < n; ++i){
     copy(a+i,b+i);
   }
+  
   copy(a+n,b+n);
   return 1;
 }

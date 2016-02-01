@@ -1,0 +1,11 @@
+
+local k       : array [1..3] of [1..3];
+
+P1::
+[
+  l_0: loop forever do
+  [
+    l_4: noncritical;
+
+  ]
+]

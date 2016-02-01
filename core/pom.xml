@@ -5,42 +5,61 @@
   <version>0.0.3-SNAPSHOT</version>
 
   <description>
-    The core Cascade library provides generic interfaces to first-order 
-    theorem provers and program analysis, as well as utilities used throughout
-    the Cascade platform.
+    The core Cascade library provides generic interfaces to first-order theorem provers
+    and program analysis, as well as utilities used throughout the Cascade platform.
   </description>
+
+  <repositories>
+    <repository>
+      <id>cascade-public-repo</id>
+      <name>Cascade Public Repository</name>
+      <url>http://cs.nyu.edu/acsys/cascade-repository/</url>
+    </repository>
+  </repositories>
 
   <parent>
     <groupId>edu.nyu.cascade</groupId>
     <artifactId>cascade</artifactId>
     <version>0.0.2-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
   </parent>
   
   <dependencies>
+    <!-- Intended for injection during testing, but creates a cyclic dependency -->
     <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <version>3.0.0</version>
+      <groupId>org.codehaus.mojo</groupId>
+      <artifactId>exec-maven-plugin</artifactId>
+      <version>1.1.1</version>
+      <type>maven-plugin</type>
+    </dependency>
+	<dependency>
+	  <groupId>com.google.inject.extensions</groupId>
+	  <artifactId>guice-assistedinject</artifactId>
+	  <version>3.0</version>
+	</dependency>
+    <dependency>
+      <groupId>com.google.inject</groupId>
+      <artifactId>guice</artifactId>
+      <version>3.0</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>19.0</version>
+      <version>18.0</version>
     </dependency>
     <dependency>
-      <groupId>com.google.inject.extensions</groupId>
-      <artifactId>guice-assistedinject</artifactId>
-      <version>4.0</version>
+    	<groupId>xtc</groupId>
+    	<artifactId>rats</artifactId>
+    	<version>2.3.1</version>
     </dependency>
-    <dependency>
-      <groupId>com.google.inject</groupId>
-      <artifactId>guice</artifactId>
-      <version>4.0</version>
-    </dependency>
-    <!-- Intended for injection during testing, but creates a cyclic dependency -->
   </dependencies>
-  
+
+  <properties>
+    <xtc.jar>${basedir}/lib/rats.jar</xtc.jar>
+    <xtc.build.sourceDirectory>src/main/xtc</xtc.build.sourceDirectory>
+    <generated.sourceDirectory>${project.build.directory}/generated-sources</generated.sourceDirectory>
+    <xtc.generated.sourceDirectory>${generated.sourceDirectory}/xtc</xtc.generated.sourceDirectory>
+  </properties>
+
   <build>
     <resources>
       <resource>
@@ -81,6 +100,70 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.0</version>
+        <executions>
+          <execution>
+            <id>default-testCompile</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+            <configuration>
+              <showWarnings>true</showWarnings>
+              <source>1.6</source>
+              <target>1.6</target>
+            </configuration>
+          </execution>
+          <execution>
+            <id>default-compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <configuration>
+              <showWarnings>true</showWarnings>
+              <source>1.6</source>
+              <target>1.6</target>
+            </configuration>
+          </execution>
+          <execution>
+            <phase>compile</phase>
+            <configuration>
+              <showWarnings>true</showWarnings>
+              <source>1.6</source>
+              <target>1.6</target>
+            </configuration>
+          </execution>
+        </executions>
+        <configuration>
+          <showWarnings>true</showWarnings>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.7.2</version>
+        <executions>
+          <execution>
+            <id>default-test</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+<!--            <configuration>
+              <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm>
+              <fork>always</fork>
+            </configuration> -->
+          </execution>
+        </executions>
+<!--        <configuration>
+          <jvm>/System/Library/Java/JavaVirtualMachines/1.6.0.jdk/Contents/Home/bin/java</jvm>
+          <fork>always</fork>
+        </configuration> -->
       </plugin>
     </plugins>
   </build>

@@ -22,7 +22,7 @@ import edu.nyu.cascade.util.CacheException;
 
 class VariableExpressionImpl extends ExpressionImpl implements
     VariableExpression {
-	static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, Expr>> varCache = CacheBuilder
+  private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, Expr>> varCache = CacheBuilder
       .newBuilder().build(
           new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, Expr>>(){
             public ConcurrentMap<String, Expr> load(ExpressionManagerImpl expressionManager) {
@@ -96,9 +96,12 @@ class VariableExpressionImpl extends ExpressionImpl implements
           if(type.isDatatype()) {
           	DatatypeType dtt = new DatatypeType(type);
           	String dtName = dtt.getDatatype().getName();
-          	TheoremProverImpl.cvc4FileCommand("(declare-const ", res, " " + dtName + ")");
+          	
+          	TheoremProverImpl.tpFileCommand("(declare-const " + res + " " + dtName + ")");
+            TheoremProverImpl.debugCommand("(declare-const " + res + " " + dtName + ")");
           } else {
-          	TheoremProverImpl.cvc4FileCommand("(declare-const ", res, type, ")");
+          	TheoremProverImpl.tpFileCommand("(declare-const " + res + " ", type, ")");
+            TheoremProverImpl.debugCommand("(declare-const " + res + " ", type, ")");
           }
 
           return res;

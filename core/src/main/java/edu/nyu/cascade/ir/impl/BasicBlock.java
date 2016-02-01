@@ -43,11 +43,11 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
   }
 
   public static BasicBlock entryBlock(Location loc) {
-    return new BasicBlock(Type.FUNCENT, loc);
+    return new BasicBlock(Type.FUNC_ENT, loc);
   }
   
   public static BasicBlock exitBlock() {
-    return new BasicBlock(Type.FUNCEXIT);
+    return new BasicBlock(Type.FUNC_EXIT);
   }
 
   public static BasicBlock switchBlock(Location loc) {
@@ -133,14 +133,12 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
     postLabels.add(label);
   }
   
-  @Override
   public void addStatement(IRStatement statement) {
     statements.add(statement);
     if(statement.hasLocation()) addLocation(statement.getLocation());
   }
 
-  @Override
-  public void addStatements(Iterable<? extends IRStatement> statements) {
+  public void addStatements(List<? extends IRStatement> statements) {
   	for(IRStatement stmt : statements) {
   		addStatement(stmt);
   	}
@@ -196,13 +194,7 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
       }
       i++;
     }
-    return splitAt(i);
-  }
-  
-  @Override
-  public BasicBlock splitAt(int index) {
-  	Preconditions.checkPositionIndex(index, statements.size());
-    List<IRStatement> nextStmts = statements.subList(index, statements.size());
+    List<IRStatement> nextStmts = statements.subList(i, statements.size());
     BasicBlock next = new BasicBlock(type, nextStmts);
     next.setScope(getScope());
     nextStmts.clear(); // removes the sublist from this.statements
@@ -220,7 +212,12 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
       }
       i++;
     }
-    return splitAt(i);
+    List<IRStatement> nextStmts = statements.subList(i, statements.size());
+    BasicBlock next = new BasicBlock(type, nextStmts);
+    next.setScope(getScope());
+    nextStmts.clear(); // removes the sublist from this.statements
+    updateLocations();
+    return next;
   }
   
   @Override
@@ -253,22 +250,6 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
     }
 
     return s;
-  }
-  
-  @Override
-  public BasicBlock clone() {
-  	ImmutableList.Builder<IRStatement> stmtBuilder = ImmutableList.builder();
-  	for(IRStatement stmt : statements) {
-  		stmtBuilder.add(stmt.clone());
-  	}
-  	BasicBlock newBlock = new BasicBlock(type, stmtBuilder.build());
-  	newBlock.updateLocations();
-  	newBlock.scope = scope;
-  	newBlock.swichBlock = swichBlock;
-  	newBlock.iterTimes = iterTimes;
-  	newBlock.addPostLabels(postLabels);
-  	newBlock.addPreLabels(preLabels);
-  	return newBlock;
   }
 
   @Override

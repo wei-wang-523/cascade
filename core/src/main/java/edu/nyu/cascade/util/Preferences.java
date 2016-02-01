@@ -3,7 +3,6 @@ package edu.nyu.cascade.util;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Pattern;
@@ -11,7 +10,6 @@ import java.util.regex.Pattern;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /** A global repository for runtime preferences.
@@ -41,8 +39,9 @@ public class Preferences {
 
   public static final String OPTION_PLUGINS_DIRECTORY = "plugins";
   
-  /** Give a trace is the assertion is invalid */
-  public static final String OPTION_TRACE = "trace";
+  
+  /** Give a counter example is the assertion is invalid */
+  public static final String OPTION_COUNTER_EXAMPLE = "counter-example";
   
   /** Set the timeout of cascade */
   public static final String OPTION_TIMEOUT = "timeout";
@@ -53,21 +52,18 @@ public class Preferences {
   /** Check safe memory access for all memory dereferences */
   public static final String OPTION_MEMORY_CHECK = "memory-check";
   
+  /** Enable integer encoding, default is fixed-size bit-vector encoding (might overflow).*/
+  public static final String OPTION_NON_OVERFLOW = "non-overflow";
+  
   /** Make variables are pure logic variables, if they with no the compound type and 
    * have no address-of op on it. */
   public static final String OPTION_HOARE = "hoare";
   
   
   /** Incrementally check reachability until reach the function 
-   * in-line bounds */
+   * inline and loop unrolling bounds */
   
   public static final String OPTION_INCREMENTAL = "incremental";
-  
-  public static final String OPTION_REACHABILITY = "reachability";
-  
-  /** Check if the unrolling bound is enough */
-  public static final String OPTION_CHECK_KEEP_UNROLL = "check-keep-unroll";
-  public static final String OPTION_CHECK_EXIT_UNROLL = "check-exit-unroll";
   
   public static final String OPTION_FUNC_INLINE = "function-inline";
   
@@ -79,11 +75,9 @@ public class Preferences {
   /** Enable field sensitive pointer analysis */
   public static final String OPTION_FIELD_SENSITIVE = "field-sensitive";
   
-  /** Enable cell-based field sensitive pointer analysis */
-  public static final String OPTION_CELL_BASED_FIELD_SENSITIVE = "cell-field-sensitive";
+  /** Enable context sensitive pointer analysis */
+  public static final String OPTION_CONTEXT_SENSITIVE = "context-sensitive";
   
-  /** Enable cell-based field sensitive pointer analysis */
-  public static final String OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE = "cell-field-sensitive-context-sensitive";
   
   /** -------------- memory layout encoding ----------------- */
  
@@ -121,7 +115,8 @@ public class Preferences {
   /** Path encoding: sequential (no ite-branch merge), merge (default),
    * path-based
    */
-  public static final String OPTION_SBE = "small-block-encoding";
+  public static final String OPTION_SEQ_PATH = "seq";
+  public static final String OPTION_PATH_BASED = "path-based";
   
   
   /** ------------------ memory model theory -------------- */
@@ -130,36 +125,19 @@ public class Preferences {
   public static final String OPTION_MODE = "mode";
   
   /** Enable the lambda encoding */
-	public static final String OPTION_LAMBDA = "lambda"; 
-	
-  /** Enable the statement lambda encoding */
-	public static final String OPTION_STMT = "stmt"; 
+	public static final String OPTION_LAMBDA = "lambda";
+  
+  
+	/** ----------------- memory encoding ------------------- */
+  
+  public static final String OPTION_MEM_ENCODING = "mem-encoding";
+  public static final String MEM_ENCODING_SYNC = "sync";
+  public static final String MEM_ENCODING_LINEAR = "linear";
+  
 	
   /** ------------- Theorem prover: z3, cvc4 ---------------- */
 	public static final String PROVER_Z3 = "z3";
 	public static final String PROVER_CVC4 = "cvc4";
-	
-	/** ------------- The 32bits machine ---------------------- */
-	public static final String OPTION_M32 = "m32";
-	
-	/** ------------- The 64bits machine ---------------------- */
-	public static final String OPTION_M64 = "m64";
-	
-	/** -- The pointer arithmetic optimization of cfs-pointer-analysis -- */
-	public static final String OPTION_CFS_POINTER_ARITH = "cfs-ptrArith";
-
-	/** -- Inline malloc functions in CFG -- */
-	public static final String OPTION_INLINE_MALLOC = "inline-malloc";
-	
-	/** -- Memory leak check -- */
-	public static final String OPTION_MEMTRACK = "memtrack";
-	
-	/** -- Two round of memory check -- */
-	public static final String OPTION_TWOROUND_MEMCHECK = "two-round-check";
-	
-	/** ------------ The magic iteration times ---------------- */
-	public static final List<Integer> MEM_MAGIC_ITER_TIMES = Lists.newArrayList(0, 1, 6, 12, 17, 21, 40, 80, 100, 200);
-	public static final List<Integer> REACH_MAGIC_ITER_TIMES = Lists.newArrayList(1, 6, 12, 17, 21, 40, 80, 100, 200, 400, 1024);
   
   public static void clearAll() {
     getProperties().clear();
@@ -200,7 +178,7 @@ public class Preferences {
     }
   }
   
-  public static Map<String,Object> getProperties() { return PROPERTIES; }
+  private static Map<String,Object> getProperties() { return PROPERTIES; }
   
   public static String getString(String option) {
     return (String) getProperties().get(option);

@@ -122,13 +122,13 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
   static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
       int size, BigInteger value) {
   	Preconditions.checkArgument(size > 0);
-    int repSize = value.bitLength(); // bit-length of 0 would be 0 (treat 0 as sign bit)
+    int repSize = value.bitLength();
     String binary = value.toString(2);
     if (repSize < size) { /* Sign-extend the value */
       int prefix_length = (int) (size - repSize);
       char[] prefix = new char[prefix_length];
       Arrays.fill(prefix, value.compareTo(BigInteger.ZERO) >= 0 ? '0' : '1');
-      binary = repSize == 0 ? String.valueOf(prefix) : String.valueOf(prefix) + binary;
+      binary = String.valueOf(prefix) + binary;
     } else if (repSize > size) { /* truncate */
       binary = binary.substring((int) (repSize - size), repSize);
     }
@@ -541,6 +541,9 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 		
 		int exprSize = bv.getSize();
 		if(exprSize == size)	return valueOf(exprManager, bv);
+		
+		/* Expression get from the CExpression all should have balanced size */
+		assert(a.getNode() == null);
 		
 		if(exprSize > size)   return mkExtract(exprManager, bv, size-1, 0);
 		

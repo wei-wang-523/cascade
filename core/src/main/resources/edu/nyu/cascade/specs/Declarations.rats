@@ -1,0 +1,43 @@
+module edu.nyu.cascade.spl.Declarations(Symbols, Keywords, Identifiers, Expressions);
+
+import Symbols;
+import Keywords; 
+import Identifiers;
+import Expressions;
+
+public generic DeclarationList = (DeclarationEntry SEMICOLON?)* ;
+
+public generic LocalDeclarationList = (LOCAL Declaration SEMICOLON?)* ;
+
+// [chris 2/13/2008] Can a LocalDeclaration appear outside a
+// LocalDeclarationList?
+
+generic DeclarationEntry =
+      yyValue:Declaration 
+    / IN    Declaration @InDeclaration
+    / OUT   Declaration @OutDeclaration
+    / LOCAL Declaration @LocalDeclaration
+    ;
+     
+generic Declaration = 
+    IdentifierList COLON VariableType InitialCondition? 
+    ;
+
+generic VariableType =
+      yyValue:BaseType                      /* @BaseType */
+    / CHANNEL OF VariableType       @ChannelType
+    / CHANNEL ASYNC OF VariableType @ChannelTypeAsync
+    / ARRAY Range OF   VariableType @ArrayType
+    / LIST OF VariableType          @ListType
+    ;
+
+generic InitialCondition =
+     WHERE yyValue:Expression
+     ;
+
+
+/* Emacs Local Variables: */
+/* Emacs mode: java */
+/* Emacs compile-command: "ant -f ../../../../../../../../build.xml -emacs" */
+/* Emacs indent-tabs-mode: nil */
+/* Emacs End: */

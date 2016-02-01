@@ -1,8 +1,7 @@
-extern int __VERIFIER_nondet_int();
 
 int main(){
    int a[32];
-   int x = __VERIFIER_nondet_int();
+   int x = __NONDET__();
 
    a[x%32] = 1;
    

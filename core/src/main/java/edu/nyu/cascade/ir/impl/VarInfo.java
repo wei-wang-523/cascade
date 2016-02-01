@@ -6,19 +6,18 @@ import com.google.common.collect.Maps;
 
 import xtc.tree.Node;
 import xtc.type.Type;
+import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.type.IRType;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.util.HashCodeUtil;
-import edu.nyu.cascade.util.Preferences;
 
 public class VarInfo implements IRVarInfo {	
   private final String scope;
   private final String name;
   private final IRType type;
   private final Type sourceType;
-  private Expression lBinding;
-  private boolean logicLabel = false;
+  private Expression lBinding, rBinding;
   
   /** A set of client-specified properties. */
   private final Map<String,Object> properties;
@@ -78,11 +77,6 @@ public class VarInfo implements IRVarInfo {
   public void setProperty(String name, Object property) {
     properties.put(name, property);
   }
-  
-  @Override
-  public boolean isDeclared() {
-  	return null != sourceNode;
-  }
 
   @Override
   public String toString() {
@@ -120,15 +114,30 @@ public class VarInfo implements IRVarInfo {
   public Expression getLValBinding() {
 	  return lBinding;
   }
+
+	@Override
+  public Expression getRValBinding() {
+	  return rBinding;
+  }
 	
 	@Override
 	public boolean hasLValBinding() {
 		return lBinding != null;
 	}
+	
+	@Override
+	public boolean hasRValBinding() {
+		return rBinding != null;
+	}
 
 	@Override
   public void setLValBinding(Expression varExpr) {
 		this.lBinding = varExpr;
+  }
+	
+	@Override
+  public void setRValBinding(Expression varExpr) {
+		this.rBinding = varExpr;
   }
 	
 	@Override
@@ -141,24 +150,7 @@ public class VarInfo implements IRVarInfo {
 	}
 
 	@Override
-	public void enableLogicLabel() {
-		if(!Preferences.isSet(Preferences.OPTION_HOARE)) return;
-		logicLabel = true;
-	}
-
-	@Override
-	public void disableLogicLabel() {
-		if(!Preferences.isSet(Preferences.OPTION_HOARE)) return;
-		logicLabel = false;
-	}
-	
-	@Override
-	public boolean hasLogicLabel() {
-		return logicLabel;
-	}
-  
-  @Override
-  public boolean isStatic() {
-    return sourceType.hasShape() && sourceType.getShape().isStatic();
+  public long getSize() {
+		return CType.getSizeofType(sourceType);
   }
 }

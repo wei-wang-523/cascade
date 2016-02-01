@@ -1,0 +1,18 @@
+<controlFile>
+  <sourceFile name="scopeSensitive.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="17" />
+    <wayPoint fileId="1" line="30" >
+      <function funcName="test" >
+        <wayPoint fileId="1" line="8" >
+          <loop>
+            <invariant><![CDATA[
+              i>=0 && i <= n && implies(i<n, valid(&a[i]))
+            ]]></invariant>
+          </loop>
+        </wayPoint>
+      </function>
+    </wayPoint>
+    <endPosition fileId="1" line="32" />
+  </run>
+</controlFile>

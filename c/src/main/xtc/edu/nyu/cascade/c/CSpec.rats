@@ -1,0 +1,32 @@
+module edu.nyu.cascade.c.CSpec;
+
+import edu.nyu.cascade.c.CState
+        as CState;
+import edu.nyu.cascade.c.CSpacing(CState)                        
+	as Spacing;
+import edu.nyu.cascade.c.CConstant(Spacing)             
+	as Constants;
+import edu.nyu.cascade.c.Symbol(Spacing)               
+        as Symbol;
+import edu.nyu.cascade.c.CSymbol(Symbol)               
+	as CSymbols;
+import edu.nyu.cascade.specs.Symbols(CSymbols)               
+	as Symbols;
+import edu.nyu.cascade.c.CReserved
+	as CKeywords;
+import edu.nyu.cascade.specs.Keywords(CKeywords,Spacing)
+	as Keywords;
+import edu.nyu.cascade.c.CIdentifier(CKeywords, Spacing)
+	as Identifiers;
+import edu.nyu.cascade.c.CContext(CState)
+        as CContext;
+import edu.nyu.cascade.c.CCore(CContext,Constants, Identifiers, Symbols, Spacing)
+	as Expressions;
+import edu.nyu.cascade.specs.Spec(Symbols,Keywords,Expressions,Spacing)
+        as Spec;
+
+option withLocation, constant, flatten, main(CSpec), parser(edu.nyu.cascade.c.CSpecParser);
+
+public generic CSpec = Spacing yyValue:Specification !_ ;
+public generic CSpecExpression = Spacing yyValue:Spec.Expression !_;
+

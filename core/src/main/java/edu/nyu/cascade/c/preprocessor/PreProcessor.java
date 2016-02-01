@@ -1,13 +1,13 @@
 package edu.nyu.cascade.c.preprocessor;
 
 import java.util.Collection;
-import java.util.Map;
 
 import xtc.tree.Node;
+import xtc.type.Type;
 
-import com.google.common.collect.Range;
+import com.google.common.collect.ImmutableMap;
 
-import edu.nyu.cascade.ir.IRControlFlowGraph;
+import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.prover.Expression;
 
 /**
@@ -23,64 +23,45 @@ public interface PreProcessor<T> {
 
 	void buildSnapShot();
 
-	T getPointsToLoc(T rep);
+	ImmutableMap<T, Collection<IRVar>> getSnapShot();
+
+	T getPointsToRep(Node node);
 	
-	long getRepTypeWidth(T rep);
+	Type getRepType(T rep);
 
 	String getRepId(T rep);
 
 	T getRep(Node node);
 	
 	/**
-	 * Get the field representative of <code>rep</code>. It's
+	 * Get the source representative of <code>rep</code>. It's
 	 * used to in field-sensitive steensgaard analysis, to find 
-	 * the elements' representative for the structure components
+	 * the parent representative for the structure components
 	 * 
 	 * @param rep
 	 * @return
 	 */
-	Collection<T> getFillInReps(T rep);
+	T getSrcRep(T rep);
 
 	/**
-	 * Analysis control flow graph <code>cfg</code>
+	 * Pre analysis statement <code>stmt</code>
 	 * @param stmt
 	 */
-	void analysis(IRControlFlowGraph cfg);
+	void analysis(IRStatement stmt);
 
 	/**
-	 * Add an newly allocated <code>region</code> with source node 
-	 * <code>ptrNode</code>
-	 * @param region
-	 * @param ptrNode
-	 * @return
-	 */
-	void addAllocRegion(Expression region, Node ptrNode);
-
-	/**
-	 * Add a stack variable with expression <code>lval</code>,
-	 * with source node <code>lvalNode</code>
-	 * @param lval
-	 * @param lvalNode
-	 */
-	void addStackVar(Expression lval, Node lvalNode);
-	
-	/**
-	 * Get the mapping from offset to ECR in structure ECR
-	 * only used for field-sensitive analysis
-	 * 
+	 * Add an newly allocated variable with variable information 
+	 * <code>info</code> in the partition with representative 
+	 * <code>rep</code>
+	 * @param rep
 	 * @param rep
 	 * @return
 	 */
-	Map<Range<Long>, T> getStructMap(T rep);
-
-	Collection<IRVar> getEquivFuncVars(Node funcNode);
-
-	void reset();
-
-	boolean isAccessTypeSafe(T rep);
+	void addAllocRegion(T rep, Expression region);
 
 	/**
-	 * Initialize partition checker
+	 * Add a stack variable with expression <code>lval</code>
+	 * @param lval
 	 */
-	void initChecker();
+	IRVar addStackVar(Expression lval);
 }

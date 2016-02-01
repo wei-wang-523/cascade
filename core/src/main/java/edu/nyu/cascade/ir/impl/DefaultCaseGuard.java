@@ -7,17 +7,21 @@ import xtc.tree.Printer;
 import xtc.util.SymbolTable.Scope;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import edu.nyu.cascade.ir.IRBooleanExpression;
 import edu.nyu.cascade.ir.IRLocation;
 import edu.nyu.cascade.ir.IRLocations;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
-import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.state.StateExpression;
+import edu.nyu.cascade.ir.state.StateExpressionClosure;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.prover.type.Type;
 
 public class DefaultCaseGuard implements IRBooleanExpression {
   private final Node node;
@@ -25,7 +29,7 @@ public class DefaultCaseGuard implements IRBooleanExpression {
   private final IRLocation location;
   
   public DefaultCaseGuard(Node node, Iterable<CaseGuard> list) {
-//    Preconditions.checkArgument(!Iterables.isEmpty(list));
+    Preconditions.checkArgument(!Iterables.isEmpty(list));
     this.node = node;
     this.guards = ImmutableList.copyOf(list);
     location = IRLocations.ofNode(node);
@@ -55,24 +59,46 @@ public class DefaultCaseGuard implements IRBooleanExpression {
   }
 
   @Override
-  public Expression toBoolean(StateExpression pre, final ExpressionEncoder encoder) {
-    List<BooleanExpression> argExprs = Lists.newArrayList();
-    ExpressionEncoding exprEncoding = encoder.getEncoding();
-    for( CaseGuard guard : guards ) {
-    	Expression expr = guard.toBoolean(pre, encoder);
-      assert( expr.isBoolean() );
-      argExprs.add(expr.asBooleanExpression());
-    }
-    return exprEncoding.not(exprEncoding.or(argExprs));
+  public StateExpressionClosure toBoolean(final ExpressionEncoder encoder) {
+    return new StateExpressionClosure() {
+      @Override
+      public Expression eval(StateExpression mem) {
+        List<BooleanExpression> argExprs = Lists.newArrayList();
+        ExpressionManager exprManager = null;
+        for( CaseGuard guard : guards ) {
+        	StateExpressionClosure closure = guard.toBoolean(encoder);
+          Expression expr = closure.eval(mem);
+          assert( expr.isBoolean() );
+          argExprs.add(expr.asBooleanExpression());
+          exprManager = expr.getExpressionManager();
+        }
+        return exprManager.or(argExprs).not();
+      }
+
+      @Override
+      public Type getOutputType() {
+        return encoder.getEncoding().getExpressionManager().booleanType();
+      }
+      
+      @Override
+      public ExpressionManager getExpressionManager() {
+        return encoder.getEncoding().getExpressionManager();
+      }
+
+			@Override
+      public Expression getOutput() {
+				throw new UnsupportedOperationException();
+      }
+    };
   }
 
   @Override
-  public Expression toExpression(StateExpression pre, ExpressionEncoder encoder){
+  public StateExpressionClosure toExpression(ExpressionEncoder encoder){
     throw new UnsupportedOperationException("DefaultCaseGuard.toExpression");
   }
 
   @Override
-  public Expression toLval(StateExpression pre, ExpressionEncoder encoder) {
+  public StateExpressionClosure toLval(ExpressionEncoder encoder) {
     throw new UnsupportedOperationException("DefaultCaseGuard.toLval");
   }
 

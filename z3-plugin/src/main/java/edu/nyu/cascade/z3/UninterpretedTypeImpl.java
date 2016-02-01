@@ -15,6 +15,7 @@ import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.util.CacheException;
+import edu.nyu.cascade.util.IOUtils;
 
 final class UninterpretedTypeImpl extends TypeImpl implements UninterpretedType {
   private final String name;
@@ -57,10 +58,13 @@ final class UninterpretedTypeImpl extends TypeImpl implements UninterpretedType 
     this.name = name;
     
     try {
+      TheoremProverImpl.debugCall("uninterpretedType");
       setZ3Type(exprManager.getTheoremProver().getZ3Context().mkUninterpretedSort(name));
       exprManager.addToTypeCache(this);
-      
-      TheoremProverImpl.z3FileCommand("(declare-sort " + name + " 0)");
+      if(IOUtils.debugEnabled())
+        TheoremProverImpl.debugCommand("(declare-sort " + name + " 0)");
+      if(IOUtils.tpFileEnabled())
+        TheoremProverImpl.z3FileCommand("(declare-sort " + name + " 0)");
     } catch (Exception e) {
       throw new TheoremProverException(e);
     }

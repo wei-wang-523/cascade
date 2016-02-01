@@ -162,9 +162,4 @@ public class UnionFind<E> implements Serializable {
         LinkedHashMultimap.<Partition, E> create());
     return ImmutableSet.copyOf(parts.asMap().get(key));
   }
-  
-  public void reset() {
-  	map.clear();
-  	nPartitions = 0;
-  }
 }

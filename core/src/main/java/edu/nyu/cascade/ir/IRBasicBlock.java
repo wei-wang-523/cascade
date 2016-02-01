@@ -1,6 +1,7 @@
 package edu.nyu.cascade.ir;
 
 import java.math.BigInteger;
+import java.util.List;
 
 import xtc.tree.Node;
 import xtc.util.SymbolTable.Scope;
@@ -41,17 +42,20 @@ public interface IRBasicBlock {
      * A swich-merge block. The block merges the N paths of following a switch block.
      */
     MERGE,
-    /** A function entry block. The block has no statements and one successor. */
-    FUNCENT,
-    /** A function exit block. The block has no statements and no successors. */
-    FUNCEXIT ;
+    /**
+     * A call block. The block has a single statement (the call) and a single
+     * successor.
+     */
+    CALL,
+    /** An entry block. The block has no statements and one successor. */
+    FUNC_ENT,
+    /** An exit block. The block has no statements and no successors. */
+    FUNC_EXIT ;
   }
 
   void addPreLabel(String label);
   void addPostLabel(String label);
-  void addStatements(Iterable<? extends IRStatement> postStatements);
-	void addStatement(IRStatement statement);
-	
+  void addStatements(List<? extends IRStatement> postStatements);
   /**
    * Return the IR responsible for this node
    * 
@@ -89,7 +93,6 @@ public interface IRBasicBlock {
    */
   IRBasicBlock splitBefore(IRLocation position);
   IRBasicBlock splitAfter(IRLocation position);
-	IRBasicBlock splitAt(int index);
   
   ImmutableSet<String> getPreLabels();
   ImmutableSet<String> getPostLabels();

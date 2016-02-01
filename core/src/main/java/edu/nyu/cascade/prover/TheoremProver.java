@@ -48,10 +48,48 @@ public interface TheoremProver {
   ValidityResult<?> checkValidity(Expression bool) ;
 
   SatResult<?> checkSat(Expression expr) ;
-  
+
+  /**
+   * Called after isValid returns INVALID, gives an inconsistent set of
+   * assumptions from the last query. Called after isSatisfiable returns
+   * SATISFIABLE, gives a consistent set of sub-formulas which are sufficient
+   * to satisfy the last query. E.g., for
+   * <code>isValid(x > 0 && x = 1 && x < 0)</code>,
+   * <code>getCounterExample</code> might return the list
+   * <code>{ x > 0, x < 0 }</code>; for
+   * <code>isSatisfiable(x > 0 || x = 1 || x < 0)</code>, it might return
+   * <code>{ x > 0 }</code>.
+   */
+//  ImmutableSet<?> getCounterExample() ;
+
+  /**
+   * Called after isValid returns INVALID, gives an inconsistent set of
+   * assumptions from the last query.
+   */
+//  List<IBooleanExpression> getCounterModel();
+
+//  void assume(IExpression<IBooleanType> proposition) ;
   void assume(Iterable<? extends Expression> propositions) ;
   void assume(Expression first, Expression... rest) ;
   void clearAssumptions() ;
+  
+  /**
+   * Set an "effort level" for validity and satisfiability queries. An
+   * implementation may use this to set a timeout, limit memory usage, or set
+   * some other resource limit, or it may ignore this call altogether.
+   * Higher values of <code>level</code> represent higher resource limits.
+   * A value of 0 represents unlimited resources.
+   */
+  void setEffortLevel(int level) ;
+  
+  /**
+   * Set an "time level" for validity and satisfiability queries. In this
+   * implementation, the "time limit" varies with the time
+   * level. An time level of <math>n</math> corresponds to a theorem prover
+   * "time limit" <math>256n</math>. A value of 0 means no time limit.
+   */
+
+  void setTimeLimit(int second) ;
   
   /**
    * Set implementation-specific properties, possibly by referring to 
@@ -61,14 +99,4 @@ public interface TheoremProver {
   
   String getProviderName();
 
-	long getStatsTime();
-	
-	/**
-	 * Get the evaluation of <code>expr</code> based on model
-	 * @param expr
-	 * @return
-	 */
-	Expression evaluate(Expression expr);
-	
-	void reset();
 }

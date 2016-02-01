@@ -1,9 +1,8 @@
-extern int __VERIFIER_nondet_int();
 
 int main(){
 	
   int * a;
-  int k = __VERIFIER_nondet_int();
+  int k = __NONDET__();
   int i;
   if ( k <= 0 ) return -1;
   

@@ -4,8 +4,7 @@ import xtc.tree.Node;
 import xtc.tree.Printer;
 import xtc.util.SymbolTable.Scope;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
-import edu.nyu.cascade.ir.state.StateExpression;
-import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.ir.state.StateExpressionClosure;
 
 public interface IRExpression {
   void format(Printer printer);
@@ -14,11 +13,11 @@ public interface IRExpression {
 
   IRLocation getLocation();
 
-  Expression toBoolean(StateExpression pre, ExpressionEncoder encoder);
+  StateExpressionClosure toBoolean(ExpressionEncoder encoder);
 
-  Expression toExpression(StateExpression pre, ExpressionEncoder encoder);
+  StateExpressionClosure toExpression(ExpressionEncoder encoder);
 
-  Expression toLval(StateExpression pre, ExpressionEncoder encoder);
+  StateExpressionClosure toLval(ExpressionEncoder encoder);
 
   Scope getScope();
 }

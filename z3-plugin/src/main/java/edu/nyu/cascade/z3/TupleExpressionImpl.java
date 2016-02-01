@@ -13,6 +13,7 @@ import com.microsoft.z3.TupleSort;
 import com.microsoft.z3.Z3Exception;
 
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
@@ -54,15 +55,19 @@ final class TupleExpressionImpl extends ExpressionImpl implements
     Preconditions.checkArgument(val.getType().equals(
         tuple.asTuple().getType().getElementTypes().get(index)));
 
-    return new TupleExpressionImpl(exprManager, TUPLE_UPDATE,
-        new BinaryConstructionStrategy() {
-      @Override
-      public Expr apply(Context ctx, Expr tuple, Expr val) {
-        // FIXME: tuple update is not supported by z3 yet
-        throw new UnsupportedOperationException("Unsupported z3 operation");
-        /*return em.tupleUpdateExpr(tuple, index, val);*/
-      }
-    }, tuple, val);
+    try {
+      return new TupleExpressionImpl(exprManager, TUPLE_UPDATE,
+          new BinaryConstructionStrategy() {
+        @Override
+        public Expr apply(Context ctx, Expr tuple, Expr val) {
+          // FIXME: tuple update is not supported by z3 yet
+          throw new UnsupportedOperationException("Unsupported z3 operation");
+          /*return em.tupleUpdateExpr(tuple, index, val);*/
+        }
+      }, tuple, val);
+    } catch (Z3Exception e) {
+      throw new TheoremProverException(e);
+    }
   }
   
   static ExpressionImpl mkTupleIndex(
@@ -73,8 +78,12 @@ final class TupleExpressionImpl extends ExpressionImpl implements
     ExpressionImpl result = new ExpressionImpl(exprManager, TUPLE_INDEX,
         new UnaryConstructionStrategy() {
           @Override
-          public Expr apply(Context ctx, Expr expr) throws Z3Exception {
-            return tupleSort.getFieldDecls()[index].apply(expr);
+          public Expr apply(Context ctx, Expr expr) {
+              try {
+                return tupleSort.getFieldDecls()[index].apply(expr);
+              } catch (Z3Exception e) {
+                throw new TheoremProverException(e);
+              }
           }
         }, tuple);
     result.setType((Type) 
@@ -84,7 +93,7 @@ final class TupleExpressionImpl extends ExpressionImpl implements
 
   private TupleExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
       BinaryConstructionStrategy strategy, Expression tuple,
-      Expression value) {
+      Expression value) throws Z3Exception {
     super(exprManager, kind, strategy, tuple, value);
     setType(TupleTypeImpl.valueOf(exprManager, tuple.getType()));
   }
@@ -94,8 +103,12 @@ final class TupleExpressionImpl extends ExpressionImpl implements
     super (exprManager, TUPLE,
         new NaryConstructionStrategy() {
           @Override
-          public Expr apply(Context ctx, Expr[] args) throws Z3Exception {
-          	return ((TupleSort) exprManager.toZ3Type(type)).mkDecl().apply(args);           
+          public Expr apply(Context ctx, Expr[] args) {
+            try {
+              return ((TupleSort) exprManager.toZ3Type(type)).mkDecl().apply(args);
+            } catch (Z3Exception e) {
+              throw new TheoremProverException(e);
+            }            
           }
         }, elements);
     setType(type);

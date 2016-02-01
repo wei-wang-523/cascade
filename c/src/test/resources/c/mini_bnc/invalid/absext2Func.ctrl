@@ -1,0 +1,15 @@
+<controlFile>
+  <sourceFile name="absext2.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="8" />
+    <wayPoint fileId="1" line="11">
+      <function funcName="abs" column="21" >
+        <wayPoint fileId="1" line="5" />
+      </function>
+      <function funcName="abs" column="12" >
+        <wayPoint fileId="1" line="3" />
+      </function>
+    </wayPoint>
+    <endPosition fileId="1" line="13" />
+  </run>
+</controlFile>

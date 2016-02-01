@@ -39,6 +39,7 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
     try {
       edu.nyu.acsys.CVC4.Type indexCvc4Type = exprManager.toCvc4Type(indexType);
       edu.nyu.acsys.CVC4.Type elementCvc4Type = exprManager.toCvc4Type(elementType);
+      TheoremProverImpl.debugCall("arrayType(%s,%s)", indexCvc4Type, elementCvc4Type);
       setCVC4Type(exprManager.getTheoremProver().getCvc4ExprManager().mkArrayType(indexCvc4Type, 
                 elementCvc4Type));
     } catch (Exception e) {

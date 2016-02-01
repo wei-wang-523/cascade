@@ -40,8 +40,8 @@ public class DefaultIntegerEncoding extends
   }
 
   @Override
-  public IntegerExpression characterConstant(int c) {
-  	return constant(c);
+  public IntegerExpression characterConstant(long c) {
+  	return getExpressionManager().constant(c);
   }
   
   @Override
@@ -55,7 +55,7 @@ public class DefaultIntegerEncoding extends
   }
   
   @Override
-  public IntegerExpression constant(BigInteger c, long size) {
+  public IntegerExpression constant(BigInteger c) {
     return getExpressionManager().constant(c);
   }
 
@@ -168,14 +168,6 @@ public class DefaultIntegerEncoding extends
   	 */
     return i;
   }
-  
-  @Override
-  public IntegerExpression ofInteger(IntegerExpression i, int size, boolean isSigned) {
-  	/* FIXME: default integer encoding do not support casting between
-  	 * different integer kind
-  	 */
-    return i;
-  }
 
   @Override
   public IntegerExpression ofExpression(Expression x) {
@@ -210,7 +202,7 @@ public class DefaultIntegerEncoding extends
 
   @Override
   public IntegerExpression unknown() {
-    return getType().asInteger().variable(UNKNOWN_VARIABLE_NAME, true);
+    return unknown(getType());
   }
 
   @Override
@@ -219,18 +211,14 @@ public class DefaultIntegerEncoding extends
   }
 
   @Override
-  public IntegerExpression unknown(long size) {
-    return unknown();
+  public IntegerExpression unknown(Type type) {
+    Preconditions.checkArgument(type.isInteger());
+    return type.asInteger().variable(UNKNOWN_VARIABLE_NAME, true);
   }
 
 	@Override
 	public IntegerExpression uminus(IntegerExpression expr) {
 		return expr.negate();
-	}
-	
-	@Override
-	public IntegerExpression uplus(IntegerExpression expr) {
-		return expr;
 	}
 
 	@Override
@@ -268,7 +256,6 @@ public class DefaultIntegerEncoding extends
 
   @Override
   public IntegerExpression variable(String name, Type type, boolean fresh) {
-  	Preconditions.checkArgument(type.isInteger());
-  	return type.asInteger().variable(name, fresh);
+  	return variable(name, type, fresh);
   }
 }

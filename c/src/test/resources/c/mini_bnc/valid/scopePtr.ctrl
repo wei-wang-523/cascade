@@ -1,0 +1,16 @@
+<controlFile>
+  <sourceFile name="scopePtr.c" id="1" />
+  <run>
+    <startPosition fileId="1" line="11" />
+    <wayPoint fileId="1" line="22" >
+      <loop iterTimes="10" />
+    </wayPoint>
+    <wayPoint fileId="1" line="35" >
+      <loop iterTimes="10" />
+    </wayPoint>
+    <wayPoint fileId="1" line="49" >
+      <loop iterTimes="3" />
+    </wayPoint>
+    <endPosition fileId="1" line="63" />
+  </run>
+</controlFile>

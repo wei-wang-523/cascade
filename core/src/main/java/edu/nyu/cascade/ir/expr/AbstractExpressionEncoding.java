@@ -4,12 +4,16 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import xtc.type.Type;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -23,9 +27,9 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.BoundExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.util.IOUtils;
-import edu.nyu.cascade.util.Pair;
+import edu.nyu.cascade.util.Identifiers;
+import edu.nyu.cascade.util.Preferences;
 
 /** An abstract implementation of the <code>ExpressionEncoding</code> interface,
  * with convenience implementations of several methods. 
@@ -37,8 +41,26 @@ import edu.nyu.cascade.util.Pair;
  */
 
 public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
-  private static final String VAL_PREFIX = "value_of_";
+  private final ExpressionManager exprManager;
+
+  private final BiMap<String, Expression> varBindings;
+  private final Map<String, IRType> varTypes;
   
+  private static final int DEFAULT_WORD_SIZE = 8;
+  
+  protected static final int WORD_SIZE;
+  
+  static {
+  	if(Preferences.isSet(Preferences.OPTION_BYTE_BASED)) {
+  		WORD_SIZE = DEFAULT_WORD_SIZE;
+  	} else {
+  		if(Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE))
+  			WORD_SIZE = Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE);
+  		else
+  			WORD_SIZE = DEFAULT_WORD_SIZE;
+  	}
+  }
+
   protected final IntegerEncoding<? extends Expression> integerEncoding;
 
   protected final BooleanEncoding<? extends Expression> booleanEncoding;
@@ -48,10 +70,6 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   protected final PointerEncoding<? extends Expression> pointerEncoding;
   
   protected final Collection<BooleanExpression> assumptions;
-  
-  private final ExpressionManager exprManager;
-  
-  private final CType cTypeAnalyzer = CType.getInstance();
   
   protected AbstractExpressionEncoding(ExpressionManager exprManager,
       IntegerEncoding<? extends Expression> integerEncoding,
@@ -81,12 +99,24 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
         integerEncoding.getExpressionManager().equals( arrayEncoding.getExpressionManager()) );
  
     this.exprManager = integerEncoding.getExpressionManager();
+    
+    // WARNING: variable() better generate well-behaved HashMap keys!
+    this.varBindings = HashBiMap.create();
+    this.varTypes = Maps.newHashMap();
     this.assumptions = Sets.newHashSet();
     
     this.integerEncoding = integerEncoding;
     this.booleanEncoding = booleanEncoding;
     this.arrayEncoding = arrayEncoding;
     this.pointerEncoding = pointerEncoding;
+  }
+
+  @Override
+  public Expression addSourceVariable(String qName, IRType type) {
+    Expression binding = variable(qName, type, true);
+    varBindings.put(qName, binding);
+    varTypes.put(qName, type);
+    return binding;
   }
   
   @Override
@@ -100,8 +130,14 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   }
 
   @Override
-  public Expression and(Expression... conjuncts) {
+  public Expression and(Expression... conjuncts)
+      {
     return and(Arrays.asList(conjuncts));
+  }
+  
+  @Override
+  public Expression bindingForSourceVar(String qName) {
+    return varBindings.get(Identifiers.fullyQualify(qName));
   }
   
   @Override
@@ -136,11 +172,6 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   public ExpressionManager getExpressionManager() {
     return exprManager;
   }
-  
-	@Override
-	public CType getCTypeAnalyzer() {
-		return cTypeAnalyzer;
-	}
 
   /** {@inheritDoc}
    * 
@@ -185,6 +216,16 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   @Override
   public Expression or(Expression... disjuncts) {
     return or(Arrays.asList(disjuncts));
+  }
+
+  @Override
+  public String sourceVarForBinding(Expression var) {
+    return varBindings.inverse().get(var);
+  }
+  
+  @Override
+  public IRType typeForSourceVar(String qName) {
+    return varTypes.get(Identifiers.fullyQualify(qName));
   }
 
   @Override
@@ -358,23 +399,16 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   
   @Override
   public Expression castToInteger(Expression expr, int size) {
-  	return castToInteger(expr, size, true);
-  }
-  
-  @Override
-  public Expression castToInteger(Expression expr, int size, boolean signed) {
   	Preconditions.checkArgument(isInteger(expr) || isBoolean(expr));
   	IntegerEncoding<? extends Expression> ie = getIntegerEncoding();
     return toInteger_(ie, 
     		isInteger(expr) ? 
-    				expr : ie.ofBoolean(toBoolean(getBooleanEncoding(),expr)), 
-    				size,
-    				signed);
+    				expr : ie.ofBoolean(toBoolean(getBooleanEncoding(),expr)), size);
   }
   
   private <T extends Expression> Expression toInteger_(
-  		IntegerEncoding<T> ie, Expression e, int size, boolean signed) {
-  	return ie.ofInteger(ie.ofExpression(e ), size, signed);
+  		IntegerEncoding<T> ie, Expression e, int size) {
+  	return ie.ofInteger(ie.ofExpression(e), size);
   }
   
   @Override
@@ -383,6 +417,13 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   			? expr
   			:	getPointerEncoding().getNullPtr();
   }
+  
+/*  @Override
+  public Expression castToRational(Expression expr) {
+    return isRational(expr)
+        ? expr
+        : (Expression) expr.asRationalExpression();
+  }*/
 
   private <T extends Expression> BooleanExpression toBoolean(BooleanEncoding<T> be, Expression e) {
     Preconditions.checkArgument(isBoolean(e));
@@ -416,7 +457,6 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
     case ARRAY:
     case STRUCT:
     case UNION:
-    case FUNCTION:
     case POINTER:
       return getPointerEncoding();
     
@@ -821,13 +861,13 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   }
 	
 	@Override
-  public Expression characterConstant(int c) {
+  public Expression characterConstant(long c) {
     return getIntegerEncoding().characterConstant(c);
   }
 	
 	@Override
-  public Expression integerConstant(BigInteger c, long size) {
-    return getIntegerEncoding().constant(c, size);
+  public Expression integerConstant(BigInteger c) {
+    return getIntegerEncoding().constant(c);
   }
 	
   @Override
@@ -838,6 +878,18 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 	@Override
 	public Expression zero() {
 	  return getIntegerEncoding().zero();
+	}
+	
+	@Override
+	public Expression componentSelect(Expression lhs, Expression rhs) {
+		return componentSelect_(getPointerEncoding(), getIntegerEncoding(), lhs, rhs);
+	}
+
+	private <T extends Expression> T componentSelect_(PointerEncoding<T> pe, 
+			IntegerEncoding<?> ie, Expression lhs, Expression rhs) {
+	  Preconditions.checkArgument(isPointer(lhs));
+	  Preconditions.checkArgument(isInteger(rhs));
+	  return pe.plus(pe.ofExpression(lhs), ie.ofExpression(rhs));
 	}
 	
 	@Override
@@ -974,18 +1026,6 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
     			
 		return ie.uminus(ie.ofExpression(lhs));
 	}
-	
-  @Override
-	public Expression uplus(Expression expr) {
-		return uplus_(getIntegerEncoding(), expr);
-	}
-
-	private <T extends Expression> Expression uplus_(
-	    IntegerEncoding<T> ie, Expression lhs) {
-		Preconditions.checkArgument(isInteger(lhs));
-    			
-		return ie.uplus(ie.ofExpression(lhs));
-	}
 
 	@Override
   public Expression signedRem(Expression lhs, Expression rhs) {
@@ -1068,7 +1108,12 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 	  }
 	  return be.or(bDisjs);
 	}
-	
+
+	/*  @Override
+  public Expression ofBoolean(Expression expr) {
+    return getBooleanEncoding().ofExpression(expr);
+  }
+*/
   @Override
   public Expression ofInteger(Expression x) {
     Preconditions.checkArgument(x.isInteger());
@@ -1082,8 +1127,26 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   }
   
   @Override
-  public Expression ofPointer(Expression expr) {
-  	return getPointerEncoding().ofExpression(expr);
+  public Expression ofPointer(Expression x) {
+  	Preconditions.checkArgument(x.isTuple());
+  	return getPointerEncoding().ofExpression(x);
+  }
+
+  @Override
+  public Expression symbolicConstant(String name, IRType t, boolean fresh) {
+    TypeEncoding<? extends Expression> encoding = encodingForType(t);
+    return encoding.symbolicConstant(name, fresh);
+  }
+
+  @Override
+  public Expression castExpression(Expression src, Type targetType) {
+  	Preconditions.checkArgument(targetType.isPointer() || targetType.isInteger());
+  	if(targetType.isPointer()) {
+  		return castToPointer(src);
+  	} else {
+  		long size = CType.getSizeofType(targetType) * WORD_SIZE;
+  		return castToInteger(src, (int) size);
+  	}
   }
   
   @Override
@@ -1144,6 +1207,24 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   }
   
   @Override
+  public int getWordSize() {
+    return WORD_SIZE;
+  }
+  
+  @Override
+  public Expression castToOffset(Expression expr) {
+  	edu.nyu.cascade.prover.type.Type ptrType, offsetType;
+  	ptrType = getPointerEncoding().getType();
+  	offsetType = ptrType.isTuple() ? 
+  			ptrType.asTuple().getElementTypes().get(1) : ptrType;
+  	if(offsetType.isBitVectorType()) {
+  		int offsetSize = offsetType.asBitVectorType().getSize();
+  		return castToInteger(expr, offsetSize);
+  	}
+  	return expr;
+  }
+  
+  @Override
   public Expression notOverflow(Expression base, Expression size) {
   	Preconditions.checkArgument(isInteger(base) && isInteger(size));
   	return greaterThanOrEqual(plus(base, size), base);
@@ -1178,13 +1259,13 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   	if(isInteger(base1)) {
   		Expression baseBound1 = plus(base1, size1);
   		Expression baseBound2 = plus(base2, size2);
-  		return and(lessThanOrEqual(base1, base2), lessThanOrEqual(baseBound2, baseBound1));
+  		return and(lessThanOrEqual(base1, base2), lessThan(baseBound2, baseBound1));
   	} else {
   		PointerEncoding<? extends Expression> pe = getPointerEncoding();
   		IntegerEncoding<? extends Expression> ie = getIntegerEncoding();
   		Expression baseBound1 = pointerPlus_(pe, ie, base1, size1);
   		Expression baseBound2 = pointerPlus_(pe, ie, base2, size2);
-  		return and(pointerLessThanOrEqual_(pe, base1, base2), pointerLessThanOrEqual_(pe, baseBound2, baseBound1));
+  		return and(pointerLessThanOrEqual_(pe, base1, base2), pointerLessThan_(pe, baseBound2, baseBound1));
   	}
   }
   
@@ -1210,34 +1291,7 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
     
     if(type.isBoolean())	return getBooleanEncoding().unknown();
     
-    long size = cTypeAnalyzer.getWidth(type);
-  	return getIntegerEncoding().unknown(size);
+  	return getIntegerEncoding().unknown(getExpressionManager().bitVectorType(
+				(int) (CType.getSizeofType(type) * WORD_SIZE)));
   }
-  
-  @Override
-	public Pair<Expression, Expression> arithTypeConversion(Expression lhs, Expression rhs,
-			Type lhsType, Type rhsType) {
-
-		lhs = castToInteger(lhs);	rhs = castToInteger(rhs);
-		IntegerEncoding<?> ie = getIntegerEncoding();
-		
-		if(ie.getType().isInteger())	return Pair.of(lhs, rhs);
-		
-		Type targetType = cTypeAnalyzer.convert(lhsType, rhsType);
-		int size = (int) cTypeAnalyzer.getWidth(targetType);
-		
-	  Expression lhsPrime = toInteger_(ie, lhs, size, !CType.isUnsigned(lhsType));
-	  Expression rhsPrime = toInteger_(ie, rhs, size, !CType.isUnsigned(rhsType));
-	  			
-	  return Pair.of(lhsPrime, rhsPrime);
-	}
-  
-  @Override
-	public VariableExpression getRvalBinding(Expression lvalBinding) {
-  	Preconditions.checkArgument(lvalBinding.isHoareLogic());
-		VariableExpression lvalBindingVar = lvalBinding.asVariable();
-		String name = lvalBindingVar.getName();
-		String rvalName = VAL_PREFIX + name;
-		return getExpressionManager().variable(rvalName, lvalBindingVar.getType(), false);
-	}
 }

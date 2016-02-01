@@ -1,34 +1,122 @@
 package edu.nyu.cascade.c;
 
-import java.util.List;
-
 import xtc.tree.Node;
-import xtc.type.ArrayT;
-import xtc.type.NumberT;
-import xtc.type.PointerT;
-import xtc.type.StructOrUnionT;
-import xtc.type.Type;
-import xtc.type.Type.Tag;
-import xtc.type.VariableT;
-import xtc.type.VoidT;
+import xtc.type.*;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 
+import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 
 /**
  * An auxiliary C type analyzer for C programs.
  *
  */
-public final class CType {
+public class CType {
   public static final String TYPE = xtc.Constants.TYPE;
   public static final String SCOPE = xtc.Constants.SCOPE;
   
-  private static final CType instance = new CType();
+  private static final String FIELD_INFIX = Identifiers.UNDERLINE;
+  private static final xtc.type.C cAnalyzer = new xtc.type.C();
   
-  public static CType getInstance() {
-  	return instance;
+  public enum CellKind {
+    SCALAR, POINTER, STRUCTORUNION, ARRAY, BOOL
   }
+  
+  public static xtc.type.Type unwrapped(xtc.type.Type type) {
+    while(type.isAlias() || type.isAnnotated() || type.isVariable()) {
+      type = type.deannotate();
+      type = type.resolve();
+    }
+    return type;
+  }
+  
+  public static String getReferenceName(Type type) {
+    if(!(type.hasShape() 
+        || (type.hasConstant() && type.getConstant().isReference())))   
+      return Identifiers.CONSTANT;
+    
+    if(type.hasConstant() && type.getConstant().isReference()) {
+      Reference constRef = type.getConstant().refValue();
+      if(!constRef.isString()) return getReferenceName(constRef);
+    } 
+      
+    return getReferenceName(type.getShape());
+  }
+  
+  private static String getReferenceName(Reference ref) {
+  	Preconditions.checkNotNull(ref);
+    if(ref.isStatic()) {
+      return ((StaticReference) ref).getName();
+    } else if(ref.isDynamic()) {
+      return ((DynamicReference) ref).getName();
+    } else if(ref.isIndirect()) {
+      Reference base = ref.getBase();
+      return getReferenceName(base);
+    } else if(ref instanceof FieldReference) {
+      Reference base = ref.getBase();
+      return getReferenceName(base);
+    } else if(ref instanceof IndexReference) {
+      Reference base = ref.getBase();
+      return getReferenceName(base);
+    } else if(ref.isCast()) { 
+      Reference base = ref.getBase();
+      return getReferenceName(base);
+    } else if(ref.isString()) {
+      return ((StringReference) ref).getLiteral();
+    } else if(ref.isNull()) {
+      return ((NullReference) ref).toString();
+    } else {
+      throw new IllegalArgumentException("Unknown reference for " + ref);
+    }
+  }
+  
+  public static String parseTypeName(xtc.type.Type type) {
+  	Preconditions.checkNotNull(type);
+    StringBuffer sb =  new StringBuffer();
+    if(type.isVoid())	 					sb.append(type.toString());
+    else if(type.isBoolean()) 	sb.append(type.toString());
+    else if(type.isStruct()) 		sb.append(type.getName());
+    else if(type.isUnion())			sb.append(type.getName());
+    else if(type.isInteger()) 	sb.append(type.toString());
+    else if(type.isLabel())			sb.append(type.toLabel().getName());
+    else if(type.isAlias()) 		sb.append(parseTypeName(type.toAlias().getType()));
+    else if(type.isVariable()) 	sb.append(parseTypeName(type.toVariable().getType()));
+    else if(type.isPointer()) 
+    	sb.append("pointer(").append(parseTypeName(type.toPointer().getType())).append(')');
+    else if(type.isArray())
+      sb.append("array(").append(parseTypeName(type.toArray().getType())).append(')');
+    else if(type.isAnnotated()){
+      AnnotatedT annoType = type.toAnnotated();
+      if(annoType.hasShape()) {
+        sb.append(parseRefName(annoType.getShape()));
+      } else {
+        sb.append(parseTypeName(annoType.getType()));
+      }
+    }
+    else
+      throw new IllegalArgumentException("Cannot parse type " + type.getName());
+    return sb.toString();
+  }
+  
+  private static String parseRefName(Reference ref) {
+		Preconditions.checkNotNull(ref);
+	  StringBuffer sb =  new StringBuffer();
+	  if(ref instanceof FieldReference) {
+	  	FieldReference fieldRef = (FieldReference) ref;
+	  	String baseName = parseRefName(fieldRef.getBase());
+	  	sb.append(baseName).append(FIELD_INFIX).append(fieldRef.getField());
+	  } else if(ref instanceof CastReference) {
+	  	//FIXME: (int *) &d, type(ref) is int, type is pointer(int) 
+	  	sb.append(parseTypeName(ref.getType().deannotate()));
+	  } else {
+	  	sb.append(parseTypeName(ref.getType()));
+	  }
+	  return sb.toString();
+	}
   
   public static boolean hasType(Node node) {
   	return node.hasProperty(TYPE);
@@ -47,6 +135,105 @@ public final class CType {
   	Preconditions.checkArgument(node.hasProperty(SCOPE));
   	return node.getStringProperty(SCOPE);
   }
+
+  /**
+   * Get the size of <code>type</code>
+   * 
+   * @param type
+   * @return 0 if the array type without size:
+   * <code>extern char *sys_errlist[];</code>
+   */
+	public static long getSizeofType(Type type) {
+			
+		if(Preferences.isSet(Preferences.OPTION_BYTE_BASED)) {
+			try {
+				return cAnalyzer.getSize(type);
+			} catch (IllegalArgumentException e) {
+				IOUtils.err().println("WARNING: " + e.getMessage());
+				return 0;
+			} catch (NullPointerException e) {
+				IOUtils.err().println("WARNING: emptry structure type " + type);
+				return 0;
+			}
+		}
+		
+    xtc.type.Type resolvedType = type.resolve();
+    if(resolvedType.isStruct()) {
+    	if(resolvedType.toStruct().getMembers() == null) return 0;
+    	
+    	long size = 0;
+    	for(VariableT member : resolvedType.toStruct().getMembers()) {
+    		size += getSizeofType(member);
+    	}
+    	return size;
+    }
+	
+    if(resolvedType.isUnion()) {
+    	if(resolvedType.toUnion().getMembers() == null) return 0;
+    	
+    	long size = 0;
+    	for(VariableT member : resolvedType.toUnion().getMembers()) {
+    		size = Math.max(size, getSizeofType(member));
+    	}
+    	return size;
+    }
+    
+		if(resolvedType.isArray()) {
+			long length = resolvedType.toArray().getLength();
+			long cellSize = getSizeofType(resolvedType.toArray().getType());
+			return length * cellSize;
+		}
+		
+		return 1;
+  }
+	
+	public static Type getOffsetType(Type type, final String name) {
+  	Preconditions.checkArgument(type.isStruct() || type.isUnion());
+  	StructOrUnionT suType = type.toStructOrUnion();
+  	return Iterables.find(suType.getMembers(), new Predicate<VariableT>() {
+			@Override
+      public boolean apply(VariableT elem) {
+        return elem.getName().equals(name);
+      }
+  	}).getType();
+	}
+
+  public static long getOffset(Type type, final String name) {
+  	Preconditions.checkArgument(type.resolve().isStruct() || type.resolve().isUnion());
+  	StructOrUnionT suType = type.resolve().toStructOrUnion();
+  	
+    if(Preferences.isSet(Preferences.OPTION_BYTE_BASED)){
+      return cAnalyzer.getOffset(suType, name);
+    }
+    
+    if(suType.isUnion()) {
+    	if(Iterables.any(suType.getMembers(), new Predicate<VariableT>() {
+				@Override
+        public boolean apply(VariableT elem) {
+	        return elem.getName().equals(name);
+        }
+    	})) 
+    		return 0;      
+    } else {
+      long offset = 0;
+      for(VariableT elem : suType.getMembers()) {
+      	if(elem.getName().equals(name)) {
+      		return offset;
+      	}
+      	offset += getSizeofType(elem.getType());
+      }
+    }
+    
+    throw new IllegalArgumentException("WARNING: " + suType.getName() 
+    		+ " doesn't has member " + name);
+  }
+  
+  public static Type getBottomType(Type t1, Type t2) {
+  	if(t1 == null) return t2;
+  	if(t2 == null) return t1;
+  	if(t1.equals(t2)) return t1;
+  	return getUnitType();
+  }
   
   public static Type getUnitType() {
   	return NumberT.U_CHAR;
@@ -55,15 +242,75 @@ public final class CType {
   public static Type getVoidType() {
 	  return VoidT.TYPE;
 	}
+
+	public static Type getBottomType(StructOrUnionT su) {
+		if(su.getMembers() == null) return CType.getVoidType();
+		
+  	Type res = null;
+  	for(Type type : su.getMembers()) {
+  		res = res == null ? type : getBottomType(res, type);
+  	}
+  	return res;
+  }
   
-	public static Type getArrayCellType(Type type) {
-  	Preconditions.checkArgument(Tag.ARRAY.equals(type.tag()));
+	/**
+	 * Get the cell type of array, structure or union
+	 * @param type
+	 * @return
+	 */
+  public static Type getCellType(Type type) {
+  	type = type.resolve();
+  	if(type.isArray()) 
+  		return getCellType(type.toArray().getType());
+  	if(type.isStruct() || type.isUnion()) 
+  		return getCellType(CType.getBottomType(type.toStructOrUnion()));
+  	return type;
+  }
+  
+  public static Type getArrayCellType(Type type) {
+  	Preconditions.checkArgument(type.resolve().isArray());
   	Type resType = type.resolve();
-  	do {
+  	while(resType.isArray()) {
   		resType = resType.toArray().getType().resolve();
-  	} while(resType.isArray());
+  	}
   	return resType;
   }
+  
+  public static Type getStructOrUnionCellType(Type type) {
+  	Preconditions.checkArgument(type.resolve().isStruct() ||
+  			type.resolve().isUnion());
+  	return getCellType(type);
+  }
+  
+  public static long getArraySize(ArrayT type) {
+  	Preconditions.checkArgument(type.hasLength());
+  	Type cellType = type.getType();
+  	if(cellType.isArray()) 
+  		return type.getLength() * getArraySize(cellType.toArray());
+  	else
+  		return type.getLength();
+  }
+  
+  public static boolean isPointerOrDecay(Type type) {
+  	return type.isArray() || type.isPointer();
+  }
+
+	public static long getNumberOfCells(Type type, Type cellType) {
+	  if(type.equals(cellType)) return 1;
+	  
+	  long size = CType.getSizeofType(type);
+	  long cellSize = CType.getSizeofType(cellType);
+	  return size/cellSize;
+  }
+	
+	public static boolean isIncompatible(Type lhs, Type rhs) {
+		Type lhs_ = lhs.resolve();
+		Type rhs_ = rhs.resolve();
+		
+		if(isPointerOrDecay(lhs_))	return isPointerOrDecay(rhs_);
+		
+		return lhs.equals(rhs);
+	}
 	
 	public static boolean isUnsigned(Type type) {
 		type = type.resolve();
@@ -79,199 +326,5 @@ public final class CType {
 		default:
 			return false;
 		}
-	}
-
-	public static boolean isScalar(Type type) {
-	  switch (type.tag()) {
-	  case BOOLEAN:
-	  case INTEGER:
-	  case FLOAT:
-	  case POINTER:
-	    return true;
-	  default:
-	    return false;
-	  }
-	}
-	
-	public static boolean isArithmetic(Type type) {
-    switch (type.tag()) {
-    case BOOLEAN:
-    case INTEGER:
-    case FLOAT:
-      return true;
-    default:
-      return false;
-    }
-	}
-	
-	private final C cops = Preferences.isSet(Preferences.OPTION_M32) ? new C32() : new C64();
-
-	public C c() {
-		return cops;
-	}
-	
-	public boolean equal(Type lhs, Type rhs) {
-		return cops.equal(lhs, rhs);
-	}
-	
-	public Type convert(Type lhsType, Type rhsType) {
-		if(lhsType.resolve().isPointer() || !cops.isScalar(lhsType)
-				|| rhsType.resolve().isPointer() || !cops.isScalar(rhsType))
-			return PointerT.TO_VOID;
-		
-		return cops.convert(lhsType, rhsType);
-	}
-
-	public Type compose(Type lhsType, Type rhsType) {
-		return cops.compose(lhsType, rhsType, false);
-	}
-	
-	public int getWordSize() {
-		if(Preferences.isSet(Preferences.OPTION_BYTE_BASED)) return getByteSize();
-		
-		if(Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE))
-				return Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE);
-		
-		return (int) cops.getWidth(NumberT.INT);
-	}
-	
-	public Type pointerize(Type type) {
-		return cops.pointerize(type);
-	}
-
-	public Type typeInteger(String literal) {
-		return cops.typeInteger(literal);
-	}
-
-	public Type typeCharacter(String literal) {
-		return cops.typeCharacter(literal);
-	}
-
-	public long getWidth(Type type) { 
-		long size = getSize(type);
-		if(Preferences.isSet(Preferences.OPTION_BYTE_BASED))
-			return cops.toWidth(size);
-		else {
-			return size * cops.getWidth(NumberT.INT);
-		}
-	}
-	
-	public long toWidth(long size) {
-		return cops.toWidth(size);
-	}
-
-	/**
-	 * Get the size of <code>type</code>
-	 * 
-	 * @param type
-	 * @return 0 if the array type without size:
-	 * <code>extern char *sys_errlist[];</code>
-	 */
-	public long getSize(Type type) {
-		if(Preferences.isSet(Preferences.OPTION_BYTE_BASED))
-			return cops.getSize(type);
-		else
-			return getSizeSimple(type);
-	}
-
-	private long getSizeSimple(Type type) {
-	  switch(type.resolve().tag()) {
-		case BOOLEAN:
-		case ENUM:
-		case ENUMERATOR:
-		case FLOAT:
-		case INTEGER:
-		case POINTER:
-		case FUNCTION:
-			return 1;
-		case STRUCT: {
-			List<VariableT> members = type.resolve().toStruct().getMembers();
-			if(members == null) return 0;
-			long size = 0;
-			
-			for(VariableT member : members)
-				size += getSizeSimple(member);
-			
-			return size;
-		}
-		case ARRAY: {
-			ArrayT arrayT = type.resolve().toArray();
-		  long length = arrayT.getLength();
-		  long cellSize = getSizeSimple(arrayT.toArray().getType());
-		  return length * cellSize;
-		}
-		case UNION: {
-			List<VariableT> members = type.resolve().toUnion().getMembers();
-			if(members == null) return 0;
-			long size = 0;
-			
-			for(VariableT member : members)
-				size = Math.max(size, getSizeSimple(member));
-			
-			return size;
-		}
-		case VOID:
-			return 0;
-		default:
-			throw new IllegalArgumentException("Unknown size of type: " + type);
-	  }
-	}
-
-	public long getOffset(Type type, String name) {
-		Preconditions.checkArgument(type.resolve().isStruct() || type.resolve().isUnion());
-		
-	  if(Preferences.isSet(Preferences.OPTION_BYTE_BASED))
-	    return cops.getOffset( type.resolve().toStructOrUnion(), name);
-	  else
-	  	return getOffsetSimple(type, name);
-	}
-
-	private long getOffsetSimple(Type type,  String name) {
-		StructOrUnionT suType = type.resolve().toStructOrUnion();
-	  if (suType.isStruct()) {
-	    final List<VariableT> members     = suType.getMembers();
-	    final int             memberCount = members.size();
-	    long size = 0;
-	    for (int i=0; i<memberCount; i++) {
-	      // Process the member.
-	      final VariableT var = members.get(i);
-	      
-	      if (null != name) {
-	        if (var.hasName(name)) {
-	          return size;
-	        } else if (! var.hasName()) {
-	          final long offset = getOffsetSimple(var.toStructOrUnion(), name);
-	          if (-1 != offset) return size + offset;
-	        }
-	      }
-	      
-	      size += getSizeSimple(var);
-	    }
-	    
-	    return size;
-	  } else {
-	    for (VariableT var : suType.getMembers()) {
-	      if (var.hasName(name)) {
-	        return 0;
-	      } else if (! var.hasName() && ! var.hasWidth()) {
-	        final long offset = getOffset(var.toStructOrUnion(), name);
-	        if (-1 != offset) return offset;
-	      }
-	    }
-	    return -1;
-	  }
-	}
-
-	public static boolean isVarLengthArray(Type type) {
-		type = type.resolve();
-		while(type.isArray()) {
-			if(type.toArray().isVarLength()) return true;
-			type = type.toArray().getType().resolve();
-		}
-		return false;
-	}
-	
-	public final int getByteSize() {
-		return cops.BYTE_SIZE();
 	}
 }

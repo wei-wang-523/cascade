@@ -3,7 +3,7 @@ int foo(int x);
 int a [100];
 int b[200];
 void g(int * x, int y){
-  x[y]=0;
+   x[y]=0;
 }
 
 

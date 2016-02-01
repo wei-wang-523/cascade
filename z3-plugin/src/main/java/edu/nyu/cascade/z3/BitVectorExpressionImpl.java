@@ -43,6 +43,7 @@ import com.microsoft.z3.Z3Exception;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
@@ -56,7 +57,11 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
             public LoadingCache<Pair<String, Integer>, BitVectorExpressionImpl> load(final ExpressionManagerImpl exprManager) {
               return CacheBuilder.newBuilder().build(new CacheLoader<Pair<String, Integer>, BitVectorExpressionImpl>(){
                 public BitVectorExpressionImpl load(Pair<String, Integer> pair) {
-                  return new BitVectorExpressionImpl(exprManager, pair.fst(), pair.snd());
+                  try {
+                    return new BitVectorExpressionImpl(exprManager, pair.fst(), pair.snd());
+                  } catch (Z3Exception e) {
+                    throw new TheoremProverException(e);
+                  }
                 }
               });
             }
@@ -497,6 +502,9 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 		int exprSize = bv.getSize();
 		if(exprSize == size)	return valueOf(exprManager, bv);
 		
+		/* Expression get from the CExpression all should have balanced size */
+		assert(a.getNode() == null);
+		
 		if(exprSize > size)   return mkExtract(exprManager, bv, size-1, 0);
 		
 		return mkSignExtend(exprManager, size, bv);
@@ -509,86 +517,99 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 		BitVectorType aType = a.asBitVector().getType();
 	  BitVectorType bType = b.asBitVector().getType();
 	  
-	  int size = 0;
-		
-		Expression lhs, rhs;
-		switch(kind) {
-		case BV_AND:
-		case BV_NAND:
-		case BV_NOR:
-		case BV_OR:
-		case BV_XOR:
-		case PLUS:
-		case DIVIDE:
-		case SDIVIDE:
-		case MINUS:
-		case MULT: 
-		case REM:
-		case SREM:
-		case BV_LSHIFT: 
-		case BV_RSHIFT: {
-			size = Math.max(aType.getSize(), bType.getSize());
-			lhs = typeConversion(exprManager, size, a);
-			rhs = typeConversion(exprManager, size, b);
-			break;
-		}
-		case BV_CONCAT: {
-			size = aType.getSize() + bType.getSize();
-			lhs = a; rhs = b; 
-			break;
-		}
-		default:
-		  throw new IllegalArgumentException("Unknown kind " + kind);
-		}
-		
-		BitVectorExpressionImpl expr = new BitVectorExpressionImpl(exprManager, 
-				kind, strategy, lhs, rhs);
-		expr.setType(exprManager.bitVectorType(size));
-		return expr;
+	  try {
+		  int size = 0;
+		  
+	  	Expression lhs, rhs;
+	  	switch(kind) {
+	  	case BV_AND:
+		  case BV_NAND:
+		  case BV_NOR:
+		  case BV_OR:
+		  case BV_XOR:
+		  case PLUS:
+		  case DIVIDE:
+		  case SDIVIDE:
+		  case MINUS:
+		  case MULT: 
+		  case REM:
+		  case SREM:
+		  case BV_LSHIFT: 
+		  case BV_RSHIFT: {
+		  	size = Math.max(aType.getSize(), bType.getSize());
+		  	lhs = typeConversion(exprManager, size, a);
+		  	rhs = typeConversion(exprManager, size, b);
+		  	break;
+		  }
+		  case BV_CONCAT: {
+		  	size = aType.getSize() + bType.getSize();
+		  	lhs = a; rhs = b; 
+		  	break;
+		  }
+		  default:
+		    throw new IllegalArgumentException("Unknown kind " + kind);
+	  	}
+	  	
+	  	BitVectorExpressionImpl expr = new BitVectorExpressionImpl(exprManager, 
+	  			kind, strategy, lhs, rhs);
+	    expr.setType(exprManager.bitVectorType(size));
+	    return expr;
+	  } catch (Z3Exception e) {
+	    throw new TheoremProverException(e);
+	  }
 	}
 
 	private static BitVectorExpressionImpl mkNary(final ExpressionManagerImpl exprManager,
 	    final Kind kind, NaryConstructionStrategy strategy, Iterable<? extends Expression> args) {
-		int maxSize = 0;
-		for(Expression arg : args) {
-			assert arg.isBitVector();
-			maxSize = Math.max(maxSize, arg.asBitVector().getSize());
-		}
-		
-		final int size = maxSize;
-		Iterable<? extends Expression> argsPrime = Iterables.transform(args, 
-				new Function<Expression, Expression>(){
-			@Override
-			public Expression apply(Expression input) {
-		  	switch(kind) {
-		  	case BV_AND:
-			  case BV_NAND:
-			  case BV_NOR:
-			  case BV_OR:
-			  case BV_XOR:
-			  case PLUS:
-			  case MULT: {
-			  	return typeConversion(exprManager, size, input);
-			  }
-			  default:
-			    throw new IllegalArgumentException("Unknown kind " + kind);
-		  	}
+	
+		try {
+			int maxSize = 0;
+			for(Expression arg : args) {
+				assert arg.isBitVector();
+				maxSize = Math.max(maxSize, arg.asBitVector().getSize());
 			}
-		});
-		
-  	BitVectorExpressionImpl expr = new BitVectorExpressionImpl(exprManager, 
-  			kind, strategy, argsPrime);
-    expr.setType(exprManager.bitVectorType(size));
-    return expr;
+			
+			final int size = maxSize;
+			Iterable<? extends Expression> argsPrime = Iterables.transform(args, 
+					new Function<Expression, Expression>(){
+				@Override
+				public Expression apply(Expression input) {
+			  	switch(kind) {
+			  	case BV_AND:
+				  case BV_NAND:
+				  case BV_NOR:
+				  case BV_OR:
+				  case BV_XOR:
+				  case PLUS:
+				  case MULT: {
+				  	return typeConversion(exprManager, size, input);
+				  }
+				  default:
+				    throw new IllegalArgumentException("Unknown kind " + kind);
+			  	}
+				}
+			});
+			
+	  	BitVectorExpressionImpl expr = new BitVectorExpressionImpl(exprManager, 
+	  			kind, strategy, argsPrime);
+	    expr.setType(exprManager.bitVectorType(size));
+	    return expr;
+	  } catch (Z3Exception e) {
+	    throw new TheoremProverException(e);
+	  }
 	}
 
 	private static BitVectorExpressionImpl mkUnary(ExpressionManagerImpl exprManager,
 			Kind kind, UnaryConstructionStrategy strategy, Expression a, int size) {
 		Preconditions.checkArgument(a.isBitVector());
-		BitVectorExpressionImpl expr = new BitVectorExpressionImpl(exprManager, 
-   			kind, strategy, a);
-		expr.setType(exprManager.bitVectorType(size));
-		return expr;
+		try {
+			BitVectorExpressionImpl expr = new BitVectorExpressionImpl(exprManager, 
+	   			kind, strategy, a);
+	     expr.setType(exprManager.bitVectorType(size));
+	     return expr;
+		} catch (Z3Exception e) {
+			throw new TheoremProverException(e);
+		}
 	}
 
 	static BitVectorExpressionImpl create(ExpressionManagerImpl em, Kind kind, 
@@ -599,7 +620,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 
 	private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
 	    BinaryConstructionStrategy strategy, Expression a,
-	    Expression b) {
+	    Expression b) throws Z3Exception {
 	  super(exprManager, kind, strategy, a, b);
 	}
 
@@ -611,7 +632,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
     super(exprManager, e);
   }
 
-  private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, final String decimalRep, final int len) {
+  private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, final String decimalRep, final int len) throws Z3Exception {
     super(exprManager, CONSTANT, new NullaryConstructionStrategy() {
       @Override
       public Expr apply(Context ctx) throws Z3Exception {
@@ -632,25 +653,25 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	
 	private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
       NaryConstructionStrategy strategy, Expression first,
-      Expression[] rest) {
+      Expression[] rest) throws Z3Exception {
     super(exprManager, kind, strategy, first, rest);
   }
 
   private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-      UnaryConstructionStrategy strategy, Expression a) {
+      UnaryConstructionStrategy strategy, Expression a) throws Z3Exception {
     super(exprManager, kind, strategy, a);
     setType(a.getType());
   }
 
   private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
       NaryConstructionStrategy strategy,
-      Iterable<? extends Expression> args) {
+      Iterable<? extends Expression> args) throws Z3Exception {
     super(exprManager, kind, strategy, args);
   }
 
   private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
       TernaryConstructionStrategy strategy,
-      Expression arg1, Expression arg2, Expression arg3) {
+      Expression arg1, Expression arg2, Expression arg3) throws Z3Exception {
     super(exprManager, kind, strategy, arg1, arg2, arg3);
   }
   

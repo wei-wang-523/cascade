@@ -18,13 +18,13 @@ public class DominatorTree {
 	private final IRControlFlowGraph cfg;
 	private final List<IRBasicBlock> blocks;
 	private final Map<IRBasicBlock, Integer> blocksToIndex;
-	private final int[] i_dom;
+	private final List<Integer> i_dom;
 	private final List<Collection<Integer>> dominated;
 	
 	private DominatorTree(IRControlFlowGraph cfg,
 			List<IRBasicBlock> blocks,
 			Map<IRBasicBlock, Integer> blocksToIndex,
-			int[] i_dom,
+			List<Integer> i_dom,
 			List<Collection<Integer>> dominated) {
 		this.cfg = cfg;
 		this.blocks = blocks;
@@ -34,44 +34,27 @@ public class DominatorTree {
 	}
 	
 	public static DominatorTree analyze(IRControlFlowGraph cfg) {
-		Collection<IRBasicBlock> seq = cfg.topologicalSeq(cfg.getEntry());
+		Collection<IRBasicBlock> seq = ControlFlowGraph.topologicalSeq(cfg);
 		int size = seq.size();
 		List<IRBasicBlock> blocks = Lists.newArrayListWithExpectedSize(size);
 		Map<IRBasicBlock, Integer> blocksToIndex = Maps.newHashMapWithExpectedSize(size);
-		int[] i_dom = new int[size];
+		List<Integer> i_dom = Lists.newArrayListWithExpectedSize(size);
 		List<Collection<Integer>> dominated = Lists.newArrayListWithExpectedSize(size);
 		for(IRBasicBlock block : seq) { // reverse order
 			blocks.add(0, block);
 			blocksToIndex.put(block, blocks.size()-1);
-			i_dom[blocks.size()-1] = -1;
+			i_dom.add(-1);
 			dominated.add(Collections.<Integer>emptyList());
 		}
 		computeDT(cfg, blocks, blocksToIndex, i_dom, dominated);
 		return new DominatorTree(cfg, blocks, blocksToIndex, i_dom, dominated);
 	}
 	
-	public static DominatorTree analyze(IRControlFlowGraph cfg, IRBasicBlock startBlock) {
-		Collection<IRBasicBlock> seq = cfg.topologicalSeq(startBlock);
-		int size = seq.size();
-		List<IRBasicBlock> blocks = Lists.newArrayListWithExpectedSize(size);
-		Map<IRBasicBlock, Integer> blocksToIndex = Maps.newHashMapWithExpectedSize(size);
-		int[] i_dom = new int[size];
-		List<Collection<Integer>> dominated = Lists.newArrayListWithExpectedSize(size);
-		for(IRBasicBlock block : seq) { // reverse order
-			blocks.add(0, block);
-			blocksToIndex.put(block, blocks.size()-1);
-			i_dom[blocks.size()-1] = -1;
-			dominated.add(Collections.<Integer>emptyList());
-		}
-		computeDT(cfg, blocks, blocksToIndex, i_dom, dominated);
-		return new DominatorTree(cfg, blocks, blocksToIndex, i_dom, dominated);
-	}
-
 	/**
 	 * Get blocks in post-order
 	 * @return
 	 */
-	public List<IRBasicBlock> getBlocks() {
+	public Collection<IRBasicBlock> getBlocks() {
 		return blocks;
 	}
 	
@@ -88,7 +71,7 @@ public class DominatorTree {
 		do
 		{
 			dominates = nextId == id;
-			nextId = i_dom[nextId];
+			nextId = i_dom.get(nextId);
 		} while(startId != nextId && !dominates);
 		
 		return dominates || nextId == id;
@@ -96,7 +79,7 @@ public class DominatorTree {
 	
 	/** Get the dominator of a given block */
 	public IRBasicBlock getDominator(IRBasicBlock block) {
-		return blocks.get(i_dom[blocksToIndex.get(block)]);
+		return blocks.get(i_dom.get(blocksToIndex.get(block)));
 	}
 	
 	/** Get the nearest common dominator of two blocks */
@@ -104,7 +87,7 @@ public class DominatorTree {
 		int n1 = blocksToIndex.get(block1);
 		int n2 = blocksToIndex.get(block2);
 		
-		int n = intersect(i_dom, i_dom[n1], i_dom[n2]);
+		int n = intersect(i_dom, i_dom.get(n1), i_dom.get(n2));
 		
 		return blocks.get(n);
 	}
@@ -125,13 +108,13 @@ public class DominatorTree {
 	private static void computeDT(IRControlFlowGraph cfg, 
 			List<IRBasicBlock> blocks, 
 			Map<IRBasicBlock, Integer> blocksToIndex, 
-			int[] i_dom,
+			List<Integer> i_dom,
 			List<Collection<Integer>> dominated) {
 		IRBasicBlock entry = cfg.getEntry();
 		int startIdx = blocksToIndex.get(entry);
 		
 		boolean changed = true;
-		i_dom[startIdx] = startIdx;
+		i_dom.set(startIdx, startIdx);
 		
 		while(changed) {
 			changed = false;
@@ -144,7 +127,7 @@ public class DominatorTree {
 				for(IREdge<?> incoming : cfg.getIncomingEdges(currBlock)) {
 					IRBasicBlock src = incoming.getSource();
 					int srcIdx = blocksToIndex.get(src);
-					if(i_dom[srcIdx] == -1) continue;
+					if(i_dom.get(srcIdx) == -1) continue;
 					
 					if(processed) {
 						new_idom = intersect(i_dom, srcIdx, new_idom);
@@ -156,8 +139,8 @@ public class DominatorTree {
 				
 				if(processed) {
 					int currIdx = blocksToIndex.get(currBlock);
-					if(i_dom[currIdx] != new_idom) {
-						i_dom[currIdx] = new_idom;
+					if(i_dom.get(currIdx) != new_idom) {
+						i_dom.set(currIdx, new_idom);
 						changed = true;
 					}
 				}
@@ -165,7 +148,7 @@ public class DominatorTree {
 		}
 		
 		for(int n = 0; n < blocks.size(); n++) {
-			int i_dom_n = i_dom[n];
+			int i_dom_n = i_dom.get(n);
 			if(i_dom_n >= 0) {
 				Collection<Integer> doms = dominated.get(i_dom_n);
 				if(doms.isEmpty()) {
@@ -178,15 +161,15 @@ public class DominatorTree {
 		}
 	}
 	
-	private static int intersect(int[] i_dom, int b1, int b2) {
+	private static int intersect(List<Integer> i_dom, int b1, int b2) {
 		int finger1 = b1;
 		int finger2 = b2;
 		while (finger1 != finger2) {
 			while (finger1 < finger2) {
-				finger1 = i_dom[finger1];
+				finger1 = i_dom.get(finger1);
 			}
 			while (finger2 < finger1) {
-				finger2 = i_dom[finger2];
+				finger2 = i_dom.get(finger2);
 			}
 		}
 		return finger1;

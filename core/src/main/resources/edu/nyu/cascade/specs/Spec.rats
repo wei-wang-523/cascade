@@ -1,0 +1,98 @@
+// The specification language is parameterized by symbols and
+// expressions from the source language, as well as specification
+// Keywords. The Symbols module should have have String productions
+// Symbol and SymbolCharacters (with a first sequence named
+// <Start>). The Keywords module should have a KEYWORDS set, The
+// Expressions module should have generic productions IffExpression,
+// AboveIffExpression, TemporalExpression, AboveTemporalExpression, 
+// QuantifiedExpression, and AboveQuantifiedExpression. Each XExpression
+// production will be replaced with the operators defined here. Each
+// AboveXExpression production should specify the expressions at the next
+// higher level of precedence than implication/equivalence,
+// until/next/henceforth/..., and forall/exists/uexists, respectively. 
+
+module edu.nyu.cascade.specs.Spec(Symbols,Keywords,Expressions,Spacing);
+
+import Symbols;
+import Keywords;
+import Expressions;
+import Spacing;
+
+modify Expressions;
+
+generic IffExpression :=
+    IffExpression IFF       ImpliesExpression @IffExpression
+  / IffExpression CONGRUENT ImpliesExpression @CongruentExpression
+  / yyValue:ImpliesExpression
+  ;
+
+generic ImpliesExpression =
+    ImpliesExpression IMPLIES AboveIffExpression
+  / ImpliesExpression ENTAILS AboveIffExpression @EntailsExpression
+  / yyValue:AboveIffExpression
+  ;
+
+generic TemporalExpression :=
+    TemporalExpression UNTIL  UnaryTemporalExpression @UntilExpression
+  / TemporalExpression AWAITS UnaryTemporalExpression @AwaitsExpression
+  / TemporalExpression SINCE  UnaryTemporalExpression @SinceExpression
+  / TemporalExpression BACKTO UnaryTemporalExpression @BacktoExpression
+  / yyValue:UnaryTemporalExpression
+  ;
+
+generic UnaryTemporalExpression =
+    NEXT       UnaryTemporalExpression @NextExpression
+  / HENCEFORTH UnaryTemporalExpression @HenceforthExpression
+  / EVENTUALLY UnaryTemporalExpression @EventuallyExpression
+  / PREVIOUSLY UnaryTemporalExpression @PreviouslyExpression
+  / SOFAR      UnaryTemporalExpression @SofarExpression
+  / ONCE       UnaryTemporalExpression @OnceExpression
+  / yyValue:AboveTemporalExpression
+  ;
+
+/*
+generic QuantifiedExpression := 
+      SPEC_FORALL Bindings DOT Expression  @ForAllExpression
+    / SPEC_EXISTS Bindings DOT Expression  @ExistsExpression
+    / SPEC_UEXISTS Bindings DOT Expression  @ExistsUniqueExpression
+;
+*/
+
+// INCOMPLETE: Skipping declarations, which include recursive types,
+// macros, and simplification rules. [chris 4/17]
+
+public generic Specification = 
+  // DeclarationList
+    Expression  &EndOfFile   @Expression
+//  / SPEC SpecItem* &EndOfFile
+  ;	
+
+/*
+public generic SpecItem =
+  // yyValue:Declaration   / 
+  yyValue:Axiom
+  / yyValue:Property
+  ;
+*/
+
+// INCOMPLETE: In STeP, an axiom/property description can be "any
+// sequence of characters except colon". Here, we just use traditional
+// alpha-numeric identifiers [chris 4/17]
+
+// INCOMPLETE: Omitting module environments [chris 4/17]
+
+/* 
+public generic Axiom = 
+  AXIOM Identifier COLON // (ModuleEnv TURNSTILE)?
+  Expression
+  ;
+
+public generic Property = 
+  PROPERTY Identifier COLON // (ModuleEnv TURNSTILE)?
+  Expression
+  ;
+*/
+
+// public generic ModuleEnv =
+//   Identifier (PARALLEL Identifier)*
+//   ;

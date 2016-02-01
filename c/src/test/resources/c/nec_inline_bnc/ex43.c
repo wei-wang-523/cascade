@@ -9,7 +9,7 @@ typedef int data_t;
 typedef size_t idx_t;
 typedef int bool_t;
 #define NULL (int *) 0
-extern int __VERIFIER_nondet_int();
+int __NONDET__();
 int ASSUME(int);
 int ASSERT(int);
 
@@ -74,7 +74,7 @@ void bufWrite(buf_t *buf_, idx_t idx_, data_t val_) {
 
 idx_t randomIdx(const buf_t *buf_) {
 	ASSUME(buf_ != NULL);
-	idx_t idx = __VERIFIER_nondet_int();
+	idx_t idx = __NONDET__();
 	ASSUME(0 <= idx);
 	ASSUME(idx < buf_->maxNumData);
 	return idx;
@@ -93,14 +93,14 @@ int main(int argc, char *argv[]) {
 	
 	for (i=0; i<numWrites; i++) {
 		for (j=0; j<numBufs; j++)
-			bufWrite(bufs[j], randomIdx(bufs[j]), (data_t)__VERIFIER_nondet_int());
+			bufWrite(bufs[j], randomIdx(bufs[j]), (data_t)__NONDET__());
 		
 	}
 	
 	for (i=0; i<numReads; i++) {
 		for (j=0; j<numBufs; j++) {
-			datum = (data_t) __VERIFIER_nondet_int();
-			shouldReset = __VERIFIER_nondet_int();
+			datum = (data_t) __NONDET__();
+			shouldReset = __NONDET__();
 			datumOut = (data_t)0;
 			if (shouldReset)
 				bufReset(bufs[j], datum);

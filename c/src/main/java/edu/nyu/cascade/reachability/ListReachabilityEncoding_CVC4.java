@@ -64,12 +64,12 @@ public class ListReachabilityEncoding_CVC4 extends ListReachabilityEncoding {
   
   public static ListReachabilityEncoding_CVC4 create(
       ExpressionManager exprManager) throws ExpressionFactoryException {
-    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager);
+    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager, WORD_SIZE);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(exprManager);
-    PointerEncoding<Expression> pointerEncoding = new UnimplementedPointerEncoding<Expression>();
+    PointerEncoding<Expression> tupleEncoding = new UnimplementedPointerEncoding<Expression>();
     
-    return new ListReachabilityEncoding_CVC4(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
+    return new ListReachabilityEncoding_CVC4(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
   }
   
   private ListReachabilityEncoding_CVC4(

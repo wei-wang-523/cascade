@@ -16,7 +16,9 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.FunctionExpression;
+import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.Identifiers;
 
 public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 	
@@ -27,8 +29,8 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 		enum Kind {
 			VALID_ACCESS,
 			VALID_ACCESS_RANGE,
-			STACK_ORDERED,
-			HEAP_ORDERED,
+			STACK_OREDERED,
+			HEAP_OREDERED,
 			DISJOINT,
 			PRE_DISJOINT
 		}
@@ -38,44 +40,55 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 			String name = key.isFunction() ? key.asFunctionExpression().getName() :
 				key.asVariable().getName();
 			
-			if(name.equals(Kind.VALID_ACCESS_RANGE.name())) 
+			if(name.startsWith(Kind.VALID_ACCESS_RANGE.name())) 
 				return Kind.VALID_ACCESS_RANGE;
 			
-			if(name.equals(Kind.VALID_ACCESS.name())) 
+			if(name.startsWith(Kind.VALID_ACCESS.name())) 
 				return Kind.VALID_ACCESS;
 			
-			if(name.equals(Kind.DISJOINT.name())) 
+			if(name.startsWith(Kind.DISJOINT.name())) 
 				return Kind.DISJOINT;
 			
-			if(name.equals(Kind.STACK_ORDERED.name())) 
-				return Kind.STACK_ORDERED;
+			if(name.startsWith(Kind.STACK_OREDERED.name())) 
+				return Kind.STACK_OREDERED;
 			
-			if(name.equals(Kind.HEAP_ORDERED.name())) 
-				return Kind.HEAP_ORDERED;
+			if(name.startsWith(Kind.HEAP_OREDERED.name())) 
+				return Kind.HEAP_OREDERED;
 			
-			if(name.equals(Kind.PRE_DISJOINT.name())) 
+			if(name.startsWith(Kind.PRE_DISJOINT.name())) 
 				return Kind.PRE_DISJOINT;
 			
 			throw new IllegalArgumentException("Invalid predicate " + name);
 		}
+
+		static String getFuncName(Kind kind, String suffix) {
+			String infix = Identifiers.UNDERLINE;
+	    return kind.name() + infix + suffix;
+    }
 	}
 	
 	protected final IRDataFormatter formatter;
-	protected final ExpressionEncoding encoding;	
-	private final Collection<BooleanExpression> assumptions;
+	protected final ExpressionEncoding encoding;
+	
+	public enum Strategy {
+		SOUND_LINEAR,
+		SOUND_SYNC,
+		ORDER_LINEAR
+	}
 	
 	protected AbstractMemSafetyEncoding(ExpressionEncoding encoding, IRDataFormatter formatter) {
 		this.formatter = formatter;
 		this.encoding = encoding;
-		this.assumptions = initAssumptions();
 	}
 	
 	public static IRMemSafetyEncoding getInstance(ExpressionEncoding encoding, IRDataFormatter formatter, Strategy strategy) {
 		switch(strategy) {
-		case ORDER:
+		case ORDER_LINEAR:
 			return OrderLinearMemSafetyEncoding.create(encoding, formatter);
-		default:
+		case SOUND_LINEAR:
 			return SoundLinearMemSafetyEncoding.create(encoding, formatter);
+		default:
+			return SoundSyncMemSafetyEncoding.create(encoding, formatter);
 		}
 	}
 
@@ -115,11 +128,35 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 	public Expression applyUpdatedPredicate(SingleLambdaStateExpression state, 
 			FunctionExpression func, Collection<Expression> args) {
 		String funcName = func.getName();
-		PredicateClosure predicateClosure = state.getSafetyPredicateClosure(funcName);
-		Expression[] argsArray = new Expression[args.size()];
-		argsArray = args.toArray(argsArray);
-	  state.registerPredicate(predicateClosure.getUninterpretedFunc(), argsArray);
-	  return predicateClosure.eval(argsArray);
+		for(String label : getClosurePropNames()) {
+			if(funcName.contains(label)) {
+				PredicateClosure predicateClosure = state.getSafetyPredicateClosure(label);
+				Expression[] argsArray = new Expression[args.size()];
+			  state.registerPredicate(predicateClosure.getUninterpretedFunc(), args.toArray(argsArray));
+			  return predicateClosure.eval(args.toArray(argsArray));
+			}
+		}
+		throw new IllegalArgumentException("Illegal function name " + funcName);
+	}
+	
+	@Override
+	public Expression getInitBoolValue(Expression key) {		
+		Kind kind = SafetyPredicate.parse(key);
+		
+		switch(kind) {
+		case DISJOINT:
+			return encoding.tt();
+		case HEAP_OREDERED:
+			return encoding.tt();
+		case PRE_DISJOINT:
+			return encoding.tt();
+		case STACK_OREDERED:
+			return encoding.tt();
+		case VALID_ACCESS:
+			return encoding.ff();
+		default: // VALID_ACCESS_RANGE:
+			return encoding.ff();
+		}
 	}
 	
 	@Override
@@ -137,15 +174,8 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 	  return state.getSafetyPredicate(Kind.PRE_DISJOINT.name());
 	}
 	
-	@Override
-	public Collection<BooleanExpression> getAssumptions() {
-		return assumptions;
-	}
-	
 	protected abstract void propagatePreDisjoint(SingleLambdaStateExpression fromState, 
 			SingleLambdaStateExpression toState);
-	
-	protected abstract Collection<BooleanExpression> initAssumptions();
 	
 	final void updatePredicateMap(SingleLambdaStateExpression fromState, 
 			SingleLambdaStateExpression toState) {
@@ -162,7 +192,7 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 	
 	final void initSafetyPredicate(Kind kind, SingleLambdaStateExpression state, Expression ptrVar, Expression sizeVar) {
 		ExpressionManager exprManager = encoding.getExpressionManager();
-		String fname = kind.name();
+		String fname = SafetyPredicate.getFuncName(kind, state.getName());
 		
 		Type addrType = formatter.getAddressType();
 	  Type sizeType = formatter.getSizeType();
@@ -176,28 +206,29 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 							exprManager.booleanType()), false);
 		  PredicateClosure closure = suspend(func, 
 		  		func.apply(ptrVar, sizeVar), ptrVar, sizeVar);
-		  state.putSafetyPredicateClosure(fname, closure);
+		  state.putSafetyPredicateClosure(kind.name(), closure);
 			break;
 		}
-		case HEAP_ORDERED: {
+		case HEAP_OREDERED: {
 		  FunctionExpression func = 
 		  		exprManager.functionDeclarator(fname, 
 		  				exprManager.functionType(addrType, exprManager.booleanType()), false);
 		  PredicateClosure closure = suspend(func, func.apply(ptrVar), ptrVar);
-		  state.putSafetyPredicateClosure(fname, closure);
+		  state.putSafetyPredicateClosure(kind.name(), closure);
 			break;
 		}
 		case PRE_DISJOINT: {
-			BooleanExpression predicate = exprManager.booleanType().tt();
-			state.putSafetyPredicate(fname, predicate);
+			BooleanExpression predicate = exprManager.booleanType().variable(fname, false);
+			state.registerPredicate(predicate);
+			state.putSafetyPredicate(kind.name(), predicate);
 			break;
 		}
-		case STACK_ORDERED: {
+		case STACK_OREDERED: {
 		  FunctionExpression func = 
 		  		exprManager.functionDeclarator(fname, 
 		  				exprManager.functionType(addrType, exprManager.booleanType()), false);
 		  PredicateClosure closure = suspend(func, func.apply(ptrVar), ptrVar);
-		  state.putSafetyPredicateClosure(fname, closure);
+		  state.putSafetyPredicateClosure(kind.name(), closure);
 			break;
 		}
 		case VALID_ACCESS: {
@@ -206,7 +237,7 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 							exprManager.functionType(addrType, 
 									exprManager.booleanType()), false);
 			PredicateClosure closure = suspend(func, func.apply(ptrVar), ptrVar);
-			state.putSafetyPredicateClosure(fname, closure);
+			state.putSafetyPredicateClosure(kind.name(), closure);
 			break;
 		}
 		case VALID_ACCESS_RANGE: {
@@ -218,7 +249,7 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 			PredicateClosure closure = suspend(func, 
 					func.apply(ptrVar, sizeVar), ptrVar, sizeVar);
 			
-			state.putSafetyPredicateClosure(fname, closure);
+			state.putSafetyPredicateClosure(kind.name(), closure);
 			break;
 		}
 		default:
@@ -226,27 +257,27 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 		}
 	}
 	
-//	final void replaceLabelsInSafetyPredicate(Kind kind, 
-//			SingleLambdaStateExpression state, 
-//			Collection<VariableExpression> oldLabels, 
-//			Collection<VariableExpression> freshLabels) {
-//		String propName = kind.name();
-//		switch(kind) {
-//		case PRE_DISJOINT: {
-//			BooleanExpression to = state.getSafetyPredicate(propName);
-//			BooleanExpression toPrime = to.subst(oldLabels, freshLabels)
-//					.asBooleanExpression();
-//			state.putSafetyPredicate(propName, toPrime);
-//			break;
-//		}
-//		default: {
-//			PredicateClosure to = state.getSafetyPredicateClosure(propName);
-//			PredicateClosure toPrime = replaceLabels(to, oldLabels, freshLabels);
-//			state.putSafetyPredicateClosure(propName, toPrime);
-//			break;
-//		}
-//		}
-//	}
+	final void replaceLabelsInSafetyPredicate(Kind kind, 
+			SingleLambdaStateExpression state, 
+			Collection<VariableExpression> oldLabels, 
+			Collection<VariableExpression> freshLabels) {
+		String propName = kind.name();
+		switch(kind) {
+		case PRE_DISJOINT: {
+			BooleanExpression to = state.getSafetyPredicate(propName);
+			BooleanExpression toPrime = to.subst(oldLabels, freshLabels)
+					.asBooleanExpression();
+			state.putSafetyPredicate(propName, toPrime);
+			break;
+		}
+		default: {
+			PredicateClosure to = state.getSafetyPredicateClosure(propName);
+			PredicateClosure toPrime = replaceLabels(to, oldLabels, freshLabels);
+			state.putSafetyPredicateClosure(propName, toPrime);
+			break;
+		}
+		}
+	}
 	
 	final void propagateSafetyPredicate(Kind kind, 
 			SingleLambdaStateExpression fromState, 
@@ -298,22 +329,22 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 		return suspend(toFunPrime, toBodyPrime, toVars);
 	}
 
-//	/**
-//	 * Replace the <code>closure</code> from <code>oldLabels</code> to 
-//	 * <code>freshLabels</code>
-//	 * @param closure
-//	 * @param oldLabels
-//	 * @param freshLabels
-//	 * @return
-//	 */
-//	private PredicateClosure replaceLabels(PredicateClosure closure, 
-//			Collection<VariableExpression> oldLabels, 
-//			Collection<VariableExpression> freshLabels) {
-//		Expression[] vars = closure.getVars();		
-//		BooleanExpression body = closure.getBodyExpr().asBooleanExpression();
-//		BooleanExpression bodyPrime = body.subst(oldLabels, freshLabels).asBooleanExpression();
-//		
-//		Expression funApp = closure.getUninterpretedFunc();
-//		return suspend(funApp, bodyPrime, vars);
-//	}
+	/**
+	 * Replace the <code>closure</code> from <code>oldLabels</code> to 
+	 * <code>freshLabels</code>
+	 * @param closure
+	 * @param oldLabels
+	 * @param freshLabels
+	 * @return
+	 */
+	private PredicateClosure replaceLabels(PredicateClosure closure, 
+			Collection<VariableExpression> oldLabels, 
+			Collection<VariableExpression> freshLabels) {
+		Expression[] vars = closure.getVars();		
+		BooleanExpression body = closure.getBodyExpr().asBooleanExpression();
+		BooleanExpression bodyPrime = body.subst(oldLabels, freshLabels).asBooleanExpression();
+		
+		Expression funApp = closure.getUninterpretedFunc();
+		return suspend(funApp, bodyPrime, vars);
+	}
 }

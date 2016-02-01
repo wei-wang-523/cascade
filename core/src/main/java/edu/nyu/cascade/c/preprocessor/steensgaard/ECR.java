@@ -2,10 +2,15 @@ package edu.nyu.cascade.c.preprocessor.steensgaard;
 
 import java.math.BigInteger;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
+
+import xtc.type.Type;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
+import edu.nyu.cascade.c.preprocessor.steensgaard.ValueType.ValueTypeKind;
 import edu.nyu.cascade.util.UnionFind;
 
 /**
@@ -23,16 +28,16 @@ public final class ECR extends UnionFind.Partition {
   private static final long serialVersionUID = -8706921066542618766L;
   private static BigInteger nextId = BigInteger.ONE;
 
+  private ValueType type;
+  private BigInteger id;
+  
   /**
    * A list of 'pending' joins for this ECR.  We make conditional joins,
    * if the type for this variable is BOTTOM.  Then, if the type for
    * this variable changes, we need to update the types of all the 
    * ECRs on the pending list.
    */
-  private Collection<ECR> pending = Sets.newHashSet();
-  
-  private ValueType type;
-  private BigInteger id;
+  private Set<ECR> pending = Sets.newHashSet();
   
   private ECR(ValueType _type) {
     super();
@@ -42,54 +47,78 @@ public final class ECR extends UnionFind.Partition {
     nextId = nextId.add(BigInteger.ONE);
   }
   
-  static ECR createBottom() {
+  protected static ECR createBottom() {
     return new ECR(ValueType.bottom());
   }
   
-  static ECR create(ValueType type) {
+  protected static ECR create(ValueType type) {
     return new ECR(type);
   }
   
   /**
    * @return the type associated with the ECR.
    */
-  ValueType getType() {
+  protected ValueType getType() {
     return type;
   }
   
-  void setType(ValueType _type) {
+  protected void setType(ValueType _type) {
     type = _type;
   }
+  
+  /**
+   * @return the pending with the ECR
+   */
+  protected Collection<ECR> getPending() {
+    return pending;
+  }
+  
+  protected void cleanPending() {
+  	pending.clear();
+  }
+  
+  protected boolean hasPending() {
+    return pending.isEmpty();
+  }
+  
+  protected boolean addPending(Collection<ECR> newPending) {
+    if(newPending == null) return false;    
+    pending.addAll(newPending);
+    return true;
+  }
+  
+  protected boolean addPending(ECR newPending) {
+    return addPending(Collections.singleton(newPending));
+  }
+  
+  protected String toStringShort() {
+		return new StringBuilder().append("ECR ")
+	  		.append(id).append(" : ").append(type).toString();
+	}
 
 	@Override
   public String toString() {
     StringBuilder sb = new StringBuilder().append("(ECR ")
-    		.append(id).append(" : ").append(type).append(')');
+    		.append(id).append(" : ").append(type);
+    
+    if (!pending.isEmpty()) {
+      sb.append(" pending : [ ");
+      for(ECR e : pending) {
+        sb.append(e.toStringShort()).append(' ');
+      }
+      sb.append(']');
+    }
+    sb.append(')');
 
     return sb.toString();
   }
   
-	int getId() {
-	  return id.intValue();
+	protected String getId() {
+	  return id.toString();
   }
 	
-  /**
-   * @return the pending with the ECR
-   */
-  Collection<ECR> getPendings() {
-    return pending;
-  }
-  
-  void clearPending() {
-  	pending.clear();
-  }
-  
-  boolean addPendings(Collection<ECR> newPendings) {
-  	Preconditions.checkNotNull(newPendings);
-    return pending.addAll(newPendings);
-  }
-  
-  boolean addPending(ECR newPending) {
-  	return pending.add(newPending);
-  }
+	protected Type getXtcType() {
+		Preconditions.checkArgument(type.getKind().equals(ValueTypeKind.REF));
+		return type.asRef().getXtcType();
+	}
 }

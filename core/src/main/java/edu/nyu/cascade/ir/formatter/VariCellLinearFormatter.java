@@ -2,13 +2,16 @@ package edu.nyu.cascade.ir.formatter;
 
 import com.google.common.base.Preconditions;
 
+import xtc.type.IntegerT;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
+import edu.nyu.cascade.ir.expr.PointerEncoding;
 import edu.nyu.cascade.prover.ArrayExpression;
-import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.ExpressionManager;
+import edu.nyu.cascade.prover.type.ArrayType;
+import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
-import edu.nyu.cascade.util.Preferences;
 
 /**
  * Formatter for vari-cell heap encoding with linear pointer type
@@ -19,167 +22,178 @@ import edu.nyu.cascade.util.Preferences;
  *
  */
 
-public class VariCellLinearFormatter extends AbstractDataFormatter {
+public class VariCellLinearFormatter implements IRDataFormatter {
+
+	private final ExpressionEncoding encoding;
+	private final ExpressionManager exprManager;
 	
-	private VariCellLinearFormatter(ExpressionEncoding encoding) {
-		super(encoding);
+	private VariCellLinearFormatter(ExpressionEncoding _encoding) {
+		encoding = _encoding;
+		exprManager = encoding.getExpressionManager();
 	}
 	
 	public static VariCellLinearFormatter create(ExpressionEncoding encoding) {
-		Preconditions.checkArgument(Preferences.isSet(Preferences.OPTION_BYTE_BASED));
 		return new VariCellLinearFormatter(encoding);
 	}
 	
 	@Override
-	public Type getValueType() {
-		return encoding.getExpressionManager().bitVectorType(encoding.getCTypeAnalyzer().getByteSize());
+	public Type getAddressType() {
+		return encoding.getPointerEncoding().getType();
 	}
-	
+
+	@Override
+	public Type getValueType() {
+		return encoding.getIntegerEncoding().getType();
+	}
+
+	@Override
+	public BitVectorType getSizeType() {
+		long size = CType.getSizeofType(IntegerT.LONG);
+		int wordSize = encoding.getWordSize();
+	  return exprManager.bitVectorType((int) (size * wordSize));
+	}
+
+	@Override
+	public Expression getNullAddress() {
+			return encoding.getPointerEncoding().getNullPtr();
+	}
+
+  @SuppressWarnings("unchecked")
   @Override
-	public Expression indexMemoryArray(ArrayExpression memory, Expression index, xtc.type.Type idxType) {
-		Preconditions.checkArgument(index.isBitVector());
-		int valueSize = (int) encoding.getCTypeAnalyzer().getWidth(idxType);
+	public ArrayExpression updateMemoryArray(ArrayExpression memory, Expression index,
+	    Expression value) {
+		Preconditions.checkNotNull(index.getNode());
+		
+		if(value.isBoolean()) value = encoding.castToInteger(value);
+		
+		int lhsSize = (int) CType.getSizeofType(CType.getType(index.getNode())) 
+				* encoding.getWordSize();
+		int rhsSize = value.asBitVector().getSize();
+		
+		if(rhsSize < lhsSize) {
+	    /* For any assignment a = b;, the value of b is converted to a value of the type of a, 
+	     * provided that is possible, and that converted value is assigned to a.
+	     */
+			value = encoding.castToInteger(value, lhsSize);
+		}
+		
 		int cellSize = memory.getElementType().asBitVectorType().getSize();
 		
-		int length = valueSize < cellSize ? 1 : getCellLength(memory, valueSize);
-		if(length == 1) return memory.index(index);
+		if(lhsSize == cellSize) return memory.update(index, value); // not collapse
 		
-		Expression res = null;
-		for(int i = 0; i < length; i++) {
-			Expression offExpr = ptrEncoding.ofExpression(encoding.integerConstant(i));
-			Expression idxExpr = encoding.pointerPlus(index, offExpr);
-			Expression value = memory.index(idxExpr);
+    @SuppressWarnings("rawtypes")
+    PointerEncoding ptrEncoding = encoding.getPointerEncoding();
+    
+		int size = lhsSize/cellSize; assert(size > 0);
+    
+		Expression idx = index;
+		for(int i = 0; i < size; i++, idx = ptrEncoding.incr(idx)) {
+			Expression valExpr = value.asBitVector().extract((i+1) * cellSize - 1, i * cellSize);
+			memory = memory.update(idx, valExpr);
+		}
+		return memory;
+	}
+
+  @SuppressWarnings("unchecked")
+  @Override
+	public Expression indexMemoryArray(ArrayExpression memory, Expression index) {
+		Preconditions.checkNotNull(index.getNode());
+		Preconditions.checkArgument(index.isBitVector());
+		long valueSize = CType.getSizeofType(CType.getType(index.getNode()))
+				* encoding.getWordSize();
+		int elemSize = memory.getType().getElementType().asBitVectorType().getSize();
+		int size = (int) valueSize/elemSize;
+		assert(size > 0);
+		
+		if(size == 1) return memory.index(index);
+		
+		@SuppressWarnings("rawtypes")
+    PointerEncoding ptrEncoding = encoding.getPointerEncoding();
+		
+		Expression res = null, idx = index;
+		for(int i = 0; i < size; i++, idx = ptrEncoding.incr(idx.asBitVector())) {
+			Expression value = memory.index(idx);
 			if(res == null)	res = value;
 			else						res = value.asBitVector().concat(res);
 		}
 		return res;
 	}
-  
-	@Override
-	public Expression castToSize(Expression size) {
-		return encoding.castToInteger(size, getSizeType().asBitVectorType().getSize());
-	}
-	
-	@Override
-	public Expression getSizeZero() {
-		return getSizeType().asBitVectorType().constant(0);
-	}
 
 	@Override
 	public Expression getUnknownValue(xtc.type.Type type) {
-		CType cTypeAnalyzer = encoding.getCTypeAnalyzer();
-		int size = (int) cTypeAnalyzer.getWidth(type);
-		return encoding.getIntegerEncoding().unknown(size);
+		int size = (int) CType.getSizeofType(type);
+		int wordSize = encoding.getWordSize();
+		Type valueType = exprManager.bitVectorType(size * wordSize);
+		return encoding.getIntegerEncoding().unknown(valueType);
 	}
 	
 	/**
 	 * @param type is not used in multi-cell bit-vector formatter
 	 */
 	@Override
-	public Type getArrayElemType(long width) {
-		Preconditions.checkArgument(width > 0);
-		return encoding.getExpressionManager().bitVectorType((int) width);
+	public Type getArrayElemType(xtc.type.Type type) {
+		if(type.resolve().isArray()) type = type.resolve().toArray().getType();
+		long size = CType.getSizeofType(type);
+		int wordSize = encoding.getWordSize();
+		return encoding.getExpressionManager().bitVectorType((int) (wordSize * size));
 	}
 
 	@Override
-	public BooleanExpression memorySet(ArrayExpression memory,
-			Expression region, Expression size, Expression value) {
-		int cellSize = memory.getType().getElementType().asBitVectorType().getSize();
-		int byteSize = CType.getInstance().getByteSize();
-		// Extract the the low 8 bit of value
-		Expression valueToChar = encoding.castToInteger(value, byteSize);
-		Expression valueInCellSize = null;
-		for(int i = 0; i < cellSize/byteSize; ++i) {
-			if(valueInCellSize == null)
-				valueInCellSize = valueToChar;
-			else
-				valueInCellSize = valueToChar.asBitVector().concat(valueInCellSize);
-		}
-		
-		Expression idxVar = getSizeType().asBitVectorType().boundVar(QF_IDX_NAME, true);
-		Expression idxWithinRrange = encoding.and(
-				encoding.greaterThanOrEqual(idxVar, getSizeZero()),
-				encoding.lessThan(idxVar, size));
-		Expression setToValue = memory.index(encoding.pointerPlus(region, idxVar)).eq(valueInCellSize);
-		
-		return encoding.forall(idxVar, 
-				encoding.implies(idxWithinRrange, setToValue)).asBooleanExpression();
+	public ArrayType getMemoryArrayType() {
+		return encoding.getExpressionManager()
+				.arrayType(getAddressType(), getValueType());
+	}
+
+	@Override
+	public ArrayType getSizeArrayType() {
+		return encoding.getExpressionManager()
+				.arrayType(getAddressType(), getSizeType());
 	}
 	
 	@Override
-	public BooleanExpression memorySet(ArrayExpression memory,
-			Expression region, Expression size, int value) {
-		int cellSize = memory.getType().getElementType().asBitVectorType().getSize();
-		int byteSize = CType.getInstance().getByteSize();
-		while(cellSize >= byteSize) {
-			byteSize += byteSize;
-			value = value << byteSize + value;
-		}
-		
-		Expression valueInCellSize = encoding.castToInteger(
-				encoding.integerConstant(value), cellSize);
-		Expression idxVar = getSizeType().asBitVectorType().boundVar(QF_IDX_NAME, true);
-		Expression idxWithinRrange = encoding.and(
-				encoding.greaterThanOrEqual(idxVar, getSizeZero()),
-				encoding.lessThan(idxVar, size));
-		Expression setToValue = memory.index(encoding.pointerPlus(region, idxVar)).eq(valueInCellSize);
-		
-		return encoding.forall(idxVar, 
-				encoding.implies(idxWithinRrange, setToValue)).asBooleanExpression();
+	public Expression getSizeZero() {
+		return encoding.getExpressionManager()
+				.bitVectorZero(getSizeType().asBitVectorType().getSize());
 	}
 
 	@Override
-	public BooleanExpression memoryCopy(ArrayExpression destMemory, ArrayExpression srcMemory,
-			Expression destRegion, Expression srcRegion, Expression size) {		
-		Expression idxVar = getSizeType().asBitVectorType().boundVar(QF_IDX_NAME, true);
-		Expression idxWithinRrange = encoding.and(
-				encoding.greaterThanOrEqual(idxVar, getSizeZero()),
-				encoding.lessThan(idxVar, size));
-		
-		Expression destValue = destMemory.index(encoding.pointerPlus(destRegion, idxVar));
-		Expression srcValue = srcMemory.index(encoding.pointerPlus(srcRegion, idxVar));
-		
-		return encoding.forall(idxVar, 
-				encoding.implies(idxWithinRrange, destValue.eq(srcValue))).asBooleanExpression();
-	}
-
-	@Override
-	protected ArrayExpression updateScalarInMem(ArrayExpression memory, xtc.type.Type idxType,
+	public ArrayExpression updateSizeArray(ArrayExpression sizeArr,
 			Expression index, Expression value) {
-		Preconditions.checkArgument(!(idxType.isUnion() || idxType.isArray()));
-		
-		if(isSingleCell(memory, idxType)) return memory.update(index, value);
-		
-    int cellSize = memory.getElementType().asBitVectorType().getSize();
-		int valueSize = value.asBitVector().getSize();
-		if(valueSize < cellSize) {
-			value = encoding.castToInteger(value, cellSize);
-			valueSize = value.asBitVector().getSize();
-		}
-		
-		int length = getCellLength(memory, valueSize);
-		
-		for(int i = 0; i < length; i++) {
-			Expression offExpr = ptrEncoding.ofExpression(encoding.integerConstant(i));
-			Expression idxExpr = encoding.pointerPlus(index, offExpr); 
-			int high = (i+1) * cellSize - 1;
-			int low = i * cellSize;
-			Expression valExpr = value.asBitVector().extract(high, low);
-			memory = memory.update(idxExpr, valExpr);
-		}
-		return memory;
+		return sizeArr.update(index, value);
 	}
 
-	private boolean isSingleCell(ArrayExpression memory, xtc.type.Type idxType) {
-		int elemTypeSize = memory.getElementType().asBitVectorType().getSize();
-		CType cTypeAnalyzer = encoding.getCTypeAnalyzer();
-		long indexSize = cTypeAnalyzer.getWidth(idxType);
-		return elemTypeSize == indexSize;
+	@Override
+	public Expression indexSizeArray(ArrayExpression sizeArr, Expression index) {
+		return sizeArr.index(index);
+	}
+	
+	@Override
+	public Expression getFreshPtr(String name, boolean fresh) {
+		return encoding.getPointerEncoding().freshPtr(name, fresh);
+	}
+	
+	@Override
+	public Expression getBase(Expression ptr) {
+		return ptr;
 	}
 
-	private int getCellLength(ArrayExpression memory, int valueSize) {
-		int elemTypeSize = memory.getElementType().asBitVectorType().getSize();
-		int cellLength = valueSize / elemTypeSize;
-		return cellLength;
+	@Override
+	public Expression cast(Expression index, Expression value) {
+		Preconditions.checkNotNull(index.getNode());
+		
+		if(value.isBoolean()) value = encoding.castToInteger(value);
+		
+		int lhsSize = (int) CType.getSizeofType(CType.getType(index.getNode())) 
+				* encoding.getWordSize();
+		int rhsSize = value.asBitVector().getSize();
+		
+		if(rhsSize < lhsSize) {
+	    /* For any assignment a = b;, the value of b is converted to a value of the type of a, 
+	     * provided that is possible, and that converted value is assigned to a.
+	     */
+			value = encoding.castToInteger(value, lhsSize);
+		}
+		
+		return value;
 	}
 }

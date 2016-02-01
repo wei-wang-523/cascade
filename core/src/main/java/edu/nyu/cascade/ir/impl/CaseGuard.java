@@ -2,17 +2,14 @@ package edu.nyu.cascade.ir.impl;
 
 import xtc.tree.Node;
 import xtc.tree.Printer;
-import xtc.type.Type;
 import xtc.util.SymbolTable.Scope;
-import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.ir.IRBooleanExpression;
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRLocation;
 import edu.nyu.cascade.ir.IRLocations;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
-import edu.nyu.cascade.ir.state.StateExpression;
-import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.util.Pair;
+import edu.nyu.cascade.ir.state.StateExpressionClosure;
+import edu.nyu.cascade.ir.state.StateExpressionClosures;
 
 public class CaseGuard implements IRBooleanExpression {
   private final IRExpression testExpr, caseLabel;
@@ -50,24 +47,17 @@ public class CaseGuard implements IRBooleanExpression {
   }
 
   @Override
-  public Expression toBoolean(StateExpression pre, final ExpressionEncoder encoder) {
-  	Expression testExprVal = testExpr.toExpression(pre, encoder);
-  	Expression caseExprVal = caseLabel.toExpression(pre, encoder);
-    Type testType = CType.getType(testExpr.getSourceNode());
-    Type caseType = CType.getType(caseLabel.getSourceNode());
-    
-  	Pair<Expression, Expression> pair = encoder.getEncoding()
-  			.arithTypeConversion(testExprVal, caseExprVal, testType, caseType);
-    return pair.fst().eq(pair.snd());
+  public StateExpressionClosure toBoolean(ExpressionEncoder encoder) {
+    return StateExpressionClosures.eq(testExpr.toExpression(encoder),caseLabel.toExpression(encoder));
   }
 
   @Override
-  public Expression toExpression(StateExpression pre, ExpressionEncoder encoder) {
+  public StateExpressionClosure toExpression(ExpressionEncoder encoder) {
     throw new UnsupportedOperationException("CaseGuard.toExpression");
   }
   
   @Override
-  public Expression toLval(StateExpression pre, ExpressionEncoder encoder) {
+  public StateExpressionClosure toLval(ExpressionEncoder encoder) {
     throw new UnsupportedOperationException("CaseGuard.toLval");
   }
 

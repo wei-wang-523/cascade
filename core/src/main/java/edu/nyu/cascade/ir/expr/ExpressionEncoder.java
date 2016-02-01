@@ -1,9 +1,8 @@
 package edu.nyu.cascade.ir.expr;
 
-import edu.nyu.cascade.ir.state.StateExpression;
+import edu.nyu.cascade.ir.memory.model.MemoryModel;
+import edu.nyu.cascade.ir.state.StateExpressionClosure;
 import edu.nyu.cascade.ir.state.StateFactory;
-import edu.nyu.cascade.prover.BooleanExpression;
-import edu.nyu.cascade.prover.Expression;
 import xtc.tree.Node;
 import xtc.util.SymbolTable;
 import xtc.util.SymbolTable.Scope;
@@ -21,15 +20,18 @@ import xtc.util.SymbolTable.Scope;
 
 public interface ExpressionEncoder {
   ExpressionEncoding getEncoding();
+  MemoryModel<?> getMemoryModel();
 	StateFactory<?> getStateFactory();
 	SymbolTable.Scope getCurrentScope();
   
-	BooleanExpression toBoolean(StateExpression pre, Node node);
-  BooleanExpression toBoolean(StateExpression pre, Node node, Scope scope);
-  BooleanExpression toBoolean(StateExpression pre, Node node, boolean negated);
-  BooleanExpression toBoolean(StateExpression pre, Node node, boolean negated, Scope scope);
-  Expression toExpression(StateExpression pre, Node node);
-  Expression toExpression(StateExpression pre, Node node, Scope scope);
-  Expression toLval(StateExpression pre, Node node);
-  Expression toLval(StateExpression pre, Node node, Scope scope);
+  StateExpressionClosure toBoolean(Node node);
+  StateExpressionClosure toBoolean(Node node, Scope scope);
+  StateExpressionClosure toBoolean(Node node, boolean negated);
+  StateExpressionClosure toBoolean(Node node, boolean negated, Scope scope);
+//  ExpressionClosure toInteger(Node node);
+//  ExpressionClosure toInteger(Node node, Scope scope);
+  StateExpressionClosure toExpression(Node node);
+  StateExpressionClosure toExpression(Node node, Scope scope);
+  StateExpressionClosure toLval(Node node);
+  StateExpressionClosure toLval(Node node, Scope scope);
 }

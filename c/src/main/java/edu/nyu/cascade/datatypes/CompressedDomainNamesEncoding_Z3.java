@@ -56,15 +56,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import xtc.type.PointerT;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.ir.expr.ArrayEncoding;
 import edu.nyu.cascade.ir.expr.BitVectorFixedSizeEncoding;
 import edu.nyu.cascade.ir.expr.BitVectorIntegerEncoding;
@@ -141,12 +138,11 @@ public class CompressedDomainNamesEncoding_Z3 extends CompressedDomainNamesEncod
   
   static CompressedDomainNamesEncoding_Z3 create(
       ExpressionManager expressionManager) throws ExpressionFactoryException {
-    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(expressionManager);
+    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(expressionManager, WORD_SIZE);
     BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(expressionManager);
     ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(expressionManager);  	
     PointerEncoding<? extends Expression> pointerEncoding = LinearPointerEncoding.create(
-    		BitVectorFixedSizeEncoding.create(expressionManager, (BitVectorIntegerEncoding) integerEncoding, 
-    				CType.getInstance().getWidth(PointerT.TO_VOID)));
+    		BitVectorFixedSizeEncoding.create(expressionManager, (BitVectorIntegerEncoding) integerEncoding, WORD_SIZE));
     
     return new CompressedDomainNamesEncoding_Z3(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
     

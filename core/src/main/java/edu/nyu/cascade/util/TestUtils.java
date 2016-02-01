@@ -204,7 +204,7 @@ public class TestUtils {
       	Thread.sleep(30);
       	if(timer.elapsed(TimeUnit.SECONDS) > timeout) {
       		thread.stop();
-      		IOUtils.out().println("TIMEOUT");
+      		IOUtils.err().println("Timeout");
       		break;
       	}
       }

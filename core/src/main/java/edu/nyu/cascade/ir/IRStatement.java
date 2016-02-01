@@ -1,5 +1,7 @@
 package edu.nyu.cascade.ir;
 
+import java.util.List;
+
 import xtc.tree.Node;
 
 import com.google.common.collect.ImmutableList;
@@ -7,8 +9,9 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.ir.expr.ExpressionFactoryException;
+import edu.nyu.cascade.ir.path.PathEncoding;
 import edu.nyu.cascade.ir.state.StateExpression;
-import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.ir.state.StateExpressionClosure;
 
 public interface IRStatement {
   /**
@@ -20,28 +23,29 @@ public interface IRStatement {
       
   	  /** Declare a symbol */
   		DECLARE,
-      /** Declare a variable array symbol */
-      DECLARE_VAR_ARRAY,
-  	  /** Init a symbol */
-  		INIT,
-  		/** Assignment of values to a variable (set of variables) */ 
+      /** Assignment of values to a variable (set of variables) */ 
       ASSIGN,
       /** Allocate a region */
-      MALLOC,
-      /** Allocate a region and initialize them into zero */
-      CALLOC,
+      ALLOC,
+      /** Change the type of a by casting */
+      CAST,
       /** Free a region in memory */
       FREE,
-      /** Allocate a region in stack */
-      ALLOCA,
       /** Empty instruction node */
       SKIP,
       /** Call a procedure */
       CALL,
       /** Return from a procedure */
       RETURN,
+      /** Declare enum type */
+      ENUM,
       
       // Label statements
+      
+      /** Mark the start of statements lifted from loop for havoc */
+      LIFT_BEGIN,
+      /** Mark the end of statements lifted from loop for havoc */
+      LIFT_END,
       /** Mark the enter into a scope */
       FUNC_ENT,
       /** Mark the exit out of a scope */
@@ -90,10 +94,8 @@ public interface IRStatement {
   
   void addPreLabel(String label);
   void addPreLabels(Iterable<String> labels);
-  boolean hasPreLabel(String label);
   void addPostLabel(String label);
   void addPostLabels(Iterable<String> labels);
-  boolean hasPostLabel(String label);
 
   Node getSourceNode();
 
@@ -103,10 +105,21 @@ public interface IRStatement {
    * <code>assert x!=null</code>, then the pre-condition is <code>x!=null</code>.
    * @throws ExpressionFactoryException 
    */
-  Expression getPreCondition(StateExpression pre, ExpressionEncoder encoder);
+  StateExpressionClosure getPreCondition(ExpressionEncoder  encoder);
+
+  /**
+   * Get the strongest post-condition of the statement, using the given
+   * expression factory, given a pre-condition. E.g., if the statement is
+   * <code>assert x!=null</code> and the pre-condition is <code>P</code>, then
+   * the post-condition will be <code>P && x!=null</code>.
+   * @throws ExpressionFactoryException 
+   */
+  StateExpression getPostCondition(PathEncoding factory, StateExpression preCondition);
   
   StatementType getType();
   ImmutableList<IRExpression> getOperands();
+  List<StateExpressionClosure> getOperands(ExpressionEncoder encoder);
+  StateExpressionClosure getOperand(ExpressionEncoder encoder,int i);
 	IRExpression getOperand(int i);
   IRLocation getLocation();
   
@@ -116,6 +129,4 @@ public interface IRStatement {
 	Object getProperty(String name);
 	boolean hasProperty(String name);
 	boolean hasLocation();
-	
-	IRStatement clone();
 }

@@ -1,7 +1,5 @@
 package edu.nyu.cascade.ir.impl;
 
-import com.google.common.base.Preconditions;
-
 import xtc.tree.Node;
 import xtc.tree.Printer;
 import xtc.util.SymbolTable.Scope;
@@ -9,25 +7,31 @@ import edu.nyu.cascade.ir.IRBooleanExpression;
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRLocation;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
-import edu.nyu.cascade.ir.state.StateExpression;
-import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.ir.state.StateExpressionClosure;
 
 public class Guard implements IRBooleanExpression {
   public static Guard create(IRExpression test) {
     return new Guard(test);
   }
 
+/*  public static Guard create(Node test) {
+    return new Guard(IRExpressionImpl.create(test));
+  }*/
+
   private final IRExpression expression;
+//  private final Node sourceNode;
   private final boolean negated;
+//  private final IRLocation location;
 
   Guard(IRExpression expression) {
     this(expression, false);
   }
 
   Guard(IRExpression expression, boolean negated) {
-  	Preconditions.checkNotNull(expression);
+//    this.sourceNode = expression;
     this.expression = expression;
     this.negated = negated;
+//    location = IRLocations.ofNode(sourceNode);
   }
 
   @Override
@@ -62,17 +66,17 @@ public class Guard implements IRBooleanExpression {
   }
 
   @Override
-  public Expression toBoolean(StateExpression pre, ExpressionEncoder encoder) {
-    return encoder.toBoolean(pre, getSourceNode(), isNegated(), getScope());
+  public StateExpressionClosure toBoolean(ExpressionEncoder encoder) {
+    return encoder.toBoolean(getSourceNode(), isNegated(), getScope());
   }
 
   @Override
-  public Expression toExpression(StateExpression pre, ExpressionEncoder encoder) {
+  public StateExpressionClosure toExpression(ExpressionEncoder encoder) {
     throw new UnsupportedOperationException("Guard.toExpression");
   }
 
   @Override
-  public Expression toLval(StateExpression pre, ExpressionEncoder encoder) {
+  public StateExpressionClosure toLval(ExpressionEncoder encoder) {
     throw new UnsupportedOperationException("Guard.toLval");
   }
 

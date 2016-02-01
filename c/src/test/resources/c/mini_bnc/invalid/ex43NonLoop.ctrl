@@ -1,0 +1,7 @@
+<controlFile>
+    <sourceFile name="ex43NonLoop.c" id="1" />
+    <run>
+        <startPosition fileId="1" line="15" />
+        <endPosition fileId="1" line="37" />
+    </run>
+</controlFile>

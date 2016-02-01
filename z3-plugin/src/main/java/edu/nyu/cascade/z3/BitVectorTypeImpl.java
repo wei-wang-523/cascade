@@ -54,6 +54,8 @@ final class BitVectorTypeImpl extends TypeImpl implements BitVectorType {
   private BitVectorTypeImpl(ExpressionManagerImpl expressionManager, int size) {
     super(expressionManager);
     this.size = size;
+    TheoremProverImpl.debugCall("bv_type_%1$d = validityChecker.bitVecType(%1$d)",
+        size);
 
     try {
       setZ3Type(expressionManager
@@ -140,17 +142,17 @@ final class BitVectorTypeImpl extends TypeImpl implements BitVectorType {
 
   @Override
   public BitVectorExpressionImpl constant(int c) {
-    return BitVectorExpressionImpl.mkConstant(getExpressionManager(), size, c);
+    return BitVectorExpressionImpl.mkConstant(getExpressionManager(), c);
   }
   
   @Override
   public BitVectorExpressionImpl constant(long c) {
-    return BitVectorExpressionImpl.mkConstant(getExpressionManager(), size, c);
+    return BitVectorExpressionImpl.mkConstant(getExpressionManager(), c);
   }
   
   @Override
   public BitVectorExpressionImpl constant(BigInteger c) {
-    return BitVectorExpressionImpl.mkConstant(getExpressionManager(), size, c);
+    return BitVectorExpressionImpl.mkConstant(getExpressionManager(), c);
   }
 
   @Override

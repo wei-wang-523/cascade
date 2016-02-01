@@ -12,6 +12,7 @@ import com.microsoft.z3.Expr;
 import com.microsoft.z3.Z3Exception;
 
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Type;
@@ -48,15 +49,19 @@ final class RecordExpressionImpl extends ExpressionImpl implements
       Expression record, String name, Expression val) {
     Preconditions.checkArgument(record.isRecord());
     final int index = record.getType().asRecord().getElementNames().indexOf(name);
-    return new RecordExpressionImpl(exprManager, RECORD_UPDATE,
-        new BinaryConstructionStrategy() {
-      @Override
-      public Expr apply(Context ctx, Expr record, Expr val) throws Z3Exception {
-        Expr[] args = record.getArgs();
-        args[index] = val;
-        return ctx.mkApp(((DatatypeSort) record.getSort()).getConstructors()[0], args); 
-      }
-    }, record, val);
+    try {
+      return new RecordExpressionImpl(exprManager, RECORD_UPDATE,
+          new BinaryConstructionStrategy() {
+        @Override
+        public Expr apply(Context ctx, Expr record, Expr val) throws Z3Exception {
+          Expr[] args = record.getArgs();
+          args[index] = val;
+          return ctx.mkApp(((DatatypeSort) record.getSort()).getConstructors()[0], args); 
+        }
+      }, record, val);
+    } catch (Z3Exception e) {
+      throw new TheoremProverException(e);
+    }
   }
   
   static ExpressionImpl mkRecordSelect(
@@ -67,9 +72,13 @@ final class RecordExpressionImpl extends ExpressionImpl implements
     result = new ExpressionImpl(exprManager, RECORD_SELECT,
         new UnaryConstructionStrategy() {
           @Override
-          public Expr apply(Context ctx, Expr expr) throws Z3Exception {
-            DatatypeSort recordSort = (DatatypeSort) expr.getSort();                
-            return recordSort.getAccessors()[0][index].apply(expr);
+          public Expr apply(Context ctx, Expr expr) {
+              try {
+                DatatypeSort recordSort = (DatatypeSort) expr.getSort();                
+                return recordSort.getAccessors()[0][index].apply(expr);
+              } catch (Z3Exception e) {
+                throw new TheoremProverException(e);
+              }
           }
         }, record);
     
@@ -80,7 +89,7 @@ final class RecordExpressionImpl extends ExpressionImpl implements
 
   private RecordExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
       BinaryConstructionStrategy strategy, Expression record,
-      Expression value) {
+      Expression value) throws Z3Exception {
     super(exprManager, kind, strategy, record, value);
     setType(RecordTypeImpl.valueOf(exprManager, record.getType()));
   }
@@ -90,8 +99,12 @@ final class RecordExpressionImpl extends ExpressionImpl implements
     super (exprManager, RECORD,
         new NaryConstructionStrategy() {
           @Override
-          public Expr apply(Context ctx, Expr[] args) throws Z3Exception {
-          	return ((DatatypeSort) exprManager.toZ3Type(type)).getConstructors()[0].apply(args);           
+          public Expr apply(Context ctx, Expr[] args) {
+            try {
+              return ((DatatypeSort) exprManager.toZ3Type(type)).getConstructors()[0].apply(args);
+            } catch (Z3Exception e) {
+              throw new TheoremProverException(e);
+            }            
           }
         }, elements);
     setType(type);

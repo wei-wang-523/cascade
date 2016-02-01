@@ -2,20 +2,15 @@ package edu.nyu.cascade.ir.state;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
+import java.util.List;
 
-import javax.annotation.Nullable;
-
-import xtc.tree.Node;
-
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
-import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
@@ -25,12 +20,19 @@ import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.ArrayType;
+import edu.nyu.cascade.prover.type.Type;
+import edu.nyu.cascade.util.Identifiers;
+import edu.nyu.cascade.util.Pair;
+import edu.nyu.cascade.util.Preferences;
 
 public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 	
+	private static final String DEFAULT_MEMORY_VARIABLE_NAME = "m";
+	private static final String DEFAULT_SIZE_VARIABLE_NAME = "size";
 	private static final String DEFAULT_STATE_NAME = "flat";
+	private static final String ConstArray = "constArr";
+	private static final String IndexVar = "indexVar";
 	
 	private final IRSingleHeapEncoder heapEncoder;
 	
@@ -41,54 +43,16 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
   }
 	
 	@Override
-	public void reset() {
-		heapEncoder.reset();
-	}
-	
-	@Override
 	public <X> void setLabelAnalyzer(PreProcessor<X> preprocessor) {
 		throw new UnsupportedOperationException();
 	}
 	
 	@Override
-	public void malloc(StateExpression state, Expression ptr, Expression size, Node ptrNode) {		
-		VariableExpression region = createFreshRegion();
-		state.addRegion(region);
-		BooleanExpression tt = getExpressionEncoding().tt().asBooleanExpression();
-		updateMemState(state, ptr, ptrNode, region, null);
-		updateSizeStateWithAlloc(state, region, size, ptrNode);
-		updateMarkState(state, region, tt, ptrNode);
-		
-		plusRegionSize(state, size);
-		state.addConstraint(applyValidMalloc(state, region, size, ptrNode));
-	}
-	
-	@Override
-	public void calloc(StateExpression state, Expression ptr, Expression nitem,
-			Expression size, Node ptrNode) {
-		ExpressionEncoding encoding = getExpressionEncoding();
-		Expression multSize = encoding.times(nitem, size);
-		VariableExpression region = createFreshRegion();
-		state.addRegion(region);
-		BooleanExpression tt = encoding.tt().asBooleanExpression();
-		updateMemState(state, ptr, ptrNode, region, null);
-		updateSizeStateWithAlloc(state, region, multSize, ptrNode);
-		updateMarkState(state, region, tt, ptrNode);
-		
-		plusRegionSize(state, multSize);
-		state.addConstraint(applyValidMalloc(state, region, multSize, ptrNode));
-		state.addConstraint(applyMemset(state, region, multSize, 
-				getExpressionEncoding().characterConstant(0),
-				ptrNode));
-	}
-	
-	@Override
-	public void alloca(StateExpression state, Expression ptr, Expression size, Node ptrNode) {
-		VariableExpression region = createFreshRegion();
-		state.addRegion(region);
-		updateMemState(state, ptr, ptrNode, region, null);
-		updateSizeStateWithAlloc(state, region, size, ptrNode);
-		state.addConstraint(applyValidMalloc(state, region, size, ptrNode));
+	public SingleStateExpression alloc(StateExpression state, Expression ptr, Expression size) {
+		Expression region = createFreshRegion(ptr);
+		SingleStateExpression state1 = updateMemState(state, ptr, region);
+		SingleStateExpression state2 = updateSizeStateWithAlloc(state1, ptr, region, size);
+		return state2;
 	}
 	
   @Override
@@ -102,248 +66,256 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
     joinState.setConstraint(joinConstraint);
     BooleanExpression joinGuard = joinGuards(preStates);
     joinState.setGuard(joinGuard);
-    
-    /* Set the memory tracker */
-		joinMemTrackers(joinState, preStates);
-		
     return joinState;
 	}
   
   @Override
-  public BooleanExpression applyMemset(StateExpression state, Expression region, 
-  		Expression size, Expression value, Node ptrNode) {
-  	IRDataFormatter formatter = getDataFormatter();
-  	return formatter.memorySet(state.asSingle().getMemory(), region, size, value);
-  }
-  
-  @Override
-  public BooleanExpression applyMemset(StateExpression state, Expression region, 
-  		Expression size, int value, Node ptrNode) {
-  	IRDataFormatter formatter = getDataFormatter();
-  	return formatter.memorySet(state.asSingle().getMemory(), region, size, value);
-  }
-  
-  @Override
-  public BooleanExpression applyMemcpy(StateExpression state, Expression destRegion, 
-  		Expression srcRegion, Expression size, Node destNode, Node srcNode) {
-  	ArrayExpression mem = state.asSingle().getMemory();
-  	IRDataFormatter formatter = getDataFormatter();
-  	return formatter.memoryCopy(mem, mem, destRegion, srcRegion, size);
+  public Expression cleanup(StateExpression state, Expression expr) {
+  	Pair<Expression, Expression> pair = getCleanSizeSubstPair(state.asSingle());
+    return expr.subst(pair.fst(), pair.snd());
   }
 	
 	@Override
-  public BooleanExpression applyValidMalloc(StateExpression state, Expression region, 
-  		Expression size, Node ptrNode) {
-		Preconditions.checkNotNull(heapEncoder);		
-		return heapEncoder.validMalloc(state.asSingle().getSize(), region, size);
+  public Expression eval(Expression expr, StateExpression stateVar,
+      final StateExpression state) {
+		Preconditions.checkArgument(stateVar.isSingle());
+		Preconditions.checkArgument(state.isSingle());
+		
+		Pair<List<Expression>, List<Expression>> sustElemsPair = 
+				getSubstElemsPair(stateVar, state);
+		List<Expression> fromExprs = sustElemsPair.fst();
+		List<Expression> toExprs = sustElemsPair.snd();
+		
+		if(fromExprs.isEmpty()) return expr;
+		
+		return expr.subst(fromExprs, toExprs);
   }
 	
+	/** Do nothing */
 	@Override
-	public BooleanExpression applyValidFree(StateExpression state, Expression region, Node ptrNode) {
+	public void propagateNewInfo(StateExpression fromState, StateExpression toState) {
+	}
+
+	@Override
+  public Expression applyValidMalloc(StateExpression state, Expression ptr, Expression size) {
+		Preconditions.checkArgument(state.isSingle());
 		Preconditions.checkNotNull(heapEncoder);
-		return heapEncoder.validFree(state.asSingle().getMark(), region);
+		return heapEncoder.validMalloc(state.asSingle().getElement(1).asArray(), ptr, size);
+  }
+	
+	@Override
+	public BooleanExpression applyValidFree(StateExpression state, Expression ptr) {
+		Preconditions.checkArgument(state.isSingle());
+		Preconditions.checkNotNull(heapEncoder);
+		return heapEncoder.validFree(state.asSingle().getElement(1).asArray(), ptr);
 	}
 	
 	@Override
-  public BooleanExpression validAccess(StateExpression state, Expression ptr, Node ptrNode) {
+  public Expression validAccess(StateExpression state, Expression ptr) {
+		Preconditions.checkArgument(state.isSingle());
 		Preconditions.checkNotNull(heapEncoder);
-		return getExpressionManager().or(
-				heapEncoder.validMemAccess(state.asSingle().getSize(), ptr));
+		return getExpressionEncoding().or(
+				heapEncoder.validMemAccess(
+						state.asSingle().getElement(1).asArray(), ptr));
 	}
 	
   @Override
-  public BooleanExpression validAccessRange(StateExpression state, Expression ptr, 
-  		Expression size, Node ptrNode) {
+  public Expression validAccessRange(StateExpression state, Expression ptr, Expression size) {
+		Preconditions.checkArgument(state.isSingle());
 		Preconditions.checkNotNull(heapEncoder);
-		return getExpressionManager().or(
-				heapEncoder.validMemAccess(state.asSingle().getSize(), ptr, size));
+		return getExpressionEncoding().or(
+				heapEncoder.validMemAccess(
+						state.asSingle().getElement(1).asArray(), ptr, size));
   }
 	
   @Override
+  public Expression getDisjointAssumption(StateExpression state) {
+		Preconditions.checkArgument(state.isSingle());
+		Preconditions.checkNotNull(heapEncoder);
+		return getExpressionEncoding().and(
+				heapEncoder.disjointMemLayout(state.asSingle().getElement(1).asArray()));
+  }
+	
+	@Override
   public SingleStateExpression freshState() {
-    SingleStateExpression freshState = freshSingleState();
-	  freshState.setMemTracker(getDataFormatter().getSizeZero());
-	  return freshState;
+    ExpressionManager exprManager = getExpressionManager();
+    IRDataFormatter formatter = getDataFormatter();
+    Expression memVar = exprManager.variable(DEFAULT_MEMORY_VARIABLE_NAME + 
+    		Identifiers.UNDERLINE + DEFAULT_STATE_NAME, 
+    		formatter.getMemoryArrayType(), false);
+    Expression sizeVar = exprManager.variable(DEFAULT_SIZE_VARIABLE_NAME + 
+    		Identifiers.UNDERLINE + DEFAULT_STATE_NAME, 
+        formatter.getSizeArrayType(), false);
+    return SingleStateExpression.create(DEFAULT_STATE_NAME, memVar, sizeVar);
   }
 	
 	@Override
-	public void addStackVar(StateExpression state, Expression lval, IRVarInfo info) {
-		Preconditions.checkNotNull(heapEncoder);
-		if(!info.isStatic()) state.addVar(lval.asVariable());
-		heapEncoder.addFreshAddress(lval, info);
-	}
-	
-	@Override
-	public void addStackVarArray(StateExpression state, Expression lval, 
-			Expression rval, IRVarInfo info, Node sourceNode) {
-		Preconditions.checkNotNull(heapEncoder);
-		if(!info.isStatic()) state.addVar(lval.asVariable());
-		updateSizeStateWithAlloc(state, lval, rval, sourceNode);
-		state.addConstraint(applyValidMalloc(state, lval, rval, sourceNode));
-	}
-	
-  @Override
-  public SingleStateExpression copy(StateExpression state) {
+  public SingleStateExpression updateMemState(StateExpression state, 
+  		Expression memIdx, Expression memVal) {
+  	Preconditions.checkArgument(state.isSingle());
   	SingleStateExpression singleState = state.asSingle();
-		SingleStateExpression newState = SingleStateExpression.create(
-				singleState.getName(), singleState.getMemory(), singleState.getSize(), singleState.getMark());
-		newState.setConstraint(state.getConstraint());
-		newState.setGuard(state.getGuard());
-		newState.setProperties(state.getProperties());
-		newState.addVars(state.getVars());
-		newState.addRegions(state.getRegions());
-		newState.setAssertions(state.getAssertions());
-		newState.setMemTracker(state.getMemTracker());
-    return newState;
+  	
+  	IRDataFormatter formatter = getDataFormatter();
+  	
+  	Expression memory = formatter.updateMemoryArray(
+  			singleState.getElement(0).asArray(), memIdx, memVal);
+    Expression size = singleState.getElement(1);
+    
+    SingleStateExpression resState = SingleStateExpression.create(singleState.getName(), 
+    		memory, size);
+		copyProperties(singleState, resState);
+    return resState;
   }
   
   @Override
-  public void substitute(StateExpression state,
-  		Collection<? extends Expression> vars, Collection<? extends Expression> freshVars) {
-		substState(state, vars, freshVars);
-		substConstraintGuard(state, vars, freshVars);
-		substAssertions(state, vars, freshVars);
-		substMemTracker(state, vars, freshVars);
+  public SingleStateExpression updateSizeState(StateExpression state, 
+  		Expression sizeIdx, Expression sizeVal) {
+  	Preconditions.checkArgument(state.isSingle());
+  	SingleStateExpression singleState = state.asSingle();
+  	
+  	IRDataFormatter formatter = getDataFormatter();
+  	
+  	Expression memory = singleState.getElement(0);
+    Expression size = formatter.updateSizeArray(
+    		singleState.getElement(1).asArray(), sizeIdx, sizeVal);
+    
+    SingleStateExpression resState = SingleStateExpression.create(singleState.getName(), 
+    		memory, size);
+		copyProperties(singleState, resState);
+    return resState;
   }
-
+	
 	@Override
-	public void propagateState(StateExpression cleanState, StateExpression stateArg) {
-		Collection<Expression> fromElems = Lists.newArrayList();
-		Collection<Expression> toElems = Lists.newArrayList();
-		
-		getSubstElemsPair(cleanState, stateArg, fromElems, toElems);
-		substitute(cleanState, fromElems, toElems);
-		
-		cleanState.addPreGuard(stateArg.getGuard());
-		cleanState.addConstraint(stateArg.getConstraint());
-		
-		propagateAssertions(stateArg, cleanState);
-		propagateMemTracker(stateArg, cleanState);
+	public Expression deref(StateExpression state, Expression index) {
+		Preconditions.checkArgument(state.isSingle());
+		return getDataFormatter().indexMemoryArray(
+	  		state.asSingle().getElement(0).asArray(), index);
 	}
 	
 	@Override
-	public Collection<BooleanExpression> getAssumptions() {
-		return Collections.emptyList();
-	}
-	
-	@Override
-	public Expression lookupSize(StateExpression state, Expression ptr, Node node) {
-		return getDataFormatter().indexSizeArray(state.asSingle().getSize(), ptr);
-	}
-
-	@Override
-	protected BooleanExpression getDisjointAssumption(StateExpression state) {
+	public SingleStateExpression addStackVar(StateExpression state, Expression lval, IRVarInfo info) {
 		Preconditions.checkNotNull(heapEncoder);
-		return getExpressionManager().and(
-				heapEncoder.disjointMemLayout(state.asSingle().getSize()));
+		heapEncoder.addFreshAddress(lval, info);
+		return state.asSingle();
+	}
+	
+	/** Do nothing */
+	@Override
+	public StateExpression scopeOptimize(StateExpression preState, 
+			StateExpression postState) {
+		return postState;
 	}
 
 	@Override
-	protected Expression getSizeOfRegion(StateExpression state, Expression region, Node ptrNode) {
-		SingleStateExpression singleState = state.asSingle();
-		ArrayExpression sizeArr = singleState.getSize();
-		return getDataFormatter().indexSizeArray(sizeArr, region);
+	public StateExpression propagateState(StateExpression cleanState,
+	    StateExpression stateVar, StateExpression stateArg) {
+		StateExpression statePrime = substitute(cleanState, stateVar, stateArg);
+		propagateProperties(stateArg, statePrime);
+		return statePrime;
 	}
 
 	@Override
-	protected void updateMemState(StateExpression state, 
-			Expression index, Node idxNode, Expression value, @Nullable Node valNode) {
-		SingleStateExpression singleState = state.asSingle();
+	protected void propagateProperties(StateExpression fromState, StateExpression toState) {    
+	  /* Propagate fromState guard to toState, guard contains 
+	   * no valid_access or valid_access_range */
+	  if(fromState.hasGuard()) {
+	  	BooleanExpression fromGuard = fromState.getGuard();
+	  	toState.addGuard(fromGuard);
+	  }
 		
-		IRDataFormatter formatter = getDataFormatter();
-		xtc.type.Type idxType = CType.getType(idxNode);
-		xtc.type.Type valType = valNode != null ? CType.getType(valNode) : null;
-		ArrayExpression memoryPrime = formatter.updateMemoryArray(
-				singleState.getMemory(), index, idxType, value, valType);
-		singleState.setMemory(memoryPrime);
-	}
-	
-	/** <code>ptrNode</code> is not used here*/
-	@Override
-	protected void updateSizeStateWithFree(StateExpression state, 
-			Expression region, Expression size, Node ptrNode) {
-		SingleStateExpression singleState = state.asSingle();
-		IRDataFormatter formatter = getDataFormatter();
-		ArrayExpression sizePrime = formatter.updateSizeArray(
-	  		singleState.getSize(), region, size);
-	  singleState.setSize(sizePrime);
-	}
-	
-	@Override
-	protected void updateMarkState(StateExpression state, 
-			Expression region, BooleanExpression mark, Node ptrNode) {
-		SingleStateExpression singleState = state.asSingle();
-		// FIXME: update size array only if region is not nullptr
-		ArrayExpression markPrime = singleState.getMark().update(region, mark);
-	  singleState.setMark(markPrime);
+	  /* Propagate fromState constraint to toState, constraint may contain 
+	   * valid_access and valid_access_range */
+	  if(fromState.hasConstraint()) {
+	  	BooleanExpression fromConstraint = fromState.getConstraint();
+	  	ExpressionManager exprManager = getExpressionManager();
+	  	toState.addConstraint(fromConstraint, exprManager.tt(), exprManager.ff());
+	  }
 	}
 
-	/** <code>ptr</code> and <code>ptrNode</code> is not used here */
+	/** <code>ptr</code> is not used here */
 	@Override
-	protected void updateSizeStateWithAlloc(StateExpression state,
-	    Expression region, Expression size, Node ptrNode) {
+	protected SingleStateExpression updateSizeStateWithAlloc(StateExpression state,
+	    Expression ptr, Expression region, Expression size) {
+  	Preconditions.checkArgument(state.isSingle());
 		Preconditions.checkNotNull(heapEncoder);
 		
-		SingleStateExpression singleState = state.asSingle();
-		//FIXME: update size array only if region is not nullptr
-		IRDataFormatter formatter = getDataFormatter();
-	  ArrayExpression sizePrime = formatter.updateSizeArray(
-	  		singleState.getSize(), region, size);
-	  singleState.setSize(sizePrime);
+  	SingleStateExpression singleState = state.asSingle();
+  	
+  	IRDataFormatter formatter = getDataFormatter();
+    Expression sizePrime = formatter.updateSizeArray(
+    		singleState.getElement(1).asArray(), region, size);
+    
+    SingleStateExpression resState = SingleStateExpression.create(
+    		singleState.getName(), singleState.getElement(0), sizePrime);
+		copyProperties(singleState, resState);
 		heapEncoder.addFreshRegion(region);
-	}
-
-	@Override
-	protected void propagateMemSafetyPredicates(StateExpression fromState, StateExpression toState) {
-	}
-
-	@Override
-	protected void getSubstElemsPair(
-			StateExpression fromState, StateExpression toState,
-			Collection<Expression> fromElems, Collection<Expression> toElems) {
-		
-		SingleStateExpression fromStateVar = getStateVar(fromState.asSingle());
-		
-		ArrayExpression fromMem = fromStateVar.getMemory();
-		ArrayExpression toMem = toState.asSingle().getMemory();
-		if(!fromMem.equals(toMem)) {
-			fromElems.add(fromMem); toElems.add(toMem);
-		}
-
-		ArrayExpression fromSize = fromStateVar.getSize();
-		ArrayExpression toSize = toState.asSingle().getSize();
-		if(!fromSize.equals(toSize)) {
-			fromElems.add(fromSize); toElems.add(toSize);
-		}
-		
-		ArrayExpression fromMark = fromStateVar.getMark();
-		ArrayExpression toMark = toState.asSingle().getMark();
-		if(!fromMark.equals(toMark)) {
-			fromElems.add(fromMark); toElems.add(toMark);
-		}
+    return resState;
 	}
 	
 	@Override
-	protected void getSubstPredicatesPair(
-			StateExpression fromState, StateExpression toState, 
-			Collection<Expression> fromPredicates, Collection<Expression> toPredicates) {
-		return;
+	protected Pair<List<Expression>, List<Expression>> getSubstElemsPair(
+			StateExpression fromState, StateExpression toState, boolean fetchFreshMap) {
+		int elemSize = fromState.asSingle().getElemSize();
+		List<Expression> fromElems = Lists.newArrayListWithCapacity(elemSize);
+		List<Expression> toElems = Lists.newArrayListWithCapacity(elemSize);
+		
+		for(int i = 0; i < elemSize; i++) {
+			Expression fromExpr = fromState.asSingle().getElement(i);
+			Expression toExpr = toState.asSingle().getElement(i);
+			if(fromExpr.equals(toExpr)) continue;
+			fromElems.add(fromExpr); toElems.add(toExpr);
+		}
+		
+		return Pair.of(fromElems, toElems);
+	}
+	
+	@Override
+	protected Pair<List<Expression>, List<Expression>> getSubstPredicatesPair(
+			StateExpression fromState, StateExpression toState) {
+		return Pair.of(Collections.<Expression>emptyList(), Collections.<Expression>emptyList());
 	}
 
 	@Override
-	protected void substState(StateExpression state,
-			Collection<? extends Expression> fromElems, Collection<? extends Expression> toElems) {
-		if(fromElems.isEmpty())		return;
+	protected SingleStateExpression doSubstitute(StateExpression state,
+			final Collection<Expression> fromElems, 
+			final Collection<Expression> toElems,
+			Collection<Expression> fromPredicates, 
+			Collection<Expression> toPredicates) {
+		Preconditions.checkArgument(state.isSingle());
+		
+		if(fromElems.isEmpty())		return state.asSingle();
 		
 		SingleStateExpression singleState = state.asSingle();
-		
 		/* Substitute state elements */
-		Expression newMem = singleState.getMemory().subst(fromElems, toElems);
-		Expression newSize = singleState.getSize().subst(fromElems, toElems);
-		Expression newMark = singleState.getMark().subst(fromElems, toElems);
-		singleState.setMemory(newMem.asArray());
-		singleState.setSize(newSize.asArray());
-		singleState.setMark(newMark.asArray());
+		Iterable<Expression> newElems = Iterables.transform(singleState.getElements(), 
+				new Function<Expression, Expression>() {
+    	@Override
+    	public Expression apply(Expression elem) {
+    		return elem.subst(fromElems, toElems);
+    	}
+    });
+    
+    SingleStateExpression singleStatePrime = SingleStateExpression.create(
+    		singleState.getName(), newElems);
+    
+    /* Copy properties */
+    singleStatePrime.setProperties(singleState.getProperties());
+    
+    /* Substitute constraint */
+    if(singleState.hasConstraint()) {
+    	Expression pc = singleState.getConstraint();
+    	BooleanExpression pcPrime = pc.subst(fromElems, toElems).asBooleanExpression();
+    	singleStatePrime.setConstraint(pcPrime);
+    }
+    
+    /* Substitute guards */
+    if(singleState.hasGuard()) {
+    	Expression guard = singleState.getGuard();
+    	BooleanExpression guardPrime = guard.subst(fromElems, toElems).asBooleanExpression();
+    	singleStatePrime.setGuard(guardPrime);
+    }
+    
+    return singleStatePrime;
 	}
 
 	@Override
@@ -351,25 +323,23 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 			Iterable<BooleanExpression> preGuards) {
 	  Preconditions.checkArgument(Iterables.size(preStates) == Iterables.size(preGuards));
 	  
-	  SingleStateExpression firstPreState = preStates.iterator().next().asSingle();
+	  ExpressionEncoding encoding = getExpressionEncoding();	  
 	  
-	  LinkedHashMultimap<Expression, BooleanExpression> guardMemMap = LinkedHashMultimap.create();
-	  LinkedHashMultimap<Expression, BooleanExpression> guardSizeMap = LinkedHashMultimap.create();
-	  LinkedHashMultimap<Expression, BooleanExpression> guardMarkMap = LinkedHashMultimap.create();
-  	Iterator<BooleanExpression> preGuardItr = preGuards.iterator();
-  	for(StateExpression preState : preStates) {
-  		BooleanExpression preGuard = preGuardItr.next();
-  		Expression preMem = preState.asSingle().getMemory();
-  		Expression preSize = preState.asSingle().getSize();
-  		Expression preMark = preState.asSingle().getMark();
-  		guardMemMap.put(preMem, preGuard);
-  		guardSizeMap.put(preSize, preGuard);
-  		guardMarkMap.put(preMark, preGuard);
-  	}
-  	
-  	ArrayExpression joinStateMem = getITEExpression(guardMemMap).asArray();
-  	ArrayExpression joinStateSize = getITEExpression(guardSizeMap).asArray();
-  	ArrayExpression joinStateMark = getITEExpression(guardMarkMap).asArray();
+	  int preStatesSize = Iterables.size(preStates);
+	  
+	  SingleStateExpression firstPreState = preStates.iterator().next().asSingle();
+	  int elemSize = firstPreState.getElements().size();
+	  
+	  List<Expression> joinStateElems = Lists.newArrayListWithCapacity(elemSize);
+	  for(int idx = 0; idx < elemSize; idx++) {
+	  	Collection<Expression> elemsAtIdx = Lists.newArrayListWithCapacity(preStatesSize);
+	  	for(StateExpression preState : preStates) {
+	  		elemsAtIdx.add(preState.asSingle().getElement(idx));
+	  	}
+	  	
+	  	Expression joinElem = getITEExpression(encoding, elemsAtIdx, preGuards);
+	  	joinStateElems.add(joinElem);
+	  }
 	
 	  final String preStateName = firstPreState.getName();
 	  
@@ -380,86 +350,90 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 	    }
 	  }));
 	  
-	  return SingleStateExpression.create(preStateName, joinStateMem, joinStateSize, joinStateMark);
-	}
-	
-	@Override
-	protected Expression dereference(StateExpression state, Expression index, Node indexNode) {
-		xtc.type.Type idxType = CType.getType(indexNode);
-		return getDataFormatter().indexMemoryArray(state.asSingle().getMemory(), index, idxType);
-	}
-
-	@Override
-	protected void substSafetyPredicates(StateExpression state,
-			Collection<? extends Expression> fromElems, Collection<? extends Expression> toElems) {
-	  // TODO Auto-generated method stub
-	  
-	}
-	
-	SingleStateExpression freshSingleState() {
-    IRDataFormatter formatter = getDataFormatter();
-    ArrayExpression memVar = formatter.getMemoryArrayType().variable(DEFAULT_MEMORY_VARIABLE_NAME + 
-    		DEFAULT_STATE_NAME, false);
-    ArrayExpression sizeVar = formatter.getSizeArrayType().variable(DEFAULT_SIZE_VARIABLE_NAME + 
-    		DEFAULT_STATE_NAME, false);
-    ArrayExpression markVar = formatter.getMarkArrayType().variable(DEFAULT_MARK_VARIABLE_NAME +
-    		DEFAULT_STATE_NAME, false);
-    
-    ExpressionEncoding encoding = getExpressionEncoding();
-    encoding.addAssumption(sizeVar.index(formatter.getNullAddress()).eq(formatter.getSizeZero()));
-    encoding.addAssumption(markVar.index(formatter.getNullAddress()).eq(encoding.tt()));
-    
-    return SingleStateExpression.create(DEFAULT_STATE_NAME, memVar, sizeVar, markVar);
-	}
-
-	SingleStateExpression freshSingleState(String labelName, long width) {
-	  ExpressionManager exprManager = getExpressionManager();
-	  IRDataFormatter formatter = getDataFormatter();
-	  ArrayExpression memVar = exprManager.arrayType(
-	  		formatter.getAddressType(), formatter.getArrayElemType(width)).variable(
-	  				DEFAULT_MEMORY_VARIABLE_NAME + labelName, false);
-	  ArrayExpression sizeVar = formatter.getSizeArrayType().variable(
-	  		DEFAULT_SIZE_VARIABLE_NAME + labelName, false);
-	  ArrayExpression markVar = formatter.getMarkArrayType().variable(
-	  		DEFAULT_MARK_VARIABLE_NAME + labelName, false);
-	  
-    ExpressionEncoding encoding = getExpressionEncoding();
-    encoding.addAssumption(sizeVar.index(formatter.getNullAddress()).eq(formatter.getSizeZero()));
-    encoding.addAssumption(markVar.index(formatter.getNullAddress()).eq(encoding.tt()));
-    
-	  return SingleStateExpression.create(labelName, memVar, sizeVar, markVar);
-	}
-	
-	SingleStateExpression freshSingleState(String labelName, ArrayType[] elemTypes) {
-		Preconditions.checkArgument(elemTypes.length == 3);
-	  ArrayExpression memVar = elemTypes[0].variable(DEFAULT_MEMORY_VARIABLE_NAME + 
-	  		labelName, false);
-	  ArrayExpression sizeVar = elemTypes[1].variable(DEFAULT_SIZE_VARIABLE_NAME + 
-	  		labelName, false);
-	  ArrayExpression markVar = elemTypes[2].variable(DEFAULT_MARK_VARIABLE_NAME +
-	  		labelName, false);
-	  return SingleStateExpression.create(labelName, memVar, sizeVar, markVar);
+	  return SingleStateExpression.create(preStateName, joinStateElems);
 	}
 	
 	void copyProperties(SingleStateExpression fromState, SingleStateExpression toState) {	
 		toState.setProperties(fromState.getProperties());
-		toState.setConstraint(fromState.getConstraint());
-		toState.setGuard(fromState.getGuard());
+		if(fromState.hasConstraint()) 
+			toState.setConstraint(fromState.getConstraint());
+		if(fromState.hasGuard()) 
+			toState.setGuard(fromState.getGuard());
 	}
-	
-	void updateStructInMemState(StateExpression state, 
-			Expression index, Expression value, long range) {
-		SingleStateExpression singleState = state.asSingle();
+
+	/**
+	 * Collection the substitution pair of size variable cleaning
+	 * @param state
+	 * @return
+	 */
+	Pair<Expression, Expression> getCleanSizeSubstPair(SingleStateExpression state) {
+		Preconditions.checkArgument(state.isSingle());
+		ExpressionManager exprManager = getExpressionManager();
 		IRDataFormatter formatter = getDataFormatter();
-		ArrayExpression memoryPrime = formatter.updateStructInMemoryArray(
-				singleState.getMemory(), index, value, range);
-		singleState.setMemory(memoryPrime);
+		String labelName = state.asSingle().getName();
+	  Expression sizeVar = exprManager.variable(DEFAULT_SIZE_VARIABLE_NAME + 
+	  		Identifiers.UNDERLINE + labelName, 
+	      formatter.getSizeArrayType(), false);
+		Expression constSizeArr = getConstSizeArr(formatter.getSizeArrayType());
+		return Pair.of(sizeVar, constSizeArr);
 	}
 	
-	private SingleStateExpression getStateVar(SingleStateExpression state) {
-		String labelName = state.getName();
-		ArrayType[] elemTypes = state.getElemTypes();
-		return freshSingleState(labelName, elemTypes);
+	SingleStateExpression freshSingleState(String labelName, xtc.type.Type type) {
+		Preconditions.checkNotNull(type);
+	  ExpressionManager exprManager = getExpressionManager();
+	  IRDataFormatter formatter = getDataFormatter();
+	  Expression memVar = exprManager.variable(DEFAULT_MEMORY_VARIABLE_NAME + 
+	  		Identifiers.UNDERLINE + labelName, 
+	  		exprManager.arrayType(formatter.getAddressType(), 
+	  				formatter.getArrayElemType(type)), false);
+	  Expression sizeVar = exprManager.variable(DEFAULT_SIZE_VARIABLE_NAME + 
+	  		Identifiers.UNDERLINE + labelName, 
+	      formatter.getSizeArrayType(), false);
+	  return SingleStateExpression.create(labelName, memVar, sizeVar);
+	}
+	
+	SingleStateExpression freshSingleState(String labelName, Type[] elemTypes) {
+		Preconditions.checkArgument(elemTypes.length == 2);
+	  ExpressionManager exprManager = getExpressionManager();
+	  Expression memVar = exprManager.variable(DEFAULT_MEMORY_VARIABLE_NAME + 
+	  		Identifiers.UNDERLINE + labelName, elemTypes[0], false);
+	  Expression sizeVar = exprManager.variable(DEFAULT_SIZE_VARIABLE_NAME + 
+	  		Identifiers.UNDERLINE + labelName, elemTypes[1], false);
+	  return SingleStateExpression.create(labelName, memVar, sizeVar);
+	}
+	
+	private SingleStateExpression substitute(StateExpression state, 
+			final StateExpression stateVar, final StateExpression stateArg) {
+		
+		Pair<List<Expression>, List<Expression>> substElemsPair = 
+				getSubstElemsPair(stateVar, stateArg);
+		Pair<List<Expression>, List<Expression>> substPredsPair =
+				getSubstPredicatesPair(state, stateArg);
+		
+		SingleStateExpression statePrime = doSubstitute(state, 
+				substElemsPair.fst(),
+				substElemsPair.snd(), 
+				substPredsPair.fst(), 
+				substPredsPair.snd());
+	  
+	  return statePrime;
+	}
+
+	private ArrayExpression getConstSizeArr(ArrayType sizeArrType) {
+		ExpressionManager exprManager = getExpressionManager();
+		IRDataFormatter formatter = getDataFormatter();
+		
+		if(Preferences.PROVER_Z3.equals(exprManager.getTheoremProver().getProviderName())) {
+			return exprManager.storeAll(formatter.getSizeZero(), sizeArrType);
+		}
+		
+		ArrayExpression sizeVar = exprManager.variable(ConstArray, sizeArrType, true).asArray();
+		Expression indexVar = exprManager.boundVar(IndexVar, sizeArrType.getIndexType(), false);
+		BooleanExpression axiom = exprManager.forall(indexVar, 
+				sizeVar.index(indexVar).eq(
+						exprManager.bitVectorZero(sizeArrType.getElementType().asBitVectorType().getSize())));
+		getExpressionEncoding().addAssumption(axiom);
+		return sizeVar;
 	}
 }
 

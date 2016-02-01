@@ -12,25 +12,24 @@ public interface IRVarInfo {
   String getScopeName();
   IRType getIRType();
 	Type getXtcType();
+	long getSize();
 	
 	Expression getLValBinding();
+	Expression getRValBinding();
+
 	boolean hasLValBinding();
+	boolean hasRValBinding();
 	
 	/**
-	 * Set the left binding expression to var info.
+	 * Set the left binding expression to var info, if the var info has 
+	 * a region var info attached (created by Steensgaard analysis),
+	 * set the <code>varExpr</code> to region var info too.
 	 * @param varExpr
 	 */
 	void setLValBinding(Expression varExpr);
+	void setRValBinding(Expression varExpr);
 	
   boolean hasProperty(String name);
   void setProperty(String name, Object property);
 	void setDeclarationNode(Node node);
-	
-	void enableLogicLabel();
-	void disableLogicLabel();
-	boolean hasLogicLabel();
-	
-	boolean isDeclared();
-  
-  boolean isStatic();
 }

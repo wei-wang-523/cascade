@@ -6,19 +6,21 @@
     A Z3 implementation of the Cascade theorem prover interface.
   </description>
 
+  <repositories>
+    <repository>
+      <id>cascade-public-repo</id>
+      <name>Cascade Public Repository</name>
+      <url>http://cs.nyu.edu/acsys/cascade-repository/</url>
+    </repository>
+  </repositories>
+
   <parent>
     <groupId>edu.nyu.cascade</groupId>
     <artifactId>cascade</artifactId>
     <version>0.0.2-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <dependencies>
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>19.0</version>
-    </dependency>
     <dependency>
       <groupId>edu.nyu.cascade</groupId>
       <artifactId>core</artifactId>
@@ -31,10 +33,81 @@
       <scope>system</scope>
       <systemPath>${z3.jar}</systemPath>
     </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>18.0</version>
+    </dependency>            
   </dependencies>
 
   <build>
     <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.0</version>
+        <executions>
+          <execution>
+            <id>default-testCompile</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+            <configuration>
+              <showWarnings>true</showWarnings>
+              <source>1.6</source>
+              <target>1.6</target>
+            </configuration>
+          </execution>
+          <execution>
+            <id>default-compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <configuration>
+              <showWarnings>true</showWarnings>
+              <source>1.6</source>
+              <target>1.6</target>
+            </configuration>
+          </execution>
+          <execution>
+            <phase>compile</phase>
+            <configuration>
+              <showWarnings>true</showWarnings>
+              <source>1.6</source>
+              <target>1.6</target>
+            </configuration>
+          </execution>
+        </executions>
+        <configuration>
+          <showWarnings>true</showWarnings>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.7.2</version>
+        <executions>
+          <execution>
+            <id>default-test</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <fork>always</fork>
+            </configuration>
+          </execution>
+        </executions>
+        <configuration>
+          <environmentVariables>
+            <LD_LIBRARY_PATH>${z3.libdir}</LD_LIBRARY_PATH>
+            <DYLD_LIBRARY_PATH>${z3.libdir}</DYLD_LIBRARY_PATH>
+          </environmentVariables>
+          <fork>always</fork>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 </project>

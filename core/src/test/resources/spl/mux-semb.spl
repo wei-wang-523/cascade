@@ -1,0 +1,27 @@
+local y1, y2 : [0..1] where y1 = 0 & y2 = 0;
+           s : [1..2] where s = 1;
+
+P_1 ::
+[
+    l_0: loop forever do [
+        l_1: noncritical;
+        l_2: y1 := 1; 
+        l_3: s := 1;
+        l_4: await y2 = 0 & s != 1;
+        l_5: critical;
+        l_6: y1 := 0;
+    ]
+]
+
+|| P_2 ::
+
+[
+    m_0: loop forever do [
+        m_1: noncritical;
+        m_2: y2 := 1; 
+        m_3: s := 2;
+        m_4: await y1 = 0 & s != 2;
+        m_5: critical;
+        m_6: y2 := 0;
+    ]
+]

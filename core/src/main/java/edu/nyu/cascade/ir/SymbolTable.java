@@ -34,5 +34,4 @@ public interface SymbolTable {
   Type lookupType(String name);
 	void enter(String name);
 	void exit();
-	void mark(Node node);
 }

@@ -5,10 +5,8 @@ int foo(int x){
   if (x == 0) 
     return 1;
   ASSERT(x > 0 && x < 1000);
-  
-  for (i = 0; i < x; ++i) {
+  for (i = 0; i < x; ++i)
     a[i]=0;
-  }
   return 0;
 }
 

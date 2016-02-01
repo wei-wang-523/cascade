@@ -1,14 +1,11 @@
 package edu.nyu.cascade.ir.impl;
 
 import java.util.Collection;
-import java.util.Deque;
 import java.util.List;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Queues;
-import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.ir.IRBasicBlock;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
@@ -18,18 +15,16 @@ public class Loop {
 	private final IRControlFlowGraph cfg;
 	private final IRBasicBlock loopHeader;
 	private final List<IRBasicBlock> blocks;
-	private Collection<IREdge<? extends IRBasicBlock>> backEdges, exitEdges, loopEdges;
-	private Collection<IRBasicBlock> blocksInExitRound, blocksInLoopRound;
+	private Collection<IREdge<?>> backEdges, exitEdges;
 	private int numBlocks;
 	private int numSubLoops;
 	private List<Loop> subLoops = Lists.newArrayList();
 	private Loop parent = null;
-	private int unrollTime = 0;
 	
 	public Loop(IRControlFlowGraph cfg, IRBasicBlock loopHeader) {
 		this.cfg = cfg;
 		this.loopHeader = loopHeader;
-		this.blocks = Lists.newArrayList(loopHeader);
+		this.blocks = Lists.newArrayList();
 	}
 
 	public IRBasicBlock getHeader() {
@@ -52,10 +47,6 @@ public class Loop {
 	  return blocks;
   }
 	
-	public boolean containsBlock(IRBasicBlock block) {
-		return blocks.contains(block);
-	}
-	
 	public boolean addBlock(IRBasicBlock block) {
 		return blocks.add(block);
 	}
@@ -72,17 +63,13 @@ public class Loop {
 		return numBlocks;
 	}
 	
-	public Collection<Loop> getSubLoops() {
-		return subLoops;
-	}
-	
 	public int getNumSubLoops() {
 		return numSubLoops;
 	}
 	
-	public Collection<IREdge<? extends IRBasicBlock>> getBackEdges() {
+	public Collection<IREdge<?>> getBackEdges() {
 		if(backEdges == null) {
-			backEdges = Lists.<IREdge<? extends IRBasicBlock>>newArrayList(
+			backEdges = Lists.newArrayList(
 					Iterables.filter(cfg.getIncomingEdges(loopHeader), 
 							new Predicate<IREdge<?>>() {
 						@Override
@@ -94,11 +81,11 @@ public class Loop {
 		return backEdges;
 	}
 	
-	public Collection<IREdge<? extends IRBasicBlock>> getExitEdges() {
+	public Collection<IREdge<?>> getExitEdges() {
 		if(exitEdges == null) {
 			exitEdges = Lists.newArrayList();
 			for(IRBasicBlock block : blocks) {
-				for(IREdge<? extends IRBasicBlock> outgoing : cfg.getOutgoingEdges(block)) {
+				for(IREdge<?> outgoing : cfg.getOutgoingEdges(block)) {
 					IRBasicBlock dest = outgoing.getTarget();
 					if(blocks.contains(dest)) continue;
 					exitEdges.add(outgoing);
@@ -106,69 +93,5 @@ public class Loop {
 			}
 		}
 		return exitEdges;
-	}
-	
-	public Collection<IREdge<? extends IRBasicBlock>> getLoopEdges() {
-		if(loopEdges == null) {
-			loopEdges = Lists.newArrayList();
-			for(IRBasicBlock block : blocks) {
-				for(IREdge<? extends IRBasicBlock> outgoing : cfg.getOutgoingEdges(block)) {
-					IRBasicBlock dest = outgoing.getTarget();
-					if(blocks.contains(dest)) loopEdges.add(outgoing);
-					continue;
-				}
-			}
-		}
-		return loopEdges;
-	}
-	
-	public int getUnrollTime() {
-		return unrollTime;
-	}
-	
-	public void setUnrollTime(int unrollTime) {
-		this.unrollTime = unrollTime;
-	}
-	
-	public Collection<IRBasicBlock> getBlocksInExitRound() {
-		if(blocksInExitRound != null) return blocksInExitRound;
-		Collection<IRBasicBlock> resBlockSet = Sets.newHashSet(loopHeader);
-		Deque<IRBasicBlock> stack = Queues.newArrayDeque();
-		for(IREdge<? extends IRBasicBlock> exitEdge : getExitEdges()) {
-			IRBasicBlock src = exitEdge.getSource();
-			stack.add(src);
-		}
-		
-		while(!stack.isEmpty()) {
-			IRBasicBlock block = stack.pop();
-			if(!resBlockSet.add(block)) continue;
-			for(IRBasicBlock predBB : cfg.getPredecessors(block)) {
-				if(blocks.contains(predBB)) stack.add(predBB);
-			}
-		}
-		
-		blocksInExitRound = resBlockSet;
-		return blocksInExitRound;
-	}
-	
-	public Collection<IRBasicBlock> getBlocksInLoopRound() {
-		if(blocksInLoopRound != null) return blocksInLoopRound;
-		Collection<IRBasicBlock> resBlockSet = Sets.newHashSet(loopHeader);
-		Deque<IRBasicBlock> stack = Queues.newArrayDeque();
-		for(IREdge<? extends IRBasicBlock> exitEdge : getBackEdges()) {
-			IRBasicBlock src = exitEdge.getSource();
-			stack.add(src);
-		}
-		
-		while(!stack.isEmpty()) {
-			IRBasicBlock block = stack.pop();
-			if(!resBlockSet.add(block)) continue;
-			for(IRBasicBlock predBB : cfg.getPredecessors(block)) {
-				if(blocks.contains(predBB)) stack.add(predBB);
-			}
-		}
-		
-		blocksInLoopRound = resBlockSet;
-		return blocksInLoopRound;
 	}
 }

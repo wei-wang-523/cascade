@@ -1,15 +1,22 @@
 package edu.nyu.cascade.prover;
 
 import java.io.File;
+import java.io.FileFilter;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionBuilder;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -124,59 +131,59 @@ public class TheoremProverFactory {
     discoverCalled = true;
 
     /* Give preference to the user-supplied plugins dir */
-//    File[] pluginsDirs = null;
-//    
-//    if(Preferences.isSet(Preferences.OPTION_PLUGINS_DIRECTORY)) {   
-//      pluginsDirs = Preferences.getFiles(Preferences.OPTION_PLUGINS_DIRECTORY);
-//      for(File pluginsDir : pluginsDirs) {
-//        if (pluginsDir != null && !pluginsDir.canRead()) {
-//          IOUtils.err().println("Can't read plugins directory: " + pluginsDir);
-//        }
-//      }
-//    }
-//
-//    /* If no user-supplied dir, use default */
-//    if (pluginsDirs == null) {
-//      pluginsDirs = new File[] {DEFAULT_PLUGINS_DIRECTORY};
-//      if( !pluginsDirs[0].canRead() ) {
-//        IOUtils.err().println("Can't read plugins directory: " + pluginsDirs[0]);
-//        pluginsDirs = null;
-//      }
-//    }
-//
+    File[] pluginsDirs = null;
+    
+    if(Preferences.isSet(Preferences.OPTION_PLUGINS_DIRECTORY)) {   
+      pluginsDirs = Preferences.getFiles(Preferences.OPTION_PLUGINS_DIRECTORY);
+      for(File pluginsDir : pluginsDirs) {
+        if (pluginsDir != null && !pluginsDir.canRead()) {
+          IOUtils.err().println("Can't read plugins directory: " + pluginsDir);
+        }
+      }
+    }
+
+    /* If no user-supplied dir, use default */
+    if (pluginsDirs == null) {
+      pluginsDirs = new File[] {DEFAULT_PLUGINS_DIRECTORY};
+      if( !pluginsDirs[0].canRead() ) {
+        IOUtils.err().println("Can't read plugins directory: " + pluginsDirs[0]);
+        pluginsDirs = null;
+      }
+    }
+
     ClassLoader classLoader = ClassLoader.getSystemClassLoader();
-//
-//    if( pluginsDirs != null ) {
-//      List<URL> urlArr = Lists.newArrayList();
-//      
-//      for(File pluginsDir : pluginsDirs) {
-//        IOUtils.debug().pln("Plugins dir: " + pluginsDir);
-//    
-//        /* Get a list of the JARs in the plugins dir */
-//        File[] jarFiles = pluginsDir.listFiles(new FileFilter() {
-//          @Override
-//          public boolean accept(File pathname) {
-//            return pathname.getName().endsWith(".jar");
-//          }
-//        });
-//
-//        /* Convert JAR names to URLs */
-//        List<URL> jarUrls = Lists.newArrayList();
-//        for (int i = 0; i < jarFiles.length; i++) {
-//          IOUtils.debug().pln("Plugin JAR: " + jarFiles[i]);
-//          try {
-//            jarUrls.add(jarFiles[i].toURI().toURL());
-//          } catch (MalformedURLException e) {
-//            e.printStackTrace(IOUtils.err());
-//            assert false;
-//          }
-//        }
-//        urlArr.addAll(jarUrls);
-//      }
-//
-//      /* Inspect the JARs for TheoremProver providers */
-//      classLoader = new URLClassLoader(urlArr.toArray(new URL[urlArr.size()]), classLoader);
-//    }
+
+    if( pluginsDirs != null ) {
+      List<URL> urlArr = Lists.newArrayList();
+      
+      for(File pluginsDir : pluginsDirs) {
+        IOUtils.debug().pln("Plugins dir: " + pluginsDir);
+    
+        /* Get a list of the JARs in the plugins dir */
+        File[] jarFiles = pluginsDir.listFiles(new FileFilter() {
+          @Override
+          public boolean accept(File pathname) {
+            return pathname.getName().endsWith(".jar");
+          }
+        });
+
+        /* Convert JAR names to URLs */
+        List<URL> jarUrls = Lists.newArrayList();
+        for (int i = 0; i < jarFiles.length; i++) {
+          IOUtils.debug().pln("Plugin JAR: " + jarFiles[i]);
+          try {
+            jarUrls.add(jarFiles[i].toURI().toURL());
+          } catch (MalformedURLException e) {
+            e.printStackTrace(IOUtils.err());
+            assert false;
+          }
+        }
+        urlArr.addAll(jarUrls);
+      }
+
+      /* Inspect the JARs for TheoremProver providers */
+      classLoader = new URLClassLoader(urlArr.toArray(new URL[urlArr.size()]), classLoader);
+    }
 
     ServiceLoader<TheoremProver.Provider> tpServiceLoader = ServiceLoader.load(
         TheoremProver.Provider.class, classLoader);
@@ -252,19 +259,25 @@ public class TheoremProverFactory {
       been called.
   */
 
+  @SuppressWarnings("static-access")
   public static ImmutableList<Option> getOptions() {
     if( !discoverCalled ) {
       discover();
     }
 
     ImmutableList.Builder<Option> listBuilder = ImmutableList.builder();
-    listBuilder.add(Option.builder().longOpt(OPTION_PROVER) //
+    listBuilder.add(OptionBuilder.withLongOpt(OPTION_PROVER) //
         .hasArg() //
-        .argName("NAME") //
-        .desc("Enable the named theorem prover plugin") //
-        .build());
+        .withArgName("NAME") //
+        .withDescription("Enable the named theorem prover plugin") //
+        .create());
     for (TheoremProver.Provider tp : allProviders) {
-    	listBuilder.addAll(tp.getOptions());
+      /*
+       * listBuilder.add(OptionBuilder.withLongOpt(tp.getName()) //
+       * .withDescription( "Enable the " + tp.getName() +
+       * " theorem prover plugin") // .create());
+       */
+      listBuilder.addAll(tp.getOptions());
     }
     return listBuilder.build();
   }

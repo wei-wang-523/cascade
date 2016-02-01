@@ -31,4 +31,10 @@ public interface PointerEncoding<T extends Expression> extends TypeEncoding<T> {
 	T getNullPtr();
 	T unknown();
 	T freshPtr(String name, boolean fresh);
+	
+	boolean isSyncEncoding();
+	boolean isLinearEncoding();
+	
+	SyncPointerEncoding<? extends Expression, ? extends Expression> asSyncPointerEncoding();
+	LinearPointerEncoding<? extends Expression> asLinearPointerEncoding();
 }

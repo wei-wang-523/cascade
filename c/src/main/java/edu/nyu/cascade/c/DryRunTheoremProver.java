@@ -8,6 +8,7 @@ import org.apache.commons.cli.Option;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
@@ -50,11 +51,13 @@ final class DryRunTheoremProver implements TheoremProver {
   private static class DryRunExpressionManager implements ExpressionManager {
     private final DryRunTheoremProver theoremProver;;
     private final ExpressionManager exprManager;
+    private final Collection<Expression> variableSet;
 
     DryRunExpressionManager(DryRunTheoremProver theoremProver,
         ExpressionManager exprManager) {
       this.theoremProver = theoremProver;
       this.exprManager = exprManager;
+      variableSet = Sets.newLinkedHashSet();
     }
 
     @Override
@@ -840,6 +843,11 @@ final class DryRunTheoremProver implements TheoremProver {
     }
 
     @Override
+    public Collection<Expression> getVariables() {
+      return variableSet;
+    }
+
+    @Override
     public UninterpretedType uninterpretedType(String name) {
       return exprManager.uninterpretedType(name);
     }
@@ -976,17 +984,6 @@ final class DryRunTheoremProver implements TheoremProver {
         boolean fresh) {
 	    return exprManager.boundExpression(name, i, type, fresh);
     }
-
-		@Override
-		public FunctionExpression lambda(Expression arg, Expression body) {
-			return exprManager.lambda(arg, body);
-		}
-
-		@Override
-		public FunctionExpression lambda(Collection<Expression> args,
-				Expression body) {
-			return exprManager.lambda(args, body);
-		}
   }
 
   public class Provider implements TheoremProver.Provider {
@@ -1057,6 +1054,16 @@ final class DryRunTheoremProver implements TheoremProver {
   public ExpressionManager getExpressionManager() {
     return exprManager;
   }
+
+  @Override
+  public void setEffortLevel(int level) {
+    theoremProver.setEffortLevel(level);
+  }
+  
+  @Override
+  public void setTimeLimit(int second) {
+    theoremProver.setTimeLimit(second);
+  }
   
   @Override
   public void setPreferences() {
@@ -1067,19 +1074,4 @@ final class DryRunTheoremProver implements TheoremProver {
   public String getProviderName() {
     return theoremProver.getProviderName();
   }
-
-	@Override
-	public long getStatsTime() {
-		return theoremProver.getStatsTime();
-	}
-
-	@Override
-	public Expression evaluate(Expression expr) {
-		return theoremProver.evaluate(expr);
-	}
-	
-	@Override
-	public void reset() {
-		theoremProver.reset();
-	}
 }

@@ -37,10 +37,10 @@ public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
   
   T constant(long c);
   
-  T constant(BigInteger c, long size);
+  T constant(BigInteger c);
   
   /** Returns an integer expression representing the character constant <code>c</code>. */
-  T characterConstant(int c);
+  T characterConstant(long c);
   
   /**
    * Returns an integer expression representing the integer <code>expr</code>
@@ -132,12 +132,6 @@ public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
   T ofInteger(T i, int size);
   
   /**
-   * Cast expression <code>i</code> to integer expression with given <code>
-   * size</code>
-   */
-  T ofInteger(T i, int size, boolean isSigned);
-  
-  /**
    * Returns an integer expression representing one.
    */
   T one() ;
@@ -190,7 +184,7 @@ public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
   /**
    * @return an unknown expression with given <code>type</code>
    */
-  T unknown(long size);
+  T unknown(Type type);
   
   /**
    * Returns an integer expression representing zero.
@@ -201,11 +195,6 @@ public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
    * Return an expression representing <code>-expr</code>
    */
   T uminus(T expr);
-  
-  /**
-   * Return an expression representing <code>+expr</code>
-   */
-  T uplus(T expr);
   
   /**
    * @return an expression representing <code>lhs << rhs</code>

@@ -25,6 +25,7 @@ import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
+import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 
 class FunctionDeclarator extends ExpressionImpl
@@ -39,14 +40,14 @@ class FunctionDeclarator extends ExpressionImpl
           });
   
   static FunctionDeclarator create(final ExpressionManagerImpl exprManager, String name,
-      Iterable<? extends Type> args, Type range, boolean fresh) {
+      Iterable<? extends Type> argTypes, Type range, boolean fresh) {
     try {
     	String funcName = fresh ? Identifiers.uniquify(name) : name;
     	
       if(funcCache.get(exprManager).containsKey(funcName)) 
         return funcCache.get(exprManager).get(funcName);
       
-      Iterable<TypeImpl> argTypes = Iterables.transform(args,
+      Iterable<TypeImpl> argTypes1 = Iterables.transform(argTypes,
           new Function<Type, TypeImpl>() {
             @Override
             public TypeImpl apply(Type t) {
@@ -56,7 +57,7 @@ class FunctionDeclarator extends ExpressionImpl
       
       TypeImpl rangeType = exprManager.importType(range);
       
-      FunctionTypeImpl funcType = FunctionTypeImpl.create(exprManager, argTypes, rangeType);
+      FunctionTypeImpl funcType = FunctionTypeImpl.create(exprManager, argTypes1, rangeType);
       FunctionDeclarator func = new FunctionDeclarator(exprManager, funcName, funcType);
       funcCache.get(exprManager).put(funcName, func);
       return func;
@@ -148,7 +149,10 @@ class FunctionDeclarator extends ExpressionImpl
           }), Sort.class), 
           exprManager.importType(functionType.getRangeType()).getZ3Type());
       
-      TheoremProverImpl.z3FileCommand(func.toString().trim());
+      if(IOUtils.debugEnabled())
+        TheoremProverImpl.debugCommand(func.toString().trim());
+      if(IOUtils.tpFileEnabled())
+        TheoremProverImpl.z3FileCommand(func.toString().trim());
     } catch (Z3Exception e) {
     	throw new TheoremProverException(e);
     }
