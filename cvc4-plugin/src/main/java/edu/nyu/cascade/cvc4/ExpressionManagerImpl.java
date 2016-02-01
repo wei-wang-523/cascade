@@ -18,6 +18,7 @@ import com.google.common.collect.MapMaker;
 import edu.nyu.acsys.CVC4.ArrayStoreAll;
 import edu.nyu.acsys.CVC4.Expr;
 import edu.nyu.acsys.CVC4.Integer;
+import edu.nyu.acsys.CVC4.pairStringType;
 import edu.nyu.acsys.CVC4.vectorExpr;
 import edu.nyu.acsys.CVC4.vectorType;
 import edu.nyu.cascade.cvc4.InductiveTypeImpl.ConstructorImpl;
@@ -857,9 +858,9 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     	Collection<String> fieldNames = Lists.newArrayList();
     	Collection<Type> fieldTypes = Lists.newArrayList();
     	for(int i = 0; i < size; i++) {
-    		Object[] field = record.getField(i);
-    		fieldNames.add((String) field[0]);
-    		fieldTypes.add(toType((edu.nyu.acsys.CVC4.Type) field[1]));
+    		pairStringType pair = record.getField(i);
+    		fieldNames.add(pair.getFirst());
+    		fieldTypes.add(toType(pair.getSecond()));
     	}
     	return RecordTypeImpl.create(this, "cvc4_record", fieldNames, fieldTypes);
     }

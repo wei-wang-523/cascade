@@ -17,10 +17,10 @@ import edu.nyu.cascade.prover.type.Type;
 final class UninterpretedExpressionImpl extends ExpressionImpl implements
     UninterpretedExpression {
 
-  static UninterpretedExpressionImpl create(ExpressionManagerImpl exprManager, Type type, int id) {
-    Preconditions.checkArgument(type.isUninterpreted());
-    return new UninterpretedExpressionImpl(exprManager, type, id);
-  }
+//  static UninterpretedExpressionImpl create(ExpressionManagerImpl exprManager, Type type, int id) {
+//    Preconditions.checkArgument(type.isUninterpreted());
+//    return new UninterpretedExpressionImpl(exprManager, type, id);
+//  }
 
   static UninterpretedExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
 	    Expr expr, UninterpretedType type, Iterable<? extends ExpressionImpl> children) {
@@ -51,19 +51,19 @@ final class UninterpretedExpressionImpl extends ExpressionImpl implements
     setType(TupleTypeImpl.valueOf(exprManager,t));
   }
 
-  private UninterpretedExpressionImpl(final ExpressionManagerImpl exprManager, final Type type, final int id) {
-    super(exprManager, UNINTERPRETED, new NullaryConstructionStrategy() {
-      @Override
-      public Expr apply(ExprManager em)
-          throws Exception {
-        edu.nyu.acsys.CVC4.Type cvc4_type = exprManager.toCvc4Type(type);
-        Integer cvc4_id = new Integer(id);
-        UninterpretedConstant uc = new UninterpretedConstant(cvc4_type, cvc4_id);
-        return em.mkConst(uc);
-      }
-    });
-    setType(type);
-  }
+//  private UninterpretedExpressionImpl(final ExpressionManagerImpl exprManager, final Type type, final int id) {
+//    super(exprManager, UNINTERPRETED, new NullaryConstructionStrategy() {
+//      @Override
+//      public Expr apply(ExprManager em)
+//          throws Exception {
+//        edu.nyu.acsys.CVC4.Type cvc4_type = exprManager.toCvc4Type(type);
+//        Integer cvc4_id = new Integer(id);
+//        UninterpretedConstant uc = new UninterpretedConstant(cvc4_type, cvc4_id);
+//        return em.mkConst(uc);
+//      }
+//    });
+//    setType(type);
+//  }
 
   private UninterpretedExpressionImpl(ExpressionImpl tuple) {
     super(tuple);
