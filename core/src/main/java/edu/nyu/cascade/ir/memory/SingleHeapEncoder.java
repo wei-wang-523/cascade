@@ -9,7 +9,7 @@ import edu.nyu.cascade.ir.memory.layout.IROrderMemLayoutEncoding;
 import edu.nyu.cascade.ir.memory.layout.IRSoundMemLayoutEncoding;
 import edu.nyu.cascade.ir.memory.layout.OrderLinearMemLayoutEncoding;
 import edu.nyu.cascade.ir.memory.layout.SoundLinearMemLayoutEncoding;
-import edu.nyu.cascade.ir.memory.safety.Strategy;
+import edu.nyu.cascade.ir.memory.safety.AbstractMemSafetyEncoding.Strategy;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;

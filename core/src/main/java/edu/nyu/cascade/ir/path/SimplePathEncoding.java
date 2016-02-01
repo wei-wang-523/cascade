@@ -68,22 +68,12 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   }
 	
 	@Override
-	public StateExpression declareVarArray(StateExpression preState, Expression lval, Node sourceNode,
-			Expression rval) {
-    StateFactory<?> stateFactory = getStateFactory();
-    StateExpression currState = preState;
-    String name = sourceNode.getString(0);
-    IRVarInfo info = (IRVarInfo) getExpressionEncoder().getCurrentScope().lookup(name);
-    stateFactory.addStackVarArray(currState, lval, rval, info, sourceNode);
-    return currState;
-	}
-	
-	@Override
   public StateExpression init(StateExpression preState, Expression lval, Node lNode, 
-  		Expression rval, Node rNode) {
+  		List<Expression> rvals, List<Node> rNodes) {
     StateFactory<?> stateFactory = getStateFactory();
     StateExpression currState = preState;
-    stateFactory.assign(currState, lval, lNode, rval, rNode);
+    
+    stateFactory.initializeValues(currState, lval, lNode, rvals, rNodes);
     return currState;
   }
   
@@ -124,12 +114,12 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   }
 
   @Override
-  public StateExpression assume(StateExpression preState, Expression expr, boolean isGuard) {
+  public StateExpression assume(StateExpression preState, Expression expr, boolean isEdge) {
     Preconditions.checkArgument(expr.isBoolean());
     StateExpression currState = preState;
   	
-    if(isGuard) 	currState.addGuard(expr.asBooleanExpression());
-    else 					currState.addConstraint(expr.asBooleanExpression());
+    if(isEdge) 	currState.addGuard(expr.asBooleanExpression());
+    else 				currState.addConstraint(expr.asBooleanExpression());
     return currState;
   }
 
@@ -175,37 +165,59 @@ public class SimplePathEncoding extends AbstractPathEncoding {
   	StateFactory<?> stateFactory = getStateFactory();
   	
   	if(funcName.equals(ReservedFunction.MEMSET)) {
-  		Expression region = args.get(1);
-  		Expression value = args.get(2);
-  		Expression size = args.get(3);
-  		Node regionNode = argNodes.get(1);
-  		Node valueNode = argNodes.get(2);
-  		stateFactory.setValidAccessRange(preState, region, size, regionNode);
-  		
-  		xtc.type.Type valueNodeType = CType.getType(valueNode);
-  		BooleanExpression memset;
-  		if(valueNodeType.hasConstant()) {
-  			// The value constant must be less than 256
-  			int valueConstant = (int) valueNodeType.getConstant().longValue();
-  			memset = stateFactory.applyMemset(preState, region, size, valueConstant, regionNode);
-  		} else {
-  			memset = stateFactory.applyMemset(preState, region, size, value, regionNode);
-  		}
-
+  		Expression region = args.get(0);
+  		Expression value = args.get(1);
+  		Expression size = args.get(2);
+  		BooleanExpression memset = stateFactory.applyMemset(preState, region, size, value, argNodes.get(0));
   		preState.addConstraint(memset);
+  		return preState;
   	}
   	
-  	else if(funcName.equals(ReservedFunction.MEMCOPY)) {
-  		Expression destRegion = args.get(1);
-  		Expression srcRegion = args.get(2);
-  		Expression size = args.get(3);
-  		Node destNode = argNodes.get(1);
-  		Node srcNode = argNodes.get(2);
-  		BooleanExpression memcpy = stateFactory.applyMemcpy(preState, destRegion, 
-  				srcRegion, size, destNode, srcNode);
+  	if(funcName.equals(ReservedFunction.MEMCOPY)) {
+  		Expression destRegion = args.get(0);
+  		Expression srcRegion = args.get(1);
+  		Expression size = args.get(2);
+  		BooleanExpression memcpy = stateFactory.applyMemcpy(preState, destRegion, srcRegion, size, argNodes.get(0), argNodes.get(1));
   		preState.addConstraint(memcpy);
+  		return preState;
   	}
   	
   	return preState;
+  }
+
+	@Override
+  final protected BooleanExpression assertionToBoolean(StateExpression preState,
+      Expression bool) {
+    Preconditions.checkArgument( bool.isBoolean() );
+    StateFactory<?> stateFactory = getStateFactory();
+    ExpressionEncoding exprEncoding = getExpressionEncoding();
+    
+    StateExpression currState = preState;
+  	
+    BooleanExpression memorySafe = stateFactory.getDisjointAssumption(currState)
+    		.asBooleanExpression();
+    Expression pc = currState.getConstraint();
+    Expression guard = currState.getGuard();
+    Expression assumption = pc == null ? exprEncoding.and(guard, memorySafe) :
+    	exprEncoding.and(pc, guard, memorySafe);
+    
+    Expression res = exprEncoding.implies(assumption, bool);
+    Expression resCleanup = stateFactory.cleanup(currState, res);
+    return resCleanup.asBooleanExpression();
+  }
+
+  @Override
+  public final BooleanExpression pathToBoolean(StateExpression preState) {
+  	StateFactory<?> stateFactory = getStateFactory();
+    ExpressionEncoding exprEncoding = getExpressionEncoding();
+    
+    Expression pc = preState.getConstraint();
+    Expression guard = preState.getGuard();
+    Expression memorySafe = stateFactory.getDisjointAssumption(preState);
+    Expression res = pc == null ? exprEncoding.and(guard, memorySafe) :
+    	exprEncoding.and(pc, guard, memorySafe);
+    	
+    Expression resCleanup = stateFactory.cleanup(preState, res);
+    return resCleanup.asBooleanExpression();
   }
 }

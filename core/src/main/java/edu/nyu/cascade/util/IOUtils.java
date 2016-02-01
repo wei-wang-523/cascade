@@ -266,9 +266,9 @@ public class IOUtils {
     userEnabledOut = true;
   }
 
-  public static void enableTrace(File file) {
+  public static void enableTrace(String fileName) {
   	traceFlag = true;
-  	File dumpDir = FileUtils.createDumpDir(file.getName());
+  	File dumpDir = FileUtils.createDumpDir(fileName);
   	File witnessFile = FileUtils.filePath(dumpDir, "witness.out");
   	File witnessXmlFile = FileUtils.filePath(dumpDir, "witness.graphml");
   	

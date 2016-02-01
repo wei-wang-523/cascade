@@ -23,7 +23,6 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.BoundExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Pair;
 
@@ -37,7 +36,6 @@ import edu.nyu.cascade.util.Pair;
  */
 
 public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
-  private static final String VAL_PREFIX = "value_of_";
   
   protected final IntegerEncoding<? extends Expression> integerEncoding;
 
@@ -416,7 +414,6 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
     case ARRAY:
     case STRUCT:
     case UNION:
-    case FUNCTION:
     case POINTER:
       return getPointerEncoding();
     
@@ -826,8 +823,8 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   }
 	
 	@Override
-  public Expression integerConstant(BigInteger c, long size) {
-    return getIntegerEncoding().constant(c, size);
+  public Expression integerConstant(BigInteger c) {
+    return getIntegerEncoding().constant(c);
   }
 	
   @Override
@@ -1178,13 +1175,13 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
   	if(isInteger(base1)) {
   		Expression baseBound1 = plus(base1, size1);
   		Expression baseBound2 = plus(base2, size2);
-  		return and(lessThanOrEqual(base1, base2), lessThanOrEqual(baseBound2, baseBound1));
+  		return and(lessThanOrEqual(base1, base2), lessThan(baseBound2, baseBound1));
   	} else {
   		PointerEncoding<? extends Expression> pe = getPointerEncoding();
   		IntegerEncoding<? extends Expression> ie = getIntegerEncoding();
   		Expression baseBound1 = pointerPlus_(pe, ie, base1, size1);
   		Expression baseBound2 = pointerPlus_(pe, ie, base2, size2);
-  		return and(pointerLessThanOrEqual_(pe, base1, base2), pointerLessThanOrEqual_(pe, baseBound2, baseBound1));
+  		return and(pointerLessThanOrEqual_(pe, base1, base2), pointerLessThan_(pe, baseBound2, baseBound1));
   	}
   }
   
@@ -1230,14 +1227,5 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 	  Expression rhsPrime = toInteger_(ie, rhs, size, !CType.isUnsigned(rhsType));
 	  			
 	  return Pair.of(lhsPrime, rhsPrime);
-	}
-  
-  @Override
-	public VariableExpression getRvalBinding(Expression lvalBinding) {
-  	Preconditions.checkArgument(lvalBinding.isHoareLogic());
-		VariableExpression lvalBindingVar = lvalBinding.asVariable();
-		String name = lvalBindingVar.getName();
-		String rvalName = VAL_PREFIX + name;
-		return getExpressionManager().variable(rvalName, lvalBindingVar.getType(), false);
 	}
 }

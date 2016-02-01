@@ -1,11 +1,10 @@
-extern int __VERIFIER_nondet_int();
 int b;
 
 int main(){
 	int i,n,j;
 	int a[1025];
 	
-	if (__VERIFIER_nondet_int()){
+	if (__NONDET__()){
 		n=0;
 	} else {
 		n=1023;

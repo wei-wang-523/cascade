@@ -140,7 +140,7 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
   }
 
   @Override
-  public void addStatements(Iterable<? extends IRStatement> statements) {
+  public void addStatements(List<? extends IRStatement> statements) {
   	for(IRStatement stmt : statements) {
   		addStatement(stmt);
   	}
@@ -257,11 +257,7 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
   
   @Override
   public BasicBlock clone() {
-  	ImmutableList.Builder<IRStatement> stmtBuilder = ImmutableList.builder();
-  	for(IRStatement stmt : statements) {
-  		stmtBuilder.add(stmt.clone());
-  	}
-  	BasicBlock newBlock = new BasicBlock(type, stmtBuilder.build());
+  	BasicBlock newBlock = new BasicBlock(type, statements);
   	newBlock.updateLocations();
   	newBlock.scope = scope;
   	newBlock.swichBlock = swichBlock;

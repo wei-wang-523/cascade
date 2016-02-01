@@ -54,30 +54,6 @@ public class MainTest {
     }
   };
   
-  private static final FilenameFilter falseDerefFileFilter = new FilenameFilter() {
-    public boolean accept(File dir, String name) {
-      return name.endsWith("_false-valid-deref.c");
-    }
-  };
-  
-  private static final FilenameFilter falseFreeFileFilter = new FilenameFilter() {
-    public boolean accept(File dir, String name) {
-      return name.endsWith("_false-valid-free.c");
-    }
-  };
-  
-  private static final FilenameFilter falseMemtrackFileFilter = new FilenameFilter() {
-    public boolean accept(File dir, String name) {
-      return name.endsWith("_false-valid-memtrack.c");
-    }
-  };
-  
-  private static final FilenameFilter falseAssertFileFilter = new FilenameFilter() {
-    public boolean accept(File dir, String name) {
-      return name.endsWith("_false-valid-assert.c");
-    }
-  };
-  
   private static final FilenameFilter propFileFilter = new FilenameFilter() {
     public boolean accept(File dir, String name) {
       return name.endsWith(".properties");
@@ -219,16 +195,31 @@ public class MainTest {
   
   @Test
   @Ignore
-  public void testFieldSensitive() {
-  	File invalid_programs_location = new File(mini_programs_location, "invalid");
-  	File valid_programs_location = new File(mini_programs_location, "valid");
-  	Tester<File> tester = parserTestTimeout("--inline-anno", "--iter-times", "10", "--vari-cell",
-				"--lambda", "--memory-check", "--hoare", "--fs", "-m32");
-  	
-  	TestUtils.checkDirectoryRec(invalid_programs_location, cFileFilter, tester, false);
-  	TestUtils.checkDirectoryRec(valid_programs_location, cFileFilter, tester, false);
+  public void testFieldSensitive() {  	
+  	TestUtils.checkDirectoryRec(mini_programs_location, cFileFilter,
+  			parserTestTimeout("--inline-anno", "--iter-times", "10", "--fs", 
+  	  			"--lambda", "--memory-check", "--merge-unroll", "--hoare"), false);
+  	TestUtils.checkDirectoryRec(mini_programs_location, cFileFilter,
+  			parserTestTimeout("--inline-anno", "--iter-times", "10", "--fs", "--multi-cell",
+  	  			"--lambda", "--memory-check", "--merge-unroll", "--hoare"), false);
+  	TestUtils.checkDirectoryRec(mini_programs_location, cFileFilter,
+  			parserTest("--inline-anno", "--iter-times", "10", "--fs", "--vari-cell",
+  	  			"--lambda", "--memory-check", "--merge-unroll", "--hoare"), false);
   }
-    
+  
+  
+  @Test
+  public void testNonOverflowDryRun() {
+  	TestUtils.checkDirectory(programs_location, cFileFilter,
+  			parserTest("--dry-run", "--non-overflow"), false);
+  	
+  	TestUtils.checkDirectoryRec(mini_programs_location, cFileFilter,
+  			parserTest("--dry-run", "--non-overflow", "--iter-times", "1"), false);
+  	
+  	TestUtils.checkDirectoryRec(mini_programs_location, cFileFilter,
+  			parserTest("--dry-run", "--non-overflow", "--iter-times", "1", "--lambda"), false);
+  }
+  
   @Test
   @Ignore
   public void testReachability() {
@@ -237,10 +228,10 @@ public class MainTest {
     
   	TestUtils.checkDirectoryRec(bv_programs_location, iFileFilter, 
   			parserTestTimeout("-r", "ERROR", 
-  					"--multi-cell", "--iter-times", "10", "--function-inline", "2"), false);
+  					"--multi-cell", "--iter-times", "10", "--function-inline", "2", "--merge-unroll"), false);
   	TestUtils.checkDirectoryRec(bv_reg_programs_location, iFileFilter, 
   			parserTestTimeout("-r", "ERROR", 
-  					"--multi-cell", "--iter-times", "10", "--function-inline", "2"), false);
+  					"--multi-cell", "--iter-times", "10", "--function-inline", "2", "--merge-unroll"), false);
   }
   
   @Test
@@ -250,7 +241,7 @@ public class MainTest {
     
   	TestUtils.checkDirectoryRec(memsafety_programs_location, iFileFilter, 
   			parserTestTimeout("--memory-check", "--lambda", "--hoare",
-  					"--multi-cell", "--iter-times", "10", "--function-inline", "2"), false);
+  					"--multi-cell", "--iter-times", "10", "--function-inline", "2", "--merge-unroll"), false);
   }
   
   @Test
@@ -262,34 +253,10 @@ public class MainTest {
   
   @Test
 //  @Ignore
-  public void testCFSMiniBenchmark() {
-  	final Tester<File> SoundTester = parserTestTimeout("--inline-anno", "--iter-times", 
-  			"10", "-m32", "--vari-cell", "--lambda", "--memory-check", "--hoare", "-cfs");
-  	
-  	File invalid_location = new File(mini_programs_location, "invalid");
-  	File valid_location = new File(mini_programs_location, "valid");
-  	
-    TestUtils.checkDirectoryRec(invalid_location, falseDerefFileFilter, SoundTester, false);
-    TestUtils.checkDirectoryRec(invalid_location, falseFreeFileFilter, SoundTester, false);
-    TestUtils.checkDirectoryRec(invalid_location, falseMemtrackFileFilter, SoundTester, false);
-    TestUtils.checkDirectoryRec(invalid_location, falseAssertFileFilter, SoundTester, false);
-    TestUtils.checkDirectoryRec(valid_location, cFileFilter, SoundTester, false);
-  }
-  
-  @Test
-  //@Ignore
-  public void testCFSCSMiniBenchmark() {
-  	final Tester<File> SoundTester = parserTestTimeout("--inline-anno", "--iter-times", 
-  			"10", "-m32", "--vari-cell", "--lambda", "--memory-check", "--hoare", "-cfscs");
-  	
-  	File invalid_location = new File(mini_programs_location, "invalid");
-  	File valid_location = new File(mini_programs_location, "valid");
-  	
-    TestUtils.checkDirectoryRec(invalid_location, falseDerefFileFilter, SoundTester, false);
-    TestUtils.checkDirectoryRec(invalid_location, falseFreeFileFilter, SoundTester, false);
-    TestUtils.checkDirectoryRec(invalid_location, falseMemtrackFileFilter, SoundTester, false);
-    TestUtils.checkDirectoryRec(invalid_location, falseAssertFileFilter, SoundTester, false);
-    TestUtils.checkDirectoryRec(valid_location, cFileFilter, SoundTester, false);
+  public void testMiniBenchmark() {
+  	final Tester<File> SoundTester = parserTestTimeout("--inline-anno", "--iter-times", "10",
+  			"--lambda", "--memory-check", "--merge-unroll", "--hoare");
+    TestUtils.checkDirectoryRec(mini_programs_location, cFileFilter, SoundTester, false);
   }
   
   @Test

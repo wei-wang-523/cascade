@@ -18,7 +18,7 @@ public class Loop {
 	private final IRControlFlowGraph cfg;
 	private final IRBasicBlock loopHeader;
 	private final List<IRBasicBlock> blocks;
-	private Collection<IREdge<? extends IRBasicBlock>> backEdges, exitEdges, loopEdges;
+	private Collection<IREdge<? extends IRBasicBlock>> backEdges, exitEdges;
 	private Collection<IRBasicBlock> blocksInExitRound, blocksInLoopRound;
 	private int numBlocks;
 	private int numSubLoops;
@@ -82,7 +82,7 @@ public class Loop {
 	
 	public Collection<IREdge<? extends IRBasicBlock>> getBackEdges() {
 		if(backEdges == null) {
-			backEdges = Lists.<IREdge<? extends IRBasicBlock>>newArrayList(
+			backEdges = Lists.newArrayList(
 					Iterables.filter(cfg.getIncomingEdges(loopHeader), 
 							new Predicate<IREdge<?>>() {
 						@Override
@@ -106,20 +106,6 @@ public class Loop {
 			}
 		}
 		return exitEdges;
-	}
-	
-	public Collection<IREdge<? extends IRBasicBlock>> getLoopEdges() {
-		if(loopEdges == null) {
-			loopEdges = Lists.newArrayList();
-			for(IRBasicBlock block : blocks) {
-				for(IREdge<? extends IRBasicBlock> outgoing : cfg.getOutgoingEdges(block)) {
-					IRBasicBlock dest = outgoing.getTarget();
-					if(blocks.contains(dest)) loopEdges.add(outgoing);
-					continue;
-				}
-			}
-		}
-		return loopEdges;
 	}
 	
 	public int getUnrollTime() {

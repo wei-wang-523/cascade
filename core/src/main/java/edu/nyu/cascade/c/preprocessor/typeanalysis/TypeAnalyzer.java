@@ -1,26 +1,17 @@
 package edu.nyu.cascade.c.preprocessor.typeanalysis;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.Map;
 
 import xtc.tree.Node;
 import xtc.type.Type;
-import xtc.type.VoidT;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Queues;
-import com.google.common.collect.Range;
-import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.c.preprocessor.IRVar;
-import edu.nyu.cascade.ir.IRBasicBlock;
-import edu.nyu.cascade.ir.IRControlFlowGraph;
-import edu.nyu.cascade.ir.IREdge;
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.prover.Expression;
@@ -46,30 +37,9 @@ public class TypeAnalyzer implements PreProcessor<FSType> {
 	public void reset() {
 		varTypeMap.clear();
 	}
-	
-	@Override
-	public void analysis(IRControlFlowGraph cfg) {
-		final Collection<IRBasicBlock> visited = Sets.newHashSet();
-		Deque<IRBasicBlock> workList = Queues.newArrayDeque();
-		workList.push(cfg.getEntry());
-		
-		while(!workList.isEmpty()) {
-			IRBasicBlock block = workList.pop();
-			if(visited.contains(block)) continue;
-			
-			visited.add(block);
-			
-			for(IRStatement stmt : block.getStatements()) {
-				analysis(stmt);
-			}
-			
-			for(IREdge<?> outgoing : cfg.getOutgoingEdges(block)) {				
-				workList.add(outgoing.getTarget());
-			}
-		}
-	}
 
-	private void analysis(IRStatement stmt) {
+	@Override
+	public void analysis(IRStatement stmt) {
 		switch(stmt.getType()) {
 		case ASSIGN : {
 			IRExpression lhs = stmt.getOperand(0);
@@ -96,8 +66,11 @@ public class TypeAnalyzer implements PreProcessor<FSType> {
 	 * @return
 	 */
 	@Override
-	public FSType getPointsToLoc(FSType fsType) {		
-		Type type = fsType.getType();
+	public FSType getPointsToRep(Node node) {
+		if(node.hasName("AddressExpression"))
+			return typeEncoder.encodeFSType(node.getNode(0));
+		
+		Type type = CType.getType(node);
 		Type cellType = type;
 		
 		Type cleanType = type.resolve();
@@ -109,15 +82,23 @@ public class TypeAnalyzer implements PreProcessor<FSType> {
 			cleanType = CType.getArrayCellType(cellType);
 		}
 		
-		String cellTypeName = typeEncoder.parseTypeName(cellType);
+		String cellTypeName = CType.parseTypeName(cellType);
 		FSType res = FSType.of(cellType, cellTypeName);
 		IOUtils.debug().pln("The points-to rep is " + res);
 		return res;
 	}
 	
 	@Override
-	public long getRepTypeWidth(FSType rep) {
-	  return CType.getInstance().getWidth(rep.getType());
+	public Type getRepType(FSType rep) {
+	  return rep.getType();
+	}
+
+	@Override
+	public ImmutableMap<FSType, Collection<IRVar>> getSnapShot() {
+	  ImmutableMap.Builder<FSType, Collection<IRVar>> builder = 
+	  		new ImmutableMap.Builder<FSType, Collection<IRVar>>()
+	  		.putAll(varTypeMap.asMap());
+	  return builder.build();
 	}
 	
 	/** Don't bother to build snap shot for Burstall memory model */
@@ -134,32 +115,43 @@ public class TypeAnalyzer implements PreProcessor<FSType> {
 	 */
 	@Override
 	public String getRepId(FSType fsType) {
-		return String.valueOf(fsType.getId());
+		return fsType.getId();
 	}
 	
 	@Override
-	public void addAllocRegion(Expression region, Node ptrNode) {
-		String name = region.asVariable().getName();
-	  String scopeName = CType.getScopeName(ptrNode);
-	  FSType fsType = getPointsToLoc(getRep(ptrNode));
+	public FSType getSrcRep(FSType fsType) {
+		while(fsType.hasParent()) {
+			fsType = fsType.getParent();
+		}
+	  return fsType;
+	}
+	
+	@Override
+	public void addAllocRegion(FSType fsType, Expression region, Node regionNode) {
+	  String name = regionNode.getString(0);
+	  Type type = CType.getType(regionNode);
+	  String scopeName = CType.getScopeName(regionNode);
 	  
-	  IRVar var = VarImpl.create(name, VoidT.TYPE, scopeName);
+	  IRVar var = VarImpl.createForRegion(name, type, scopeName, region);
+		
 		varTypeMap.put(fsType, var);
 		
 		IOUtils.debug().pln(displaySnapShot());
 	}
 
 	@Override
-	public void addStackVar(Expression lval, Node lvalNode) {
+	public IRVar addStackVar(Expression lval, Node lvalNode) {
 	  String name = lvalNode.getString(0);
 	  Type type = CType.getType(lvalNode);
 	  String scopeName = CType.getScopeName(lvalNode);
 	  
-	  IRVar var = VarImpl.create(name, type, scopeName);
+	  IRVar var = VarImpl.createForSymbol(name, type, scopeName, lval);
 	  FSType fsType = typeEncoder.encodeFSType(lvalNode);
 		
 	  varTypeMap.put(fsType, var);
 	  IOUtils.debug().pln(displaySnapShot());
+	  
+	  return var;
 	}
 
 	@Override
@@ -173,36 +165,10 @@ public class TypeAnalyzer implements PreProcessor<FSType> {
 			.append(" { ");
 			
 			for(IRVar var : varTypeMap.get(fsType)) {
-				sb.append(var.getName()).append(' ');
+				sb.append(var.toStringShort()).append(' ');
 			}
 			sb.append("}\n");
 		}
 		return sb.toString();
-	}
-	
-	@Override
-	public Map<Range<Long>, FSType> getStructMap(FSType type) {
-		throw new UnsupportedOperationException();
-	}
-	
-	@Override
-	public Collection<IRVar> getEquivFuncVars(Node funcNode) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-  public Collection<FSType> getFillInReps(FSType rep) {
-		return Collections.singleton(rep);
-  }
-
-	@Override
-	public boolean isAccessTypeSafe(FSType rep) {
-		return false;
-	}
-
-	@Override
-	public void initChecker() {
-	    // TODO Auto-generated method stub
-	    
 	}
 }

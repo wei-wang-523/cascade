@@ -1,7 +1,6 @@
-extern int __VERIFIER_nondet_int();
 
 int main(){
-  while(__VERIFIER_nondet_int()) {
+  while(__NONDET__()) {
   }
 	
   return 1;	

@@ -9,6 +9,7 @@ import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.state.StateExpression;
 import edu.nyu.cascade.ir.state.StateFactory;
+import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.SatResult;
@@ -28,8 +29,8 @@ public interface PathEncoding    {
   StateExpression noop(StateExpression pre);
   StateExpression noop(Collection<StateExpression> preStates);
   
-	StateExpression assume(StateExpression pre, Expression bool, boolean isGuard) ;
-	StateExpression assume(StateExpression pre, IRExpression expr, boolean isGuard) throws PathFactoryException;
+	StateExpression assume(StateExpression pre, Expression bool, boolean isEdge) ;
+	StateExpression assume(StateExpression pre, IRExpression expr) throws PathFactoryException;
 
 	StateExpression assign(StateExpression pre, Expression lval, Node lNode, Expression rval, Node rNode) ;
 	StateExpression assign(StateExpression pre, IRExpression lval, IRExpression rval) throws PathFactoryException;
@@ -52,30 +53,28 @@ public interface PathEncoding    {
 	StateExpression declare(StateExpression pre, IRExpression lval) throws PathFactoryException;
 	StateExpression declare(StateExpression pre, Expression lval, Node lNode);
 	
-	StateExpression declareVarArray(StateExpression pre, IRExpression ptr, IRExpression size) throws PathFactoryException;
-	StateExpression declareVarArray(StateExpression pre, Expression ptr, Node pNode, Expression size);
-	
 	StateExpression ret(StateExpression pre, IRExpression lval) throws PathFactoryException;
 	
-	StateExpression init(StateExpression pre, IRExpression lval, IRExpression rval) throws PathFactoryException;
-	StateExpression init(StateExpression pre, Expression lval, Node lNode, Expression rval, Node rNode);
+	StateExpression init(StateExpression pre, IRExpression lval, IRExpression... rvals) throws PathFactoryException;
+	StateExpression init(StateExpression pre, Expression lval, Node lNode, List<Expression> rvals, List<Node> rNodes);
 	
 	StateExpression call(StateExpression pre, IRExpression func, IRExpression... args) throws PathFactoryException;
 	StateExpression call(StateExpression pre, String funcName, Node funcNode, List<Expression> args, List<Node> argNodes);
 	
   StateExpression emptyState();
   
-  ValidityResult<?> checkAssertion(Expression assertion) throws PathFactoryException;
+  ValidityResult<?> checkAssertion(StateExpression prefix, Expression p) throws PathFactoryException;
 
   SatResult<?> checkPath(StateExpression prefix) throws PathFactoryException;
   
+	BooleanExpression pathToBoolean(StateExpression path);
+  
   /** Clean all the side-effect of instance fields */
   void reset();
+  
+	String getFailReason();
+	ValidityResult<?> preRunIsValid();
 	
 	/** Get the trace expression annotation for counter-example generation */
 	Expression getTraceExpression();
-	
-	/** Get the information about a condition edge is negated or not for
-	 *  counter-example generation */
-	boolean isEdgeNegated();
 }

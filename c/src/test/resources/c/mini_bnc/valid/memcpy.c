@@ -1,6 +1,3 @@
-typedef unsigned long size_t;
-extern void *memcpy(void *dest, const void *src, size_t n);
-
 int main (){
 	const char src[50] = "http://www.tutorialspoint.com";
 	char dest[50];

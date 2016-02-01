@@ -1,5 +1,7 @@
 package edu.nyu.cascade.ir.formatter;
 
+import com.google.common.base.Preconditions;
+
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -54,32 +56,25 @@ public final class SingleCellLinearFormatter extends AbstractDataFormatter {
 	}
 
 	@Override
-	public Type getArrayElemType(long width) {
-		if(encoding.getCTypeAnalyzer().getWordSize() == width)
-			return getValueType();
-		else
-			return getAddressType();
+	public Type getArrayElemType(xtc.type.Type type) {
+		Preconditions.checkNotNull(type);
+		xtc.type.Type cleanType = type.resolve();
+		return cleanType.isPointer() || cleanType.isArray() || cleanType.isStruct() || cleanType.isUnion() ?
+				getAddressType() : getValueType();
 	}
 	
-	@Override
-	protected ArrayExpression updateScalarInMem(ArrayExpression memory,
-			xtc.type.Type idxType, Expression index, Expression value) {
-		return memory.update(index, value);
-	}
+  @Override
+  protected ArrayExpression updateScalarInMem(ArrayExpression memory, xtc.type.Type idxType,
+  		Expression index, Expression value) {
+  	return memory.update(index, value);
+  }
 
 	@Override
-	public BooleanExpression memorySet(ArrayExpression memory, Expression region,
-			Expression size, Expression value) {
+  public BooleanExpression memorySet(ArrayExpression memory, Expression region,
+      Expression size, Expression value) {
 		// FIXME: single cell linear format is unsound for memory set
 		return encoding.tt().asBooleanExpression();
-	}
-	
-	@Override
-	public BooleanExpression memorySet(ArrayExpression memory, Expression region,
-			Expression size, int value) {
-		// FIXME: single cell linear format is unsound for memory set
-		return encoding.tt().asBooleanExpression();
-	}
+  }
 
 	@Override
 	public BooleanExpression memoryCopy(ArrayExpression destMemory, ArrayExpression srcMemory,

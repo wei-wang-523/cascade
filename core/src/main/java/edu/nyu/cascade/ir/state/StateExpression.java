@@ -1,13 +1,10 @@
 package edu.nyu.cascade.ir.state;
 
-import java.util.Collection;
 import java.util.Map;
 
-import com.google.common.collect.Multimap;
-
+import xtc.util.SymbolTable.Scope;
 import edu.nyu.cascade.prover.BooleanExpression;
-import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.prover.VariableExpression;
+import edu.nyu.cascade.prover.type.Type;
 
 /**
  * Program state tuple <memory, size, constraint, guard>
@@ -31,9 +28,17 @@ public interface StateExpression {
 	
 	boolean isLambda();
   
+  void setScope(Scope scope);
+  
+  Scope getScope();
+  
+  boolean hasScope();
+  
   BooleanExpression getConstraint();
   
   void setConstraint(BooleanExpression constraint);
+  
+  boolean hasSameType(StateExpression state);
 
 	Object setProperty(String key, Object val);
 	
@@ -55,9 +60,13 @@ public interface StateExpression {
 
 	Object getProperty(String label);
 	
-	void addAssertion(String label, BooleanExpression assertion);
+	void setPreAssertion(String label, BooleanExpression assertion);
 	
-	Multimap<String, BooleanExpression> getAssertions();
+	void setPostAssertion(String label, BooleanExpression assertion);
+	
+	Map<String, BooleanExpression> getPreAssertions();
+
+	Map<String, BooleanExpression> getPostAssertions();
 	
 	void setProperties(Map<String, Object> props);
 
@@ -65,23 +74,5 @@ public interface StateExpression {
 
 	String toStringShort();
 
-	void addVar(VariableExpression variable);
-	void addVars(Collection<VariableExpression> variables);
-	Collection<VariableExpression> getVars();
-	
-	void addRegion(VariableExpression region);
-	void addRegions(Collection<VariableExpression> regions);
-	Collection<VariableExpression> getRegions();
-	
-	void setAssertions(Multimap<String, BooleanExpression> assertions);
-
-	void setMemTracker(Expression expr);
-	
-	Expression getMemTracker();
-
-	Map<Expression, Expression> getHoareValues();
-	
-	void setHoareValues(Map<Expression, Expression> hoareValues);
-	
-	void updateHoareValue(Expression key, Expression Value);
+	Type[] getElemTypes();
 }

@@ -25,7 +25,7 @@ public interface IRSoundMemLayoutEncoding {
 	BooleanExpression validMalloc(MemoryVarSets memoryVarSets,
       ArrayExpression sizeArr, Expression ptr, Expression size);
 	
-	BooleanExpression validFree(ArrayExpression sizeArr, Expression ptr);
+	BooleanExpression validFree(ArrayExpression markArr, Expression ptr);
 	
 	ImmutableSet<BooleanExpression> validMemAccess(
 			MemoryVarSets varSets, ArrayExpression sizeArr, Expression ptr);

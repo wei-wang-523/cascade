@@ -2,19 +2,19 @@ package edu.nyu.cascade.c.mode;
 
 import com.google.inject.Inject;
 
+import edu.nyu.cascade.c.CSymbolTable;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.c.preprocessor.typeanalysis.FSType;
 import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeAnalyzer;
-import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.ir.expr.BitVectorExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
+import edu.nyu.cascade.ir.expr.IntExpressionEncoding;
 import edu.nyu.cascade.ir.formatter.IRDataFormatter;
 import edu.nyu.cascade.ir.memory.IRPartitionHeapEncoder;
 import edu.nyu.cascade.ir.memory.PartitionHeapEncoder;
 import edu.nyu.cascade.ir.memory.safety.AbstractMemSafetyEncoding;
-import edu.nyu.cascade.ir.memory.safety.AbstractStmtMemSafetyEncoding;
 import edu.nyu.cascade.ir.memory.safety.IRMemSafetyEncoding;
-import edu.nyu.cascade.ir.memory.safety.Strategy;
+import edu.nyu.cascade.ir.memory.safety.AbstractMemSafetyEncoding.Strategy;
 import edu.nyu.cascade.ir.state.AbstractStateFactory;
 import edu.nyu.cascade.ir.state.HoareStateFactory;
 import edu.nyu.cascade.ir.state.StateFactory;
@@ -27,7 +27,11 @@ public class BurstallMode extends AbstractMode {
   
   @Inject
   public BurstallMode(ExpressionManager exprManager) {
-  	encoding = BitVectorExpressionEncoding.create(exprManager);
+  	if(Preferences.isSet(Preferences.OPTION_NON_OVERFLOW)) {
+  		encoding = IntExpressionEncoding.create(exprManager);
+  	} else {
+  		encoding = BitVectorExpressionEncoding.create(exprManager);
+  	}
   	
     Strategy strategy;
     
@@ -40,10 +44,9 @@ public class BurstallMode extends AbstractMode {
   	IRDataFormatter formatter = getFormatter(encoding);
   	
   	if(Preferences.isSet(Preferences.OPTION_LAMBDA)) {
-  		IRMemSafetyEncoding memSafetyEncoding = Preferences.isSet(Preferences.OPTION_STMT) ? 
-  				AbstractStmtMemSafetyEncoding.getInstance(encoding, formatter, strategy) :
-  					AbstractMemSafetyEncoding.getInstance(encoding, formatter, strategy);
-  		
+      IRMemSafetyEncoding memSafetyEncoding = AbstractMemSafetyEncoding
+      		.getInstance(encoding, formatter, strategy);
+      
       stateFactory = AbstractStateFactory.createMultipleLambda(encoding, formatter, memSafetyEncoding);
   	} else {
     	IRPartitionHeapEncoder heapEncoder = PartitionHeapEncoder.create(encoding, formatter, strategy);
@@ -72,7 +75,7 @@ public class BurstallMode extends AbstractMode {
   }
 
 	@Override
-  public PreProcessor<FSType> buildPreprocessor(SymbolTable symbolTable) {
+  public PreProcessor<FSType> buildPreprocessor(CSymbolTable symbolTable) {
 		PreProcessor<FSType> preProcessor = TypeAnalyzer.create();
 		stateFactory.setLabelAnalyzer(preProcessor);
 		return preProcessor;

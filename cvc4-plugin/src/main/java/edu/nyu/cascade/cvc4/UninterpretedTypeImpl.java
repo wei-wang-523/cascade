@@ -16,6 +16,7 @@ import edu.nyu.cascade.prover.Expression.Kind;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.util.CacheException;
+import edu.nyu.cascade.util.IOUtils;
 
 final class UninterpretedTypeImpl extends TypeImpl implements UninterpretedType {
   private final String name;
@@ -67,7 +68,8 @@ final class UninterpretedTypeImpl extends TypeImpl implements UninterpretedType 
     this.name = name;
     try {
       setCVC4Type(exprManager.getTheoremProver().getCvc4ExprManager().mkSort(name));
-      TheoremProverImpl.cvc4FileCommand("(declare-sort " + name + " 0)");
+      if(IOUtils.tpFileEnabled())
+        TheoremProverImpl.cvc4FileCommand("(declare-sort " + name + " 0)");
     } catch (Exception e) {
       throw new TheoremProverException(e);
     }

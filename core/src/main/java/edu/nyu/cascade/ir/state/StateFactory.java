@@ -1,6 +1,7 @@
 package edu.nyu.cascade.ir.state;
 
 import java.util.Collection;
+import java.util.List;
 
 import xtc.tree.Node;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
@@ -13,6 +14,8 @@ import edu.nyu.cascade.prover.Expression;
 public interface StateFactory<T> {
 
 	StateExpression resolvePhiNode(Collection<StateExpression> preStates);
+	
+	Expression cleanup(StateExpression state, Expression ptr);
 
 	/**
 	 * <code>ptr = malloc(...)</code>, <code>region</code> is the expression 
@@ -35,13 +38,6 @@ public interface StateFactory<T> {
 	 * Initialize the <code>region</code> of memory with <code>size</code> 
 	 * to be <code>value</code>
 	 */
-	BooleanExpression applyMemset(StateExpression state, Expression region, 
-			Expression size, int value, Node ptrNode);
-	
-	/**
-	 * Initialize the <code>region</code> of memory with <code>size</code> 
-	 * to be <code>value</code>
-	 */
 	BooleanExpression applyMemcpy(StateExpression state, Expression destRegion, 
 			Expression srcRegion, Expression size, Node destNode, Node srcNode);
 	
@@ -55,29 +51,23 @@ public interface StateFactory<T> {
 	BooleanExpression validAccess(StateExpression state, Expression ptr, 
 			Node ptrNode);
 
-	/**
-	 * This function is used for memset function call (for now). <code>ptr</code>
-	 * is the returned pointer of memset. Here we actually checks
-	 * if [ptr, ptr+size) are valid access with the region pointed by
-	 * <code>ptr</code>. Thus in multi-lambda encoding, the partition we need to
-	 * check the predicate is not the partition of <code>ptrNode</code>, but the
-	 * partition pointed by it.
-	 * @return
-	 */
 	BooleanExpression validAccessRange(StateExpression state, Expression ptr,
       Expression size, Node ptrNode);
+
+	BooleanExpression getDisjointAssumption(StateExpression state);
 	
 	IRDataFormatter getDataFormatter();
 
 	ExpressionEncoding getExpressionEncoding();
 	
 	/**
-	 * Substitute the element state variable in <code>cleanState</code> with <code>stateArg</code>
+	 * Substitute <code>stateVar</code> in <code>cleanState</code> with <code>stateArg</code>
 	 * @param cleanState
+	 * @param stateVar
 	 * @param stateArg
 	 * @return
 	 */
-	void propagateState(StateExpression cleanState, StateExpression stateArg);
+	void propagateState(StateExpression cleanState, StateExpression stateVar, StateExpression stateArg);
 	
 	/**
 	 * Allocate a region at <code>ptr</code> with <code>size</code>
@@ -116,6 +106,27 @@ public interface StateFactory<T> {
 	 * @param valNode 
 	 */
 	void assign(StateExpression state, Expression memIdx, Node idxNode, Expression memVal, Node valNode);
+	
+	/**
+	 * Initialize the static variable as default value, for static variables
+	 * 
+	 * @param currState
+	 * @param lval
+	 * @param lNode
+	 */
+	void initializeDefault(StateExpression currState, Expression lval, Node lNode);
+	
+	/**
+	 * Initialize the variable with values
+	 * 
+	 * @param currState
+	 * @param lval
+	 * @param lNode
+	 * @param rvals
+	 * @param rNodes
+	 */
+	void initializeValues(StateExpression currState, Expression lval, Node lNode, 
+			List<Expression> rvals, List<Node> rNodes);
 
 	/**
 	 * Update the size element of <code>state</code>
@@ -148,24 +159,9 @@ public interface StateFactory<T> {
    * 
    * @param state
    * @param lval
-   * @param info
+   * @return the updated state
    */
 	void addStackVar(StateExpression state, Expression lval, IRVarInfo info);
-	
-  /**
-   * Add the newly-declared stack array variable expression <code>lval</code> to 
-   * <code>state</code> with variable size <code>rval</code>. If <code>state</code> 
-   * is a multiple state or multiple lambda state, and doesn't contain the element 
-   * state for <code>lval</code>, a new element state will be added into <code>state
-   * </code>, and thus will cause side-effect
-   * 
-   * @param state
-   * @param lval
-	 * @param rval
-   * @param info
-   * @param sourceNode 
-   */
-	void addStackVarArray(StateExpression state, Expression lval, Expression rval, IRVarInfo info, Node sourceNode);
 
 	<X> void setLabelAnalyzer(PreProcessor<X> preprocessor);
 	
@@ -184,34 +180,16 @@ public interface StateFactory<T> {
 	StateExpression copy(StateExpression state);
 
 	/**
-	 * Refresh the local variables and newly allocated regions
+	 * Get the corresponding state variable for <code>state</code>. If it is
+	 * single, return the empty state (m_flat, size_flat). Otherwise, collect 
+	 * the corresponding variable for the every sub-state of <code>state</code>
+	 * 
 	 * @param state
-	 * @param vars
-	 * @param freshVars
 	 * @return
 	 */
-	void substitute(StateExpression state, 
-			Collection<? extends Expression> vars, Collection<? extends Expression> freshVars);
+	StateExpression getStateVar(StateExpression state);
+
+	StateExpressionClosure suspend(StateExpression stateVar, Expression expr);
 	
 	void reset();
-
-	/**
-	 * Look up the size of variable length array <code>ptr</code> with source
-	 * node <code>node</code>
-	 * @param state
-	 * @param ptr
-	 * @param node
-	 * @return
-	 */
-	Expression lookupSize(StateExpression state, Expression ptr, Node node);
-	
-	void setValidAccess(StateExpression preState, Expression lhsExpr, Node lNode);
-	
-	void setValidAccessRange(StateExpression preState, Expression lhsExpr, Expression sizeExpr, Node lNode);
-	
-	void setValidFree(StateExpression preState, Expression regionExpr, Node ptrNode);
-	
-	BooleanExpression stateToBoolean(StateExpression state);
-	
-	Collection<BooleanExpression> getAssumptions();
 }

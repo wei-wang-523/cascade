@@ -239,8 +239,6 @@ public class ExpressionImpl implements Expression {
   private boolean isVariable;
   
   private boolean isBoundVariable;
-  
-  private boolean isHoareLogic;
 
   private TypeImpl type;
   
@@ -760,11 +758,6 @@ public class ExpressionImpl implements Expression {
   void setType(Type type) {
     this.type = getExpressionManager().importType(type);
   }
-  
-  @Override
-  public void setHoareLogic(boolean bool) {
-  	this.isHoareLogic = bool;
-  }
 
   @Override
   public Expression subst(Expression oldExpr, Expression newExpr) {
@@ -910,9 +903,4 @@ public class ExpressionImpl implements Expression {
   public boolean isBound() {
 	  return isBoundVariable;
   }
-	
-	@Override
-	public boolean isHoareLogic() {
-		return isHoareLogic;
-	}
 }

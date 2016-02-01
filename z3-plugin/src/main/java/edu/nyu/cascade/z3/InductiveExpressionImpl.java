@@ -15,6 +15,7 @@ import com.microsoft.z3.Z3Exception;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.InductiveExpression;
+import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.Selector;
@@ -61,8 +62,12 @@ final class InductiveExpressionImpl extends ExpressionImpl implements
     super(constructor.getExpressionManager(), Kind.DATATYPE_CONSTRUCT,
         new NullaryConstructionStrategy() {
           @Override
-          public Expr apply(Context ctx) throws Z3Exception {
-            return ctx.mkConst(constructor.getZ3Constructor().ConstructorDecl());
+          public Expr apply(Context ctx) {
+            try {
+              return ctx.mkConst(constructor.getZ3Constructor().ConstructorDecl());
+            } catch (Z3Exception e) {
+              throw new TheoremProverException(e);
+            }
           }
         });
 
@@ -88,8 +93,12 @@ final class InductiveExpressionImpl extends ExpressionImpl implements
     super(constructor.getExpressionManager(), DATATYPE_CONSTRUCT,
         new NaryConstructionStrategy() {
           @Override
-          public Expr apply(Context ctx, Expr[] children) throws Z3Exception {
-          	return ctx.mkApp(constructor.getZ3Constructor().ConstructorDecl(), children);
+          public Expr apply(Context ctx, Expr[] children) {
+            try {
+              return ctx.mkApp(constructor.getZ3Constructor().ConstructorDecl(), children);
+            } catch (Z3Exception e) {
+              throw new TheoremProverException(e);
+            }
           }
         }, args);
 //  this.constructor = constructor;

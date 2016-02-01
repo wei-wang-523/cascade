@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -15,11 +14,11 @@ import xtc.tree.Printer;
 import xtc.util.SymbolTable.Scope;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Lists;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 
@@ -33,7 +32,7 @@ public class ControlFlowGraph implements IRControlFlowGraph {
   private final String name;
   private BasicBlock entry, exit;
   private final SortedSet<BasicBlock> nodes;
-  private final LinkedListMultimap<BasicBlock, Edge> incoming, outgoing;
+  private final Multimap<BasicBlock, Edge> incoming, outgoing;
   private final LinkedHashSet<Edge> edges;
   private final Scope scope;
 
@@ -49,8 +48,8 @@ public class ControlFlowGraph implements IRControlFlowGraph {
     nodes = Sets.newTreeSet();
     edges = Sets.newLinkedHashSet();
     nodes.add(entry); nodes.add(exit);
-    incoming = LinkedListMultimap.create();
-    outgoing = LinkedListMultimap.create();
+    incoming = LinkedHashMultimap.create();
+    outgoing = LinkedHashMultimap.create();
   }
   
   private ControlFlowGraph(Node sourceNode, 
@@ -60,8 +59,8 @@ public class ControlFlowGraph implements IRControlFlowGraph {
   		LinkedHashSet<Edge> edges,
   		BasicBlock entryBlock, 
   		BasicBlock exitBlock,
-  		LinkedListMultimap<BasicBlock, Edge> incoming,
-  		LinkedListMultimap<BasicBlock, Edge> outgoing) {
+  		Multimap<BasicBlock, Edge> incoming,
+  		Multimap<BasicBlock, Edge> outgoing) {
     this.sourceNode = sourceNode;
     this.name = name;
     this.scope = scope;
@@ -79,16 +78,15 @@ public class ControlFlowGraph implements IRControlFlowGraph {
    * @param entryBlock
    * @param exitBlock
    */
-  private static ControlFlowGraph create(Node sourceNode, String name, Scope scope, 
-  		IRBasicBlock entryBlock, IRBasicBlock exitBlock) {
+  public static ControlFlowGraph create(IRBasicBlock entryBlock, IRBasicBlock exitBlock) {
   	SortedSet<BasicBlock> nodes = Sets.newTreeSet();
   	LinkedHashSet<Edge> edges = Sets.newLinkedHashSet();
   	if(entryBlock != null)	nodes.add((BasicBlock) entryBlock);
   	if(exitBlock != null)	nodes.add((BasicBlock) exitBlock);
-  	return new ControlFlowGraph(sourceNode, name, scope, nodes, edges,
+  	return new ControlFlowGraph(null, null, null, nodes, edges,
   			(BasicBlock) entryBlock, (BasicBlock) exitBlock, 
-  			LinkedListMultimap.<BasicBlock, Edge>create(), 
-  			LinkedListMultimap.<BasicBlock, Edge>create());  	
+  			HashMultimap.<BasicBlock, Edge>create(), 
+  			HashMultimap.<BasicBlock, Edge>create());  	
   }
 
 	@Override
@@ -108,7 +106,7 @@ public class ControlFlowGraph implements IRControlFlowGraph {
 		
 		BasicBlock entryClone = entry == null ? null : cloneMap.get(entry);
 		BasicBlock exitClone = entry == null ? null : cloneMap.get(exit);
-		ControlFlowGraph cfgClone = ControlFlowGraph.create(sourceNode, name, scope,
+		ControlFlowGraph cfgClone = ControlFlowGraph.create(
 				entryClone, exitClone);
 		
 		for(Edge edge : edges) {
@@ -180,12 +178,12 @@ public class ControlFlowGraph implements IRControlFlowGraph {
 
 	@Override
 	public Collection<Edge> getIncomingEdges(IRBasicBlock block) {
-	  return ImmutableList.copyOf(incoming.get((BasicBlock) block));
+	  return Collections.unmodifiableCollection(incoming.get((BasicBlock) block));
 	}
 
 	@Override
 	public Collection<Edge> getOutgoingEdges(IRBasicBlock block) {
-	  return ImmutableList.copyOf(outgoing.get((BasicBlock) block));
+	  return Collections.unmodifiableCollection(outgoing.get((BasicBlock) block));
 	}
 
 	@Override
@@ -254,7 +252,6 @@ public class ControlFlowGraph implements IRControlFlowGraph {
 
 	@Override
 	public void removeBlock(IRBasicBlock block) {
-		Preconditions.checkArgument(block != entry);
 	  for( Edge e : ImmutableSet.copyOf(outgoing.get((BasicBlock) block)) ) {
 	    removeEdge(e);
 	  }
@@ -271,11 +268,6 @@ public class ControlFlowGraph implements IRControlFlowGraph {
 		outgoing.remove((BasicBlock) edge.getSource(), edge);
 		incoming.remove((BasicBlock) edge.getTarget(), edge);
 		edges.remove(edge);
-	}
-	
-	@Override
-	public void addBlock(IRBasicBlock block) {
-		addNode((BasicBlock) block);
 	}
 
 	@Override
@@ -301,16 +293,14 @@ public class ControlFlowGraph implements IRControlFlowGraph {
 	  /*
 	   * addOutgoingEdge(source, edge); addIncomingEdge(target, edge);
 	   */
-	  if(edges.add((Edge) edge)) { // new edge
-	  	outgoing.put(source, (Edge) edge);
-	  	incoming.put(target, (Edge) edge);
-	  }
+	  outgoing.put(source, (Edge) edge);
+	  incoming.put(target, (Edge) edge);
+	  edges.add((Edge) edge);
 	}
-	
-	@Override
-	public List<IRBasicBlock> topologicalSeq(IRBasicBlock startBlock) {
-		List<IRBasicBlock> sequence = Lists.newArrayList();
-		Set<IRBasicBlock> visited = Sets.newHashSet();
+
+  @Override
+	public Collection<IRBasicBlock> topologicalSeq(IRBasicBlock startBlock) {
+		Collection<IRBasicBlock> sequence = Sets.newLinkedHashSetWithExpectedSize(nodes.size());
 		Deque<IRBasicBlock> stack = Queues.newArrayDeque();
 		stack.add(startBlock);
 		
@@ -319,10 +309,7 @@ public class ControlFlowGraph implements IRControlFlowGraph {
 		while(!stack.isEmpty()) {
 			IRBasicBlock currBlock = stack.peek();
 			if(visiting.contains(currBlock)) {
-				stack.pop(); 
-				if(visited.contains(currBlock)) continue;
-				visited.add(currBlock);
-				sequence.add(currBlock);
+				stack.pop(); sequence.add(currBlock);
 				continue;
 			}
 			
@@ -331,36 +318,6 @@ public class ControlFlowGraph implements IRControlFlowGraph {
 				IRBasicBlock dest = out.getTarget();
 				if(visiting.contains(dest)) continue;
 				stack.push(dest);
-			}
-		}
-		
-		return sequence;
-	}
-	
-	@Override
-	public List<IRBasicBlock> topologicalRevSeq(IRBasicBlock endBlock) {
-		List<IRBasicBlock> sequence = Lists.newArrayList();
-		Set<IRBasicBlock> visited = Sets.newHashSet();
-		Deque<IRBasicBlock> stack = Queues.newArrayDeque();
-		stack.add(endBlock);
-		
-		Collection<IRBasicBlock> visiting = Sets.newHashSet();
-		
-		while(!stack.isEmpty()) {
-			IRBasicBlock currBlock = stack.peek();
-			if(visiting.contains(currBlock)) {
-				stack.pop(); 
-				if(visited.contains(currBlock)) continue;
-				visited.add(currBlock);
-				sequence.add(currBlock);
-				continue;
-			}
-			
-			visiting.add(currBlock);
-			for(IREdge<?> in : getIncomingEdges(currBlock)) {
-				IRBasicBlock src = in.getSource();
-				if(visiting.contains(src)) continue;
-				stack.push(src);
 			}
 		}
 		

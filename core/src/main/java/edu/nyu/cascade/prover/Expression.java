@@ -382,7 +382,4 @@ public interface Expression {
   boolean isUninterpreted();
 
   Expression simplify();
-
-	void setHoareLogic(boolean bool);
-	boolean isHoareLogic();
 }

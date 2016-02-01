@@ -1,9 +1,9 @@
 package edu.nyu.cascade.c.encoder;
 
 import java.util.Collection;
-import java.util.Map;
 
 import edu.nyu.cascade.c.SafeResult;
+import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRBasicBlock;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.IREdge;
@@ -38,10 +38,6 @@ public interface FormulaEncoder {
 	interface MemLeakCheckStrategy<T> {
 		void apply(T state) throws PathFactoryException;
 	}
-	
-	interface EdgeFilterStrategy<T> {
-		boolean apply(Map<IREdge<?>, T> state, IREdge<?> edge) throws PathFactoryException;
-	}
 
   /**
    * Returns true if all verification conditions passed to handle() since the
@@ -63,11 +59,13 @@ public interface FormulaEncoder {
   
   void setIterTimes(int iterTimes);
 
-	void encode(IRControlFlowGraph cfg, LoopInfo loopInfo)
-			throws PathFactoryException;
+	void encode(PreProcessor<?> preprocessor, IRControlFlowGraph cfg, 
+			LoopInfo loopInfo)
+					throws PathFactoryException;
 
-	void checkReach(IRControlFlowGraph cfg, LoopInfo loopInfo, String label)
-			throws PathFactoryException;
+	void checkReach(PreProcessor<?> preprocessor, IRControlFlowGraph cfg, 
+			LoopInfo loopInfo, String label)
+					throws PathFactoryException;
 
 	Pair<Boolean, StateExpression> encodeEdge(
 			TraceFactory factory,

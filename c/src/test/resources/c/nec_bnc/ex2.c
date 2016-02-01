@@ -1,5 +1,3 @@
-extern int __VERIFIER_nondet_int();
-
 int * a;
 
 
@@ -20,7 +18,7 @@ int test(int * n ){
 
 int main(){
 
-   int n = __VERIFIER_nondet_int();
+   int n = __NONDET__();
    
    if (n <= 0 || n >= 1024){
 	   exit(1);

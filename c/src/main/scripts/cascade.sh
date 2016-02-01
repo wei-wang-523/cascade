@@ -13,4 +13,4 @@ CASCADE_JAR="$CASCADE_BIN_DIR/${project.build.finalName}-jar-with-dependencies.j
 export DYLD_LIBRARY_PATH=$Z3_LIB_DIR:$CVC4_LIB_DIR:$CVC4_JNI_LIB_DIR:$DYLD_LIBRARY_PATH
 export LD_LIBRARY_PATH=$Z3_LIB_DIR:$CVC4_LIB_DIR:$CVC4_JNI_LIB_DIR:$LD_LIBRARY_PATH
 
-java -Xss256m -ea -cp "$Z3_JAR:$CVC4_JAR:$XTC_JAR:$CASCADE_JAR" edu.nyu.cascade.c.Main "$@"
+java -ea -cp "$Z3_JAR:$CVC4_JAR:$XTC_JAR:$CASCADE_JAR" edu.nyu.cascade.c.Main "$@"

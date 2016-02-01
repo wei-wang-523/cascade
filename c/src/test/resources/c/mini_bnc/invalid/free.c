@@ -14,6 +14,5 @@ int main() {
 	p[1] = s;
 	free(s);
   free(q);
-  free(p);
 	return p[0][1];
 }

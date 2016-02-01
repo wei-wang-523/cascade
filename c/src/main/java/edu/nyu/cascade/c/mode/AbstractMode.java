@@ -4,6 +4,7 @@ import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.formatter.IRDataFormatter;
 import edu.nyu.cascade.ir.formatter.MultiCellLinearFormatter;
 import edu.nyu.cascade.ir.formatter.SingleCellLinearFormatter;
+import edu.nyu.cascade.ir.formatter.SingleCellLinearIntegerFormatter;
 import edu.nyu.cascade.ir.formatter.VariCellLinearFormatter;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.TheoremProver;
@@ -31,12 +32,19 @@ public abstract class AbstractMode implements Mode {
 		return mode;
 	}
 
-	IRDataFormatter getFormatter(ExpressionEncoding encoding) {  		
+	IRDataFormatter getFormatter(ExpressionEncoding encoding) {		
+  	if(Preferences.isSet(Preferences.OPTION_NON_OVERFLOW)) {
+  		assert(!Preferences.isSet(Preferences.OPTION_VARI_CELL));
+  		assert(!Preferences.isSet(Preferences.OPTION_MULTI_CELL));
+  		
+  		return SingleCellLinearIntegerFormatter.create(encoding);
+  	}
+  		
   	if(Preferences.isSet(Preferences.OPTION_MULTI_CELL))
   		return MultiCellLinearFormatter.create(encoding);
   	
   	if(Preferences.isSet(Preferences.OPTION_VARI_CELL))
-  		return VariCellLinearFormatter.create(encoding);
+  			return VariCellLinearFormatter.create(encoding);
   	
   	return SingleCellLinearFormatter.create(encoding);
 	}

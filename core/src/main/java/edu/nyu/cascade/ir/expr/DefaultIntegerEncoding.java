@@ -55,7 +55,7 @@ public class DefaultIntegerEncoding extends
   }
   
   @Override
-  public IntegerExpression constant(BigInteger c, long size) {
+  public IntegerExpression constant(BigInteger c) {
     return getExpressionManager().constant(c);
   }
 

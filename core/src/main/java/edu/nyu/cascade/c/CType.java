@@ -3,17 +3,12 @@ package edu.nyu.cascade.c;
 import java.util.List;
 
 import xtc.tree.Node;
-import xtc.type.ArrayT;
-import xtc.type.NumberT;
-import xtc.type.PointerT;
-import xtc.type.StructOrUnionT;
-import xtc.type.Type;
+import xtc.type.*;
 import xtc.type.Type.Tag;
-import xtc.type.VariableT;
-import xtc.type.VoidT;
 
 import com.google.common.base.Preconditions;
 
+import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 
 /**
@@ -24,11 +19,60 @@ public final class CType {
   public static final String TYPE = xtc.Constants.TYPE;
   public static final String SCOPE = xtc.Constants.SCOPE;
   
+  public static final int BYTE_SIZE = Preferences.isSet(Preferences.OPTION_M32) ?
+  		Limits32.CHAR_BITS : Limits64.CHAR_BITS;
+  
+  private static final String FIELD_INFIX = Identifiers.SCOPE_INFIX;
+  
   private static final CType instance = new CType();
   
   public static CType getInstance() {
   	return instance;
   }
+	
+  public static String parseTypeName(Type type) {
+  	Preconditions.checkNotNull(type);
+    StringBuffer sb =  new StringBuffer();
+    if(type.isVoid())	 					sb.append(type.toString());
+    else if(type.isBoolean()) 	sb.append(type.toString());
+    else if(type.isStruct()) 		sb.append(type.getName());
+    else if(type.isUnion())			sb.append(type.getName());
+    else if(type.isInteger()) 	sb.append(type.toString());
+    else if(type.isLabel())			sb.append(type.toLabel().getName());
+    else if(type.isAlias()) 		sb.append(parseTypeName(type.toAlias().getType()));
+    else if(type.isVariable()) 	sb.append(parseTypeName(type.toVariable().getType()));
+    else if(type.isPointer()) 
+    	sb.append("pointer(").append(parseTypeName(type.toPointer().getType())).append(')');
+    else if(type.isArray())
+      sb.append("array(").append(parseTypeName(type.toArray().getType())).append(')');
+    else if(type.isAnnotated()){
+      AnnotatedT annoType = type.toAnnotated();
+      if(annoType.hasShape()) {
+        sb.append(parseRefName(annoType.getShape()));
+      } else {
+        sb.append(parseTypeName(annoType.getType()));
+      }
+    }
+    else
+      throw new IllegalArgumentException("Cannot parse type " + type.getName());
+    return sb.toString();
+  }
+  
+  private static String parseRefName(Reference ref) {
+		Preconditions.checkNotNull(ref);
+	  StringBuffer sb =  new StringBuffer();
+	  if(ref instanceof FieldReference) {
+	  	FieldReference fieldRef = (FieldReference) ref;
+	  	String baseName = parseRefName(fieldRef.getBase());
+	  	sb.append(baseName).append(FIELD_INFIX).append(fieldRef.getField());
+	  } else if(ref instanceof CastReference) {
+	  	//FIXME: (int *) &d, type(ref) is int, type is pointer(int) 
+	  	sb.append(parseTypeName(ref.getType().deannotate()));
+	  } else {
+	  	sb.append(parseTypeName(ref.getType()));
+	  }
+	  return sb.toString();
+	}
   
   public static boolean hasType(Node node) {
   	return node.hasProperty(TYPE);
@@ -46,6 +90,13 @@ public final class CType {
   public static String getScopeName(Node node) {
   	Preconditions.checkArgument(node.hasProperty(SCOPE));
   	return node.getStringProperty(SCOPE);
+  }
+
+  public static Type getBottomType(Type t1, Type t2) {
+  	if(t1 == null) return t2;
+  	if(t2 == null) return t1;
+  	if(t1.equals(t2)) return t1;
+  	return getUnitType();
   }
   
   public static Type getUnitType() {
@@ -92,72 +143,91 @@ public final class CType {
 	    return false;
 	  }
 	}
-	
-	public static boolean isArithmetic(Type type) {
+
+	/**
+	 * Get the cell type of array, structure or union
+	 * @param type
+	 * @return
+	 */
+	public static Type getCellType(Type type) {
+    type = type.resolve();
+
+    // The type has been resolved.
     switch (type.tag()) {
-    case BOOLEAN:
-    case INTEGER:
-    case FLOAT:
-      return true;
+    case VOID:
+      return type;
+    case ARRAY: {
+      // An array is incomplete if (1) it is not variable and has no
+      // lenght, (2) it has an incomplete member type, or (3) it has a
+      // trailing array.
+      ArrayT a = type.toArray();
+      return getCellType(a.getType());
+    }
+    case STRUCT: 
+    case UNION: {
+      // A struct is incomplete if (1) it has no members, (2) any
+      // member but the last member is incomplete, (3) the last member
+      // is not an array but is incomplete, or (4) the last member is
+      // an array with an incomplete element type.
+      List<VariableT> members = type.toStructOrUnion().getMembers();
+      if (null == members) return VoidT.TYPE;
+      Type cellType = null;
+      
+      for (VariableT member : members) {
+      	Type memCellType = getCellType(member);
+        if(cellType == null) {
+        	cellType = memCellType;
+        } else {
+        	if(cellType.tag().equals(memCellType.tag())) continue;
+        	cellType = IntegerT.BYTE; break;
+        }
+      }
+      
+      return cellType;
+    }
     default:
-      return false;
+      return type;
     }
 	}
-	
-	private final C cops = Preferences.isSet(Preferences.OPTION_M32) ? new C32() : new C64();
 
-	public C c() {
-		return cops;
-	}
-	
+	private final xtc.type.C C =  
+			Preferences.isSet(Preferences.OPTION_M32) ? new C32() : new C64();
+
 	public boolean equal(Type lhs, Type rhs) {
-		return cops.equal(lhs, rhs);
+		return C.equal(lhs, rhs);
 	}
-	
+
 	public Type convert(Type lhsType, Type rhsType) {
-		if(lhsType.resolve().isPointer() || !cops.isScalar(lhsType)
-				|| rhsType.resolve().isPointer() || !cops.isScalar(rhsType))
+		if(lhsType.resolve().tag().equals(Tag.POINTER) || !C.isScalar(lhsType)
+				|| rhsType.resolve().tag().equals(Tag.POINTER) || !C.isScalar(rhsType))
 			return PointerT.TO_VOID;
 		
-		return cops.convert(lhsType, rhsType);
-	}
-
-	public Type compose(Type lhsType, Type rhsType) {
-		return cops.compose(lhsType, rhsType, false);
+		return C.convert(lhsType, rhsType);
 	}
 	
 	public int getWordSize() {
-		if(Preferences.isSet(Preferences.OPTION_BYTE_BASED)) return getByteSize();
+		if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) return BYTE_SIZE;
 		
 		if(Preferences.isSet(Preferences.OPTION_MEM_CELL_SIZE))
 				return Preferences.getInt(Preferences.OPTION_MEM_CELL_SIZE);
 		
-		return (int) cops.getWidth(NumberT.INT);
-	}
-	
-	public Type pointerize(Type type) {
-		return cops.pointerize(type);
+		return (int) C.getWidth(NumberT.INT);
 	}
 
 	public Type typeInteger(String literal) {
-		return cops.typeInteger(literal);
+		return C.typeInteger(literal);
 	}
 
 	public Type typeCharacter(String literal) {
-		return cops.typeCharacter(literal);
+		return C.typeCharacter(literal);
 	}
 
-	public long getWidth(Type type) { 
-		long size = getSize(type);
+	public long getWidth(Type type) {  	
 		if(Preferences.isSet(Preferences.OPTION_BYTE_BASED))
-			return cops.toWidth(size);
+			return getSize(type) * C.getWidth(NumberT.CHAR);
 		else {
-			return size * cops.getWidth(NumberT.INT);
+			return getSize(type) * getWordSize();
 		}
-	}
-	
-	public long toWidth(long size) {
-		return cops.toWidth(size);
 	}
 
 	/**
@@ -169,7 +239,7 @@ public final class CType {
 	 */
 	public long getSize(Type type) {
 		if(Preferences.isSet(Preferences.OPTION_BYTE_BASED))
-			return cops.getSize(type);
+			return C.getSize(type);
 		else
 			return getSizeSimple(type);
 	}
@@ -182,7 +252,6 @@ public final class CType {
 		case FLOAT:
 		case INTEGER:
 		case POINTER:
-		case FUNCTION:
 			return 1;
 		case STRUCT: {
 			List<VariableT> members = type.resolve().toStruct().getMembers();
@@ -221,7 +290,7 @@ public final class CType {
 		Preconditions.checkArgument(type.resolve().isStruct() || type.resolve().isUnion());
 		
 	  if(Preferences.isSet(Preferences.OPTION_BYTE_BASED))
-	    return cops.getOffset( type.resolve().toStructOrUnion(), name);
+	    return C.getOffset( type.resolve().toStructOrUnion(), name);
 	  else
 	  	return getOffsetSimple(type, name);
 	}
@@ -260,18 +329,5 @@ public final class CType {
 	    }
 	    return -1;
 	  }
-	}
-
-	public static boolean isVarLengthArray(Type type) {
-		type = type.resolve();
-		while(type.isArray()) {
-			if(type.toArray().isVarLength()) return true;
-			type = type.toArray().getType().resolve();
-		}
-		return false;
-	}
-	
-	public final int getByteSize() {
-		return cops.BYTE_SIZE();
 	}
 }

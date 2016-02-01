@@ -53,6 +53,9 @@ public class Preferences {
   /** Check safe memory access for all memory dereferences */
   public static final String OPTION_MEMORY_CHECK = "memory-check";
   
+  /** Enable integer encoding, default is fixed-size bit-vector encoding (might overflow).*/
+  public static final String OPTION_NON_OVERFLOW = "non-overflow";
+  
   /** Make variables are pure logic variables, if they with no the compound type and 
    * have no address-of op on it. */
   public static final String OPTION_HOARE = "hoare";
@@ -63,7 +66,10 @@ public class Preferences {
   
   public static final String OPTION_INCREMENTAL = "incremental";
   
-  public static final String OPTION_REACHABILITY = "reachability";
+  public static final String OPTION_REACHABILITY = "reachability";  
+  
+  /** Merge every round of loop unrolling */
+  public static final String OPTION_MERGE_UNROLL = "merge-unroll";
   
   /** Check if the unrolling bound is enough */
   public static final String OPTION_CHECK_KEEP_UNROLL = "check-keep-unroll";
@@ -79,11 +85,9 @@ public class Preferences {
   /** Enable field sensitive pointer analysis */
   public static final String OPTION_FIELD_SENSITIVE = "field-sensitive";
   
-  /** Enable cell-based field sensitive pointer analysis */
-  public static final String OPTION_CELL_BASED_FIELD_SENSITIVE = "cell-field-sensitive";
+  /** Enable context sensitive pointer analysis */
+  public static final String OPTION_CONTEXT_SENSITIVE = "context-sensitive";
   
-  /** Enable cell-based field sensitive pointer analysis */
-  public static final String OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE = "cell-field-sensitive-context-sensitive";
   
   /** -------------- memory layout encoding ----------------- */
  
@@ -121,7 +125,8 @@ public class Preferences {
   /** Path encoding: sequential (no ite-branch merge), merge (default),
    * path-based
    */
-  public static final String OPTION_SBE = "small-block-encoding";
+  public static final String OPTION_SEQ_PATH = "seq";
+  public static final String OPTION_PATH_BASED = "path-based";
   
   
   /** ------------------ memory model theory -------------- */
@@ -130,10 +135,7 @@ public class Preferences {
   public static final String OPTION_MODE = "mode";
   
   /** Enable the lambda encoding */
-	public static final String OPTION_LAMBDA = "lambda"; 
-	
-  /** Enable the statement lambda encoding */
-	public static final String OPTION_STMT = "stmt"; 
+	public static final String OPTION_LAMBDA = "lambda";  
 	
   /** ------------- Theorem prover: z3, cvc4 ---------------- */
 	public static final String PROVER_Z3 = "z3";
@@ -145,21 +147,9 @@ public class Preferences {
 	/** ------------- The 64bits machine ---------------------- */
 	public static final String OPTION_M64 = "m64";
 	
-	/** -- The pointer arithmetic optimization of cfs-pointer-analysis -- */
-	public static final String OPTION_CFS_POINTER_ARITH = "cfs-ptrArith";
-
-	/** -- Inline malloc functions in CFG -- */
-	public static final String OPTION_INLINE_MALLOC = "inline-malloc";
-	
-	/** -- Memory leak check -- */
-	public static final String OPTION_MEMTRACK = "memtrack";
-	
-	/** -- Two round of memory check -- */
-	public static final String OPTION_TWOROUND_MEMCHECK = "two-round-check";
-	
 	/** ------------ The magic iteration times ---------------- */
 	public static final List<Integer> MEM_MAGIC_ITER_TIMES = Lists.newArrayList(0, 1, 6, 12, 17, 21, 40, 80, 100, 200);
-	public static final List<Integer> REACH_MAGIC_ITER_TIMES = Lists.newArrayList(1, 6, 12, 17, 21, 40, 80, 100, 200, 400, 1024);
+    public static final List<Integer> REACH_MAGIC_ITER_TIMES = Lists.newArrayList(1, 6, 12, 17, 21, 40, 80, 100, 200, 400, 1024);
   
   public static void clearAll() {
     getProperties().clear();

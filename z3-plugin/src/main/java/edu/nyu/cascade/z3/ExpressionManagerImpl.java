@@ -1,10 +1,8 @@
 package edu.nyu.cascade.z3;
 
 import java.math.BigInteger;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
-
 import org.apache.commons.cli.Option;
 
 import com.google.common.base.Function;
@@ -824,17 +822,4 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
       FunctionType functionType, boolean fresh) {
 	  return FunctionDeclarator.create(this, name, functionType, fresh);
   }
-
-	@Override
-	public FunctionExpression lambda(Expression arg, Expression body) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public FunctionExpression lambda(Collection<Expression> args,
-			Expression body) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 }

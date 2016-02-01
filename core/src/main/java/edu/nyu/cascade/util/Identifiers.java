@@ -17,30 +17,67 @@ public class Identifiers {
 	/** The infix for naming */
   public static final String SCOPE_INFIX = ".";
   public static final String UNDERLINE = "_";
+  
+  
+  /** The reserved name in Rats! parser */
+	public static final String FUNC = "__func__";
+	
 	
 	/** The name for global control flow graph (cfg-builder) */
   public static final String GLOBAL_CFG = "globalCfg";
   
-	public static final String MAIN = "main";
-  
+	
 	/** The elements associated with state expression or variable sets in pointer analysis */
 	public static final String SCOPE = "scope";
-	
-	/** The guard associated with the assume statement */
-	public static final String GUARD = "guard";
+	public static final String TYPE = "type";
+  
+  /** The pointer type (refType, intType) created for sync mem encoding */
+  public static final String REF_TYPE_NAME = "refType";
+  public static final String NULL_PTR_NAME = "nullRef";
+  public static final String PTR_TYPE_NAME = "ptrType";
+  
+	/** Cascade created auxiliary variables */
+  
+  /** The names for condition, string variable, allocated region and return variable */
+  public static final String STRING_VAR_PREFIX = "string_var";
+  public static final String RETURN_VAR_PREFIX = "return";
+  public static final String REGION_VARIABLE_NAME = "region";
+  public static final String CONSTANT = "Constant";
   
   /** Label for auxiliary variables created by cascade internally */
 	public static final String AUXLABEL = "auxVarLabel";
 	
   /** Label for variables created by control file as quantified variable */
 	public static final String CTRLVAR = "ctrlVarLabel";
+
+	/** Label for variables with*/
+	public static final String HOARE_VAR = "hoareVar";
 	
 	public static final String ITERTIMES = "iterTimes";	
 	
+	/** The elements about function call statement encoding */
+	
+	/** The statement: y = f(x) */
+	public static final String STMTFUNCASSIGN = "stmtFuncAssign";
+	
+	/** The statement: f(x) */
+	public static final String STMTFUNC = "stmtFunc";
+	
+	/** The argument expressions of function call */
+	public static final String ARGUMENTS = "arguments";
+	
+	/** The function name */
+	public static final String FUNCNAME = "funcName";
+
 	/** The attached memory check assertion */
-  public static final String VALID_DEREF = "valid-deref";
-  public static final String VALID_FREE = "valid-free";
-  public static final String VALID_MEMORY_TRACE = "valid-memtrack";
+  public static final String VALID_DEREF = "p_valid-deref";
+  public static final String VALID_FREE = "p_valid-free";
+  public static final String VALID_MEMORY_TRACE = "p_valid-memtrack";
+  
+  /** The static label for declare and assign statement */
+	public static final String STATIC = "static";
+  
+	public static final String INSUFFICIENT_UNROLL = "insufficient_loop_unroll";
 	
 	public static enum IdType {
     DEFAULT,

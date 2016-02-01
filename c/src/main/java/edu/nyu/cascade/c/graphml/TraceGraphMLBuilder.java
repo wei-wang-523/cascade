@@ -10,7 +10,6 @@ import xtc.tree.Node;
 
 import com.google.common.collect.Lists;
 
-import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.graphml.jaxb.DataType;
 import edu.nyu.cascade.graphml.jaxb.DefaultType;
@@ -21,29 +20,24 @@ import edu.nyu.cascade.graphml.jaxb.KeyForType;
 import edu.nyu.cascade.graphml.jaxb.KeyType;
 import edu.nyu.cascade.graphml.jaxb.KeyTypeType;
 import edu.nyu.cascade.graphml.jaxb.ObjectFactory;
-import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.IRTraceNode;
 import edu.nyu.cascade.prover.Expression;
-import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 
 public class TraceGraphMLBuilder {
 	private final ObjectFactory objectFactory;
 	private final List<Object> graphElems = Lists.newArrayList();
-	private final String srcFile;
-//	private CPrinter cp = new CPrinter(printer);
 	
-	public TraceGraphMLBuilder(String file) {
+	public TraceGraphMLBuilder() {
 		this.objectFactory = new ObjectFactory();
-		this.srcFile = file;
 	}
 	
 	public JAXBElement<?> analyzeTrace(IRTraceNode entryTraceNode) {
 		MLNode entry = MLNode.createEntry();
 		addNode(entry);
 		analyzeIRMLNode(entryTraceNode, entry);
-		return build(srcFile);
+		return build();
 	}
 	
 	public void dumpXmlTrace(JAXBElement<?> traceGraphML, OutputStream outputStream) {
@@ -56,87 +50,37 @@ public class TraceGraphMLBuilder {
 			MLNode post = MLNode.create();
 			MLEdge edge = MLEdge.create(pre, post);
 			
-			Node srcNode = stmt.getSourceNode();
 			edge.setSourceCode(stmt.toString());
 			
-			if(srcNode != null) { // exit statement without src node
+			Node srcNode = stmt.getSourceNode();
+			
+			if(srcNode != null) {
 				Location loc = srcNode.getLocation();
 				edge.setOriginLine(loc.line);
-				edge.setOriginOffset(loc.column);
+				edge.setOriginFile(loc.file);
 			}
+			
 			switch(stmt.getType()) {
-			case INIT: {
-	    	IRExpression rhs = stmt.getOperand(1);
-	    	if(rhs.getSourceNode().hasName("CharacterConstant")) {
-	    		String c = rhs.getSourceNode().getString(0);
-	    		if(c.charAt(1) == '\u0000') {
-	    			StringBuilder sb = new StringBuilder();
-	    			sb.append(stmt.getOperand(0)).append(" := ''");
-	    			edge.setSourceCode(sb.toString());
-	    		}
-	    	}
-				Expression traceExpr = traceNode.getTraceExpr(stmt);
-				StringBuilder sb = new StringBuilder();
-				sb.append(stmt.getOperand(0)).append(" == ").append('(').append(traceExpr).append(')');
-				edge.setAssumption(sb.toString());
-				// Only set assumption scope for initialization for sv_comp benchmark:
-				// ldv-regression/rule60_list2.c_false-unreach-call_1.i
-				String qualifiedScopeName = CType.getScopeName(stmt.getOperand(0).getSourceNode());
-				String scopeName = CScopeAnalyzer.getLastScopeName(qualifiedScopeName);
-				edge.setAssumptionScope(scopeName);
-	    	break;
-			}
-			case DECLARE: {
-				xtc.type.Type type = CType.getType(srcNode);
-				if(type.resolve().isFunction()) continue;
-				break;
-			}
 			case ASSIGN: {
 				Expression traceExpr = traceNode.getTraceExpr(stmt);
 				StringBuilder sb = new StringBuilder();
-				sb.append(stmt.getOperand(0)).append(" == ").append('(').append(traceExpr).append(')');
+				sb.append(stmt.getOperand(0)).append('=').append(traceExpr);
 				edge.setAssumption(sb.toString());
 				break;
 			}
 			case ASSUME: {
-//				Expression traceExpr = traceNode.getTraceExpr(stmt);
-//				edge.setAssumption(traceExpr.toString());
-				if(traceNode.isEdge(stmt)) {
-					edge.setSourceCode(IOUtils.formatC(srcNode));
-					edge.setCondition(traceNode.isEdgeNegated(stmt));
-				} else {
-					edge.setAssumption(traceNode.getTraceExpr(stmt).toString());
-				}
-				break;
-			}
-			case FREE: {
 				Expression traceExpr = traceNode.getTraceExpr(stmt);
-				StringBuilder sb = new StringBuilder();
-				sb.append(stmt.getOperand(0)).append(" == ").append('(').append(traceExpr).append(')');
-				edge.setAssumption(sb.toString());
-				break;
-			}
-			case CALL: {
-				if(!CType.getType(srcNode).resolve().isVoid()) {
-					Expression traceExpr = traceNode.getTraceExpr(stmt);
-					StringBuilder sb = new StringBuilder();
-					sb.append(stmt.getOperand(1)).append(" == ").append('(').append(traceExpr).append(')');
-					edge.setAssumption(sb.toString());
-				}
+				edge.setAssumption(traceExpr.toString());
 				break;
 			}
 			case FUNC_ENT: {
-				String scopeName = CType.getScopeName(srcNode);
-				String funcName = CScopeAnalyzer.getLastScopeName(scopeName);
+				String funcName = CType.getScopeName(srcNode);
 				edge.setEnterFunc(funcName);
 				break;
 			}
-			case FUNC_EXIT: {
-				String scopeName = (String) stmt.getProperty(Identifiers.SCOPE);
-				String funcName = CScopeAnalyzer.getLastScopeName(scopeName);
-				edge.setExitFunc(funcName);
+			case FUNC_EXIT:
+				edge.setExitFunc((String) stmt.getProperty(Identifiers.SCOPE));
 				break;
-			}
 			default:
 				break;
 			}
@@ -157,20 +101,18 @@ public class TraceGraphMLBuilder {
 		}
 	}
 	
-	private JAXBElement<GraphmlType> build(String srcFile) {
+	private JAXBElement<GraphmlType> build() {
 		GraphmlType graphmlType = objectFactory.createGraphmlType();
 		List<KeyType> keys = graphmlType.getKey();
 		
 		keys.add(getKeyType("assumption", "assumption", KeyForType.EDGE, KeyTypeType.STRING));
-		keys.add(getKeyType("assumption.scope", "assumption.scope", KeyForType.EDGE, KeyTypeType.STRING));
 		keys.add(getKeyType("sourcecode", "sourcecode", KeyForType.EDGE, KeyTypeType.STRING));
 		keys.add(getKeyType("sourcecodeLanguage", "sourcecodelang", KeyForType.GRAPH, KeyTypeType.STRING));
-//		keys.add(getKeyType("tokenSet", "tokens", KeyForType.EDGE, KeyTypeType.STRING));
-//		keys.add(getKeyType("originTokenSet", "origintokens", KeyForType.EDGE, KeyTypeType.STRING));
+		keys.add(getKeyType("tokenSet", "tokens", KeyForType.EDGE, KeyTypeType.STRING));
+		keys.add(getKeyType("originTokenSet", "origintokens", KeyForType.EDGE, KeyTypeType.STRING));
 		keys.add(getKeyType("negativeCase", "negated", KeyForType.EDGE, KeyTypeType.STRING, String.valueOf(false)));
-		keys.add(getKeyType("startline", "startline", KeyForType.EDGE, KeyTypeType.INT));
+		keys.add(getKeyType("lineNumberInOrigin", "originline", KeyForType.EDGE, KeyTypeType.INT));
 		keys.add(getKeyType("originFileName", "originfile", KeyForType.EDGE, KeyTypeType.STRING, "&lt;command-line&gt;"));
-		keys.add(getKeyType("control", "control", KeyForType.EDGE, KeyTypeType.STRING));
 		keys.add(getKeyType("nodeType", "nodetype", KeyForType.NODE, KeyTypeType.STRING, "path"));
 		keys.add(getKeyType("isFrontierNode", "frontier", KeyForType.NODE, KeyTypeType.BOOLEAN, String.valueOf(false)));
 		keys.add(getKeyType("isViolationNode", "violation", KeyForType.NODE, KeyTypeType.BOOLEAN, String.valueOf(false)));
@@ -179,7 +121,7 @@ public class TraceGraphMLBuilder {
 		keys.add(getKeyType("enterFunction", "enterFunction", KeyForType.EDGE, KeyTypeType.STRING));
 		keys.add(getKeyType("returnFromFunction", "returnFrom", KeyForType.EDGE, KeyTypeType.STRING));
 		
-		GraphType graphType = buildGraphType(srcFile);
+		GraphType graphType = buildGraphType();
 		graphmlType.getGraphOrData().add(graphType);
 		return objectFactory.createGraphml(graphmlType);
 	}
@@ -214,7 +156,7 @@ public class TraceGraphMLBuilder {
   	return keyType;
 	}
 	
-	private GraphType buildGraphType(String srcFile) {
+	private GraphType buildGraphType() {
 		GraphType graphType = objectFactory.createGraphType();
 		graphType.setEdgedefault(GraphEdgedefaultType.DIRECTED);
 		
@@ -223,12 +165,6 @@ public class TraceGraphMLBuilder {
 		dataType.setContent("C");
 		
 		graphElems.add(0, dataType);
-		
-		DataType srcFileType = objectFactory.createDataType();
-		srcFileType.setKey("originfile");
-		srcFileType.setContent(srcFile);
-		
-		graphElems.add(1, srcFileType);
 		graphType.getDataOrNodeOrEdge().addAll(graphElems);
 		return graphType;
 	}

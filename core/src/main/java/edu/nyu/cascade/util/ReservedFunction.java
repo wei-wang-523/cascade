@@ -20,7 +20,6 @@ public class ReservedFunction {
   public static final String CALLOC = "calloc";
   public static final String FREE = "free";
   public static final String EXIT = "exit";
-  public static final String ABORT = "abort";
 	public static final String ALLOCA = "alloca";
   public static final String MEMSET = "memset";
   public static final String MEMCOPY = "memcpy";
@@ -33,8 +32,6 @@ public class ReservedFunction {
   public static final String ANNO_INVARIANT = "INVARIANT";
   
   public static final String VERIFIER_ASSUME = "__VERIFIER_assume";
-  public static final String VERIFIER_nondet_int = "__VERIFIER_nondet_int";
-  public static final String VERIFIER_nondet_pointer = "__VERIFIER_nondet_pointer";
   
   public static final String FUN_VALID_ACCESS = "valid";
   public static final String FUN_VALID_MALLOC = "valid_malloc";
@@ -79,7 +76,7 @@ public class ReservedFunction {
   	.put(MEMSET, 
   			Sig.of(PointerT.TO_VOID, PointerT.TO_VOID, IntegerT.CHAR, NumberT.U_LONG))
   	.put(MEMCOPY, 
-  			Sig.of(PointerT.TO_VOID, PointerT.TO_VOID, PointerT.TO_VOID, NumberT.U_LONG))
+  			Sig.of(PointerT.TO_VOID, PointerT.TO_VOID, PointerT.TO_VOID, NumberT.U_LONG))		
   	.put(MALLOC, 
   			Sig.of(PointerT.TO_VOID, NumberT.U_LONG))
   	.put(CALLOC, 
@@ -112,10 +109,5 @@ public class ReservedFunction {
   	.put(FUN_EXISTS,
   			Sig.of(BooleanT.TYPE, BooleanT.TYPE))
   	.put(VERIFIER_ASSUME,
-  			Sig.of(BooleanT.TYPE, BooleanT.TYPE))
-  	.put(VERIFIER_nondet_int,
-  			Sig.of(NumberT.INT, VoidT.TYPE))
-  	.put(VERIFIER_nondet_pointer,
-  			Sig.of(PointerT.TO_VOID, VoidT.TYPE))
-  	.build();
+  			Sig.of(BooleanT.TYPE, BooleanT.TYPE)).build();
 }

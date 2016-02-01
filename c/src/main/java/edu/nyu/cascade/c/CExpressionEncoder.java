@@ -6,7 +6,6 @@ package edu.nyu.cascade.c;
 import java.util.List;
 
 import xtc.type.*;
-import xtc.type.Type.Tag;
 import xtc.tree.*;
 import xtc.util.SymbolTable;
 import xtc.util.SymbolTable.Scope;
@@ -33,6 +32,7 @@ import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.ReservedFunction;
 
 class CExpressionEncoder implements ExpressionEncoder {
+  private static final String TYPE = xtc.Constants.TYPE;
   private static final String VAR_PREFIX = "addr_of_";
   
   @SuppressWarnings("unused")
@@ -112,6 +112,7 @@ class CExpressionEncoder implements ExpressionEncoder {
       /* [chris 12/3/2010] Note that this ignores pointer arithmetic, so any 
        * non-char* arithmetic will be wrong
        */
+      IOUtils.debug().pln("APPROX: Possible pointer arithmetic treated as char*");
       
     	String additiveOp = node.getString(1);
     	Expression left = encodeExpression(node.getNode(0));
@@ -354,7 +355,7 @@ class CExpressionEncoder implements ExpressionEncoder {
         Node ptrNode = argList.getNode(0);
         Expression region = encodeExpression(ptrNode);
         
-        Expression size = encodeExpression(argList.getNode(1));
+        Expression size = encodeExpression(argList.getNode(1));        
         return stateFactory.applyValidMalloc(currState, region, size, ptrNode);
       } 
       
@@ -389,6 +390,7 @@ class CExpressionEncoder implements ExpressionEncoder {
           } else {
           	boundVar = getBoundVarExpr(info);
           }
+          info.setRValBinding(boundVar);
           argsBuilder.add(boundVar);
         }
         
@@ -415,11 +417,20 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
 
     public Expression visitIntegerConstant(GNode node) {
-      Type srcType = CType.getType(node);
+    	CType cTypeAnalyzer = encoding.getCTypeAnalyzer();
+    	
+      String numStr = node.getString(0);
+      Type srcType = cTypeAnalyzer.typeInteger(numStr);
+      
+      boolean isUnsigned = CType.isUnsigned(srcType);
       Expression value = encoding.integerConstant(
-      		srcType.getConstant().bigIntValue(), 
-      		CType.getInstance().getWidth(srcType));
-      return value;
+      		srcType.getConstant().bigIntValue());
+      
+      Type targetType = CType.getType(node);
+      int size = (int) cTypeAnalyzer.getWidth(targetType);
+      
+      Expression valuePrime = encoding.castToInteger(value, size, !isUnsigned);
+      return valuePrime;
     }
 
     public Expression visitLogicalAndExpression(GNode node) {
@@ -465,10 +476,6 @@ class CExpressionEncoder implements ExpressionEncoder {
     	if(xtcType.isEnumerator()) {
     		int index = xtcType.getConstant().bigIntValue().intValue();
       	return encoding.integerConstant(index);
-    	}
-    	
-    	if(xtcType.resolve().isFunction()) {
-    		return info.getLValBinding();
     	}
     	
     	assert info.hasLValBinding();
@@ -540,14 +547,23 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitSizeofExpression(GNode node) {
     	Node typeNode = node.getNode(0);
-    	Type type = CType.getType(typeNode);
-    	if(!CType.isVarLengthArray(type)) {
-    		long size = encoding.getCTypeAnalyzer().getSize(type);
-    		return encoding.integerConstant(size);
-    	}
-    	// array with variable length
-    	Expression ptr = encodeExpression(typeNode);
-    	return stateFactory.lookupSize(currState, ptr, typeNode);
+    	
+      if(typeNode.hasProperty(TYPE)) { // pointer type (STRUCT *)
+        long size = encoding.getCTypeAnalyzer().getSize(CType.getType(typeNode));
+        return encoding.integerConstant(size);
+      } 
+      
+      if(typeNode.hasName("PrimaryIdentifier")){
+        GNode typedef = GNode.create("TypedefName", typeNode.get(0));
+        typedef.setLocation(node.getLocation());
+        GNode specifier = GNode.create("SpecifierQualifierList", typedef);
+        specifier.setLocation(node.getLocation());
+        GNode typename = GNode.create("TypeName", specifier);
+        typename.setLocation(node.getLocation());
+        return encodeExpression(typename);
+      }
+      
+      return encodeExpression(typeNode);
     }
     
     public Expression visitTypeName(GNode node) {
@@ -595,12 +611,12 @@ class CExpressionEncoder implements ExpressionEncoder {
     
     public Expression visitUnaryMinusExpression(GNode node) {
       Expression rhs = encodeExpression(node.getNode(0));
-      return encoding.uminus(rhs);
+      return encoding.uminus(rhs); 
     }
     
     public Expression visitUnaryPlusExpression(GNode node) {
       Expression rhs = encodeExpression(node.getNode(0));
-      return encoding.uminus(rhs);
+      return encoding.uminus(rhs); 
     }
     
     public Expression visitMultiplicativeExpression(final GNode node) {
@@ -608,6 +624,7 @@ class CExpressionEncoder implements ExpressionEncoder {
       /* [chris 12/3/2010] Note that this ignores pointer arithmetic, so any 
        * non-char* arithmetic will be wrong
        */
+      IOUtils.debug().pln("APPROX: Possible pointer arithmetic treated as char*");
       
     	String mulOp = node.getString(1);
     	Expression left = encodeExpression(node.getNode(0));
@@ -642,34 +659,41 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
     
     public Expression visitDirectComponentSelection(GNode node) {
-      String fieldName = node.getString(1);
-      Type baseType = CType.getType(node.getNode(0)).resolve();
+      Type type = CType.getType(node);
+      assert(type.hasShape());
+      Reference ref = type.getShape();
+      assert(ref.hasBase() && ref.hasField());
+      Type baseType = ref.getBase().getType();
+      assert(baseType.isStruct() || baseType.isUnion());
+      String fieldName = ref.getField();
       long offset = encoding.getCTypeAnalyzer().getOffset(baseType.toStructOrUnion(), fieldName);
       Expression baseLoc = lvalVisitor.encodeExpression(node.getNode(0));
       Expression offsetExpr = encoding.integerConstant(offset);
       Expression resLoc = encoding.pointerPlus(coerceToPointer(baseLoc), 
       		coerceToInteger(offsetExpr));
-      Type type = CType.getType(node);
       return derefMemory(currState, resLoc, node, type);
     }
     
     public Expression visitIndirectComponentSelection(GNode node) {
-      String fieldName = node.getString(1);
-      Type baseType = CType.getType(node.getNode(0)).resolve().toPointer().getType();
+      Type type = CType.getType(node);
+      assert(type.hasShape());
+      Reference ref =  type.getShape();
+      assert(ref.hasBase() && ref.hasField());
+      Type baseType = ref.getBase().getType();
+      assert(baseType.isStruct() || baseType.isUnion());
+      String fieldName = ref.getField();
       long offset = encoding.getCTypeAnalyzer().getOffset(baseType.toStructOrUnion(), fieldName);
       Expression baseLoc = encodeExpression(node.getNode(0));
       Expression offsetExpr = encoding.integerConstant(offset);
       Expression resLoc = encoding.pointerPlus(
       		coerceToPointer(baseLoc), coerceToInteger(offsetExpr));
-      Type type = CType.getType(node);
       return derefMemory(currState, resLoc, node, type);
     }
 
 		private Expression derefMemory(StateExpression state, Expression lvalExpr, Node node, Type type) {
-			Preconditions.checkArgument(!Tag.VOID.equals(type.tag()));
-			if(!CType.isScalar(type))	return lvalExpr;
+			Preconditions.checkArgument(!type.resolve().isVoid());
+			if(!CType.isScalar(type.resolve()))	return lvalExpr;
 			
-		  stateFactory.setValidAccess(state, lvalExpr, node);
 		  return stateFactory.deref(state, lvalExpr, node);
 		}
 		
@@ -743,7 +767,12 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
     
     public Expression visitIndirectionExpression(GNode node) {
-      return exprVisitor.encodeExpression(node.getNode(0));
+      Expression op = exprVisitor.encodeExpression(node.getNode(0));
+      Type type = CType.getType(node);
+      IOUtils.debug().pln(
+          "Indirection expression type: " + type.tag() + type.getName()
+              + type.resolve().getName()).flush();
+      return op;
     }
 
     public Expression visitPrimaryIdentifier(GNode node) {
@@ -759,11 +788,18 @@ class CExpressionEncoder implements ExpressionEncoder {
     	if(info.getXtcType().getShape().isStatic() && info.hasLValBinding()) 
     		return info.getLValBinding();
     	
-    	Expression lValue = info.hasLogicLabel() ? 
-    			encoding.variable(info.getName(), info.getIRType(), true) 
-    			: getLvalBinding(info);
-    	lValue.setHoareLogic(info.hasLogicLabel());
+    	if(Preferences.isSet(Preferences.OPTION_HOARE)) {
+    		boolean isHoare = (Boolean) info.getProperty(Identifiers.HOARE_VAR);
+    		if(isHoare) {
+        	Expression lValue = getLvalBinding(info);
+      		Expression rValue = encoding.variable(info.getName(), info.getIRType(), true);
+      		info.setLValBinding(lValue);
+      		info.setRValBinding(rValue);
+      		return lValue;
+    		}
+    	}
     	
+    	Expression lValue = getLvalBinding(info);
     	info.setLValBinding(lValue);
     	return lValue;
     }
@@ -785,8 +821,12 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
     
     public Expression visitDirectComponentSelection(GNode node) {
-      String fieldName = node.getString(1);
-      Type baseType = CType.getType(node.getNode(0));
+      Type type = CType.getType(node);
+      assert(type.hasShape());
+      Reference ref = type.getShape();
+      Type baseType = ref.getBase().getType();
+      assert(baseType.isStruct() || baseType.isUnion());
+      String fieldName = ref.getField();
       long offset = encoding.getCTypeAnalyzer().getOffset(baseType.toStructOrUnion(), fieldName);
       Expression offsetExpr = encoding.integerConstant(offset);
       Expression baseLoc = encodeExpression(node.getNode(0));
@@ -799,8 +839,13 @@ class CExpressionEncoder implements ExpressionEncoder {
     }
     
     public Expression visitIndirectComponentSelection(GNode node) {
-      String fieldName = node.getString(1);
-      Type baseType = CType.getType(node.getNode(0)).resolve().toPointer().getType();
+      Type type = CType.getType(node);
+      assert(type.hasShape());
+      Reference ref = type.getShape();
+      assert(ref.hasBase() && ref.hasField());
+      Type baseType = ref.getBase().getType();
+      assert(baseType.isStruct() || baseType.isUnion());
+      String fieldName = ref.getField();
       long offset = encoding.getCTypeAnalyzer().getOffset(baseType.toStructOrUnion(), fieldName);
       Expression offsetExpr = encoding.integerConstant(offset);
       Expression baseLoc = exprVisitor.encodeExpression(node.getNode(0));

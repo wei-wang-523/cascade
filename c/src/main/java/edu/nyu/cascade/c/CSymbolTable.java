@@ -258,11 +258,6 @@ public class CSymbolTable implements SymbolTable {
   }
   
   @Override
-  public void mark(Node node) {
-  	symbolTable.mark(node);
-  }
-  
-  @Override
   public Type lookupType(String name) {
     return (Type) originalSymbolTable.current().lookup(name);
   }

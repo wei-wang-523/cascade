@@ -80,8 +80,8 @@ public final class FSType {
 		return typeName;
 	}
 	
-	int getId() {
-		return id.intValue();
+	String getId() {
+		return String.valueOf(id);
 	}
 	
 	FSType getParent() {

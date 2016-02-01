@@ -1,5 +1,7 @@
 package edu.nyu.cascade.ir.formatter;
 
+import java.util.List;
+
 import javax.annotation.Nullable;
 
 import edu.nyu.cascade.prover.ArrayExpression;
@@ -24,7 +26,7 @@ public interface IRDataFormatter {
 	
 	Type getSizeType();
 	
-	Type getArrayElemType(long width);
+	Type getArrayElemType(xtc.type.Type type);
 	
 	Expression getNullAddress();
 	
@@ -36,12 +38,15 @@ public interface IRDataFormatter {
 	
 	ArrayType getMarkArrayType();
 	
+	ArrayExpression initializeZero(ArrayExpression memory, Expression lval,
+			xtc.type.Type lType);
+	
 	ArrayExpression updateMemoryArray(ArrayExpression memory, 
 			Expression index, xtc.type.Type idxType,
 			Expression value, @Nullable xtc.type.Type valType);
 	
-	ArrayExpression updateStructInMemoryArray(ArrayExpression memory,
-			Expression index, Expression value, long range);
+	ArrayExpression initializeValues(ArrayExpression memory, Expression lval,
+			xtc.type.Type lType, List<Expression> rvals, List<xtc.type.Type> rTypes);
 	
 	Expression indexMemoryArray(ArrayExpression memory, Expression index, xtc.type.Type idxType);
 	
@@ -57,9 +62,6 @@ public interface IRDataFormatter {
 	
 	BooleanExpression memorySet(ArrayExpression memory, 
 			Expression region, Expression size, Expression value);
-	
-	BooleanExpression memorySet(ArrayExpression memory, 
-			Expression region, Expression size, int value);
 	
 	BooleanExpression memoryCopy(ArrayExpression destMemory, ArrayExpression srcMemory,
 			Expression destRegion, Expression srcRegion, Expression size);

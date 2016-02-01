@@ -1,19 +1,20 @@
 package edu.nyu.cascade.ir.path;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Map.Entry;
 
 import xtc.tree.Node;
+import xtc.type.PointerT;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.ir.IRBooleanExpression;
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
-import edu.nyu.cascade.ir.impl.Guard;
 import edu.nyu.cascade.ir.state.StateExpression;
-import edu.nyu.cascade.ir.state.StateFactory;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
@@ -21,57 +22,57 @@ import edu.nyu.cascade.prover.SatResult;
 import edu.nyu.cascade.prover.TheoremProver;
 import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.ValidityResult;
+import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 
 public abstract class AbstractPathEncoding implements PathEncoding {
 	
   private final ExpressionEncoder encoder;
-  private final StateFactory<?> stateFactory;
 	
+  private ValidityResult<?> runIsValid;
+  private String failReason;
   private Expression traceExpression;
-  private boolean isEdgeNegated;
 
   protected AbstractPathEncoding(ExpressionEncoder encoder) {
     this.encoder = encoder;
-    this.stateFactory = encoder.getStateFactory();
   }
+
+  protected abstract BooleanExpression assertionToBoolean(StateExpression path,
+      Expression bool);
   
   @Override
   public void reset() {
   	traceExpression = null;
-  	stateFactory.reset();
+  	failReason = null;
+  	runIsValid = null;
   }
   
 	@Override
   public StateExpression declare(StateExpression pre, IRExpression lval) throws PathFactoryException {
 	  ExpressionEncoder encoder = getExpressionEncoder();
 	  Expression lvalExpr = lval.toLval(pre, encoder);
-	  
+	  checkPreAssertion(pre);
 	  return declare(pre, lvalExpr, lval.getSourceNode());
   }
 	
 	@Override
-	public StateExpression declareVarArray(StateExpression pre, 
-			IRExpression lval, 
-			IRExpression rval) throws PathFactoryException {
-		ExpressionEncoder encoder = getExpressionEncoder();
-		Expression lvalExpr = lval.toLval(pre, encoder);
-		Expression rvalExpr = rval.toExpression(pre, encoder);
-		
-		return declareVarArray(pre, lvalExpr, lval.getSourceNode(), rvalExpr);
-	}
-	
-	@Override
-  public StateExpression init(StateExpression pre, IRExpression lval, IRExpression rval) throws PathFactoryException {
+  public StateExpression init(StateExpression pre, IRExpression lval, IRExpression... rvals) throws PathFactoryException {
 	  ExpressionEncoder encoder = getExpressionEncoder();
+	  
 	  Node lNode = lval.getSourceNode();
-	  Node rNode = rval.getSourceNode();
+	  Expression lvalExpr = lval.toLval(pre, encoder);
 	  
-	  Expression lvalExpr = lval.toLval(pre, encoder);	  
-	  Expression rvalExpr = rval.toExpression(pre, encoder);
+	  List<Node> rNodes = Lists.newArrayListWithExpectedSize(rvals.length);
+	  List<Expression> rvalExprs = Lists.newArrayListWithExpectedSize(rvals.length);
 	  
-	  updateTraceExpression(lNode, rvalExpr, rNode);
-	  return init(pre, lvalExpr, lNode, rvalExpr, rNode);
+	  for(IRExpression rval : rvals) {
+	  	rvalExprs.add(rval.toExpression(pre, encoder));
+	  	rNodes.add(rval.getSourceNode());
+	  }
+	  
+	  checkPreAssertion(pre);	  
+	  updateTraceExpression(lNode, rvalExprs);
+	  return init(pre, lvalExpr, lNode, rvalExprs, rNodes);
   }
 	
 	@Override
@@ -79,7 +80,6 @@ public abstract class AbstractPathEncoding implements PathEncoding {
 	  ExpressionEncoder encoder = getExpressionEncoder();
 	  
 	  Node funcNode = func.getSourceNode();
-	  if(!funcNode.hasName("PrimaryIdentifier")) return pre;
 	  String funcName = funcNode.getString(0);
 	  
 	  List<Node> argNodes = Lists.newArrayListWithExpectedSize(args.length);
@@ -90,11 +90,7 @@ public abstract class AbstractPathEncoding implements PathEncoding {
 	  	argNodes.add(arg.getSourceNode());
 	  }
 	  
-	  xtc.type.Type funcType = CType.getType(func.getSourceNode()).resolve();
-	  if(funcType.isFunction() && !funcType.toFunction().getResult().resolve().isVoid()) {
-	  	updateTraceExpression(argNodes.get(0), argExprs.get(0));
-	  }
-	  
+	  checkPreAssertion(pre);
 	  return call(pre, funcName, funcNode, argExprs, argNodes);
   }
 	
@@ -103,16 +99,19 @@ public abstract class AbstractPathEncoding implements PathEncoding {
     ExpressionEncoder encoder = getExpressionEncoder();
     Expression lhsExpr = lhs.toLval(pre, encoder);
     Expression rhsExpr = rhs.toExpression(pre, encoder);
-    stateFactory.setValidAccess(pre, lhsExpr, lhs.getSourceNode());
+    setValidAccess(pre, lhsExpr, lhs.getSourceNode());
+    checkPreAssertion(pre);
     
-    updateTraceExpression(lhs.getSourceNode(), rhsExpr, rhs.getSourceNode());
+    updateTraceExpression(lhs.getSourceNode(), rhsExpr);
     return assign(pre, lhsExpr, lhs.getSourceNode(), rhsExpr, rhs.getSourceNode());
   }
-  
+
   @Override
-  public StateExpression assume(StateExpression pre, IRExpression b, boolean isGuard) throws PathFactoryException {
+  public StateExpression assume(StateExpression pre, IRExpression b) throws PathFactoryException {
+  	boolean isGuard = b instanceof IRBooleanExpression;
   	Expression guard = b.toBoolean(pre, getExpressionEncoder());
-  	updateEdgeTraceExpression(b, guard);
+  	checkPreAssertion(pre);
+  	updateTraceExpression(null, guard);
     return assume(pre, guard, isGuard);
   }
   
@@ -121,7 +120,8 @@ public abstract class AbstractPathEncoding implements PathEncoding {
     ExpressionEncoder encoder = getExpressionEncoder();
     Expression ptrExpr = ptr.toLval(pre, encoder);
     Expression sizeExpr = size.toExpression(pre, encoder);
-    stateFactory.setValidAccess(pre, ptrExpr, ptr.getSourceNode());
+    setValidAccess(pre, ptrExpr, ptr.getSourceNode());
+    checkPreAssertion(pre);
     
     StateExpression post = malloc(pre, ptrExpr, ptr.getSourceNode(), sizeExpr);
     Expression regionExpr = ptr.toExpression(post, encoder);
@@ -135,7 +135,8 @@ public abstract class AbstractPathEncoding implements PathEncoding {
     Expression ptrExpr = ptr.toLval(pre, encoder);
     Expression nitemExpr = nitem.toExpression(pre, encoder);
     Expression sizeExpr = size.toExpression(pre, encoder);
-    stateFactory.setValidAccess(pre, ptrExpr, ptr.getSourceNode());
+    setValidAccess(pre, ptrExpr, ptr.getSourceNode());
+    checkPreAssertion(pre);
     
     StateExpression post = calloc(pre, ptrExpr, ptr.getSourceNode(), nitemExpr, sizeExpr);
     Expression regionExpr = ptr.toExpression(post, encoder);
@@ -148,7 +149,8 @@ public abstract class AbstractPathEncoding implements PathEncoding {
     ExpressionEncoder encoder = getExpressionEncoder();
     Expression ptrExpr = ptr.toLval(pre, encoder);
     Expression sizeExpr = size.toExpression(pre, encoder);
-    stateFactory.setValidAccess(pre, ptrExpr, ptr.getSourceNode());
+    setValidAccess(pre, ptrExpr, ptr.getSourceNode());
+    checkPreAssertion(pre);
     
     StateExpression post = alloca(pre, ptrExpr, ptr.getSourceNode(), sizeExpr);
     Expression regionExpr = ptr.toExpression(post, encoder);
@@ -160,8 +162,8 @@ public abstract class AbstractPathEncoding implements PathEncoding {
   public StateExpression free(StateExpression pre, IRExpression ptr) throws PathFactoryException {
     ExpressionEncoder encoder = getExpressionEncoder();
     Expression regionExpr = ptr.toExpression(pre, encoder);
-    stateFactory.setValidFree(pre, regionExpr, ptr.getSourceNode());
-    updateTraceExpression(ptr.getSourceNode(), regionExpr);
+    setValidFree(pre, regionExpr, ptr.getSourceNode());
+    checkPreAssertion(pre);
     return free(pre, regionExpr, ptr.getSourceNode());
   }
 
@@ -169,8 +171,8 @@ public abstract class AbstractPathEncoding implements PathEncoding {
   public StateExpression havoc(StateExpression pre, IRExpression lhs) throws PathFactoryException {
     ExpressionEncoder encoder = getExpressionEncoder();
     Expression lhsExpr = lhs.toLval(pre, encoder);
-    stateFactory.setValidAccess(pre, lhsExpr, lhs.getSourceNode());
-    
+    setValidAccess(pre, lhsExpr, lhs.getSourceNode());
+    checkPreAssertion(pre);
     return havoc(pre, lhsExpr, lhs.getSourceNode());
   }
   
@@ -178,26 +180,24 @@ public abstract class AbstractPathEncoding implements PathEncoding {
 	public StateExpression ret(StateExpression pre, IRExpression lhs) throws PathFactoryException {
 	  ExpressionEncoder encoder = getExpressionEncoder();
 	  lhs.toExpression(pre, encoder);
-	  
+	  checkPreAssertion(pre);
 		return pre;
 	}
 
 	@Override
-  public ValidityResult<?> checkAssertion(Expression assertion)
+  public ValidityResult<?> checkAssertion(StateExpression path, Expression bool)
       throws PathFactoryException {
     ExpressionEncoding exprEncoding = getExpressionEncoding();
     ExpressionManager exprManager = exprEncoding.getExpressionManager();
 
     try {
       TheoremProver tp = exprManager.getTheoremProver();
-      
-      Collection<? extends BooleanExpression> assumptions = exprEncoding.getAssumptions();
+      BooleanExpression assertion = assertionToBoolean(path, bool);
+      ImmutableSet<? extends BooleanExpression> assumptions = exprEncoding
+          .getAssumptions();
       tp.assume(assumptions);
-      
-      Collection<BooleanExpression> stateAssumptions = stateFactory.getAssumptions();
-      tp.assume(stateAssumptions);
-      
       ValidityResult<?> res = tp.checkValidity(assertion);
+      exprEncoding.clearAssumptions();
       tp.clearAssumptions();
       return res;
     } catch (TheoremProverException e) {
@@ -206,18 +206,16 @@ public abstract class AbstractPathEncoding implements PathEncoding {
   }
 
   @Override
-  public SatResult<?> checkPath(StateExpression state) throws PathFactoryException {
+  public SatResult<?> checkPath(StateExpression path) throws PathFactoryException {
     ExpressionEncoding exprEncoding = getExpressionEncoding();
     TheoremProver tp = exprEncoding.getExpressionManager().getTheoremProver();
     try {
-      BooleanExpression assertion = stateFactory.stateToBoolean(state);
-      Collection<? extends BooleanExpression> assumptions = exprEncoding.getAssumptions();
+      BooleanExpression assertion = pathToBoolean(path);
+      ImmutableSet<? extends BooleanExpression> assumptions = exprEncoding
+          .getAssumptions();
       tp.assume(assumptions);
-      
-      Collection<BooleanExpression> stateAssumptions = stateFactory.getAssumptions();
-      tp.assume(stateAssumptions);
-      
       SatResult<?> res = tp.checkSat(assertion);
+      exprEncoding.clearAssumptions();
       tp.clearAssumptions();
       return res;
     } catch (TheoremProverException e) {
@@ -257,39 +255,73 @@ public abstract class AbstractPathEncoding implements PathEncoding {
     return pre;
   }
   
+  @Override
+  public String getFailReason() {
+  	return failReason;
+  }
+  
+  @Override
+  public ValidityResult<?> preRunIsValid() {
+  	return runIsValid;
+  }
+  
   @Override 
   public Expression getTraceExpression() {
   	return traceExpression;
   }
-  
-  @Override
-  public boolean isEdgeNegated() {
-  	return isEdgeNegated;
-  }
-  
-	private void updateTraceExpression(Node lNode, Expression rvalExpr) {
-		if(!Preferences.isSet(Preferences.OPTION_TRACE)) return;
-	  ExpressionEncoding encoding = encoder.getEncoding();
-	  xtc.type.Type idxType = CType.getType(lNode);
-		int size = (int) encoding.getCTypeAnalyzer().getWidth(idxType);
-		traceExpression = encoding.castToInteger(rvalExpr, size);
+	
+	private void checkPreAssertion(StateExpression pre) throws PathFactoryException {
+	  if(!pre.getPreAssertions().isEmpty()) {
+	  	for(Entry<String, BooleanExpression> entry : pre.getPreAssertions().entrySet()) {
+	  		ValidityResult<?> result = checkAssertion(pre, entry.getValue());
+	  		runIsValid = result;
+	  		if (!result.isValid()) {
+	  			failReason = entry.getKey(); break;
+	  	  }
+	  	}
+	  	
+			pre.getPreAssertions().clear();
+	  }
 	}
 	
-	private void updateTraceExpression(Node lNode, Expression rvalExpr, Node rNode) {
-		if(!Preferences.isSet(Preferences.OPTION_TRACE)) return;
-	  ExpressionEncoding encoding = encoder.getEncoding();
-	  xtc.type.Type idxType = CType.getType(lNode);
-	  boolean isUnsigned = rNode != null && CType.isUnsigned(CType.getType(rNode));
-			
-		int size = (int) encoding.getCTypeAnalyzer().getWidth(idxType);
-		traceExpression = encoding.castToInteger(rvalExpr, size, !isUnsigned);
+	private BooleanExpression setValidAccess(StateExpression pre, Expression lhsExpr, Node lNode) {
+		if(!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) return null;
+		BooleanExpression validAccess = getStateFactory().validAccess(pre, lhsExpr, lNode);
+		pre.setPreAssertion(Identifiers.VALID_DEREF, validAccess);
+		return validAccess;
 	}
-
-	private void updateEdgeTraceExpression(IRExpression b, Expression guard) {
-		if(!Preferences.isSet(Preferences.OPTION_TRACE)) return;
-		traceExpression = guard;
-		if(b instanceof Guard) {
-			isEdgeNegated = ((Guard) b).isNegated();
+	
+	private BooleanExpression setValidFree(StateExpression pre, Expression regionExpr, Node ptrNode) {
+		if(!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) return null;
+		BooleanExpression validFree = getStateFactory().applyValidFree(pre, regionExpr, ptrNode);
+    pre.setPreAssertion(Identifiers.VALID_FREE, validFree);
+    return validFree;
+	}
+	
+	private void updateTraceExpression(Node lNode, Expression rvalExpr) {
+		if(lNode == null) {
+			traceExpression = rvalExpr;
+		} else {
+	    ExpressionEncoding encoding = encoder.getEncoding();
+			xtc.type.Type idxType = CType.getType(lNode);
+			boolean isUnsigned = CType.isUnsigned(idxType);
+			
+			CType cTypeAnalyzer = encoding.getCTypeAnalyzer();
+			int size = (int) cTypeAnalyzer.getWidth(idxType);
+			traceExpression = encoding.castToInteger(rvalExpr, size, !isUnsigned);
 		}
+	}
+	
+	private void updateTraceExpression(Node lNode, List<Expression> rvalExprs) {
+		if(rvalExprs.size() != 1) return;
+		
+    ExpressionEncoding encoding = encoder.getEncoding();
+		xtc.type.Type idxType = CType.getType(lNode);
+		boolean isUnsigned = CType.isUnsigned(idxType);
+		
+		CType cTypeAnalyzer = encoding.getCTypeAnalyzer();
+		int size = (int) cTypeAnalyzer.getWidth(
+				CType.isScalar(idxType) ? idxType : PointerT.TO_VOID);
+		traceExpression = encoding.castToInteger(rvalExprs.get(0), size, !isUnsigned);
 	}
 }

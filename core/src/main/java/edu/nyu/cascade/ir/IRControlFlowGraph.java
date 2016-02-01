@@ -15,7 +15,6 @@
 package edu.nyu.cascade.ir;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 import xtc.tree.Location;
@@ -83,11 +82,7 @@ public interface IRControlFlowGraph {
 	
 	void setExit(IRBasicBlock newExit);
 
-	List<IRBasicBlock> topologicalSeq(IRBasicBlock startBlock);
+	Collection<IRBasicBlock> topologicalSeq(IRBasicBlock startBlock);
 
 	IRControlFlowGraph clone();
-
-	void addBlock(IRBasicBlock source);
-
-	List<IRBasicBlock> topologicalRevSeq(IRBasicBlock endBlock);
 }

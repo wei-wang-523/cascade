@@ -1,6 +1,7 @@
 package edu.nyu.cascade.ir;
 
 import java.math.BigInteger;
+import java.util.List;
 
 import xtc.tree.Node;
 import xtc.util.SymbolTable.Scope;
@@ -49,7 +50,7 @@ public interface IRBasicBlock {
 
   void addPreLabel(String label);
   void addPostLabel(String label);
-  void addStatements(Iterable<? extends IRStatement> postStatements);
+  void addStatements(List<? extends IRStatement> postStatements);
 	void addStatement(IRStatement statement);
 	
   /**

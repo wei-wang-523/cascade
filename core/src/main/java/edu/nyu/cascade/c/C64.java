@@ -37,7 +37,7 @@ import xtc.util.Utilities;
  */
 
 @SuppressWarnings("unused")
-public class C64 extends C {
+public class C64 extends xtc.type.C {
 
   /** Create a new instance. */
 	public C64() { /* Nothing to do. */ }
@@ -1167,30 +1167,6 @@ public class C64 extends C {
       throw new AssertionError("Not a C integer " + type);
     }
   }
-  
-  public boolean fitsInt(BigInteger num) {
-  	return Limits64.fitsInt(num);
-  }
-  
-  public boolean fitsUnsignedInt(BigInteger num) {
-  	return Limits64.fitsUnsignedInt(num);
-  }
-  
-  public boolean fitsLong(BigInteger num) {
-  	return Limits64.fitsLong(num);
-  }
-  
-  public boolean fitsUnsignedLong(BigInteger num) {
-  	return Limits64.fitsUnsignedLong(num);
-  }
-  
-  public boolean fitsLongLong(BigInteger num) {
-  	return Limits64.fitsLongLong(num);
-  }
-  
-  public boolean fitsUnsignedLongLong(BigInteger num) {
-  	return Limits64.fitsUnsignedLongLong(num);
-  }
 
   /**
    * Mask the specified number as a value of this integer type.
@@ -2035,24 +2011,5 @@ public class C64 extends C {
     if (chop) literal = literal.substring(0, literal.length()-1);
     return type.annotate().constant(Double.valueOf(literal));
   }
-  
-  public int BYTE_SIZE() {
-  	return Limits64.CHAR_BITS;
-  }
-  
-  public BigInteger ARRAY_MAX() {
-  	return Limits64.ARRAY_MAX;
-  }
-  
-  public BigInteger INT_MAX() {
-  	return Limits64.INT_MAX;
-  }
-  
-  public boolean IS_STRING_CONST() {
-  	return Limits64.IS_STRING_CONST;
-  }
-  
-  public long toWidth(long size) {
-		return Limits64.toWidth(size);
-	}
+
 }

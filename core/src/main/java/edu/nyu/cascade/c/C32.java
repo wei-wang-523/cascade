@@ -24,9 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import edu.nyu.cascade.util.IOUtils;
-import edu.nyu.cascade.util.Preferences;
 import xtc.Constants;
-import xtc.Limits;
 import xtc.type.*;
 import xtc.tree.Attribute;
 import xtc.util.Utilities;
@@ -38,7 +36,7 @@ import xtc.util.Utilities;
  * @version $Revision: 1.44 $
  */
 @SuppressWarnings("unused")
-public class C32 extends C {
+public class C32 extends xtc.type.C {
 
   /** Create a new instance. */
   public C32() { /* Nothing to do. */ }
@@ -1168,30 +1166,6 @@ public class C32 extends C {
       throw new AssertionError("Not a C integer " + type);
     }
   }
-  
-  public boolean fitsInt(BigInteger num) {
-  	return Limits32.fitsInt(num);
-  }
-  
-  public boolean fitsUnsignedInt(BigInteger num) {
-  	return Limits32.fitsUnsignedInt(num);
-  }
-  
-  public boolean fitsLong(BigInteger num) {
-  	return Limits32.fitsLong(num);
-  }
-  
-  public boolean fitsUnsignedLong(BigInteger num) {
-  	return Limits32.fitsUnsignedLong(num);
-  }
-  
-  public boolean fitsLongLong(BigInteger num) {
-  	return Limits32.fitsLongLong(num);
-  }
-  
-  public boolean fitsUnsignedLongLong(BigInteger num) {
-  	return Limits32.fitsUnsignedLongLong(num);
-  }
 
   /**
    * Mask the specified number as a value of this integer type.
@@ -2037,23 +2011,4 @@ public class C32 extends C {
     return type.annotate().constant(Double.valueOf(literal));
   }
 
-  public int BYTE_SIZE() {
-  	return Limits32.CHAR_BITS;
-  }
-  
-  public BigInteger ARRAY_MAX() {
-  	return Limits32.ARRAY_MAX;
-  }
-  
-  public BigInteger INT_MAX() {
-  	return Limits32.INT_MAX;
-  }
-  
-  public boolean IS_STRING_CONST() {
-  	return Limits32.IS_STRING_CONST;
-  }
-  
-  public long toWidth(long size) {
-		return Limits32.toWidth(size);
-	}
 }

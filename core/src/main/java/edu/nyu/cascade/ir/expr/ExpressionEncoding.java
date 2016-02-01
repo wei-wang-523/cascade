@@ -11,7 +11,6 @@ import edu.nyu.cascade.ir.type.IRType;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
-import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.util.Pair;
 
 /**
@@ -420,7 +419,7 @@ public interface ExpressionEncoding {
    * @param c the BigInteger number
    * @return an integer-encoded expression
    */
-  Expression integerConstant(BigInteger c, long size) ;
+  Expression integerConstant(BigInteger c) ;
   
   /**
    * A shortcut for <code>not(castToBoolean(e))</code>.
@@ -901,11 +900,4 @@ public interface ExpressionEncoding {
 	 */
 	Pair<Expression, Expression> arithTypeConversion(Expression lhs, Expression rhs,
 			Type lhsType, Type rhsType);
-
-	/**
-	 * Generate the corresponding rval-binding
-	 * @param lvalBinding
-	 * @return
-	 */
-	VariableExpression getRvalBinding(Expression lvalBinding);
 }

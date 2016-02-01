@@ -7,6 +7,7 @@ import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.FunctionExpression;
+import edu.nyu.cascade.prover.VariableExpression;
 
 public interface IRMemSafetyEncoding {
 
@@ -19,13 +20,10 @@ public interface IRMemSafetyEncoding {
 	void initMemSafetyPredicates(SingleLambdaStateExpression state);
 
 	void updateStackMemSafetyPredicates(SingleLambdaStateExpression state,
-			Expression lval, Expression lvalSize);
+			VariableExpression ptrExpr, VariableExpression sizeExpr);
 
 	void updateHeapMemSafetyPredicates(SingleLambdaStateExpression state,
-			Expression hpRegExpr, Expression hpRegSize);
-	
-	void freeUpdateHeapMemSafetyPredicates(SingleLambdaStateExpression state,
-			Expression ptrExpr, Expression sizeExpr);
+			VariableExpression ptrExpr, VariableExpression sizeExpr);
 
 	/** Propagate the memory safety predicates of <code>fromState</code>
 	 * to <code>toState</code>
@@ -34,16 +32,16 @@ public interface IRMemSafetyEncoding {
 	 */
 	void propagateSafetyPredicates(SingleLambdaStateExpression fromState, SingleLambdaStateExpression toState);
 
-//	/**
-//	 * Refresh the safety properties related to <code>state</code> with
-//	 * <code>fromLabels</code> to <code>toLabels</code>
-//	 * @param state
-//	 * @param fromLabels
-//	 * @param toLabels
-//	 */
-//	void refreshDuplicateLabels(SingleLambdaStateExpression state,
-//      Collection<VariableExpression> fromLabels,
-//      Collection<VariableExpression> toLabels);
+	/**
+	 * Refresh the safety properties related to <code>state</code> with
+	 * <code>fromLabels</code> to <code>toLabels</code>
+	 * @param state
+	 * @param fromLabels
+	 * @param toLabels
+	 */
+	void refreshDuplicateLabels(SingleLambdaStateExpression state,
+      Collection<VariableExpression> fromLabels,
+      Collection<VariableExpression> toLabels);
 	
 	Collection<String> getExprPropNames();
 
@@ -61,8 +59,8 @@ public interface IRMemSafetyEncoding {
 	Expression applyUpdatedPredicate(SingleLambdaStateExpression state, 
 			FunctionExpression predicate,
       Collection<Expression> args);
-	
-	Collection<BooleanExpression> getAssumptions();
+
+	Expression getInitBoolValue(Expression key);
 	
 	PredicateClosure getValidAccess(SingleLambdaStateExpression state);
 	

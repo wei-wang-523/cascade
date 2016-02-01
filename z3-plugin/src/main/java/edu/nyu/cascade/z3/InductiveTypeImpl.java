@@ -153,8 +153,8 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
           i++;
         }
         sb.append(")");
-        
-        TheoremProverImpl.z3FileCommand("(declare-datatypes " + sb.toString() + ")");
+        if(IOUtils.tpFileEnabled())
+          TheoremProverImpl.z3FileCommand("(declare-datatypes " + sb.toString() + ")");
       }
       
       Sort[] sorts = null;

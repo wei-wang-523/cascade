@@ -69,6 +69,4 @@ public interface TheoremProver {
 	 * @return
 	 */
 	Expression evaluate(Expression expr);
-	
-	void reset();
 }

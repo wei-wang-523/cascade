@@ -10,9 +10,7 @@ import xtc.tree.GNode;
 import xtc.tree.Node;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -27,8 +25,6 @@ import edu.nyu.cascade.ir.impl.Loop;
 import edu.nyu.cascade.ir.impl.LoopInfoUtil;
 import edu.nyu.cascade.ir.impl.Statement;
 import edu.nyu.cascade.util.IOUtils;
-import static edu.nyu.cascade.ir.IRStatement.StatementType.CALL;
-import static edu.nyu.cascade.ir.IRStatement.StatementType.RETURN;
 
 public class CfgProcessor {
 	
@@ -57,15 +53,7 @@ public class CfgProcessor {
 		IRBasicBlock entry = funcCfg.getEntry();
 		IRBasicBlock currBlock = entry;
 		
-		Predicate<IRStatement> isDeclareStmt = new Predicate<IRStatement>(){
-			@Override
-      public boolean apply(IRStatement stmt) {
-	      return StatementType.DECLARE.equals(stmt.getType()) || 
-						StatementType.DECLARE_VAR_ARRAY.equals(stmt.getType());
-      }
-		};
-		
-		while(!Iterables.any(currBlock.getStatements(), isDeclareStmt)) {
+		while(currBlock.getStatements().isEmpty()) {
 			Collection<? extends IRBasicBlock> succs = funcCfg.getSuccessors(currBlock);
 			assert(succs.size() == 1);
 			currBlock = succs.iterator().next();
@@ -75,8 +63,7 @@ public class CfgProcessor {
 		Iterator<IRStatement> itr = assignStmts.iterator();
 		for(IRStatement stmt : currBlock.getStatements()) {
 			newStmts.add(stmt);
-			if(StatementType.DECLARE.equals(stmt.getType()) || 
-					StatementType.DECLARE_VAR_ARRAY.equals(stmt.getType())) {
+			if(StatementType.DECLARE.equals(stmt.getType())) {
 				if(itr.hasNext()) newStmts.add(itr.next());
 			}
 		}
@@ -88,22 +75,17 @@ public class CfgProcessor {
 		replaceBlock(funcCfg, currBlock, newBlock);
 	}
 	
-	public static void appendReturnStmt(IRControlFlowGraph funcCfg, IRStatement callStmt) {
-	  Preconditions.checkArgument(callStmt.getType().equals(CALL));
-	  Preconditions.checkNotNull(funcCfg.getExit());
-	  
-	  IRBasicBlock lastBlock = funcCfg.getExit();
-	  for(IRStatement stmt : lastBlock.getStatements().reverse()) {
-	  	if(stmt.getType().equals(RETURN)) {
-	      IRExpressionImpl lExpr = (IRExpressionImpl) callStmt.getOperand(1);
-	      IRExpressionImpl rExpr = (IRExpressionImpl) stmt.getOperand(0);
-	      if(lExpr.getSourceNode().equals(rExpr.getSourceNode()))	return;
-	      Node assignNode = GNode.create("AssignmentExpression", 
-	          lExpr.getSourceNode(), "=", rExpr.getSourceNode());
-	      assignNode.setLocation(callStmt.getSourceNode().getLocation());
-	      IRStatement retAssign = Statement.assign(assignNode, lExpr, rExpr);
-	  		lastBlock.addStatement(retAssign); break;
-	  	}
+	public static void appendReturnStmt(IRControlFlowGraph funcCfg, IRStatement assignStmt) {
+	  Preconditions.checkArgument(assignStmt.getType().equals(StatementType.ASSIGN));
+
+	  for(IRBasicBlock block : funcCfg.getBlocks()) {
+	  	if(block.getStatements().isEmpty()) continue;
+	  	int lastIdx = block.getStatements().size()-1;
+	  	IRStatement lastStmt = block.getStatements().get(lastIdx);
+	  	if(!StatementType.RETURN.equals(lastStmt.getType())) continue;
+	  	if(lastStmt.getOperands().size() == 0) continue; // no operand
+	  	IRStatement retAsgn = createReturnAssignStmt(lastStmt, assignStmt);
+	  	block.addStatement(retAsgn);
 	  }
 	}
 	
@@ -179,7 +161,7 @@ public class CfgProcessor {
 		preLoopBlock.addStatements(liftHavocDeclStmts);
 		
 		Collection<IREdge<?>> backEdges = loop.getBackEdges();
-		Collection<IREdge<?>> enterEdges = ImmutableList.copyOf(cfg.getIncomingEdges(loopHeader));
+		Collection<IREdge<?>> enterEdges = Lists.newArrayList(cfg.getIncomingEdges(loopHeader));
 		enterEdges.removeAll(backEdges);
 		
 		for(IREdge<?> enterEdge : enterEdges) {
@@ -208,14 +190,7 @@ public class CfgProcessor {
 	private static void replaceBlock(IRControlFlowGraph cfg, 
 			IRBasicBlock oldBlock, 
 			IRBasicBlock newBlock) {
-		
-		if(cfg.getBlocks().size() == 1 && cfg.getEdges().isEmpty()) { // singleton CFG
-			cfg.setEntry(newBlock);	cfg.setExit(newBlock);
-			cfg.removeBlock(oldBlock);
-			cfg.addBlock(newBlock);
-			return;
-		}
-		
+	
 		Collection<? extends IREdge<? extends IRBasicBlock>> incomings 
 				= ImmutableList.copyOf(cfg.getIncomingEdges(oldBlock));
 		
@@ -278,7 +253,7 @@ public class CfgProcessor {
 		assert(incomings.size() == 1);
 		IREdge<?> incoming = incomings.iterator().next();
 		if(incoming.getGuard() != null) {
-			IRStatement assumeStmt = Statement.assumeStmt(incoming.getSourceNode(), incoming.getGuard(), false);
+			IRStatement assumeStmt = Statement.assumeStmt(incoming.getSourceNode(), incoming.getGuard());
 			predBB.addStatement(assumeStmt);
 		}
 		
@@ -303,31 +278,13 @@ public class CfgProcessor {
 	}
 
 	private static boolean deleteDeadBlocks(IRControlFlowGraph cfg) {
-		boolean Changed = false;
-		
 		Collection<IRBasicBlock> topologicSeq = cfg.topologicalSeq(cfg.getEntry());
 		Collection<IRBasicBlock> deadBlocks = Lists.newArrayList(cfg.getBlocks());
 		deadBlocks.removeAll(topologicSeq); // remained are dead blocks;
-		Changed |= !deadBlocks.isEmpty();
-		
-		if(deadBlocks.contains(cfg.getExit())) 
-			IOUtils.err().println("CFG " + cfg.getName() + "'s exit block has been deleted as the dead block");
+		if(deadBlocks.isEmpty()) return false;
 		
 		for(IRBasicBlock block : deadBlocks) cfg.removeBlock(block);
-		
-		if(cfg.getExit() == null) return Changed;
-		
-		topologicSeq = cfg.topologicalRevSeq(cfg.getExit());
-		deadBlocks = Lists.newArrayList(cfg.getBlocks());
-		deadBlocks.removeAll(topologicSeq); // remained are dead blocks;
-		Changed |= !deadBlocks.isEmpty();
-		
-		if(deadBlocks.contains(cfg.getEntry())) 
-			throw new IllegalStateException("Entry block has been deleted as the dead block");
-		
-		for(IRBasicBlock block : deadBlocks) cfg.removeBlock(block);
-		
-		return Changed;
+		return true;
 	}
 	
 	private static List<IRStatement> liftHavocDeclStatements(Loop loop) {
@@ -353,7 +310,6 @@ public class CfgProcessor {
 					break;
 				case HAVOC:
 				case DECLARE:
-				case DECLARE_VAR_ARRAY:
 					liftStmts.add(stmt); break;
 				default:
 					break;
@@ -363,4 +319,24 @@ public class CfgProcessor {
 		
 		return liftStmts;
 	}
+	
+	/**
+	 * Replace the <code>returnStmt</code> as <code>assignStmt</code>
+	 * @param returnStmt
+	 * @param assignStmt
+	 * @return
+	 */
+  private static IRStatement createReturnAssignStmt(
+  		IRStatement returnStmt, 
+  		IRStatement assignStmt) {
+    Preconditions.checkArgument(StatementType.RETURN.equals(returnStmt.getType()));
+    Preconditions.checkArgument(StatementType.ASSIGN.equals(assignStmt.getType()));
+    IRExpressionImpl lExpr = (IRExpressionImpl) assignStmt.getOperand(0);
+    IRExpressionImpl rExpr = (IRExpressionImpl) returnStmt.getOperand(0);
+    Node assignNode = GNode.create("AssignmentExpression", 
+        lExpr.getSourceNode(), "=", rExpr.getSourceNode());
+    assignNode.setLocation(assignStmt.getSourceNode().getLocation());
+    IRStatement assignResult = Statement.assign(assignNode, lExpr, rExpr);
+    return assignResult;
+  }
 }

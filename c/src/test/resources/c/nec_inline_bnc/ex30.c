@@ -1,4 +1,4 @@
-extern int __VERIFIER_nondet_int();
+
 typedef struct {
 	int a;
 	int b;
@@ -30,7 +30,7 @@ int main(){
 	f_t * x, *z;
 	int * y, *w; 
 	int n; 
-	n = __VERIFIER_nondet_int();
+	n = __NONDET__();
 	ASSUME(n > 0 );
 	ASSUME( n < 100);
 	x = (f_t*) malloc(n * sizeof(f_t));

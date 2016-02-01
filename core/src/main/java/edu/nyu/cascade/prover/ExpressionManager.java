@@ -1,7 +1,6 @@
 package edu.nyu.cascade.prover;
 
 import java.math.BigInteger;
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.cli.Option;
@@ -993,21 +992,5 @@ public interface ExpressionManager {
    * @param expr
    */
   boolean valueOfBooleanConstant(Expression expr);
-
-  /**
-   * Create a lambda expression
-   * @param arg
-   * @param body
-   * @return
-   */
-	FunctionExpression lambda(Expression arg, Expression body);
-
-	/**
-	 * Create a lambda expression
-	 * @param args
-	 * @param body
-	 * @return
-	 */
-	FunctionExpression lambda(Collection<Expression> args, Expression body);
 
 }

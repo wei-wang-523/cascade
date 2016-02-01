@@ -3,7 +3,7 @@ package edu.nyu.cascade.prover;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-public abstract class QueryResult<R> {
+abstract class QueryResult<R> {
   private final ImmutableList<BooleanExpression> assumptions;
   private final Expression query;
   private final R result;

@@ -55,7 +55,7 @@ class ExpressionImpl implements Expression {
   }
   
   static interface ArrayStoreAllConstructionStrategy {
-    Expr apply(Context ctx, Sort type, Expr expr) throws Z3Exception;
+    Expr apply(Context ctx, Sort type, Expr expr);
   }
   
   static interface FuncApplyConstructionStrategy {
@@ -65,13 +65,13 @@ class ExpressionImpl implements Expression {
   static interface BinderTriggersConstructionStrategy {
     Expr apply(Context ctx, Expr[] names, Expr body, 
         Expr[] pattern, Expr[] noPatter, 
-        Symbol quantifierID, Symbol skolemID) throws Z3Exception;
+        Symbol quantifierID, Symbol skolemID);
   }
   
   static interface BinderTriggersDeBruijnConstructionStrategy {
     Expr apply(Context ctx, Sort[] sorts, Symbol[] names, Expr body, 
         Expr[] pattern, Expr[] noPatter, 
-        Symbol quantifierID, Symbol skolemID) throws Z3Exception;
+        Symbol quantifierID, Symbol skolemID);
   }
 
   static interface NaryConstructionStrategy {
@@ -99,7 +99,7 @@ class ExpressionImpl implements Expression {
   }
   
   static interface ConstantConstructionStrategy {
-    Expr apply(Context ctx, String name, Sort type);
+    Expr apply(Context ctx, String name, Sort type) throws Z3Exception;
   }
 
 	static ExpressionImpl mkFunApply(
@@ -210,8 +210,6 @@ class ExpressionImpl implements Expression {
   private boolean isVariable;
   
   private boolean isBound;
-  
-  private boolean isHoareLogic;
 
   private TypeImpl type;
   
@@ -872,16 +870,6 @@ class ExpressionImpl implements Expression {
   	} catch (Z3Exception e) {
   		throw new TheoremProverException(e);
   	}
-  }
-  
-  @Override
-  public void setHoareLogic(boolean bool) {
-  	this.isHoareLogic = bool;
-  }
-  
-  @Override
-  public boolean isHoareLogic() {
-  	return isHoareLogic;
   }
 
   @Override

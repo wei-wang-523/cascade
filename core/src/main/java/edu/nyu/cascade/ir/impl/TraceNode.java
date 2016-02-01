@@ -29,7 +29,6 @@ public class TraceNode implements IRTraceNode {
 	private final List<IRStatement> stmts = Lists.newArrayList();
 	private final List<TraceNode> successors = Lists.newArrayList();
 	private final Map<IRStatement, Expression> stmtTraceExprMap = Maps.newHashMap(); 
-	private final Map<IRStatement, Boolean> edgeStmtMap = Maps.newHashMap();
 	private final Set<String> labels = Sets.newHashSet();
 	
 	private final BigInteger id;
@@ -107,21 +106,6 @@ public class TraceNode implements IRTraceNode {
   public void setStmtTraceExpr(IRStatement stmt, Expression expr) {
 		if(expr != null) stmtTraceExprMap.put(stmt, expr);
   }
-	
-	@Override
-	public boolean isEdge(IRStatement stmt) {
-		return edgeStmtMap.containsKey(stmt);
-	}
-	
-	@Override
-	public void isNegate(IRStatement stmt, boolean isNegate) {
-		edgeStmtMap.put(stmt, isNegate);
-	}
-	
-	@Override
-	public boolean isEdgeNegated(IRStatement stmt) {
-		return edgeStmtMap.get(stmt);
-	}
 	
 	@Override
   public void addStatements(Collection<? extends IRStatement> stmts) {

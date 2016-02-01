@@ -547,15 +547,13 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
     });
   }
   
-	@Override
-	public FunctionExpression lambda(
-      Collection<Expression> args, Expression body) {
+	FunctionExpression lambda(
+      Collection<BoundExpression> args, Expression body) {
     return FunctionExpressionImpl.create(this, args, body);
   }
 	
-	@Override
-	public FunctionExpression lambda(
-      Expression arg, Expression body) {
+	FunctionExpression lambda(
+      BoundExpression arg, Expression body) {
     return FunctionExpressionImpl.create(this, Collections.singletonList(arg), body);
   }
 	
@@ -660,7 +658,7 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       return new ExpressionImpl(this, Kind.CONSTANT, e, integerType());
     } 
     else if ( e.getKind() == edu.nyu.acsys.CVC4.Kind.LAMBDA ) {
-    	Collection<Expression> args = Lists.newArrayList();
+    	Collection<BoundExpression> args = Lists.newArrayList();
     	for(int i = 0; i < e.getNumChildren()-1; i++)
     		args.add(BoundVariableExpressionImpl.valueOf(this, toExpression(e.getChild(i))));
       Expression body = toExpression(e.getChild((int) e.getNumChildren()-1));

@@ -37,7 +37,7 @@ public interface IntegerEncoding<T extends Expression> extends TypeEncoding<T> {
   
   T constant(long c);
   
-  T constant(BigInteger c, long size);
+  T constant(BigInteger c);
   
   /** Returns an integer expression representing the character constant <code>c</code>. */
   T characterConstant(int c);

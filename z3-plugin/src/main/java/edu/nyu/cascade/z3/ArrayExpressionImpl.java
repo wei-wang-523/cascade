@@ -13,6 +13,7 @@ import com.microsoft.z3.Sort;
 
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 
@@ -28,8 +29,12 @@ final class ArrayExpressionImpl
     return new ArrayExpressionImpl(exprManager, ARRAY_UPDATE,
         new TernaryConstructionStrategy() {
       @Override
-      public Expr apply(Context ctx, Expr arg1, Expr arg2, Expr arg3) throws Z3Exception {
-      	return ctx.mkStore((ArrayExpr) arg1, arg2, arg3);
+      public Expr apply(Context ctx, Expr arg1, Expr arg2, Expr arg3) {
+        try {
+          return ctx.mkStore((ArrayExpr) arg1, arg2, arg3);
+        } catch (Z3Exception e) {
+          throw new TheoremProverException(e);
+        }
       }
     }, array, index, value);
   }
@@ -42,8 +47,12 @@ final class ArrayExpressionImpl
     result = new ExpressionImpl(exprManager, ARRAY_INDEX,
         new BinaryConstructionStrategy() {
           @Override
-          public Expr apply(Context ctx, Expr left, Expr right) throws Z3Exception {
-          	return ctx.mkSelect((ArrayExpr)left, right);
+          public Expr apply(Context ctx, Expr left, Expr right) {
+              try {
+                return ctx.mkSelect((ArrayExpr)left, right);
+              } catch (Z3Exception e) {
+                throw new TheoremProverException(e);
+              }
           }
         }, array, index);
     result.setType(array.asArray().getElementType());
@@ -57,8 +66,12 @@ final class ArrayExpressionImpl
     return new ArrayExpressionImpl(exprManager, ARRAY_STORE_ALL,
         new ArrayStoreAllConstructionStrategy() {
           @Override
-          public Expr apply(Context ctx, Sort type, Expr expr) throws Z3Exception {
-          	return ctx.mkConstArray(type, expr);
+          public Expr apply(Context ctx, Sort type, Expr expr) {
+            try {
+              return ctx.mkConstArray(type, expr);
+            } catch (Z3Exception e) {
+              throw new TheoremProverException(e);
+            }
           }
         }, arrayType, expr);
   }

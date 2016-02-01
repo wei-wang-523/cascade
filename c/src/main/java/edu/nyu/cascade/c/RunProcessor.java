@@ -9,15 +9,6 @@ public interface RunProcessor {
 	
 	boolean prepare(IRControlFlowGraph mainCfg);
 	
-	/**
-	 * Simplify and pre-process the cfgs
-	 */
-	void init();
-	
-	void init(String label);
-
-	void preprocess();
-	
   /**
 	 * Process reachability checking in CFG to visit block with <code>label</code>
 	 * 
@@ -47,6 +38,4 @@ public interface RunProcessor {
 	void enableCheckKeepUnroll();
 	
 	void enableCheckExitUnroll();
-
-	boolean isFullyFuncInlined(IRControlFlowGraph mainCfg);
 }

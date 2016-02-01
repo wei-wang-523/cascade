@@ -1,14 +1,12 @@
 package edu.nyu.cascade.c;
 
 import java.math.BigInteger;
-import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.cli.Option;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
@@ -976,17 +974,6 @@ final class DryRunTheoremProver implements TheoremProver {
         boolean fresh) {
 	    return exprManager.boundExpression(name, i, type, fresh);
     }
-
-		@Override
-		public FunctionExpression lambda(Expression arg, Expression body) {
-			return exprManager.lambda(arg, body);
-		}
-
-		@Override
-		public FunctionExpression lambda(Collection<Expression> args,
-				Expression body) {
-			return exprManager.lambda(args, body);
-		}
   }
 
   public class Provider implements TheoremProver.Provider {
@@ -1076,10 +1063,5 @@ final class DryRunTheoremProver implements TheoremProver {
 	@Override
 	public Expression evaluate(Expression expr) {
 		return theoremProver.evaluate(expr);
-	}
-	
-	@Override
-	public void reset() {
-		theoremProver.reset();
 	}
 }

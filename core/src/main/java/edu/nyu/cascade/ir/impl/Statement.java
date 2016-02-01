@@ -22,8 +22,9 @@ import static edu.nyu.cascade.ir.IRStatement.StatementType.SEND;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.SKIP;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.FUNC_ENT;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.FUNC_EXIT;
-import static edu.nyu.cascade.ir.IRStatement.StatementType.DECLARE_VAR_ARRAY;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -56,10 +57,6 @@ public class Statement implements IRStatement {
     return new Statement(sourceNode, DECLARE, varExpr);
   }
 	
-	public static Statement declareVarArray(Node sourceNode, IRExpressionImpl varExpr, IRExpression sizeExpr) {
-		return new Statement(sourceNode, DECLARE_VAR_ARRAY, varExpr, sizeExpr);
-	}
-	
   public static Statement malloc(Node sourceNode, IRExpressionImpl ptrExpr, IRExpressionImpl sizeExpr) {
     return new Statement(sourceNode, MALLOC, ptrExpr, sizeExpr);
   }
@@ -81,18 +78,20 @@ public class Statement implements IRStatement {
     return new Statement(sourceNode, ASSIGN, varExpr, valExpr);
   }
   
-  public static Statement initialize(Node sourceNode, IRExpressionImpl varExpr, IRExpressionImpl valExpr) {
-    return new Statement(sourceNode, INIT, varExpr, valExpr);
+  public static Statement initialize(Node sourceNode, IRExpressionImpl varExpr, IRExpressionImpl... valExprs) {
+    return new Statement(sourceNode, INIT, Lists.asList(varExpr, valExprs));
   }
 
-  public static Statement assumeStmt(Node sourceNode, IRExpression expression, boolean guard) {
-    Statement stmt = new Statement(sourceNode, ASSUME, expression);
-    stmt.setProperty(Identifiers.GUARD, guard);
-    return stmt;
+  public static Statement assumeStmt(Node sourceNode, IRExpression expression) {
+    return new Statement(sourceNode, ASSUME, expression);
   }
   
   public static Statement await(Node sourceNode, IRExpressionImpl expr) {
     return new Statement(sourceNode, AWAIT, expr);
+  }
+
+  public static Statement create(Node sourceNode) {
+    return new Statement(sourceNode);
   }
 
   public static Statement critical(Node sourceNode) {
@@ -100,10 +99,9 @@ public class Statement implements IRStatement {
   }
   
   public static Statement functionCall(Node sourceNode, IRExpression funExpr,
-      IRExpression retExpr, List<? extends IRExpression> args) {
+      List<? extends IRExpression> args) {
     ImmutableList.Builder<IRExpression> builder = ImmutableList.builder();
     builder.add(funExpr);
-    if(retExpr != null) builder.add(retExpr);
     if(args != null)	builder.addAll(args);
     return new Statement(sourceNode, CALL, builder.build());
   }
@@ -141,14 +139,12 @@ public class Statement implements IRStatement {
     return new Statement(sourceNode, RETURN);
   }
   
-  public static Statement scopeEnt(Node sourceNode, String scopeName) {
-  	Statement stmt = new Statement(sourceNode, FUNC_ENT);
-  	stmt.setProperty(Identifiers.SCOPE, scopeName);
-  	return stmt;
+  public static Statement scopeEnt(Node sourceNode) {
+  	return new Statement(sourceNode, FUNC_ENT);
   }
   
-  public static Statement scopeExit(Node sourceNode, String scopeName) {
-  	Statement stmt = new Statement(sourceNode, FUNC_EXIT);
+  public static Statement scopeExit(String scopeName) {
+  	Statement stmt = new Statement(null, FUNC_EXIT);
   	stmt.setProperty(Identifiers.SCOPE, scopeName);
   	return stmt;
   }
@@ -174,6 +170,29 @@ public class Statement implements IRStatement {
   
   private final Map<String, Object> properties;
   
+  protected Statement(Node sourceNode) {
+    this(sourceNode, null);
+  }
+  
+  protected Statement(IRLocation loc, StatementType type) {
+    this.type = type;
+    this.location = loc;
+    this.preLabels = Collections.emptySet();
+    this.postLabels = Collections.emptySet();
+    this.properties = Maps.newHashMap();
+  }
+  
+  protected Statement(Node sourceNode, StatementType type,
+      IRExpression... operands) {
+    this.sourceNode = sourceNode;
+    this.type = type;
+    this.operands = ImmutableList.copyOf(Arrays.asList(operands));
+    this.location = IRLocations.ofNode(sourceNode);
+    this.preLabels = Sets.newHashSet();
+    this.postLabels = Sets.newHashSet();
+    this.properties = Maps.newHashMap();
+  }
+  
   protected Statement(Node sourceNode, StatementType type,
       List<? extends IRExpression> operands) {
     this.sourceNode = sourceNode;
@@ -183,20 +202,6 @@ public class Statement implements IRStatement {
     this.preLabels = Sets.newHashSet();
     this.postLabels = Sets.newHashSet();
     this.properties = Maps.newHashMap();
-  }
-  
-  protected Statement(Node sourceNode, StatementType type,
-      IRExpression... operands) {
-    this(sourceNode, type, Lists.newArrayList(operands));
-  }
-  
-  @Override
-  public IRStatement clone() {
-  	Statement copy = new Statement(sourceNode, type, operands);
-  	copy.properties.putAll(properties);
-  	copy.preLabels.addAll(preLabels);
-  	copy.postLabels.addAll(postLabels);
-  	return copy;
   }
   
   @Override
@@ -305,8 +310,6 @@ public class Statement implements IRStatement {
     switch (getType()) {
     case DECLARE:
     	return "declare " + getOperand(0);
-    case DECLARE_VAR_ARRAY:
-    	return "declare " + getOperand(0) + "[" + getOperand(1) + "]"; 
     case MALLOC:
       return getOperand(0) + " := malloc(" + getOperand(1) + ")";
     case CALLOC:
@@ -315,8 +318,13 @@ public class Statement implements IRStatement {
       return getOperand(0) + " := alloca(" + getOperand(1) + ")";    
     case ASSERT:
       return "assert " + getOperand(0);
-    case INIT: 
-    	return getOperand(0) + " := " + getOperand(1);
+    case INIT: {
+    	StringBuilder sb = new StringBuilder().append(getOperand(0)).append(" := ");
+    	for(int i = 1; i < getOperands().size(); i++) {
+    		sb.append(getOperand(i)).append(" ");
+    	}
+    	return sb.toString();
+    }
     case ASSIGN:
     	return getOperand(0) + " := " + getOperand(1);
     case ASSUME:
@@ -325,26 +333,19 @@ public class Statement implements IRStatement {
       return "await " + getOperand(0);
 
     case CALL:
-    	StringBuilder sb = new StringBuilder();
       Iterator<IRExpression> opIter = getOperands().iterator();
       assert (opIter.hasNext()); // function expression
       IRExpression funExpr = opIter.next();
-      xtc.type.Type resultType = CType.getType(sourceNode);
-      if(!resultType.resolve().isVoid()) {
-      	IRExpression retExpr = opIter.next();
-      	sb.append(retExpr + " := ");
-      }
-      
-      sb.append(funExpr + "(");
+      String result = funExpr.toString() + "(";
       while (opIter.hasNext()) {
         IRExpression arg = opIter.next();
-        sb.append(arg.toString());
+        result += arg.toString();
         if (opIter.hasNext()) {
-          sb.append(",");
+          result += ",";
         }
       }
-      sb.append(")");
-      return sb.toString();
+      result += ")";
+      return result;
 
     case CRITICAL_SECTION:
       return "critical";
@@ -374,10 +375,10 @@ public class Statement implements IRStatement {
       return "skip";
     
     case FUNC_ENT:
-    	return "enter " + getProperty(Identifiers.SCOPE);
+    	return "enter (" + CType.getScopeName(sourceNode) + ")";
     
     case FUNC_EXIT:
-    	return "exit " + getProperty(Identifiers.SCOPE);
+    	return "exit (" + getProperty(Identifiers.SCOPE) + ")";
     	
     default:
       return sourceNode.getName();

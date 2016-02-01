@@ -2,18 +2,17 @@ package edu.nyu.cascade.c.mode;
 
 import com.google.inject.Inject;
 
+import edu.nyu.cascade.c.CSymbolTable;
 import edu.nyu.cascade.c.preprocessor.PreProcessor;
-import edu.nyu.cascade.c.preprocessor.steensgaard.Steensgaard;
-import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.ir.expr.BitVectorExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
+import edu.nyu.cascade.ir.expr.IntExpressionEncoding;
 import edu.nyu.cascade.ir.formatter.IRDataFormatter;
 import edu.nyu.cascade.ir.memory.IRSingleHeapEncoder;
 import edu.nyu.cascade.ir.memory.SingleHeapEncoder;
 import edu.nyu.cascade.ir.memory.safety.AbstractMemSafetyEncoding;
-import edu.nyu.cascade.ir.memory.safety.AbstractStmtMemSafetyEncoding;
 import edu.nyu.cascade.ir.memory.safety.IRMemSafetyEncoding;
-import edu.nyu.cascade.ir.memory.safety.Strategy;
+import edu.nyu.cascade.ir.memory.safety.AbstractMemSafetyEncoding.Strategy;
 import edu.nyu.cascade.ir.state.AbstractStateFactory;
 import edu.nyu.cascade.ir.state.HoareStateFactory;
 import edu.nyu.cascade.ir.state.StateFactory;
@@ -26,7 +25,11 @@ public class FlatMode extends AbstractMode {
   
   @Inject
   public FlatMode(ExpressionManager exprManager) {
-  	encoding = BitVectorExpressionEncoding.create(exprManager);
+  	if(Preferences.isSet(Preferences.OPTION_NON_OVERFLOW)) {
+  		encoding = IntExpressionEncoding.create(exprManager);
+  	} else {
+  		encoding = BitVectorExpressionEncoding.create(exprManager);
+  	}
   	
   	Strategy strategy;
   	
@@ -39,10 +42,8 @@ public class FlatMode extends AbstractMode {
   	IRDataFormatter formatter = getFormatter(encoding);
   	
   	if(Preferences.isSet(Preferences.OPTION_LAMBDA)) {
-  		IRMemSafetyEncoding memSafetyEncoding = Preferences.isSet(Preferences.OPTION_STMT) ? 
-  				AbstractStmtMemSafetyEncoding.getInstance(encoding, formatter, strategy) :
-  					AbstractMemSafetyEncoding.getInstance(encoding, formatter, strategy);
-  		
+      IRMemSafetyEncoding memSafetyEncoding = AbstractMemSafetyEncoding
+      		.getInstance(encoding, formatter, strategy);
       stateFactory = AbstractStateFactory.createSingleLambda(encoding, formatter, memSafetyEncoding);
   	} else {
     	IRSingleHeapEncoder heapEncoder = SingleHeapEncoder.create(encoding, formatter, strategy);
@@ -66,13 +67,11 @@ public class FlatMode extends AbstractMode {
 
 	@Override
   public boolean hasPreprocessor() {
-	  return true;
+	  return false;
   }
 
 	@Override
-	public PreProcessor<?> buildPreprocessor(SymbolTable symbolTable) {
-		PreProcessor<?> preProcessor = Steensgaard.create(symbolTable);
-		stateFactory.setLabelAnalyzer(preProcessor);
-		return preProcessor;
-	}
+  public PreProcessor<?> buildPreprocessor(CSymbolTable symbolTable) {
+	  throw new UnsupportedOperationException("Flat mode doesn't have preprocessor.");
+  }
 }

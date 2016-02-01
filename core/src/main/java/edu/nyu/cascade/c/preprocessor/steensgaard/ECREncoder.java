@@ -7,9 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 import xtc.tree.*;
-import xtc.type.FunctionT;
+import xtc.type.PointerT;
 import xtc.type.Type;
-import xtc.type.Type.Tag;
 import xtc.type.VoidT;
 import xtc.util.SymbolTable.Scope;
 
@@ -23,7 +22,10 @@ import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Pair;
+import edu.nyu.cascade.util.ReservedFunction;
+import edu.nyu.cascade.util.ReservedFunction.Sig;
 
 /**
  * The ECR encoder for Node. Return the ECR contained the left-value of the 
@@ -43,12 +45,10 @@ import edu.nyu.cascade.util.Pair;
  */
 
 class ECREncoder extends Visitor {
+	private static final Pair<String, String> CONST_ECR_KEY = Pair.of("ECR.constant", "");
   	
   private final UnionFindECR uf;
   private final SymbolTable symbolTable;
-  private final CType cTypeAnalyzer = CType.getInstance();
-  private final LvalVisitor lvalVisitor = new LvalVisitor();
-  private final RvalVisitor rvalVisitor = new RvalVisitor();
   
   /**
    * Store all the ECRs created for declared variables with
@@ -56,362 +56,303 @@ class ECREncoder extends Visitor {
    */
   private final Map<Pair<String, String>, ECR> ecrMap = Maps.newHashMap();
   
-  @SuppressWarnings("unused")
-  private class LvalVisitor extends Visitor {
-  	private ECR encodeECR(Node node) {
-      return (ECR) dispatch(node);
-    }
-    
-    @Override
-    public ECR unableToVisit(Node node) throws VisitingException {
-      IOUtils.err()
-          .println(
-              "APPROX: Treating unexpected node type as NULL: "
-                  + node.getName());
-      return ECR.createBottom();
-    }
-    
-    public ECR visitAdditiveExpression(GNode node) {
-    	return rvalVisitor.encodeECR(node);
-    }
-
-    public ECR visitSimpleDeclarator(GNode node) {  	
-    	Preconditions.checkArgument(CType.hasScope(node));
-    	String id = node.getString(0);
-    	IRVarInfo varInfo = (IRVarInfo) symbolTable.getScope(node).lookup(id);
-    	String scopeName = varInfo.getScopeName();
-    	
-    	Pair<String, String> key = Pair.of(id, scopeName);
-    	if(ecrMap.containsKey(key)) return ecrMap.get(key);
-    	
-    	Type type = varInfo.getXtcType();
-    	ECR addrECR = createECR(type);
-  		ecrMap.put(key, addrECR);
-  		
-    	if(type.resolve().isFunction()) {
-    		ECR varECR = deref(addrECR, type);
-    		ECR lamECR = uf.getFunc(varECR);
-    		VarImpl funcVar = new VarImpl(id, type, scopeName, lamECR);
-    		uf.add(funcVar);
-    	}
-    	
-    	return addrECR;
-    }
-    
-		public ECR visitEnumerator(GNode node) {
-    	String id = node.getString(0);
-    	IRVarInfo info = symbolTable.lookup(id);
-    	String scopeName = info.getScopeName();
-    	
-    	Pair<String, String> key = Pair.of(id, scopeName);
-    	if(ecrMap.containsKey(key)) return ecrMap.get(key);
-    	
-    	ECR varECR = createECR(info.getXtcType());
-    	ecrMap.put(key, varECR);
-    	
-    	return varECR;
-    }
-		
-    public ECR visitIndirectionExpression(GNode node) {
-    	return rvalVisitor.encodeECR(node.getNode(0));
-    }
-    
-    public ECR visitPrimaryIdentifier(GNode node) {
-    	Preconditions.checkArgument(CType.hasScope(node));
-    	String id = node.getString(0);
-    	IRVarInfo varInfo = (IRVarInfo) symbolTable.getScope(node).lookup(id);
-    	String scopeName = varInfo.getScopeName();
-    	
-    	Pair<String, String> key = Pair.of(id, scopeName);
-    	if(ecrMap.containsKey(key)) return ecrMap.get(key);
-    	
-    	Type type = varInfo.getXtcType();
-    	ECR addrECR = createECR(type);
-  		ecrMap.put(key, addrECR);
-  		return addrECR;
-    }
-    
-    public ECR visitSubscriptExpression(GNode node) {
-    	ECR baseECR = rvalVisitor.encodeECR(node.getNode(0));
-    	ECR idxECR = rvalVisitor.encodeECR(node.getNode(1));
-    	long size = cTypeAnalyzer.getSize((CType.getType(node)));
-    	return baseECR;
-    }
-    
-    public ECR visitIntegerConstant(GNode node) {
-			return getConstant();
-    }
-    
-    public ECR visitIndirectComponentSelection(GNode node) {
-      return rvalVisitor.encodeECR(node.getNode(0));
-    }
-    
-    public ECR visitDirectComponentSelection(GNode node) {
-    	Node baseNode = node.getNode(0);      
-      ECR baseECR = encodeECR(baseNode);
-      return baseECR;
-    }
-  }
-  
-  @SuppressWarnings("unused")
-  private class RvalVisitor extends Visitor {
-  	private ECR encodeECR(Node node) {
-      return (ECR) dispatch(node);
-    }
-    
-    @Override
-    public ECR unableToVisit(Node node) throws VisitingException {
-      IOUtils.err()
-          .println(
-              "APPROX: Treating unexpected node type as NULL: "
-                  + node.getName());
-      return ECR.createBottom();
-    }
-
-		public ECR visitLabeledStatement(GNode node) {
-			return ECR.createBottom();
-		}
-
-		public ECR visitConditionalExpression(GNode node) {
-    	ECR lhsECR = encodeECR(node.getNode(1));
-    	ECR rhsECR = encodeECR(node.getNode(2));
-		  return getOpECR(lhsECR, rhsECR);
-		}
-
-		public ECR visitAdditiveExpression(GNode node) {
-			ECR leftECR = encodeECR(node.getNode(0));
-			ECR rightECR = encodeECR(node.getNode(2));
-			return getOpECR(leftECR, rightECR);
-		}
-
-		public ECR visitShiftExpression(GNode node) {
-			ECR leftECR = encodeECR(node.getNode(0));
-			ECR rightECR = encodeECR(node.getNode(2));
-			return getOpECR(leftECR, rightECR);
-		}
-
-		public ECR visitSubscriptExpression(GNode node) {
-			ECR addrECR = lvalVisitor.encodeECR(node);
-			return deref(addrECR, CType.getType(node));
-		}
-
-		public ECR visitFunctionCall(GNode node) {
-    	Type returnType = CType.getType(node);
-    	return createECR(returnType);
-		}
-
-		public ECR visitAddressExpression(GNode node) {
-		  return lvalVisitor.encodeECR(node.getNode(0));
-		}
-
-		public ECR visitAssignmentExpression(GNode node) {
-			ECR leftECR = encodeECR(node.getNode(0));
-			ECR rightECR = encodeECR(node.getNode(2));
-			return getOpECR(leftECR, rightECR);
-		}
-
-		public ECR visitBitwiseAndExpression(GNode node) {
-			ECR leftECR = encodeECR(node.getNode(0));
-			ECR rightECR = encodeECR(node.getNode(1));
-			return getOpECR(leftECR, rightECR);
-		}
-
-		public ECR visitBitwiseNegationExpression(GNode node) {
-			return encodeECR(node.getNode(0));
-		}
-
-		public ECR visitBitwiseOrExpression(GNode node) {
-			ECR leftECR = encodeECR(node.getNode(0));
-			ECR rightECR = encodeECR(node.getNode(1));
-			return getOpECR(leftECR, rightECR);
-		}
-
-		public ECR visitBitwiseXorExpression(GNode node) {
-			ECR leftECR = encodeECR(node.getNode(0));
-			ECR rightECR = encodeECR(node.getNode(1));
-			return getOpECR(leftECR, rightECR);
-		}
-
-		public ECR visitCastExpression(GNode node) {
-			return encodeECR(node.getNode(1));
-		}
-
-		public ECR visitCharacterConstant(GNode node) {
-			return getConstant();
-		}
-
-		public ECR visitEqualityExpression(GNode node) {
-    	ECR lhsECR = encodeECR(node.getNode(0));
-    	ECR rhsECR = encodeECR(node.getNode(2));
-    	getOpECR(lhsECR, rhsECR);
-    	return getConstant();
-		}
-
-		public List<ECR> visitExpressionList(GNode node) {
-		  List<ECR> subECRList = Lists.newArrayListWithCapacity(node.size());
-		  for (Object elem : node) {
-		    ECR subECR = encodeECR(GNode.cast(elem));
-		    subECRList.add(subECR);
-		  }
-		  return subECRList;
-		}
-
-		public ECR visitIndirectionExpression(GNode node) {
-			ECR addrECR = encodeECR(node.getNode(0));
-			return deref(addrECR, CType.getType(node));
-		}
-
-		public ECR visitIntegerConstant(GNode node) {
-    	return getConstant();
-		}
-
-		public ECR visitFloatingConstant(GNode node) {
-    	return getConstant();
-		}
-
-		public ECR visitLogicalAndExpression(GNode node) {
-    	ECR lhsECR = encodeECR(node.getNode(0));
-    	ECR rhsECR = encodeECR(node.getNode(2));
-		  return getConstant();
-		}
-
-		public ECR visitLogicalNegationExpression(GNode node) {
-		  return encodeECR(node.getNode(0));
-		}
-
-		public ECR visitLogicalOrExpression(GNode node) {
-    	ECR lhsECR = encodeECR(node.getNode(0));
-    	ECR rhsECR = encodeECR(node.getNode(2));
-    	return getConstant();
-		}
-
-		public ECR visitPreincrementExpression(GNode node) {
-		  ECR base = encodeECR(node.getNode(0));
-		  return getOpECR(base, getConstant());
-		}
-
-		public ECR visitPredecrementExpression(GNode node) {
-		  ECR base = encodeECR(node.getNode(0));
-		  return getOpECR(base, getConstant());
-		}
-
-		public ECR visitPostincrementExpression(GNode node) {
-		  ECR base = encodeECR(node.getNode(0));
-		  return getOpECR(base, getConstant());
-		}
-
-		public ECR visitPostdecrementExpression(GNode node) {
-		  ECR base = encodeECR(node.getNode(0));
-		  return getOpECR(base, getConstant());
-		}
-
-		public ECR visitPrimaryIdentifier(GNode node) {
-			String id = node.getString(0);
-			Scope scope = symbolTable.getScope(node);
-			if(!scope.isDefined(id)) return getConstant();
-			IRVarInfo info = (IRVarInfo) scope.lookup(id);			
-			Type type = info.getXtcType();
-			if(type.isEnumerator()) return getConstant();
-			
-			ECR varECR = lvalVisitor.encodeECR(node);
-			return deref(varECR, type);
-		}
-
-		public ECR visitRelationalExpression(GNode node) {
-    	ECR lhsECR = encodeECR(node.getNode(0));
-    	ECR rhsECR = encodeECR(node.getNode(2));
-		  return getConstant();
-		}
-
-		public ECR visitStringConstant(GNode node) {
-    	return getConstant();
-		}
-
-		public ECR visitSimpleDeclarator(GNode node) {
-			ECR addrECR = lvalVisitor.encodeECR(node);
-    	return deref(addrECR, CType.getType(node));
-		}
-
-		public ECR visitEnumerator(GNode node) {
-			return lvalVisitor.visitEnumerator(node);
-		}
-
-		public ECR visitSizeofExpression(GNode node) {
-			encodeECR(node.getNode(0));
-			return getConstant();
-		}
-
-		public ECR visitUnaryMinusExpression(GNode node) {
-		  return encodeECR(node.getNode(0));
-		}
-
-		public ECR visitUnaryPlusExpression(GNode node) {
-		  return encodeECR(node.getNode(0));
-		}
-
-		public ECR visitMultiplicativeExpression(GNode node) {
-			ECR leftECR = encodeECR(node.getNode(0));
-			ECR rightECR = encodeECR(node.getNode(2));
-			return getOpECR(leftECR, rightECR);
-		}
-
-		public ECR visitDirectComponentSelection(GNode node) {
-		  ECR addrECR = lvalVisitor.encodeECR(node);
-		  Type type = CType.getType(node);
-			return deref(addrECR, type);
-		}
-
-		public ECR visitIndirectComponentSelection(GNode node) {
-		  ECR addrECR = lvalVisitor.encodeECR(node);
-		  Type type = CType.getType(node);
-			return deref(addrECR, type);
-		}
-  }
-  
   private ECREncoder(UnionFindECR uf, SymbolTable symbolTable) {
   	this.uf = uf;
   	this.symbolTable = symbolTable;
+  	ecrMap.put(CONST_ECR_KEY, newConstantECR());
   }
   
   static ECREncoder create(UnionFindECR uf, SymbolTable symbolTable) {
   	return new ECREncoder(uf, symbolTable);
   }
   
-  ECR toRval(Node node) {
-  	return rvalVisitor.encodeECR(node);
-  }
-
-  ECR toLval(Node node) {
-  	return lvalVisitor.encodeECR(node);
+  void reset() {
+  	ecrMap.clear();
+  	ecrMap.put(CONST_ECR_KEY, newConstantECR());
   }
   
-  /**
-   * Get the lambda ECR created for <code>functionName</code>
-   * @param functionName
-   * @return
-   */
-  ECR getFunctionECR(String functionName) {
-  	return ecrMap.get(Pair.of(functionName, CScopeAnalyzer.getRootScopeName()));
+  ECR encodeECR(Node node) {
+    ECR res = (ECR) dispatch(node);
+    assert(res != null);
+    return res;
+  }
+  
+  @Override
+  public ECR unableToVisit(Node node) throws VisitingException {
+    IOUtils.err()
+        .println(
+            "APPROX: Treating unexpected node type as BOT: "
+                + node.getName());
+    return ECR.createBottom();
+  }
+  
+  /* Do-nothing implementation to make errors from header files go away. */
+  public ECR visitFunctionDeclarator(GNode node) {
+    IOUtils.err()
+    .println(
+        "APPROX: Treating function declarator node type as BOT: "
+            + node.getName());
+    // TODO: Something
+  	return ECR.createBottom();
+  }
+  
+  public ECR visitConditionalExpression(GNode node) {
+  	ECR bot = ECR.createBottom();
+    ECR trueCase = encodeECR(node.getNode(1));
+    ECR falseCase = encodeECR(node.getNode(2));
+    uf.cjoin(bot, trueCase);
+    uf.cjoin(bot, falseCase);
+    return bot;
+  }
+
+  public ECR visitAdditiveExpression(GNode node) {
+  	return getOpECR(node.getNode(0), node.getNode(2));
+  }
+  
+  public ECR visitShiftExpression(GNode node) {
+  	return getOpECR(node.getNode(0), node.getNode(2));
+  }
+  
+  public ECR visitSubscriptExpression(GNode node) {
+  	Node baseNode = node.getNode(0);
+  	ECR baseECR = encodeECR(baseNode);
+  	return getLocECR(baseECR, CType.getType(node));
+  }
+  
+  public ECR visitFunctionCall(GNode node) {
+  	Node funcNode = node.getNode(0);
+  	String funcName = funcNode.getString(0);
+  	String rootScope = CScopeAnalyzer.getRootScopeName();
+  	Type returnType = null;
+  	
+  	if(ReservedFunction.isReserved(funcName)) {
+  		Sig signature = ReservedFunction.getSignature(funcName);
+  		returnType = signature.getReturnType();
+  	} else {
+  		returnType = CType.getType(node);
+  	}
+  	
+		return ECR.create(
+				ValueType.ref(ECR.createBottom(), ECR.createBottom(), returnType, rootScope));
+  }
+  
+  public ECR visitAddressExpression(GNode node) {
+    ECR base = encodeECR(node.getNode(0));
+    return getAddrECR(base);
+  }
+
+  public ECR visitAssignmentExpression(GNode node) {
+  	return getOpECR(node.getNode(0), node.getNode(2));
+  }
+
+  public ECR visitBitwiseAndExpression(GNode node) {
+  	return getOpECR(node.getNode(0), node.getNode(1));
+  }
+  
+  public ECR visitBitwiseNegationExpression(GNode node) {
+  	return encodeECR(node.getNode(0));
+  }
+  
+  public ECR visitBitwiseOrExpression(GNode node) {
+  	return getOpECR(node.getNode(0), node.getNode(1));
+  }
+  
+  public ECR visitBitwiseXorExpression(GNode node) {
+  	return getOpECR(node.getNode(0), node.getNode(1));
+  }
+
+  public ECR visitCastExpression(GNode node) {
+  	return encodeECR(node.getNode(1));
+  }
+  
+  public ECR visitCharacterConstant(GNode node) {
+    return getIntConstantECR();
+  }
+
+  public ECR visitEqualityExpression(GNode node) {
+  	return getOpECR(node.getNode(0), node.getNode(2));
+  }
+
+  public List<ECR> visitExpressionList(GNode node) {
+    List<ECR> subECRList = Lists.newArrayListWithCapacity(node.size());
+    for (Object elem : node) {
+      ECR subECR = encodeECR(GNode.cast(elem));
+      subECRList.add(subECR);
+    }
+    return subECRList;
+  }
+
+  public ECR visitIndirectionExpression(GNode node) {
+    ECR baseECR = encodeECR(node.getNode(0));
+    Type type = CType.getType(node);
+  	return getLocECR(baseECR, type);
+  }
+
+  public ECR visitIntegerConstant(GNode node) {
+  	return getIntConstantECR();
+  }
+  
+  public ECR visitFloatingConstant(GNode node) {
+  	return getFloatConstantECR();
+  }
+
+  public ECR visitLogicalAndExpression(GNode node) {
+  	return getOpECR(node.getNode(0), node.getNode(1));
+  }
+
+  public ECR visitLogicalNegationExpression(GNode node) {
+    return encodeECR(node.getNode(0));
+  }
+
+  public ECR visitLogicalOrExpression(GNode node) {
+  	return getOpECR(node.getNode(0), node.getNode(1));
+  }
+
+  public ECR visitPreincrementExpression(GNode node) {
+    ECR base = encodeECR(node.getNode(0));
+    uf.cjoin(base, getIntConstantECR());
+    return base;
+  }
+
+  public ECR visitPredecrementExpression(GNode node) {
+    ECR base = encodeECR(node.getNode(0));
+    uf.cjoin(base, getIntConstantECR());
+    return base;
+  }
+  
+  public ECR visitPostincrementExpression(GNode node) {
+    ECR base = encodeECR(node.getNode(0));
+    uf.cjoin(base, getIntConstantECR());
+    return base;
+  }
+
+  public ECR visitPostdecrementExpression(GNode node) {
+    ECR base = encodeECR(node.getNode(0));
+    uf.cjoin(base, getIntConstantECR());
+    return base;
+  }
+  
+  public ECR visitPrimaryIdentifier(GNode node) {
+  	String id = node.getString(0);
+  	String scopeName = CType.getScopeName(node);
+  	Scope currScope = symbolTable.getScope(scopeName);
+  	
+  	Scope scope = currScope.isDefined(id) ? // region is not defined under scope
+  			currScope.lookupScope(id) : currScope;
+  	
+  	Pair<String, String> key = Pair.of(id, scope.getQualifiedName());
+  	if(ecrMap.containsKey(key)) return ecrMap.get(key);
+  	
+  	IRVarInfo info = (IRVarInfo) scope.lookup(id);
+  	Type type = info.getXtcType();
+  	
+  	if(type.isEnumerator()) return getIntConstantECR();
+    
+		assert(info.hasProperty(Identifiers.CTRLVAR));
+  	VarImpl freshVar = VarImpl.createCtrlSymbol(info);
+    ECR freshECR = freshVar.getECR();
+    uf.add(freshVar);
+    ecrMap.put(key, freshECR);
+  	return freshECR;
+  }
+
+  public ECR visitRelationalExpression(GNode node) {
+  	return getOpECR(node.getNode(0), node.getNode(2));
+  }
+
+  public ECR visitSimpleDeclarator(GNode node) {
+  	String id = node.getString(0);
+  	String scopeName = CType.getScopeName(node);
+  	Scope currScope = symbolTable.getScope(scopeName);
+  	
+  	Scope scope = currScope.isDefined(id) ? // region is not defined under scope
+  			currScope.lookupScope(id) : currScope;
+  	
+  	Pair<String, String> key = Pair.of(id, scope.getQualifiedName());
+  	if(ecrMap.containsKey(key)) return ecrMap.get(key);
+  	
+  	IRVarInfo info = (IRVarInfo) scope.lookup(id);  	
+  	ECR varECR = createForSymbol(info);
+		ecrMap.put(key, varECR);
+  	return varECR;
+  }
+  
+  public ECR visitEnumerator(GNode node) {
+  	String id = node.getString(0);
+  	String scopeName = CType.getScopeName(node);
+  	Scope scope = symbolTable.getScope(scopeName);
+  	
+  	Pair<String, String> key = Pair.of(id, scope.getQualifiedName());
+  	if(ecrMap.containsKey(key)) return ecrMap.get(key);
+  	
+  	IRVarInfo info = (IRVarInfo) scope.lookup(id);
+  	ECR varECR = createForSymbol(info);
+  	ecrMap.put(key, varECR);
+  	
+  	return varECR;
+  }
+
+  public ECR visitStringConstant(GNode node) {
+  	return getIntConstantECR();
+  }
+  
+  public ECR visitSizeofExpression(GNode node) {
+  	return getIntConstantECR();
+  }
+  
+  public ECR visitUnaryMinusExpression(GNode node) 
+      throws VisitingException {
+    return encodeECR(node.getNode(0));
+  }
+  
+  public ECR visitUnaryPlusExpression(GNode node) 
+      throws VisitingException {
+    return encodeECR(node.getNode(0));
+  }
+  
+  public ECR visitMultiplicativeExpression(GNode node) {
+  	return getOpECR(node.getNode(0), node.getNode(2));
+  }
+  
+  public ECR visitDirectComponentSelection(GNode node) {
+    ECR baseECR = getAddrECR(encodeECR(node.getNode(0)));
+    Type type = CType.getType(node);
+  	return getLocECR(baseECR, type);
+  }
+  
+  public ECR visitIndirectComponentSelection(GNode node) {
+    ECR baseECR = encodeECR(node.getNode(0));
+    Type type = CType.getType(node);
+  	return getLocECR(baseECR, type);
   }
 	
-	void addStackVar(Expression lval, Node lvalNode) {
+	VarImpl createForStackVar(Expression lval, Node lvalNode) {
+		String name = lvalNode.getString(0);
+		String scopeName = CType.getScopeName(lvalNode);
 		Type type = CType.getType(lvalNode);
-		switch(type.resolve().tag()) {
-		case FUNCTION: createFuncVar(lval, lvalNode); break;
-		case UNION:
-		case INTEGER:
-		case BOOLEAN:
-		case POINTER:
-		case FLOAT: createVar(lval, lvalNode); break;
-		case ARRAY:
-		case STRUCT: {
-			createVar(lval, lvalNode);
-			createRegionVar(lval, lvalNode);
-			break;
+		Type cleanType = type.resolve();
+		
+		if(cleanType.isStruct() || cleanType.isUnion()) {
+			Pair<VarImpl, VarImpl> pair = VarImpl.createForStructOrUnionSymbol(name, type, scopeName, lval);
+			VarImpl stackVar = pair.fst();
+			VarImpl regVar = pair.snd();
+			uf.add(stackVar);
+			uf.add(regVar);
+			return stackVar;
 		}
-		default:
-			throw new IllegalArgumentException("Unknown type " + type);
+		
+		if(cleanType.isArray()) {
+			Pair<VarImpl, VarImpl> pair = VarImpl.createForArraySymbol(name, type, scopeName, lval);
+			VarImpl stackVar = pair.fst();
+			VarImpl regVar = pair.snd();
+			uf.add(stackVar);
+			uf.add(regVar);
+			return stackVar;
 		}
+		
+		VarImpl stackVar = VarImpl.createForScalarSymbol(name, type, scopeName, lval);
+		uf.add(stackVar);
+		return stackVar;
 	}
 
 	/**
@@ -420,14 +361,21 @@ class ECREncoder extends Visitor {
 	 * @param ptrNode
 	 * @return
 	 */
-	void createRegionVar(Expression region, Node ptrNode) {
+	ECR createForRegion(Expression region, Node ptrNode) {
 		String name = region.asVariable().getName();
 		String scopeName = CType.getScopeName(ptrNode);
-		ECR ptrECR = rvalVisitor.encodeECR(ptrNode);
-		ECR regionECR = uf.findRoot(uf.getLoc(ptrECR));
 		
-		VarImpl regionVar = new VarImpl(name, VoidT.TYPE, scopeName, regionECR);
+		VarImpl regionVar = VarImpl.createRegionVar(name, VoidT.TYPE, scopeName, region);
 		uf.add(regionVar);
+		ECR regionECR = regionVar.getECR();
+		Pair<String, String> key = Pair.of(name, scopeName);
+		assert(!ecrMap.containsKey(key));
+		ecrMap.put(key, regionECR);
+		return regionECR;
+	}
+
+	ECR getNullPtrECR() {
+		return ecrMap.get(CONST_ECR_KEY);
 	}
 
 	/**
@@ -439,101 +387,186 @@ class ECREncoder extends Visitor {
 	 * @param srcType
 	 * @return
 	 */
-	ECR deref(ECR ecr, Type type) {
-		Preconditions.checkNotNull(ecr);
-		Preconditions.checkArgument(!Tag.VOID.equals(type.tag()));
-		if(CType.isScalar(type) || type.resolve().isFunction()) return uf.getLoc(ecr);
-	  return ecr;
-	}
-
-	ValueType getLamdaType(Type type) {
-		Preconditions.checkArgument(type.resolve().isFunction());
-		FunctionT funcType = type.resolve().toFunction();
-		ECR retECR;
-		if(Tag.VOID.equals(funcType.getResult().tag())) {
-			retECR = ECR.createBottom();
-		} else {
-			retECR = createECR(funcType.getResult());
+	ECR getLocECR(ECR ecr, Type srcType) {
+		if(srcType.resolve().isArray()) return ecr;
+		
+		ValueType valueType = uf.getType(ecr);
+		if(valueType.isBot()) {
+			IOUtils.err().println("WARNING: get Loc of " + ecr.toStringShort());
+			return getNullPtrECR();
 		}
 		
-		ValueType lambdaType;
-		if(!funcType.getParameters().isEmpty()) {
-			List<Type> params = funcType.getParameters();
-			ECR[] paramECRs = new ECR[params.size()];
-			for(int i = 0; i < params.size(); i++) {
-				Type param = params.get(i);
-				ECR paramECR = deref(createECR(param), param);
-				paramECRs[i] = paramECR;
-			}
-			lambdaType = ValueType.lam(retECR, paramECRs);
+	  return uf.getType(ecr).asRef().getLocation();
+	}
+
+	private ECR createForSymbol(IRVarInfo info) {
+		Type type = info.getXtcType();
+		String scopeName = info.getScopeName();
+		
+		ECR resECR;
+		if(type.resolve().isArray()) {
+			resECR = createForArraySymbol(type, scopeName);
+		} else if(type.resolve().isStruct() || type.resolve().isUnion()) {
+			resECR = createForStructOrUnionSymbol(type, scopeName);
 		} else {
-			lambdaType = ValueType.lam(retECR);
+			resECR = createForScalarSymbol(type, scopeName);
 		}
-		
-		return lambdaType;
-	}
-
-	private void createVar(Expression lval, Node lvalNode) {
-		String name = lval.asVariable().getName();
-		String scopeName = CType.getScopeName(lvalNode);
-		Type type = CType.getType(lvalNode);
-		ECR lvalECR = rvalVisitor.encodeECR(lvalNode);
-		VarImpl var = new VarImpl(name, type, scopeName, lvalECR);
-		uf.add(var);
-	}
-	
-	private void createFuncVar(Expression lval, Node lvalNode) {
-		String name = lval.asVariable().getName();
-		String scopeName = CType.getScopeName(lvalNode);
-		Type type = CType.getType(lvalNode);
-		Type ptrType = CType.getInstance().pointerize(type);
-		ECR lvalECR = rvalVisitor.encodeECR(lvalNode);
-		VarImpl var = new VarImpl(name, ptrType, scopeName, lvalECR);
-		uf.add(var);
-	}
-
-	private ECR createECR(Type type) {
-		if(type.resolve().isFunction())
-			return createForFunction(type);
-		
-		ValueType refType = ValueType.ref(
-				ECR.createBottom(), ECR.createBottom());
-  	ECR varECR = ECR.create(refType);
-		
-		if(type.resolve().isInternal())	return varECR;
-		
-		ValueType addrType = ValueType.ref(varECR, 
-  			ECR.createBottom());
-		ECR addrECR = ECR.create(addrType);
-		return addrECR;
-	}
-	
-	private ECR getConstant() {
-  	return ECR.createBottom();
+		return resECR;
 	}
 	
 	/**
-	 * Create ECRs for function symbol: lambda ECR
+	 * Create ECRs for array symbol: region ECR and variable ECR
+	 * 
+	 * @param type
+	 * @param scopeName
+	 * @return variable ECR
 	 */
-	private ECR createForFunction(Type type) {		
-		ValueType lambdaType = getLamdaType(type);
-		ECR func = ECR.create(lambdaType);		
-		ECR loc = ECR.createBottom();
-		ECR varECR = ECR.create(ValueType.ref(loc, func));
-  	ECR addrECR = ECR.create(ValueType.ref(varECR, ECR.createBottom()));
-		return addrECR;
+	private ECR createForArraySymbol(Type type, String scopeName) {
+		Preconditions.checkArgument(type.resolve().isArray());
+		
+		ECR regLoc = ECR.createBottom();
+		ECR regFunc = ECR.createBottom();
+		
+		ValueType regType = ValueType.ref(
+				regLoc, regFunc, CType.getCellType(type), scopeName);
+		ECR regECR = ECR.create(regType);
+		
+		regLoc.getType().setAddress(regECR);
+		regFunc.getType().setAddress(regECR);
+		
+		ECR loc = regECR;
+    ECR func = ECR.createBottom();
+    
+    ValueType refType = ValueType.ref(loc, func, type, scopeName);
+  	ECR varECR = ECR.create(refType);
+  	
+  	loc.getType().setAddress(varECR);
+  	func.getType().setAddress(varECR);
+  	refType.setAddress(varECR);
+  	
+    return varECR;
 	}
-
+	
 	/**
-	 * Get the ECR in the format as <code>op(leftECR, rightECR)</code>
-	 * @param leftECR
-	 * @param rightECR
+	 * Create ECRs for struct or union symbol: region ECR, variable ECR
+	 * 
+	 * @param type
+	 * @param scopeName
+	 * @return variable ECR
+	 */
+	private ECR createForStructOrUnionSymbol(Type type, String scopeName) {
+		Preconditions.checkArgument(type.resolve().isStruct() || type.resolve().isUnion());
+		
+		ECR regLoc = ECR.createBottom();
+		ECR regFunc = ECR.createBottom();
+		
+		ValueType regType = ValueType.ref(
+				regLoc, regFunc, CType.getCellType(type), scopeName);
+		ECR regECR = ECR.create(regType);
+		
+		regLoc.getType().setAddress(regECR);
+		regFunc.getType().setAddress(regECR);
+		
+		ECR loc = regECR;
+    ECR func = ECR.createBottom();
+    
+    ValueType refType = ValueType.ref(loc, func, type, scopeName);
+  	ECR varECR = ECR.create(refType);
+  	
+  	loc.getType().setAddress(varECR);
+  	func.getType().setAddress(varECR);
+  	
+  	refType.setAddress(varECR);
+  	
+    return varECR;
+	}
+	
+	/**
+	 * Create ECRs for scalar symbol: variable ECR and addr ECR
+	 * @param xtcType
+	 * @param scopeName
+	 * @return variable ECR
+	 */
+	private ECR createForScalarSymbol(Type xtcType, String scopeName) {
+		ECR loc = ECR.createBottom();
+    ECR func = ECR.createBottom();
+    
+    ValueType refType = ValueType.ref(loc, func, xtcType, scopeName);
+  	ECR varECR = ECR.create(refType);
+  	
+  	loc.getType().setAddress(varECR);
+  	func.getType().setAddress(varECR);
+    
+  	Type addrXtcType = new PointerT(xtcType);
+    // For scalar type variable, set the address
+  	ECR addrECR = ECR.create(ValueType.ref( varECR, ECR.createBottom(), 
+  			addrXtcType, scopeName));
+  	varECR.getType().setAddress(addrECR);
+  	
+  	return varECR;
+	}
+	
+	/**
+	 * Create constant ECR with root scope
 	 * @return
 	 */
-	private ECR getOpECR(ECR leftECR, ECR rightECR) {
-		ECR resECR = ECR.createBottom();
-		uf.assign(resECR, leftECR);
-		uf.assign(resECR, rightECR);
-		return resECR;
+	private ECR newConstantECR() {
+		String scopeName = CScopeAnalyzer.getRootScopeName();		
+    ECR loc = ECR.createBottom(); 
+    ECR func = ECR.createBottom();
+    
+    ValueType type = ValueType.ref(loc, func, VoidT.TYPE, scopeName);
+  	ECR constECR = ECR.create(type);
+  	
+  	loc.getType().setAddress(constECR);
+  	func.getType().setAddress(constECR);
+		return constECR;
+	}
+
+	/**
+	 * Get the ECR in the format as <code>op(lhsNode, rhsNode)</code>
+	 * @param lhsNode
+	 * @param rhsNode
+	 * @return
+	 */
+	private ECR getOpECR(Node lhsNode, Node rhsNode) {
+		ECR leftECR = encodeECR(lhsNode);
+		ECR rightECR = encodeECR(rhsNode);
+		ValueType leftType = uf.getType(leftECR);
+		ValueType rightType = uf.getType(rightECR);
+		
+		if(leftType.isBot() || rightType.isBot()) {
+			IOUtils.err().println("WARNING: get Op of " + leftECR + ", " + rightECR);
+			return leftECR;
+		}
+		
+		ECR leftLoc = leftType.asRef().getLocation();
+		ECR leftFunc = leftType.asRef().getFunction();
+		ECR rightLoc = rightType.asRef().getLocation();
+		ECR rightFunc = rightType.asRef().getFunction();
+		
+		uf.cjoin(leftLoc, rightLoc);
+		uf.cjoin(leftFunc, rightFunc);
+		return leftECR;
+	}
+	
+	private ECR getIntConstantECR() {
+		return ecrMap.get(CONST_ECR_KEY);
+	}
+	
+	private ECR getFloatConstantECR() {
+		return ecrMap.get(CONST_ECR_KEY);
+	}
+
+	/**
+	 * For &a, if the type of node a -- <code>baseType</code> is an array
+	 * type, return the <code>ECR(a) = ecr</code>, otherwise return the 
+	 * address ECR of <code>ecr</code>
+	 * @param ecr
+	 * @param baseType
+	 * @return
+	 */
+	private ECR getAddrECR(ECR ecr) {
+	  return uf.getType(ecr).getAddress();
 	}
 }
