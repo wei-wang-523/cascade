@@ -47,7 +47,7 @@ public class UnionFindECR {
   /**
    * Track the pointer cast pending joins
    */
-  private final Map<Pair<ECR, Long>, Pair<ECR, Long>> ptrCastJoins = Maps.newHashMap();
+  private final Map<Pair<ECR, Long>, Pair<ECR, Long>> ptrCastJoins = Maps.newLinkedHashMap();
   /**
    * Track the source ecr (created for nodes as operands of statement)
    */
