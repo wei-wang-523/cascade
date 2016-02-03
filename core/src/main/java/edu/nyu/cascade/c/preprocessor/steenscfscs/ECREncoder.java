@@ -253,8 +253,7 @@ public class ECREncoder extends Visitor {
     	}
     	
     	Size size = Size.createForType(returnType);
-    	BlankType type = ValueType.blank(
-    			size, Parent.getBottom());
+    	BlankType type = ValueType.blank(size, Parent.getBottom());
     	return ECR.create(type);
     }
     
