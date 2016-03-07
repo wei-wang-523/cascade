@@ -60,7 +60,7 @@ public class CFSProcessor implements PreProcessor<Cell> {
   }
 
 	@Override
-  public void analysis(IRControlFlowGraph cfg) {
+  public void analysis(IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs) {
 	  // TODO Auto-generated method stub
 	  
   }

@@ -42,10 +42,9 @@ public interface PreProcessor<T> {
 	Collection<T> getFillInReps(T rep);
 
 	/**
-	 * Analysis control flow graph <code>cfg</code>
-	 * @param stmt
+	 * Analysis control flow graphs <code>globalCFG</code> and <code>CFGs</code>
 	 */
-	void analysis(IRControlFlowGraph cfg);
+	void analysis(IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs);
 
 	/**
 	 * Add an newly allocated <code>region</code> with source node 

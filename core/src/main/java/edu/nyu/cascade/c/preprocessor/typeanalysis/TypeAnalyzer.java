@@ -27,7 +27,7 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.util.IOUtils;
 
 /**
- * Preprocessor: type analyzer for Burstall memory model
+ * Type analyzer for Burstall memory model
  * 
  * @author Wei
  *
@@ -48,24 +48,49 @@ public class TypeAnalyzer implements PreProcessor<FSType> {
 	}
 	
 	@Override
-	public void analysis(IRControlFlowGraph cfg) {
-		final Collection<IRBasicBlock> visited = Sets.newHashSet();
-		Deque<IRBasicBlock> workList = Queues.newArrayDeque();
-		workList.push(cfg.getEntry());
+	public void analysis(IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs) {
+		// Analyze the global CFG.
+		{
+			final Collection<IRBasicBlock> visited = Sets.newHashSet();
+			Deque<IRBasicBlock> workList = Queues.newArrayDeque();
+			workList.push(globalCFG.getEntry());
+			
+			while(!workList.isEmpty()) {
+				IRBasicBlock block = workList.pop();
+				if(visited.contains(block)) continue;
+				
+				visited.add(block);
+				
+				for(IRStatement stmt : block.getStatements()) {
+					analysis(stmt);
+				}
+				
+				for(IREdge<?> outgoing : globalCFG.getOutgoingEdges(block)) {				
+					workList.add(outgoing.getTarget());
+				}
+			}
+		}
 		
-		while(!workList.isEmpty()) {
-			IRBasicBlock block = workList.pop();
-			if(visited.contains(block)) continue;
+		// Analyze the non-global CFG.
+		for(IRControlFlowGraph CFG : CFGs) {
+			final Collection<IRBasicBlock> visited = Sets.newHashSet();
+			Deque<IRBasicBlock> workList = Queues.newArrayDeque();
+			workList.push(CFG.getEntry());
 			
-			visited.add(block);
-			
-			for(IRStatement stmt : block.getStatements()) {
-				analysis(stmt);
-			}
-			
-			for(IREdge<?> outgoing : cfg.getOutgoingEdges(block)) {				
-				workList.add(outgoing.getTarget());
-			}
+			while(!workList.isEmpty()) {
+				IRBasicBlock block = workList.pop();
+				if(visited.contains(block)) continue;
+				
+				visited.add(block);
+				
+				for(IRStatement stmt : block.getStatements()) {
+					analysis(stmt);
+				}
+				
+				for(IREdge<?> outgoing : CFG.getOutgoingEdges(block)) {				
+					workList.add(outgoing.getTarget());
+				}
+			}			
 		}
 	}
 

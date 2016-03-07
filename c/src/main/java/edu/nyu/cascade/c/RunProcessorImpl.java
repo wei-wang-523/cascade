@@ -212,8 +212,7 @@ class RunProcessorImpl implements RunProcessor {
 	public void preprocess() {
 	if(preprocessor == null) return;
 	if(!mode.hasPreprocessor()) return;
-	preprocessor.analysis(globalCFG);
-	for(IRControlFlowGraph cfg : cfgs)	preprocessor.analysis(cfg);
+	preprocessor.analysis(globalCFG, cfgs);
 	preprocessor.initChecker();		
     }
     

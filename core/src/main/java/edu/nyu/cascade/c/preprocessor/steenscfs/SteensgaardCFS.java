@@ -14,6 +14,7 @@ import com.google.common.collect.Sets;
 
 import xtc.tree.GNode;
 import xtc.tree.Node;
+import xtc.type.FunctionT;
 import xtc.type.PointerT;
 import xtc.type.Type;
 import edu.nyu.cascade.c.CAnalyzer;
@@ -27,7 +28,6 @@ import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.util.IOUtils;
-import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 
 /**
@@ -55,50 +55,68 @@ public class SteensgaardCFS implements PreProcessor<ECR> {
   }
   
 	@Override
-	public void analysis(IRControlFlowGraph cfg) {
-		symbolTable.enterScope(cfg);
+	public void analysis(IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs) {
+		// Analyze non-global CFGs
+		{
+			symbolTable.enterScope(globalCFG);
+			currentCFG = globalCFG;
 		
-		currentCFG = cfg;
+			final Collection<IRBasicBlock> topologicSeq = Lists.reverse(globalCFG.topologicalSeq(globalCFG.getEntry()));
 		
-		if(!Identifiers.GLOBAL_CFG.equals(cfg.getName())) {
-			GNode declarator = cfg.getSourceNode().getGeneric(2);
-			GNode identifier = CAnalyzer.getDeclaredId(declarator);
-			Type funcXtcType = symbolTable.lookupType(identifier.getString(0));
+			for(IRBasicBlock block : topologicSeq) {			
+				for(IRStatement stmt : block.getStatements()) analysis(stmt);
 			
-			if(!funcXtcType.resolve().toFunction().getParameters().isEmpty()) {	  		
-	  		GNode parameters = CAnalyzer.getFunctionDeclarator(declarator).getGeneric(1);
-				parameters = parameters.getGeneric(0);
-				
-				List<ECR> paramECRs = Lists.newArrayList();
-	      for (Object o : parameters) {
-	      	GNode paramNode = ((Node) o).getGeneric(1);
-	      	assert (null != paramNode);
-	      	Node paramIdNode = CAnalyzer.getDeclaredId(paramNode);
-	        ECR paramECR = ecrEncoder.toRval(paramIdNode);
-	        paramECRs.add(paramECR);
-	      }
-	     
-				ECR funcECR = ecrEncoder.toRval(identifier);
-	  		LambdaType lamType = uf.getType(uf.getFunc(funcECR)).asLambda();
-	  		List<ECR> lamECRs = lamType.getParams();
-	  		assert lamECRs.size() >= paramECRs.size();
-	  		
-	      for(int i = 0; i < paramECRs.size(); i++) {
-	      	ECR lamECR = lamECRs.get(i);
-	      	ECR paramECR = paramECRs.get(i);
-	      	uf.cjoin(lamECR, paramECR);
-	      }
+				for(IREdge<?> outgoing : globalCFG.getOutgoingEdges(block)) {
+					if(null != outgoing.getGuard()) 
+						ecrEncoder.toRval(outgoing.getGuard().getSourceNode());
+				}
 			}
 		}
 		
-		final Collection<IRBasicBlock> topologicSeq = Lists.reverse(cfg.topologicalSeq(cfg.getEntry()));
+		// Analyze non-global CFGs
 		
-		for(IRBasicBlock block : topologicSeq) {			
-			for(IRStatement stmt : block.getStatements()) analysis(stmt);
+		for(IRControlFlowGraph CFG : CFGs) {
+			symbolTable.enterScope(CFG);
+			currentCFG = CFG;
+			GNode declarator = CFG.getSourceNode().getGeneric(2);
+			GNode identifier = CAnalyzer.getDeclaredId(declarator);
+			FunctionT funcXtcType = symbolTable.lookupType(identifier.getString(0)).resolve().toFunction();
 			
-			for(IREdge<?> outgoing : cfg.getOutgoingEdges(block)) {
-				if(null != outgoing.getGuard()) 
-					ecrEncoder.toRval(outgoing.getGuard().getSourceNode());
+			if(!funcXtcType.getParameters().isEmpty()) {	  		
+				GNode parameters = CAnalyzer.getFunctionDeclarator(declarator).getGeneric(1);
+				parameters = parameters.getGeneric(0);
+				
+				List<ECR> paramECRs = Lists.newArrayList();
+				for (Object o : parameters) {
+					GNode paramNode = ((Node) o).getGeneric(1);
+					assert (null != paramNode);
+					Node paramIdNode = CAnalyzer.getDeclaredId(paramNode);
+					ECR paramECR = ecrEncoder.toRval(paramIdNode);
+					paramECRs.add(paramECR);
+				}
+	     
+				ECR funcECR = ecrEncoder.toRval(identifier);
+				LambdaType lamType = uf.getType(uf.getFunc(funcECR)).asLambda();
+				List<ECR> lamECRs = lamType.getParams();
+				assert lamECRs.size() >= paramECRs.size();
+	  		
+				for(int i = 0; i < paramECRs.size(); i++) {
+					ECR lamECR = lamECRs.get(i);
+					ECR paramECR = paramECRs.get(i);
+					uf.cjoin(lamECR, paramECR);
+				}
+			}
+			
+			final Collection<IRBasicBlock> topologicSeq = Lists.reverse(CFG.topologicalSeq(CFG.getEntry()));
+			
+			for(IRBasicBlock block : topologicSeq) {			
+				for(IRStatement stmt : block.getStatements()) analysis(stmt);
+				
+				for(IREdge<?> outgoing : CFG.getOutgoingEdges(block)) {
+					if(null != outgoing.getGuard()) {
+						ecrEncoder.toRval(outgoing.getGuard().getSourceNode());
+					}
+				}
 			}
 		}
 	}
