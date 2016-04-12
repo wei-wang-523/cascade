@@ -19,7 +19,7 @@ import edu.nyu.cascade.util.CacheException;
 final class UninterpretedTypeImpl extends TypeImpl implements UninterpretedType {
   private final String name;
   
-  private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, UninterpretedTypeImpl>> typeCache = CacheBuilder
+  static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, UninterpretedTypeImpl>> typeCache = CacheBuilder
       .newBuilder().build(
           new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, UninterpretedTypeImpl>>(){
             public ConcurrentMap<String, UninterpretedTypeImpl> load(ExpressionManagerImpl expressionManager) {

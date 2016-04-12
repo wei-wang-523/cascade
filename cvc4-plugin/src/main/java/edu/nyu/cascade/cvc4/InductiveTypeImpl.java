@@ -42,7 +42,7 @@ import edu.nyu.cascade.util.IOUtils;
 
 public class InductiveTypeImpl extends TypeImpl implements InductiveType {
   
-  private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, ConstructorImpl>> constructorCache = CacheBuilder
+	static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, ConstructorImpl>> constructorCache = CacheBuilder
       .newBuilder().build(
           new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, ConstructorImpl>>(){
             public ConcurrentMap<String, ConstructorImpl> load(ExpressionManagerImpl expressionManager) {

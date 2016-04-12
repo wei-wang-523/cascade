@@ -45,7 +45,7 @@ import edu.nyu.cascade.util.Preferences;
  */
 public class TheoremProverImpl implements TheoremProver {
 	
-    private static final LoadingCache<TheoremProverImpl, ConcurrentMap<Expr, ValidityResult<?>>> queryCache = CacheBuilder
+	static final LoadingCache<TheoremProverImpl, ConcurrentMap<Expr, ValidityResult<?>>> queryCache = CacheBuilder
 	.newBuilder().build(
 			    new CacheLoader<TheoremProverImpl, ConcurrentMap<Expr, ValidityResult<?>>>(){
 				public ConcurrentMap<Expr, ValidityResult<?>> load(TheoremProverImpl thereomProver) {
@@ -53,7 +53,7 @@ public class TheoremProverImpl implements TheoremProver {
 				}
 			    });
     
-    private static final LoadingCache<TheoremProverImpl, ConcurrentMap<Expr, SatResult<?>>> satCache = CacheBuilder
+	static final LoadingCache<TheoremProverImpl, ConcurrentMap<Expr, SatResult<?>>> satCache = CacheBuilder
 	.newBuilder().build(
 			    new CacheLoader<TheoremProverImpl, ConcurrentMap<Expr, SatResult<?>>>(){
 				public ConcurrentMap<Expr, SatResult<?>> load(TheoremProverImpl thereomProver) {

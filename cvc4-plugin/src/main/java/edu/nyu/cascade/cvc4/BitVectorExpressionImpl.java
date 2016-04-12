@@ -55,7 +55,7 @@ import edu.nyu.cascade.util.CacheException;
 
 final class BitVectorExpressionImpl extends ExpressionImpl implements
     BitVectorExpression {
-    private static final LoadingCache<ExpressionManagerImpl, LoadingCache<String, BitVectorExpressionImpl>> constantCache = CacheBuilder
+	static final LoadingCache<ExpressionManagerImpl, LoadingCache<String, BitVectorExpressionImpl>> constantCache = CacheBuilder
         .newBuilder().build(
             new CacheLoader<ExpressionManagerImpl, LoadingCache<String, BitVectorExpressionImpl>>(){
               public LoadingCache<String, BitVectorExpressionImpl> load(final ExpressionManagerImpl exprManager) {

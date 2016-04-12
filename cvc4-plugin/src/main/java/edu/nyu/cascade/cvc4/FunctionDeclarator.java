@@ -25,7 +25,7 @@ import edu.nyu.cascade.util.IOUtils;
 
 final class FunctionDeclarator extends ExpressionImpl implements FunctionExpression {
 
-  private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, FunctionDeclarator>> funcCache = CacheBuilder
+	static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, FunctionDeclarator>> funcCache = CacheBuilder
       .newBuilder().build(
           new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, FunctionDeclarator>>(){
             public ConcurrentMap<String, FunctionDeclarator> load(ExpressionManagerImpl expressionManager) {

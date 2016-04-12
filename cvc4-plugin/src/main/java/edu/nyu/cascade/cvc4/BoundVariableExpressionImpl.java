@@ -17,7 +17,7 @@ import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
 
 class BoundVariableExpressionImpl extends ExpressionImpl implements BoundExpression {
-  private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, Expr>> boundCache = CacheBuilder
+	static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, Expr>> boundCache = CacheBuilder
       .newBuilder().build(
           new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, Expr>>(){
             public ConcurrentMap<String, Expr> load(ExpressionManagerImpl expressionManager) {

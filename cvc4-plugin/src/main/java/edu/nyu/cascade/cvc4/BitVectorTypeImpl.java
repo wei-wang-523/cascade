@@ -21,7 +21,7 @@ import edu.nyu.cascade.util.CacheException;
 
 final class BitVectorTypeImpl extends TypeImpl implements
     BitVectorType {
-  private static final LoadingCache<ExpressionManagerImpl, LoadingCache<Integer, BitVectorTypeImpl>> cache = CacheBuilder
+	static final LoadingCache<ExpressionManagerImpl, LoadingCache<Integer, BitVectorTypeImpl>> cache = CacheBuilder
       .newBuilder().build(
           new CacheLoader<ExpressionManagerImpl, LoadingCache<Integer, BitVectorTypeImpl>>(){
             public LoadingCache<Integer, BitVectorTypeImpl> load(final ExpressionManagerImpl exprManager) {

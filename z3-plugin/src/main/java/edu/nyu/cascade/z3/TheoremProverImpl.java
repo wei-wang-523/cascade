@@ -49,7 +49,7 @@ import edu.nyu.cascade.util.Preferences;
  */
 public class TheoremProverImpl implements TheoremProver {
     
-    private static final LoadingCache<TheoremProverImpl, ConcurrentMap<Expr, QueryResult<?>>> queryCache = CacheBuilder
+	static final LoadingCache<TheoremProverImpl, ConcurrentMap<Expr, QueryResult<?>>> queryCache = CacheBuilder
 	.newBuilder().build(
 			    new CacheLoader<TheoremProverImpl, ConcurrentMap<Expr, QueryResult<?>>>(){
 				public ConcurrentMap<Expr, QueryResult<?>> load(TheoremProverImpl thereomProver) {

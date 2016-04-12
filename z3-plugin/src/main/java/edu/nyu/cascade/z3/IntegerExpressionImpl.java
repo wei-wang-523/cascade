@@ -35,7 +35,7 @@ import edu.nyu.cascade.util.CacheException;
 final class IntegerExpressionImpl extends ExpressionImpl implements
     IntegerExpression {
   
-  private static final LoadingCache<ExpressionManagerImpl, LoadingCache<BigInteger, IntegerExpressionImpl>> constantCache = CacheBuilder
+	static final LoadingCache<ExpressionManagerImpl, LoadingCache<BigInteger, IntegerExpressionImpl>> constantCache = CacheBuilder
       .newBuilder().build(
           new CacheLoader<ExpressionManagerImpl, LoadingCache<BigInteger, IntegerExpressionImpl>>(){
             public LoadingCache<BigInteger, IntegerExpressionImpl> load(final ExpressionManagerImpl exprManager) {

@@ -837,4 +837,16 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 		// TODO Auto-generated method stub
 		return null;
 	}
+	
+	@Override
+	public void reset() {
+		VariableExpressionImpl.varCache.cleanUp();
+		BitVectorExpressionImpl.cache.cleanUp();
+		BitVectorTypeImpl.cache.cleanUp();
+		FunctionDeclarator.funcCache.cleanUp();
+		InductiveTypeImpl.constructorCache.cleanUp();
+		UninterpretedTypeImpl.typeCache.cleanUp();
+		IntegerExpressionImpl.constantCache.cleanUp();
+		TheoremProverImpl.queryCache.cleanUp();
+	}
 }

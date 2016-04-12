@@ -881,4 +881,18 @@ public class ExpressionManagerImpl extends AbstractExpressionManager {
       FunctionType functionType, boolean fresh) {
 	  return FunctionDeclarator.create(this, name, functionType, fresh);
   }
+	
+	@Override
+	public void reset() {
+		VariableExpressionImpl.varCache.cleanUp();
+		BoundVariableExpressionImpl.boundCache.cleanUp();
+		BitVectorExpressionImpl.constantCache.cleanUp();
+		BitVectorTypeImpl.cache.cleanUp();
+		FunctionDeclarator.funcCache.cleanUp();
+		InductiveTypeImpl.constructorCache.cleanUp();
+		UninterpretedTypeImpl.typeCache.cleanUp();
+		IntegerExpressionImpl.constantCache.cleanUp();
+		TheoremProverImpl.queryCache.cleanUp();
+		TheoremProverImpl.satCache.cleanUp();
+	}
 }

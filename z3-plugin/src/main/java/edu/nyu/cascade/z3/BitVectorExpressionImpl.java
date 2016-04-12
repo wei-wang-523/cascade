@@ -50,7 +50,7 @@ import edu.nyu.cascade.util.Pair;
 
 final class BitVectorExpressionImpl extends ExpressionImpl implements
     BitVectorExpression {
-  private static final LoadingCache<ExpressionManagerImpl, LoadingCache<Pair<String, Integer>, BitVectorExpressionImpl>> cache = CacheBuilder
+	static final LoadingCache<ExpressionManagerImpl, LoadingCache<Pair<String, Integer>, BitVectorExpressionImpl>> cache = CacheBuilder
       .newBuilder().build(
           new CacheLoader<ExpressionManagerImpl, LoadingCache<Pair<String, Integer>, BitVectorExpressionImpl>>(){
             public LoadingCache<Pair<String, Integer>, BitVectorExpressionImpl> load(final ExpressionManagerImpl exprManager) {
