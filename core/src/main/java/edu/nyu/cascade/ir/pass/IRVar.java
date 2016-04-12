@@ -1,4 +1,4 @@
-package edu.nyu.cascade.c.preprocessor;
+package edu.nyu.cascade.ir.pass;
 
 import xtc.type.Type;
 /**
@@ -10,9 +10,9 @@ import xtc.type.Type;
  */
 
 public interface IRVar {
-  String getName() ;
-  Type getType() ;
-  String getScopeName();
+	String getName() ;
+	Type getType() ;
+	String getScopeName();
 	void setProperty(String id, Object o);
 	Object getProperty(String id);
 }

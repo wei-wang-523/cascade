@@ -20,12 +20,12 @@ import com.google.common.collect.Multimap;
 import com.google.inject.Inject;
 
 import edu.nyu.cascade.c.CType;
-import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.formatter.IRDataFormatter;
 import edu.nyu.cascade.ir.memory.safety.IRMemSafetyEncoding;
 import edu.nyu.cascade.ir.memory.safety.PredicateClosure;
+import edu.nyu.cascade.ir.pass.IRAliasAnalyzer;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -51,7 +51,7 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	public void reset() {}
 	
 	@Override
-	public <X> void setLabelAnalyzer(PreProcessor<X> preprocessor) {
+	public <X> void setLabelAnalyzer(IRAliasAnalyzer<X> preprocessor) {
 		throw new UnsupportedOperationException();
 	}
 	
@@ -190,7 +190,7 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	}
 	
 	@Override
-	public void addStackVarArray(StateExpression state, Expression lval,
+	public void addStackArray(StateExpression state, Expression lval,
 			Expression rval, IRVarInfo info, Node sourceNode) {
 		if(!info.isStatic()) state.addVar(lval.asVariable());
 		updateSizeStateWithAlloc(state, lval, rval, sourceNode);

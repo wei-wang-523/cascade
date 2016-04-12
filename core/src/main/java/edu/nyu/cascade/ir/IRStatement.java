@@ -21,7 +21,7 @@ public interface IRStatement {
   	  /** Declare a symbol */
   		DECLARE,
       /** Declare a variable array symbol */
-      DECLARE_VAR_ARRAY,
+      DECLARE_ARRAY,
   	  /** Init a symbol */
   		INIT,
   		/** Assignment of values to a variable (set of variables) */ 

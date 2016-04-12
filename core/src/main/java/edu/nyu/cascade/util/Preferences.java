@@ -85,6 +85,9 @@ public class Preferences {
   /** Enable cell-based field sensitive pointer analysis */
   public static final String OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE = "cell-field-sensitive-context-sensitive";
   
+  /** Enable data-structure pointer analysis */
+  public static final String OPTION_DSA = "dsa";
+  
   /** -------------- memory layout encoding ----------------- */
  
   /** Memory layout encoding: sound (no assume an order between regions), 

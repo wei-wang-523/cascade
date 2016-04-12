@@ -3,10 +3,10 @@ package edu.nyu.cascade.ir.state;
 import java.util.Collection;
 
 import xtc.tree.Node;
-import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.formatter.IRDataFormatter;
+import edu.nyu.cascade.ir.pass.IRAliasAnalyzer;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 
@@ -165,9 +165,9 @@ public interface StateFactory<T> {
    * @param info
    * @param sourceNode 
    */
-	void addStackVarArray(StateExpression state, Expression lval, Expression rval, IRVarInfo info, Node sourceNode);
+	void addStackArray(StateExpression state, Expression lval, Expression rval, IRVarInfo info, Node sourceNode);
 
-	<X> void setLabelAnalyzer(PreProcessor<X> preprocessor);
+	<X> void setLabelAnalyzer(IRAliasAnalyzer<X> preprocessor);
 	
 	
   /**

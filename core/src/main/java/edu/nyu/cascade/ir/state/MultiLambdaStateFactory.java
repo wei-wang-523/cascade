@@ -9,6 +9,7 @@ import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
 import xtc.tree.Node;
+import xtc.type.Type;
 
 // import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
@@ -21,11 +22,11 @@ import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 
 import edu.nyu.cascade.c.CType;
-import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.formatter.IRDataFormatter;
 import edu.nyu.cascade.ir.memory.safety.IRMemSafetyEncoding;
+import edu.nyu.cascade.ir.pass.IRAliasAnalyzer;
 import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
@@ -37,7 +38,7 @@ import edu.nyu.cascade.util.Preferences;
 public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 
 	private final SingleLambdaStateFactory<T> singleStateFactory;
-	PreProcessor<T> labelAnalyzer;
+	IRAliasAnalyzer<T> labelAnalyzer;
 	
   @Inject
 	MultiLambdaStateFactory(ExpressionEncoding encoding, IRDataFormatter formatter,
@@ -61,46 +62,33 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		if(!info.isStatic()) state.addVar(lval.asVariable());
 		
 		Node node = info.getDeclarationNode();
-		labelAnalyzer.addStackVar(lval, node);
+		labelAnalyzer.addStackVar(lval, node);		
+		T rep = labelAnalyzer.getStackRep(node);
+		long length = CType.getInstance().getSize(info.getXtcType());
 		
-		T rep = labelAnalyzer.getRep(node);
-		
-		/* The address should belongs to the group it points-to, where to reason
-		 * about disjointness */
-		xtc.type.Type lvalType = info.getXtcType();
-		long size = getCTypeAnalyzer().getSize(lvalType);
-		Expression sizeExpr = getExpressionEncoding().integerConstant(size);
-		
-		if(!(CType.isScalar(lvalType) || lvalType.resolve().isFunction())) {
-	  	rep = labelAnalyzer.getPointsToLoc(rep);
-		}
-		
-		MultiLambdaStateExpression multiState = state.asMultiLambda();
-		Collection<T> fillInReps = labelAnalyzer.getFillInReps(rep);
-		
-		for(T fillInRep : fillInReps) {
-			updateStateWithRep(multiState, fillInRep);
-			
+		for(T fillInRep : labelAnalyzer.getFillInReps(rep, length)) {
+			updateStateWithRep(state.asMultiLambda(), fillInRep);
 			String label = labelAnalyzer.getRepId(fillInRep);
-			SingleLambdaStateExpression singleState = multiState.getStateMap().get(label);
+			SingleLambdaStateExpression singleState = state.asMultiLambda().getStateMap().get(label);
+			xtc.type.Type lvalType = info.getXtcType();
+			long size = getCTypeAnalyzer().getSize(lvalType);
+			Expression sizeExpr = getExpressionEncoding().integerConstant(size);
 			singleStateFactory.addStackVar(singleState, lval, sizeExpr);
 		}
 	}
 
 	@Override
-	public void addStackVarArray(StateExpression state, Expression lval,
+	public void addStackArray(StateExpression state, Expression lval,
 			Expression rval, IRVarInfo info, Node sourceNode) {
 		if(!info.isStatic()) state.addVar(lval.asVariable());
 		
 		labelAnalyzer.addStackVar(lval, sourceNode);
-		
 		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(sourceNode));
-		MultiLambdaStateExpression multiState = state.asMultiLambda();
-		
-		for(T rep : labelAnalyzer.getFillInReps(ptrRep)) {
-			updateStateWithRep(multiState, rep);
+		long length = CType.getInstance().getSize(CType.getArrayCellType(info.getXtcType()));
+		for(T rep : labelAnalyzer.getFillInReps(ptrRep, length)) {
+			updateStateWithRep(state.asMultiLambda(), rep);
 			String label = labelAnalyzer.getRepId(rep);
-			SingleLambdaStateExpression singleState = multiState.getStateMap().get(label);
+			SingleLambdaStateExpression singleState = state.asMultiLambda().getStateMap().get(label);
 			singleStateFactory.updateSizeStateWithAlloc(singleState, lval, rval, sourceNode);
 		}
 		
@@ -140,47 +128,32 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	@Override
 	public BooleanExpression applyMemset(StateExpression state, Expression region,
 			Expression size, Expression value, Node ptrNode) {
-		T srcRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));		
-//		MultiLambdaStateExpression multiState = state.asMultiLambda();
-//		
-//		updateStateWithRep(multiState, srcRep);
-//		
-//		String label = labelAnalyzer.getRepId(srcRep);
-//		SingleLambdaStateExpression singleState = multiState.getStateMap().get(label);
-//		
-//		return singleStateFactory.applyMemset(singleState, region, size, value, ptrNode);
-		
-		MultiLambdaStateExpression multiState = state.asMultiLambda();
-		Collection<T> fillInReps = labelAnalyzer.getFillInReps(srcRep);
-		
 		Collection<BooleanExpression> predicates = Lists.newArrayList();
-		for(T fillInRep : fillInReps) {
-			updateStateWithRep(multiState, fillInRep);
-			
+		T rep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
+		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode)).toPointer().getType();
+		long length = CType.getInstance().getSize(ty);
+		for(T fillInRep : labelAnalyzer.getFillInReps(rep, length)) {
+			updateStateWithRep(state.asMultiLambda(), fillInRep);
 			String label = labelAnalyzer.getRepId(fillInRep);
-			SingleLambdaStateExpression singleState = multiState.getStateMap().get(label);
-			BooleanExpression predicate = singleStateFactory.applyMemset(singleState, region, size, value, null);
-			predicates.add(predicate);
+			SingleLambdaStateExpression singleState = state.asMultiLambda().getStateMap().get(label);
+			predicates.add(singleStateFactory.applyMemset(singleState, region, size, value, null));
 		}
+		
 		return getExpressionEncoding().and(predicates).asBooleanExpression();
 	}
 	
 	@Override
 	public BooleanExpression applyMemset(StateExpression state, Expression region,
-			Expression size, int value, Node ptrNode) {
-		T srcRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
-		
-		MultiLambdaStateExpression multiState = state.asMultiLambda();
-		Collection<T> fillInReps = labelAnalyzer.getFillInReps(srcRep);
-		
+			Expression size, int value, Node ptrNode) {	
 		Collection<BooleanExpression> predicates = Lists.newArrayList();
-		for(T fillInRep : fillInReps) {
-			updateStateWithRep(multiState, fillInRep);
-			
+		T rep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
+		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode)).toPointer().getType();
+		long length = CType.getInstance().getSize(ty);
+		for(T fillInRep : labelAnalyzer.getFillInReps(rep, length)) {
+			updateStateWithRep(state.asMultiLambda(), fillInRep);
 			String label = labelAnalyzer.getRepId(fillInRep);
-			SingleLambdaStateExpression singleState = multiState.getStateMap().get(label);
-			BooleanExpression predicate = singleStateFactory.applyMemset(singleState, region, size, value, null);
-			predicates.add(predicate);
+			SingleLambdaStateExpression singleState = state.asMultiLambda().getStateMap().get(label);
+			predicates.add(singleStateFactory.applyMemset(singleState, region, size, value, null));
 		}
 		return getExpressionEncoding().and(predicates).asBooleanExpression();
 	}
@@ -212,46 +185,26 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	public BooleanExpression applyValidMalloc(StateExpression state, Expression region, 
 			Expression size, Node ptrNode) {
 		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
-		
-		MultiLambdaStateExpression multiState = state.asMultiLambda();
-		
-		updateStateWithRep(multiState, ptrRep);
-		
+		updateStateWithRep(state.asMultiLambda(), ptrRep);
 		String label = labelAnalyzer.getRepId(ptrRep);
-		SingleLambdaStateExpression singleState = multiState.getStateMap().get(label);
-		
-	  return singleStateFactory.applyValidMalloc(singleState, region, size, ptrNode);
+		SingleLambdaStateExpression singleState = state.asMultiLambda().getStateMap().get(label);	
+		return singleStateFactory.applyValidMalloc(singleState, region, size, ptrNode);
 	}
 
 	@Override
 	public BooleanExpression applyValidFree(StateExpression state, Expression region, Node ptrNode) {
 		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
-		
-		MultiLambdaStateExpression multiState = state.asMultiLambda();
-		updateStateWithRep(multiState, ptrRep);
-		
+		updateStateWithRep(state.asMultiLambda(), ptrRep);
 		String label = labelAnalyzer.getRepId(ptrRep);
-		SingleLambdaStateExpression singleState = multiState.getStateMap().get(label);
-		
-		BooleanExpression predicate = singleStateFactory.applyValidFree(singleState, region, ptrNode);
-		return predicate;
+		SingleLambdaStateExpression singleState = state.asMultiLambda().getStateMap().get(label);
+		return singleStateFactory.applyValidFree(singleState, region, ptrNode);
 	}
 
 	@Override
 	public BooleanExpression validAccess(StateExpression state, Expression ptr, Node ptrNode) {
-		T srcRep = labelAnalyzer.getRep(ptrNode);
-		
-		xtc.type.Type ptrType = CType.getType(ptrNode);
-		if(!CType.isScalar(ptrType)) {
-			/* The address should belongs to the group it points-to, where to reason
-			 * about disjointness */
-			srcRep = labelAnalyzer.getPointsToLoc(srcRep);
-		}
-		
+		T srcRep = labelAnalyzer.getStackRep(ptrNode);
 		MultiLambdaStateExpression multiState = state.asMultiLambda();
 		updateStateWithRep(multiState, srcRep);
-		
-//		if(labelAnalyzer.isAccessTypeSafe(srcRep)) return getExpressionManager().tt();
 				
 		String label = labelAnalyzer.getRepId(srcRep);
 		SingleLambdaStateExpression singleState = multiState.getStateMap().get(label);
@@ -263,22 +216,10 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	@Override
 	public BooleanExpression validAccessRange(StateExpression state, Expression ptr,
 	    Expression size, Node ptrNode) {
-		T srcRep = labelAnalyzer.getRep(ptrNode);
-		
-//		xtc.type.Type ptrType = CType.getType(ptrNode);
-//		if(!CType.isScalar(ptrType)) {
-//			/* The address should belongs to the group it points-to, where to reason
-//			 * about disjointness */
-//			srcRep = labelAnalyzer.getPointsToLoc(srcRep);
-//		}
-		
-		srcRep = labelAnalyzer.getPointsToLoc(srcRep);
-		
-		MultiLambdaStateExpression multiState = state.asMultiLambda();
-		updateStateWithRep(multiState, srcRep);
-		
+		T srcRep = labelAnalyzer.getStackRep(ptrNode);
+		updateStateWithRep(state.asMultiLambda(), srcRep);
 		String label = labelAnalyzer.getRepId(srcRep);
-		SingleLambdaStateExpression singleState = multiState.getStateMap().get(label);
+		SingleLambdaStateExpression singleState = state.asMultiLambda().getStateMap().get(label);
 		BooleanExpression predicate = singleStateFactory.validAccessRange(singleState, ptr, size, ptrNode);
 		return predicate;
 	}
@@ -337,8 +278,8 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <X> void setLabelAnalyzer(PreProcessor<X> preprocessor) {
-		labelAnalyzer = (PreProcessor<T>) preprocessor;
+	public <X> void setLabelAnalyzer(IRAliasAnalyzer<X> preprocessor) {
+		labelAnalyzer = (IRAliasAnalyzer<T>) preprocessor;
 	}
 	
 	@Override
@@ -406,14 +347,14 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	protected void updateMarkState(StateExpression state,
 			Expression region, BooleanExpression mark, Node ptrNode) {
 		MultiLambdaStateExpression multiLambdaState = state.asMultiLambda();
-		Map<String, SingleLambdaStateExpression> stateMap = multiLambdaState.getStateMap();
-		
 		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
-		
-		for(T rep : labelAnalyzer.getFillInReps(ptrRep)) {
+		Type ty = CType.getInstance().pointerize(
+				CType.getType(ptrNode)).toPointer().getType();
+		long length = CType.getInstance().getSize(ty);
+		for(T rep : labelAnalyzer.getFillInReps(ptrRep, length)) {
 			updateStateWithRep(multiLambdaState, rep);
 			String label = labelAnalyzer.getRepId(rep);
-			SingleLambdaStateExpression singleState = stateMap.get(label);
+			SingleLambdaStateExpression singleState = multiLambdaState.getStateMap().get(label);
 			singleStateFactory.updateMarkState(singleState, region, mark, ptrNode);
 		}
 	}
@@ -442,11 +383,14 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		/* The address should belongs to the group it points-to, where to reason
 		 * about disjointness */
 		xtc.type.Type idxType = CType.getType(idxNode);
-		if(!CType.isScalar(idxType)) rep = labelAnalyzer.getPointsToLoc(rep);
+		if(!CType.isScalar(idxType)) {
+			rep = labelAnalyzer.getPointsToLoc(rep);
+		}
 		
-		if(!(	Preferences.isSet(Preferences.OPTION_FIELD_SENSITIVE) ||
-					Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE) ||
-					Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE))) {			
+		if(!(Preferences.isSet(Preferences.OPTION_FIELD_SENSITIVE) ||
+				Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE) ||
+				Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE) ||
+				Preferences.isSet(Preferences.OPTION_DSA))) {			
 			updateStateWithRep(multiLambdaState, rep);
 			String label = labelAnalyzer.getRepId(rep);
 			SingleLambdaStateExpression singleState = stateMap.get(label);
@@ -454,7 +398,8 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 			return;
 		}
 		
-		Map<Range<Long>, T> fieldMap = labelAnalyzer.getStructMap(rep);
+		long length = CType.getInstance().getSize(idxType);
+		Map<Range<Long>, T> fieldMap = labelAnalyzer.getStructMap(rep, length);
 		
 		if(fieldMap.isEmpty()) {			
 			updateStateWithRep(multiLambdaState, rep);
@@ -495,8 +440,9 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
 		MultiLambdaStateExpression multiLambdaState = state.asMultiLambda();
 		Map<String, SingleLambdaStateExpression> stateMap = multiLambdaState.getStateMap();
-		
-		for(T fillInRep : labelAnalyzer.getFillInReps(ptrRep)) {
+		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode)).toPointer().getType();
+		long length = CType.getInstance().getSize(ty);
+		for(T fillInRep : labelAnalyzer.getFillInReps(ptrRep, length)) {
 			updateStateWithRep(multiLambdaState, fillInRep);
 			String label = labelAnalyzer.getRepId(fillInRep);
 			SingleLambdaStateExpression singleState = stateMap.get(label);
@@ -512,14 +458,13 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 			Node ptrNode) {
 		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
 		MultiLambdaStateExpression multiLambdaState = state.asMultiLambda();
-		Map<String, SingleLambdaStateExpression> stateMap = multiLambdaState.getStateMap();
-		
 		labelAnalyzer.addAllocRegion(region, ptrNode);
-		
-		for(T rep : labelAnalyzer.getFillInReps(ptrRep)) {
+		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode)).toPointer().getType();
+		long length = CType.getInstance().getSize(ty);
+		for(T rep : labelAnalyzer.getFillInReps(ptrRep, length)) {
 			updateStateWithRep(multiLambdaState, rep);
 			String label = labelAnalyzer.getRepId(rep);
-			SingleLambdaStateExpression singleState = stateMap.get(label);
+			SingleLambdaStateExpression singleState = multiLambdaState.getStateMap().get(label);
 			singleStateFactory.updateSizeStateWithAlloc(singleState, region, size, ptrNode);
 		}
 	}

@@ -30,11 +30,10 @@ public class VarInfo implements IRVarInfo {
    */
   private Node sourceNode;
   
-  VarInfo(String scope, String name, IRType type, Node sourceNode, Type sourceType) {
+  VarInfo(String scope, String name, IRType type, Type sourceType) {
     this.scope = scope;
     this.name = name;
     this.type = type;
-    this.sourceNode = sourceNode;
     this.sourceType = sourceType;
     this.properties = Maps.newHashMap();
   }

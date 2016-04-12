@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import edu.nyu.cascade.util.Preferences;
 import xtc.Constants;
 import xtc.tree.Attribute;
 import xtc.tree.GNode;
@@ -886,7 +885,7 @@ public class CAnalyzer extends Visitor {
 
           // Declare the struct so that members can reference it.
           type = new StructT(tag);
-          table.current().define(name, type);
+          define(table.current(), name, type);
         }
 
         // Update the location.
@@ -951,7 +950,7 @@ public class CAnalyzer extends Visitor {
           for (Attribute a : toAttributeList(n.getGeneric(0))) {
             type.addAttribute(a);
           }
-          table.current().define(name, type);
+          define(table.current(), name, type);
         }
 
         // Mark the node.
@@ -1001,7 +1000,7 @@ public class CAnalyzer extends Visitor {
 
           // Declare the union so that members can reference it.
           type = new UnionT(tag);
-          table.current().define(name, type);
+          define(table.current(), name, type);
         }
 
         // Update the location.
@@ -1066,7 +1065,7 @@ public class CAnalyzer extends Visitor {
           for (Attribute a : toAttributeList(n.getGeneric(0))) {
             type.addAttribute(a);
           }
-          table.current().define(name, type);
+          define(table.current(), name, type);
         }
 
         // Mark the node.
@@ -1162,7 +1161,7 @@ public class CAnalyzer extends Visitor {
             runtime.error("redefinition of '" + rname + "'",
                           rator);
           } else {
-            table.current().define(rname, ratorT);
+            define(table.current(), rname, ratorT);
           }
 
           // Add the enumerator to the list of enumerators.
@@ -1218,7 +1217,7 @@ public class CAnalyzer extends Visitor {
           type.addAttribute(a);
         }
         type.seal();
-        table.current().define(name, type);
+        define(table.current(), name, type);
 
         // Mark the node.
         mark(n, type);
@@ -1260,7 +1259,7 @@ public class CAnalyzer extends Visitor {
           for (Attribute a : toAttributeList(n.getGeneric(0))) {
             type.addAttribute(a);
           }
-          table.current().define(name, type);
+          define(table.current(), name, type);
         }
 
         // Mark the node.
@@ -2277,7 +2276,7 @@ public class CAnalyzer extends Visitor {
             }
           }
 
-          // Check for compatibility with prevous declarations.
+          // Check for compatibility with previous declarations.
           if (isTopLevel) {
             // An external declaration/definition.
 
@@ -2612,7 +2611,7 @@ public class CAnalyzer extends Visitor {
               // declarator.  Consequently, we "pre-define" the
               // identifier before processing the initializer.
               if (define) {
-                table.current().define(name, type);
+                define(table.current(), name, type);
               }
 
               // Do the actual processing.
@@ -2622,10 +2621,10 @@ public class CAnalyzer extends Visitor {
 
           // (Re)define the name and type.
           if (define) {
-            table.current().define(name, type);
+        	  define(table.current(), name, type);
           }
           if (defineGlobal) {
-            table.root().define(name, type);
+        	  define(table.root(), name, type);
           }
           if (defineExtern) {
             defineExtern(name, type);
@@ -2863,7 +2862,7 @@ public class CAnalyzer extends Visitor {
     if (define) {
       // Note that processParameters() below may modify the type's
       // parameters.
-      table.current().define(name, type);
+      define(table.current(), name, type);
     }
 
     // Check that main's return type is int.
@@ -2879,7 +2878,7 @@ public class CAnalyzer extends Visitor {
     table.mark(n);
 
     // C99 6.4.2.2: Declare the function name.
-    table.current().define("__func__", toFuncType(name));
+    define(table.current(), "__func__", toFuncType(name));
     
     // Mark function declarator
     mark(identifier, type);
@@ -3032,7 +3031,7 @@ public class CAnalyzer extends Visitor {
                 runtime.error("redefinition of parameter '" + name + "'",
                               declaration);
               } else {
-                table.current().define(name, type);
+                define(table.current(), name, type);
               }
             }
           }
@@ -3044,7 +3043,7 @@ public class CAnalyzer extends Visitor {
         if (! table.current().isDefinedLocally(name)) {
           final Type type = VariableT.newParam(C.IMPLICIT, name).
             attribute(Constants.ATT_STORAGE_AUTO).shape(false, name);
-          table.current().define(name, type);
+          define(table.current(), name, type);
 
           if (pedantic) {
             runtime.warning("type of '" + name + "' defaults to 'int'", node);
@@ -3143,7 +3142,7 @@ public class CAnalyzer extends Visitor {
               runtime.error("parameter name omitted", decl);
             }
           } else if (! table.current().isDefinedLocally(name)) {
-            table.current().define(name, type);
+            define(table.current(), name, type);
           }
           
           Node id = getDeclaredId(decl);
@@ -3313,7 +3312,7 @@ public class CAnalyzer extends Visitor {
       if (null != type) {
         assert type.isLabel() : "Malformed label type";
         if (type.hasAttribute(Constants.ATT_UNINITIALIZED)) {
-          scope.define(name, new LabelT(id).locate(n).
+          define(scope, name, new LabelT(id).locate(n).
                        attribute(Constants.ATT_DEFINED).attribute(atts));
         } else {
           runtime.error("duplicate label '" + id + "'", n);
@@ -3332,7 +3331,7 @@ public class CAnalyzer extends Visitor {
       runtime.error("duplicate label '" + id + "'", n);
       reportPrevious(id, (Type)scope.lookupLocally(name));
     } else {
-      scope.define(name, new LabelT(id).locate(n).
+      define(scope, name, new LabelT(id).locate(n).
                    attribute(Constants.ATT_DEFINED).attribute(atts));
     }
   }
@@ -3396,7 +3395,7 @@ public class CAnalyzer extends Visitor {
         runtime.error("duplicate label declaration '" + id + "'", n);
         reportPrevious(id, (Type)table.current().lookupLocally(name));
       } else {
-        table.current().define(name, new LabelT(id).locate(n).
+        define(table.current(), name, new LabelT(id).locate(n).
                                attribute(Constants.ATT_UNINITIALIZED));
       }
     }
@@ -5364,7 +5363,7 @@ public class CAnalyzer extends Visitor {
             annotate().attribute(Constants.ATT_STORAGE_EXTERN);
 
           // Always enter the implicit declaration in the local scope.
-          table.current().define(name, t1.shape(true, name).locate(n));
+          define(table.current(), name, t1.shape(true, name).locate(n));
 
           // Compare to any previous extern declarations.
           final Type extern = lookupExtern(name);
@@ -6110,7 +6109,7 @@ public class CAnalyzer extends Visitor {
             runtime.error("redefinition of parameter '" + name + "'", param);
             types.add(VariableT.newParam(ErrorT.TYPE, name));
           } else {
-            table.current().define(name, type);
+            define(table.current(), name, type);
             types.add(type);
           }
         }
@@ -6482,6 +6481,43 @@ public class CAnalyzer extends Visitor {
         return null;
       }
     };
+    
+    /**
+     * Get the innermost identifier from the node
+     *
+     * @param node
+     * @return The innermost identifier or <code>null</code> if
+     *   the node does not contains an identifier.
+     */
+    public static GNode getIdentifier(GNode node) {
+      return GNode.cast(getIdentifierVisitor.dispatch(node));
+    }
+
+    /** The actual implementation of {@link #getFunctionDeclarator}. */
+    @SuppressWarnings("unused")
+    private static final Visitor getIdentifierVisitor = new Visitor() {
+        public Object visitPrimaryIdentifier(GNode n) {
+        	return n;
+        }
+        public Object visitIndirectionExpression(GNode n) {
+        	return dispatch(n.getGeneric(0));
+        }
+        public Object visitCastExpression(GNode n) {
+        	return dispatch(n.getGeneric(1));
+        }
+        public Object visitIndirectComponentSelection(GNode n) {
+        	return dispatch(n.getGeneric(0));
+        }
+        public Object visitDirectComponentSelection(GNode n) {
+        	return dispatch(n.getGeneric(0));
+        }
+        public Object visitSubscriptExpression(GNode n) {
+        	return dispatch(n.getGeneric(0));
+        }
+        public Object visitIntegerConstant(GNode n) {
+        	return null;
+        }
+      };
 
   /**
    * Determine whether the specified parameter type list represents a
@@ -7005,7 +7041,7 @@ public class CAnalyzer extends Visitor {
       table.setScope(current);
     }
 
-    scope.define(name, type);
+    define(scope, name, type);
   }
 
   /**
@@ -7051,6 +7087,15 @@ public class CAnalyzer extends Visitor {
       }
       runtime.errConsole().p(" of '").p(tag.getName()).p("' was here").flush();
     }
+  }
+  
+  private void define(Scope scope, String name, Type type) {
+	  if (!type.isSealed()) {
+		  String scopeName = scope.getQualifiedName();
+		  scope.define(name, type.scope(scopeName));
+	  } else {
+		  scope.define(name, type);
+	  }
   }
 
 }

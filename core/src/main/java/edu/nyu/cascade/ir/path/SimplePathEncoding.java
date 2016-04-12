@@ -74,7 +74,7 @@ public class SimplePathEncoding extends AbstractPathEncoding {
     StateExpression currState = preState;
     String name = sourceNode.getString(0);
     IRVarInfo info = (IRVarInfo) getExpressionEncoder().getCurrentScope().lookup(name);
-    stateFactory.addStackVarArray(currState, lval, rval, info, sourceNode);
+    stateFactory.addStackArray(currState, lval, rval, info, sourceNode);
     return currState;
 	}
 	

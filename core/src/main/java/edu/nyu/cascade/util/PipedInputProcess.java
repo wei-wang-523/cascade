@@ -37,15 +37,14 @@ public class PipedInputProcess implements Runnable, Future<Integer> {
       final CleanupStrategy cleanupStrategy) throws IOException {
     // this.inputReader = inputReader;
     final Process process = Runtime.getRuntime().exec(command);
-    final Writer outputWriter = new OutputStreamWriter(process
-        .getOutputStream());
 
     this.task = new FutureTask<Integer>(new Callable<Integer>() {
       @Override
       public Integer call() throws ExecutionException {
         try {
+          Writer outputWriter = new OutputStreamWriter(process.getOutputStream());
           IOUtils.pipeReader(inputReader, outputWriter);
-          outputWriter.close();
+          outputWriter.flush();
           int returnCode = process.waitFor();
           return returnCode; // Integer.valueOf(returnCode);
         } catch (IOException e) {

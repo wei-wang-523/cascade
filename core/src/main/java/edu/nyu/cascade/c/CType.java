@@ -104,6 +104,16 @@ public final class CType {
     }
 	}
 	
+	public static boolean isStructOrUnion(Type type) {
+		switch (type.tag()) {
+	    case STRUCT:
+	    case UNION:
+	      return true;
+	    default:
+	      return false;
+		}
+	}
+	
 	private final C cops = Preferences.isSet(Preferences.OPTION_M32) ? new C32() : new C64();
 
 	public C c() {

@@ -1009,5 +1009,9 @@ public interface ExpressionManager {
 	 * @return
 	 */
 	FunctionExpression lambda(Collection<Expression> args, Expression body);
-
+	
+	/**
+	 * Clear the static fields.
+	 */
+	void reset();
 }

@@ -51,7 +51,7 @@ public abstract class AbstractPathEncoding implements PathEncoding {
   }
 	
 	@Override
-	public StateExpression declareVarArray(StateExpression pre, 
+	public StateExpression declareArray(StateExpression pre, 
 			IRExpression lval, 
 			IRExpression rval) throws PathFactoryException {
 		ExpressionEncoder encoder = getExpressionEncoder();

@@ -52,7 +52,7 @@ public interface PathEncoding    {
 	StateExpression declare(StateExpression pre, IRExpression lval) throws PathFactoryException;
 	StateExpression declare(StateExpression pre, Expression lval, Node lNode);
 	
-	StateExpression declareVarArray(StateExpression pre, IRExpression ptr, IRExpression size) throws PathFactoryException;
+	StateExpression declareArray(StateExpression pre, IRExpression ptr, IRExpression size) throws PathFactoryException;
 	StateExpression declareVarArray(StateExpression pre, Expression ptr, Node pNode, Expression size);
 	
 	StateExpression ret(StateExpression pre, IRExpression lval) throws PathFactoryException;

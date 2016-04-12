@@ -1,4 +1,4 @@
-package edu.nyu.cascade.c.preprocessor;
+package edu.nyu.cascade.ir.pass;
 
 import java.util.Collection;
 import java.util.Map;
@@ -7,7 +7,6 @@ import xtc.tree.Node;
 
 import com.google.common.collect.Range;
 
-import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.prover.Expression;
 
 /**
@@ -15,7 +14,7 @@ import edu.nyu.cascade.prover.Expression;
  * @author Wei
  *
  */
-public interface PreProcessor<T> {	
+public interface IRAliasAnalyzer<T> extends IRPass {	
   /**
    * Display the snap shot
    */
@@ -31,6 +30,8 @@ public interface PreProcessor<T> {
 
 	T getRep(Node node);
 	
+	T getStackRep(Node node);
+	
 	/**
 	 * Get the field representative of <code>rep</code>. It's
 	 * used to in field-sensitive steensgaard analysis, to find 
@@ -39,12 +40,7 @@ public interface PreProcessor<T> {
 	 * @param rep
 	 * @return
 	 */
-	Collection<T> getFillInReps(T rep);
-
-	/**
-	 * Analysis control flow graphs <code>globalCFG</code> and <code>CFGs</code>
-	 */
-	void analysis(IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs);
+	Collection<T> getFillInReps(T rep, long length);
 
 	/**
 	 * Add an newly allocated <code>region</code> with source node 
@@ -70,16 +66,9 @@ public interface PreProcessor<T> {
 	 * @param rep
 	 * @return
 	 */
-	Map<Range<Long>, T> getStructMap(T rep);
+	Map<Range<Long>, T> getStructMap(T rep,  long length);
 
 	Collection<IRVar> getEquivFuncVars(Node funcNode);
 
-	void reset();
-
 	boolean isAccessTypeSafe(T rep);
-
-	/**
-	 * Initialize partition checker
-	 */
-	void initChecker();
 }

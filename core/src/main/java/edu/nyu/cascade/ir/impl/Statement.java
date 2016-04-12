@@ -22,7 +22,7 @@ import static edu.nyu.cascade.ir.IRStatement.StatementType.SEND;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.SKIP;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.FUNC_ENT;
 import static edu.nyu.cascade.ir.IRStatement.StatementType.FUNC_EXIT;
-import static edu.nyu.cascade.ir.IRStatement.StatementType.DECLARE_VAR_ARRAY;
+import static edu.nyu.cascade.ir.IRStatement.StatementType.DECLARE_ARRAY;
 
 import java.util.Iterator;
 import java.util.List;
@@ -56,8 +56,8 @@ public class Statement implements IRStatement {
     return new Statement(sourceNode, DECLARE, varExpr);
   }
 	
-	public static Statement declareVarArray(Node sourceNode, IRExpressionImpl varExpr, IRExpression sizeExpr) {
-		return new Statement(sourceNode, DECLARE_VAR_ARRAY, varExpr, sizeExpr);
+	public static Statement declareArrayVar(Node sourceNode, IRExpressionImpl varExpr, IRExpression sizeExpr) {
+		return new Statement(sourceNode, DECLARE_ARRAY, varExpr, sizeExpr);
 	}
 	
   public static Statement malloc(Node sourceNode, IRExpressionImpl ptrExpr, IRExpressionImpl sizeExpr) {
@@ -305,7 +305,7 @@ public class Statement implements IRStatement {
     switch (getType()) {
     case DECLARE:
     	return "declare " + getOperand(0);
-    case DECLARE_VAR_ARRAY:
+    case DECLARE_ARRAY:
     	return "declare " + getOperand(0) + "[" + getOperand(1) + "]"; 
     case MALLOC:
       return getOperand(0) + " := malloc(" + getOperand(1) + ")";

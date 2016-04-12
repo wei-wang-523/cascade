@@ -17,10 +17,10 @@ import com.google.common.collect.Multimap;
 import com.google.inject.Inject;
 
 import edu.nyu.cascade.c.CType;
-import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
 import edu.nyu.cascade.ir.formatter.IRDataFormatter;
+import edu.nyu.cascade.ir.pass.IRAliasAnalyzer;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.VariableExpression;
@@ -253,13 +253,13 @@ public class HoareStateFactory<T> implements StateFactory<T> {
   }
 	
 	@Override
-	public void addStackVarArray(StateExpression state, Expression lval,
+	public void addStackArray(StateExpression state, Expression lval,
 			Expression rval, IRVarInfo info, Node sourceNode) {
-		stateFactory.addStackVarArray(state, lval, rval, info, sourceNode);
+		stateFactory.addStackArray(state, lval, rval, info, sourceNode);
 	}
 
 	@Override
-  public <X> void setLabelAnalyzer(PreProcessor<X> preprocessor) {
+  public <X> void setLabelAnalyzer(IRAliasAnalyzer<X> preprocessor) {
 		stateFactory.setLabelAnalyzer(preprocessor);
   }
 	
