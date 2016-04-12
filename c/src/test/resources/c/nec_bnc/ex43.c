@@ -1,17 +1,10 @@
+#include "../../reserved.h"
 
 /*
    An array with constant-time reset.
 */
 
 //#include <stdlib.h>
-typedef int size_t; // redef type size_t as int
-typedef int data_t;
-typedef size_t idx_t;
-typedef int bool_t;
-#define NULL (int *) 0
-extern int __VERIFIER_nondet_int();
-int ASSUME(int);
-int ASSERT(int);
 
 typedef struct {
   data_t resetVal;
@@ -72,7 +65,7 @@ void bufWrite(buf_t *buf_, idx_t idx_, data_t val_) {
 
 idx_t randomIdx(const buf_t *buf_) {
   ASSUME(buf_ != NULL);
-  idx_t idx = ___VERIFIER_nondet_int();
+  idx_t idx = __VERIFIER_nondet_int();
   ASSUME(0 <= idx);
   ASSUME(idx < buf_->maxNumData);
   return idx;

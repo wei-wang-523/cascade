@@ -1,3 +1,5 @@
+#include "../../reserved.h"
+
 struct list_head {
   struct list_head *next, *prev;
 };
@@ -11,7 +13,7 @@ struct list_head gl_list = { &(gl_list), &(gl_list) };
 
 int main()
 {
-  struct node *node = malloc(sizeof *node);
+  struct node *node = (struct node *) malloc(sizeof *node);
   
   struct list_head *new = &node->linkage;
   struct list_head *head = &gl_list;

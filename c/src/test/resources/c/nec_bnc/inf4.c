@@ -1,3 +1,5 @@
+#include "../../reserved.h"
+
 int isoscles;
 int scalene;
 int triangle;

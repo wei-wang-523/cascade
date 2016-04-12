@@ -1,5 +1,7 @@
+#include "../../../reserved.h"
+
 int main() {
-  const char * s = "123";
+  char * s = "123";
   s[0] = '2';
 	char str[50] = "This is string.h library function";	
 	char *str2 = "This is string.h library function";

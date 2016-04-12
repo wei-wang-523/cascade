@@ -1,17 +1,5 @@
+#include "../../../reserved.h"
 
-typedef long unsigned int size_t;
-extern void *malloc (size_t __size) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__malloc__)) ;
-extern void *calloc (size_t __nmemb, size_t __size)
-__attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__malloc__)) ;
-
-/*
-   An array with constant-time reset.
-*/
-
-typedef int size_t; // redef type size_t as int
-typedef int data_t;
-typedef size_t idx_t;
-typedef int bool_t;
 typedef struct {
   data_t resetVal;
   data_t *data;

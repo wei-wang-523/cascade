@@ -1,3 +1,5 @@
+#include "../../../reserved.h"
+
 void f() {
   int fa = 1;
   int fb = 1;
@@ -18,7 +20,7 @@ void g() {
   }
 }
 
-void main() {
+int main() {
   int x = 1;
   int y;
   
@@ -26,4 +28,6 @@ void main() {
     ASSERT(x==1);
     g();
   }
+  
+  return 0;
 }

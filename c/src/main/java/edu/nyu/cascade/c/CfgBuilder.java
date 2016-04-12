@@ -307,7 +307,7 @@ public class CfgBuilder extends Visitor {
       		} 
       		
     			final CExpression left = recurseOnExpression(getId());
-          final CExpression right = recurseOnExpression(node);
+    			final CExpression right = recurseOnExpression(node);
     			Statement initStmt = Statement.initialize(srcNode, left, right);
     			addStatement(initStmt, isStatic);
       		return;
@@ -1178,6 +1178,8 @@ public class CfgBuilder extends Visitor {
   private Node defineCondVarNode(Location loc) {
   	String varName = Identifiers.uniquify(COND_VAR_PREFIX);
   	Type varType = NumberT.INT.annotate().shape(false, varName);
+  	String scopeName = symbolTable.getCurrentScope().getQualifiedName();
+  	varType.scope(scopeName);
   	
   	Node varDeclareNode = GNode.create("SimpleDeclarator", varName);
   	varDeclareNode.setLocation(loc);
@@ -1198,6 +1200,8 @@ public class CfgBuilder extends Visitor {
     String varName = null == funcName ? Identifiers.uniquify(RETURN_VAR_PREFIX) : 
     	Identifiers.uniquify(RETURN_VAR_PREFIX + '_' + funcName);
     Type varType = retType.annotate().shape(false, varName);
+  	String scopeName = symbolTable.getCurrentScope().getQualifiedName();
+  	varType.scope(scopeName);
     
     GNode varDeclareNode = GNode.create("SimpleDeclarator", varName);
     varDeclareNode.setLocation(loc);
@@ -1223,6 +1227,8 @@ public class CfgBuilder extends Visitor {
     left.resolve().toArray().
     setLength(right.resolve().toArray().getLength() + 1);
     left.annotate().shape(false, varName).mark(stringVar);
+  	String scopeName = symbolTable.getCurrentScope().getQualifiedName();
+  	left.scope(scopeName);
     symbolTable.mark(stringVar);
 	  
 	  createAuxVarBinding(stringVar, STRING_VAR_PREFIX);
@@ -1243,9 +1249,8 @@ public class CfgBuilder extends Visitor {
   	assert(!symbolTable.isDefined(name));
   	
     Type type = CType.getType(node);
-    String scopeName = symbolTable.getCurrentScope().getQualifiedName();
-  	IRVarInfo binding = VarInfoFactory.createVarInfoWithType(
-  			scopeName, name, type);
+    String scopeName = type.getScope();
+  	IRVarInfo binding = VarInfoFactory.createVarInfo(scopeName, name, type);
   	
   	if(CType.isScalar(type)) {
   		binding.enableLogicLabel();
@@ -1690,7 +1695,7 @@ public class CfgBuilder extends Visitor {
     varInfo.setDeclarationNode(declareNode);
     varInfo.disableLogicLabel();
     
-    Statement declareStmt = Statement.declareVarArray(node, resExpr, sizeExpr);    
+    Statement declareStmt = Statement.declareArrayVar(node, resExpr, sizeExpr);    
     addStatement(declareStmt, varInfo.isStatic());
     
     Node primaryId = GNode.create("PrimaryIdentifier", name);

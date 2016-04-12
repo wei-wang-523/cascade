@@ -1,5 +1,5 @@
 /*-- from blast tacas 06 examplex --*/
-extern int __VERIFIER_nondet_int();
+#include "../../reserved.h"
 
 
 int main(){
@@ -18,7 +18,7 @@ int main(){
   }
   
   if(y != 0){
-     ASSERT(1==0);
+     ASSERT(0);
   }
 
   return 1;

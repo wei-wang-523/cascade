@@ -50,8 +50,8 @@ public class CSymbolTable implements SymbolTable {
 
   private static void copyScope(File file, xtc.util.SymbolTable xtcSymbolTable, xtc.util.SymbolTable newXtcSymbolTable) {
     Scope scope = xtcSymbolTable.current();
-    String scopeName = scope.getName();
-    Preconditions.checkArgument(scopeName.equals(newXtcSymbolTable.current().getName()));
+    String scopeName = scope.getQualifiedName();
+    Preconditions.checkArgument(scopeName.equals(newXtcSymbolTable.current().getQualifiedName()));
     
     IOUtils.debug().pln("Visiting scope: '" + scopeName + "'");
     
@@ -67,10 +67,8 @@ public class CSymbolTable implements SymbolTable {
        * always be a Node???
        */
       assert( binding instanceof Type);
-      Scope newScope = newXtcSymbolTable.current();
-      IRVarInfo varInfo = VarInfoFactory.createVarInfoWithType(
-      		newScope.getQualifiedName(), name, (Type)binding);
-      newScope.define(name, varInfo);
+      IRVarInfo varInfo = VarInfoFactory.createVarInfo(scopeName, name, (Type)binding);
+      newXtcSymbolTable.current().define(name, varInfo);
     }
     
     /* Recursively descend through nested scopes. */

@@ -1,8 +1,0 @@
-<controlFile>
-  <sourceFile name="../ex5.c" id="1" />
-  <run>
-    <startPosition fileId="1" line="4" />
-    <wayPoint fileId="1" line="12" />
-    <endPosition fileId="1" line="16" />
-  </run>
-</controlFile>

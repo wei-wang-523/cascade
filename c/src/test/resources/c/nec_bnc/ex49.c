@@ -1,3 +1,5 @@
+#include "../../reserved.h"
+
 int main( int n){
    int i, sum=0;
    ASSUME( n >= 0);

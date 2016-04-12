@@ -93,9 +93,8 @@ public class MainTest {
         Main main = getInjector().getInstance(Main.class);
         main.init();
         List<String> files = main.processCommandLine(args);
-        main.setOutStream(IOUtils.NULL_PRINT_STREAM);
-        main.setErrStream(System.err);
-        main.setStatsStream(System.err);
+        main.setOutStream(System.out);
+        main.setErrStream(IOUtils.NULL_PRINT_STREAM);
         main.run(files);
         return null;
       }
@@ -114,15 +113,15 @@ public class MainTest {
           List<String> files = main.processCommandLine(args);
           main.setOutStream(System.out);
           main.setErrStream(IOUtils.NULL_PRINT_STREAM);
-        	IOUtils.enableOut();
-					main.run(files);
-				} catch (TheoremProverException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				} catch (ParseException e) {
-					e.printStackTrace();
-				}
+          IOUtils.enableOut();
+          main.run(files);
+        } catch (TheoremProverException e) {
+        	e.printStackTrace();
+        } catch (IOException e) {
+        	e.printStackTrace();
+        } catch (ParseException e) {
+        	e.printStackTrace();
+        }
       }
     }, 20);
   }
@@ -261,7 +260,6 @@ public class MainTest {
   }
   
   @Test
-//  @Ignore
   public void testCFSMiniBenchmark() {
   	final Tester<File> SoundTester = parserTestTimeout("--inline-anno", "--iter-times", 
   			"10", "-m32", "--vari-cell", "--lambda", "--memory-check", "--hoare", "-cfs");
@@ -277,7 +275,6 @@ public class MainTest {
   }
   
   @Test
-  //@Ignore
   public void testCFSCSMiniBenchmark() {
   	final Tester<File> SoundTester = parserTestTimeout("--inline-anno", "--iter-times", 
   			"10", "-m32", "--vari-cell", "--lambda", "--memory-check", "--hoare", "-cfscs");

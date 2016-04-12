@@ -1,5 +1,4 @@
-typedef long unsigned int size_t;
-extern void *malloc (size_t __size) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__malloc__)) ;
+#include "../../../reserved.h"
 
 typedef struct {
   void *lo;
@@ -12,10 +11,10 @@ static void alloc_data(TData *pdata)
   pdata->hi = malloc(24);
 }
 
-static void free_data(TData data)
+static void free_data(TData fdata)
 {
-  void *lo = data.lo;
-  void *hi = data.hi;
+  void *lo = fdata.lo;
+  void *hi = fdata.hi;
   
 //  if (lo == hi)
 //    return;

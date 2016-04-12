@@ -1,3 +1,5 @@
+#include "../../reserved.h"
+
 struct _addr {
   unsigned char len;
   unsigned char dat[16];
@@ -15,7 +17,7 @@ int f3(unsigned char data, Buffer *buf);
 
 int main(Addr *addr, Buffer *buf)
 {
-   ASSUME(addr);
+   ASSUME(addr != NULL);
    
    if (addr->len < 0 || addr->len >= 16) {
       return 0;

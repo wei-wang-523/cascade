@@ -1,3 +1,5 @@
+#include "../../../reserved.h"
+
 int main(){
   int a[1000];
   int y, sum = 0;

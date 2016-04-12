@@ -1,3 +1,4 @@
+#include "../../../reserved.h"
 
 int foo(int x);
 int a [100];

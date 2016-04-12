@@ -1,3 +1,5 @@
+#include "../../../reserved.h"
+
 typedef struct{
    int * a;
    int * b;
@@ -14,7 +16,7 @@ int main(){
    *(A.a) = 0;
    *(A.b) = 1;
 
-   ptrStruct * ptr = A;
+   ptrStruct * ptr = &A;
    
    ASSERT(ptr->a == &x);
    

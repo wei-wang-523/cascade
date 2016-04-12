@@ -1,4 +1,4 @@
-#define NULL (void *) 0
+#include "../../reserved.h"
 
 typedef struct {
 

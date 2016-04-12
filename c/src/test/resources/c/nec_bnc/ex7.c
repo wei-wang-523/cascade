@@ -1,5 +1,6 @@
-#define NULL (void *)0
-int * main (int x, int y){
+#include "../../reserved.h"
+
+int main (int x, int y){
 	
 	int * a;
 	int i;
@@ -14,6 +15,6 @@ int * main (int x, int y){
 		a[i] = 0;
 	}
 	
-	return a;
+	return 0;
 	
 }

@@ -1,7 +1,8 @@
+#include "../../reserved.h"
+
 /*
   fn1 returns a positive value less than n.
 */
-extern int __VERIFIER_nondet_int();
 
 int fn1(int n) {
   int ret = __VERIFIER_nondet_int();

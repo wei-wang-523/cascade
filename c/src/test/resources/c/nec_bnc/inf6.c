@@ -1,4 +1,4 @@
-//#include <stdio.h>
+#include "../../reserved.h"
 
 struct {
   char*fp; // FILE* fp;

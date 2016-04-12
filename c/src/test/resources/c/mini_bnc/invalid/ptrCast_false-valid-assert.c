@@ -1,3 +1,5 @@
+#include "../../../reserved.h"
+
 int main() {
 	int *a, *b;
 	char d;

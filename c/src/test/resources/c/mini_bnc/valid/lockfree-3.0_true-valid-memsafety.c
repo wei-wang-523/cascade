@@ -1,5 +1,4 @@
-#define NULL (void*) 0
-extern int __VERIFIER_nondet_int(void);
+#include "../../../reserved.h"
 
 struct cell {
   struct cell* next;

@@ -1,3 +1,5 @@
+#include "../../../reserved.h"
+
 int main() {
   int a = 0;
   int b;

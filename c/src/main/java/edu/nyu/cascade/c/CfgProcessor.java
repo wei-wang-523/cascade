@@ -61,7 +61,7 @@ public class CfgProcessor {
 			@Override
       public boolean apply(IRStatement stmt) {
 	      return StatementType.DECLARE.equals(stmt.getType()) || 
-						StatementType.DECLARE_VAR_ARRAY.equals(stmt.getType());
+						StatementType.DECLARE_ARRAY.equals(stmt.getType());
       }
 		};
 		
@@ -76,7 +76,7 @@ public class CfgProcessor {
 		for(IRStatement stmt : currBlock.getStatements()) {
 			newStmts.add(stmt);
 			if(StatementType.DECLARE.equals(stmt.getType()) || 
-					StatementType.DECLARE_VAR_ARRAY.equals(stmt.getType())) {
+					StatementType.DECLARE_ARRAY.equals(stmt.getType())) {
 				if(itr.hasNext()) newStmts.add(itr.next());
 			}
 		}
@@ -353,7 +353,7 @@ public class CfgProcessor {
 					break;
 				case HAVOC:
 				case DECLARE:
-				case DECLARE_VAR_ARRAY:
+				case DECLARE_ARRAY:
 					liftStmts.add(stmt); break;
 				default:
 					break;

@@ -1,4 +1,4 @@
-extern int __VERIFIER_nondet_int();
+#include "../../../reserved.h"
 
 int main(){
 	int a[5];

@@ -23,8 +23,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import edu.nyu.cascade.c.preprocessor.IRVar;
-import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRBasicBlock;
 import edu.nyu.cascade.ir.IRBooleanExpression;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
@@ -38,6 +36,8 @@ import edu.nyu.cascade.ir.impl.CaseGuard;
 import edu.nyu.cascade.ir.impl.DefaultCaseGuard;
 import edu.nyu.cascade.ir.impl.IRExpressionImpl;
 import edu.nyu.cascade.ir.impl.Statement;
+import edu.nyu.cascade.ir.pass.IRAliasAnalyzer;
+import edu.nyu.cascade.ir.pass.IRVar;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
@@ -47,14 +47,14 @@ import static edu.nyu.cascade.ir.IRStatement.StatementType.CALL;
 public class FuncInlineProcessor<T> {
   private final Map<String, IRControlFlowGraph> cfgs;
   private final SymbolTable symbolTable;
-  private final PreProcessor<T> preprocessor;
+  private final IRAliasAnalyzer<T> preprocessor;
   private final int effortLevel;
   private final xtc.type.C cop = CType.getInstance().c();
 	
   private FuncInlineProcessor(
       Map<Node, IRControlFlowGraph> cfgs,
       SymbolTable symbolTable,
-      PreProcessor<T> preprocessor,
+      IRAliasAnalyzer<T> preprocessor,
       int effortLevel) {
     this.symbolTable = symbolTable;
     this.effortLevel = effortLevel;
@@ -77,7 +77,7 @@ public class FuncInlineProcessor<T> {
   static <T> FuncInlineProcessor<T> create(
       Map<Node, IRControlFlowGraph> cfgs,
       SymbolTable symbolTable,
-      PreProcessor<T> preprocessor) {
+      IRAliasAnalyzer<T> preprocessor) {
   	int effortLevel = Integer.MAX_VALUE;
   	if(Preferences.isSet(Preferences.OPTION_FUNC_INLINE))
   		effortLevel = Preferences.getInt(Preferences.OPTION_FUNC_INLINE);

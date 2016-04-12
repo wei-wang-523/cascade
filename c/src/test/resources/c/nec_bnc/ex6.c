@@ -1,3 +1,5 @@
+#include "../../reserved.h"
+
 int x,y;
 
 int foo(int * ptr){

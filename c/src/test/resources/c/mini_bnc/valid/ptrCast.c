@@ -1,3 +1,5 @@
+#include "../../../reserved.h"
+
 struct {char a; char b;} pair;
 
 int main(){

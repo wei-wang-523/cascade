@@ -1,7 +1,0 @@
-<controlFile>
-  <sourceFile name="../inf2.c" id="1" />
-  <run>
-    <startPosition fileId="1" line="47" />
-    <endPosition fileId="1" line="58" />
-  </run>
-</controlFile>

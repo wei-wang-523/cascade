@@ -1,4 +1,5 @@
-extern int __VERIFIER_nondet_int(void);
+#include "../../reserved.h"
+
 struct list_head {
   struct list_head *next, *prev;
 };

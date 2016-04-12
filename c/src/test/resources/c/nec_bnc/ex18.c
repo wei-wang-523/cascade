@@ -1,4 +1,4 @@
-extern int __VERIFIER_nondet_int();
+#include "../../reserved.h"
 
 int main(){
 
@@ -10,7 +10,7 @@ int main(){
      return -1;
    a= malloc( k * sizeof(int));
 
-   ASSUME(a);
+   ASSUME(a != NULL);
    ASSUME(k >= 100);
    
    for (i =0 ; i != k; i++)

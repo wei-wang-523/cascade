@@ -1,3 +1,5 @@
+#include "../../../reserved.h"
+
 int C[2];
 int a = 3;
 int main() 

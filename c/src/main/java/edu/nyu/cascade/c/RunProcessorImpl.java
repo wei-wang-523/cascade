@@ -16,13 +16,13 @@ import edu.nyu.cascade.c.encoder.FormulaEncoder;
 import edu.nyu.cascade.c.encoder.StmtBasedFormulaEncoder;
 import edu.nyu.cascade.c.graphml.TraceGraphMLBuilder;
 import edu.nyu.cascade.c.mode.Mode;
-import edu.nyu.cascade.c.preprocessor.PreProcessor;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.IRTraceNode;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.ir.impl.LoopInfo;
 import edu.nyu.cascade.ir.impl.TraceFactory;
+import edu.nyu.cascade.ir.pass.IRAliasAnalyzer;
 import edu.nyu.cascade.ir.path.PathFactoryException;
 import edu.nyu.cascade.ir.path.SimplePathEncoding;
 import edu.nyu.cascade.util.IOUtils;
@@ -82,7 +82,7 @@ class RunProcessorImpl implements RunProcessor {
     private final boolean withNoMemAlloc;
     private final FormulaEncoder formulaEncoder;
     private final FuncInlineProcessor<?> funcProcessor;
-    private final PreProcessor<?> preprocessor;
+    private final IRAliasAnalyzer<?> preprocessor;
     private final Mode mode;
     private final TraceFactory traceFactory;
     
@@ -213,7 +213,6 @@ class RunProcessorImpl implements RunProcessor {
 	if(preprocessor == null) return;
 	if(!mode.hasPreprocessor()) return;
 	preprocessor.analysis(globalCFG, cfgs);
-	preprocessor.initChecker();		
     }
     
     @Override

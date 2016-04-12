@@ -1,3 +1,5 @@
+#include "../../../reserved.h"
+
 struct _addr {
 	unsigned char len;
 	unsigned char dat[16];
@@ -8,7 +10,7 @@ int f1(Addr *addr);
 
 int main(Addr *addr)
 {
-	ASSUME(addr);
+	ASSUME(addr != NULL);
 	return f1(addr);
 }
 

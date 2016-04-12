@@ -1,7 +1,4 @@
-typedef long unsigned int size_t;
-
-extern int __VERIFIER_nondet_int(void);
-extern void *malloc (size_t __size) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__malloc__)) ;
+#include "../../../reserved.h"
 
 int i = 0;
 

@@ -987,6 +987,11 @@ final class DryRunTheoremProver implements TheoremProver {
 				Expression body) {
 			return exprManager.lambda(args, body);
 		}
+
+		@Override
+		public void reset() {
+			exprManager.reset();
+		}
   }
 
   public class Provider implements TheoremProver.Provider {

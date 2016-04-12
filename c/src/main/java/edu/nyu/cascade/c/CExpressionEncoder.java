@@ -692,8 +692,10 @@ class CExpressionEncoder implements ExpressionEncoder {
 		private IRVarInfo createCtrlVar(GNode node) {
 	  	Preconditions.checkNotNull(currScope);
 	    String name = node.getString(0);
-			IRVarInfo varInfo = VarInfoFactory.createVarInfoWithNode(
-					currScope.getQualifiedName(), name, node);
+	    Type ty = CType.getType(node);
+	    IRVarInfo varInfo = VarInfoFactory.createVarInfo(
+	    		currScope.getQualifiedName(), name, ty);
+	    varInfo.setDeclarationNode(node);
 	  	varInfo.setProperty(Identifiers.CTRLVAR, true);
 	  	currScope.define(name, varInfo);
 	  	return varInfo;

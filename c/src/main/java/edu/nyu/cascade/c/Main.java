@@ -279,7 +279,11 @@ public class Main {
 	.addOption(Option.builder("cfscs")
 		   .longOpt(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE) //
 		   .desc("Enable cell based field sensitive and context sensitive pointer analysis.") //
-		   .build())              
+		   .build()) 
+	.addOption(Option.builder("dsa")
+			   .longOpt(Preferences.OPTION_DSA) //
+			   .desc("Enable data-structure alias analysis.") //
+			   .build())  	
 	.addOption(Option.builder()
 		   .longOpt(Preferences.OPTION_CFS_POINTER_ARITH) //
 		   .desc("Enable optimization of pointer arithmetic in cfs pointer analysis.") //
@@ -452,10 +456,10 @@ public class Main {
 	return res;
     }
     
-    private void prepare() {
+    public void prepare() {
 	Preconditions.checkArgument(asts.isEmpty());
   	Preconditions.checkArgument(cfgs.isEmpty());
-  	Preconditions.checkArgument(cAnalyzer == null);
+//  	Preconditions.checkArgument(cAnalyzer == null);
   	Preconditions.checkArgument(symbolTable == null);
 	runtime.initDefaultValues();
 	runtime.setValue(OPTION_INTERNAL_PEDANTIC,
@@ -703,12 +707,7 @@ public class Main {
 		    
 		    if (Preferences.isSet(OPTION_PARSEC)) return;
 		    
-		    IRControlFlowGraph mainCfg = Iterables.find(cfgs.values(),
-		    		new Predicate<IRControlFlowGraph>(){
-		    	@Override
-		    	public boolean apply(IRControlFlowGraph cfg) {
-		    		return cfg.getName().equals(Identifiers.MAIN);
-		    	}}, null);
+		    IRControlFlowGraph mainCfg = getControlFlowGraph(Identifiers.MAIN);
 		    
 		    if(mainCfg == null) {
 			IOUtils.err().println("no main function."); return;
@@ -773,6 +772,23 @@ public class Main {
 	IOUtils.out().println(safeResult);
 	StatsTimer.cascadeStop();
 	printTimeInfo(IOUtils.err());
+    }
+    
+    private IRControlFlowGraph getControlFlowGraph(String filename) {
+    	return Iterables.find(cfgs.values(),
+	    		new Predicate<IRControlFlowGraph>(){
+	    	@Override
+	    	public boolean apply(IRControlFlowGraph cfg) {
+	    		return cfg.getName().equals(Identifiers.MAIN);
+	    	}}, null);
+    }
+    
+    public Collection<IRControlFlowGraph> getControlFlowGraphs() {
+    	return cfgs.values();
+    }
+    
+    public SymbolTable getSymbolTable() {
+    	return symbolTable;
     }
     
     public void setErrStream(PrintStream err) {

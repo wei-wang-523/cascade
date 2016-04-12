@@ -1,14 +1,11 @@
-typedef long unsigned int size_t;
-extern void *malloc (size_t __size) __attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__malloc__)) ;
-extern void *calloc (size_t __nmemb, size_t __size)
-__attribute__ ((__nothrow__ , __leaf__)) __attribute__ ((__malloc__)) ;
+#include "../../../reserved.h"
 
-int * main (int x, int y){
+int main (int x, int y){
 	
 	int * a;
 	int i = 0;
 	
-	if ( x< 0 || y < 0 || y > x ) return (int *) 0;
+	if ( x< 0 || y < 0 || y > x ) return 0;
 	
 	a = (int *) malloc( x * sizeof(int));
 	
@@ -16,5 +13,5 @@ int * main (int x, int y){
   
   a[i] = 0;
 	
-	return a;
+	return 0;
 }

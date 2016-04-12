@@ -1,4 +1,4 @@
-extern int __VERIFIER_nondet_int(void);
+#include "../../../reserved.h"
 
 int main() {
   while (__VERIFIER_nondet_int()) {}

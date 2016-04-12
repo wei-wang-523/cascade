@@ -1,5 +1,4 @@
-//#include <stdlib.h>
-//#include <string.h>
+#include "../../reserved.h"
 
 // get the length of a string
 int strlen(char *str)
@@ -14,7 +13,7 @@ int strlen(char *str)
 }
 
 // copy the content from src to dst
-void memcpy(char *dst, char *src, int length)
+void _memcpy(char *dst, char *src, int length)
 {
   for(int i=0; i<length; i++) {
     dst[i] = src[i];
@@ -28,7 +27,7 @@ char *str_sub(char *str, int start, int end)
   int len = strlen(str);
   
   res = (char *) calloc (end - start + 2, 1);
-  memcpy(res, str+start, end-start+1);
+  _memcpy(res, str+start, end-start+1);
   
   return res;
 }

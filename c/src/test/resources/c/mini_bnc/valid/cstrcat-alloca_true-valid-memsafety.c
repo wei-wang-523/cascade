@@ -1,4 +1,4 @@
-extern int __VERIFIER_nondet_int(void);
+#include "../../../reserved.h"
 
 char *(cstrcat)(char *s1, const char *s2)
 {

@@ -2,6 +2,8 @@ package edu.nyu.cascade.theory;
 
 import static org.junit.Assert.assertTrue;
 
+import org.junit.After;
+
 //import java.io.FileNotFoundException;
 //import java.io.PrintStream;
 //import edu.nyu.cascade.util.IOUtils;
@@ -36,6 +38,11 @@ public class ListReachabilityTest {
     theoremProver = TheoremProverFactory.getInstance();
     exprManager = theoremProver.getExpressionManager();
     listEncoding = new ListReachability(exprManager).getEncoding();
+  }
+  
+  @After
+  public void tearDown() {
+	  exprManager.reset();
   }
   
   @Test

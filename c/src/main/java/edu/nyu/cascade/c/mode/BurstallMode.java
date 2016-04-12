@@ -2,9 +2,8 @@ package edu.nyu.cascade.c.mode;
 
 import com.google.inject.Inject;
 
-import edu.nyu.cascade.c.preprocessor.PreProcessor;
-import edu.nyu.cascade.c.preprocessor.typeanalysis.FSType;
-import edu.nyu.cascade.c.preprocessor.typeanalysis.TypeAnalyzer;
+import edu.nyu.cascade.c.pass.alias.typesafe.FSType;
+import edu.nyu.cascade.c.pass.alias.typesafe.TypeAnalyzer;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.ir.expr.BitVectorExpressionEncoding;
 import edu.nyu.cascade.ir.expr.ExpressionEncoding;
@@ -15,6 +14,7 @@ import edu.nyu.cascade.ir.memory.safety.AbstractMemSafetyEncoding;
 import edu.nyu.cascade.ir.memory.safety.AbstractStmtMemSafetyEncoding;
 import edu.nyu.cascade.ir.memory.safety.IRMemSafetyEncoding;
 import edu.nyu.cascade.ir.memory.safety.Strategy;
+import edu.nyu.cascade.ir.pass.IRAliasAnalyzer;
 import edu.nyu.cascade.ir.state.AbstractStateFactory;
 import edu.nyu.cascade.ir.state.HoareStateFactory;
 import edu.nyu.cascade.ir.state.StateFactory;
@@ -72,8 +72,8 @@ public class BurstallMode extends AbstractMode {
   }
 
 	@Override
-  public PreProcessor<FSType> buildPreprocessor(SymbolTable symbolTable) {
-		PreProcessor<FSType> preProcessor = TypeAnalyzer.create();
+  public IRAliasAnalyzer<FSType> buildPreprocessor(SymbolTable symbolTable) {
+		IRAliasAnalyzer<FSType> preProcessor = TypeAnalyzer.create();
 		stateFactory.setLabelAnalyzer(preProcessor);
 		return preProcessor;
   }

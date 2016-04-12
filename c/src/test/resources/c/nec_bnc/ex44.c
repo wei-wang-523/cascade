@@ -1,4 +1,4 @@
-//#include <stdlib.h>
+#include "../../reserved.h"
 
 #define INIT_SIZE 1 // INIT_SIZE 100
 
@@ -17,11 +17,11 @@ Vector* create_vector()
 	node->size = 0;
 	node->capacity = INIT_SIZE;
 	node->data = (int *)malloc(node->capacity* sizeof(int));
-	ASSUME(node->data);
+	ASSUME(node->data != NULL);
 	return node;
 }
 
-void memcpy(int* pvTo, int* pvFrom, int size) 
+void _memcpy(int* pvTo, int* pvFrom, int size)
 
 { 
 	int* pbTo = pvTo; 	
@@ -40,7 +40,7 @@ void push_back(Vector *vct, int value)
 		vct->capacity += INIT_SIZE;
 		tmp = (int*) malloc (vct->capacity * sizeof(int));
 		ASSUME(tmp != NULL);
-		memcpy(tmp, vct->data, (vct->capacity - INIT_SIZE)*sizeof(int));
+		_memcpy(tmp, vct->data, (vct->capacity - INIT_SIZE)*sizeof(int));
 		free(vct->data);
 		vct->data = tmp;
 	}

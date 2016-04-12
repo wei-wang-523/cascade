@@ -1,4 +1,4 @@
-extern void __VERIFIER_error() __attribute__ ((__noreturn__));
+#include "../../../reserved.h"
 
 int main() {
   

@@ -1,3 +1,5 @@
+#include "../../../reserved.h"
+
 int main() {
   char s[] = "123";
   int a;

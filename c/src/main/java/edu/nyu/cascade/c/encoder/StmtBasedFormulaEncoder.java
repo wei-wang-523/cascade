@@ -843,8 +843,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 		switch (stmt.getType()) {
 		case DECLARE:
 			return pathEncoding.declare(prefix, stmt.getOperand(0)); 
-		case DECLARE_VAR_ARRAY:
-			return pathEncoding.declareVarArray(prefix, stmt.getOperand(0), stmt.getOperand(1)); 
+		case DECLARE_ARRAY:
+			return pathEncoding.declareArray(prefix, stmt.getOperand(0), stmt.getOperand(1)); 
 		case INIT:
 			return pathEncoding.init(prefix, stmt.getOperand(0), stmt.getOperand(1));
 		case ASSIGN:

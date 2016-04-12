@@ -1,3 +1,5 @@
+#include "../../../reserved.h"
+
 int main() {
   char* d1 = (char*) malloc (sizeof(char));
   char* s1 = (char*) malloc (sizeof(char));

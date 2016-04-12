@@ -1,3 +1,5 @@
+#include "../../reserved.h"
+
 int main(int a, int b, int c){
 	int flag1,flag2;
 	

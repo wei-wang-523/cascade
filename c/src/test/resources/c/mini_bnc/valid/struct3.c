@@ -1,3 +1,5 @@
+#include "../../../reserved.h"
+
 struct {
   int a[3];
   int b;

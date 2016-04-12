@@ -1,5 +1,4 @@
-typedef int data_t;
-extern int __VERIFIER_nondet_int();
+#include "../../../reserved.h"
 
 int main(){
 	int len = (data_t)__VERIFIER_nondet_int();

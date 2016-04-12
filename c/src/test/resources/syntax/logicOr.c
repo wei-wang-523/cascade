@@ -1,4 +1,4 @@
-extern void __VERIFIER_error(void);
+#include "../reserved.h"
 
 int main() {
   int a = 1;
