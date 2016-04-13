@@ -35,14 +35,14 @@ public interface IRAliasAnalyzer<T> extends IRPass {
 	T getStackRep(Node node);
 	
 	/**
-	 * Get the field representative of <code>rep</code>. It's
-	 * used to in field-sensitive steensgaard analysis, to find 
-	 * the elements' representative for the structure components
+	 * Get the field representatives within rep. It is
+	 * used to in field-sensitive points-to analysis, to find 
+	 * the elements' representative for the innder components
 	 * 
 	 * @param rep
 	 * @return
 	 */
-	Collection<T> getFillInReps(T rep, long length);
+	Collection<T> getFieldReps(T rep, long length);
 
 	/**
 	 * Add an newly allocated <code>region</code> with source node 

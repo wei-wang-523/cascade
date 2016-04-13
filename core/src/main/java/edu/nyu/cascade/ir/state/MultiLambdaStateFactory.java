@@ -66,7 +66,7 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		T rep = labelAnalyzer.getStackRep(node);
 		long length = CType.getInstance().getSize(info.getXtcType());
 		
-		for(T fillInRep : labelAnalyzer.getFillInReps(rep, length)) {
+		for(T fillInRep : labelAnalyzer.getFieldReps(rep, length)) {
 			updateStateWithRep(state.asMultiLambda(), fillInRep);
 			String label = labelAnalyzer.getRepId(fillInRep);
 			SingleLambdaStateExpression singleState = state.asMultiLambda().getStateMap().get(label);
@@ -85,7 +85,7 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		labelAnalyzer.addVar(lval, sourceNode);
 		T ptrRep = labelAnalyzer.getPtsToRep(sourceNode);
 		long length = CType.getInstance().getSize(CType.getArrayCellType(info.getXtcType()));
-		for(T rep : labelAnalyzer.getFillInReps(ptrRep, length)) {
+		for(T rep : labelAnalyzer.getFieldReps(ptrRep, length)) {
 			updateStateWithRep(state.asMultiLambda(), rep);
 			String label = labelAnalyzer.getRepId(rep);
 			SingleLambdaStateExpression singleState = state.asMultiLambda().getStateMap().get(label);
@@ -132,7 +132,7 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		T rep = labelAnalyzer.getPtsToRep(ptrNode);
 		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode)).toPointer().getType();
 		long length = CType.getInstance().getSize(ty);
-		for(T fillInRep : labelAnalyzer.getFillInReps(rep, length)) {
+		for(T fillInRep : labelAnalyzer.getFieldReps(rep, length)) {
 			updateStateWithRep(state.asMultiLambda(), fillInRep);
 			String label = labelAnalyzer.getRepId(fillInRep);
 			SingleLambdaStateExpression singleState = state.asMultiLambda().getStateMap().get(label);
@@ -149,7 +149,7 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		T rep = labelAnalyzer.getPtsToRep(ptrNode);
 		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode)).toPointer().getType();
 		long length = CType.getInstance().getSize(ty);
-		for(T fillInRep : labelAnalyzer.getFillInReps(rep, length)) {
+		for(T fillInRep : labelAnalyzer.getFieldReps(rep, length)) {
 			updateStateWithRep(state.asMultiLambda(), fillInRep);
 			String label = labelAnalyzer.getRepId(fillInRep);
 			SingleLambdaStateExpression singleState = state.asMultiLambda().getStateMap().get(label);
@@ -351,7 +351,7 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		Type ty = CType.getInstance().pointerize(
 				CType.getType(ptrNode)).toPointer().getType();
 		long length = CType.getInstance().getSize(ty);
-		for(T rep : labelAnalyzer.getFillInReps(ptrRep, length)) {
+		for(T rep : labelAnalyzer.getFieldReps(ptrRep, length)) {
 			updateStateWithRep(multiLambdaState, rep);
 			String label = labelAnalyzer.getRepId(rep);
 			SingleLambdaStateExpression singleState = multiLambdaState.getStateMap().get(label);
@@ -439,7 +439,7 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		Map<String, SingleLambdaStateExpression> stateMap = multiLambdaState.getStateMap();
 		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode)).toPointer().getType();
 		long length = CType.getInstance().getSize(ty);
-		for(T fillInRep : labelAnalyzer.getFillInReps(ptrRep, length)) {
+		for(T fillInRep : labelAnalyzer.getFieldReps(ptrRep, length)) {
 			updateStateWithRep(multiLambdaState, fillInRep);
 			String label = labelAnalyzer.getRepId(fillInRep);
 			SingleLambdaStateExpression singleState = stateMap.get(label);
@@ -458,7 +458,7 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		labelAnalyzer.addRegion(region, ptrNode);
 		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode)).toPointer().getType();
 		long length = CType.getInstance().getSize(ty);
-		for(T rep : labelAnalyzer.getFillInReps(ptrRep, length)) {
+		for(T rep : labelAnalyzer.getFieldReps(ptrRep, length)) {
 			updateStateWithRep(multiLambdaState, rep);
 			String label = labelAnalyzer.getRepId(rep);
 			SingleLambdaStateExpression singleState = multiLambdaState.getStateMap().get(label);

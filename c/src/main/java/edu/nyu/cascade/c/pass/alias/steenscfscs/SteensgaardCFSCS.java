@@ -412,7 +412,7 @@ public class SteensgaardCFSCS implements IRAliasAnalyzer<ECR> {
 	}
 	
 	@Override
-	public Collection<ECR> getFillInReps(ECR rep, long length) {
+	public Collection<ECR> getFieldReps(ECR rep, long length) {
 		Collection<ECR> reps = Sets.newLinkedHashSet();
 		collectFieldReps(reps, rep);
 	  return reps;

@@ -54,7 +54,7 @@ public class CFSProcessor implements IRAliasAnalyzer<Cell> {
   }
 
 	@Override
-  public Collection<Cell> getFillInReps(Cell rep, long length) {
+  public Collection<Cell> getFieldReps(Cell rep, long length) {
 	  // TODO Auto-generated method stub
 	  return null;
   }

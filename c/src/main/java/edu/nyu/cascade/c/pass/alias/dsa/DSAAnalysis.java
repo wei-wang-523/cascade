@@ -104,7 +104,7 @@ public class DSAAnalysis implements IRAliasAnalyzer<Region> {
 	}
 
 	@Override
-	public Collection<Region> getFillInReps(Region Region, long length) {
+	public Collection<Region> getFieldReps(Region Region, long length) {
 		Region newReg = new Region(Region.N, null, Region.offset, length);
 		Collection<Region> overlapRegions = Lists.newArrayList();
 		Iterator<Region> RegItr = regPass.getRegions().iterator();
