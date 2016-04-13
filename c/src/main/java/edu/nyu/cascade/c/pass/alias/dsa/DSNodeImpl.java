@@ -364,8 +364,17 @@ final class DSNodeImpl extends DSNode {
 
 	@Override
 	void remapLinks(Map<DSNode, DSNodeHandle> OldNodeMap) {
-		// TODO Auto-generated method stub
-
+		for (Entry<Long, DSNodeHandle> entry : Links.entrySet()) {
+			DSNodeHandle NH = entry.getValue();
+			DSNode N = NH.getNode();
+			if (N != null) {
+				if(OldNodeMap.containsKey(N)) {
+					DSNodeHandle ONMI = OldNodeMap.get(N);
+					DSNode ONMIN = ONMI.getNode();
+					NH.setTo(ONMIN, NH.getOffset() + ONMI.getOffset());
+				}
+			}
+		}
 	}
 
 	@Override

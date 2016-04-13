@@ -184,34 +184,39 @@ public class SteensDataStructureImpl extends DataStructuresImpl {
 		Iterator<Value> AI = F.getArguments().iterator();
 		while (AI.hasNext() && PtrArgIdx < Call.getNumPtrArgs()) {
 		    Value Arg = AI.next();
-		    if (ValMap.contains(Arg)) { // If its a pointer argument...
-		    	DSNodeHandle ValNH = ValMap.find(Arg);
-		    	DSNodeHandle ArgNH = Call.getPtrArg(PtrArgIdx++);
+		    if (!ValMap.contains(Arg)) continue; 
+		    
+		    // If its a pointer argument...
+		    DSNodeHandle ValNH = ValMap.find(Arg);
+		    DSNodeHandle ArgNH = Call.getPtrArg(PtrArgIdx++);
 			    
-				if (ValNH.isNull())	{
-					DSNode ValN = new DSNodeImpl(ResultGraph);
-					ValNH.setTo(ValN, 0);
-				}
-			    
-			    // Mark that the node is written to ...
-				ValNH.getNode().setModifiedMarker();
-			    
-			    // Ensure a type-record exists
-				ValNH.getNode().growSizeForType(Arg.getType(), ValNH.getOffset());
-			    
-			    // Avoid adding edges from null, or processing non-"pointer" stores
-				if (!CType.isArithmetic(Arg.getType())) {
-			    	if (ArgNH.isNull()) {
-			    		DSNode ArgN = new DSNodeImpl(ResultGraph);
-			    		ArgNH.setTo(ArgN, 0);
-			    	}
-			    	ValNH.addEdgeTo(0, ArgNH);
-				}
-			    
-			    //TODO: TypeInferenceOptimize
-			    
-			    ValNH.getNode().mergeTypeInfo(Arg.getType(), ValNH.getOffset());
+		    if (ValNH.isNull())	{
+		    	DSNode ValN = new DSNodeImpl(ResultGraph);
+		    	ValNH.setTo(ValN, 0);
 		    }
+			    
+		    // Mark that the node is written to ...
+		    ValNH.getNode().setModifiedMarker();
+			    
+		    // Ensure a type-record exists
+		    ValNH.getNode().growSizeForType(Arg.getType(), ValNH.getOffset());
+				
+		    // Avoid adding edges from null, or processing non-"pointer" stores
+		    if (CType.isScalar(Arg.getType().resolve())){
+		    	if (Arg.getType().resolve().isPointer()) {
+		    		if (ArgNH.isNull()) {
+		    			DSNode ArgN = new DSNodeImpl(ResultGraph);
+		    			ArgNH.setTo(ArgN, 0);
+		    		}
+			    	ValNH.addEdgeTo(0, ArgNH);
+		    	}
+		    } else { // Pass composite type
+		    	ValNH.mergeWith(ArgNH);
+		    }
+			    
+		    //TODO: TypeInferenceOptimize
+		    
+		    ValNH.getNode().mergeTypeInfo(Arg.getType(), ValNH.getOffset());
 		}
 	}
 }

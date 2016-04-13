@@ -90,7 +90,7 @@ public class MainInjectTest {
 	  			"-m32", 
 	  			"--vari-cell", 
 	  			"--lambda", 
-//	  			"--memory-check", 
+	  			"--memory-check", 
 	  			"--hoare", 
 	  			"--dsa",
 	  			cfile.toString()};

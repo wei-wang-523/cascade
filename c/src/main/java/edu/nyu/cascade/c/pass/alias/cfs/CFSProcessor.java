@@ -30,13 +30,13 @@ public class CFSProcessor implements IRAliasAnalyzer<Cell> {
   }
 
 	@Override
-  public Cell getPointsToLoc(Cell rep) {
+  public Cell getPtsToRep(Cell rep) {
 	  // TODO Auto-generated method stub
 	  return null;
   }
 
 	@Override
-  public long getRepTypeWidth(Cell rep) {
+  public long getRepWidth(Cell rep) {
 	  // TODO Auto-generated method stub
 	  return 0;
   }
@@ -66,13 +66,13 @@ public class CFSProcessor implements IRAliasAnalyzer<Cell> {
   }
 
 	@Override
-  public void addAllocRegion(Expression region, Node ptrNode) {
+  public void addRegion(Expression region, Node ptrNode) {
 	  // TODO Auto-generated method stub
 	  
   }
 
 	@Override
-  public void addStackVar(Expression lval, Node lvalNode) {
+  public void addVar(Expression lval, Node lvalNode) {
 	  // TODO Auto-generated method stub
 	  
   }
@@ -103,6 +103,12 @@ public class CFSProcessor implements IRAliasAnalyzer<Cell> {
 
 	@Override
 	public Cell getStackRep(Node node) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Cell getPtsToRep(Node node) {
 		// TODO Auto-generated method stub
 		return null;
 	}

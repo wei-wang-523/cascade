@@ -150,6 +150,10 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 		
 		private DSNodeHandle load(DSNodeHandle PtrNH, GNode node) {			
 			Type Ty = CType.getType(node);
+			
+			// Do not load the content if it is composite value. 
+			// It is viewed as a pointer to the composite value.
+			//
 			if (!CType.isScalar(Ty)) return PtrNH;
 			
 			// Create a DSNode for the pointer dereferenced by the load.  If the DSNode
@@ -924,8 +928,8 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 		 * specified node if one exists.  If a link does not already exist (it's
 		 * null), then we create a new node, link it, then return it.
 		 */
-		private DSNodeHandle getLink(final DSNodeHandle Node, int LinkNo) {
-			DSNodeHandle Link = Node.getLink(LinkNo);
+		private DSNodeHandle getLink(final DSNodeHandle NH, int LinkNo) {
+			DSNodeHandle Link = NH.getLink(LinkNo);
 			if(Link.isNull()) {
 				// If the link hasn't been created yet, make and return a new shadow node
 				Link.setTo(createNode(), 0);

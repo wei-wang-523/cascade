@@ -287,17 +287,22 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 	}
 	
 	@Override
-	public ECR getPointsToLoc(ECR base) {
-    if(base.getType().isBot())
-    	IOUtils.err().println("WARNING: get points-to Loc ECR of bottom " + base);
-    return uf.findRoot(uf.getLoc(base));
+	public ECR getPtsToRep(ECR base) {
+		if(base.getType().isBot())
+			IOUtils.err().println("WARNING: get points-to Loc ECR of bottom " + base);
+		return uf.findRoot(uf.getLoc(base));
+	}
+	
+	@Override
+	public ECR getPtsToRep(Node node) {
+	    return getPtsToRep(getRep(node));
 	}
 
 	/**
 	 * Return unit type: steensgaard doesn't hold any type info
 	 */
 	@Override
-	public long getRepTypeWidth(ECR rep) {
+	public long getRepWidth(ECR rep) {
 		return CType.getInstance().getWidth(CType.getUnitType());
 	}
 	
@@ -305,7 +310,7 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 	public Collection<IRVar> getEquivFuncVars(Node funcNode) {
 		Type funcType = CType.getType(funcNode).resolve();		
 		ECR rep = getRep(funcNode);
-		if(funcType.isPointer()) rep = getPointsToLoc(rep);
+		if(funcType.isPointer()) rep = getPtsToRep(rep);
 		ValueType refType = uf.getType(rep);
 		ECR funcRep = refType.asRef().getFunction();
 	  return uf.getEquivClass(funcRep);
@@ -333,18 +338,18 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 		
 		/* The address should belongs to the group it points-to, where to reason
 		 * about disjointness */
-		return CType.isScalar(lvalType) ? rep : getPointsToLoc(rep);
+		return CType.isScalar(lvalType) ? rep : getPtsToRep(rep);
 	}
 
 	@Override
-	public void addStackVar(Expression lval, Node lvalNode) {
+	public void addVar(Expression lval, Node lvalNode) {
 		if(!IOUtils.debugEnabled()) return;
 		ecrEncoder.addStackVar(lval, lvalNode);
 		IOUtils.debug().pln(displaySnapShot());
 	}
 
 	@Override
-	public void addAllocRegion(Expression region, Node ptrNode) {
+	public void addRegion(Expression region, Node ptrNode) {
 		if(!IOUtils.debugEnabled()) return;
 		ecrEncoder.createRegionVar(region, ptrNode);
 		IOUtils.debug().pln(displaySnapShot());

@@ -298,10 +298,15 @@ public class SteensgaardFS implements IRAliasAnalyzer<ECR> {
   }
 
 	@Override
-	public ECR getPointsToLoc(ECR base) {
+	public ECR getPtsToRep(ECR base) {
     if(base.getType().isBottom())
     	IOUtils.err().println("WARNING: get points-to Loc ECR of bottom " + base);
     return uf.findRoot(uf.getLoc(base));
+	}
+	
+	@Override
+	public ECR getPtsToRep(Node node) {
+		return getPtsToRep(getRep(node));
 	}
 	
 	@Override
@@ -317,7 +322,7 @@ public class SteensgaardFS implements IRAliasAnalyzer<ECR> {
 	 * with the bottom type (not yet allocated)
 	 */
 	@Override
-	public long getRepTypeWidth(ECR ecr) {
+	public long getRepWidth(ECR ecr) {
 		long defaultWidth = CType.getInstance().getWidth(CType.getUnitType());
 		if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) return defaultWidth;
 
@@ -364,13 +369,13 @@ public class SteensgaardFS implements IRAliasAnalyzer<ECR> {
 		 * about disjointness */
 		if(lvalType.resolve().isStruct() || lvalType.resolve().isUnion() ||
 				lvalType.resolve().isArray() ||	lvalType.resolve().isFunction()) {
-			rep = getPointsToLoc(rep);
+			rep = getPtsToRep(rep);
 		}
 		return rep;
 	}
 
 	@Override
-	public void addAllocRegion(Expression region, Node ptrNode) {
+	public void addRegion(Expression region, Node ptrNode) {
 		if(!IOUtils.debugEnabled()) return;
 		
 		/* The freshRegionVar should have the same scope and type as place holder */
@@ -379,7 +384,7 @@ public class SteensgaardFS implements IRAliasAnalyzer<ECR> {
 	}
 
 	@Override
-	public void addStackVar(Expression lval, Node lvalNode) {
+	public void addVar(Expression lval, Node lvalNode) {
 		if(!IOUtils.debugEnabled()) return;
 		
 		ecrEncoder.addStackVar(lval, lvalNode);
@@ -412,7 +417,7 @@ public class SteensgaardFS implements IRAliasAnalyzer<ECR> {
 	public Collection<IRVar> getEquivFuncVars(Node funcNode) {
 		ECR rep = ecrEncoder.toRval(funcNode);
 		Type funcType = CType.getType(funcNode).resolve();
-		if(funcType.isPointer()) rep = getPointsToLoc(rep);
+		if(funcType.isPointer()) rep = getPtsToRep(rep);
 		ECR funcRep = uf.getFunc(rep);
 	  return uf.getEquivClass(funcRep);
 	}

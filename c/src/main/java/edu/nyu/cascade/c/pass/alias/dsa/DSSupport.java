@@ -229,10 +229,6 @@ class DSSupport {
 		// Merge the NodeType information.
 		CurNodeH.getNode().NodeType |= N.NodeType;
 
-		// Start forwarding to the new node!
-		N.forwardNode(CurNodeH.getNode(), NOffset);
-		assert(!CurNodeH.getNode().isDeadNode());
-
 		// Make all of the outgoing links of N now be outgoing links of CurNodeH.
 		//
 		for (Entry<Long, DSNodeHandle> entry : N.Links.entrySet()) {
@@ -245,19 +241,24 @@ class DSSupport {
 				// links at offset zero.
 				long MergeOffset = 0;
 				DSNode CN = CurNodeH.getNode();
-				if (CN.Size != 1)
+				if (CN.Size != 1) {
 					MergeOffset = (entry.getKey() + NOffset) % CN.getSize();
-			      CN.addEdgeTo(MergeOffset, entry.getValue());
-			    }
-
-			  // Now that there are no outgoing edges, all of the Links are dead.
-			  N.Links.clear();
-
-			  // Merge the globals list...
-			  CurNodeH.getNode().mergeGlobals(N);
-
-			  // Delete the globals from the old node...
-			  N.Globals.clear();
+				}
+				CN.addEdgeTo(MergeOffset, entry.getValue());
+			}
 		}
+		
+		// Now that there are no outgoing edges, all of the Links are dead.
+		N.Links.clear();
+
+		// Merge the globals list...
+		CurNodeH.getNode().mergeGlobals(N);
+		
+		// Delete the globals from the old node...
+		N.Globals.clear();
+		
+		// Start forwarding to the new node!
+		N.forwardNode(CurNodeH.getNode(), NOffset);
+		assert(!CurNodeH.getNode().isDeadNode());
 	}
 }

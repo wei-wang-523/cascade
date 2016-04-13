@@ -57,12 +57,30 @@ public class DSAAnalysis implements IRAliasAnalyzer<Region> {
 	}
 
 	@Override
-	public Region getPointsToLoc(Region region) {
-		return region;
+	public Region getPtsToRep(Node node) {
+		Region rep = getRep(node);
+		DSNode N = rep.N;
+		DSNodeHandle NH = N.getLink(0);
+		Type Ty = CType.getType(node);
+		assert Ty.resolve().isPointer() : "Get points-to content of non-pointer";
+		Type ptsToTy = Ty.resolve().toPointer().getType();
+		long ptsToSize = CType.getInstance().getSize(ptsToTy);
+		return new Region(NH.getNode(), ptsToTy, NH.getOffset(), ptsToSize);
+	}
+	
+	public Region getPtsToRep(Region rep) {
+		return null;
+//		DSNode N = rep.N;
+//		DSNodeHandle NH = N.getLink(0);
+//		Type Ty = CType.getType(node);
+//		assert Ty.resolve().isPointer() : "Get points-to content of non-pointer";
+//		Type ptsToTy = Ty.resolve().toPointer().getType();
+//		long ptsToSize = CType.getInstance().getSize(ptsToTy);
+//		return new Region(NH.getNode(), ptsToTy, NH.getOffset(), ptsToSize);
 	}
 
 	@Override
-	public long getRepTypeWidth(Region region) {
+	public long getRepWidth(Region region) {
 		//TODO: word-level analysis
 		return CType.getInstance().getByteSize();
 	}
@@ -118,7 +136,7 @@ public class DSAAnalysis implements IRAliasAnalyzer<Region> {
 	}
 
 	@Override
-	public void addAllocRegion(Expression regExpr, Node node) {
+	public void addRegion(Expression regExpr, Node node) {
 //		if (!IOUtils.debugEnabled())	return;
 		Region region = regPass.getRegionMap().get(node);
 		snapshot.put(region, regExpr);
@@ -126,7 +144,7 @@ public class DSAAnalysis implements IRAliasAnalyzer<Region> {
 	}
 
 	@Override
-	public void addStackVar(Expression lval, Node node) {
+	public void addVar(Expression lval, Node node) {
 //		if (!IOUtils.debugEnabled())	return;
 		if (CType.getType(node).resolve().isFunction()) return;
 		Region region = regPass.getRegionMap().get(node);

@@ -121,7 +121,7 @@ public class TypeAnalyzer implements IRAliasAnalyzer<FSType> {
 	 * @return
 	 */
 	@Override
-	public FSType getPointsToLoc(FSType fsType) {		
+	public FSType getPtsToRep(FSType fsType) {		
 		Type type = fsType.getType();
 		Type cellType = type;
 		
@@ -141,8 +141,13 @@ public class TypeAnalyzer implements IRAliasAnalyzer<FSType> {
 	}
 	
 	@Override
-	public long getRepTypeWidth(FSType rep) {
+	public long getRepWidth(FSType rep) {
 	  return CType.getInstance().getWidth(rep.getType());
+	}
+	
+	@Override
+	public FSType getPtsToRep(Node node) {
+		return getPtsToRep(getRep(node));
 	}
 	
 	/** Don't bother to build snap shot for Burstall memory model */
@@ -163,7 +168,7 @@ public class TypeAnalyzer implements IRAliasAnalyzer<FSType> {
 		 * about disjointness */
 		if(lvalType.resolve().isStruct() || lvalType.resolve().isUnion() ||
 				lvalType.resolve().isArray() ||	lvalType.resolve().isFunction()) {
-			rep = getPointsToLoc(rep);
+			rep = getPtsToRep(rep);
 		}
 		return rep;
 	}
@@ -177,10 +182,10 @@ public class TypeAnalyzer implements IRAliasAnalyzer<FSType> {
 	}
 	
 	@Override
-	public void addAllocRegion(Expression region, Node ptrNode) {
+	public void addRegion(Expression region, Node ptrNode) {
 		String name = region.asVariable().getName();
 	  String scopeName = CType.getScopeName(ptrNode);
-	  FSType fsType = getPointsToLoc(getRep(ptrNode));
+	  FSType fsType = getPtsToRep(getRep(ptrNode));
 	  
 	  IRVar var = VarImpl.create(name, VoidT.TYPE, scopeName);
 		varTypeMap.put(fsType, var);
@@ -189,7 +194,7 @@ public class TypeAnalyzer implements IRAliasAnalyzer<FSType> {
 	}
 
 	@Override
-	public void addStackVar(Expression lval, Node lvalNode) {
+	public void addVar(Expression lval, Node lvalNode) {
 	  String name = lvalNode.getString(0);
 	  Type type = CType.getType(lvalNode);
 	  String scopeName = CType.getScopeName(lvalNode);

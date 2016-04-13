@@ -73,7 +73,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 		if(!info.isStatic()) state.addVar(lval.asVariable());
        
 		Node node = info.getDeclarationNode();
-		labelAnalyzer.addStackVar(lval, node);		
+		labelAnalyzer.addVar(lval, node);		
 		T rep = labelAnalyzer.getStackRep(node);
 		Type ty = CType.getInstance().pointerize(CType.getType(node));
 		long length = CType.getInstance().getSize(ty);
@@ -88,8 +88,8 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 			Expression rval, IRVarInfo info, Node sourceNode) {
 		if(!info.isStatic()) state.addVar(lval.asVariable());
 		
-		labelAnalyzer.addStackVar(lval, sourceNode);
-		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(sourceNode));
+		labelAnalyzer.addVar(lval, sourceNode);
+		T ptrRep = labelAnalyzer.getPtsToRep(sourceNode);
 		long length = CType.getInstance().getSize(CType.getArrayCellType(info.getXtcType()));
 		for(T rep : labelAnalyzer.getFillInReps(ptrRep, length)) {
 			updateStateWithRep(state.asMultiple(), rep);
@@ -104,7 +104,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 
 	@Override
 	public Expression lookupSize(StateExpression state, Expression ptr, Node node) {		
-		T rep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(node));
+		T rep = labelAnalyzer.getPtsToRep(node);
 		String label = labelAnalyzer.getRepId(rep);
 		Map<String, SingleStateExpression> stateMap = state.asMultiple().getStateMap();
 		SingleStateExpression singleState = stateMap.get(label);
@@ -132,7 +132,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 	@Override
 	public BooleanExpression applyMemset(StateExpression state, Expression region, 
 			Expression size, Expression value, Node ptrNode) {
-		T srcRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
+		T srcRep = labelAnalyzer.getPtsToRep(ptrNode);
 		updateStateWithRep(state.asMultiple(), srcRep);		
 		String srcRepId = labelAnalyzer.getRepId(srcRep);
 		SingleStateExpression singleState = state.asMultiple().getStateMap().get(srcRepId);
@@ -142,7 +142,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 	@Override
 	public BooleanExpression applyMemset(StateExpression state, Expression region, 
 			Expression size, int value, Node ptrNode) {
-		T srcRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
+		T srcRep = labelAnalyzer.getPtsToRep(ptrNode);
 		updateStateWithRep(state.asMultiple(), srcRep);
 		String srcRepId = labelAnalyzer.getRepId(srcRep);
 		SingleStateExpression singleState = state.asMultiple().getStateMap().get(srcRepId);
@@ -152,8 +152,8 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 	@Override
 	public BooleanExpression applyMemcpy(StateExpression state, Expression destRegion, 
 			Expression srcRegion, Expression size, Node destNode, Node srcNode) {
-		T destRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(destNode));
-		T srcRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(srcNode));
+		T destRep = labelAnalyzer.getPtsToRep(destNode);
+		T srcRep = labelAnalyzer.getPtsToRep(srcNode);
 		
 		updateStateWithRep(state.asMultiple(), destRep);
 		updateStateWithRep(state.asMultiple(), srcRep);
@@ -173,7 +173,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 	@Override
 	public BooleanExpression applyValidMalloc(StateExpression state, Expression ptr, 
 			Expression size, Node pNode) {
-		T srcRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(pNode));		
+		T srcRep = labelAnalyzer.getPtsToRep(pNode);		
 		
 		MultiStateExpression multiState = state.asMultiple();
 		updateStateWithRep(multiState, srcRep);
@@ -188,7 +188,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 
 	@Override
 	public BooleanExpression applyValidFree(StateExpression state, Expression region, Node ptrNode) {
-		T srcRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
+		T srcRep = labelAnalyzer.getPtsToRep(ptrNode);
 		updateStateWithRep(state.asMultiple(), srcRep);
 		
 		/* Get the related size array */
@@ -327,7 +327,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 		MultiStateExpression multiState = state.asMultiple();
 		Map<String, SingleStateExpression> stateMap = multiState.getStateMap();
 		
-		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
+		T ptrRep = labelAnalyzer.getPtsToRep(ptrNode);
 		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode));
 		long length = CType.getInstance().getSize(ty);
 		for(T rep : labelAnalyzer.getFillInReps(ptrRep, length)) {
@@ -355,7 +355,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 
 	@Override
 	protected Expression getSizeOfRegion(StateExpression state, Expression region, Node ptrNode) {
-		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
+		T ptrRep = labelAnalyzer.getPtsToRep(ptrNode);
 		String label = labelAnalyzer.getRepId(ptrRep);
 		
 		Map<String, SingleStateExpression> stateMap = state.asMultiple().getStateMap();
@@ -368,17 +368,14 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
   @Override
 	protected void updateMemState(StateExpression state,
 	    Expression index, Node idxNode, Expression value, @Nullable Node valNode) {
-		T rep = labelAnalyzer.getRep(idxNode);
+		MultiStateExpression multiState = state.asMultiple();
+		Map<String, SingleStateExpression> stateMap = multiState.getStateMap();
 		
 		/* The address should belongs to the group it points-to, where to reason
 		 * about disjointness */
 		xtc.type.Type idxType = CType.getType(idxNode);
-		if(!CType.isScalar(idxType)) {
-			rep = labelAnalyzer.getPointsToLoc(rep);
-		}
-		
-		MultiStateExpression multiState = state.asMultiple();
-		Map<String, SingleStateExpression> stateMap = multiState.getStateMap();
+		T rep = CType.isScalar(idxType) ? labelAnalyzer.getRep(idxNode) :
+			labelAnalyzer.getPtsToRep(idxNode);
 		
 		if(!(Preferences.isSet(Preferences.OPTION_FIELD_SENSITIVE) ||
 				Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE) ||
@@ -409,7 +406,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 			ExpressionEncoding encoding = getExpressionEncoding();
 			
 			for(Entry<Range<Long>, T> fieldEntry : fieldMap.entrySet()) {
-				T fieldRep = labelAnalyzer.getPointsToLoc(fieldEntry.getValue());
+				T fieldRep = labelAnalyzer.getPtsToRep(fieldEntry.getValue());
 				String fieldLabel = labelAnalyzer.getRepId(fieldRep);
 				updateStateWithRep(multiState, fieldRep);
 				SingleStateExpression singleState = stateMap.get(fieldLabel);
@@ -428,7 +425,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 	@Override
 	protected void updateSizeStateWithFree(StateExpression state,
 	    Expression region, Expression sizeVal, Node ptrNode) {
-		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
+		T ptrRep = labelAnalyzer.getPtsToRep(ptrNode);
 		MultiStateExpression multiState = state.asMultiple();
 		Map<String, SingleStateExpression> stateMap = multiState.getStateMap();
 		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode));
@@ -444,9 +441,9 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 	@Override
 	protected void updateSizeStateWithAlloc(StateExpression state,
 			Expression region, Expression size, Node ptrNode) {
-		T ptrRep = labelAnalyzer.getPointsToLoc(labelAnalyzer.getRep(ptrNode));
+		T ptrRep = labelAnalyzer.getPtsToRep(ptrNode);
 		MultiStateExpression multiState = state.asMultiple();
-		labelAnalyzer.addAllocRegion(region, ptrNode);
+		labelAnalyzer.addRegion(region, ptrNode);
 		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode));
 		long length = CType.getInstance().getSize(ty);
 		for(T rep : labelAnalyzer.getFillInReps(ptrRep, length)) {
@@ -601,7 +598,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
   	String label = labelAnalyzer.getRepId(rep);
 	  if(stateMap.containsKey(label)) return false;
 	  
-	  long width = labelAnalyzer.getRepTypeWidth(rep);
+	  long width = labelAnalyzer.getRepWidth(rep);
   	SingleStateExpression singleState = singleStateFactory.freshSingleState(label, width);
 	  stateMap.put(label, singleState);	  
 	  return false;

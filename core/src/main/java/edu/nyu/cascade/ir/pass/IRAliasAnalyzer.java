@@ -22,9 +22,11 @@ public interface IRAliasAnalyzer<T> extends IRPass {
 
 	void buildSnapShot();
 
-	T getPointsToLoc(T rep);
+	T getPtsToRep(Node node);
 	
-	long getRepTypeWidth(T rep);
+	T getPtsToRep(T rep);
+	
+	long getRepWidth(T rep);
 
 	String getRepId(T rep);
 
@@ -49,7 +51,7 @@ public interface IRAliasAnalyzer<T> extends IRPass {
 	 * @param ptrNode
 	 * @return
 	 */
-	void addAllocRegion(Expression region, Node ptrNode);
+	void addRegion(Expression region, Node ptrNode);
 
 	/**
 	 * Add a stack variable with expression <code>lval</code>,
@@ -57,7 +59,7 @@ public interface IRAliasAnalyzer<T> extends IRPass {
 	 * @param lval
 	 * @param lvalNode
 	 */
-	void addStackVar(Expression lval, Node lvalNode);
+	void addVar(Expression lval, Node lvalNode);
 	
 	/**
 	 * Get the mapping from offset to ECR in structure ECR
