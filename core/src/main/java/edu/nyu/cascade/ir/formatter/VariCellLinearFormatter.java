@@ -57,7 +57,9 @@ public class VariCellLinearFormatter extends AbstractDataFormatter {
   
 	@Override
 	public Expression castToSize(Expression size) {
-		return encoding.castToInteger(size, getSizeType().asBitVectorType().getSize());
+		// size is unsigned long
+		return encoding.castToInteger(size, 
+				getSizeType().asBitVectorType().getSize(), false);
 	}
 	
 	@Override
