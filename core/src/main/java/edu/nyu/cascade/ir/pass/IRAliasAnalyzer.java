@@ -24,7 +24,7 @@ public interface IRAliasAnalyzer<T> extends IRPass {
 
 	T getPtsToRep(Node node);
 	
-	T getPtsToRep(T rep);
+	T getPtsToFieldRep(T rep);
 	
 	long getRepWidth(T rep);
 
