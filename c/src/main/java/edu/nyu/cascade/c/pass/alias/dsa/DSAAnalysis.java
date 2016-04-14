@@ -1,6 +1,7 @@
 package edu.nyu.cascade.c.pass.alias.dsa;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -58,25 +59,12 @@ public class DSAAnalysis implements IRAliasAnalyzer<Region> {
 
 	@Override
 	public Region getPtsToRep(Node node) {
-		Region rep = getRep(node);
-		DSNode N = rep.N;
-		DSNodeHandle NH = N.getLink(0);
-		Type Ty = CType.getType(node);
-		assert Ty.resolve().isPointer() : "Get points-to content of non-pointer";
-		Type ptsToTy = Ty.resolve().toPointer().getType();
-		long ptsToSize = CType.getInstance().getSize(ptsToTy);
-		return new Region(NH.getNode(), ptsToTy, NH.getOffset(), ptsToSize);
+		Region ptsToRegion = regPass.getPtsToRegion().get(getRep(node));
+		return ptsToRegion;
 	}
 	
-	public Region getPtsToRep(Region rep) {
-		return null;
-//		DSNode N = rep.N;
-//		DSNodeHandle NH = N.getLink(0);
-//		Type Ty = CType.getType(node);
-//		assert Ty.resolve().isPointer() : "Get points-to content of non-pointer";
-//		Type ptsToTy = Ty.resolve().toPointer().getType();
-//		long ptsToSize = CType.getInstance().getSize(ptsToTy);
-//		return new Region(NH.getNode(), ptsToTy, NH.getOffset(), ptsToSize);
+	public Region getPtsToFieldRep(Region rep) {
+		return rep;
 	}
 
 	@Override
@@ -105,6 +93,7 @@ public class DSAAnalysis implements IRAliasAnalyzer<Region> {
 
 	@Override
 	public Collection<Region> getFieldReps(Region Region, long length) {
+		Preconditions.checkNotNull(Region);
 		Region newReg = new Region(Region.N, null, Region.offset, length);
 		Collection<Region> overlapRegions = Lists.newArrayList();
 		Iterator<Region> RegItr = regPass.getRegions().iterator();
@@ -112,40 +101,49 @@ public class DSAAnalysis implements IRAliasAnalyzer<Region> {
 			Region reg = RegItr.next();
 			if (reg.overlaps(newReg)) overlapRegions.add(reg);
 		}
-		return overlapRegions;
+		if(!overlapRegions.isEmpty()) {
+			return overlapRegions;
+		} else {
+			return Collections.singleton(Region);
+		}
 	}
 
 	@Override
 	public void analysis(IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs) {
 		addrTaken.analysis(globalCFG, CFGs);
 		local.analysis(globalCFG, CFGs);
-		IOUtils.out().println("local analysis: ");
-		ValueManager valueManager = local.getValueManager();
-		for(IRControlFlowGraph CFG : CFGs) {
-			String FuncID = CFG.getName();
-			Type FuncTy = SymbolTable.lookupType(FuncID);
-			Function func = (Function) valueManager.get(FuncID, FuncTy);
-			local.getDSGraph(func).dump(IOUtils.outPrinter());
+		
+		if (IOUtils.debugEnabled()) {
+			IOUtils.out().println("local analysis: ");
+			ValueManager valueManager = local.getValueManager();
+			for(IRControlFlowGraph CFG : CFGs) {
+				String FuncID = CFG.getName();
+				Type FuncTy = SymbolTable.lookupType(FuncID);
+				Function func = (Function) valueManager.get(FuncID, FuncTy);
+				local.getDSGraph(func).dump(IOUtils.outPrinter());
+			}
 		}
 		
 		steens.analysis(globalCFG, CFGs);
-		IOUtils.out().println("steensgaard analysis: ");
-		steens.getResultGraph().dump(IOUtils.outPrinter());
 		
+		if (IOUtils.debugEnabled()) {
+			IOUtils.out().println("steensgaard analysis: ");
+			steens.getResultGraph().dump(IOUtils.outPrinter());
+		}
 		regPass.analysis(globalCFG, CFGs);
 	}
 
 	@Override
 	public void addRegion(Expression regExpr, Node node) {
-//		if (!IOUtils.debugEnabled())	return;
-		Region region = regPass.getRegionMap().get(node);
+		if (!IOUtils.debugEnabled())	return;
+		Region region = getPtsToRep(node);
 		snapshot.put(region, regExpr);
 		IOUtils.out().println(displaySnapShot());
 	}
 
 	@Override
 	public void addVar(Expression lval, Node node) {
-//		if (!IOUtils.debugEnabled())	return;
+		if (!IOUtils.debugEnabled())	return;
 		if (CType.getType(node).resolve().isFunction()) return;
 		Region region = regPass.getRegionMap().get(node);
 		snapshot.put(region, lval);

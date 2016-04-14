@@ -148,8 +148,12 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 
 	class GraphBuilder {
 		
-		private DSNodeHandle load(DSNodeHandle PtrNH, GNode node) {			
-			Type Ty = CType.getType(node);
+		private DSNodeHandle load(DSNodeHandle PtrNH, Node N) {
+			Type Ty = CType.getType(N);
+			return load(PtrNH, Ty);
+		}
+		
+		private DSNodeHandle load(DSNodeHandle PtrNH, Type Ty) {
 			
 			// Do not load the content if it is composite value. 
 			// It is viewed as a pointer to the composite value.
@@ -243,6 +247,43 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			return ResNH;
 		}
 		
+		private void ensureSafeIndexAccess(DSNodeHandle NodeH, Type BaseTy) {
+			// Treat the memory object (DSNode) as an array.
+			NodeH.getNode().setArrayMarker();
+			
+			long BaseTySize = CType.getInstance().getSize(BaseTy);
+			
+			// Ensure that the DSNode's size is large enough to contain one
+			// element of the type to which the pointer points.
+			// Ensure that the DSNode's size is large enough to contain one
+			// element of the type to which the pointer points.
+			if (!BaseTy.resolve().isArray() && NodeH.getNode().getSize() <= 0) {
+				NodeH.getNode().growSize(BaseTySize + NodeH.getOffset());
+			} else if (BaseTy.resolve().isArray() && NodeH.getNode().getSize() <= 0) {
+				Type ElemTy = BaseTy.resolve().toArray().getType();
+				while (ElemTy.resolve().isArray()) {
+					ElemTy = ElemTy.resolve().toArray().getType();
+				}
+				long ElemTySize = CType.getInstance().getSize(ElemTy);
+				NodeH.getNode().growSize(ElemTySize);
+			}
+			
+			// Fold the DSNode if we're indexing into it in a type-incompatible 
+			// manner.  That can occur if 
+			// 1) the DSNode represents a pointer into the memory object at a non-zero 
+			//    offset, 
+			// 2) the offset of the pointer is already non-zero, 
+			// 3) the size of the array element does not match the size into which the 
+			//    pointer index is indexing. Indexing into an array must always at the 
+			// 	  base of the memory object.
+			if (NodeH.getOffset() != 0
+					|| (!BaseTy.resolve().isArray()
+							&& NodeH.getNode().getSize() != BaseTySize)) {
+				NodeH.getNode().foldNodeCompletely();
+				NodeH.getNode();
+			}
+		}
+
 		private class LvalVisitor extends Visitor {
 			DSNodeHandle encode(Node node) {
 				if (G.getNodeMap().contains(node)) 
@@ -333,6 +374,7 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				} else if (BaseTy.resolve().isPointer()) {
 					// Get the type pointed to by the pointer
 					Type CurTy = BaseTy.resolve().toPointer().getType();
+					NodeH = load(NodeH, CurTy);
 					
 					//
 					// Unless we're advancing the pointer by zero bytes via array indexing,
@@ -357,43 +399,6 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				
 				// NodeH is now the pointer we want to GEP to be...
 				return NodeH;
-			}
-		}
-		
-		private void ensureSafeIndexAccess(DSNodeHandle NodeH, Type BaseTy) {
-			// Treat the memory object (DSNode) as an array.
-			NodeH.getNode().setArrayMarker();
-			
-			long BaseTySize = CType.getInstance().getSize(BaseTy);
-			
-			// Ensure that the DSNode's size is large enough to contain one
-			// element of the type to which the pointer points.
-			// Ensure that the DSNode's size is large enough to contain one
-			// element of the type to which the pointer points.
-			if (!BaseTy.resolve().isArray() && NodeH.getNode().getSize() <= 0) {
-				NodeH.getNode().growSize(BaseTySize + NodeH.getOffset());
-			} else if (BaseTy.resolve().isArray() && NodeH.getNode().getSize() <= 0) {
-				Type ElemTy = BaseTy.resolve().toArray().getType();
-				while (ElemTy.resolve().isArray()) {
-					ElemTy = ElemTy.resolve().toArray().getType();
-				}
-				long ElemTySize = CType.getInstance().getSize(ElemTy);
-				NodeH.getNode().growSize(ElemTySize);
-			}
-			
-			// Fold the DSNode if we're indexing into it in a type-incompatible 
-			// manner.  That can occur if 
-			// 1) the DSNode represents a pointer into the memory object at a non-zero 
-			//    offset, 
-			// 2) the offset of the pointer is already non-zero, 
-			// 3) the size of the array element does not match the size into which the 
-			//    pointer index is indexing. Indexing into an array must always at the 
-			// 	  base of the memory object.
-			if (NodeH.getOffset() != 0
-					|| (!BaseTy.resolve().isArray()
-							&& NodeH.getNode().getSize() != BaseTySize)) {
-				NodeH.getNode().foldNodeCompletely();
-				NodeH.getNode();
 			}
 		}
 		

@@ -12,7 +12,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.CAnalyzer;
-import edu.nyu.cascade.c.CPrinter;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.ir.IRBasicBlock;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
@@ -31,6 +30,7 @@ public final class RegionPassImpl implements IRPass {
 	private SteensDataStructureImpl SteensDS;
 	private Map<Node, Region> RegionMap = Maps.newHashMap();
 	private TreeSet<Region> Regions = Sets.newTreeSet();
+	private Map<Region, Region> PtsToRegion = Maps.newHashMap();
 	
 	static RegionPassImpl create(IRPass... prePasses) {
 		Preconditions.checkArgument(prePasses.length == 1);
@@ -324,8 +324,15 @@ public final class RegionPassImpl implements IRPass {
 			
 			long length = getPointedTypeSize(Ty);
 			Region region = new Region(NH.getNode(), Ty, NH.getOffset(), length);
-			region = idx(region);
-			RegionMap.put(N, region);
+			RegionMap.put(N, idx(region));
+			
+			if (Ty.resolve().isPointer()) { // Add points-to region
+				Type ptsToTy = Ty.resolve().toPointer().getType();
+				long ptsToSize = CType.getInstance().getSize(ptsToTy);
+				DSNodeHandle ptsToNH = NH.getLink(0);
+				Region ptsToRegion = new Region(ptsToNH.getNode(), ptsToTy, 0, ptsToSize);
+				PtsToRegion.put(region, ptsToRegion);
+			}
 		}
 		
 		private long getPointedTypeSize(Type Ty) {			
@@ -375,8 +382,16 @@ public final class RegionPassImpl implements IRPass {
 		}
 	}
 	
-	public Map<Node, Region> getRegionMap() {
+	Map<Node, Region> getRegionMap() {
 		return RegionMap;
+	}
+
+	TreeSet<Region> getRegions() {
+		return Regions;
+	}
+	
+	Map<Region, Region> getPtsToRegion() {
+		return PtsToRegion;
 	}
 
 	@Override
@@ -403,9 +418,5 @@ public final class RegionPassImpl implements IRPass {
 					R.offset + R.length >= NR.offset + NR.length);
 			RegionMap.put(N, R);
 		}
-	}
-
-	TreeSet<Region> getRegions() {
-		return Regions;
 	}
 }

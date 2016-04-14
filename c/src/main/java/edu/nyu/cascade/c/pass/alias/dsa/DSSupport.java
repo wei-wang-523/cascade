@@ -228,6 +228,10 @@ class DSSupport {
 
 		// Merge the NodeType information.
 		CurNodeH.getNode().NodeType |= N.NodeType;
+		
+		// Start forwarding to the new node!
+		N.forwardNode(CurNodeH.getNode(), NOffset);
+		assert(!CurNodeH.getNode().isDeadNode());
 
 		// Make all of the outgoing links of N now be outgoing links of CurNodeH.
 		//
@@ -256,9 +260,5 @@ class DSSupport {
 		
 		// Delete the globals from the old node...
 		N.Globals.clear();
-		
-		// Start forwarding to the new node!
-		N.forwardNode(CurNodeH.getNode(), NOffset);
-		assert(!CurNodeH.getNode().isDeadNode());
 	}
 }

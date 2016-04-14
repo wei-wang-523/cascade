@@ -287,7 +287,7 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 	}
 	
 	@Override
-	public ECR getPtsToRep(ECR base) {
+	public ECR getPtsToFieldRep(ECR base) {
 		if(base.getType().isBot())
 			IOUtils.err().println("WARNING: get points-to Loc ECR of bottom " + base);
 		return uf.findRoot(uf.getLoc(base));
@@ -295,7 +295,7 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 	
 	@Override
 	public ECR getPtsToRep(Node node) {
-	    return getPtsToRep(getRep(node));
+	    return getPtsToFieldRep(getRep(node));
 	}
 
 	/**
@@ -310,7 +310,7 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 	public Collection<IRVar> getEquivFuncVars(Node funcNode) {
 		Type funcType = CType.getType(funcNode).resolve();		
 		ECR rep = getRep(funcNode);
-		if(funcType.isPointer()) rep = getPtsToRep(rep);
+		if(funcType.isPointer()) rep = getPtsToFieldRep(rep);
 		ValueType refType = uf.getType(rep);
 		ECR funcRep = refType.asRef().getFunction();
 	  return uf.getEquivClass(funcRep);
@@ -338,7 +338,7 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 		
 		/* The address should belongs to the group it points-to, where to reason
 		 * about disjointness */
-		return CType.isScalar(lvalType) ? rep : getPtsToRep(rep);
+		return CType.isScalar(lvalType) ? rep : getPtsToFieldRep(rep);
 	}
 
 	@Override

@@ -44,7 +44,7 @@ public class MainInjectTest {
 	
 	@Parameterized.Parameters
 	public static Collection<File> cFiles() {		
-		File[] programs_dirs = { /* programs_syntax, mini_invalids,*/  mini_valids /*, nec_programs */};
+		File[] programs_dirs = { /* programs_syntax, mini_invalids, */ mini_valids /*, nec_programs */};
 		Collection<File> fileList = Lists.newArrayList();
 		
 		for(File programs_dir : programs_dirs) {
@@ -70,6 +70,7 @@ public class MainInjectTest {
 	
 	public MainInjectTest(File file) {
         IOUtils.enableOut();
+//        IOUtils.enableDebug();
 		main = getInjector().getInstance(Main.class);
         main.init();
         main.prepare();
@@ -92,8 +93,9 @@ public class MainInjectTest {
 	  			"--lambda", 
 	  			"--memory-check", 
 	  			"--hoare", 
-	  			"--dsa",
+	  			"-dsa",
 	  			cfile.toString()};
+	  	IOUtils.out().println(cfile.toString());
 	  	List<String> cmds = main.processCommandLine(args);
 	  	main.run(cmds);
 	}

@@ -30,7 +30,7 @@ public class CFSProcessor implements IRAliasAnalyzer<Cell> {
   }
 
 	@Override
-  public Cell getPtsToRep(Cell rep) {
+  public Cell getPtsToFieldRep(Cell rep) {
 	  // TODO Auto-generated method stub
 	  return null;
   }

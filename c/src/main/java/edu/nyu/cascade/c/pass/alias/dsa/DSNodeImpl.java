@@ -312,7 +312,8 @@ final class DSNodeImpl extends DSNode {
 
 		//Move the Links
 		for (Entry<Long, DSNodeHandle> entry : Links.entrySet()) {
-		    if (entry.getValue().isNull()) {
+			DSNodeHandle entryNH = entry.getValue();
+		    if (!entryNH.isNull()) {
 		      // Compute the offset into the current node at which to
 		      // merge this link.  In the common case, this is a linear
 		      // relation to the offset in the original node (with
@@ -322,7 +323,7 @@ final class DSNodeImpl extends DSNode {
 		      long MergeOffset = 0;
 		      if (ToNH.getNode().getSize() != 1)
 		    	  MergeOffset = (entry.getKey() + Offset) % ToNH.getNode().getSize();
-		    	  ToNH.getNode().addEdgeTo(MergeOffset, entry.getValue());
+		    	  ToNH.getNode().addEdgeTo(MergeOffset, entryNH);
 		    }
 		}
 		Links.clear();

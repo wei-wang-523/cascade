@@ -293,7 +293,7 @@ public class SteensgaardCFSOpt implements IRAliasAnalyzer<ECR> {
   }
 
 	@Override
-	public ECR getPtsToRep(ECR base) {
+	public ECR getPtsToFieldRep(ECR base) {
     if(base.getType().isBottom())
     	IOUtils.err().println("WARNING: get points-to Loc ECR of bottom " + base);
     return uf.findRoot(uf.getLoc(base));
@@ -301,7 +301,7 @@ public class SteensgaardCFSOpt implements IRAliasAnalyzer<ECR> {
 	
 	@Override
 	public ECR getPtsToRep(Node node) {
-		return getPtsToRep(getRep(node));
+		return getPtsToFieldRep(getRep(node));
 	}
 	
 	@Override
@@ -363,7 +363,7 @@ public class SteensgaardCFSOpt implements IRAliasAnalyzer<ECR> {
 		 * about disjointness */
 		if(lvalType.resolve().isStruct() || lvalType.resolve().isUnion() ||
 				lvalType.resolve().isArray() ||	lvalType.resolve().isFunction()) {
-			rep = getPtsToRep(rep);
+			rep = getPtsToFieldRep(rep);
 		}
 		return rep;
 	}
@@ -411,7 +411,7 @@ public class SteensgaardCFSOpt implements IRAliasAnalyzer<ECR> {
 	public Collection<IRVar> getEquivFuncVars(Node funcNode) {
 		ECR rep = ecrChecker.toRval(funcNode);
 		Type funcType = CType.getType(funcNode).resolve();
-		if(funcType.isPointer()) rep = getPtsToRep(rep);
+		if(funcType.isPointer()) rep = getPtsToFieldRep(rep);
 		ECR funcRep = uf.getFunc(rep);
 	  return uf.getEquivClass(funcRep);
 	}
