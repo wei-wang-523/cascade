@@ -59,8 +59,13 @@ public class DSAAnalysis implements IRAliasAnalyzer<Region> {
 
 	@Override
 	public Region getPtsToRep(Node node) {
-		Region ptsToRegion = regPass.getPtsToRegion().get(getRep(node));
-		return ptsToRegion;
+		Type ty = CType.getType(node);
+		Region reg = getRep(node);
+		assert !CType.isArithmetic(ty) : "Invalid pointer type";
+		if (ty.resolve().isPointer()) 
+			return regPass.getPtsToRegion().get(reg);
+		else
+			return reg;
 	}
 	
 	public Region getPtsToFieldRep(Region rep) {
@@ -76,7 +81,7 @@ public class DSAAnalysis implements IRAliasAnalyzer<Region> {
 	@Override
 	public String getRepId(Region region) {
 		Preconditions.checkNotNull(region);
-		return region.toString();
+		return region.N.getID() + ":" + region.offset;
 	}
 
 	@Override

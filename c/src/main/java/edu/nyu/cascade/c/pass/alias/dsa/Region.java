@@ -2,6 +2,8 @@ package edu.nyu.cascade.c.pass.alias.dsa;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
+import com.google.common.base.Preconditions;
+
 import xtc.type.Type;
 
 public final class Region implements Comparable<Region> {
@@ -13,6 +15,7 @@ public final class Region implements Comparable<Region> {
 	boolean singleton, allocated, bytewise, incomplete, complicated, collapsed;
 	
 	Region(DSNode rep, Type type, long offset, long length) {
+		Preconditions.checkNotNull(rep);
 		this.N = rep;
 		this.type = type;
 		this.offset = offset;

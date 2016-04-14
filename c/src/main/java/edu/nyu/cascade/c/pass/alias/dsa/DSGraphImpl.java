@@ -221,21 +221,35 @@ final class DSGraphImpl extends DSGraph {
 		// Copy the scalar map... merging all of the global nodes...
 		for (Entry<Value, DSNodeHandle> entry :
 			G.getScalarMap().getValueMap().entrySet()) {
-			DSNodeHandle MappedNode = OldNodeMap.get(entry.getValue().getNode());
 		    DSNodeHandle H = ScalarMap.getRawEntryRef(entry.getKey());
-		    DSNode MappedNodeN = MappedNode.getNode();
-		    H.mergeWith(new DSNodeHandle(MappedNodeN,
-		    		entry.getValue().getOffset() + MappedNode.getOffset()));
+			DSNodeHandle OldNH = entry.getValue();
+			DSNode OldN = OldNH.getNode();
+			if (Nodes.contains(OldN)) {
+				H.mergeWith(OldNH);
+			} else {
+				assert OldNodeMap.containsKey(OldN) : "Unmapped node";
+				DSNodeHandle MappedNH = OldNodeMap.get(OldN);
+			    DSNode MappedN = MappedNH.getNode();
+			    H.mergeWith(new DSNodeHandle(MappedN,
+			    		OldNH.getOffset() + MappedNH.getOffset()));
+			}
 		}
 		
 		// Copy the node map... merging all of the global nodes...
 		for (Entry<Pair<Node, String>, DSNodeHandle> entry :
 			G.getNodeMap().getNodeMap().entrySet()) {
-		    DSNodeHandle MappedNode = OldNodeMap.get(entry.getValue().getNode());
-		    DSNodeHandle H = NodeMap.getRawEntryRef(entry.getKey().fst());
-		    DSNode MappedNodeN = MappedNode.getNode();
-		    H.mergeWith(new DSNodeHandle(MappedNodeN,
-		    		entry.getValue().getOffset() + MappedNode.getOffset()));
+			DSNodeHandle H = NodeMap.getRawEntryRef(entry.getKey().fst());
+			DSNodeHandle OldNH = entry.getValue();
+			DSNode OldN = OldNH.getNode();
+			if (Nodes.contains(OldN)) {
+				H.mergeWith(OldNH);
+			} else {
+				assert OldNodeMap.containsKey(OldN) : "Unmapped node";
+				DSNodeHandle MappedNH = OldNodeMap.get(OldN);
+				DSNode MappedN = MappedNH.getNode();
+				H.mergeWith(new DSNodeHandle(MappedN,
+						OldNH.getOffset() + MappedNH.getOffset()));
+			}
 		}
 		
 		if ((CloneFlags & DSSupport.CloneFlags.DontCloneCallNodes.value()) == 0) {
@@ -248,6 +262,7 @@ final class DSGraphImpl extends DSGraph {
 		// Map the return node pointers over...
 		for (Entry<Function, DSNodeHandle> entry : G.ReturnNodes.entrySet()) {
 			DSNodeHandle Ret = entry.getValue();
+			assert OldNodeMap.containsKey(Ret.getNode()) : "Unmapped node";
 			DSNodeHandle MappedRet = OldNodeMap.get(Ret.getNode());
 			DSNode MappedRetN = MappedRet.getNode();
 			ReturnNodes.put(entry.getKey(), new DSNodeHandle(MappedRetN,
@@ -257,6 +272,7 @@ final class DSGraphImpl extends DSGraph {
 		// Map the VA node pointers over...
 		for (Entry<Function, DSNodeHandle> entry : G.getVANodes().entrySet()) {
 			DSNodeHandle VarArg = entry.getValue();
+			assert OldNodeMap.containsKey(VarArg.getNode()) : "Unmapped node";
 		    DSNodeHandle MappedVarArg = OldNodeMap.get(VarArg.getNode());
 		    DSNode MappedVarArgN = MappedVarArg.getNode();
 		    VANodes.put(entry.getKey(), new DSNodeHandle(MappedVarArgN,

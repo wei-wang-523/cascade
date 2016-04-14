@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -78,7 +77,7 @@ class DSCallSite {
 		CalleeN = new DSNodeHandle(funcN, 0);
 		RetVal = retVal;
 		VarArgVal = varArgNH;
-		CallArgs = ImmutableList.copyOf(args);
+		CallArgs = Lists.newArrayList(args);
 	}
 
 	DSCallSite(Node callSite, 

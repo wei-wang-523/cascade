@@ -12,18 +12,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import edu.nyu.cascade.c.Main;
 import edu.nyu.cascade.c.pass.ValueManager;
-import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.util.FileUtils;
 import edu.nyu.cascade.util.IOUtils;
-import edu.nyu.cascade.util.Preferences;
-import edu.nyu.cascade.util.TestUtils;
-import edu.nyu.cascade.util.TestUtils.Tester;
 import xtc.parser.ParseException;
 
 @RunWith(Parameterized.class)

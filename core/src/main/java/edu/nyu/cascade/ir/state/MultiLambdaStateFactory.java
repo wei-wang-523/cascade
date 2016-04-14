@@ -83,7 +83,7 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		if(!info.isStatic()) state.addVar(lval.asVariable());
 		
 		labelAnalyzer.addVar(lval, sourceNode);
-		T ptrRep = labelAnalyzer.getPtsToRep(sourceNode);
+		T ptrRep = labelAnalyzer.getStackRep(sourceNode);
 		long length = CType.getInstance().getSize(CType.getArrayCellType(info.getXtcType()));
 		for(T rep : labelAnalyzer.getFieldReps(ptrRep, length)) {
 			updateStateWithRep(state.asMultiLambda(), rep);
@@ -380,9 +380,7 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		
 		/* The address should belongs to the group it points-to, where to reason
 		 * about disjointness */
-		xtc.type.Type idxType = CType.getType(idxNode);
-		T rep = CType.isScalar(idxType) ? labelAnalyzer.getRep(idxNode) :
-			labelAnalyzer.getPtsToRep(idxNode);
+		T rep = labelAnalyzer.getStackRep(idxNode);
 		
 		if(!(Preferences.isSet(Preferences.OPTION_FIELD_SENSITIVE) ||
 				Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE) ||
@@ -395,27 +393,18 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 			return;
 		}
 		
-		long length = CType.getInstance().getSize(idxType);
-		Map<Range<Long>, T> fieldMap = labelAnalyzer.getStructMap(rep, length);
-		
-		if(fieldMap.isEmpty()) {			
+		xtc.type.Type idxType = CType.getType(idxNode);
+		if(CType.isScalar(idxType)) {
 			updateStateWithRep(multiLambdaState, rep);
 			String label = labelAnalyzer.getRepId(rep);
 			SingleLambdaStateExpression singleState = stateMap.get(label);
-			
-			if(!idxType.isStruct()) {
-				singleStateFactory.updateMemState(singleState, index, idxNode, value, valNode);
-			} else {
-				CType cTypeAnalyzer = getCTypeAnalyzer();
-				long range =  cTypeAnalyzer.getSize(idxType);
-				singleStateFactory.updateStructInMemState(singleState, index, value, range);
-			}
+			singleStateFactory.updateMemState(singleState, index, idxNode, value, valNode);
 		} else {
-			
 			ExpressionEncoding encoding = getExpressionEncoding();
-			
+			long length = CType.getInstance().getSize(idxType);
+			Map<Range<Long>, T> fieldMap = labelAnalyzer.getStructMap(rep, length);
 			for(Entry<Range<Long>, T> fieldEntry : fieldMap.entrySet()) {
-				T fieldRep = labelAnalyzer.getPtsToRep(fieldEntry.getValue());
+				T fieldRep = labelAnalyzer.getPtsToFieldRep(fieldEntry.getValue());
 				String fieldLabel = labelAnalyzer.getRepId(fieldRep);
 				updateStateWithRep(multiLambdaState, fieldRep);
 				SingleLambdaStateExpression singleState = stateMap.get(fieldLabel);

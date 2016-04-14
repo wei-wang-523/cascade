@@ -313,7 +313,8 @@ public final class RegionPassImpl implements IRPass {
 
 		private void init(Node N) {
 			Type Ty = CType.getType(N);
-//			if (Ty.resolve().isFunction()) return;
+			if (Ty.resolve().isFunction()) return;
+			if (RegionMap.containsKey(N)) return;
 			
 			DSNodeHandle NH = null;
 			if (Identifiers.GLOBAL_CFG.equals(currCFG.getName())) {
@@ -325,6 +326,8 @@ public final class RegionPassImpl implements IRPass {
 			long length = getPointedTypeSize(Ty);
 			Region region = new Region(NH.getNode(), Ty, NH.getOffset(), length);
 			RegionMap.put(N, idx(region));
+			
+			if (PtsToRegion.containsKey(region)) return;
 			
 			if (Ty.resolve().isPointer()) { // Add points-to region
 				Type ptsToTy = Ty.resolve().toPointer().getType();
