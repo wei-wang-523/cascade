@@ -26,12 +26,12 @@ import edu.nyu.cascade.util.IOUtils;
 import xtc.tree.Node;
 import xtc.type.Type;
 
-public class DSAAnalysis implements IRAliasAnalyzer<Region> {
+public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 	private final AddressTakenAnalysis addrTaken;
 	private final LocalDataStructureImpl local;
 	private final SteensDataStructureImpl steens;
 	private final RegionPassImpl regPass;
-	private final Multimap<Region, Expression> snapshot = HashMultimap.create();
+	private final Multimap<DSNodeHandle, Expression> snapshot = HashMultimap.create();
 	private final SymbolTable SymbolTable;
 	
 	private DSAAnalysis(SymbolTable symTbl) { 
@@ -58,58 +58,60 @@ public class DSAAnalysis implements IRAliasAnalyzer<Region> {
 	}
 
 	@Override
-	public Region getPtsToRep(Node node) {
+	public DSNodeHandle getPtsToRep(Node node) {
 		Type ty = CType.getType(node);
-		Region reg = getRep(node);
+		DSNodeHandle reg = getRep(node);
 		assert !CType.isArithmetic(ty) : "Invalid pointer type";
 		if (ty.resolve().isPointer()) 
-			return regPass.getPtsToRegion().get(reg);
+			return reg.getLink(0);
 		else
 			return reg;
 	}
 	
-	public Region getPtsToFieldRep(Region rep) {
+	public DSNodeHandle getPtsToFieldRep(DSNodeHandle rep) {
 		return rep;
 	}
 
 	@Override
-	public long getRepWidth(Region region) {
+	public long getRepWidth(DSNodeHandle NH) {
 		//TODO: word-level analysis
 		return CType.getInstance().getByteSize();
 	}
 
 	@Override
-	public String getRepId(Region region) {
-		Preconditions.checkNotNull(region);
-		return region.N.getID() + ":" + region.offset;
+	public String getRepId(DSNodeHandle NH) {
+		Preconditions.checkNotNull(NH);
+		return NH.getNode().getID() + ":" + NH.getOffset();
 	}
 
 	@Override
-	public Region getRep(Node Node) {
+	public DSNodeHandle getRep(Node Node) {
 		Map<Node, Region> regionMap = regPass.getRegionMap();
 		assert regionMap.containsKey(Node) : "No region for node";
-		return regionMap.get(Node);
+		Region region = regionMap.get(Node);
+		return new DSNodeHandle(region.getNode(), region.getOffset());
 	}
 	
 	@Override
-	public Region getStackRep(Node Node) {
+	public DSNodeHandle getStackRep(Node Node) {
 		return getRep(Node);
 	}
 
 	@Override
-	public Collection<Region> getFieldReps(Region Region, long length) {
-		Preconditions.checkNotNull(Region);
-		Region newReg = new Region(Region.N, null, Region.offset, length);
-		Collection<Region> overlapRegions = Lists.newArrayList();
+	public Collection<DSNodeHandle> getFieldReps(DSNodeHandle NH, long length) {
+		Preconditions.checkNotNull(NH);
+		Region newReg = new Region(NH.getNode(), null, NH.getOffset(), length);
+		Collection<DSNodeHandle> overlapNHs = Lists.newArrayList();
 		Iterator<Region> RegItr = regPass.getRegions().iterator();
 		while(RegItr.hasNext()) {
 			Region reg = RegItr.next();
-			if (reg.overlaps(newReg)) overlapRegions.add(reg);
+			if (reg.overlaps(newReg)) 
+				overlapNHs.add(new DSNodeHandle(reg.getNode(), reg.getOffset()));
 		}
-		if(!overlapRegions.isEmpty()) {
-			return overlapRegions;
+		if(!overlapNHs.isEmpty()) {
+			return overlapNHs;
 		} else {
-			return Collections.singleton(Region);
+			return Collections.singleton(NH);
 		}
 	}
 
@@ -118,7 +120,7 @@ public class DSAAnalysis implements IRAliasAnalyzer<Region> {
 		addrTaken.analysis(globalCFG, CFGs);
 		local.analysis(globalCFG, CFGs);
 		
-		if (IOUtils.debugEnabled()) {
+//		if (IOUtils.debugEnabled()) {
 			IOUtils.out().println("local analysis: ");
 			ValueManager valueManager = local.getValueManager();
 			for(IRControlFlowGraph CFG : CFGs) {
@@ -127,21 +129,22 @@ public class DSAAnalysis implements IRAliasAnalyzer<Region> {
 				Function func = (Function) valueManager.get(FuncID, FuncTy);
 				local.getDSGraph(func).dump(IOUtils.outPrinter());
 			}
-		}
+//		}
 		
 		steens.analysis(globalCFG, CFGs);
 		
-		if (IOUtils.debugEnabled()) {
+//		if (IOUtils.debugEnabled()) {
 			IOUtils.out().println("steensgaard analysis: ");
 			steens.getResultGraph().dump(IOUtils.outPrinter());
-		}
+			steens.getGlobalsGraph().dump(IOUtils.outPrinter());
+//		}
 		regPass.analysis(globalCFG, CFGs);
 	}
 
 	@Override
 	public void addRegion(Expression regExpr, Node node) {
 		if (!IOUtils.debugEnabled())	return;
-		Region region = getPtsToRep(node);
+		DSNodeHandle region = getPtsToRep(node);
 		snapshot.put(region, regExpr);
 		IOUtils.out().println(displaySnapShot());
 	}
@@ -151,21 +154,22 @@ public class DSAAnalysis implements IRAliasAnalyzer<Region> {
 		if (!IOUtils.debugEnabled())	return;
 		if (CType.getType(node).resolve().isFunction()) return;
 		Region region = regPass.getRegionMap().get(node);
-		snapshot.put(region, lval);
+		snapshot.put(new DSNodeHandle(region.getNode(), region.getOffset()), lval);
 		IOUtils.out().println(displaySnapShot());
 	}
 
 	@Override
-	public Map<Range<Long>, Region> getStructMap(Region Region, long length) {
-		Region newReg = new Region(Region.N, null, Region.offset, length);
-		Map<Range<Long>, Region> overlapRegions = Maps.newHashMap();
+	public Map<Range<Long>, DSNodeHandle> getStructMap(DSNodeHandle NH, long length) {
+		Region newReg = new Region(NH.getNode(), null, NH.getOffset(), length);
+		Map<Range<Long>, DSNodeHandle> overlapRegions = Maps.newHashMap();
 		Iterator<Region> RegItr = regPass.getRegions().iterator();
 		while(RegItr.hasNext()) {
 			Region reg = RegItr.next();
 			if (reg.overlaps(newReg)) {
-				long offset = reg.offset - Region.offset;
+				long offset = reg.getOffset() - NH.getOffset();
 				assert (offset >= 0) : "negative offset";
-				overlapRegions.put(Range.closedOpen(offset, offset + reg.length), reg);
+				overlapRegions.put(Range.closedOpen(offset, offset + reg.getLength()), 
+						new DSNodeHandle(reg.getNode(), reg.getOffset()));
 			}
 		}
 		return overlapRegions;
@@ -190,7 +194,7 @@ public class DSAAnalysis implements IRAliasAnalyzer<Region> {
 	}
 
 	@Override
-	public boolean isAccessTypeSafe(Region rep) {
+	public boolean isAccessTypeSafe(DSNodeHandle rep) {
 		// TODO Auto-generated method stub
 		return false;
 	}

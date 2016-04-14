@@ -30,7 +30,6 @@ public final class RegionPassImpl implements IRPass {
 	private SteensDataStructureImpl SteensDS;
 	private Map<Node, Region> RegionMap = Maps.newHashMap();
 	private TreeSet<Region> Regions = Sets.newTreeSet();
-	private Map<Region, Region> PtsToRegion = Maps.newHashMap();
 	
 	static RegionPassImpl create(IRPass... prePasses) {
 		Preconditions.checkArgument(prePasses.length == 1);
@@ -313,7 +312,7 @@ public final class RegionPassImpl implements IRPass {
 
 		private void init(Node N) {
 			Type Ty = CType.getType(N);
-			if (Ty.resolve().isFunction()) return;
+//			if (Ty.resolve().isFunction()) return;
 			if (RegionMap.containsKey(N)) return;
 			
 			DSNodeHandle NH = null;
@@ -326,16 +325,6 @@ public final class RegionPassImpl implements IRPass {
 			long length = getPointedTypeSize(Ty);
 			Region region = new Region(NH.getNode(), Ty, NH.getOffset(), length);
 			RegionMap.put(N, idx(region));
-			
-			if (PtsToRegion.containsKey(region)) return;
-			
-			if (Ty.resolve().isPointer()) { // Add points-to region
-				Type ptsToTy = Ty.resolve().toPointer().getType();
-				long ptsToSize = CType.getInstance().getSize(ptsToTy);
-				DSNodeHandle ptsToNH = NH.getLink(0);
-				Region ptsToRegion = new Region(ptsToNH.getNode(), ptsToTy, 0, ptsToSize);
-				PtsToRegion.put(region, ptsToRegion);
-			}
 		}
 		
 		private long getPointedTypeSize(Type Ty) {			
@@ -392,10 +381,6 @@ public final class RegionPassImpl implements IRPass {
 	TreeSet<Region> getRegions() {
 		return Regions;
 	}
-	
-	Map<Region, Region> getPtsToRegion() {
-		return PtsToRegion;
-	}
 
 	@Override
 	public void analysis(IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs) {
@@ -404,8 +389,7 @@ public final class RegionPassImpl implements IRPass {
 
 	@Override
 	public void reset() {
-		// TODO Auto-generated method stub
-		
+		RegionMap.clear(); Regions.clear();
 	}
 
 	private void normalizeRegionMap() {
@@ -417,8 +401,8 @@ public final class RegionPassImpl implements IRPass {
 			Region R2 = Regions.higher(NR);
 			Region R = R1.overlaps(NR)? R1 : R2;
 			
-			assert (R.offset <= NR.offset && 
-					R.offset + R.length >= NR.offset + NR.length);
+			assert (R.getOffset() <= NR.getOffset() && 
+					R.getOffset() + R.getLength() >= NR.getOffset() + NR.getLength());
 			RegionMap.put(N, R);
 		}
 	}

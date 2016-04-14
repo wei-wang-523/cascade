@@ -29,14 +29,6 @@ final class DSNodeImpl extends DSNode {
 	/// ID - For dumping
 	private final BigInteger ID;
 	
-//	DSNodeImpl() {
-//		ID = nextId; 
-//		nextId = nextId.add(BigInteger.ONE);
-//		NumReferrers = 0;
-//		Size = 0;
-//		NodeType = NodeTy.ShadowNode.value();
-//	}
-	
 	DSNodeImpl(DSGraph G) {
 		ID = nextId;
 		nextId = nextId.add(BigInteger.ONE);

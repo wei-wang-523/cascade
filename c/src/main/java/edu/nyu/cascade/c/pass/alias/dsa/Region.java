@@ -7,10 +7,10 @@ import com.google.common.base.Preconditions;
 import xtc.type.Type;
 
 public final class Region implements Comparable<Region> {
-	DSNode N;
-	Type type;
-	long offset;
-	long length;
+	private final DSNode N;
+	private Type type;
+	private long offset;
+	private long length;
 	
 	boolean singleton, allocated, bytewise, incomplete, complicated, collapsed;
 	
@@ -98,5 +98,17 @@ public final class Region implements Comparable<Region> {
 				.append(N)
 				.append(offset)
 				.append(length).hashCode();
+	}
+
+	DSNode getNode() {
+		return N;
+	}
+
+	long getOffset() {
+		return offset;
+	}
+
+	long getLength() {
+		return length;
 	}
 }

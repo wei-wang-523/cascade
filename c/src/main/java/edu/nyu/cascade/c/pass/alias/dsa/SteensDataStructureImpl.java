@@ -157,7 +157,9 @@ public class SteensDataStructureImpl extends DataStructuresImpl {
 		
 		for (GlobalValue GV : GlobalsGraph.getScalarMap().getGlobalSet()) {
 			if (GV instanceof GlobalVariable || GV instanceof Function) {
-				RC.getClonedNH(GlobalsGraph.getNodeForValue(GV));
+//				RC.getClonedNH(GlobalsGraph.getNodeForValue(GV));
+				RC.merge(ResultGraph.getNodeForValue(GV),
+						GlobalsGraph.getNodeForValue(GV));
 			}
 		}
 		
