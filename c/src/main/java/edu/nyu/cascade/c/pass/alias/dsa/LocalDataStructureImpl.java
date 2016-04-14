@@ -659,12 +659,12 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			if (!g.getScalarMap().getGlobalSet().isEmpty()) {
 				ReachabilityCloner RC = new ReachabilityCloner(g, g.getGlobalsGraph(), 0, true);
 				for(GlobalValue GV : g.getScalarMap().getGlobalSet()) {
-//					if(GV instanceof GlobalVariable) {
-//						if(GV.isConstant()) {
-//					IOUtils.debug().pln("Merging global " + GV);
-//					RC.merge(g.getNodeForValue(GV), g.getGlobalsGraph().getNodeForValue(GV));
-//						}
-//					}
+					if(GV instanceof GlobalVariable) {
+						if(GV.isConstant()) {
+							IOUtils.debug().pln("Merging global " + GV);
+							RC.merge(g.getNodeForValue(GV), g.getGlobalsGraph().getNodeForValue(GV));
+						}
+					}
 				}
 			}
 			

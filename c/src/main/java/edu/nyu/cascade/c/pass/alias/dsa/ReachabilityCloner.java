@@ -335,19 +335,19 @@ class ReachabilityCloner {
 	 * mergeCallSite - Merge the nodes reachable from the specified src call
 	 * site into the nodes reachable from DestCS.
 	 */
-	void mergeCallSite(DSCallSite DestCS, DSCallSite SrcCS) {
+	private void mergeCallSite(DSCallSite DestCS, DSCallSite SrcCS) {
 		
 	}
 	
-	DSCallSite cloneCallSite(DSCallSite SrcCS) {
+	private DSCallSite cloneCallSite(DSCallSite SrcCS) {
 		return null;
 	}
 
-	boolean clonedAnyNodes() { return !NodeMap.isEmpty(); }
+	private boolean clonedAnyNodes() { return !NodeMap.isEmpty(); }
 	
-	boolean hasClonedNode(DSNode N) { return NodeMap.containsKey(N); }
+	private boolean hasClonedNode(DSNode N) { return NodeMap.containsKey(N); }
 
-	void destroy() { NodeMap.clear(); }
+	private void destroy() { NodeMap.clear(); }
 	
 	private DSNodeHandle getOrCreate(Map<DSNode, DSNodeHandle> NodeMap, DSNode DN) {
 		Preconditions.checkNotNull(NodeMap);

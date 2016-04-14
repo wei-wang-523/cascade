@@ -120,7 +120,7 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 		addrTaken.analysis(globalCFG, CFGs);
 		local.analysis(globalCFG, CFGs);
 		
-//		if (IOUtils.debugEnabled()) {
+		if (IOUtils.debugEnabled()) {
 			IOUtils.out().println("local analysis: ");
 			ValueManager valueManager = local.getValueManager();
 			for(IRControlFlowGraph CFG : CFGs) {
@@ -129,15 +129,15 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 				Function func = (Function) valueManager.get(FuncID, FuncTy);
 				local.getDSGraph(func).dump(IOUtils.outPrinter());
 			}
-//		}
+		}
 		
 		steens.analysis(globalCFG, CFGs);
 		
-//		if (IOUtils.debugEnabled()) {
+		if (IOUtils.debugEnabled()) {
 			IOUtils.out().println("steensgaard analysis: ");
 			steens.getResultGraph().dump(IOUtils.outPrinter());
 			steens.getGlobalsGraph().dump(IOUtils.outPrinter());
-//		}
+		}
 		regPass.analysis(globalCFG, CFGs);
 	}
 

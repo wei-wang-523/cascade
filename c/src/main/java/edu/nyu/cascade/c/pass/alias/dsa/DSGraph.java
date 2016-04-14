@@ -262,10 +262,10 @@ abstract class DSGraph {
 	abstract void computeCalleeCallerMapping(DSCallSite CS, Function Callee,
 			DSGraph CalleeGraph, Map<DSNode, DSNodeHandle> NodeMap);
 
-	/// spliceFrom - Logically perform the operation of cloning the RHS graph into
-	/// this graph, then clearing the RHS graph.  Instead of performing this as
-	/// two separate operations, do it as a single, much faster, one.
-	///
+	/** spliceFrom - Logically perform the operation of cloning the RHS graph into
+	 * this graph, then clearing the RHS graph.  Instead of performing this as
+	 * two separate operations, do it as a single, much faster, one.
+	 */
 	abstract void spliceFrom(DSGraph RHS);
 
 	/// cloneInto - Clone the specified DSGraph into the current graph.

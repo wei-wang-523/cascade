@@ -10,8 +10,6 @@ import com.google.common.collect.Lists;
 
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.pass.Function;
-import edu.nyu.cascade.c.pass.GlobalValue;
-import edu.nyu.cascade.c.pass.GlobalVariable;
 import edu.nyu.cascade.c.pass.Value;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.SymbolTable;
@@ -148,20 +146,21 @@ public class SteensDataStructureImpl extends DataStructuresImpl {
 		// Mark external globals incomplete.
 		GlobalsGraph.markIncompleteNodes(DSSupport.MarkIncompleteFlags.IgnoreGlobals.value());
 		
+		// Copy GlobalsGraph into ResultGraph
+		ResultGraph.spliceFrom(GlobalsGraph);
+		
 		formGlobalECs();
 		
 		// Clone the global nodes into this graph.
-		ReachabilityCloner RC = new ReachabilityCloner(ResultGraph, GlobalsGraph, 
-				DSSupport.CloneFlags.DontCloneCallNodes.value() |
-				DSSupport.CloneFlags.DontCloneAuxCallNodes.value(), true);
-		
-		for (GlobalValue GV : GlobalsGraph.getScalarMap().getGlobalSet()) {
-			if (GV instanceof GlobalVariable || GV instanceof Function) {
-//				RC.getClonedNH(GlobalsGraph.getNodeForValue(GV));
-				RC.merge(ResultGraph.getNodeForValue(GV),
-						GlobalsGraph.getNodeForValue(GV));
-			}
-		}
+//		ReachabilityCloner RC = new ReachabilityCloner(ResultGraph, GlobalsGraph, 
+//				DSSupport.CloneFlags.DontCloneCallNodes.value() |
+//				DSSupport.CloneFlags.DontCloneAuxCallNodes.value(), true);
+//		
+//		for (GlobalValue GV : GlobalsGraph.getScalarMap().getGlobalSet()) {
+//			if (GV instanceof GlobalVariable || GV instanceof Function) {
+//				 RC.getClonedNH(GlobalsGraph.getNodeForValue(GV));
+//			}
+//		}
 		
 		return false;
 	}

@@ -315,13 +315,7 @@ public final class RegionPassImpl implements IRPass {
 //			if (Ty.resolve().isFunction()) return;
 			if (RegionMap.containsKey(N)) return;
 			
-			DSNodeHandle NH = null;
-			if (Identifiers.GLOBAL_CFG.equals(currCFG.getName())) {
-				NH = SteensDS.getGlobalsGraph().getNodeMap().get(N); 
-			} else {
-				NH = SteensDS.getResultGraph().getNodeMap().get(N);
-			}
-			
+			DSNodeHandle NH = SteensDS.getResultGraph().getNodeMap().get(N);			
 			long length = getPointedTypeSize(Ty);
 			Region region = new Region(NH.getNode(), Ty, NH.getOffset(), length);
 			RegionMap.put(N, idx(region));
