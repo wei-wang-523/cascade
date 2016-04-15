@@ -25,6 +25,7 @@ import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.util.FileUtils;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
+import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.Preferences;
 import xtc.parser.ParseException;
 import xtc.tree.Node;
@@ -120,9 +121,9 @@ public class RegionPassImplTest {
 		
 		out.incr();
 		CPrinter cout = new CPrinter(out);
-		for(Entry<Node, Region> entry : regionPass.getRegionMap().entrySet()) {
+		for(Entry<Pair<Node,String>, Region> entry : regionPass.getRegionMap().entrySet()) {
 			out.indent().p(":" + entry.getValue());
-			cout.dispatch(entry.getKey());
+			cout.dispatch(entry.getKey().fst());
 			out.pln();
 		}
 		
