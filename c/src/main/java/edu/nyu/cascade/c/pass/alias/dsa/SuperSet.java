@@ -16,13 +16,13 @@ import com.google.common.collect.Sets;
  */
 
 class SuperSet<T> {
-	SortedSet<SortedSet<T>> TySS;
+	SortedSet<Set<T>> TySS;
 	
 	SuperSet() {
 		TySS = Sets.newTreeSet(
-				new Comparator<SortedSet<T>>(){
+				new Comparator<Set<T>>(){
 					@Override
-					public int compare(SortedSet<T> lhs, SortedSet<T> rhs) {
+					public int compare(Set<T> lhs, Set<T> rhs) {
 						return Integer.compare(lhs.size(), rhs.size());
 					}
 		});
@@ -45,8 +45,8 @@ class SuperSet<T> {
 	 * @param TySet
 	 * @return
 	 */
-	SortedSet<T> addSet(SortedSet<T> TySet) {
-		for(SortedSet<T> element : TySS) {
+	Set<T> addSet(Set<T> TySet) {
+		for(Set<T> element : TySS) {
 			if(element.size() < TySet.size()) continue;
 			if(element.size() > TySet.size()) break;
 			if(element.containsAll(TySet) && TySet.containsAll(element)) {

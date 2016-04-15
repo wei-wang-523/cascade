@@ -155,11 +155,6 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 		
 		private DSNodeHandle load(DSNodeHandle PtrNH, Type Ty) {
 			
-			// Do not load the content if it is composite value. 
-			// It is viewed as a pointer to the composite value.
-			//
-			if (!CType.isScalar(Ty)) return PtrNH;
-			
 			// Create a DSNode for the pointer dereferenced by the load.  If the DSNode
 			// is NULL, do nothing more (this can occur if the load is loading from a
 			// NULL pointer constant (bug-point can generate such code).
@@ -175,7 +170,11 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			
 			PtrNH.getNode().mergeTypeInfo(Ty, PtrNH.getOffset());
 			
-			return getLink(PtrNH, 0);
+			
+			// Do not load the content if it is composite value. 
+			// It is viewed as a pointer to the composite value.
+			//
+			return CType.isScalar(Ty) ? getLink(PtrNH, 0) : PtrNH;
 		}
 		
 		private DSNodeHandle fieldSelect(DSNodeHandle NodeH, Type StructTy, String FieldName) {

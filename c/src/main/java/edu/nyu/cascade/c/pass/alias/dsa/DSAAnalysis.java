@@ -177,7 +177,13 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 
 	@Override
 	public Collection<IRVar> getEquivFuncVars(Node funcNode) {
-		DSNodeHandle NH = steens.getResultGraph().getNodeMap().get(funcNode);
+		Type funcTy = CType.getType(funcNode);
+		DSNodeHandle NH;
+		if (funcTy.resolve().isPointer()) {
+			NH = getPtsToRep(funcNode);
+		} else {
+			NH = getRep(funcNode);
+		}
 		Collection<GlobalValue> GVs = NH.getNode().getGlobals();
 		Collection<IRVar> Functions = Lists.newArrayList();
 		for(GlobalValue GV : GVs) {

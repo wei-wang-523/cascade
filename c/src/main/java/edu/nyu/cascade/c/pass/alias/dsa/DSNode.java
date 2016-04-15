@@ -56,7 +56,7 @@ abstract class DSNode implements Comparable<DSNode> {
 	 * TyMap - Keep track of the loadable types and offsets those types are seen 
 	 * at.
 	 */
-	Map<Long, SortedSet<Type>> TyMap = Maps.newTreeMap();
+	Map<Long, Set<Type>> TyMap = Maps.newTreeMap();
 	
 	/** Links - Contains one entry for every byte in this memory object. */
 	Map<Long, DSNodeHandle> Links = Maps.newTreeMap();

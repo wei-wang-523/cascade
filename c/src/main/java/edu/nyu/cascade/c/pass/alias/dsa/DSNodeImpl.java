@@ -2,12 +2,9 @@ package edu.nyu.cascade.c.pass.alias.dsa;
 
 import java.math.BigInteger;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.SortedSet;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -82,16 +79,7 @@ final class DSNodeImpl extends DSNode {
 		    	mergeTypeInfo(member, Offset + FieldOffset);
 		    }
 		  } else {
-				SortedSet<Type> NewTySet = Sets.newTreeSet(
-						new Comparator<Type>() {
-					@Override
-					public int compare(Type o1, Type o2) {
-						return Long.compareUnsigned(
-								CType.getInstance().getSize(o1),
-								CType.getInstance().getSize(o2));
-					}
-				});
-				
+			  Set<Type> NewTySet = Sets.newHashSet();
 			  if (TyMap.containsKey(Offset)) {
 				  NewTySet.addAll(TyMap.get(Offset));
 			  }
@@ -108,12 +96,12 @@ final class DSNodeImpl extends DSNode {
 	void mergeTypeInfo(DSNode DN, long Offset) {
 		if (isCollapsedNode())	return;
 
-		for(Entry<Long, SortedSet<Type>> entry : DN.TyMap.entrySet()) {
+		for(Entry<Long, Set<Type>> entry : DN.TyMap.entrySet()) {
 			mergeTypeInfo(entry.getValue(), entry.getKey() + Offset);
 		}
 	}
 	
-	private void mergeTypeInfo(SortedSet<Type> TySet, long Offset) {
+	private void mergeTypeInfo(Set<Type> TySet, long Offset) {
 		if (isCollapsedNode()) return;
 		if (isArrayNode()) Offset %= getSize();
 		
@@ -126,15 +114,7 @@ final class DSNodeImpl extends DSNode {
 				}
 			}
 		} else {
-			SortedSet<Type> NewTySet = Sets.newTreeSet(
-					new Comparator<Type>() {
-				@Override
-				public int compare(Type o1, Type o2) {
-					return Long.compareUnsigned(
-							CType.getInstance().getSize(o1),
-							CType.getInstance().getSize(o2));
-				}
-			});
+			Set<Type> NewTySet = Sets.newHashSet();
 			
 			NewTySet.addAll(TyMap.get(Offset));
 			NewTySet.addAll(TySet);
@@ -441,7 +421,7 @@ final class DSNodeImpl extends DSNode {
 				  OS.append(" array");
 			  }
 			  
-			  for (Entry<Long, SortedSet<Type>> Entry : TyMap.entrySet()) {
+			  for (Entry<Long, Set<Type>> Entry : TyMap.entrySet()) {
 				  OS.append('\n').append("    ").append(Entry.getKey() + ": ");
 				  if (Entry.getValue() != null) {
 					  for (Type Ty : Entry.getValue()) {
