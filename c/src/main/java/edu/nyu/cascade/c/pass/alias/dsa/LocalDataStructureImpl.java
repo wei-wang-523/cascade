@@ -248,25 +248,24 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			return ResNH;
 		}
 		
-		private void ensureSafeIndexAccess(DSNodeHandle NodeH, Type BaseTy) {
+		private void ensureSafeIndexAccess(DSNodeHandle NodeH, Type ElemTy) {
 			// Treat the memory object (DSNode) as an array.
 			NodeH.getNode().setArrayMarker();
 			
-			long BaseTySize = CType.getInstance().getSize(BaseTy);
-			
 			// Ensure that the DSNode's size is large enough to contain one
 			// element of the type to which the pointer points.
 			// Ensure that the DSNode's size is large enough to contain one
 			// element of the type to which the pointer points.
-			if (!BaseTy.resolve().isArray() && NodeH.getNode().getSize() <= 0) {
-				NodeH.getNode().growSize(BaseTySize + NodeH.getOffset());
-			} else if (BaseTy.resolve().isArray() && NodeH.getNode().getSize() <= 0) {
-				Type ElemTy = BaseTy.resolve().toArray().getType();
-				while (ElemTy.resolve().isArray()) {
-					ElemTy = ElemTy.resolve().toArray().getType();
-				}
+			if (!ElemTy.resolve().isArray() && NodeH.getNode().getSize() <= 0) {
 				long ElemTySize = CType.getInstance().getSize(ElemTy);
-				NodeH.getNode().growSize(ElemTySize);
+				NodeH.getNode().growSize(ElemTySize + NodeH.getOffset());
+			} else if (ElemTy.resolve().isArray() && NodeH.getNode().getSize() <= 0) {
+				Type CurrElemTy = ElemTy.resolve().toArray().getType();
+				while (CurrElemTy.resolve().isArray()) {
+					CurrElemTy = CurrElemTy.resolve().toArray().getType();
+				}
+				long CurrElemTySize = CType.getInstance().getSize(CurrElemTy);
+				NodeH.getNode().growSize(CurrElemTySize);
 			}
 			
 			// Fold the DSNode if we're indexing into it in a type-incompatible 
@@ -278,15 +277,15 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			//    pointer index is indexing. Indexing into an array must always at the 
 			// 	  base of the memory object.
 			if (NodeH.getOffset() != 0
-					|| (!BaseTy.resolve().isArray()
-							&& NodeH.getNode().getSize() != BaseTySize)) {
+					|| (!ElemTy.resolve().isArray()
+							&& NodeH.getNode().getSize() != CType.getInstance().getSize(ElemTy))) {
 				NodeH.getNode().foldNodeCompletely();
 				NodeH.getNode();
 			}
 		}
 
 		private class LvalVisitor extends Visitor {
-			DSNodeHandle encode(Node node) {
+			private DSNodeHandle encode(Node node) {
 				if (G.getNodeMap().contains(node)) 
 					return G.getNodeMap().get(node);
 				
@@ -361,41 +360,25 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				// indexed pointer is already folded, then we know that the result of the
 				// GEP will have the same offset into the same DSNode
 				// as the indexed pointer.
-				if (!NodeH.isNull() && NodeH.getNode().isNodeCompletelyFolded()) {
+				if (!NodeH.isNull() 
+						&& NodeH.getNode().isNodeCompletelyFolded()) {
 					return NodeH;
 				}
 				
 				Type BaseTy = CType.getType(Base);
+				Type BasePtrTy = CType.getInstance().pointerize(BaseTy);
+				Type ElemTy = BasePtrTy.toPointer().getType();
 				
-				if (BaseTy.resolve().isArray()) {
-					// indexing into an array.
-					Type CurTy = BaseTy.resolve().toArray().getType();
-					ensureSafeIndexAccess(NodeH, CurTy);
-					
-				} else if (BaseTy.resolve().isPointer()) {
-					// Get the type pointed to by the pointer
-					Type CurTy = BaseTy.resolve().toPointer().getType();
-					NodeH = load(NodeH, CurTy);
-					
-					//
-					// Unless we're advancing the pointer by zero bytes via array indexing,
-					// fold the node (i.e., mark it type-unknown) and indicate that we're
-					// indexing zero bytes into the object (because all fields are aliased).
-					//
-					// Note that we break out of the loop if we fold the node.  Once
-					// something is folded, all values within it are considered to alias.
-					//
-					
-					Type IdxTy = CType.getType(Idx);
-					if (!IdxTy.hasShape() || !IdxTy.getShape().isConstant()) {
-						ensureSafeIndexAccess(NodeH, CurTy);
-					}
+				assert BasePtrTy.isPointer() : "Error type";
+				if (BaseTy.resolve().isPointer()) {
+					NodeH = load(NodeH, ElemTy);
 				}
 				
+				ensureSafeIndexAccess(NodeH, ElemTy);
+				
 				// Check the offset
-				DSNode N = NodeH.getNode();
-				if (N != null) {
-					N.checkOffsetFoldIfNeeded(NodeH.getOffset());
+				if (!NodeH.isNull()) {
+					NodeH.getNode().checkOffsetFoldIfNeeded(NodeH.getOffset());
 				}
 				
 				// NodeH is now the pointer we want to GEP to be...
@@ -404,7 +387,7 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 		}
 		
 		private class RvalVisitor extends Visitor {
-			DSNodeHandle encode(Node node) {
+			private DSNodeHandle encode(Node node) {
 				return (DSNodeHandle) dispatch(node);
 			}
 			
@@ -582,12 +565,14 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				}
 				
 				Type lhsTy = CType.getType(node.getNode(0));
+				lhsTy = CType.getInstance().pointerize(lhsTy);
 				DSNodeHandle lhsNH = encode(node.getNode(0));
 				if (lhsTy.resolve().isPointer()) {
 					CurNH.mergeWith(getValueDest(lhsNH, lhsTy));
 				}
 				
 				Type rhsTy = CType.getType(node.getNode(2));
+				rhsTy = CType.getInstance().pointerize(rhsTy);
 				DSNodeHandle rhsNH = encode(node.getNode(2));
 				if (rhsTy.resolve().isPointer()) {
 					CurNH.mergeWith(getValueDest(rhsNH, rhsTy));
@@ -699,7 +684,23 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 		private LvalVisitor lvalVisitor = new LvalVisitor();
 		private RvalVisitor rvalVisitor = new RvalVisitor();
 		
-		void visit(IRStatement stmt) {
+		void visit(IRControlFlowGraph CFG) {
+			SymbolTable.enterScope(CFG);
+			
+			Collection<IRBasicBlock> BBs = Lists.reverse(CFG.topologicalSeq(CFG.getEntry()));
+			for(IRBasicBlock BB : BBs) {
+				for(IRStatement stmt : BB.getStatements())	visit(stmt);
+				
+				for(IREdge<?> outgoing : CFG.getOutgoingEdges(BB)) {
+					if(null != outgoing.getGuard()) {
+						Node op = outgoing.getGuard().getSourceNode();
+						rvalVisitor.encode(op);
+					}
+				}
+			}
+		}
+
+		private void visit(IRStatement stmt) {
 			switch (stmt.getType()) {
 			case DECLARE:
 			case DECLARE_ARRAY:
@@ -739,22 +740,6 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			}
 			default:
 				break;
-			}
-		}
-		
-		void visit(IRControlFlowGraph CFG) {
-			SymbolTable.enterScope(CFG);
-			
-			Collection<IRBasicBlock> BBs = Lists.reverse(CFG.topologicalSeq(CFG.getEntry()));
-			for(IRBasicBlock BB : BBs) {
-				for(IRStatement stmt : BB.getStatements())	visit(stmt);
-				
-				for(IREdge<?> outgoing : CFG.getOutgoingEdges(BB)) {
-					if(null != outgoing.getGuard()) {
-						Node op = outgoing.getGuard().getSourceNode();
-						rvalVisitor.encode(op);
-					}
-				}
 			}
 		}
 		

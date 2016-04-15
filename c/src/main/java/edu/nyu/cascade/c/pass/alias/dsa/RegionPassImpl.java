@@ -20,7 +20,6 @@ import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.pass.IRPass;
 import edu.nyu.cascade.util.IOUtils;
-import edu.nyu.cascade.util.Identifiers;
 import xtc.tree.GNode;
 import xtc.tree.Node;
 import xtc.tree.Visitor;
@@ -60,8 +59,6 @@ public final class RegionPassImpl implements IRPass {
 	}
 
 	class RegionBuilder {
-		
-		private IRControlFlowGraph currCFG;
 
 		private class LvalVisitor extends Visitor {
 			void encode(Node node) {
@@ -293,9 +290,7 @@ public final class RegionPassImpl implements IRPass {
 			}
 		}
 		
-		void visit(IRControlFlowGraph CFG) {
-			currCFG = CFG;
-			
+		void visit(IRControlFlowGraph CFG) {			
 			Collection<IRBasicBlock> BBs =
 					Lists.reverse(CFG.topologicalSeq(CFG.getEntry()));
 			for(IRBasicBlock BB : BBs) {
