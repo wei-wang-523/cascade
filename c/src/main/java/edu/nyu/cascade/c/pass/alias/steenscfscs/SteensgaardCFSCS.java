@@ -368,7 +368,7 @@ public class SteensgaardCFSCS implements IRAliasAnalyzer<ECR> {
 	  	if(uf.getType(ecr).isLambda()) continue;
 	  	Collection<IRVar> vars = entry.getValue();
 	  	if(!vars.isEmpty()) {
-	  		sb.append(formatECR(Sets.newHashSet(), ecr));
+	  		sb.append(formatECR(Sets.<ECR>newHashSet(), ecr));
 	  		sb.append("\n { ");
 	  		
 	  		for(IRVar var : vars) sb.append(var.getName()).append(' ');
