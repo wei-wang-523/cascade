@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import xtc.tree.Node;
+import xtc.type.Type;
 
 import com.google.common.collect.Range;
 
@@ -42,7 +43,7 @@ public interface IRAliasAnalyzer<T> extends IRPass {
 	 * @param rep
 	 * @return
 	 */
-	Collection<T> getFieldReps(T rep, long length);
+	Collection<T> getFieldReps(T rep, Type Ty);
 
 	/**
 	 * Add an newly allocated <code>region</code> with source node 

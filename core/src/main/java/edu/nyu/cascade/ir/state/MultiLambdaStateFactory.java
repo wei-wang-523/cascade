@@ -64,9 +64,9 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		Node node = info.getDeclarationNode();
 		labelAnalyzer.addVar(lval, node);		
 		T rep = labelAnalyzer.getStackRep(node);
-		long length = CType.getInstance().getSize(info.getXtcType());
+		Type ty = info.getXtcType();
 		
-		for(T fillInRep : labelAnalyzer.getFieldReps(rep, length)) {
+		for(T fillInRep : labelAnalyzer.getFieldReps(rep, ty)) {
 			updateStateWithRep(state.asMultiLambda(), fillInRep);
 			String label = labelAnalyzer.getRepId(fillInRep);
 			SingleLambdaStateExpression singleState = state.asMultiLambda().getStateMap().get(label);
@@ -84,8 +84,8 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		
 		labelAnalyzer.addVar(lval, sourceNode);
 		T ptrRep = labelAnalyzer.getStackRep(sourceNode);
-		long length = CType.getInstance().getSize(CType.getArrayCellType(info.getXtcType()));
-		for(T rep : labelAnalyzer.getFieldReps(ptrRep, length)) {
+		Type ty = CType.getArrayCellType(info.getXtcType());
+		for(T rep : labelAnalyzer.getFieldReps(ptrRep, ty)) {
 			updateStateWithRep(state.asMultiLambda(), rep);
 			String label = labelAnalyzer.getRepId(rep);
 			SingleLambdaStateExpression singleState = state.asMultiLambda().getStateMap().get(label);
@@ -130,9 +130,9 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 			Expression size, Expression value, Node ptrNode) {
 		Collection<BooleanExpression> predicates = Lists.newArrayList();
 		T rep = labelAnalyzer.getPtsToRep(ptrNode);
-		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode)).toPointer().getType();
-		long length = CType.getInstance().getSize(ty);
-		for(T fillInRep : labelAnalyzer.getFieldReps(rep, length)) {
+		Type ty = CType.getInstance()
+				.pointerize(CType.getType(ptrNode)).toPointer().getType();
+		for(T fillInRep : labelAnalyzer.getFieldReps(rep, ty)) {
 			updateStateWithRep(state.asMultiLambda(), fillInRep);
 			String label = labelAnalyzer.getRepId(fillInRep);
 			SingleLambdaStateExpression singleState = state.asMultiLambda().getStateMap().get(label);
@@ -147,9 +147,9 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 			Expression size, int value, Node ptrNode) {	
 		Collection<BooleanExpression> predicates = Lists.newArrayList();
 		T rep = labelAnalyzer.getPtsToRep(ptrNode);
-		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode)).toPointer().getType();
-		long length = CType.getInstance().getSize(ty);
-		for(T fillInRep : labelAnalyzer.getFieldReps(rep, length)) {
+		Type ty = CType.getInstance()
+				.pointerize(CType.getType(ptrNode)).toPointer().getType();
+		for(T fillInRep : labelAnalyzer.getFieldReps(rep, ty)) {
 			updateStateWithRep(state.asMultiLambda(), fillInRep);
 			String label = labelAnalyzer.getRepId(fillInRep);
 			SingleLambdaStateExpression singleState = state.asMultiLambda().getStateMap().get(label);
@@ -195,8 +195,10 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	public BooleanExpression applyValidFree(StateExpression state, Expression region, Node ptrNode) {
 		T ptrRep = labelAnalyzer.getPtsToRep(ptrNode);
 		updateStateWithRep(state.asMultiLambda(), ptrRep);
+		MultiLambdaStateExpression multiLambdaState = state.asMultiLambda();
+		Map<String, SingleLambdaStateExpression> stateMap = multiLambdaState.getStateMap();
 		String label = labelAnalyzer.getRepId(ptrRep);
-		SingleLambdaStateExpression singleState = state.asMultiLambda().getStateMap().get(label);
+		SingleLambdaStateExpression singleState = stateMap.get(label);
 		return singleStateFactory.applyValidFree(singleState, region, ptrNode);
 	}
 
@@ -347,28 +349,34 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	protected void updateMarkState(StateExpression state,
 			Expression region, BooleanExpression mark, Node ptrNode) {
 		MultiLambdaStateExpression multiLambdaState = state.asMultiLambda();
+		Map<String, SingleLambdaStateExpression> stateMap = multiLambdaState.getStateMap();
 		T ptrRep = labelAnalyzer.getPtsToRep(ptrNode);
-		Type ty = CType.getInstance().pointerize(
-				CType.getType(ptrNode)).toPointer().getType();
-		long length = CType.getInstance().getSize(ty);
-		for(T rep : labelAnalyzer.getFieldReps(ptrRep, length)) {
-			updateStateWithRep(multiLambdaState, rep);
-			String label = labelAnalyzer.getRepId(rep);
-			SingleLambdaStateExpression singleState = multiLambdaState.getStateMap().get(label);
-			singleStateFactory.updateMarkState(singleState, region, mark, ptrNode);
-		}
+		updateStateWithRep(multiLambdaState, ptrRep);
+		String label = labelAnalyzer.getRepId(ptrRep);
+		SingleLambdaStateExpression singleState = stateMap.get(label);
+		singleStateFactory.updateMarkState(singleState, region, mark, ptrNode);
 	}
 	
 	@Override
-	protected Expression getSizeOfRegion(StateExpression state, Expression region, Node ptrNode) {
-		T ptrRep = labelAnalyzer.getPtsToRep(ptrNode);
-		String label = labelAnalyzer.getRepId(ptrRep);
-		
+	protected Expression getSizeOfRegion(StateExpression state, Expression region, Node ptrNode) {		
 		MultiLambdaStateExpression multiLambdaState = state.asMultiLambda();		
-		Map<String, SingleLambdaStateExpression> statePrimeMap = multiLambdaState.getStateMap();
-		SingleLambdaStateExpression singleState = statePrimeMap.get(label);
+		Map<String, SingleLambdaStateExpression> stateMap = multiLambdaState.getStateMap();
+		T ptrRep = labelAnalyzer.getPtsToRep(ptrNode);
 		
-		ArrayExpression sizeArr = singleState.getSingleState().getSize();
+		// In DSA analysis, for the node with structure type, the struct rep is not recorded,
+		// instead, multiple dereferenced field reps are recorded. Thus, the region size is not
+		// stored in the size array of the single state with struct rep, unlike other field
+		// sensitive analysis (CFS, CFSCS).
+		// For memory track, we just need a single size array with region size stored. 
+		// For DSA, the size array is the one of the first collected field rep; for CFS,
+		// the size array is the on of the struct rep (which is also the first rep).
+		Type Ty = CType.getInstance().pointerize(CType.getType(ptrNode)).toPointer().getType();
+		T fstFillRep = labelAnalyzer.getFieldReps(ptrRep, Ty).iterator().next();
+		
+		String label = labelAnalyzer.getRepId(fstFillRep);
+		SingleLambdaStateExpression singleLambdaState = stateMap.get(label);
+		
+		ArrayExpression sizeArr = singleLambdaState.getSingleState().getSize();
 		return getDataFormatter().indexSizeArray(sizeArr, region);
 	}
 
@@ -427,8 +435,7 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		MultiLambdaStateExpression multiLambdaState = state.asMultiLambda();
 		Map<String, SingleLambdaStateExpression> stateMap = multiLambdaState.getStateMap();
 		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode)).toPointer().getType();
-		long length = CType.getInstance().getSize(ty);
-		for(T fillInRep : labelAnalyzer.getFieldReps(ptrRep, length)) {
+		for(T fillInRep : labelAnalyzer.getFieldReps(ptrRep, ty)) {
 			updateStateWithRep(multiLambdaState, fillInRep);
 			String label = labelAnalyzer.getRepId(fillInRep);
 			SingleLambdaStateExpression singleState = stateMap.get(label);
@@ -446,8 +453,7 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		MultiLambdaStateExpression multiLambdaState = state.asMultiLambda();
 		labelAnalyzer.addRegion(region, ptrNode);
 		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode)).toPointer().getType();
-		long length = CType.getInstance().getSize(ty);
-		for(T rep : labelAnalyzer.getFieldReps(ptrRep, length)) {
+		for(T rep : labelAnalyzer.getFieldReps(ptrRep, ty)) {
 			updateStateWithRep(multiLambdaState, rep);
 			String label = labelAnalyzer.getRepId(rep);
 			SingleLambdaStateExpression singleState = multiLambdaState.getStateMap().get(label);
