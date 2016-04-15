@@ -92,7 +92,9 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			Function FB = (Function) ValueManager.get(FuncID, FuncTy);
 			setDSGraph(FB, G);
 			
+			@SuppressWarnings("unused")
 			GraphBuilder GGB = new GraphBuilder(CFG, G);
+			
 			Collection<DSCallSite> AuxFuncCalls = G.getAuxFunctionCalls();
 			AuxFuncCalls.addAll(G.getFunctionCalls());
 			propagateUnknownFlag(G);
@@ -690,7 +692,10 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 		
 		private DSGraph G;
 		private Function FB;	// FB is null indicates global CFG
+		
+		@SuppressWarnings("unused")
 		private DSNode VAArray;
+		
 		private LvalVisitor lvalVisitor = new LvalVisitor();
 		private RvalVisitor rvalVisitor = new RvalVisitor();
 		
@@ -779,6 +784,10 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 		    // Avoid adding edges from null, or processing non-"pointer" stores
 		    if(lhsTy.resolve().isPointer()) {
 		    	Dest.addEdgeTo(0, getValueDest(rhsNH, lhsTy));
+		    }
+		    
+		    if (CType.isStructOrUnion(lhsTy)) {
+		    	Dest.mergeWith(rhsNH);
 		    }
 		    
 		    //TODO: TypeInferenceOptimize
