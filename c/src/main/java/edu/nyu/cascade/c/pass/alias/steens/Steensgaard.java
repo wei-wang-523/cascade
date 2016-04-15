@@ -361,7 +361,7 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 	}
 
 	@Override
-	public Collection<ECR> getFieldReps(ECR rep, long length) {
+	public Collection<ECR> getFieldReps(ECR rep, Type Ty) {
 	  return Collections.singleton(rep);
 	}
 	

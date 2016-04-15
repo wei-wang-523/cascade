@@ -15,7 +15,6 @@ import com.google.common.collect.Range;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.pass.Function;
 import edu.nyu.cascade.c.pass.GlobalValue;
-import edu.nyu.cascade.c.pass.ValueManager;
 import edu.nyu.cascade.c.pass.addrtaken.AddressTakenAnalysis;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.SymbolTable;
@@ -33,14 +32,12 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 	private final SteensDataStructureImpl steens;
 	private final RegionPassImpl regPass;
 	private final Multimap<DSNodeHandle, Expression> snapshot = HashMultimap.create();
-	private final SymbolTable SymbolTable;
 	
 	private DSAAnalysis(SymbolTable symTbl) { 
 		addrTaken = AddressTakenAnalysis.create(symTbl);
 		local = LocalDataStructureImpl.create(addrTaken).init(symTbl);
 		steens = SteensDataStructureImpl.create(local).init(symTbl);
 		regPass = RegionPassImpl.create(steens);
-		SymbolTable = symTbl;
 	}
 
 	public static DSAAnalysis create(SymbolTable symbolTable) {
@@ -100,8 +97,10 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 	}
 
 	@Override
-	public Collection<DSNodeHandle> getFieldReps(DSNodeHandle NH, long length) {
+	public Collection<DSNodeHandle> getFieldReps(DSNodeHandle NH, Type ty) {
 		Preconditions.checkNotNull(NH);
+		long length = ty.resolve().isVoid() ? Long.MAX_VALUE
+				: CType.getInstance().getSize(ty);
 		Region newReg = new Region(NH.getNode(), null, NH.getOffset(), length);
 		Collection<DSNodeHandle> overlapNHs = Lists.newArrayList();
 		Iterator<Region> RegItr = regPass.getRegions().iterator();
@@ -121,18 +120,6 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 	public void analysis(IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs) {
 		addrTaken.analysis(globalCFG, CFGs);
 		local.analysis(globalCFG, CFGs);
-		
-		if (IOUtils.debugEnabled()) {
-			IOUtils.out().println("local analysis: ");
-			ValueManager valueManager = local.getValueManager();
-			for(IRControlFlowGraph CFG : CFGs) {
-				String FuncID = CFG.getName();
-				Type FuncTy = SymbolTable.lookupType(FuncID);
-				Function func = (Function) valueManager.get(FuncID, FuncTy);
-				local.getDSGraph(func).dump(IOUtils.outPrinter());
-			}
-		}
-		
 		steens.analysis(globalCFG, CFGs);
 		
 		if (IOUtils.debugEnabled()) {

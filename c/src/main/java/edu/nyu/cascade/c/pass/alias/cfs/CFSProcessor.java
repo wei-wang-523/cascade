@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Map;
 import com.google.common.collect.Range;
 import xtc.tree.Node;
+import xtc.type.Type;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.pass.IRAliasAnalyzer;
 import edu.nyu.cascade.ir.pass.IRVar;
@@ -54,7 +55,7 @@ public class CFSProcessor implements IRAliasAnalyzer<Cell> {
   }
 
 	@Override
-  public Collection<Cell> getFieldReps(Cell rep, long length) {
+  public Collection<Cell> getFieldReps(Cell rep, Type Ty) {
 	  // TODO Auto-generated method stub
 	  return null;
   }

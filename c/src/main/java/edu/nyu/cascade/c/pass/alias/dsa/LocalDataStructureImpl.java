@@ -500,9 +500,22 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			
 			@SuppressWarnings("unused")
 			public DSNodeHandle visitEqualityExpression(GNode node) {
-				// TODO: merge?
-				encode(node.getNode(0));
-				encode(node.getNode(2));
+				DSNodeHandle CurNH = new DSNodeHandle();
+				
+				Type lhsTy = CType.getType(node.getNode(0));
+				lhsTy = CType.getInstance().pointerize(lhsTy);
+				DSNodeHandle lhsNH = encode(node.getNode(0));
+				if (lhsTy.resolve().isPointer()) {
+					CurNH.mergeWith(getValueDest(lhsNH, lhsTy));
+				}
+				
+				Type rhsTy = CType.getType(node.getNode(2));
+				rhsTy = CType.getInstance().pointerize(rhsTy);
+				DSNodeHandle rhsNH = encode(node.getNode(2));
+				if (rhsTy.resolve().isPointer()) {
+					CurNH.mergeWith(getValueDest(rhsNH, rhsTy));
+				}
+				
 				return null;
 			}
 			

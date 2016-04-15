@@ -235,7 +235,7 @@ public class TypeAnalyzer implements IRAliasAnalyzer<FSType> {
 	}
 
 	@Override
-  public Collection<FSType> getFieldReps(FSType rep, long length) {
+  public Collection<FSType> getFieldReps(FSType rep, Type Ty) {
 		return Collections.singleton(rep);
   }
 
