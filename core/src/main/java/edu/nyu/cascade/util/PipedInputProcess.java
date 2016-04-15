@@ -44,7 +44,7 @@ public class PipedInputProcess implements Runnable, Future<Integer> {
         try {
           Writer outputWriter = new OutputStreamWriter(process.getOutputStream());
           IOUtils.pipeReader(inputReader, outputWriter);
-          outputWriter.flush();
+          outputWriter.close();
           int returnCode = process.waitFor();
           return returnCode; // Integer.valueOf(returnCode);
         } catch (IOException e) {

@@ -7,6 +7,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.concurrent.ExecutionException;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import edu.nyu.cascade.util.PipedInputProcess;
@@ -32,6 +33,7 @@ public class PipedInputProcessTest {
   }
   
   @Test
+//  @Ignore
   public void testCancelFailure() throws IOException, InterruptedException, ExecutionException {
     PipedInputProcess p = new PipedInputProcess(echoFoo,new StringReader("bar"));
     p.run();
