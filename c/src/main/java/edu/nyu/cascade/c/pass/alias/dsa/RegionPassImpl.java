@@ -20,6 +20,7 @@ import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.pass.IRPass;
 import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Pair;
 import xtc.tree.GNode;
 import xtc.tree.Node;
 import xtc.tree.Visitor;
@@ -27,7 +28,7 @@ import xtc.type.Type;
 
 public final class RegionPassImpl implements IRPass {
 	private SteensDataStructureImpl SteensDS;
-	private Map<Node, Region> RegionMap = Maps.newHashMap();
+	private Map<Pair<Node,String>, Region> RegionMap = Maps.newHashMap();
 	private TreeSet<Region> Regions = Sets.newTreeSet();
 	
 	static RegionPassImpl create(IRPass... prePasses) {
@@ -213,7 +214,7 @@ public final class RegionPassImpl implements IRPass {
 		private LvalVisitor lvalVisitor = new LvalVisitor();
 		private RvalVisitor rvalVisitor = new RvalVisitor();
 		
-		void visit(IRStatement stmt) {
+		private void visit(IRStatement stmt) {
 			switch (stmt.getType()) {
 			case DECLARE:
 			case DECLARE_ARRAY: {
@@ -247,7 +248,9 @@ public final class RegionPassImpl implements IRPass {
 			case CALLOC:
 			case MALLOC: {
 				Node lhs = stmt.getOperand(0).getSourceNode();
+				Node size = stmt.getOperand(1).getSourceNode();
 			    lvalVisitor.encode(lhs);
+			    rvalVisitor.encode(size);
 			    break;
 			}
 			case CALL: {
@@ -290,7 +293,7 @@ public final class RegionPassImpl implements IRPass {
 			}
 		}
 		
-		void visit(IRControlFlowGraph CFG) {			
+		private void visit(IRControlFlowGraph CFG) {			
 			Collection<IRBasicBlock> BBs =
 					Lists.reverse(CFG.topologicalSeq(CFG.getEntry()));
 			for(IRBasicBlock BB : BBs) {
@@ -307,13 +310,14 @@ public final class RegionPassImpl implements IRPass {
 
 		private void init(Node N) {
 			Type Ty = CType.getType(N);
+			String NScope = CType.getScopeName(N);
 //			if (Ty.resolve().isFunction()) return;
-			if (RegionMap.containsKey(N)) return;
+			if (RegionMap.containsKey(Pair.of(N, NScope))) return;
 			
 			DSNodeHandle NH = SteensDS.getResultGraph().getNodeMap().get(N);			
 			long length = getPointedTypeSize(Ty);
 			Region region = new Region(NH.getNode(), Ty, NH.getOffset(), length);
-			RegionMap.put(N, idx(region));
+			RegionMap.put(Pair.of(N, NScope), idx(region));
 		}
 		
 		private long getPointedTypeSize(Type Ty) {			
@@ -363,7 +367,7 @@ public final class RegionPassImpl implements IRPass {
 		}
 	}
 	
-	Map<Node, Region> getRegionMap() {
+	Map<Pair<Node, String>, Region> getRegionMap() {
 		return RegionMap;
 	}
 
@@ -382,8 +386,8 @@ public final class RegionPassImpl implements IRPass {
 	}
 
 	private void normalizeRegionMap() {
-		for(Node N : ImmutableSet.copyOf(RegionMap.keySet())) {
-			Region NR = RegionMap.get(N);
+		for(Pair<Node,String> NPair : ImmutableSet.copyOf(RegionMap.keySet())) {
+			Region NR = RegionMap.get(NPair);
 			if (Regions.contains(NR)) continue;
 			
 			Region R1 = Regions.lower(NR);
@@ -392,7 +396,7 @@ public final class RegionPassImpl implements IRPass {
 			
 			assert (R.getOffset() <= NR.getOffset() && 
 					R.getOffset() + R.getLength() >= NR.getOffset() + NR.getLength());
-			RegionMap.put(N, R);
+			RegionMap.put(NPair, R);
 		}
 	}
 }

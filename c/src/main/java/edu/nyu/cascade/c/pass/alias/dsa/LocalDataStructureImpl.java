@@ -150,11 +150,6 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 
 	class GraphBuilder {
 		
-		private DSNodeHandle load(DSNodeHandle PtrNH, Node N) {
-			Type Ty = CType.getType(N);
-			return load(PtrNH, Ty);
-		}
-		
 		private DSNodeHandle load(DSNodeHandle PtrNH, Type Ty) {
 			
 			// Create a DSNode for the pointer dereferenced by the load.  If the DSNode
@@ -451,19 +446,22 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			@SuppressWarnings("unused")
 			public DSNodeHandle visitIndirectComponentSelection(GNode node) {
 				DSNodeHandle NH = lvalVisitor.encode(node);
-				return load(NH, node);
+				Type Ty = CType.getType(node);
+				return Ty.resolve().isPointer() ? load(NH, Ty) : NH;
 			}
 			
 			@SuppressWarnings("unused")
 			public DSNodeHandle visitDirectComponentSelection(GNode node) {
 				DSNodeHandle NH = lvalVisitor.encode(node);
-				return load(NH, node);
+				Type Ty = CType.getType(node);
+				return Ty.resolve().isPointer() ? load(NH, Ty) : NH;
 			}
 			
 			@SuppressWarnings("unused")
 			public DSNodeHandle visitSubscriptExpression(GNode node) {
 				DSNodeHandle NH = lvalVisitor.encode(node);
-				return load(NH, node);
+				Type Ty = CType.getType(node);
+				return Ty.resolve().isPointer() ? load(NH, Ty) : NH;
 			}
 			
 			@SuppressWarnings("unused")
@@ -517,7 +515,7 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				}
 				
 				DSNodeHandle leftNH = lvalVisitor.encode(node);
-				return load(leftNH, node);
+				return Ty.resolve().isPointer() ? load(leftNH, Ty) : leftNH;
 			}
 			
 			@SuppressWarnings("unused")
@@ -532,7 +530,8 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			@SuppressWarnings("unused")
 			public DSNodeHandle visitIndirectionExpression(GNode node) {
 				DSNodeHandle PtrNH = lvalVisitor.encode(node);
-				return load(PtrNH, node);
+				Type Ty = CType.getType(node);
+				return Ty.resolve().isPointer() ? load(PtrNH, Ty) : PtrNH;
 			}
 			
 			@SuppressWarnings("unused")
@@ -547,8 +546,7 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			
 			@SuppressWarnings("unused")
 			public DSNodeHandle visitAddressExpression(GNode node) {
-				DSNodeHandle NH = lvalVisitor.encode(node.getNode(0));
-				return NH;
+				return lvalVisitor.encode(node.getNode(0));
 			}
 			
 			/**
@@ -684,7 +682,7 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 		private LvalVisitor lvalVisitor = new LvalVisitor();
 		private RvalVisitor rvalVisitor = new RvalVisitor();
 		
-		void visit(IRControlFlowGraph CFG) {
+		private void visit(IRControlFlowGraph CFG) {
 			SymbolTable.enterScope(CFG);
 			
 			Collection<IRBasicBlock> BBs = Lists.reverse(CFG.topologicalSeq(CFG.getEntry()));
@@ -703,12 +701,20 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 		private void visit(IRStatement stmt) {
 			switch (stmt.getType()) {
 			case DECLARE:
-			case DECLARE_ARRAY:
+			case DECLARE_ARRAY: {
+				Node lhs = stmt.getOperand(0).getSourceNode();
+			  	DSNodeHandle lhsNH = lvalVisitor.encode(lhs);
+			  	Type lhsTy = CType.getType(lhs);
+			  	getValueDest(lhsNH, lhsTy);
+			  	break;
+			}
 			case ALLOCA:
 			case CALLOC:
 			case MALLOC: {
 				Node lhs = stmt.getOperand(0).getSourceNode();
+				Node rhs = stmt.getOperand(1).getSourceNode();
 			  	DSNodeHandle lhsNH = lvalVisitor.encode(lhs);
+			  	rvalVisitor.encode(rhs);
 			  	Type lhsTy = CType.getType(lhs);
 			  	getValueDest(lhsNH, lhsTy);
 			  	break;

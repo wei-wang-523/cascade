@@ -23,6 +23,7 @@ import edu.nyu.cascade.ir.pass.IRAliasAnalyzer;
 import edu.nyu.cascade.ir.pass.IRVar;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.Pair;
 import xtc.tree.Node;
 import xtc.type.Type;
 
@@ -86,9 +87,10 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 
 	@Override
 	public DSNodeHandle getRep(Node Node) {
-		Map<Node, Region> regionMap = regPass.getRegionMap();
-		assert regionMap.containsKey(Node) : "No region for node";
-		Region region = regionMap.get(Node);
+		Map<Pair<Node,String>, Region> regionMap = regPass.getRegionMap();
+		String Scope = CType.getScopeName(Node);
+		assert regionMap.containsKey(Pair.of(Node, Scope)) : "No region for node";
+		Region region = regionMap.get(Pair.of(Node, Scope));
 		return new DSNodeHandle(region.getNode(), region.getOffset());
 	}
 	
@@ -153,7 +155,8 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 	public void addVar(Expression lval, Node node) {
 		if (!IOUtils.debugEnabled())	return;
 		if (CType.getType(node).resolve().isFunction()) return;
-		Region region = regPass.getRegionMap().get(node);
+		String scope = CType.getScopeName(node);
+		Region region = regPass.getRegionMap().get(Pair.of(node, scope));
 		snapshot.put(new DSNodeHandle(region.getNode(), region.getOffset()), lval);
 		IOUtils.out().println(displaySnapShot());
 	}
