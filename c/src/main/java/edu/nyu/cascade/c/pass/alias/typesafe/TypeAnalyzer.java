@@ -243,4 +243,10 @@ public class TypeAnalyzer implements IRAliasAnalyzer<FSType> {
 	public boolean isAccessTypeSafe(FSType rep) {
 		return false;
 	}
+
+	@Override
+	public void analyzeVarArg(String func, Type funcTy, Node varArgN) {
+		// TODO Auto-generated method stub
+		
+	}
 }

@@ -15,13 +15,22 @@ import edu.nyu.cascade.ir.SymbolTable;
 public class Identifiers {
   
 	/** The infix for naming */
-  public static final String SCOPE_INFIX = ".";
-  public static final String UNDERLINE = "_";
+	public static final String UNDERLINE = "_";
 	
 	/** The name for global control flow graph (cfg-builder) */
-  public static final String GLOBAL_CFG = "globalCfg";
+	public static final String GLOBAL_CFG = "globalCfg";
   
 	public static final String MAIN = "main";
+	
+	public static final String STRING_VAR_PREFIX = "CASCADE.string";
+	
+	public static final String RETURN_VAR_PREFIX = "CASCADE.return";
+	
+	public static final String COND_VAR_PREFIX = "CASCADE.cond";
+	
+	public static final String VAR_ARG_PREFIX = "CASCADE.vararg";
+	
+	public static final String VAR_ARG = VAR_ARG_PREFIX;
   
 	/** The elements associated with state expression or variable sets in pointer analysis */
 	public static final String SCOPE = "scope";
@@ -29,10 +38,10 @@ public class Identifiers {
 	/** The guard associated with the assume statement */
 	public static final String GUARD = "guard";
   
-  /** Label for auxiliary variables created by cascade internally */
+	/** Label for auxiliary variables created by cascade internally */
 	public static final String AUXLABEL = "auxVarLabel";
 	
-  /** Label for variables created by control file as quantified variable */
+	/** Label for variables created by control file as quantified variable */
 	public static final String CTRLVAR = "ctrlVarLabel";
 	
 	public static final String ITERTIMES = "iterTimes";	

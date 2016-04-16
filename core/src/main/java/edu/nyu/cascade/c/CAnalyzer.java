@@ -1995,7 +1995,7 @@ public class CAnalyzer extends Visitor {
   protected static final String TMP_SCOPE = "tmp";
 
   /** The fully qualified name of the scope for external declarations. */
-  protected static final String EXTERN_PATH = Constants.QUALIFIER + EXTERN_SCOPE;
+  public static final String EXTERN_PATH = Constants.QUALIFIER + EXTERN_SCOPE;
 
   /** The common type operations for C. */
   protected final C cops;

@@ -44,6 +44,15 @@ public class CSymbolTable implements SymbolTable {
     Scope rootScope = xtcSymbolTable.root();
     xtc.util.SymbolTable newXtcSymbolTable = new xtc.util.SymbolTable(rootScope.getName());
     xtcSymbolTable.setScope(rootScope);
+    
+    if (rootScope.hasNested(CAnalyzer.EXTERN_SCOPE)) {
+        xtcSymbolTable.enter(CAnalyzer.EXTERN_SCOPE);
+        newXtcSymbolTable.enter(CAnalyzer.EXTERN_SCOPE);
+        copyScope(file, xtcSymbolTable, newXtcSymbolTable);
+        xtcSymbolTable.exit();
+        newXtcSymbolTable.exit();
+    }
+    
     copyScope(file, xtcSymbolTable, newXtcSymbolTable);
     return new CSymbolTable(factory.create(newXtcSymbolTable), xtcSymbolTable);
   }
@@ -76,7 +85,7 @@ public class CSymbolTable implements SymbolTable {
     while( scopeIter.hasNext() ) {
       Scope nested = scope.getNested(scopeIter.next() );
       assert( nested != null );
-      xtcSymbolTable.enter(nested.getName());    
+      xtcSymbolTable.enter(nested.getName());
       newXtcSymbolTable.enter(nested.getName());
       copyScope(file, xtcSymbolTable, newXtcSymbolTable);
       xtcSymbolTable.exit();

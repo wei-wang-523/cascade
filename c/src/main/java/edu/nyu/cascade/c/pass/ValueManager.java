@@ -6,6 +6,7 @@ import xtc.util.SymbolTable.Scope;
 
 import com.google.common.base.Preconditions;
 
+import edu.nyu.cascade.c.CAnalyzer;
 import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.SymbolTable;
@@ -32,7 +33,7 @@ public class ValueManager {
 		
 		if (Ty.resolve().isFunction()) {
 			Scope rootScope = symbolTable.rootScope();
-			assert Scope.equals(rootScope.getName());
+			assert Scope.equals(rootScope.getName()) || Scope.equals(CAnalyzer.EXTERN_PATH);
 			
 			Function func = Function.getOrCreate(Name, Scope, Ty);
 			String FuncName = xtc.util.SymbolTable.toFunctionScopeName(Name);

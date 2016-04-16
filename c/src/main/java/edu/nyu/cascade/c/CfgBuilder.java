@@ -53,10 +53,6 @@ import edu.nyu.cascade.util.ReservedFunction;
  */
 public class CfgBuilder extends Visitor {
 	
-	public static final String STRING_VAR_PREFIX = "CASCADE.string";
-	public static final String RETURN_VAR_PREFIX = "CASCADE.return";
-	public static final String COND_VAR_PREFIX = "CASCADE.cond";
-	
   /**
    * Retrieve the CFGs from the given parse tree, using the given symbol table
    * and expression manager.
@@ -1176,7 +1172,7 @@ public class CfgBuilder extends Visitor {
   }
   
   private Node defineCondVarNode(Location loc) {
-  	String varName = Identifiers.uniquify(COND_VAR_PREFIX);
+  	String varName = Identifiers.uniquify(Identifiers.COND_VAR_PREFIX);
   	Type varType = NumberT.INT.annotate().shape(false, varName);
   	String scopeName = symbolTable.getCurrentScope().getQualifiedName();
   	varType.scope(scopeName);
@@ -1186,7 +1182,7 @@ public class CfgBuilder extends Visitor {
   	varType.mark(varDeclareNode);
   	symbolTable.mark(varDeclareNode);
   	
-  	createAuxVarBinding(varDeclareNode, COND_VAR_PREFIX);
+  	createAuxVarBinding(varDeclareNode, Identifiers.COND_VAR_PREFIX);
   	
   	Node varNode = GNode.create("PrimaryIdentifier", varName);
   	varNode.setLocation(loc);
@@ -1197,8 +1193,8 @@ public class CfgBuilder extends Visitor {
   }
   
   private Node defineReturnVarNode(String funcName, Type retType, Location loc) {
-    String varName = null == funcName ? Identifiers.uniquify(RETURN_VAR_PREFIX) : 
-    	Identifiers.uniquify(RETURN_VAR_PREFIX + '_' + funcName);
+    String varName = null == funcName ? Identifiers.uniquify(Identifiers.RETURN_VAR_PREFIX) : 
+    	Identifiers.uniquify(Identifiers.RETURN_VAR_PREFIX + '_' + funcName);
     Type varType = retType.annotate().shape(false, varName);
   	String scopeName = symbolTable.getCurrentScope().getQualifiedName();
   	varType.scope(scopeName);
@@ -1208,7 +1204,7 @@ public class CfgBuilder extends Visitor {
     varType.mark(varDeclareNode);
     symbolTable.mark(varDeclareNode);
     
-    createAuxVarBinding(varDeclareNode, RETURN_VAR_PREFIX);
+    createAuxVarBinding(varDeclareNode, Identifiers.RETURN_VAR_PREFIX);
     
     Node varNode = GNode.create("PrimaryIdentifier", varName);
     varNode.setLocation(loc);
@@ -1216,9 +1212,32 @@ public class CfgBuilder extends Visitor {
     symbolTable.mark(varNode);
     return varNode; 
   }
+  
+  private Node defineVarArgNode(String funcName, Location loc, Type ty) {
+	  String varName = null == funcName ? Identifiers.uniquify(Identifiers.VAR_ARG_PREFIX) : 
+		  Identifiers.uniquify(Identifiers.VAR_ARG_PREFIX + '_' + funcName);
+	  Type varType = new ArrayT(ty).annotate().shape(false, varName);
+	  String scopeName = symbolTable.getCurrentScope().getQualifiedName();
+	  varType.scope(scopeName);
+	  IRVarInfo funcInfo = symbolTable.lookup(funcName);
+	  funcInfo.setProperty(Identifiers.VAR_ARG, varName);
+	  
+	  GNode varDeclareNode = GNode.create("SimpleDeclarator", varName);
+	  varDeclareNode.setLocation(loc);
+	  varType.mark(varDeclareNode);
+	  symbolTable.mark(varDeclareNode);
+	    
+	  createAuxVarBinding(varDeclareNode, Identifiers.VAR_ARG_PREFIX);
+	  
+	  Node varNode = GNode.create("PrimaryIdentifier", varName);
+	  varNode.setLocation(loc);
+	  varType.mark(varNode);
+	  symbolTable.mark(varNode);
+	  return varNode; 
+  }
 
 	private Node defineStringVarNode(GNode stringConst) {
-		String varName = Identifiers.uniquify(STRING_VAR_PREFIX);
+		String varName = Identifiers.uniquify(Identifiers.STRING_VAR_PREFIX);
 		
 	  Node stringVar = GNode.create("SimpleDeclarator", varName);
 	  stringVar.setLocation(stringConst.getLocation());
@@ -1231,7 +1250,7 @@ public class CfgBuilder extends Visitor {
   	left.scope(scopeName);
     symbolTable.mark(stringVar);
 	  
-	  createAuxVarBinding(stringVar, STRING_VAR_PREFIX);
+	  createAuxVarBinding(stringVar, Identifiers.STRING_VAR_PREFIX);
 	  
 	  Node varNode = GNode.create("PrimaryIdentifier", varName);
 	  varNode.setLocation(stringVar.getLocation());
@@ -1968,6 +1987,16 @@ public class CfgBuilder extends Visitor {
         // Drill down to the actual declaration
         dispatch(((Node) o).getNode(1));
       }
+    }
+    
+    Type funcType = symbolTable.lookupType(functionName);
+    if (funcType.resolve().toFunction().isVarArgs()) {
+    	List<Type> paramTys = funcType.resolve().toFunction().getParameters();
+    	int lastIdx = paramTys.size() - 1;
+    	Type lastParamTy = paramTys.get(lastIdx);
+    	Node varArgNode = defineVarArgNode(
+    			functionName, node.getLocation(), lastParamTy);
+    	expressionOf(varArgNode);
     }
     
     Type retType = symbolTable.lookupType(functionName).deannotate()

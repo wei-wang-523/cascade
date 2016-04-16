@@ -113,6 +113,12 @@ public class CFSProcessor implements IRAliasAnalyzer<Cell> {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+	public void analyzeVarArg(String func, Type funcTy, Node varArgN) {
+		// TODO Auto-generated method stub
+		
+	}
 	
 }
 //public class CFSProcessor implements PreProcessor<Cell> {	

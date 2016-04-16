@@ -54,7 +54,24 @@ public class AddressTakenAnalysis implements IRPass {
 		}
 		
 		@SuppressWarnings("unused")
+		public void visitLogicalNegationExpression(GNode node) {
+		}
+		
+		@SuppressWarnings("unused")
+		public void visitUnaryPlusExpression(GNode node) {
+			encode(node.getGeneric(0));
+		}
+		
+		@SuppressWarnings("unused")
 		public void visitIntegerConstant(GNode node) {
+		}
+		
+		@SuppressWarnings("unused")
+		public void visitFloatingConstant(GNode node) {
+		}
+		
+		@SuppressWarnings("unused")
+		public void visitStringConstant(GNode node) {
 		}
 		
 		@SuppressWarnings("unused")
@@ -65,6 +82,43 @@ public class AddressTakenAnalysis implements IRPass {
 		public void visitAssignmentExpression(GNode node) {
 			encode(node.getGeneric(0));
 			encode(node.getGeneric(2));
+		}
+		
+		@SuppressWarnings("unused")
+		public void visitConditionalExpression(GNode node) {
+			encode(node.getGeneric(0));
+			encode(node.getGeneric(1));
+			encode(node.getGeneric(2));
+		}
+		
+		@SuppressWarnings("unused")
+	    public void visitBitwiseAndExpression(GNode node) {
+			encode(node.getGeneric(0));
+			encode(node.getGeneric(1));
+		}
+	    
+		@SuppressWarnings("unused")
+	    public void visitBitwiseOrExpression(GNode node) {
+			encode(node.getGeneric(0));
+			encode(node.getGeneric(1));
+		}
+		
+		@SuppressWarnings("unused")
+	    public void visitLogicAndExpression(GNode node) {
+			encode(node.getGeneric(0));
+			encode(node.getGeneric(1));
+		}
+	    
+		@SuppressWarnings("unused")
+	    public void visitLogicOrExpression(GNode node) {
+			encode(node.getGeneric(0));
+			encode(node.getGeneric(1));
+		}
+
+		@SuppressWarnings("unused")
+	    public void visitBitwiseXorExpression(GNode node) {
+			encode(node.getGeneric(0));
+			encode(node.getGeneric(1));
 		}
 		
 		@SuppressWarnings("unused")
@@ -105,7 +159,7 @@ public class AddressTakenAnalysis implements IRPass {
 		
 		@SuppressWarnings("unused")
 		public void visitUnaryMinusExpression(GNode node) {
-			encode(node.getNode(0));
+			encode(node.getGeneric(0));
 		}
 		
 		@SuppressWarnings("unused")

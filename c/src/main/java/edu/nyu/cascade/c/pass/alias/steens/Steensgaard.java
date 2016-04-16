@@ -424,4 +424,10 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 			break;
 	  }
 	}
+
+	@Override
+	public void analyzeVarArg(String func, Type funcTy, Node varArgN) {
+		// TODO Auto-generated method stub
+		
+	}
 }

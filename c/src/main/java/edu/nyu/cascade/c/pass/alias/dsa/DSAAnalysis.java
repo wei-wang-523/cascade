@@ -168,6 +168,14 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 	@Override
 	public Collection<IRVar> getEquivFuncVars(Node funcNode) {
 		Type funcTy = CType.getType(funcNode);
+		Collection<IRVar> Functions = Lists.newArrayList();
+		
+		String Scope = CType.getScopeName(funcNode);
+		Map<Pair<Node,String>, Region> regionMap = regPass.getRegionMap();
+		if (!regionMap.containsKey(Pair.of(funcNode, Scope))) {
+			return Functions;
+		}
+		
 		DSNodeHandle NH;
 		if (funcTy.resolve().isPointer()) {
 			NH = getPtsToRep(funcNode);
@@ -175,7 +183,6 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 			NH = getRep(funcNode);
 		}
 		Collection<GlobalValue> GVs = NH.getNode().getGlobals();
-		Collection<IRVar> Functions = Lists.newArrayList();
 		for(GlobalValue GV : GVs) {
 			if (!(GV instanceof Function)) continue;
 			Functions.add(GV); 
@@ -186,13 +193,23 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 	@Override
 	public void reset() {
 		snapshot.clear();
-		regPass.reset();
 	}
 
 	@Override
 	public boolean isAccessTypeSafe(DSNodeHandle rep) {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	@Override
+	public void analyzeVarArg(String func, Type funcTy, Node varArgElem) {
+		Function FB = (Function) steens.getValueManager().get(func, funcTy);
+		DSNodeHandle VArgNH = steens.getResultGraph().getVANodeFor(FB);
+		Type Ty = CType.getType(varArgElem);
+		long length = CType.getInstance().getSize(Ty);
+		Region region = new Region(VArgNH.getNode(), Ty, 0, length);
+		regPass.getRegionMap().put(Pair.of(varArgElem, CType.getScopeName(varArgElem)), region);
+		regPass.getRegions().add(region);
 	}
 
 }

@@ -129,6 +129,9 @@ public final class RegionPassImpl implements IRPass {
 			public void visitIntegerConstant(GNode node) { }
 			
 			@SuppressWarnings("unused")
+			public void visitFloatingConstant(GNode node) { }
+			
+			@SuppressWarnings("unused")
 			public void visitCharacterConstant(GNode node) { }
 			
 			@SuppressWarnings("unused")
@@ -157,6 +160,11 @@ public final class RegionPassImpl implements IRPass {
 			}
 			
 			@SuppressWarnings("unused")
+			public void visitUnaryPlusExpression(GNode node) {
+				encode(node.getNode(0));
+			}
+			
+			@SuppressWarnings("unused")
 			public void visitIndirectComponentSelection(GNode node) {
 				lvalVisitor.encode(node);
 			}
@@ -169,6 +177,13 @@ public final class RegionPassImpl implements IRPass {
 			@SuppressWarnings("unused")
 			public void visitSubscriptExpression(GNode node) {
 				lvalVisitor.encode(node);
+			}
+			
+			@SuppressWarnings("unused") 
+			public void visitConditionalExpression(GNode node){
+				encode(node.getNode(0));
+				encode(node.getNode(1));
+				encode(node.getNode(2));
 			}
 			
 			@SuppressWarnings("unused")
@@ -202,6 +217,44 @@ public final class RegionPassImpl implements IRPass {
 			public void visitAdditiveExpression(GNode node) {
 				encode(node.getNode(0));
 				encode(node.getNode(2));			
+			}
+			
+			@SuppressWarnings("unused")
+		    public void visitBitwiseAndExpression(GNode node) {
+				encode(node.getNode(0));
+				encode(node.getNode(1));
+			}
+		    
+			@SuppressWarnings("unused")
+		    public void visitBitwiseOrExpression(GNode node) {
+				encode(node.getNode(0));
+				encode(node.getNode(1));
+			}
+
+			@SuppressWarnings("unused")
+		    public void visitBitwiseXorExpression(GNode node) {
+				encode(node.getNode(0));
+				encode(node.getNode(1));
+			}
+			
+			@SuppressWarnings("unused")
+			public void visitLogicalNegationExpression(GNode node) {
+				encode(node.getNode(0));
+			}
+			
+			@SuppressWarnings("unused")
+			public void visitStringConstant(GNode node) { }
+			
+			@SuppressWarnings("unused")
+		    public void visitLogicAndExpression(GNode node) {
+				encode(node.getNode(0));
+				encode(node.getNode(1));
+			}
+		    
+			@SuppressWarnings("unused")
+		    public void visitLogicalOrExpression(GNode node) {
+				encode(node.getNode(0));
+				encode(node.getNode(1));
 			}
 			
 			@SuppressWarnings("unused")
@@ -324,14 +377,16 @@ public final class RegionPassImpl implements IRPass {
 			Ty = Ty.resolve();
 			
 			if (Ty.isStruct() || Ty.isUnion()) {
-				Ty = Ty.toStructOrUnion().getMember(0);
-				return getPointedTypeSize(Ty);
+				if (Ty.toStructOrUnion().getMemberCount() > 0) {
+					Ty = Ty.toStructOrUnion().getMember(0);
+					return getPointedTypeSize(Ty);
+				}
 			} else if (Ty.isArray()) {
 				Ty = Ty.toArray().getType();
 				return getPointedTypeSize(Ty);
-			} else {
-				return CType.getInstance().getSize(Ty);
 			}
+			
+			return CType.getInstance().getSize(Ty);
 		}
 
 		private Region idx(Region R) {

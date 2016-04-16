@@ -506,4 +506,10 @@ public class SteensgaardFS implements IRAliasAnalyzer<ECR> {
 		uf.join(rhsLoc, lhsLoc);
 		uf.join(rhsFunc, lhsFunc);
 	}
+
+	@Override
+	public void analyzeVarArg(String func, Type funcTy, Node varArgN) {
+		// TODO Auto-generated method stub
+		
+	}
 }

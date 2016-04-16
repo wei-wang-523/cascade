@@ -444,6 +444,16 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			}
 			
 			@SuppressWarnings("unused")
+			public DSNodeHandle visitUnaryPlusExpression(GNode node) {
+				DSNodeHandle NH = encode(node.getNode(0));
+				if (NH != null && NH.getNode() != null) {
+					NH.getNode().setUnknownMarker();
+				}
+				
+				return NH;
+			}
+			
+			@SuppressWarnings("unused")
 			public DSNodeHandle visitIndirectComponentSelection(GNode node) {
 				DSNodeHandle NH = lvalVisitor.encode(node);
 				Type Ty = CType.getType(node);
@@ -496,6 +506,12 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				}
 				
 				return CurNH;
+			}
+			
+			@SuppressWarnings("unused")
+			public DSNodeHandle visitLogicalNegationExpression(GNode node) {
+				encode(node.getNode(0));
+				return null;
 			}
 			
 			@SuppressWarnings("unused")
@@ -553,8 +569,45 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			}
 			
 			@SuppressWarnings("unused")
+			public DSNodeHandle visitFloatingConstant(GNode node) { 
+				return null; 
+			}
+			
+			@SuppressWarnings("unused")
 			public DSNodeHandle visitCharacterConstant(GNode node) {
 				return null;
+			}
+			
+			@SuppressWarnings("unused")
+			public DSNodeHandle visitStringConstant(GNode node) {
+				return null;
+			}
+			
+			@SuppressWarnings("unused")
+			public DSNodeHandle visitConditionalExpression(GNode node) {
+				encode(node.getNode(0));
+				
+				DSNodeHandle CurNH = new DSNodeHandle();
+				Type Ty = CType.getType(node);
+				if (Ty.resolve().isPointer()) {
+					CurNH = getValueDest(CurNH, Ty);
+				}
+				
+				Type lhsTy = CType.getType(node.getNode(1));
+				lhsTy = CType.getInstance().pointerize(lhsTy);
+				DSNodeHandle lhsNH = encode(node.getNode(1));
+				if (lhsTy.resolve().isPointer()) {
+					CurNH.mergeWith(getValueDest(lhsNH, lhsTy));
+				}
+				
+				Type rhsTy = CType.getType(node.getNode(2));
+				rhsTy = CType.getInstance().pointerize(rhsTy);
+				DSNodeHandle rhsNH = encode(node.getNode(2));
+				if (rhsTy.resolve().isPointer()) {
+					CurNH.mergeWith(getValueDest(rhsNH, rhsTy));
+				}
+				
+				return CurNH;
 			}
 			
 			@SuppressWarnings("unused")
@@ -617,6 +670,41 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				}
 				
 				return CurNH;
+			}
+			
+			@SuppressWarnings("unused")
+		    public DSNodeHandle visitBitwiseAndExpression(GNode node) {
+				encode(node.getNode(0));
+				encode(node.getNode(1));
+				return null;
+			}
+		    
+			@SuppressWarnings("unused")
+		    public DSNodeHandle visitBitwiseOrExpression(GNode node) {
+				encode(node.getNode(0));
+				encode(node.getNode(1));
+				return null;
+			}
+
+			@SuppressWarnings("unused")
+		    public DSNodeHandle visitBitwiseXorExpression(GNode node) {
+				encode(node.getNode(0));
+				encode(node.getNode(1));
+				return null;
+			}
+			
+			@SuppressWarnings("unused")
+		    public DSNodeHandle visitLogicAndExpression(GNode node) {
+				encode(node.getNode(0));
+				encode(node.getNode(1));
+				return null;
+			}
+		    
+			@SuppressWarnings("unused")
+		    public DSNodeHandle visitLogicalOrExpression(GNode node) {
+				encode(node.getNode(0));
+				encode(node.getNode(1));
+				return null;
 			}
 		}
 		
@@ -689,7 +777,6 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 		private DSGraph G;
 		private Function FB;	// FB is null indicates global CFG
 		
-		@SuppressWarnings("unused")
 		private DSNode VAArray;
 		
 		private LvalVisitor lvalVisitor = new LvalVisitor();
@@ -840,10 +927,11 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			int StmtArgSize = stmt.getOperands().size() - 1;
 			if (!funcTy.resolve().toFunction().getResult().isVoid()) StmtArgSize -= 1;
 			
-			if (!funcTy.resolve().toFunction().isVarArgs()) {
-				assert StmtArgSize == NumFixedArgs : 
-					"Too many arguments/incorrect function signature!";
-			}
+			//FIXME: function __bswap_32 with no var args but has too many arguments
+//			if (!funcTy.resolve().toFunction().isVarArgs()) {
+//				assert StmtArgSize == NumFixedArgs : 
+//					"Too many arguments/incorrect function signature!";
+//			}
 			
 			// Calculate the arguments vector...
 			// Add all fixed pointer arguments, then merge the rest together

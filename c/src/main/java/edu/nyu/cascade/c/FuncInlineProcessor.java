@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import xtc.Constants;
 import xtc.tree.GNode;
+import xtc.tree.Location;
 import xtc.tree.Node;
 import xtc.type.FunctionT;
 import xtc.type.Type;
@@ -30,6 +32,7 @@ import edu.nyu.cascade.ir.IREdge;
 import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.IRStatement.StatementType;
+import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.ir.impl.BasicBlock;
 import edu.nyu.cascade.ir.impl.CaseGuard;
@@ -260,110 +263,81 @@ public class FuncInlineProcessor<T> {
    * @return empty list if the function is not defined or 
    * without parameters
    */
-  private Collection<IRStatement> assignArgToParam(IRStatement stmt, IRControlFlowGraph funcCFG, FunctionT funcType) {
-    Preconditions.checkArgument(CALL.equals(stmt.getType()));
+	private Collection<IRStatement> assignArgToParam(IRStatement stmt,
+			IRControlFlowGraph funcCFG, FunctionT funcType) {
+		Preconditions.checkArgument(CALL.equals(stmt.getType()));
     
-    Node defNode = funcCFG.getSourceNode();
+		Node defNode = funcCFG.getSourceNode();
     
-    /* Find the parameter declare node */
-    GNode declarator = defNode.getGeneric(2);
-    GNode paramDeclare = CAnalyzer.getFunctionDeclarator(declarator).getGeneric(1);
-    if( paramDeclare != null ) {
-      paramDeclare = paramDeclare.getGeneric(0);
-    }
+		/* Find the parameter declare node */
+		GNode declarator = defNode.getGeneric(2);
+		GNode paramDeclare = CAnalyzer.getFunctionDeclarator(declarator).getGeneric(1);
+		if( paramDeclare != null ) {
+			paramDeclare = paramDeclare.getGeneric(0);
+		}
+		
+		if(paramDeclare == null)    return Collections.emptyList();
+		
+		/* Pick all arguments */
+		int operandSize = stmt.getOperands().size();
+		List<IRExpression> args;
     
-    if(paramDeclare == null)    return Collections.emptyList();
-    
-    /* Pick all arguments */
-    int operandSize = stmt.getOperands().size();
-    List<IRExpression> args;
-    
-    if(funcType.getResult().isVoid()) {
-    	args = stmt.getOperands().subList(1, operandSize);
-    } else {
-    	args = stmt.getOperands().subList(2, operandSize);
-    }
-    
-    /* Generate assign statement one by one */
-    
-    if(funcType.isVarArgs()) {
-    	int argSize = args.size();
+		if(funcType.getResult().isVoid()) {
+			args = stmt.getOperands().subList(1, operandSize);
+		} else {
+			args = stmt.getOperands().subList(2, operandSize);
+		}
+		
+	    /* Generate assign statement one by one */
     	int paramSize = funcType.getParameters().size();
     	
-    	Collection<IRStatement> assignments = Lists.newArrayListWithExpectedSize(paramSize);
-    	assert (argSize >= paramSize);
-    	
-    	int i = 0;
-    	for(; i < paramSize-1; i++) {
-        Node paramNode = paramDeclare.getNode(i).getNode(1);
-        Node idNode = CAnalyzer.getDeclaredId(GNode.cast(paramNode));
-        GNode primaryId = GNode.create("PrimaryIdentifier", idNode.get(0));
-        Type paramType = CType.getType(idNode);
-        paramType.mark(primaryId);
-        symbolTable.mark(primaryId);
-        
-        IRExpressionImpl param = CExpression.create(primaryId, symbolTable.getCurrentScope());
-        IRExpressionImpl arg = (IRExpressionImpl) args.get(i);
-        Node argNode = arg.getSourceNode();
-        Node assignNode = GNode.create("AssignmentExpression", paramNode, "=", argNode);
-        assignNode.setLocation(paramNode.getLocation());
-        Statement assignStmt = Statement.assign(assignNode, param, arg);
-        assignments.add(assignStmt);
-    	}
-    	
-      Node paramNode = paramDeclare.getNode(i).getNode(1);
-      Node idNode = CAnalyzer.getDeclaredId(GNode.cast(paramNode));
-      GNode primaryId = GNode.create("PrimaryIdentifier", idNode.get(0));
-      Type paramType = CType.getType(idNode);
-      paramType.mark(primaryId);
-      symbolTable.mark(primaryId);
-      
-    	for(int j = 0; i< argSize; i++, j++) {
-    		GNode offsetNode = GNode.create("IntegerConstant", String.valueOf(j));
-    		cop.typeInteger(String.valueOf(j)).mark(offsetNode); symbolTable.mark(offsetNode);
-    		
-    		GNode primaryIdPrime = GNode.create("AdditiveExpression", primaryId, "+", offsetNode);
-    		paramType.mark(primaryIdPrime); symbolTable.mark(primaryIdPrime);
-    		
-    		IRExpressionImpl param = CExpression.create(primaryIdPrime, symbolTable.getCurrentScope());
-    		IRExpressionImpl arg = (IRExpressionImpl) args.get(i);
-    		Node argNode = arg.getSourceNode();
-    		
-        Node assignNode = GNode.create("AssignmentExpression", paramNode, "=", argNode);
-        assignNode.setLocation(paramNode.getLocation());
-        Statement assignStmt = Statement.assign(assignNode, param, arg);
-        assignments.add(assignStmt);
-    	}
-    	
-    	return assignments; 
-    } 
+        Collection<IRStatement> assignments = Lists.newArrayListWithExpectedSize(paramSize);
+      	
+        for(int i = 0; i < paramSize; i++) {
+        	Node paramNode = paramDeclare.getNode(i).getNode(1);
+        	Node idNode = CAnalyzer.getDeclaredId(GNode.cast(paramNode));
+        	GNode primaryId = GNode.create("PrimaryIdentifier", idNode.get(0));
+        	Type paramType = CType.getType(idNode);
+        	paramType.mark(primaryId); symbolTable.mark(primaryId);
+          
+        	IRExpressionImpl param = CExpression.create(primaryId, symbolTable.getCurrentScope());
+        	IRExpressionImpl arg = (IRExpressionImpl) args.get(i);
+        	Node argNode = arg.getSourceNode();
+        	Node assignNode = GNode.create("AssignmentExpression", paramNode, "=", argNode);
+        	assignNode.setLocation(paramNode.getLocation());
+        	Statement assignStmt = Statement.assign(assignNode, param, arg);
+        	assignments.add(assignStmt);
+        }
     
-    else {
-    	int argSize = args.size();
-    	int paramSize = funcType.getParameters().size();
+        if(funcType.isVarArgs()) {
+        	int argSize = args.size();
+        	assert (argSize >= paramSize);
     	
-      Collection<IRStatement> assignments = Lists.newArrayListWithExpectedSize(paramSize);
-    	assert (argSize == paramSize);
-    	
-      for(int i=0; i < paramSize; i++) {
-        Node paramNode = paramDeclare.getNode(i).getNode(1);
-        Node idNode = CAnalyzer.getDeclaredId(GNode.cast(paramNode));
-        GNode primaryId = GNode.create("PrimaryIdentifier", idNode.get(0));
-        Type paramType = CType.getType(idNode);
-        paramType.mark(primaryId); symbolTable.mark(primaryId);
+        	for(int i = argSize; i < paramSize; i++) {
+        		GNode offsetNode = GNode.create("IntegerConstant", String.valueOf(argSize - i));
+        		cop.typeInteger(String.valueOf(i)).mark(offsetNode); symbolTable.mark(offsetNode);
+    		
+        		Node varArgN = getVarArgNode(funcCFG.getName(), declarator.getLocation());
+        		Type varArgTy = CType.getType(varArgN).resolve().toArray().getType();
+        		GNode varArgElem = GNode.create("SubscriptExpression", varArgN, offsetNode);
+        		varArgElem.setLocation(declarator.getLocation());
+        		varArgTy.mark(varArgElem); symbolTable.mark(varArgElem);
+        		preprocessor.analyzeVarArg(funcCFG.getName(), funcType, varArgElem);
+    		
+        		IRExpressionImpl param = CExpression.create(varArgElem, symbolTable.getCurrentScope());
+        		IRExpressionImpl arg = (IRExpressionImpl) args.get(i);
+        		Node argNode = arg.getSourceNode();
+    		
+        		Node assignNode = GNode.create("AssignmentExpression", varArgElem, "=", argNode);
+        		assignNode.setLocation(varArgElem.getLocation());
+        		Statement assignStmt = Statement.assign(assignNode, param, arg);
+        		
+        		assignments.add(assignStmt);
+        	}
+        }
         
-        IRExpressionImpl param = CExpression.create(primaryId, symbolTable.getCurrentScope());
-        IRExpressionImpl arg = (IRExpressionImpl) args.get(i);
-        Node argNode = arg.getSourceNode();
-        Node assignNode = GNode.create("AssignmentExpression", paramNode, "=", argNode);
-        assignNode.setLocation(paramNode.getLocation());
-        Statement assignStmt = Statement.assign(assignNode, param, arg);
-        assignments.add(assignStmt);
-      }
-      
-      return assignments; 
-    }
-  }
+        return assignments; 
+	}
   
   /**
    * Build function in-line graph for call statement of function call 
@@ -582,7 +556,7 @@ public class FuncInlineProcessor<T> {
   }
   
   private void refreshScope(IRControlFlowGraph callerCFG, IRControlFlowGraph calleeCFG) {
-	  String freshCalleeName = callerCFG.getName() + Identifiers.SCOPE_INFIX
+	  String freshCalleeName = callerCFG.getName() + Constants.QUALIFIER
 	  		+ Identifiers.uniquify(calleeCFG.getName());
 	  
 	  for(IRBasicBlock block : calleeCFG.getBlocks()) {
@@ -596,6 +570,21 @@ public class FuncInlineProcessor<T> {
 	  		}
 	  	}
 	  }
+  }
+  
+  private Node getVarArgNode(String funcName, Location loc) {
+	  IRVarInfo funcInfo = symbolTable.lookup(funcName);
+	  String varName = (String) funcInfo.getProperty(Identifiers.VAR_ARG);
+	  IRVarInfo varInfo = symbolTable.lookup(varName);
+	  String scopeName = varInfo.getScopeName();
+	  Type varType = varInfo.getXtcType();
+	  varType.scope(scopeName);
+	  
+	  Node varNode = GNode.create("PrimaryIdentifier", varName);
+	  varNode.setLocation(loc);
+	  varType.mark(varNode);
+	  symbolTable.mark(varNode);
+	  return varNode; 
   }
 
   private Collection<IRControlFlowGraph> lookupFuncCFG(Node funcNode,

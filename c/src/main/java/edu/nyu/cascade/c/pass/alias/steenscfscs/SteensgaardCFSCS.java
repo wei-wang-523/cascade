@@ -581,4 +581,10 @@ public class SteensgaardCFSCS implements IRAliasAnalyzer<ECR> {
 			}
 		}
 	}
+
+	@Override
+	public void analyzeVarArg(String func, Type funcTy, Node varArgN) {
+		// TODO Auto-generated method stub
+		
+	}
 }

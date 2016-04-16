@@ -6,7 +6,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import edu.nyu.cascade.util.IOUtils;
-import edu.nyu.cascade.util.Identifiers;
+import xtc.Constants;
 
 public final class CScopeAnalyzer {
 	private static String FUNCTION_WRAPPER = "function(";
@@ -55,7 +55,7 @@ public final class CScopeAnalyzer {
 	 * De-qualified scope name
 	 */
 	public static String getLastScopeName(String scopeName) {
-		int lastIndexOfDot = scopeName.lastIndexOf(Identifiers.SCOPE_INFIX) + 1;
+		int lastIndexOfDot = scopeName.lastIndexOf(Constants.QUALIFIER) + 1;
 		String currentScopeName = scopeName.substring(lastIndexOfDot);
 		if(currentScopeName.startsWith(FUNCTION_WRAPPER)) {
 			int startIndex = FUNCTION_WRAPPER.length();

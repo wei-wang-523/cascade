@@ -3,7 +3,7 @@ package edu.nyu.cascade.c.pass.alias.typesafe;
 import com.google.common.base.Preconditions;
 
 import edu.nyu.cascade.c.CType;
-import edu.nyu.cascade.util.Identifiers;
+import xtc.Constants;
 import xtc.tree.GNode;
 import xtc.tree.Node;
 import xtc.tree.VisitingException;
@@ -15,7 +15,7 @@ import xtc.type.Reference;
 import xtc.type.Type;
 
 public class FSTypeEncoder extends Visitor {
-  private static final String FIELD_INFIX = Identifiers.SCOPE_INFIX;
+  private static final char FIELD_INFIX = Constants.QUALIFIER;
     
   public FSType encodeFSType(Node node) {
     FSType res = (FSType) dispatch(node);
