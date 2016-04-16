@@ -195,10 +195,10 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 				
 		  	/* For the function pointer parameters declared but not yet assigned */
 		  	if(uf.getType(funcECR).isBottom()) {
-					IOUtils.err().println("WARNING: get Loc of " + funcECR);
-					Size size = Size.createForType(CType.getInstance().pointerize(funcXtcType));
-					uf.expand(funcECR, size);
-				}
+		  		IOUtils.err().println("WARNING: get Loc of " + funcECR);
+		  		Size size = Size.createForType(CType.getInstance().pointerize(funcXtcType));
+		  		uf.expand(funcECR, size);
+		  	}
 		  	
 		  	ECR lamECR = uf.getFunc(funcECR);
 		  	

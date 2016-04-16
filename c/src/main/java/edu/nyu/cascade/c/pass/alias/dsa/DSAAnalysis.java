@@ -79,6 +79,7 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 	@Override
 	public String getRepId(DSNodeHandle NH) {
 		Preconditions.checkNotNull(NH);
+		Preconditions.checkArgument(!NH.isNull());
 		return NH.getNode().getID() + ":" + NH.getOffset();
 	}
 

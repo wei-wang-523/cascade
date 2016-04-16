@@ -6,6 +6,7 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.CAnalyzer;
+import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.pass.Function;
 import edu.nyu.cascade.c.pass.ValueManager;
 import edu.nyu.cascade.ir.IRBasicBlock;
@@ -123,13 +124,14 @@ public class AddressTakenAnalysis implements IRPass {
 		
 		@SuppressWarnings("unused")
 		public void visitAddressExpression(GNode node) {
+			Type type = CType.getType(node.getNode(0));
+			if (!type.resolve().isFunction()) return;
+			
 			Node idNode = CAnalyzer.getIdentifier(node.getGeneric(0));
 			if (idNode == null)	return;
 			assert idNode.hasName("PrimaryIdentifier") : "Invalid identifier.";
 			String idName = idNode.getString(0);
 			IRVarInfo idInfo = SymbolTable.lookup(idName);
-			Type type = idInfo.getXtcType();
-			if (!type.resolve().isFunction()) return;
 			Function func = (Function) ValueManager.getOrCreate(idInfo);
 			addressTakenFunctions.add(func);
 		}

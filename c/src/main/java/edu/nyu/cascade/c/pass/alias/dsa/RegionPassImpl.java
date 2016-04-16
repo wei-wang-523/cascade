@@ -21,6 +21,7 @@ import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.pass.IRPass;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Pair;
+import edu.nyu.cascade.util.ReservedFunction;
 import xtc.tree.GNode;
 import xtc.tree.Node;
 import xtc.tree.Visitor;
@@ -102,6 +103,11 @@ public final class RegionPassImpl implements IRPass {
 				encode(node.getNode(0));
 				rvalVisitor.encode(node.getNode(1));
 			}
+			
+			@SuppressWarnings("unused")
+			public void visitCastExpression(GNode node) {
+				encode(node.getNode(1));
+			}
 		}
 		
 		private class RvalVisitor extends Visitor {
@@ -122,6 +128,7 @@ public final class RegionPassImpl implements IRPass {
 			public void visitPrimaryIdentifier(GNode node) {
 				Type Ty = CType.getType(node);
 				if (Ty.isEnumerator()) return;
+				if (Ty.isError()) return;
 				lvalVisitor.encode(node);
 			}
 			
@@ -283,7 +290,11 @@ public final class RegionPassImpl implements IRPass {
 				rvalVisitor.encode(rhs);
 				break;
 			}
-			case FREE:
+			case FREE: {
+				Node opNode = stmt.getOperand(0).getSourceNode();
+				lvalVisitor.encode(opNode);
+				break;
+			}
 			case ASSUME:
 			case ASSERT: {
 				Node opNode = stmt.getOperand(0).getSourceNode();
@@ -316,8 +327,16 @@ public final class RegionPassImpl implements IRPass {
 				}
 				
 				Node funcNode = stmt.getOperand(0).getSourceNode();
-				Type funcTy = CType.getType(funcNode);
-					
+				String funcName = CAnalyzer.toFunctionName(funcNode);
+				if(ReservedFunction.MEMCOPY.equals(funcName)) {
+					Node lhs = stmt.getOperand(2).getSourceNode();
+					Node rhs = stmt.getOperand(3).getSourceNode();
+					lvalVisitor.encode(lhs);
+					lvalVisitor.encode(rhs);
+					return;
+				}
+				
+				Type funcTy = CType.getType(funcNode);	
 				Node funcId = CAnalyzer.getIdentifier((GNode) funcNode);
 				if (funcId == null || !CType.getType(funcId).resolve().isFunction()) {
 					lvalVisitor.encode(funcNode);

@@ -22,6 +22,7 @@ import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.util.IOUtils;
+import edu.nyu.cascade.util.ReservedFunction;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.ir.pass.IRPass;
 import xtc.Constants;
@@ -299,6 +300,16 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			}
 			
 			@SuppressWarnings("unused")
+			public DSNodeHandle visitCastExpression(GNode node) {
+				return encode(node.getNode(1));
+			}
+			
+			@SuppressWarnings("unused")
+			public DSNodeHandle visitAddressExpression(GNode node) {
+				return encode(node.getNode(0));
+			}
+			
+			@SuppressWarnings("unused")
 			public DSNodeHandle visitIndirectionExpression(GNode node) {
 				return rvalVisitor.encode(node.getNode(0));
 			}
@@ -316,6 +327,7 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			public DSNodeHandle visitPrimaryIdentifier(GNode node) {
 				String name = node.getString(0);
 				Type ty = CType.getType(node);
+				if (ty.isError()) return new DSNodeHandle();
 				Value v = ValueManager.get(name, ty);
 				return G.getNodeForValue(v);
 			}
@@ -378,6 +390,38 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				
 				// NodeH is now the pointer we want to GEP to be...
 				return NodeH;
+			}
+			
+			@SuppressWarnings("unused")
+			public DSNodeHandle visitAdditiveExpression(GNode node) {				
+				DSNodeHandle CurNH = new DSNodeHandle();
+				Type Ty = CType.getType(node);
+				assert Ty.resolve().isPointer();
+				getValueDest(CurNH, Ty);
+				
+				Type lhsTy = CType.getType(node.getNode(0));
+				lhsTy = CType.getInstance().pointerize(lhsTy);
+				if (lhsTy.isPointer()) {
+					DSNodeHandle lhsNH = encode(node.getNode(0));
+					CurNH.mergeWith(getValueDest(lhsNH, lhsTy));
+				} else {
+					rvalVisitor.encode(node.getNode(0));
+				}
+				
+				Type rhsTy = CType.getType(node.getNode(2));
+				rhsTy = CType.getInstance().pointerize(rhsTy);
+				if (rhsTy.isPointer()) {
+					DSNodeHandle rhsNH = encode(node.getNode(2));
+					CurNH.mergeWith(getValueDest(rhsNH, lhsTy));
+				} else {
+					rvalVisitor.encode(node.getNode(2));
+				}
+				
+				if (CurNH.getNode() != null) {
+					CurNH.getNode().setUnknownMarker();
+				}
+				
+				return CurNH;
 			}
 		}
 		
@@ -819,7 +863,11 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			  	getValueDest(lhsNH, lhsTy);
 			  	break;
 			}
-			case FREE:
+			case FREE: {
+				Node op = stmt.getOperand(0).getSourceNode();
+				lvalVisitor.encode(op);
+				break;
+			}
 			case ASSUME:
 			case ASSERT: {
 				Node op = stmt.getOperand(0).getSourceNode();
@@ -902,8 +950,17 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			}
 			
 			Node funcNode = stmt.getOperand(0).getSourceNode();
-			Type funcTy = CType.getType(funcNode);
+			String funcName = CAnalyzer.toFunctionName(funcNode);
+			if(ReservedFunction.MEMCOPY.equals(funcName)) {
+				Node lhs = stmt.getOperand(2).getSourceNode();
+				Node rhs = stmt.getOperand(3).getSourceNode();
+				DSNodeHandle lhsNH = lvalVisitor.encode(lhs);
+				DSNodeHandle rhsNH = lvalVisitor.encode(rhs);
+				lhsNH.mergeWith(rhsNH);
+				return;
+			}
 			
+			Type funcTy = CType.getType(funcNode);
 			Node funcId = CAnalyzer.getIdentifier((GNode) funcNode);
 			DSNode CalleeNode = null;
 			if (funcId == null || !CType.getType(funcId).resolve().isFunction()) {
