@@ -38,7 +38,7 @@ public class MainInjectTest {
 	
 	@Parameterized.Parameters
 	public static Collection<File> cFiles() {		
-		File[] programs_dirs = { /* programs_syntax, mini_invalids, */ mini_invalids /*, nec_programs */};
+		File[] programs_dirs = { /* programs_syntax, */ mini_invalids, mini_valids /*, nec_programs */};
 		Collection<File> fileList = Lists.newArrayList();
 		
 		for(File programs_dir : programs_dirs) {
