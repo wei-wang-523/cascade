@@ -218,7 +218,7 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	@Override
 	public BooleanExpression validAccessRange(StateExpression state, Expression ptr,
 	    Expression size, Node ptrNode) {
-		T srcRep = labelAnalyzer.getStackRep(ptrNode);
+		T srcRep = labelAnalyzer.getPtsToRep(ptrNode);
 		updateStateWithRep(state.asMultiLambda(), srcRep);
 		String label = labelAnalyzer.getRepId(srcRep);
 		SingleLambdaStateExpression singleState = state.asMultiLambda().getStateMap().get(label);
