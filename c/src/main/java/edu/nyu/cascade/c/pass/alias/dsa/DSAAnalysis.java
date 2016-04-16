@@ -100,7 +100,8 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 	@Override
 	public Collection<DSNodeHandle> getFieldReps(DSNodeHandle NH, Type ty) {
 		Preconditions.checkNotNull(NH);
-		long length = ty.resolve().isVoid() ? Long.MAX_VALUE
+		// void type is treated as unknown type with maximum size
+		long length = ty.resolve().isVoid() ? Integer.MAX_VALUE
 				: CType.getInstance().getSize(ty);
 		Region newReg = new Region(NH.getNode(), null, NH.getOffset(), length);
 		Collection<DSNodeHandle> overlapNHs = Lists.newArrayList();

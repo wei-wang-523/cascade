@@ -334,6 +334,7 @@ abstract class DSGraph {
 	      .incr();
 		
 		for (DSNode Node : Nodes) {
+			if (Node.Links.isEmpty()) continue;
 			printer.pln(Node.toString());
 			
 			printer.incr();
