@@ -203,9 +203,9 @@ public class SteensDataStructureImpl extends DataStructuresImpl {
 		    ValNH.getNode().growSizeForType(Arg.getType(), ValNH.getOffset());
 				
 		    // Avoid adding edges from null, or processing non-"pointer" stores
-		    if (CType.isScalar(Arg.getType().resolve())){
+		    if (CType.isScalar(Arg.getType())){
 		    	if (Arg.getType().resolve().isPointer()) {
-		    		if (ArgNH.isNull()) {
+		    		if (ArgNH != null && ArgNH.isNull()) {
 		    			DSNode ArgN = new DSNodeImpl(ResultGraph);
 		    			ArgNH.setTo(ArgN, 0);
 		    		}
