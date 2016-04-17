@@ -1171,21 +1171,21 @@ public class CfgBuilder extends Visitor {
     return e;
   }
   
-  private Node defineCondVarNode(Location loc) {
+  private Node defineCondVarNode(Node node) {
   	String varName = Identifiers.uniquify(Identifiers.COND_VAR_PREFIX);
-  	Type varType = NumberT.INT.annotate().shape(false, varName);
+  	Type varType = CType.getType(node).annotate().shape(false, varName);
   	String scopeName = symbolTable.getCurrentScope().getQualifiedName();
   	varType.scope(scopeName);
   	
   	Node varDeclareNode = GNode.create("SimpleDeclarator", varName);
-  	varDeclareNode.setLocation(loc);
+  	varDeclareNode.setLocation(node.getLocation());
   	varType.mark(varDeclareNode);
   	symbolTable.mark(varDeclareNode);
   	
   	createAuxVarBinding(varDeclareNode, Identifiers.COND_VAR_PREFIX);
   	
   	Node varNode = GNode.create("PrimaryIdentifier", varName);
-  	varNode.setLocation(loc);
+  	varNode.setLocation(node.getLocation());
   	varType.mark(varNode);
   	symbolTable.mark(varNode);
   	
@@ -1511,7 +1511,7 @@ public class CfgBuilder extends Visitor {
   }
   
   public CExpression visitConditionalExpression(GNode node) {
-  	Node varNode = defineCondVarNode(node.getLocation());
+  	Node varNode = defineCondVarNode(node);
   	CExpression varExpr = recurseOnExpression(varNode);
   	
   	xtc.util.SymbolTable.Scope currentScope = symbolTable.getCurrentScope();
@@ -2239,7 +2239,7 @@ public class CfgBuilder extends Visitor {
   }
 
   public CExpression visitLogicalAndExpression(GNode node) {
-  	Node varNode = defineCondVarNode(node.getLocation());
+  	Node varNode = defineCondVarNode(node);
   	CExpression varExpr = recurseOnExpression(varNode);
   	
   	xtc.util.SymbolTable.Scope currentScope = symbolTable.getCurrentScope();
@@ -2275,7 +2275,7 @@ public class CfgBuilder extends Visitor {
   }
   
   public CExpression visitLogicalOrExpression(GNode node) {
-  	Node varNode = defineCondVarNode(node.getLocation());
+  	Node varNode = defineCondVarNode(node);
   	CExpression varExpr = recurseOnExpression(varNode);
   	
   	xtc.util.SymbolTable.Scope currentScope = symbolTable.getCurrentScope();
