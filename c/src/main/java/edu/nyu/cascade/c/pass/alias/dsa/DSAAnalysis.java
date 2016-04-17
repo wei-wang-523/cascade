@@ -125,7 +125,7 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 		steens.analysis(globalCFG, CFGs);
 		
 		if (IOUtils.debugEnabled()) {
-			IOUtils.out().println("steensgaard analysis: ");
+			IOUtils.out().println("dsa analysis: ");
 			steens.getResultGraph().dump(IOUtils.outPrinter());
 			steens.getGlobalsGraph().dump(IOUtils.outPrinter());
 		}
