@@ -47,6 +47,7 @@ class DSNodeHandle implements Comparable<DSNodeHandle> {
 	long getOffset() {
 		getNode();
 		assert !isForwarding() : "This is a forwarding NH, call getNode first";
+		if (N.isNodeCompletelyFolded()) Offset = 0;
 		return Offset;
 	}
 	

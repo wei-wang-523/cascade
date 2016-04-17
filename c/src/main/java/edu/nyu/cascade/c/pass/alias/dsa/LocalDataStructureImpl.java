@@ -3,9 +3,12 @@ package edu.nyu.cascade.c.pass.alias.dsa;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.CAnalyzer;
 import edu.nyu.cascade.c.CType;
@@ -145,8 +148,22 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 	}
 
 	private void propagateUnknownFlag(DSGraph g) {
-		// TODO Auto-generated method stub
-		
+	    List<DSNode> workList = Lists.newArrayList();
+	    Set<DSNode> visited = Sets.newHashSet();
+	    for (DSNode I : g.getNodes()) {
+	      if (I.isUnknownNode())	workList.add(I);
+	    }
+
+	    while (!workList.isEmpty()) {
+	      DSNode N = workList.remove(0);
+	      if (visited.contains(N)) continue;
+	      visited.add(N);
+	      N.setUnknownMarker();
+	      for (Entry<Long, DSNodeHandle> I : N.Links.entrySet()) {
+	        if (!I.getValue().isNull())
+	          workList.add(I.getValue().getNode());
+	      }
+	    }
 	}
 
 	class GraphBuilder {
@@ -216,6 +233,83 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			
 			// NodeH is now the pointer we want to GEP to be...
 			return FieldNodeH;
+		}
+		
+		private DSNodeHandle getElemPtr(Node lhs, Node rhs, String op) {			
+			DSNodeHandle lhsNH = rvalVisitor.encode(lhs);
+			if (!lhsNH.isNull() &&
+					lhsNH.getNode().isNodeCompletelyFolded()) {
+				return lhsNH;
+			}
+			
+			DSNodeHandle NodeH = new DSNodeHandle();
+			NodeH.mergeWith(lhsNH);
+			
+			Type idxTy = CType.getType(rhs);
+			if ( idxTy.hasConstant() && lhsNH.getOffset() == 0 && !lhsNH.getNode().isAllocaNode()) {
+				long offset = op.equals("+") ? idxTy.getConstant().longValue() 
+						: -idxTy.getConstant().longValue();
+				// Grow the DSNode size as needed.
+				long requiredSize = offset + CType.getInstance().getSize(idxTy);
+				if (lhsNH.getNode().getSize() <= requiredSize){
+					lhsNH.getNode().growSize (requiredSize);
+				}
+
+				// Add in the offset calculated...
+				NodeH.setOffset(lhsNH.getOffset()+offset);
+				
+				 // Check the offset
+		        DSNode N = NodeH.getNode();
+		        if (N != null) N.checkOffsetFoldIfNeeded(NodeH.getOffset());
+		        
+		        return NodeH;
+			}
+			
+			// Unless we're advancing the pointer by zero bytes via array indexing,
+			// fold the node (i.e., mark it type-unknown) and indicate that we're
+			// indexing zero bytes into the object (because all fields are aliased).
+			//
+			// Note that we break out of the loop if we fold the node.  Once
+			// something is folded, all values within it are considered to alias.
+			if (!idxTy.hasConstant()) {
+				// Treat the memory object (DSNode) as an array.
+				NodeH.getNode().setArrayMarker();
+				
+				Type lhsTy = CType.getType(lhs);
+				lhsTy = CType.getInstance().pointerize(lhsTy);
+				Type CurTy = lhsTy.toPointer().getType().resolve();
+				
+				// Ensure that the DSNode's size is large enough to contain one
+				// element of the type to which the pointer points.
+				if (!CurTy.isArray() && NodeH.getNode().getSize() <= 0){
+			          NodeH.getNode().growSize(CType.getInstance().getSize(CurTy));
+				} else if (CurTy.isArray() && NodeH.getNode().getSize() <= 0){
+					Type ETy = CurTy.toArray().getType();
+					while (ETy.isArray()) {
+			            ETy = ETy.toArray().getType();
+					}
+					NodeH.getNode().growSize(CType.getInstance().getSize(ETy));
+				}
+				
+		        // Fold the DSNode if we're indexing into it in a type-incompatible
+		        // manner.  That can occur if:
+		        //  1) The DSNode represents a pointer into the object at a non-zero
+		        //     offset.
+		        //  2) The offset of the pointer is already non-zero.
+		        //  3) The size of the array element does not match the size into which
+		        //     the pointer indexing is indexing.
+				if (NodeH.getOffset() != 0 || (!CurTy.isArray() &&
+						(NodeH.getNode().getSize() != CType.getInstance().getSize(CurTy)))) {
+					NodeH.getNode().foldNodeCompletely();
+					NodeH.getNode();
+				}
+			}
+
+			// Check the offset
+			DSNode N = NodeH.getNode();
+			if (N != null) N.checkOffsetFoldIfNeeded(NodeH.getOffset());
+			
+			return NodeH;
 		}
 		
 		private DSNodeHandle cast(Type fromTy, Type toTy, DSNodeHandle fromNH) {
@@ -394,34 +488,17 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			
 			@SuppressWarnings("unused")
 			public DSNodeHandle visitAdditiveExpression(GNode node) {				
-				DSNodeHandle CurNH = new DSNodeHandle();
-				Type Ty = CType.getType(node);
-				assert Ty.resolve().isPointer();
-				getValueDest(CurNH, Ty);
-				
 				Type lhsTy = CType.getType(node.getNode(0));
 				lhsTy = CType.getInstance().pointerize(lhsTy);
-				if (lhsTy.isPointer()) {
-					DSNodeHandle lhsNH = encode(node.getNode(0));
-					CurNH.mergeWith(getValueDest(lhsNH, lhsTy));
-				} else {
-					rvalVisitor.encode(node.getNode(0));
-				}
-				
 				Type rhsTy = CType.getType(node.getNode(2));
 				rhsTy = CType.getInstance().pointerize(rhsTy);
-				if (rhsTy.isPointer()) {
-					DSNodeHandle rhsNH = encode(node.getNode(2));
-					CurNH.mergeWith(getValueDest(rhsNH, lhsTy));
+				
+				if (lhsTy.isPointer()) {
+					return getElemPtr(node.getNode(0), node.getNode(2), node.getString(1));
 				} else {
-					rvalVisitor.encode(node.getNode(2));
+					assert rhsTy.isPointer();
+					return getElemPtr(node.getNode(2), node.getNode(0), node.getString(1));
 				}
-				
-				if (CurNH.getNode() != null) {
-					CurNH.getNode().setUnknownMarker();
-				}
-				
-				return CurNH;
 			}
 		}
 		
@@ -666,22 +743,31 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			 */
 			@SuppressWarnings("unused")
 			public DSNodeHandle visitAdditiveExpression(GNode node) {
+				Type lhsTy = CType.getType(node.getNode(0));
+				lhsTy = CType.getInstance().pointerize(lhsTy);
+				Type rhsTy = CType.getType(node.getNode(2));
+				rhsTy = CType.getInstance().pointerize(rhsTy);
+				DSNodeHandle lhsNH = encode(node.getNode(0));
+				DSNodeHandle rhsNH = encode(node.getNode(2));
+				
+				if (lhsTy.isPointer() && rhsTy.isInteger()) {
+					return getElemPtr(node.getNode(0), node.getNode(2), node.getString(1));
+				}
+				
+				if (rhsTy.isPointer() && lhsTy.isInteger()) {
+					return getElemPtr(node.getNode(2), node.getNode(0), node.getString(1));
+				}
+				
 				DSNodeHandle CurNH = new DSNodeHandle();
 				Type Ty = CType.getType(node);
 				if (Ty.resolve().isPointer()) {
 					CurNH = getValueDest(CurNH, Ty);
 				}
 				
-				Type lhsTy = CType.getType(node.getNode(0));
-				lhsTy = CType.getInstance().pointerize(lhsTy);
-				DSNodeHandle lhsNH = encode(node.getNode(0));
 				if (lhsTy.resolve().isPointer()) {
 					CurNH.mergeWith(getValueDest(lhsNH, lhsTy));
 				}
 				
-				Type rhsTy = CType.getType(node.getNode(2));
-				rhsTy = CType.getInstance().pointerize(rhsTy);
-				DSNodeHandle rhsNH = encode(node.getNode(2));
 				if (rhsTy.resolve().isPointer()) {
 					CurNH.mergeWith(getValueDest(rhsNH, rhsTy));
 				}
