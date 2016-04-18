@@ -236,7 +236,7 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 		}
 		
 		private DSNodeHandle getElemPtr(Node lhs, Node rhs, String op) {
-			DSNodeHandle lhsNH = lvalVisitor.encode(lhs);
+			DSNodeHandle lhsNH = rvalVisitor.encode(lhs);
 			if (!lhsNH.isNull() &&
 					lhsNH.getNode().isNodeCompletelyFolded()) {
 				return lhsNH;
@@ -991,6 +991,7 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 		    DSNodeHandle rhsNH = rvalVisitor.encode(rhs);
 		    
 		    Type lhsTy = CType.getType(lhs);
+		    lhsTy = CType.getInstance().pointerize(lhsTy);
 		    Type rhsTy = CType.getType(rhs);
 		    if (!lhsTy.equals(rhsTy)) { // Incompatible type
 		    	rhsNH = cast(rhsTy, lhsTy, rhsNH);
@@ -1050,8 +1051,8 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			Node funcId = CAnalyzer.getIdentifier((GNode) funcNode);
 			DSNode CalleeNode = null;
 			if (funcId == null || !CType.getType(funcId).resolve().isFunction()) {
-				DSNodeHandle funcNH = lvalVisitor.encode(funcNode);
-				CalleeNode =  getValueDest(funcNH, funcTy).getNode();
+				DSNodeHandle funcNH = rvalVisitor.encode(funcNode);
+				CalleeNode =  funcNH.getNode();
 				if (CalleeNode == null) {
 					IOUtils.err().println("WARNING: Program is calling through a null pointer");
 					return;

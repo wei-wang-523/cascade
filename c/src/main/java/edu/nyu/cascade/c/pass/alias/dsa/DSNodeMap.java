@@ -5,7 +5,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.c.CType;
-import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Pair;
 import xtc.tree.Node;
 
@@ -24,7 +23,6 @@ class DSNodeMap {
 	DSNodeHandle get(Node N) {
 		Pair<Node, String> NKey = getKey(N);
 		assert NodeMap.containsKey(NKey) : "No key is stored: " + NKey;
-		IOUtils.debug().pln("visited: " + N);
 		return NodeMap.get(NKey);
 	}
 	
