@@ -105,6 +105,11 @@ public final class RegionPassImpl implements IRPass {
 			}
 			
 			@SuppressWarnings("unused")
+			public void visitAddressExpression(GNode node) {
+				encode(node.getNode(0));
+			}
+			
+			@SuppressWarnings("unused")
 			public void visitCastExpression(GNode node) {
 				encode(node.getNode(1));
 			}

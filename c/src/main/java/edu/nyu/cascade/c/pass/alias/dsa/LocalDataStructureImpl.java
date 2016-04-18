@@ -32,6 +32,7 @@ import xtc.Constants;
 import xtc.tree.GNode;
 import xtc.tree.Node;
 import xtc.tree.Visitor;
+import xtc.type.PointerT;
 import xtc.type.StaticReference;
 import xtc.type.Type;
 import xtc.util.SymbolTable.Scope;
@@ -400,7 +401,10 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			
 			@SuppressWarnings("unused")
 			public DSNodeHandle visitAddressExpression(GNode node) {
-				return encode(node.getNode(0));
+				DSNodeHandle NH = new DSNodeHandle(createNode(), 0);
+				NH.getNode().growSize(CType.getInstance().getSize(PointerT.TO_VOID));
+				NH.setLink(0, lvalVisitor.encode(node.getNode(0)));
+				return NH;
 			}
 			
 			@SuppressWarnings("unused")
@@ -750,12 +754,10 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				DSNodeHandle lhsNH = encode(node.getNode(0));
 				DSNodeHandle rhsNH = encode(node.getNode(2));
 				
-				if (lhsTy.isPointer() && rhsTy.isInteger()) {
-					return getElemPtr(node.getNode(0), node.getNode(2), node.getString(1));
-				}
-				
-				if (rhsTy.isPointer() && lhsTy.isInteger()) {
-					return getElemPtr(node.getNode(2), node.getNode(0), node.getString(1));
+				if (lhsTy.isPointer() && rhsTy.isInteger() ||
+						rhsTy.isPointer() && lhsTy.isInteger()) {
+					DSNodeHandle resNH = lvalVisitor.encode(node);
+					return load(resNH, CType.getType(node));
 				}
 				
 				DSNodeHandle CurNH = new DSNodeHandle();

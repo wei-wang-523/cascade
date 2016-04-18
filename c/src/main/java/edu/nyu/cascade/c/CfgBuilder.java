@@ -1511,8 +1511,12 @@ public class CfgBuilder extends Visitor {
   }
   
   public CExpression visitConditionalExpression(GNode node) {
-  	Node varNode = defineCondVarNode(node);
-  	CExpression varExpr = recurseOnExpression(varNode);
+  	boolean isError = CType.getType(node).resolve().isError();
+  	CExpression varExpr = null;
+  	if (!isError) {
+  		Node varNode = defineCondVarNode(node);
+  		varExpr = recurseOnExpression(varNode);
+  	}
   	
   	xtc.util.SymbolTable.Scope currentScope = symbolTable.getCurrentScope();
     BasicBlock entryBlock = currentCfg.newSwitchBlock(node.getLocation(), currentScope);
@@ -1533,12 +1537,16 @@ public class CfgBuilder extends Visitor {
     
     updateCurrentBlock(ifBlock);
     CExpression trueExpr = recurseOnExpression(node.getNode(1));
-    addStatement(Statement.assign(node, varExpr, trueExpr));
+    if (!isError) {
+    	addStatement(Statement.assign(node, varExpr, trueExpr));
+    }
     closeCurrentBlock(exitBlock);
 
     updateCurrentBlock(elseBlock);
     CExpression falseExpr = recurseOnExpression(node.getNode(2));
-    addStatement(Statement.assign(node, varExpr, falseExpr));
+    if (!isError) {
+    	addStatement(Statement.assign(node, varExpr, falseExpr));
+    }
     closeCurrentBlock(exitBlock);
     updateCurrentBlock(exitBlock);
     
