@@ -102,33 +102,38 @@ public class SteensDataStructureImpl extends DataStructuresImpl {
 		// call nodes...
 		
 		// Start with a copy of the original call sites.
-		List<DSCallSite> Calls = ResultGraph.getFunctionCalls();
-		ListIterator<DSCallSite> CallItr = Calls.listIterator();
-		
-		while(CallItr.hasNext()) {
-			DSCallSite Call = CallItr.next();
-			
-			// Loop over the called functions, eliminating as many as possible...
-			List<Function> CallTargets = Lists.newArrayList();
-			
-			if (Call.isDirectCall()) {
-				CallTargets.add(Call.getCalleeF());
-			} else {
-				Call.getCalleeN().addFullFunctionList(CallTargets);
-			}
-			
-			ListIterator<Function> itr = CallTargets.listIterator();
-			while (itr.hasNext()) {
-				Function F = itr.next();
-				if (!F.isDeclaration()) {
-					ResolveFunctionCall(F, Call, ResultGraph.getReturnNodeFor(F));
-					itr.remove();
+		List<DSCallSite> Calls = Lists.newArrayList(ResultGraph.getFunctionCalls());
+		while (!Calls.isEmpty()) {
+			boolean changed = false;
+			Iterator<DSCallSite> CallItr = Calls.iterator();
+			while(CallItr.hasNext()) {
+				DSCallSite Call = CallItr.next();
+				
+				// Loop over the called functions, eliminating as many as possible...
+				List<Function> CallTargets = Lists.newArrayList();
+				
+				if (Call.isDirectCall()) {
+					CallTargets.add(Call.getCalleeF());
+				} else {
+					Call.getCalleeN().addFullFunctionList(CallTargets);
 				}
+				
+				if (CallTargets.isEmpty()) continue;
+				
+				ListIterator<Function> itr = CallTargets.listIterator();
+				while (itr.hasNext()) {
+					Function F = itr.next();
+					if (!F.isDeclaration()) {
+						ResolveFunctionCall(F, Call, ResultGraph.getReturnNodeFor(F));
+						itr.remove();
+					}
+				}
+				
+				CallItr.remove();
+				changed |= true;
 			}
 			
-			if (CallTargets.isEmpty()) { // Eliminated all calls?
-				CallItr.remove();
-			}
+			if (!changed) break;
 		}
 		
 		// Update the "incomplete" markers on the nodes, ignoring unknownness due to
@@ -203,16 +208,18 @@ public class SteensDataStructureImpl extends DataStructuresImpl {
 		    ValNH.getNode().growSizeForType(Arg.getType(), ValNH.getOffset());
 				
 		    // Avoid adding edges from null, or processing non-"pointer" stores
-		    if (CType.isScalar(Arg.getType())){
-		    	if (ArgNH != null && Arg.getType().resolve().isPointer()) {
-		    		if (ArgNH.isNull()) {
+		    Type ArgTy = Arg.getType();
+		    ArgTy = CType.getInstance().pointerize(ArgTy);
+		    if (CType.isStructOrUnion(ArgTy)) { // Pass composite type
+		    	ValNH.mergeWith(ArgNH);
+		    } else {
+		    	if (ArgNH != null) {
+		    		if (ArgTy.isPointer() && ArgNH.isNull()) {
 		    			DSNode ArgN = new DSNodeImpl(ResultGraph);
 		    			ArgNH.setTo(ArgN, 0);
 		    		}
 			    	ValNH.addEdgeTo(0, ArgNH);
 		    	}
-		    } else { // Pass composite type
-		    	ValNH.mergeWith(ArgNH);
 		    }
 			    
 		    //TODO: TypeInferenceOptimize

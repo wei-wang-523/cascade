@@ -13,6 +13,7 @@ import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.pass.Function;
 import edu.nyu.cascade.c.pass.GlobalValue;
 import edu.nyu.cascade.c.pass.Value;
+import edu.nyu.cascade.c.pass.alias.dsa.EquivalenceClasses.ECValue;
 import edu.nyu.cascade.util.IOUtils;
 import xtc.type.StructOrUnionT;
 import xtc.type.Type;
@@ -252,8 +253,25 @@ final class DSNodeImpl extends DSNode {
 
 	@Override
 	void addFullFunctionSet(Set<Function> Set) {
-		// TODO Auto-generated method stub
+		if (Globals.isEmpty()) return;
 
+		EquivalenceClasses<GlobalValue> EC = getParentGraph().getGlobalECs();
+
+		for (GlobalValue GV : Globals) {
+		    if (EC.findValue(GV) == null) {
+		      if (GV instanceof Function)
+		        Set.add((Function) GV);
+		    } else {
+		    	ECValue EV = EC.findValue(GV);
+		    	while (EV != null) {
+		    		GlobalValue EVGV = (GlobalValue) EV.getData();
+		    		if (EVGV instanceof Function) {
+		    			Set.add((Function) EVGV);
+		    		}
+		    		EV = EV.getNext();
+		    	}
+		    }
+		}
 	}
 
 	@Override
