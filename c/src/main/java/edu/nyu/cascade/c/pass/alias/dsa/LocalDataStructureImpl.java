@@ -236,7 +236,7 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 		}
 		
 		private DSNodeHandle getElemPtr(Node lhs, Node rhs, String op) {
-			DSNodeHandle lhsNH = lvalVisitor.encode(lhs);
+			DSNodeHandle lhsNH = rvalVisitor.encode(lhs);
 			if (!lhsNH.isNull() &&
 					lhsNH.getNode().isNodeCompletelyFolded()) {
 				return lhsNH;
