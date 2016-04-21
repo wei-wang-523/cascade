@@ -121,16 +121,16 @@ public class ControlFlowGraph implements IRControlFlowGraph {
 	}
 
 	@Override
-	public void format(Printer printer) {
-	  printer
-	      .p("CFG for: " + name + " (entry=" + getEntry().getId() + ")")
-	      .incr();
-	
-	  for (BasicBlock block : getBlocks()) {
-	    printer.pln();
-	    formatBlock(printer, block);
-	  }
-	  printer.decr();
+	public void format(Printer printer) { return;
+//	  printer
+//	      .p("CFG for: " + name + " (entry=" + getEntry().getId() + ")")
+//	      .incr();
+//	
+//	  for (BasicBlock block : getBlocks()) {
+//	    printer.pln();
+//	    formatBlock(printer, block);
+//	  }
+//	  printer.decr();
 	}
 	
 	@Override
