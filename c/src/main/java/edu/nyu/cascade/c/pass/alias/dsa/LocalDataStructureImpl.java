@@ -237,27 +237,47 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 		}
 		
 		private DSNodeHandle getElemPtr(Node lhs, Node rhs, String op) {
-			DSNodeHandle lhsNH = rvalVisitor.encode(lhs);
-			if (!lhsNH.isNull() &&
-					lhsNH.getNode().isNodeCompletelyFolded()) {
-				return lhsNH;
+			DSNodeHandle lhsNH = lvalVisitor.encode(lhs);
+			Type lhsTy = CType.getType(lhs);
+			
+			// Get the points-to DSNodeHandle if lhsTy is pointer type,
+			// otherwise, ptrNH is lhsNH if lhsTy is array type.
+			DSNodeHandle ptrNH = load(lhsNH, lhsTy);
+			Type ptrTy = CType.getInstance().pointerize(lhsTy);
+			Type idxTy = CType.getType(rhs);
+			boolean isPlus = op.equals("+");
+			
+			// Get the updated pointed DSNodeHandle
+			DSNodeHandle resPtrNH = getElemPtrNH(ptrNH, ptrTy, idxTy, isPlus);
+			// Create the new DSNodeHandle for the pointer arithmetic expression
+			// which points-to resPtrNH
+			DSNodeHandle resNH = new DSNodeHandle(createNode(), 0);
+			resNH.getNode().growSize(CType.getInstance().getSize(PointerT.TO_VOID));
+			resNH.setLink(0, resPtrNH);
+			return resNH;
+		}
+		
+		private DSNodeHandle getElemPtrNH(DSNodeHandle ptrNH, Type ptrTy, Type idxTy,
+				boolean isPlus) {
+			Preconditions.checkArgument(ptrTy.isPointer());
+			if (!ptrNH.isNull() && ptrNH.getNode().isNodeCompletelyFolded()) {
+				return ptrNH;
 			}
 			
 			DSNodeHandle NodeH = new DSNodeHandle();
-			NodeH.mergeWith(lhsNH);
+			NodeH.mergeWith(ptrNH);
 			
-			Type idxTy = CType.getType(rhs);
-			if ( idxTy.hasConstant() && lhsNH.getOffset() == 0 && !lhsNH.getNode().isAllocaNode()) {
-				long offset = op.equals("+") ? idxTy.getConstant().longValue() 
+			if ( idxTy.hasConstant() && ptrNH.getOffset() == 0 && !ptrNH.getNode().isAllocaNode()) {
+				long offset = isPlus ? idxTy.getConstant().longValue() 
 						: -idxTy.getConstant().longValue();
 				// Grow the DSNode size as needed.
 				long requiredSize = offset + CType.getInstance().getSize(idxTy);
-				if (lhsNH.getNode().getSize() <= requiredSize){
-					lhsNH.getNode().growSize (requiredSize);
+				if (ptrNH.getNode().getSize() <= requiredSize){
+					ptrNH.getNode().growSize (requiredSize);
 				}
 
 				// Add in the offset calculated...
-				NodeH.setOffset(lhsNH.getOffset()+offset);
+				NodeH.setOffset(ptrNH.getOffset()+offset);
 				
 				 // Check the offset
 		        DSNode N = NodeH.getNode();
@@ -275,10 +295,7 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			if (!idxTy.hasConstant()) {
 				// Treat the memory object (DSNode) as an array.
 				NodeH.getNode().setArrayMarker();
-				
-				Type lhsTy = CType.getType(lhs);
-				lhsTy = CType.getInstance().pointerize(lhsTy);
-				Type CurTy = lhsTy.toPointer().getType().resolve();
+				Type CurTy = ptrTy.toPointer().getType().resolve();
 				
 				// Ensure that the DSNode's size is large enough to contain one
 				// element of the type to which the pointer points.

@@ -16,6 +16,6 @@ int main()
   for ( i = 0 , j = 0 , q = B ; i < N/2 ; i++ , j += 2, q++) {
     *q = pair ( &(A[j]) );
   }
-  ASSERT(valid(&(q[-1])));
+  ASSERT(valid(q[-1]));
   return q[-1] ; 
 }
