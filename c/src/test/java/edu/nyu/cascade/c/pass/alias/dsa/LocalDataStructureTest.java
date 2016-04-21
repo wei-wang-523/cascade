@@ -31,6 +31,7 @@ import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 import xtc.parser.ParseException;
 import xtc.tree.Node;
+import xtc.tree.Printer;
 import xtc.type.Type;
 
 @RunWith(Parameterized.class)
@@ -87,11 +88,10 @@ public class LocalDataStructureTest {
 	
 	@Before
 	public void setUp() {
+        Preferences.set(Preferences.OPTION_BYTE_BASED);
 		main = getInjector().getInstance(Main.class);
         main.init();
         main.prepare();
-        IOUtils.enableErr();
-        Preferences.set(Preferences.OPTION_BYTE_BASED);
 	}
 	
 	@After
@@ -121,14 +121,16 @@ public class LocalDataStructureTest {
 		DataStructures ds = LocalDataStructureImpl.create(addrTakenPass).init(symbolTable);
 		ds.analysis(globalCFG, CFGs);
 		
+		Printer out = IOUtils.debug();
+		
 		ValueManager valueManager = ds.getValueManager();
 		for(IRControlFlowGraph CFG : CFGs) {
 			String FuncID = CFG.getName();
 			Type FuncTy = symbolTable.lookupType(FuncID);
 			Function func = (Function) valueManager.get(FuncID, FuncTy);
-			ds.getDSGraph(func).dump(IOUtils.outPrinter());
+			ds.getDSGraph(func).dump(out);
 		}
 		
-		ds.getGlobalsGraph().dump(IOUtils.outPrinter());
+		ds.getGlobalsGraph().dump(out);
 	}
 }

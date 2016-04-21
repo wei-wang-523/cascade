@@ -22,7 +22,7 @@ import edu.nyu.cascade.util.IOUtils;
 import xtc.parser.ParseException;
 
 @RunWith(Parameterized.class)
-public class InjectTestMain {
+public class MainInjectTest {
 	private static final File programs_c = FileUtils
 			.absoluteResourcePath("c");
 	private static final File mini_invalids = FileUtils.filePath(programs_c,
@@ -82,7 +82,7 @@ public class InjectTestMain {
     	return fileList;
 	}
 	
-	public InjectTestMain(File file) {
+	public MainInjectTest(File file) {
         IOUtils.enableOut();
 //        IOUtils.enableDebug();
 		main = getInjector().getInstance(Main.class);

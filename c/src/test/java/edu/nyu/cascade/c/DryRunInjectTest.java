@@ -22,7 +22,7 @@ import edu.nyu.cascade.util.IOUtils;
 import xtc.parser.ParseException;
 
 @RunWith(Parameterized.class)
-public class InjectTestDryRun {
+public class DryRunInjectTest {
 	private static final File programs_c = FileUtils.absoluteResourcePath("c");
 	private static final File syntax = FileUtils.absoluteResourcePath("syntax");
 	private static final File nec_bnc = FileUtils.filePath(programs_c, "nec_bnc");
@@ -50,7 +50,7 @@ public class InjectTestDryRun {
     	return fileList;
 	}
 	
-	public InjectTestDryRun(File file) {
+	public DryRunInjectTest(File file) {
         IOUtils.enableOut();
 //        IOUtils.enableDebug();
 		main = getInjector().getInstance(Main.class);

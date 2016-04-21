@@ -74,12 +74,11 @@ public class RegionPassImplTest {
 	}
 	
 	public RegionPassImplTest(File file) {
+		Preferences.set(Preferences.OPTION_BYTE_BASED);
 		main = getInjector().getInstance(Main.class);
         main.init();
         main.prepare();
-        IOUtils.enableOut();
-        Preferences.set(Preferences.OPTION_BYTE_BASED);
-        
+        IOUtils.enableOut();        
         cfile = file;
 	}
 	
@@ -116,7 +115,7 @@ public class RegionPassImplTest {
 		RegionPassImpl regionPass = RegionPassImpl.create(steensds);
 		regionPass.runOnModule(globalCFG, CFGs);
 		
-		Printer out = IOUtils.outPrinter();
+		Printer out = IOUtils.debug();
 		out.pln(cfile.getName());
 		
 		out.incr();

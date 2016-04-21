@@ -25,6 +25,7 @@ import edu.nyu.cascade.util.Identifiers;
 import edu.nyu.cascade.util.Preferences;
 import xtc.parser.ParseException;
 import xtc.tree.Node;
+import xtc.tree.Printer;
 
 @RunWith(Parameterized.class)
 public class SteensDataStructureTest {
@@ -107,7 +108,9 @@ public class SteensDataStructureTest {
 		
 		DataStructures steensds = SteensDataStructureImpl.create(localds).init(symbolTable);
 		steensds.analysis(globalCFG, CFGs);
-		IOUtils.out().println(cfile.getName());
-		((SteensDataStructureImpl) steensds).getResultGraph().dump(IOUtils.outPrinter());
+		
+		Printer out = IOUtils.debug();
+		out.pln(cfile.getName());
+		((SteensDataStructureImpl) steensds).getResultGraph().dump(out);
 	}
 }
