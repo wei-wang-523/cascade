@@ -267,7 +267,7 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			DSNodeHandle NodeH = new DSNodeHandle();
 			NodeH.mergeWith(ptrNH);
 			
-			if ( idxTy.hasConstant() && ptrNH.getOffset() == 0 && !ptrNH.getNode().isAllocaNode()) {
+			if ( idxTy.hasConstant() && ptrNH.getOffset() == 0 && !ptrNH.getNode().isArrayNode()) {
 				long offset = isPlus ? idxTy.getConstant().longValue() 
 						: -idxTy.getConstant().longValue();
 				// Grow the DSNode size as needed.
@@ -469,11 +469,16 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			public DSNodeHandle visitSubscriptExpression(GNode node) {
 				Node Base = node.getNode(0);
 				Node Idx = node.getNode(1);
+				rvalVisitor.encode(Idx);
 				
 				Type BaseTy = CType.getType(Base);
-				DSNodeHandle NodeH =
-						BaseTy.resolve().isArray() ? encode(Base) : rvalVisitor.encode(Base);
-				DSNodeHandle IdxNH = rvalVisitor.encode(Idx);
+				if (BaseTy.resolve().isPointer()) {
+					DSNodeHandle NH = getElemPtr(Base, Idx, "+");
+					return getLink(NH, 0);
+				}
+				
+				assert BaseTy.resolve().isArray();
+				DSNodeHandle NodeH = encode(Base);
 				
 				// Ensure that the indexed pointer has a DSNode.
 				if (NodeH.isNull()) {
@@ -491,11 +496,7 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				
 				Type BasePtrTy = CType.getInstance().pointerize(BaseTy);
 				Type ElemTy = BasePtrTy.toPointer().getType();
-				
 				assert BasePtrTy.isPointer() : "Error type";
-				if (BaseTy.resolve().isPointer()) {
-					NodeH = load(NodeH, ElemTy);
-				}
 				
 				ensureSafeIndexAccess(NodeH, ElemTy);
 				
