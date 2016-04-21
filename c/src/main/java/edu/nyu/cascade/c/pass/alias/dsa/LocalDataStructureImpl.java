@@ -470,7 +470,9 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				Node Base = node.getNode(0);
 				Node Idx = node.getNode(1);
 				
-				DSNodeHandle NodeH = encode(Base);
+				Type BaseTy = CType.getType(Base);
+				DSNodeHandle NodeH =
+						BaseTy.resolve().isArray() ? encode(Base) : rvalVisitor.encode(Base);
 				DSNodeHandle IdxNH = rvalVisitor.encode(Idx);
 				
 				// Ensure that the indexed pointer has a DSNode.
@@ -487,7 +489,6 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 					return NodeH;
 				}
 				
-				Type BaseTy = CType.getType(Base);
 				Type BasePtrTy = CType.getInstance().pointerize(BaseTy);
 				Type ElemTy = BasePtrTy.toPointer().getType();
 				
