@@ -770,6 +770,8 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			 */
 			@SuppressWarnings("unused")
 			public DSNodeHandle visitAdditiveExpression(GNode node) {
+				DSNodeHandle lhsNH = encode(node.getNode(0));
+				DSNodeHandle rhsNH = encode(node.getNode(2));
 				Type Ty = CType.getType(node);
 				
 				if (Ty.resolve().isPointer()) {
@@ -779,14 +781,12 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				
 				DSNodeHandle CurNH = new DSNodeHandle();
 				
-				DSNodeHandle lhsNH = encode(node.getNode(0));
 				Type lhsTy = CType.getType(node.getNode(0));
 				lhsTy = CType.getInstance().pointerize(lhsTy);
 				if (lhsTy.resolve().isPointer()) {
 					CurNH.mergeWith(getValueDest(lhsNH, lhsTy));
 				}
 				
-				DSNodeHandle rhsNH = encode(node.getNode(2));
 				Type rhsTy = CType.getType(node.getNode(2));
 				rhsTy = CType.getInstance().pointerize(rhsTy);
 				if (rhsTy.resolve().isPointer()) {
