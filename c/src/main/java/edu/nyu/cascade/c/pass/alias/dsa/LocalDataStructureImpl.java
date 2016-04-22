@@ -169,6 +169,10 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 
 	class GraphBuilder {
 		
+		/**
+		 * If Ty is a pointer type, return the pointed DSNodeHandle
+		 * of PtrNH; otherwise, return the PtrNH itself.
+		 */
 		private DSNodeHandle load(DSNodeHandle PtrNH, Type Ty) {
 			
 			// Create a DSNode for the pointer dereferenced by the load.  If the DSNode
@@ -601,21 +605,21 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			public DSNodeHandle visitIndirectComponentSelection(GNode node) {
 				DSNodeHandle NH = lvalVisitor.encode(node);
 				Type Ty = CType.getType(node);
-				return Ty.resolve().isPointer() ? load(NH, Ty) : NH;
+				return CType.isArithmetic(Ty) ? null : load(NH, Ty);
 			}
 			
 			@SuppressWarnings("unused")
 			public DSNodeHandle visitDirectComponentSelection(GNode node) {
 				DSNodeHandle NH = lvalVisitor.encode(node);
 				Type Ty = CType.getType(node);
-				return Ty.resolve().isPointer() ? load(NH, Ty) : NH;
+				return CType.isArithmetic(Ty) ? null : load(NH, Ty);
 			}
 			
 			@SuppressWarnings("unused")
 			public DSNodeHandle visitSubscriptExpression(GNode node) {
 				DSNodeHandle NH = lvalVisitor.encode(node);
 				Type Ty = CType.getType(node);
-				return Ty.resolve().isPointer() ? load(NH, Ty) : NH;
+				return CType.isArithmetic(Ty) ? null : load(NH, Ty);
 			}
 			
 			@SuppressWarnings("unused")
@@ -688,7 +692,7 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				}
 				
 				DSNodeHandle leftNH = lvalVisitor.encode(node);
-				return Ty.resolve().isPointer() ? load(leftNH, Ty) : leftNH;
+				return CType.isArithmetic(Ty)? null : load(leftNH, Ty);
 			}
 			
 			@SuppressWarnings("unused")
@@ -704,7 +708,7 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			public DSNodeHandle visitIndirectionExpression(GNode node) {
 				DSNodeHandle PtrNH = lvalVisitor.encode(node);
 				Type Ty = CType.getType(node);
-				return Ty.resolve().isPointer() ? load(PtrNH, Ty) : PtrNH;
+				return CType.isArithmetic(Ty)? null: load(PtrNH, Ty);
 			}
 			
 			@SuppressWarnings("unused")
@@ -766,29 +770,25 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			 */
 			@SuppressWarnings("unused")
 			public DSNodeHandle visitAdditiveExpression(GNode node) {
-				Type lhsTy = CType.getType(node.getNode(0));
-				lhsTy = CType.getInstance().pointerize(lhsTy);
-				Type rhsTy = CType.getType(node.getNode(2));
-				rhsTy = CType.getInstance().pointerize(rhsTy);
-				DSNodeHandle lhsNH = encode(node.getNode(0));
-				DSNodeHandle rhsNH = encode(node.getNode(2));
+				Type Ty = CType.getType(node);
 				
-				if (lhsTy.isPointer() && rhsTy.isInteger() ||
-						rhsTy.isPointer() && lhsTy.isInteger()) {
+				if (Ty.resolve().isPointer()) {
 					DSNodeHandle resNH = lvalVisitor.encode(node);
-					return load(resNH, CType.getType(node));
+					return load(resNH, Ty);
 				}
 				
 				DSNodeHandle CurNH = new DSNodeHandle();
-				Type Ty = CType.getType(node);
-				if (Ty.resolve().isPointer()) {
-					CurNH = getValueDest(CurNH, Ty);
-				}
 				
+				DSNodeHandle lhsNH = encode(node.getNode(0));
+				Type lhsTy = CType.getType(node.getNode(0));
+				lhsTy = CType.getInstance().pointerize(lhsTy);
 				if (lhsTy.resolve().isPointer()) {
 					CurNH.mergeWith(getValueDest(lhsNH, lhsTy));
 				}
 				
+				DSNodeHandle rhsNH = encode(node.getNode(2));
+				Type rhsTy = CType.getType(node.getNode(2));
+				rhsTy = CType.getInstance().pointerize(rhsTy);
 				if (rhsTy.resolve().isPointer()) {
 					CurNH.mergeWith(getValueDest(rhsNH, rhsTy));
 				}
