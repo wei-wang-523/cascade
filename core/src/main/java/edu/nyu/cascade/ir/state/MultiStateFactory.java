@@ -70,12 +70,12 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 	
 	@Override
 	public void addStackVar(StateExpression state, Expression lval, IRVarInfo info) {
-		if(!info.isStatic()) state.addVar(lval.asVariable());
-       
+		if(!info.isStatic()) state.addVar(lval.asVariable());       
 		Node node = info.getDeclarationNode();
 		labelAnalyzer.addVar(lval, node);		
 		T rep = labelAnalyzer.getStackRep(node);
-		Type ty = CType.getInstance().pointerize(CType.getType(node));
+		Type ty = info.getXtcType();
+
 		for(T fillInRep : labelAnalyzer.getFieldReps(rep, ty)) {
 			updateStateWithRep(state.asMultiple(), fillInRep);
 			heapEncoder.addFreshAddress(labelAnalyzer.getRepId(fillInRep), lval, info);
@@ -94,7 +94,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 			updateStateWithRep(state.asMultiple(), rep);
 			String label = labelAnalyzer.getRepId(rep);
 			SingleStateExpression singleState = state.asMultiple().getStateMap().get(label);
-			singleStateFactory.updateSizeStateWithFree(singleState, lval, rval, sourceNode);
+			singleStateFactory.updateSizeStateWithAlloc(singleState, lval, rval, sourceNode);
 			heapEncoder.addFreshRegion(label, lval);
 		}
 		
@@ -131,22 +131,33 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 	@Override
 	public BooleanExpression applyMemset(StateExpression state, Expression region, 
 			Expression size, Expression value, Node ptrNode) {
-		T srcRep = labelAnalyzer.getPtsToRep(ptrNode);
-		updateStateWithRep(state.asMultiple(), srcRep);		
-		String srcRepId = labelAnalyzer.getRepId(srcRep);
-		SingleStateExpression singleState = state.asMultiple().getStateMap().get(srcRepId);
-		return singleStateFactory.applyMemset(singleState, region, size, value, ptrNode);
+	    Collection<BooleanExpression> predicates = Lists.newArrayList();
+	    T rep = labelAnalyzer.getPtsToRep(ptrNode);
+	    Type ty = CType.getInstance().pointerize(CType.getType(ptrNode)).toPointer().getType();
+	    for(T fillInRep : labelAnalyzer.getFieldReps(rep, ty)) {
+	    	updateStateWithRep(state.asMultiple(), fillInRep);
+	    	String label = labelAnalyzer.getRepId(fillInRep);
+	    	SingleStateExpression singleState = state.asMultiple().getStateMap().get(label);
+	    	predicates.add(singleStateFactory.applyMemset(singleState, region, size, value, ptrNode));
+	    }
+
+	    return getExpressionEncoding().and(predicates).asBooleanExpression();
 	}
 	  
 	@Override
 	public BooleanExpression applyMemset(StateExpression state, Expression region, 
 			Expression size, int value, Node ptrNode) {
-		T srcRep = labelAnalyzer.getPtsToRep(ptrNode);
-		updateStateWithRep(state.asMultiple(), srcRep);
-		String srcRepId = labelAnalyzer.getRepId(srcRep);
-		SingleStateExpression singleState = state.asMultiple().getStateMap().get(srcRepId);
-		return singleStateFactory.applyMemset(singleState, region, size, value, ptrNode);
-	}	
+	    Collection<BooleanExpression> predicates = Lists.newArrayList();
+	    T rep = labelAnalyzer.getPtsToRep(ptrNode);
+	    Type ty = CType.getInstance().pointerize(CType.getType(ptrNode)).toPointer().getType();
+	    for(T fillInRep : labelAnalyzer.getFieldReps(rep, ty)) {
+	    	updateStateWithRep(state.asMultiple(), fillInRep);
+	    	String label = labelAnalyzer.getRepId(fillInRep);
+	    	SingleStateExpression singleState = state.asMultiple().getStateMap().get(label);
+	    	predicates.add(singleStateFactory.applyMemset(singleState, region, size, value, ptrNode));
+	    }
+	    return getExpressionEncoding().and(predicates).asBooleanExpression(); 
+	}
 	
 	@Override
 	public BooleanExpression applyMemcpy(StateExpression state, Expression destRegion, 
@@ -172,7 +183,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 	@Override
 	public BooleanExpression applyValidMalloc(StateExpression state, Expression ptr, 
 			Expression size, Node pNode) {
-		T srcRep = labelAnalyzer.getPtsToRep(pNode);		
+		T srcRep = labelAnalyzer.getPtsToRep(pNode);
 		
 		MultiStateExpression multiState = state.asMultiple();
 		updateStateWithRep(multiState, srcRep);
@@ -323,13 +334,17 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 	@Override
 	protected void updateMarkState(StateExpression state,
 			Expression region, BooleanExpression mark, Node ptrNode) {
-		MultiStateExpression multiState = state.asMultiple();
-		Map<String, SingleStateExpression> stateMap = multiState.getStateMap();
 		T ptrRep = labelAnalyzer.getPtsToRep(ptrNode);
-		updateStateWithRep(multiState, ptrRep);
-		String label = labelAnalyzer.getRepId(ptrRep);
-		SingleStateExpression singleState = stateMap.get(label);
-		singleStateFactory.updateMarkState(singleState, region, mark, ptrNode);
+		MultiStateExpression multiState = state.asMultiple();
+		labelAnalyzer.addRegion(region, ptrNode);
+		Type ty = CType.getInstance().pointerize(
+				CType.getType(ptrNode)).toPointer().getType();
+		for(T rep : labelAnalyzer.getFieldReps(ptrRep, ty)) {
+			updateStateWithRep(multiState, rep);
+			String label = labelAnalyzer.getRepId(rep);
+			SingleStateExpression singleState = multiState.getStateMap().get(label);
+			singleStateFactory.updateMarkState(singleState, region, mark, ptrNode);
+		}
 	}
 	
 	@Override
@@ -424,7 +439,8 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 		T ptrRep = labelAnalyzer.getPtsToRep(ptrNode);
 		MultiStateExpression multiState = state.asMultiple();
 		Map<String, SingleStateExpression> stateMap = multiState.getStateMap();
-		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode));
+		Type ty = CType.getInstance().pointerize(
+				CType.getType(ptrNode)).toPointer().getType();
 		for(T rep : labelAnalyzer.getFieldReps(ptrRep, ty)) {
 			updateStateWithRep(multiState, rep);
 			String label = labelAnalyzer.getRepId(rep);
@@ -439,12 +455,13 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 		T ptrRep = labelAnalyzer.getPtsToRep(ptrNode);
 		MultiStateExpression multiState = state.asMultiple();
 		labelAnalyzer.addRegion(region, ptrNode);
-		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode));
+		Type ty = CType.getInstance().pointerize(
+				CType.getType(ptrNode)).toPointer().getType();
 		for(T rep : labelAnalyzer.getFieldReps(ptrRep, ty)) {
 			updateStateWithRep(multiState, rep);
 			String label = labelAnalyzer.getRepId(rep);
 			SingleStateExpression singleState = multiState.getStateMap().get(label);
-			singleStateFactory.updateSizeStateWithFree(singleState, region, size, ptrNode);
+			singleStateFactory.updateSizeStateWithAlloc(singleState, region, size, ptrNode);
 			heapEncoder.addFreshRegion(label, region);
 		}
 	}
@@ -594,7 +611,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 	  
 	  long width = labelAnalyzer.getRepWidth(rep);
   	SingleStateExpression singleState = singleStateFactory.freshSingleState(label, width);
-	  stateMap.put(label, singleState);	  
+	  stateMap.put(label, singleState);
 	  return false;
   }
 }

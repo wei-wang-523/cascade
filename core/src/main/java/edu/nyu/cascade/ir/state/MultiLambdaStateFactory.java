@@ -349,12 +349,15 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	protected void updateMarkState(StateExpression state,
 			Expression region, BooleanExpression mark, Node ptrNode) {
 		MultiLambdaStateExpression multiLambdaState = state.asMultiLambda();
-		Map<String, SingleLambdaStateExpression> stateMap = multiLambdaState.getStateMap();
-		T ptrRep = labelAnalyzer.getPtsToRep(ptrNode);
-		updateStateWithRep(multiLambdaState, ptrRep);
-		String label = labelAnalyzer.getRepId(ptrRep);
-		SingleLambdaStateExpression singleState = stateMap.get(label);
-		singleStateFactory.updateMarkState(singleState, region, mark, ptrNode);
+        T ptrRep = labelAnalyzer.getPtsToRep(ptrNode);
+		Type ty = CType.getInstance().pointerize(
+				CType.getType(ptrNode)).toPointer().getType();
+		for(T rep : labelAnalyzer.getFieldReps(ptrRep, ty)) {
+			updateStateWithRep(multiLambdaState, rep);
+			String label = labelAnalyzer.getRepId(rep);
+			SingleLambdaStateExpression singleState = multiLambdaState.getStateMap().get(label);
+			singleStateFactory.updateMarkState(singleState, region, mark, ptrNode);
+		}
 	}
 	
 	@Override
