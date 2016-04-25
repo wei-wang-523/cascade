@@ -14,7 +14,6 @@ import xtc.tree.Visitor;
 import xtc.type.FunctionT;
 import xtc.type.PointerT;
 import xtc.type.Type;
-import xtc.type.Type.Tag;
 import xtc.util.SymbolTable.Scope;
 
 import com.google.common.base.Preconditions;
@@ -586,7 +585,6 @@ class CellEncoder extends Visitor {
 	}
 	
 	private Cell deref(Cell cell, Type type) {
-		Preconditions.checkArgument(!Tag.VOID.equals(type.tag()));
 		type = type.resolve();
 		
 		if(CType.isScalar(type)) {

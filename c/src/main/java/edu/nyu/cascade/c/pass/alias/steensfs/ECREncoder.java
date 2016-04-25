@@ -18,7 +18,6 @@ import xtc.type.NumberT;
 import xtc.type.PointerT;
 import xtc.type.Type;
 import xtc.type.VoidT;
-import xtc.type.Type.Tag;
 import xtc.util.SymbolTable.Scope;
 
 import com.google.common.base.Preconditions;
@@ -527,7 +526,6 @@ class ECREncoder extends Visitor {
 	}
 	
 	ECR deref(ECR ecr, Type type) {
-		Preconditions.checkArgument(!Tag.VOID.equals(type.tag()));
 		if(!(CType.isScalar(type) || type.resolve().isFunction())) return ecr;
 		return uf.getLoc(ecr);
 	}

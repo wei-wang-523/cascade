@@ -503,7 +503,6 @@ public class ECREncoder extends Visitor {
 	}
 	
 	private ECR deref(ECR ecr, Type type) {
-		Preconditions.checkArgument(!type.resolve().isVoid());
 		if(!(CType.isScalar(type) || type.resolve().isFunction())) return ecr;
 		
 		ECR locECR = uf.getLoc(ecr);

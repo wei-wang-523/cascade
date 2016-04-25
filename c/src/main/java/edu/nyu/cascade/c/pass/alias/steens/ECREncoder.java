@@ -441,7 +441,6 @@ class ECREncoder extends Visitor {
 	 */
 	ECR deref(ECR ecr, Type type) {
 		Preconditions.checkNotNull(ecr);
-		Preconditions.checkArgument(!Tag.VOID.equals(type.tag()));
 		if(CType.isScalar(type) || type.resolve().isFunction()) return uf.getLoc(ecr);
 	  return ecr;
 	}
