@@ -72,7 +72,7 @@ public class FlatMode extends AbstractMode {
 	@Override
 	public IRAliasAnalyzer<?> buildPreprocessor(SymbolTable symbolTable) {
 		IRAliasAnalyzer<?> preProcessor = Steensgaard.create(symbolTable);
-		stateFactory.setLabelAnalyzer(preProcessor);
+//		stateFactory.setLabelAnalyzer(preProcessor);
 		return preProcessor;
 	}
 }
