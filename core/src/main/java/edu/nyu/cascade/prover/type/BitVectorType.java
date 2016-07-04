@@ -6,76 +6,76 @@ import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.Expression;
 
 public interface BitVectorType extends Type, ComparableType, ScalarType {
-  BitVectorExpression add(int size, Expression a, Expression b);
+	BitVectorExpression add(int size, Expression a, Expression b);
 
-  BitVectorExpression add(int size, Expression first, Expression... rest);
+	BitVectorExpression add(int size, Expression first, Expression... rest);
 
-  BitVectorExpression add(int size, Iterable<? extends Expression> args);
+	BitVectorExpression add(int size, Iterable<? extends Expression> args);
 
-  BitVectorExpression bitwiseAnd(Expression a, Expression b);
+	BitVectorExpression bitwiseAnd(Expression a, Expression b);
 
-  BitVectorExpression bitwiseNand(Expression a, Expression b);
+	BitVectorExpression bitwiseNand(Expression a, Expression b);
 
-  BitVectorExpression bitwiseNor(Expression a, Expression b);
+	BitVectorExpression bitwiseNor(Expression a, Expression b);
 
-  BitVectorExpression bitwiseNot(Expression a);
+	BitVectorExpression bitwiseNot(Expression a);
 
-  BitVectorExpression bitwiseOr(Expression a, Expression b);
+	BitVectorExpression bitwiseOr(Expression a, Expression b);
 
-  BitVectorExpression bitwiseXnor(Expression a, Expression b);
+	BitVectorExpression bitwiseXnor(Expression a, Expression b);
 
-  BitVectorExpression bitwiseXor(Expression a, Expression b);
+	BitVectorExpression bitwiseXor(Expression a, Expression b);
 
-  BitVectorExpression concat(Expression a, Expression b);
+	BitVectorExpression concat(Expression a, Expression b);
 
-  BitVectorExpression constant(int size, int val);
+	BitVectorExpression constant(int size, int val);
 
-  BitVectorExpression constant(int size, long val);
-  
-  BitVectorExpression constant(int size, BigInteger val);
-  
-  BitVectorExpression constant(int c);
-  
-  BitVectorExpression constant(long c);
-  
-  BitVectorExpression constant(BigInteger c);
+	BitVectorExpression constant(int size, long val);
 
-  BitVectorExpression extract(Expression a, int i, int j);
+	BitVectorExpression constant(int size, BigInteger val);
 
-  BitVectorExpression mult(int size, Expression a, Expression b);
-  
-  BitVectorExpression mult(int size, Expression first, Expression... rest);
+	BitVectorExpression constant(int c);
 
-  BitVectorExpression mult(int size, Iterable<? extends Expression> args);
+	BitVectorExpression constant(long c);
 
-  BitVectorExpression subtract(Expression a, Expression b);
-  
-  BitVectorExpression lshift(Expression a, Expression b);
-  
-  BitVectorExpression rshift(Expression a, Expression b);
+	BitVectorExpression constant(BigInteger c);
 
-  BitVectorExpression zero(int size);
-  
-  BitVectorExpression signedDivide(Expression a, Expression b);
-  
-  BitVectorExpression rem(Expression a, Expression b);
-  
-  BitVectorExpression signedRem(Expression a, Expression b);
-  
-  int getSize();
+	BitVectorExpression extract(Expression a, int i, int j);
+
+	BitVectorExpression mult(int size, Expression a, Expression b);
+
+	BitVectorExpression mult(int size, Expression first, Expression... rest);
+
+	BitVectorExpression mult(int size, Iterable<? extends Expression> args);
+
+	BitVectorExpression subtract(Expression a, Expression b);
+
+	BitVectorExpression lshift(Expression a, Expression b);
+
+	BitVectorExpression rshift(Expression a, Expression b);
+
+	BitVectorExpression zero(int size);
+
+	BitVectorExpression signedDivide(Expression a, Expression b);
+
+	BitVectorExpression rem(Expression a, Expression b);
+
+	BitVectorExpression signedRem(Expression a, Expression b);
+
+	int getSize();
 
 	BitVectorExpression signedExtend(int size, Expression bv);
-	
+
 	BitVectorExpression zeroExtend(int size, Expression bv);
-	
-  @Override
-  BitVectorExpression variable(String name, boolean fresh);
-  
-  @Override
-  BitVectorExpression boundVar(String name, boolean fresh);
-  
-  @Override
-  BitVectorExpression boundExpression(String name, int index, boolean fresh);
-  
+
+	@Override
+	BitVectorExpression variable(String name, boolean fresh);
+
+	@Override
+	BitVectorExpression boundVar(String name, boolean fresh);
+
+	@Override
+	BitVectorExpression boundExpression(String name, int index, boolean fresh);
+
 	BitVectorExpression signedRshift(Expression a, Expression b);
 }

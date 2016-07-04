@@ -33,99 +33,104 @@ import xtc.tree.Printer;
 
 @RunWith(Parameterized.class)
 public class RegionPassImplTest {
-	private static final File programs_syntax = FileUtils
-			.absoluteResourcePath("syntax");
-	private static final File programs_c = FileUtils
-			.absoluteResourcePath("c");
+	private static final File programs_syntax = FileUtils.absoluteResourcePath(
+	    "syntax");
+	private static final File programs_c = FileUtils.absoluteResourcePath("c");
 	private static final File mini_invalids = FileUtils.filePath(programs_c,
-			"mini_bnc", "invalid");
+	    "mini_bnc", "invalid");
 	private static final File mini_valids = FileUtils.filePath(programs_c,
-			"mini_bnc", "valid");
-	private static final File nec_programs = new File(programs_c,
-			"nec_bnc");
+	    "mini_bnc", "valid");
+	private static final File nec_programs = new File(programs_c, "nec_bnc");
 
 	private Main main;
 	private File cfile;
-	
+
 	@Parameterized.Parameters
-	public static Collection<File> cFiles() {		
-		File[] programs_dirs = { programs_syntax, mini_invalids, mini_valids, nec_programs };
+	public static Collection<File> cFiles() {
+		File[] programs_dirs = { programs_syntax, mini_invalids, mini_valids,
+		    nec_programs };
 		Collection<File> fileList = Lists.newArrayList();
-		
-		for(File programs_dir : programs_dirs) {
+
+		for (File programs_dir : programs_dirs) {
 			// Make the C files filter
-		    FilenameFilter filter = new FilenameFilter() {
-		    	public boolean accept(File dir, String name) {
-		    		return name.endsWith(".c");
-		    	}
-		    };
+			FilenameFilter filter = new FilenameFilter() {
+				public boolean accept(File dir, String name) {
+					return name.endsWith(".c");
+				}
+			};
 
-		    // Get all C files
-		    String[] c_tests = programs_dir.list(filter);
+			// Get all C files
+			String[] c_tests = programs_dir.list(filter);
 
-		    if (c_tests == null) continue;
-		    
-		    for (int i = 0; i < c_tests.length; i++) {
-		    	fileList.add(new File(programs_dir, c_tests[i]));
-		    }
+			if (c_tests == null)
+				continue;
+
+			for (int i = 0; i < c_tests.length; i++) {
+				fileList.add(new File(programs_dir, c_tests[i]));
+			}
 		}
-		
-    	return fileList;
+
+		return fileList;
 	}
-	
+
 	public RegionPassImplTest(File file) {
 		Preferences.set(Preferences.OPTION_BYTE_BASED);
 		main = getInjector().getInstance(Main.class);
-        main.init();
-        main.prepare();
-        IOUtils.enableOut();        
-        cfile = file;
+		main.init();
+		main.prepare();
+		IOUtils.enableOut();
+		cfile = file;
 	}
-	
+
 	@After
 	public void tearDown() {
 		ValueManager.reset();
 		DSNodeImpl.reset();
 	}
-	
+
 	@Test
 	public void test() throws ParseException, IOException {
 		Node ast = main.parseSourceFile(cfile);
 		main.processSourceFile(cfile, ast);
 		Collection<IRControlFlowGraph> CFGs = main.getControlFlowGraphs();
-		
+
 		IRControlFlowGraph globalCFG = Iterables.find(CFGs,
-				new Predicate<IRControlFlowGraph>(){
-			@Override
-	    	public boolean apply(IRControlFlowGraph cfg) {
-	    		return cfg.getName().equals(Identifiers.GLOBAL_CFG);
-	    	}});
+		    new Predicate<IRControlFlowGraph>() {
+			    @Override
+			    public boolean apply(IRControlFlowGraph cfg) {
+				    return cfg.getName().equals(Identifiers.GLOBAL_CFG);
+			    }
+		    });
 		CFGs.remove(globalCFG);
-		
+
 		SymbolTable symbolTable = main.getSymbolTable();
-		AddressTakenAnalysis addrTakenPass = AddressTakenAnalysis.create(symbolTable);
+		AddressTakenAnalysis addrTakenPass = AddressTakenAnalysis.create(
+		    symbolTable);
 		addrTakenPass.analysis(globalCFG, CFGs);
-		
-		DataStructures localds = LocalDataStructureImpl.create(addrTakenPass).init(symbolTable);
+
+		DataStructures localds = LocalDataStructureImpl.create(addrTakenPass).init(
+		    symbolTable);
 		localds.analysis(globalCFG, CFGs);
-		
-		DataStructures steensds = SteensDataStructureImpl.create(localds).init(symbolTable);
+
+		DataStructures steensds = SteensDataStructureImpl.create(localds).init(
+		    symbolTable);
 		steensds.analysis(globalCFG, CFGs);
-		
+
 		RegionPassImpl regionPass = RegionPassImpl.create(steensds);
 		regionPass.runOnModule(globalCFG, CFGs);
-		
+
 		Printer out = IOUtils.debug();
 		out.pln(cfile.getName());
-		
+
 		out.incr();
 		CPrinter cout = new CPrinter(out);
-		for(Entry<Pair<Node,String>, Region> entry : regionPass.getRegionMap().entrySet()) {
+		for (Entry<Pair<Node, String>, Region> entry : regionPass.getRegionMap()
+		    .entrySet()) {
 			out.indent().p(":" + entry.getValue());
 			cout.dispatch(entry.getKey().fst());
 			out.pln();
 		}
-		
+
 		out.decr();
 		out.flush();
 	}

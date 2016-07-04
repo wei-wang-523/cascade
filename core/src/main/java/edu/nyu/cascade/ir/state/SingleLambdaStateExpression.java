@@ -14,64 +14,72 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 
 public final class SingleLambdaStateExpression extends AbstractStateExpression {
-	
-	/** Map uninterpreted safety predicate function expression to arguments 
-	 * (all labels, not real expressions), waiting to be substituted with
-	 * initial boolean value (true or false)
-	 */
-  private Multimap<Expression, Collection<Expression>> predicateMap = HashMultimap.create();
 
-  /** Store all safety predicate closures */
-  private final Map<String, PredicateClosure> safetyPredicateClosures = Maps.newHashMap();
-  
-  /** Store all safety predicates */
-  private final Map<String, BooleanExpression> safetyPredicates = Maps.newHashMap();
-  
-  private final SingleStateExpression singleState;
-  
-  private SingleLambdaStateExpression(SingleStateExpression singleState) {
-  	Preconditions.checkNotNull(singleState);
-  	this.singleState = singleState;
-  }
-  
-  static SingleLambdaStateExpression create(SingleStateExpression singleState) {
-  	return new SingleLambdaStateExpression(singleState);
-  }
-  
+	/**
+	 * Map uninterpreted safety predicate function expression to arguments (all
+	 * labels, not real expressions), waiting to be substituted with initial
+	 * boolean value (true or false)
+	 */
+	private Multimap<Expression, Collection<Expression>> predicateMap = HashMultimap
+	    .create();
+
+	/** Store all safety predicate closures */
+	private final Map<String, PredicateClosure> safetyPredicateClosures = Maps
+	    .newHashMap();
+
+	/** Store all safety predicates */
+	private final Map<String, BooleanExpression> safetyPredicates = Maps
+	    .newHashMap();
+
+	private final SingleStateExpression singleState;
+
+	private SingleLambdaStateExpression(SingleStateExpression singleState) {
+		Preconditions.checkNotNull(singleState);
+		this.singleState = singleState;
+	}
+
+	static SingleLambdaStateExpression create(SingleStateExpression singleState) {
+		return new SingleLambdaStateExpression(singleState);
+	}
+
 	@Override
 	public boolean isSingle() {
 		return true;
 	}
-	
+
 	@Override
 	public boolean isMultiple() {
 		return false;
 	}
-  
+
 	@Override
 	public boolean isLambda() {
 		return true;
 	}
-	
+
 	@Override
 	public String toStringShort() {
 		StringBuilder sb = new StringBuilder().append(singleState.toStringShort());
-		if(!safetyPredicateClosures.isEmpty()) {
-			for(Entry<String, PredicateClosure> entry : safetyPredicateClosures.entrySet())
-				sb.append('\n').append(entry.getKey()).append(": ").append(entry.getValue());
+		if (!safetyPredicateClosures.isEmpty()) {
+			for (Entry<String, PredicateClosure> entry : safetyPredicateClosures
+			    .entrySet())
+				sb.append('\n').append(entry.getKey()).append(": ").append(entry
+				    .getValue());
 		}
-		if(!safetyPredicates.isEmpty()) {
-			for(Entry<String, BooleanExpression> entry : safetyPredicates.entrySet())
-				sb.append('\n').append(entry.getKey()).append(": ").append(entry.getValue());
+		if (!safetyPredicates.isEmpty()) {
+			for (Entry<String, BooleanExpression> entry : safetyPredicates.entrySet())
+				sb.append('\n').append(entry.getKey()).append(": ").append(entry
+				    .getValue());
 		}
 		return sb.toString();
 	}
-	
+
 	public Multimap<Expression, Collection<Expression>> getPredicateMap() {
 		return predicateMap;
 	}
 
-	public void putSafetyPredicateClosure(String label, PredicateClosure predicateClosure) {
+	public void putSafetyPredicateClosure(String label,
+	    PredicateClosure predicateClosure) {
 		safetyPredicateClosures.put(label, predicateClosure);
 	}
 
@@ -90,7 +98,7 @@ public final class SingleLambdaStateExpression extends AbstractStateExpression {
 	}
 
 	public void registerPredicate(Expression predicate, Expression... args) {
-	  predicateMap.put(predicate, Arrays.asList(args));
+		predicateMap.put(predicate, Arrays.asList(args));
 	}
 
 	public String getName() {
@@ -100,7 +108,7 @@ public final class SingleLambdaStateExpression extends AbstractStateExpression {
 	public void setPredicateMap(
 	    Multimap<Expression, Collection<Expression>> _predicateMap) {
 		Preconditions.checkNotNull(_predicateMap);
-	  predicateMap = _predicateMap;
+		predicateMap = _predicateMap;
 	}
 
 	int getElemSize() {
@@ -123,11 +131,12 @@ public final class SingleLambdaStateExpression extends AbstractStateExpression {
 		safetyPredicates.putAll(map);
 	}
 
-	void putAllPredicateMap(Multimap<Expression, Collection<Expression>> _predicateMap) {
-	  predicateMap.putAll(_predicateMap);
-  }
+	void putAllPredicateMap(
+	    Multimap<Expression, Collection<Expression>> _predicateMap) {
+		predicateMap.putAll(_predicateMap);
+	}
 
 	SingleStateExpression getSingleState() {
-	  return singleState;
-  }
+		return singleState;
+	}
 }

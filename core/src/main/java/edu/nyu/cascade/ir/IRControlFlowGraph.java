@@ -29,45 +29,48 @@ import xtc.util.SymbolTable.Scope;
  * used [as much as possible :)].
  */
 public interface IRControlFlowGraph {
-	
+
 	Collection<? extends IREdge<? extends IRBasicBlock>> getEdges();
-  
-  /** Get the initial node. The initial node has no predecessors and no statements. */
-  IRBasicBlock getEntry();
 
-  /** Get the exit node. The exit node has no successors and no statements. */
-  IRBasicBlock getExit();
+	/**
+	 * Get the initial node. The initial node has no predecessors and no
+	 * statements.
+	 */
+	IRBasicBlock getEntry();
 
-  /** Get all the nodes in the CFG representation. */
-  Set<? extends IRBasicBlock> getBlocks();
+	/** Get the exit node. The exit node has no successors and no statements. */
+	IRBasicBlock getExit();
 
-  /** Get the predecessors for the given <code>block</code>. */
-  Set<? extends IRBasicBlock> getPredecessors(IRBasicBlock block);
+	/** Get all the nodes in the CFG representation. */
+	Set<? extends IRBasicBlock> getBlocks();
 
-  /** Get the successors for the given <code>block</code>. */
-  Set<? extends IRBasicBlock> getSuccessors(IRBasicBlock block);
+	/** Get the predecessors for the given <code>block</code>. */
+	Set<? extends IRBasicBlock> getPredecessors(IRBasicBlock block);
 
-  /** Get the list of incoming edges. */
-  Collection<? extends IREdge<? extends IRBasicBlock>> getIncomingEdges(
-      IRBasicBlock block);
+	/** Get the successors for the given <code>block</code>. */
+	Set<? extends IRBasicBlock> getSuccessors(IRBasicBlock block);
 
-  /** Get the list of outgoing edges. */
-  Collection<? extends IREdge<? extends IRBasicBlock>> getOutgoingEdges(
-      IRBasicBlock block);
+	/** Get the list of incoming edges. */
+	Collection<? extends IREdge<? extends IRBasicBlock>> getIncomingEdges(
+	    IRBasicBlock block);
 
-  Scope getScope();
+	/** Get the list of outgoing edges. */
+	Collection<? extends IREdge<? extends IRBasicBlock>> getOutgoingEdges(
+	    IRBasicBlock block);
 
-  /** Get the source node of the declaration for this CFG. */
-  Node getSourceNode();
+	Scope getScope();
 
-  /** Get the source location of the declaration for this CFG. */
-  Location getLocation();
-  
-  /** Get the name of this CFG (e.g., the name of the procedure). */
-  String getName();
+	/** Get the source node of the declaration for this CFG. */
+	Node getSourceNode();
 
-  /** Pretty-print the CFG to the given <code>Printer</code>. */
-  void format(Printer printer);
+	/** Get the source location of the declaration for this CFG. */
+	Location getLocation();
+
+	/** Get the name of this CFG (e.g., the name of the procedure). */
+	String getName();
+
+	/** Pretty-print the CFG to the given <code>Printer</code>. */
+	void format(Printer printer);
 
 	void removeBlock(IRBasicBlock block);
 
@@ -77,10 +80,11 @@ public interface IRControlFlowGraph {
 
 	void addEdge(IRBasicBlock currentBlock, IRBasicBlock succ);
 
-	void addEdge(IRBasicBlock source, IRBooleanExpression guard, IRBasicBlock target);
+	void addEdge(IRBasicBlock source, IRBooleanExpression guard,
+	    IRBasicBlock target);
 
 	void setEntry(IRBasicBlock newEntry);
-	
+
 	void setExit(IRBasicBlock newExit);
 
 	List<IRBasicBlock> topologicalSeq(IRBasicBlock startBlock);

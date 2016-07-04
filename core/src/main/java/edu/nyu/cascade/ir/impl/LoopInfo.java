@@ -10,17 +10,18 @@ public class LoopInfo {
 	private final Map<IRBasicBlock, Loop> innerLoopMap;
 	// All the top-level tops without parent loop
 	private final Collection<Loop> topLevelLoops;
-	
-	LoopInfo(Map<IRBasicBlock, Loop> innerLoopMap, Collection<Loop> topLevelLoops) {
+
+	LoopInfo(Map<IRBasicBlock, Loop> innerLoopMap,
+	    Collection<Loop> topLevelLoops) {
 		this.innerLoopMap = innerLoopMap;
 		this.topLevelLoops = topLevelLoops;
 	}
-	
+
 	public Map<IRBasicBlock, Loop> getInnerLoopMap() {
-	  return innerLoopMap;
+		return innerLoopMap;
 	}
 
 	public Collection<Loop> getTopLevelLoops() {
-	  return topLevelLoops;
+		return topLevelLoops;
 	}
 }

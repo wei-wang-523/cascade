@@ -280,14 +280,6 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
       }
 		};
 		
-//		EdgeFilterStrategy<StateExpression> edgeFilterStrategy = new EdgeFilterStrategy<StateExpression>() {
-//			@Override
-//			public boolean apply(Map<IREdge<?>, StateExpression> edgeMap, IREdge<?> edge) 
-//					throws PathFactoryException {
-//				return isFilter(edgeMap, edge);
-//			}
-//		};
-		
 		initLoopCountDownLatch(loopInfo, iterTimes);
 		
 		statePropagateDFS(cfg, 
@@ -382,14 +374,6 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 				return;
       }
 		};
-		
-//		EdgeFilterStrategy<StateExpression> edgeFilterStrategy = new EdgeFilterStrategy<StateExpression>() {
-//			@Override
-//			public boolean apply(Map<IREdge<?>, StateExpression> edgeMap, IREdge<?> edge) 
-//					throws PathFactoryException {
-//				return isFilter(edgeMap, edge);
-//			}
-//		};
 		
 		initLoopCountDownLatch(loopInfo, iterTimes);
 		
@@ -1356,7 +1340,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 						}
 					}
 					if(isReadyToWork) {
-						countDownLatch.countDown(); // count-down the latch if all back-edges are encoded
+					// count-down the latch if all back-edges are encoded
+						countDownLatch.countDown();
 						loopFilterEdges.clear();
 						propagateWorkList.push(succ);
 					}

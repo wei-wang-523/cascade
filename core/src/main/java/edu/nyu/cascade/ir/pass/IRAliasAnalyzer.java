@@ -12,33 +12,34 @@ import edu.nyu.cascade.prover.Expression;
 
 /**
  * Pre-analysis statement
+ * 
  * @author Wei
  *
  */
-public interface IRAliasAnalyzer<T> extends IRPass {	
-  /**
-   * Display the snap shot
-   */
+public interface IRAliasAnalyzer<T> extends IRPass {
+	/**
+	 * Display the snap shot
+	 */
 	String displaySnapShot();
 
 	void buildSnapShot();
 
 	T getPtsToRep(Node node);
-	
+
 	T getPtsToFieldRep(T rep);
-	
+
 	long getRepWidth(T rep);
 
 	String getRepId(T rep);
 
 	T getRep(Node node);
-	
+
 	T getStackRep(Node node);
-	
+
 	/**
-	 * Get the field representatives within rep. It is
-	 * used to in field-sensitive points-to analysis, to find 
-	 * the elements' representative for the innder components
+	 * Get the field representatives within rep. It is used to in field-sensitive
+	 * points-to analysis, to find the elements' representative for the innder
+	 * components
 	 * 
 	 * @param rep
 	 * @return
@@ -46,8 +47,9 @@ public interface IRAliasAnalyzer<T> extends IRPass {
 	Collection<T> getFieldReps(T rep, Type Ty);
 
 	/**
-	 * Add an newly allocated <code>region</code> with source node 
+	 * Add an newly allocated <code>region</code> with source node
 	 * <code>ptrNode</code>
+	 * 
 	 * @param region
 	 * @param ptrNode
 	 * @return
@@ -55,21 +57,22 @@ public interface IRAliasAnalyzer<T> extends IRPass {
 	void addRegion(Expression region, Node ptrNode);
 
 	/**
-	 * Add a stack variable with expression <code>lval</code>,
-	 * with source node <code>lvalNode</code>
+	 * Add a stack variable with expression <code>lval</code>, with source node
+	 * <code>lvalNode</code>
+	 * 
 	 * @param lval
 	 * @param lvalNode
 	 */
 	void addVar(Expression lval, Node lvalNode);
-	
+
 	/**
-	 * Get the mapping from offset to ECR in structure ECR
-	 * only used for field-sensitive analysis
+	 * Get the mapping from offset to ECR in structure ECR only used for
+	 * field-sensitive analysis
 	 * 
 	 * @param rep
 	 * @return
 	 */
-	Map<Range<Long>, T> getStructMap(T rep,  long length);
+	Map<Range<Long>, T> getStructMap(T rep, long length);
 
 	Collection<IRVar> getEquivFuncVars(Node funcNode);
 

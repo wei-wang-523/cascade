@@ -16,9 +16,9 @@ import edu.nyu.cascade.c.pass.alias.cfs.PointsToGraph;
 import edu.nyu.cascade.util.UnionFind;
 
 public class CCjoinGraphTest {
-	private static long PtrSize =
-			CType.getInstance().getSize(new PointerT(VoidT.TYPE));
-	
+	private static long PtrSize = CType.getInstance().getSize(new PointerT(
+	    VoidT.TYPE));
+
 	private CellManager cellManager;
 	private CCjoinModule ccjoinModule;
 	private UnionFind<?> uf;
@@ -45,7 +45,7 @@ public class CCjoinGraphTest {
 		ccjoinModule.put(rhsCell, lhsCell2);
 	}
 
-	@Test(expected=IllegalArgumentException.class)
+	@Test(expected = IllegalArgumentException.class)
 	public void testFailOnStructLHS() {
 		Cell rhsCell = cellManager.scalar(PtrSize);
 		Cell lhsCell1 = cellManager.struct(PtrSize);
@@ -53,8 +53,8 @@ public class CCjoinGraphTest {
 		ccjoinModule.put(rhsCell, lhsCell1);
 		ccjoinModule.put(rhsCell, lhsCell2);
 	}
-	
-	@Test(expected=IllegalArgumentException.class)
+
+	@Test(expected = IllegalArgumentException.class)
 	public void testFailOnStructRHS() {
 		Cell rhsCell = cellManager.struct(PtrSize);
 		Cell lhsCell1 = cellManager.scalar(PtrSize);
@@ -62,7 +62,7 @@ public class CCjoinGraphTest {
 		ccjoinModule.put(rhsCell, lhsCell1);
 		ccjoinModule.put(rhsCell, lhsCell2);
 	}
-	
+
 	@Test
 	public void testPointsToPropagate() {
 		Cell c1 = cellManager.scalar(PtrSize);
@@ -75,13 +75,13 @@ public class CCjoinGraphTest {
 		ccjoinModule.put(c3, c4);
 		ccjoinModule.put(c4, c5);
 		ccjoinModule.put(c5, c4);
-		
+
 		Cell pc2 = cellManager.scalar(PtrSize);
 		Cell pc5 = cellManager.scalar(PtrSize);
 		PointsToGraph pointsToGraph = new PointsToGraph();
 		pointsToGraph.put(c2, pc2);
 		pointsToGraph.put(c5, pc5);
-		
+
 		assertTrue(ccjoinModule.propagatePointsTo(uf, pointsToGraph));
 		assertFalse(ccjoinModule.has(c1));
 		assertFalse(ccjoinModule.has(c2));
@@ -89,7 +89,7 @@ public class CCjoinGraphTest {
 		assertFalse(ccjoinModule.has(c5));
 		assertTrue(ccjoinModule.has(c3));
 	}
-	
+
 	@Test
 	public void testPointsToPropagateUnifiedPointsToPart() {
 		Cell c1 = cellManager.scalar(PtrSize);
@@ -102,13 +102,13 @@ public class CCjoinGraphTest {
 		ccjoinModule.put(c3, c4);
 		ccjoinModule.put(c4, c5);
 		ccjoinModule.put(c5, c4);
-		
+
 		Cell pc2 = cellManager.scalar(PtrSize);
 		Cell pc5 = cellManager.scalar(PtrSize);
 		PointsToGraph pointsToGraph = new PointsToGraph();
 		pointsToGraph.put(c2, pc2);
 		pointsToGraph.put(c5, pc5);
-		
+
 		assertTrue(ccjoinModule.propagatePointsTo(uf, pointsToGraph));
 		assertTrue(ccjoinModule.has(c1));
 		assertFalse(ccjoinModule.has(c2));

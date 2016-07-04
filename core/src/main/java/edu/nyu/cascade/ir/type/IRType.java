@@ -57,7 +57,7 @@ public abstract class IRType {
    * @param srcNode
    * @return
    */
-  public static IRType getIRType(Type type) {  			
+	public static IRType getIRType(Type type) {  			
   	if(type.resolve().isBoolean())
   		return IRBooleanType.getInstance();
   	

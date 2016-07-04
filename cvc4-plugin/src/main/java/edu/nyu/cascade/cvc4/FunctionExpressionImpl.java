@@ -17,102 +17,108 @@ import edu.nyu.cascade.prover.FunctionExpression;
 import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.Type;
 
-final class FunctionExpressionImpl extends ExpressionImpl implements FunctionExpression {
+final class FunctionExpressionImpl extends ExpressionImpl implements
+    FunctionExpression {
 
-  static FunctionExpressionImpl create(ExpressionManagerImpl exprManager, 
-  		Iterable<Expression> vars, Expression body) {
+	static FunctionExpressionImpl create(ExpressionManagerImpl exprManager,
+	    Iterable<Expression> vars, Expression body) {
 		return new FunctionExpressionImpl(exprManager, vars, body);
 	}
-  
-  static FunctionExpressionImpl create(ExpressionManagerImpl exprManager, Kind kind, 
-	    Expr expr, FunctionType type, Iterable<? extends ExpressionImpl> children) {
+
+	static FunctionExpressionImpl create(ExpressionManagerImpl exprManager,
+	    Kind kind, Expr expr, FunctionType type,
+	    Iterable<? extends ExpressionImpl> children) {
 		return new FunctionExpressionImpl(exprManager, kind, expr, type, children);
 	}
 
-	static FunctionExpressionImpl valueOf(
-      ExpressionManagerImpl exprManager, Expression f) {
-    if (exprManager.equals(f.getExpressionManager())) {
-      if (f instanceof FunctionExpressionImpl) {
-        return (FunctionExpressionImpl) f;
-      } else if (f instanceof ExpressionImpl) {
-        return new FunctionExpressionImpl((ExpressionImpl) f);
-      }
-    }
+	static FunctionExpressionImpl valueOf(ExpressionManagerImpl exprManager,
+	    Expression f) {
+		if (exprManager.equals(f.getExpressionManager())) {
+			if (f instanceof FunctionExpressionImpl) {
+				return (FunctionExpressionImpl) f;
+			} else if (f instanceof ExpressionImpl) {
+				return new FunctionExpressionImpl((ExpressionImpl) f);
+			}
+		}
 
-    switch (f.getKind()) {
-    default:
-      throw new UnsupportedOperationException();
-    }
-  }
-  
-  private final Expr op;
+		switch (f.getKind()) {
+		default:
+			throw new UnsupportedOperationException();
+		}
+	}
 
-  private FunctionExpressionImpl(
-      ExpressionImpl f) {
-    super(f);
-    this.op = getCvc4Expression();
-  }
-  
-  private FunctionExpressionImpl(ExpressionManagerImpl exprManager, Kind kind, 
-      Expr expr, FunctionType type, Iterable<? extends ExpressionImpl> children) {
-    super(exprManager, kind, expr, type, children);
-    this.op = getCvc4Expression().getOperator();
-  }
-  
-  private FunctionExpressionImpl(ExpressionManagerImpl exprManager,
-      Iterable<? extends Expression> vars, Expression body) {
-    super(exprManager, LAMBDA, new BinderConstructionStrategy() {
-      @Override
-      public Expr apply(ExprManager em, List<Expr> vars, Expr body) {
-        vectorExpr varList = new vectorExpr();
-        for(Expr var : vars)    varList.add(var);
-        Expr boundVarList = em.mkExpr(edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
-        Expr op = em.mkExpr(edu.nyu.acsys.CVC4.Kind.LAMBDA, boundVarList, body);       
-        return op;
-      }
-    }, vars, body);
-    this.op = getCvc4Expression().getOperator();
-    
-    List<Type> argTypes = Lists.newArrayListWithCapacity(Iterables.size(vars));
-    for( Expression t : vars ) {
-      argTypes.add( t.getType() );
-    }
-    setType( FunctionTypeImpl.create(exprManager, argTypes, body.getType()) );
-  }
-  
-  @Override
-  public Expression apply(Expression arg1, Expression... otherArgs) {
-    Preconditions.checkArgument(getType().getArgTypes().size() == otherArgs.length + 1);
-    return apply(Lists.asList(arg1, otherArgs));
-  }
+	private final Expr op;
 
-  @Override
-  public Expression apply(Iterable<? extends Expression> args) {
-    Preconditions.checkArgument(Iterables.size(args) == getType().getArgTypes().size());
-    return ExpressionImpl.mkFunApply(getExpressionManager(), this, args);
-  }
+	private FunctionExpressionImpl(ExpressionImpl f) {
+		super(f);
+		this.op = getCvc4Expression();
+	}
 
-  @Override
-  public ImmutableList<? extends Type> getArgTypes() {
-    return getType().getArgTypes();
-  }
+	private FunctionExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
+	    Expr expr, FunctionType type,
+	    Iterable<? extends ExpressionImpl> children) {
+		super(exprManager, kind, expr, type, children);
+		this.op = getCvc4Expression().getOperator();
+	}
 
-  public Expr getCvc4Op() {
-    return op;
-  }
-  
-  @Override
-  public String getName() {
-  	return op.toString();
-  }
+	private FunctionExpressionImpl(ExpressionManagerImpl exprManager,
+	    Iterable<? extends Expression> vars, Expression body) {
+		super(exprManager, LAMBDA, new BinderConstructionStrategy() {
+			@Override
+			public Expr apply(ExprManager em, List<Expr> vars, Expr body) {
+				vectorExpr varList = new vectorExpr();
+				for (Expr var : vars)
+					varList.add(var);
+				Expr boundVarList = em.mkExpr(edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST,
+		        varList);
+				Expr op = em.mkExpr(edu.nyu.acsys.CVC4.Kind.LAMBDA, boundVarList, body);
+				return op;
+			}
+		}, vars, body);
+		this.op = getCvc4Expression().getOperator();
 
-  @Override
-  public Type getRange() {
-    return getType().getRangeType();
-  }
+		List<Type> argTypes = Lists.newArrayListWithCapacity(Iterables.size(vars));
+		for (Expression t : vars) {
+			argTypes.add(t.getType());
+		}
+		setType(FunctionTypeImpl.create(exprManager, argTypes, body.getType()));
+	}
 
-  @Override
-  public FunctionType getType() {
-    return super.getType().asFunction();
-  }
+	@Override
+	public Expression apply(Expression arg1, Expression... otherArgs) {
+		Preconditions.checkArgument(getType().getArgTypes()
+		    .size() == otherArgs.length + 1);
+		return apply(Lists.asList(arg1, otherArgs));
+	}
+
+	@Override
+	public Expression apply(Iterable<? extends Expression> args) {
+		Preconditions.checkArgument(Iterables.size(args) == getType().getArgTypes()
+		    .size());
+		return ExpressionImpl.mkFunApply(getExpressionManager(), this, args);
+	}
+
+	@Override
+	public ImmutableList<? extends Type> getArgTypes() {
+		return getType().getArgTypes();
+	}
+
+	public Expr getCvc4Op() {
+		return op;
+	}
+
+	@Override
+	public String getName() {
+		return op.toString();
+	}
+
+	@Override
+	public Type getRange() {
+		return getType().getRangeType();
+	}
+
+	@Override
+	public FunctionType getType() {
+		return super.getType().asFunction();
+	}
 }

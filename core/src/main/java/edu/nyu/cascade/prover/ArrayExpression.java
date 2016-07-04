@@ -4,14 +4,14 @@ import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 
 public interface ArrayExpression extends Expression {
-  Type getIndexType();
+	Type getIndexType();
 
-  Type getElementType();
-  
-  @Override
-  ArrayType getType();
+	Type getElementType();
 
-  Expression index(Expression i);
+	@Override
+	ArrayType getType();
 
-  ArrayExpression update(Expression i, Expression val);
+	Expression index(Expression i);
+
+	ArrayExpression update(Expression i, Expression val);
 }

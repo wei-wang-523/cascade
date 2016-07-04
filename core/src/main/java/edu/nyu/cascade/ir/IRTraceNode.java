@@ -9,19 +9,19 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 
 public interface IRTraceNode {
-	
+
 	void addSuccessor(IRTraceNode succ);
-	
+
 	void filterSuccessor(ExpressionManager exprManager);
 
 	List<? extends IRTraceNode> getSuccessors();
-	
+
 	boolean hasSuccessor();
-	
+
 	void addStatements(Collection<? extends IRStatement> stmts);
-	
+
 	void setStmtTraceExpr(IRStatement stmt, Expression traceExpr);
-	
+
 	void format(Printer printer);
 
 	BigInteger getId();
@@ -35,6 +35,6 @@ public interface IRTraceNode {
 	void isNegate(IRStatement stmt, boolean isNegate);
 
 	boolean isEdgeNegated(IRStatement stmt);
-	
+
 	boolean isEdge(IRStatement stmt);
 }

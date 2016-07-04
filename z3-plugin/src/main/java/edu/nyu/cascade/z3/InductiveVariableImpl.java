@@ -6,31 +6,31 @@ import edu.nyu.cascade.prover.InductiveExpression;
 import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.Selector;
 
-final class InductiveVariableImpl extends VariableExpressionImpl
-    implements InductiveExpression {
-	
+final class InductiveVariableImpl extends VariableExpressionImpl implements
+    InductiveExpression {
+
 	static InductiveVariableImpl create(ExpressionManagerImpl exprManager,
-      String name, InductiveTypeImpl type, boolean fresh) {
-    return new InductiveVariableImpl(exprManager, name, type, fresh);
-  }
+	    String name, InductiveTypeImpl type, boolean fresh) {
+		return new InductiveVariableImpl(exprManager, name, type, fresh);
+	}
 
-  private InductiveVariableImpl(ExpressionManagerImpl exprManager, String name,
-      InductiveTypeImpl type, boolean fresh) {
-    super(exprManager, name, type, fresh);
-  }
+	private InductiveVariableImpl(ExpressionManagerImpl exprManager, String name,
+	    InductiveTypeImpl type, boolean fresh) {
+		super(exprManager, name, type, fresh);
+	}
 
-  @Override
-  public InductiveTypeImpl getType() {
-    return (InductiveTypeImpl) super.getType();
-  }
+	@Override
+	public InductiveTypeImpl getType() {
+		return (InductiveTypeImpl) super.getType();
+	}
 
-  @Override
-  public Expression select(Selector selector) {
-    return selector.apply(this);
-  }
+	@Override
+	public Expression select(Selector selector) {
+		return selector.apply(this);
+	}
 
-  @Override
-  public BooleanExpression test(Constructor constructor) {
-    return getType().test(constructor, this);
-  }
+	@Override
+	public BooleanExpression test(Constructor constructor) {
+		return getType().test(constructor, this);
+	}
 }

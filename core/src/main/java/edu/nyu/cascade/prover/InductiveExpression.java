@@ -5,7 +5,10 @@ import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.Selector;
 
 public interface InductiveExpression extends Expression {
-  Expression select(Selector selector);
-  BooleanExpression test(Constructor constructor);
-  @Override InductiveType getType();
+	Expression select(Selector selector);
+
+	BooleanExpression test(Constructor constructor);
+
+	@Override
+	InductiveType getType();
 }

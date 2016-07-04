@@ -8,14 +8,14 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 
 public interface IRSoundMemLayoutEncoding {
-	
-	ImmutableSet<BooleanExpression> disjointMemLayout(
-			MemoryVarSets multiSets, ArrayExpression sizeArr);
-	
+
+	ImmutableSet<BooleanExpression> disjointMemLayout(MemoryVarSets multiSets,
+	    ArrayExpression sizeArr);
+
 	/**
-	 * Newly-allocated region with <code>size</code> at address
-	 * <code>ptr</code> do not overlap with all the allocated
-	 * regions <code>heapVars</code>
+	 * Newly-allocated region with <code>size</code> at address <code>ptr</code>
+	 * do not overlap with all the allocated regions <code>heapVars</code>
+	 * 
 	 * @param memoryVarSets
 	 * @param sizeArr
 	 * @param ptr
@@ -23,13 +23,13 @@ public interface IRSoundMemLayoutEncoding {
 	 * @return
 	 */
 	BooleanExpression validMalloc(MemoryVarSets memoryVarSets,
-      ArrayExpression sizeArr, Expression ptr, Expression size);
-	
+	    ArrayExpression sizeArr, Expression ptr, Expression size);
+
 	BooleanExpression validFree(ArrayExpression sizeArr, Expression ptr);
-	
-	ImmutableSet<BooleanExpression> validMemAccess(
-			MemoryVarSets varSets, ArrayExpression sizeArr, Expression ptr);
-	
-	ImmutableSet<BooleanExpression> validMemAccess(
-			MemoryVarSets varSets, ArrayExpression sizeArr, Expression ptr, Expression size);
+
+	ImmutableSet<BooleanExpression> validMemAccess(MemoryVarSets varSets,
+	    ArrayExpression sizeArr, Expression ptr);
+
+	ImmutableSet<BooleanExpression> validMemAccess(MemoryVarSets varSets,
+	    ArrayExpression sizeArr, Expression ptr, Expression size);
 }

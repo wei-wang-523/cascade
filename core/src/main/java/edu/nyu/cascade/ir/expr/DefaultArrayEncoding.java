@@ -13,200 +13,181 @@ import edu.nyu.cascade.util.EqualsUtil;
 import edu.nyu.cascade.util.HashCodeUtil;
 
 public class DefaultArrayEncoding implements ArrayEncoding<ArrayExpression> {
-  private final ExpressionManager exprManager;
-  
-  public DefaultArrayEncoding(ExpressionManager exprManager) {
-    this.exprManager = exprManager;
-  }
+	private final ExpressionManager exprManager;
 
-  @Override
-  public Instance<ArrayExpression> getInstance(
-      TypeEncoding<?> indexEncoding, TypeEncoding<?> elementEncoding) {
-    return new DefaultArrayInstance(exprManager, indexEncoding, elementEncoding);
-  }
+	public DefaultArrayEncoding(ExpressionManager exprManager) {
+		this.exprManager = exprManager;
+	}
 
-  @Override
-  public boolean isEncodingFor(Expression x) {
-    return x.isArray();
-/*    List<TypeEncoding<?>> subEncodings = x.isArray();
-    if( subEncodings.size() != 2 ) {
-      return false;
-    }
-    TypeEncoding<?> indexEncoding = subEncodings.get(0);
-    TypeEncoding<?> elementEncoding = subEncodings.get(1);
-    return getInstance(indexEncoding, elementEncoding).equals(x.getTypeEncoding());
-*/  }
+	@Override
+	public Instance<ArrayExpression> getInstance(TypeEncoding<?> indexEncoding,
+	    TypeEncoding<?> elementEncoding) {
+		return new DefaultArrayInstance(exprManager, indexEncoding,
+		    elementEncoding);
+	}
 
-  @Override
-  public ArrayExpression ofExpression(Expression expr) {
-    Preconditions.checkArgument(expr.isArray());
-    return expr.asArray();
-  }
+	@Override
+	public boolean isEncodingFor(Expression x) {
+		return x.isArray();
+	}
 
-  @Override
-  public ExpressionManager getExpressionManager() {
-    return exprManager;
-  }
+	@Override
+	public ArrayExpression ofExpression(Expression expr) {
+		Preconditions.checkArgument(expr.isArray());
+		return expr.asArray();
+	}
 
-  @Override
-  public Expression index(ArrayExpression array, Expression i) {
-    return array.index(i);
-  }
+	@Override
+	public ExpressionManager getExpressionManager() {
+		return exprManager;
+	}
 
-  @Override
-  public ArrayExpression update(ArrayExpression array, Expression index,
-      Expression elem) {
-    return array.update(index, elem);
-  }
+	@Override
+	public Expression index(ArrayExpression array, Expression i) {
+		return array.index(i);
+	}
 
-/*  @Override
-  public DefaultArrayInstance<?,?> getInstance(Type indexType,
-      Type<E> elemType) {
-    return new DefaultArrayInstance<I,E>(exprManager, indexType, elemType);
-  }
-*/   
+	@Override
+	public ArrayExpression update(ArrayExpression array, Expression index,
+	    Expression elem) {
+		return array.update(index, elem);
+	}
 }
 
 class DefaultArrayInstance implements ArrayEncoding.Instance<ArrayExpression> {
-  private final ExpressionManager exprManager;
-  private final TypeEncoding<?> indexEncoding, elementEncoding;
+	private final ExpressionManager exprManager;
+	private final TypeEncoding<?> indexEncoding, elementEncoding;
 
-  public DefaultArrayInstance(ExpressionManager exprManager, TypeEncoding<?> indexEncoding, TypeEncoding<?> elementEncoding) {
-    this.exprManager = exprManager;
-    this.indexEncoding = indexEncoding;
-    this.elementEncoding = elementEncoding;
-  }
+	public DefaultArrayInstance(ExpressionManager exprManager,
+	    TypeEncoding<?> indexEncoding, TypeEncoding<?> elementEncoding) {
+		this.exprManager = exprManager;
+		this.indexEncoding = indexEncoding;
+		this.elementEncoding = elementEncoding;
+	}
 
-  @Override
-  public BooleanExpression eq(ArrayExpression lhs, ArrayExpression rhs) {
-    return lhs.eq(rhs);
-  }
-  
-  public boolean equals(Object obj) {
-    if( this == obj ) { 
-      return true;
-    }
-    if( !(obj instanceof DefaultArrayInstance) ) {
-      return false;
-    }
-    DefaultArrayInstance instance = (DefaultArrayInstance)obj;
-    return EqualsUtil.areEqual(exprManager, instance.exprManager)
-        && EqualsUtil.areEqual(indexEncoding, instance.indexEncoding)
-        && EqualsUtil.areEqual(elementEncoding, instance.elementEncoding);
-  }
+	@Override
+	public BooleanExpression eq(ArrayExpression lhs, ArrayExpression rhs) {
+		return lhs.eq(rhs);
+	}
 
-  @Override
-  public TypeEncoding<?> getElementEncoding() {
-    return elementEncoding;
-  }
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (!(obj instanceof DefaultArrayInstance)) {
+			return false;
+		}
+		DefaultArrayInstance instance = (DefaultArrayInstance) obj;
+		return EqualsUtil.areEqual(exprManager, instance.exprManager) && EqualsUtil
+		    .areEqual(indexEncoding, instance.indexEncoding) && EqualsUtil.areEqual(
+		        elementEncoding, instance.elementEncoding);
+	}
 
-  public ExpressionManager getExpressionManager() {
-    return exprManager;
-  }
+	@Override
+	public TypeEncoding<?> getElementEncoding() {
+		return elementEncoding;
+	}
 
-  @Override
-  public TypeEncoding<?> getIndexEncoding() {
-    return indexEncoding;
-  }
+	public ExpressionManager getExpressionManager() {
+		return exprManager;
+	}
 
-  @Override
-  public ArrayType getType() {
-    return exprManager.arrayType(getIndexEncoding().getType(), getElementEncoding().getType());
-  }
+	@Override
+	public TypeEncoding<?> getIndexEncoding() {
+		return indexEncoding;
+	}
 
-  @Override
-  public int hashCode() {
-    int hash = HashCodeUtil.SEED;
-    hash = HashCodeUtil.hash(hash, exprManager);
-    hash = HashCodeUtil.hash(hash, indexEncoding);
-    hash = HashCodeUtil.hash(hash, elementEncoding);
-    return hash;
-  }
+	@Override
+	public ArrayType getType() {
+		return exprManager.arrayType(getIndexEncoding().getType(),
+		    getElementEncoding().getType());
+	}
 
-  @Override
-  public Expression index(ArrayExpression array, Expression index) {
-//    Preconditions.checkArgument( indexEncoding.isEncodingFor(index) );
-//    return mkValue(getElementEncoding(), array.index(index.getValue()));
-    return array.index(index);
-  }
+	@Override
+	public int hashCode() {
+		int hash = HashCodeUtil.SEED;
+		hash = HashCodeUtil.hash(hash, exprManager);
+		hash = HashCodeUtil.hash(hash, indexEncoding);
+		hash = HashCodeUtil.hash(hash, elementEncoding);
+		return hash;
+	}
 
-  @Override
-  public boolean isEncodingFor(Expression x) {
-    if( !x.isArray() ) {
-      return false;
-    }
-    ArrayExpression ax = x.asArray();
-    return ax.getIndexType().equals( indexEncoding.getType() ) &&
-      ax.getElementType().equals( elementEncoding.getType() );
-  }
+	@Override
+	public Expression index(ArrayExpression array, Expression index) {
+		return array.index(index);
+	}
 
-/*  private EncodingValue mkEncodingValue(Expression<?> x) {
-    return new EncodingValueImpl(x,this);
-  }
-  
-  private <T> EncodingValue mkValue(TypeEncoding<T> encoding, Expression<?> element) {
-    return encoding.toEncodingValue( encoding.ofExpression(element) );
-  }*/
+	@Override
+	public boolean isEncodingFor(Expression x) {
+		if (!x.isArray()) {
+			return false;
+		}
+		ArrayExpression ax = x.asArray();
+		return ax.getIndexType().equals(indexEncoding.getType()) && ax
+		    .getElementType().equals(elementEncoding.getType());
+	}
 
-  @Override
-  public ArrayExpression ofExpression(Expression x) {
-    Preconditions.checkArgument(x.isArray());
-    return x.asArray();
-  }
-  
-  @Override
-  public ArrayExpression symbolicConstant(String name, boolean fresh) {
-    return exprManager.arrayType(getIndexEncoding().getType(), 
-    		getElementEncoding().getType()).variable(name, fresh);
-  }
+	@Override
+	public ArrayExpression ofExpression(Expression x) {
+		Preconditions.checkArgument(x.isArray());
+		return x.asArray();
+	}
 
-  @Override
-  public ArrayExpression toArrayExpression(ArrayExpression array) {
-    return array;
-  }
-  
-  @Override
-  public VariableExpression toVariable(ArrayExpression x) {
-    Preconditions.checkArgument(x.isVariable());
-    return x.asVariable();
-  }
+	@Override
+	public ArrayExpression symbolicConstant(String name, boolean fresh) {
+		return exprManager.arrayType(getIndexEncoding().getType(),
+		    getElementEncoding().getType()).variable(name, fresh);
+	}
 
-  @Override
-  public ArrayExpression update(ArrayExpression array,
-      Expression index, Expression val) {
-    return array.update(index, val);
-  }
-  
-  @Override
-  public ArrayExpression variable(String name, boolean fresh) {
-    return exprManager.arrayType(getIndexEncoding().getType(), 
-    		getElementEncoding().getType()).variable(name, fresh);
-  }
-  
-  @Override
-  public ArrayExpression boundVar(String name, boolean fresh) {
-    return exprManager.arrayType(getIndexEncoding().getType(), 
-    		getElementEncoding().getType()).boundVar(name, fresh);
-  }
-  
-  @Override
-  public ArrayExpression boundExpression(String name, int index, boolean fresh) {
-    return exprManager.arrayType(getIndexEncoding().getType(), 
-    		getElementEncoding().getType()).boundExpression(name, index, fresh);
-  }
+	@Override
+	public ArrayExpression toArrayExpression(ArrayExpression array) {
+		return array;
+	}
 
-  @Override
-  public ArrayExpression variable(String name, IRType iType, boolean fresh) {
-    return variable(name, fresh);
-  }
-  
-  @Override
-  public ArrayExpression boundVar(String name, IRType iType, boolean fresh) {
-    return boundVar(name, fresh);
-  }
-  
-  @Override
-  public ArrayExpression boundExpression(String name, int index, IRType iType, boolean fresh) {
-    return boundExpression(name, index, fresh);
-  }
+	@Override
+	public VariableExpression toVariable(ArrayExpression x) {
+		Preconditions.checkArgument(x.isVariable());
+		return x.asVariable();
+	}
+
+	@Override
+	public ArrayExpression update(ArrayExpression array, Expression index,
+	    Expression val) {
+		return array.update(index, val);
+	}
+
+	@Override
+	public ArrayExpression variable(String name, boolean fresh) {
+		return exprManager.arrayType(getIndexEncoding().getType(),
+		    getElementEncoding().getType()).variable(name, fresh);
+	}
+
+	@Override
+	public ArrayExpression boundVar(String name, boolean fresh) {
+		return exprManager.arrayType(getIndexEncoding().getType(),
+		    getElementEncoding().getType()).boundVar(name, fresh);
+	}
+
+	@Override
+	public ArrayExpression boundExpression(String name, int index,
+	    boolean fresh) {
+		return exprManager.arrayType(getIndexEncoding().getType(),
+		    getElementEncoding().getType()).boundExpression(name, index, fresh);
+	}
+
+	@Override
+	public ArrayExpression variable(String name, IRType iType, boolean fresh) {
+		return variable(name, fresh);
+	}
+
+	@Override
+	public ArrayExpression boundVar(String name, IRType iType, boolean fresh) {
+		return boundVar(name, fresh);
+	}
+
+	@Override
+	public ArrayExpression boundExpression(String name, int index, IRType iType,
+	    boolean fresh) {
+		return boundExpression(name, index, fresh);
+	}
 }

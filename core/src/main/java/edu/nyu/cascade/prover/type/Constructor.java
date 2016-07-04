@@ -7,11 +7,17 @@ import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.InductiveExpression;
 
 public interface Constructor {
-  InductiveExpression apply(Expression... args);
-  InductiveExpression apply(Iterable<? extends Expression> args);
-  int getArity();
-  ExpressionManager getExpressionManager();
-  String getName();
-  ImmutableList<? extends Selector> getSelectors();
-  InductiveType getType();
+	InductiveExpression apply(Expression... args);
+
+	InductiveExpression apply(Iterable<? extends Expression> args);
+
+	int getArity();
+
+	ExpressionManager getExpressionManager();
+
+	String getName();
+
+	ImmutableList<? extends Selector> getSelectors();
+
+	InductiveType getType();
 }

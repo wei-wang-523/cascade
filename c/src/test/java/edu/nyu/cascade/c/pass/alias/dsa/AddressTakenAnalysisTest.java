@@ -29,77 +29,79 @@ import xtc.tree.Node;
 
 @RunWith(Parameterized.class)
 public class AddressTakenAnalysisTest {
-	private static final File programs_syntax = FileUtils
-			.absoluteResourcePath("syntax");
-	private static final File programs_c = FileUtils
-			.absoluteResourcePath("c");
+	private static final File programs_syntax = FileUtils.absoluteResourcePath(
+	    "syntax");
+	private static final File programs_c = FileUtils.absoluteResourcePath("c");
 	private static final File mini_invalids = FileUtils.filePath(programs_c,
-			"mini_bnc", "invalid");
+	    "mini_bnc", "invalid");
 	private static final File mini_valids = FileUtils.filePath(programs_c,
-			"mini_bnc", "valid");
-	private static final File nec_programs = new File(programs_c,
-			"nec_bnc");
+	    "mini_bnc", "valid");
+	private static final File nec_programs = new File(programs_c, "nec_bnc");
 
 	private Main main;
 	private File cfile;
-	
+
 	@Parameterized.Parameters
-	public static Collection<File> cFiles() {		
-		File[] programs_dirs = { programs_syntax, mini_invalids, mini_valids, nec_programs };
+	public static Collection<File> cFiles() {
+		File[] programs_dirs = { programs_syntax, mini_invalids, mini_valids,
+		    nec_programs };
 		Collection<File> fileList = Lists.newArrayList();
-		
-		for(File programs_dir : programs_dirs) {
+
+		for (File programs_dir : programs_dirs) {
 			// Make the C files filter
-		    FilenameFilter filter = new FilenameFilter() {
-		    	public boolean accept(File dir, String name) {
-		    		return name.endsWith(".c");
-		    	}
-		    };
+			FilenameFilter filter = new FilenameFilter() {
+				public boolean accept(File dir, String name) {
+					return name.endsWith(".c");
+				}
+			};
 
-		    // Get all C files
-		    String[] c_tests = programs_dir.list(filter);
+			// Get all C files
+			String[] c_tests = programs_dir.list(filter);
 
-		    if (c_tests == null) continue;
-		    
-		    for (int i = 0; i < c_tests.length; i++) {
-		    	fileList.add(new File(programs_dir, c_tests[i]));
-		    }
+			if (c_tests == null)
+				continue;
+
+			for (int i = 0; i < c_tests.length; i++) {
+				fileList.add(new File(programs_dir, c_tests[i]));
+			}
 		}
-		
-    	return fileList;
+
+		return fileList;
 	}
-	
+
 	public AddressTakenAnalysisTest(File file) {
 		main = getInjector().getInstance(Main.class);
-        main.init();
-        main.prepare();
-        IOUtils.enableOut();
-        Preferences.set(Preferences.OPTION_BYTE_BASED);
-        
-        cfile = file;
+		main.init();
+		main.prepare();
+		IOUtils.enableOut();
+		Preferences.set(Preferences.OPTION_BYTE_BASED);
+
+		cfile = file;
 	}
-	
+
 	@After
 	public void tearDown() {
 		ValueManager.reset();
 	}
-	
+
 	@Test
 	public void test() throws ParseException, IOException {
 		Node ast = main.parseSourceFile(cfile);
 		main.processSourceFile(cfile, ast);
 		Collection<IRControlFlowGraph> CFGs = main.getControlFlowGraphs();
-		
+
 		IRControlFlowGraph globalCFG = Iterables.find(CFGs,
-				new Predicate<IRControlFlowGraph>(){
-			@Override
-	    	public boolean apply(IRControlFlowGraph cfg) {
-	    		return cfg.getName().equals(Identifiers.GLOBAL_CFG);
-	    	}});
+		    new Predicate<IRControlFlowGraph>() {
+			    @Override
+			    public boolean apply(IRControlFlowGraph cfg) {
+				    return cfg.getName().equals(Identifiers.GLOBAL_CFG);
+			    }
+		    });
 		CFGs.remove(globalCFG);
-		
+
 		SymbolTable symbolTable = main.getSymbolTable();
-		AddressTakenAnalysis AddrTakenAnalyzer = AddressTakenAnalysis.create(symbolTable);
+		AddressTakenAnalysis AddrTakenAnalyzer = AddressTakenAnalysis.create(
+		    symbolTable);
 		AddrTakenAnalyzer.analysis(globalCFG, CFGs);
 	}
 }

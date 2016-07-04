@@ -10,12 +10,12 @@ import edu.nyu.cascade.c.pass.alias.cfs.CellManager;
 
 public class CellTest {
 	private CellManager cellManager;
-	
+
 	@Before
 	public void setup() {
 		cellManager = new CellManager();
 	}
-	
+
 	@Test
 	public void testBottom() {
 		Cell s1 = cellManager.bottom();
@@ -29,14 +29,14 @@ public class CellTest {
 		assertTrue(cellManager.isScalar(s1));
 		assertTrue(s1.getSize() == 1000);
 	}
-	
+
 	@Test
 	public void testStruct() {
 		Cell s1 = cellManager.struct(1000);
 		assertTrue(cellManager.isStruct(s1));
 		assertTrue(s1.getSize() == 1000);
 	}
-	
+
 	@Test
 	public void testFunction() {
 		Cell s1 = cellManager.function();

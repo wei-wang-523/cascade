@@ -11,11 +11,11 @@ import org.junit.Test;
 import edu.nyu.cascade.util.IOUtils;
 
 public class IOUtilsTest {
-  @Test
-  public void testPipeReader() throws IOException {
-    StringWriter writer = new StringWriter();
-    IOUtils.pipeReader(new StringReader("foo"), writer);
-    assertEquals("foo",writer.toString());
-  }
+	@Test
+	public void testPipeReader() throws IOException {
+		StringWriter writer = new StringWriter();
+		IOUtils.pipeReader(new StringReader("foo"), writer);
+		assertEquals("foo", writer.toString());
+	}
 
 }

@@ -3,7 +3,7 @@ package edu.nyu.cascade.ir.type;
 public final class IRLabelType extends IRType {
   private static final IRLabelType singleton = new IRLabelType();
   
-  public static IRLabelType getInstance() {
+	public static IRLabelType getInstance() {
     return singleton; 
   }
   

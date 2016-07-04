@@ -15,9 +15,9 @@ import edu.nyu.cascade.c.pass.alias.cfs.PointsToGraph;
 import edu.nyu.cascade.util.UnionFind;
 
 public class PointsToGraphTest {
-	private static final long PtrSize = CType.getInstance().getSize(
-			new PointerT(VoidT.TYPE));
-	
+	private static final long PtrSize = CType.getInstance().getSize(new PointerT(
+	    VoidT.TYPE));
+
 	private CellManager cellManager;
 	private PointsToGraph pointsToGraph;
 	private UnionFind<?> uf;
@@ -28,7 +28,7 @@ public class PointsToGraphTest {
 		uf = UnionFind.create();
 		cellManager = new CellManager();
 	}
-	
+
 	@After
 	public void tearDown() {
 		pointsToGraph.clear();
@@ -40,40 +40,40 @@ public class PointsToGraphTest {
 		Cell s1 = cellManager.scalar(PtrSize);
 		Cell s2 = cellManager.scalar(1000);
 		pointsToGraph.put(s1, s2);
-		
+
 		Cell pointsCell = pointsToGraph.get(s1);
 		assertTrue(pointsCell.equals(s2));
 	}
-	
-	@Test(expected=IllegalArgumentException.class)
+
+	@Test(expected = IllegalArgumentException.class)
 	public void testPointsToFail() {
 		Cell s1 = cellManager.scalar(PtrSize);
 		Cell s2 = cellManager.scalar(2000);
 		Cell s3 = cellManager.scalar(1000);
-		
+
 		pointsToGraph.put(s1, s2);
 		pointsToGraph.put(s1, s3);
 	}
-	
+
 	@Test
 	public void testPropagateEquivNoChange() {
 		Cell s1 = cellManager.scalar(PtrSize);
 		Cell s2 = cellManager.scalar(1000);
 		Cell s3 = cellManager.scalar(PtrSize);
 		Cell s4 = cellManager.scalar(2000);
-		
+
 		pointsToGraph.put(s1, s2);
 		pointsToGraph.put(s3, s4);
 		assertFalse(pointsToGraph.propagateEquivFully(uf));
 	}
-	
+
 	@Test
 	public void testPropagateEquivChange() {
 		Cell s1 = cellManager.scalar(PtrSize);
 		Cell s2 = cellManager.scalar(1000);
 		Cell s3 = cellManager.scalar(PtrSize);
 		Cell s4 = cellManager.scalar(2000);
-		
+
 		pointsToGraph.put(s1, s2);
 		pointsToGraph.put(s3, s4);
 		uf.union(s1, s3);
@@ -82,6 +82,7 @@ public class PointsToGraphTest {
 		assertEquals(s4, pointsToGraph.get(s1));
 		assertEquals(s2, pointsToGraph.get(s3));
 	}
+
 	@Test
 	public void testPropagateEquivCycleChange() {
 		Cell s1 = cellManager.scalar(PtrSize);
@@ -90,7 +91,7 @@ public class PointsToGraphTest {
 		Cell s4 = cellManager.scalar(PtrSize);
 		Cell s5 = cellManager.scalar(PtrSize);
 		Cell s6 = cellManager.scalar(PtrSize);
-		
+
 		pointsToGraph.put(s1, s2);
 		pointsToGraph.put(s3, s4);
 		pointsToGraph.put(s2, s5);

@@ -3,13 +3,13 @@ package edu.nyu.cascade.prover.type;
 import com.google.common.collect.ImmutableList;
 
 public interface FunctionType extends Type {
-  Type getArgTypeAtIndex(int index);
+	Type getArgTypeAtIndex(int index);
 
-  ImmutableList<? extends Type> getArgTypes();
+	ImmutableList<? extends Type> getArgTypes();
 
-  int getArity();
+	int getArity();
 
-  Type getRangeType();
-  
-  String getName();
+	Type getRangeType();
+
+	String getName();
 }

@@ -25,50 +25,55 @@ import edu.nyu.cascade.prover.TheoremProverFactory.Capability;
  * @author <a href="mailto:cconway@cs.nyu.edu">Christopher Conway</a>
  */
 public interface TheoremProver {
-  static interface Provider {
-    TheoremProver create();
-    Iterable<Capability> getCapabilities();
-    String getName();
-    
-    /**
-     * Returns a list of implementation-specific options.
-     */
-    Iterable<Option> getOptions();
-  }
-  
-  /**
-   * Returns the theorem prover's expression manager. All the expressions of
-   * that the IR uses should be constructed using the expression manager of a
-   * corresponding theorem prover.
-   * 
-   * @return the expression manager.
-   */
-  ExpressionManager getExpressionManager();
+	static interface Provider {
+		TheoremProver create();
 
-  ValidityResult<?> checkValidity(Expression bool) ;
+		Iterable<Capability> getCapabilities();
 
-  SatResult<?> checkSat(Expression expr) ;
-  
-  void assume(Iterable<? extends Expression> propositions) ;
-  void assume(Expression first, Expression... rest) ;
-  void clearAssumptions() ;
-  
-  /**
-   * Set implementation-specific properties, possibly by referring to 
-   * <code>edu.nyu.cascade.util.Preferences</code>.
-   */
-  void setPreferences() ;
-  
-  String getProviderName();
+		String getName();
+
+		/**
+		 * Returns a list of implementation-specific options.
+		 */
+		Iterable<Option> getOptions();
+	}
+
+	/**
+	 * Returns the theorem prover's expression manager. All the expressions of
+	 * that the IR uses should be constructed using the expression manager of a
+	 * corresponding theorem prover.
+	 * 
+	 * @return the expression manager.
+	 */
+	ExpressionManager getExpressionManager();
+
+	ValidityResult<?> checkValidity(Expression bool);
+
+	SatResult<?> checkSat(Expression expr);
+
+	void assume(Iterable<? extends Expression> propositions);
+
+	void assume(Expression first, Expression... rest);
+
+	void clearAssumptions();
+
+	/**
+	 * Set implementation-specific properties, possibly by referring to
+	 * <code>edu.nyu.cascade.util.Preferences</code>.
+	 */
+	void setPreferences();
+
+	String getProviderName();
 
 	long getStatsTime();
-	
+
 	/**
 	 * Get the evaluation of <code>expr</code> based on model
+	 * 
 	 * @param expr
 	 * @return
 	 */
 	Expression evaluate(Expression expr);
-	
+
 	void reset();
 }

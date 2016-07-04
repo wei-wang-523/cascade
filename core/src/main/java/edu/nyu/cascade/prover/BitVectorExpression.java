@@ -2,72 +2,106 @@ package edu.nyu.cascade.prover;
 
 import edu.nyu.cascade.prover.type.BitVectorType;
 
-
 public interface BitVectorExpression extends Expression {
-  BitVectorExpression and(Expression a) ;
-  BitVectorExpression concat(Expression a) ;
+	BitVectorExpression and(Expression a);
 
-  BitVectorExpression extract(int i, int j) ;
+	BitVectorExpression concat(Expression a);
 
-  int getSize();
-  @Override BitVectorType getType();
-  
-  /**
-   * Returns a new Boolean expression that represents an unsigned greater than  
-   * (>) over this expression and a given bit vector <code>e</code>. 
-   * @param e expression to compare to
-   * @return the greater than expression
-   */
-  BooleanExpression greaterThan(Expression e) ;
-  
-  /**
-   * Returns a new Boolean expression that represents an unsigned greater than or equal
-   * comparison (>=) over this expression and a given bit vector expression <code>e</code>. 
-   * @param e expression to compare to
-   * @return the greater than or equal expression
-   */
-  BooleanExpression greaterThanOrEqual(Expression e) ;
+	BitVectorExpression extract(int i, int j);
 
-  /**
-   * Returns a new Boolean expression that represents an unsigned less than comparison 
-   * (<) over this expression and a given bit vector expression <code>e</code>. 
-   * @param e expression to compare to
-   * @return the less than expression
-   */
-  BooleanExpression lessThan(Expression e) ;
+	int getSize();
 
-  /**
-   * Returns a new Boolean expression that represents an unsigned less than or equal
-   * comparison (<=) over this expression and a given bit vector expression <code>e</code>. 
-   * @param e expression to compare to
-   * @return the less than expression
-   */
-  BooleanExpression lessThanOrEqual(Expression e) ;
-  
-  BitVectorExpression minus(Expression a) ;
-  BitVectorExpression nand(Expression a) ;
-  BitVectorExpression nor(Expression a) ;
-  BitVectorExpression not() ;
-  BitVectorExpression neg() ;
-  BitVectorExpression or(Expression a) ;
-  BitVectorExpression plus(Expression a);
-  BitVectorExpression plus(Expression... args);
-  BitVectorExpression plus(Iterable<? extends Expression> args);
-  
-  BitVectorExpression times(Expression a) ;
-  BitVectorExpression times(Expression... args);
-  BitVectorExpression times(Iterable<? extends Expression> args);
-  
-  BitVectorExpression divides(Expression a);
-  BitVectorExpression signedDivides(Expression a);
-  BitVectorExpression rems(Expression a);
-  BitVectorExpression signedRems(Expression a);
-  BitVectorExpression xnor(Expression a) ;
-  BitVectorExpression xor(Expression a) ;
-  BitVectorExpression lshift(Expression a);
-  BitVectorExpression rshift(Expression a);
-  BitVectorExpression signedRshift(Expression a);
-  BitVectorExpression zeroExtend(int size);
-  BitVectorExpression signExtend(int size);
-  BitVectorExpression uminus();
+	@Override
+	BitVectorType getType();
+
+	/**
+	 * Returns a new Boolean expression that represents an unsigned greater than
+	 * (>) over this expression and a given bit vector <code>e</code>.
+	 * 
+	 * @param e
+	 *          expression to compare to
+	 * @return the greater than expression
+	 */
+	BooleanExpression greaterThan(Expression e);
+
+	/**
+	 * Returns a new Boolean expression that represents an unsigned greater than
+	 * or equal comparison (>=) over this expression and a given bit vector
+	 * expression <code>e</code>.
+	 * 
+	 * @param e
+	 *          expression to compare to
+	 * @return the greater than or equal expression
+	 */
+	BooleanExpression greaterThanOrEqual(Expression e);
+
+	/**
+	 * Returns a new Boolean expression that represents an unsigned less than
+	 * comparison (<) over this expression and a given bit vector expression
+	 * <code>e</code>.
+	 * 
+	 * @param e
+	 *          expression to compare to
+	 * @return the less than expression
+	 */
+	BooleanExpression lessThan(Expression e);
+
+	/**
+	 * Returns a new Boolean expression that represents an unsigned less than or
+	 * equal comparison (<=) over this expression and a given bit vector
+	 * expression <code>e</code>.
+	 * 
+	 * @param e
+	 *          expression to compare to
+	 * @return the less than expression
+	 */
+	BooleanExpression lessThanOrEqual(Expression e);
+
+	BitVectorExpression minus(Expression a);
+
+	BitVectorExpression nand(Expression a);
+
+	BitVectorExpression nor(Expression a);
+
+	BitVectorExpression not();
+
+	BitVectorExpression neg();
+
+	BitVectorExpression or(Expression a);
+
+	BitVectorExpression plus(Expression a);
+
+	BitVectorExpression plus(Expression... args);
+
+	BitVectorExpression plus(Iterable<? extends Expression> args);
+
+	BitVectorExpression times(Expression a);
+
+	BitVectorExpression times(Expression... args);
+
+	BitVectorExpression times(Iterable<? extends Expression> args);
+
+	BitVectorExpression divides(Expression a);
+
+	BitVectorExpression signedDivides(Expression a);
+
+	BitVectorExpression rems(Expression a);
+
+	BitVectorExpression signedRems(Expression a);
+
+	BitVectorExpression xnor(Expression a);
+
+	BitVectorExpression xor(Expression a);
+
+	BitVectorExpression lshift(Expression a);
+
+	BitVectorExpression rshift(Expression a);
+
+	BitVectorExpression signedRshift(Expression a);
+
+	BitVectorExpression zeroExtend(int size);
+
+	BitVectorExpression signExtend(int size);
+
+	BitVectorExpression uminus();
 }

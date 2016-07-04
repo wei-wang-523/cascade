@@ -4,7 +4,10 @@ import edu.nyu.cascade.prover.Expression;
 
 public interface PredicateClosure {
 	Expression eval(Expression... args);
+
 	Expression getBodyExpr();
+
 	Expression[] getVars();
+
 	Expression getUninterpretedFunc();
 }
