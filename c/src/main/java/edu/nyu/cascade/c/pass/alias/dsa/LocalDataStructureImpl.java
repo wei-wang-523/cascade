@@ -1141,6 +1141,8 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 					Args.add(ArgNH);
 					--NumFixedArgs;
 				} else {
+					if (ArgNH == null)
+						continue;
 					VarArgNH.mergeWith(ArgNH);
 				}
 			}
