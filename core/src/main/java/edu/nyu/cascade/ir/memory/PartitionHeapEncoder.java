@@ -26,8 +26,8 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
 	private final Map<String, MemoryVarSets> memVarSetsMap = Maps.newHashMap();
 
 	private PartitionHeapEncoder(ExpressionEncoding encoding,
-	    IRDataFormatter dataFormatter, IRSoundMemLayoutEncoding soundMemEncoding,
-	    IROrderMemLayoutEncoding orderMemEncoding) {
+			IRDataFormatter dataFormatter, IRSoundMemLayoutEncoding soundMemEncoding,
+			IROrderMemLayoutEncoding orderMemEncoding) {
 		this.soundMemEncoding = soundMemEncoding;
 		this.orderMemEncoding = orderMemEncoding;
 		this.encoding = encoding;
@@ -35,17 +35,17 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
 	}
 
 	public static PartitionHeapEncoder create(ExpressionEncoding encoding,
-	    IRDataFormatter dataFormatter, Strategy strategy) {
+			IRDataFormatter dataFormatter, Strategy strategy) {
 
 		switch (strategy) {
 		case ORDER: {
 			IROrderMemLayoutEncoding memLayout = OrderLinearMemLayoutEncoding.create(
-			    encoding, dataFormatter);
+					encoding, dataFormatter);
 			return new PartitionHeapEncoder(encoding, dataFormatter, null, memLayout);
 		}
 		case SOUND: {
 			IRSoundMemLayoutEncoding memLayout = SoundLinearMemLayoutEncoding.create(
-			    encoding, dataFormatter);
+					encoding, dataFormatter);
 			return new PartitionHeapEncoder(encoding, dataFormatter, memLayout, null);
 		}
 		default:
@@ -73,20 +73,20 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
 
 	@Override
 	public ImmutableSet<BooleanExpression> disjointMemLayout(String key,
-	    ArrayExpression sizeArr) {
+			ArrayExpression sizeArr) {
 		MemoryVarSets memVarSets = getMemVarSets(key);
 		if (soundMemEncoding != null) {
 			return soundMemEncoding.disjointMemLayout(memVarSets, sizeArr);
 		} else {
 			Expression lastRegion = memVarSets.getLastRegion();
 			return orderMemEncoding.disjointMemLayout(memVarSets, sizeArr,
-			    lastRegion);
+					lastRegion);
 		}
 	}
 
 	@Override
 	public BooleanExpression validMalloc(String key, ArrayExpression sizeArr,
-	    Expression ptr, Expression size) {
+			Expression ptr, Expression size) {
 		MemoryVarSets memVarSets = getMemVarSets(key);
 
 		size = dataFormatter.castToSize(size);
@@ -97,12 +97,12 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
 			Expression lastRegion = memVarSets.getLastRegion();
 
 			BooleanExpression res = orderMemEncoding.validMalloc(sizeArr, lastRegion,
-			    ptr, size);
+					ptr, size);
 
 			Expression lastRegionCand = memVarSets.getLastRegionCand();
 			Expression lastRegionPrime = encoding.getExpressionManager().ifThenElse(
-			    lastRegionCand.eq(dataFormatter.getNullAddress()), lastRegion,
-			    lastRegionCand);
+					lastRegionCand.eq(dataFormatter.getNullAddress()), lastRegion,
+					lastRegionCand);
 			memVarSets.setLastRegion(lastRegionPrime);
 			return res;
 		}
@@ -118,7 +118,7 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
 
 	@Override
 	public ImmutableSet<BooleanExpression> validMemAccess(String key,
-	    ArrayExpression sizeArr, Expression ptr) {
+			ArrayExpression sizeArr, Expression ptr) {
 		MemoryVarSets varSets = getMemVarSets(key);
 		if (soundMemEncoding != null)
 			return soundMemEncoding.validMemAccess(varSets, sizeArr, ptr);
@@ -128,7 +128,7 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
 
 	@Override
 	public ImmutableSet<BooleanExpression> validMemAccess(String key,
-	    ArrayExpression sizeArr, Expression ptr, Expression size) {
+			ArrayExpression sizeArr, Expression ptr, Expression size) {
 		MemoryVarSets varSets = getMemVarSets(key);
 
 		size = dataFormatter.castToSize(size);

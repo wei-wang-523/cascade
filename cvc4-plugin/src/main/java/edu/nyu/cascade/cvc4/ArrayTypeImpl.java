@@ -16,7 +16,7 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 	private final Type elementType;
 
 	static ArrayTypeImpl create(ExpressionManagerImpl exprManager, Type index,
-	    Type elem) {
+			Type elem) {
 		return new ArrayTypeImpl(exprManager, index, elem);
 	}
 
@@ -27,21 +27,21 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 		} else {
 			ArrayType arrayType = type.asArrayType();
 			return create(exprManager, arrayType.getIndexType(), arrayType
-			    .getElementType());
+					.getElementType());
 		}
 	}
 
 	private ArrayTypeImpl(ExpressionManagerImpl exprManager, Type index,
-	    Type elem) {
+			Type elem) {
 		super(exprManager);
 		this.indexType = index;
 		this.elementType = elem;
 		try {
 			edu.nyu.acsys.CVC4.Type indexCvc4Type = exprManager.toCvc4Type(indexType);
 			edu.nyu.acsys.CVC4.Type elementCvc4Type = exprManager.toCvc4Type(
-			    elementType);
+					elementType);
 			setCVC4Type(exprManager.getTheoremProver().getCvc4ExprManager()
-			    .mkArrayType(indexCvc4Type, elementCvc4Type));
+					.mkArrayType(indexCvc4Type, elementCvc4Type));
 		} catch (Exception e) {
 			throw new TheoremProverException(e);
 		}
@@ -60,12 +60,12 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 	@Override
 	public ArrayBoundVariableImpl boundVar(String name, boolean fresh) {
 		return new ArrayBoundVariableImpl(getExpressionManager(), name, this,
-		    fresh);
+				fresh);
 	}
 
 	@Override
 	public ArrayExpression boundExpression(String name, int index,
-	    boolean fresh) {
+			boolean fresh) {
 		return boundVar(name, fresh);
 	}
 
@@ -101,8 +101,8 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 		case ARRAY_UPDATE:
 			assert (expression.getArity() == 3);
 			return ArrayExpressionImpl.mkUpdate(getExpressionManager(),
-			    (Expression) expression.getChild(0), (Expression) expression.getChild(
-			        1), (Expression) expression.getChild(2));
+					(Expression) expression.getChild(0), (Expression) expression.getChild(
+							1), (Expression) expression.getChild(2));
 
 		default:
 			return super.importExpression(expression);
@@ -112,27 +112,27 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 	@Override
 	public Expression index(Expression array, Expression index) {
 		return ArrayExpressionImpl.mkArrayIndex(getExpressionManager(), array,
-		    index);
+				index);
 	}
 
 	@Override
 	public ArrayExpression update(Expression array, Expression index,
-	    Expression value) {
+			Expression value) {
 		return ArrayExpressionImpl.mkUpdate(getExpressionManager(), array, index,
-		    value);
+				value);
 	}
 
 	@Override
 	public ArrayExpression storeAll(Expression expr, ArrayType arrayType) {
 		return ArrayExpressionImpl.mkStoreAll(getExpressionManager(), expr,
-		    arrayType);
+				arrayType);
 	}
 
 	@Override
 	ArrayExpressionImpl createExpression(Expr res, Expression e, Kind kind,
-	    Iterable<ExpressionImpl> children) {
+			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isArray());
 		return ArrayExpressionImpl.create(getExpressionManager(), kind, res, e
-		    .getType().asArrayType(), children);
+				.getType().asArrayType(), children);
 	}
 }

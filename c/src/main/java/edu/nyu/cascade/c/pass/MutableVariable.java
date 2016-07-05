@@ -9,7 +9,8 @@ import xtc.type.Type;
 
 public class MutableVariable extends MutableValue {
 
-	static final ConcurrentMap<Pair<String, String>, MutableVariable> mutableCache = Maps.newConcurrentMap();
+	static final ConcurrentMap<Pair<String, String>, MutableVariable> mutableCache = Maps
+			.newConcurrentMap();
 
 	protected MutableVariable(String name, String scope, Type type) {
 		super(type);
@@ -17,9 +18,10 @@ public class MutableVariable extends MutableValue {
 		setScope(scope);
 	}
 
-	static MutableVariable getOrCreate(String varName, String varScope, Type varTy) {
+	static MutableVariable getOrCreate(String varName, String varScope,
+			Type varTy) {
 		Pair<String, String> varKey = Pair.of(varName, varScope);
-		if(mutableCache.containsKey(varKey)) {
+		if (mutableCache.containsKey(varKey)) {
 			return mutableCache.get(varKey);
 		} else {
 			MutableVariable var = new MutableVariable(varName, varScope, varTy);
@@ -27,9 +29,10 @@ public class MutableVariable extends MutableValue {
 			return var;
 		}
 	}
-	
+
 	static MutableVariable get(String varName, String varScope) {
-		Preconditions.checkArgument(mutableCache.containsKey(Pair.of(varName, varScope)));
+		Preconditions.checkArgument(mutableCache.containsKey(Pair.of(varName,
+				varScope)));
 		return mutableCache.get(Pair.of(varName, varScope));
 	}
 }

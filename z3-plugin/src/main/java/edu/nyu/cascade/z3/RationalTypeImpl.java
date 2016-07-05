@@ -13,22 +13,22 @@ final class RationalTypeImpl extends TypeImpl implements RationalType {
 		super(expressionManager);
 		try {
 			setZ3Type(expressionManager.getTheoremProver().getZ3Context()
-			    .getRealSort());
+					.getRealSort());
 		} catch (Z3Exception e) {
 			throw new TheoremProverException(e);
 		}
 	}
 
 	RationalTypeImpl(ExpressionManagerImpl em,
-	    BinaryConstructionStrategy strategy, Expression lowerBound,
-	    Expression upperBound) {
+			BinaryConstructionStrategy strategy, Expression lowerBound,
+			Expression upperBound) {
 		super(em, strategy, lowerBound, upperBound);
 	}
 
 	@Override
 	public RationalExpressionImpl add(Expression first, Expression... rest) {
 		throw new UnsupportedOperationException(
-		    "RationalType.add(IExpression,IExpression...);");
+				"RationalType.add(IExpression,IExpression...);");
 	}
 
 	@Override
@@ -46,7 +46,7 @@ final class RationalTypeImpl extends TypeImpl implements RationalType {
 	@Override
 	public RationalExpressionImpl constant(int numerator, int denominator) {
 		return RationalExpressionImpl.mkConstant(getExpressionManager(), numerator,
-		    denominator);
+				denominator);
 	}
 
 	@Override
@@ -143,7 +143,7 @@ final class RationalTypeImpl extends TypeImpl implements RationalType {
 	@Override
 	public RationalVariableImpl variable(String name, boolean fresh) {
 		return RationalVariableImpl.create(getExpressionManager(), name, this,
-		    fresh);
+				fresh);
 	}
 
 	@Override
@@ -159,20 +159,20 @@ final class RationalTypeImpl extends TypeImpl implements RationalType {
 	@Override
 	public RationalBoundExpressionImpl boundVar(String name, boolean fresh) {
 		return RationalBoundExpressionImpl.create(getExpressionManager(), name,
-		    this, fresh);
+				this, fresh);
 	}
 
 	@Override
 	public RationalBoundExpressionImpl boundExpression(String name, int index,
-	    boolean fresh) {
+			boolean fresh) {
 		return RationalBoundExpressionImpl.create(getExpressionManager(), name,
-		    index, this, fresh);
+				index, this, fresh);
 	}
 
 	@Override
 	protected InductiveExpressionImpl createExpression(Expr res,
-	    Expression oldExpr, Iterable<? extends ExpressionImpl> children) {
+			Expression oldExpr, Iterable<? extends ExpressionImpl> children) {
 		return InductiveExpressionImpl.create(getExpressionManager(), oldExpr
-		    .getKind(), res, oldExpr.getType(), children);
+				.getKind(), res, oldExpr.getType(), children);
 	}
 }

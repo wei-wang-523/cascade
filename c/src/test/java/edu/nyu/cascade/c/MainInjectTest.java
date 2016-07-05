@@ -25,9 +25,9 @@ import xtc.parser.ParseException;
 public class MainInjectTest {
 	private static final File programs_c = FileUtils.absoluteResourcePath("c");
 	private static final File mini_invalids = FileUtils.filePath(programs_c,
-	    "mini_bnc", "invalid");
+			"mini_bnc", "invalid");
 	private static final File mini_valids = FileUtils.filePath(programs_c,
-	    "mini_bnc", "valid");
+			"mini_bnc", "valid");
 
 	private Main main;
 	private File cfile;
@@ -68,13 +68,13 @@ public class MainInjectTest {
 		};
 
 		fileList.addAll(ImmutableList.copyOf(mini_invalids.listFiles(
-		    falseDerefFilter)));
+				falseDerefFilter)));
 		fileList.addAll(ImmutableList.copyOf(mini_invalids.listFiles(
-		    falseFreeFilter)));
+				falseFreeFilter)));
 		fileList.addAll(ImmutableList.copyOf(mini_invalids.listFiles(
-		    falseMemtrackFilter)));
+				falseMemtrackFilter)));
 		fileList.addAll(ImmutableList.copyOf(mini_invalids.listFiles(
-		    falseAssertFilter)));
+				falseAssertFilter)));
 		fileList.addAll(ImmutableList.copyOf(mini_valids.listFiles(filter)));
 
 		return fileList;
@@ -98,8 +98,8 @@ public class MainInjectTest {
 	@Test
 	public void testDSA() throws ParseException, IOException {
 		String[] args = { "--inline-anno", "--iter-times", "10", "-m32",
-		    "--vari-cell", "--lambda", "--memory-check", "--hoare", "-dsa", cfile
-		        .toString() };
+				"--vari-cell", "--lambda", "--memory-check", "--hoare", "-dsa", cfile
+						.toString() };
 		IOUtils.out().println("DSA:" + cfile.toString());
 		List<String> cmds = main.processCommandLine(args);
 		main.run(cmds);
@@ -108,8 +108,8 @@ public class MainInjectTest {
 	@Test
 	public void testCFS() throws ParseException, IOException {
 		String[] args = { "--inline-anno", "--iter-times", "10", "-m32",
-		    "--vari-cell", "--lambda", "--memory-check", "--hoare", "-cfs", cfile
-		        .toString() };
+				"--vari-cell", "--lambda", "--memory-check", "--hoare", "-cfs", cfile
+						.toString() };
 		IOUtils.out().println("CFS:" + cfile.toString());
 		List<String> cmds = main.processCommandLine(args);
 		main.run(cmds);
@@ -118,8 +118,8 @@ public class MainInjectTest {
 	@Test
 	public void testCFSCS() throws ParseException, IOException {
 		String[] args = { "--inline-anno", "--iter-times", "10", "-m32",
-		    "--vari-cell", "--lambda", "--memory-check", "--hoare", "-cfscs", cfile
-		        .toString() };
+				"--vari-cell", "--lambda", "--memory-check", "--hoare", "-cfscs", cfile
+						.toString() };
 		IOUtils.out().println("CFSCS:" + cfile.toString());
 		List<String> cmds = main.processCommandLine(args);
 		main.run(cmds);

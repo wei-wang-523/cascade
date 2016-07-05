@@ -9,14 +9,15 @@ import xtc.Constants;
 import xtc.type.Type;
 
 public class Function extends GlobalObject {
-	//FIXME: Function reload!
-	static final ConcurrentMap<String, Function> functionCache = Maps.newConcurrentMap();
-	
+	// FIXME: Function reload!
+	static final ConcurrentMap<String, Function> functionCache = Maps
+			.newConcurrentMap();
+
 	Value Args[];
 
 	private Function(String funcID, String funcScope, Type funcType) {
 		super(funcID, funcScope, funcType);
-		
+
 		int paramSize = funcType.resolve().toFunction().getParameters().size();
 		Args = new Value[paramSize];
 	}
@@ -26,7 +27,7 @@ public class Function extends GlobalObject {
 	}
 
 	static Function getOrCreate(String funcName, String funcScope, Type funcTy) {
-		if(functionCache.containsKey(funcName)) {
+		if (functionCache.containsKey(funcName)) {
 			return functionCache.get(funcName);
 		} else {
 			Function func = new Function(funcName, funcScope, funcTy);
@@ -34,7 +35,7 @@ public class Function extends GlobalObject {
 			return func;
 		}
 	}
-	
+
 	static Function get(String funcName) {
 		Preconditions.checkNotNull(funcName);
 		Preconditions.checkArgument(functionCache.containsKey(funcName));

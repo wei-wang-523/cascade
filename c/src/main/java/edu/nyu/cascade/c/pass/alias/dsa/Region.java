@@ -11,9 +11,9 @@ public final class Region implements Comparable<Region> {
 	private Type type;
 	private long offset;
 	private long length;
-	
+
 	boolean singleton, allocated, bytewise, incomplete, complicated, collapsed;
-	
+
 	Region(DSNode rep, Type type, long offset, long length) {
 		Preconditions.checkNotNull(rep);
 		this.N = rep;
@@ -21,20 +21,28 @@ public final class Region implements Comparable<Region> {
 		this.offset = offset;
 		this.length = length;
 	}
-	
-	boolean isSingleton() { return singleton; };
-	
-	boolean isAllocated() { return allocated; };
-	
-	boolean bytewiseAccess() { return bytewise; }
-	
-	Type getType() { return type; }
+
+	boolean isSingleton() {
+		return singleton;
+	};
+
+	boolean isAllocated() {
+		return allocated;
+	};
+
+	boolean bytewiseAccess() {
+		return bytewise;
+	}
+
+	Type getType() {
+		return type;
+	}
 
 	boolean isDisjoint(long offset, long length) {
-		return this.offset + this.length <= offset  || 
-				offset + length <= this.offset;
+		return this.offset + this.length <= offset || offset
+				+ length <= this.offset;
 	}
-	
+
 	void merge(Region R) {
 		boolean collapse = type != R.type;
 		long low = Math.min(offset, R.offset);
@@ -49,23 +57,23 @@ public final class Region implements Comparable<Region> {
 		collapsed = collapsed || R.collapsed;
 		type = (bytewise || collapse) ? null : type;
 	}
-	
+
 	boolean overlaps(Region R) {
-		return (incomplete && R.incomplete)
-				|| (complicated && R.complicated)
-				|| (N == R.N
-				&& (collapsed || !isDisjoint(R.offset, R.length)));
+		return (incomplete && R.incomplete) || (complicated && R.complicated)
+				|| (N == R.N && (collapsed || !isDisjoint(R.offset, R.length)));
 	}
-	
+
 	@Override
 	public String toString() {
-		//TODO: identify the representative
-		StringBuilder sb = new StringBuilder().append(N.getID() + "[")
-				.append(offset).append(',')
-				.append(offset + length).append("]{");
-		if (singleton) 	sb.append('S');
-		if (bytewise) 	sb.append('B');
-		if (allocated)	sb.append('A');
+		// TODO: identify the representative
+		StringBuilder sb = new StringBuilder().append(N.getID() + "[").append(
+				offset).append(',').append(offset + length).append("]{");
+		if (singleton)
+			sb.append('S');
+		if (bytewise)
+			sb.append('B');
+		if (allocated)
+			sb.append('A');
 		sb.append('}');
 		return sb.toString();
 	}
@@ -78,26 +86,28 @@ public final class Region implements Comparable<Region> {
 			}
 			return Long.compare(offset, o.offset);
 		}
-		
+
 		return N.compareTo(o.N);
 	}
-	
+
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof Region)) return false;
+		if (!(o instanceof Region))
+			return false;
 		Region otherReg = (Region) o;
-		if (!otherReg.N.equals(N))  return false;
-		if (otherReg.offset != offset) return false;
-		if (otherReg.length != length) return false;
+		if (!otherReg.N.equals(N))
+			return false;
+		if (otherReg.offset != offset)
+			return false;
+		if (otherReg.length != length)
+			return false;
 		return true;
 	}
-	
+
 	@Override
 	public int hashCode() {
-		return new HashCodeBuilder(17, 37)
-				.append(N)
-				.append(offset)
-				.append(length).hashCode();
+		return new HashCodeBuilder(17, 37).append(N).append(offset).append(length)
+				.hashCode();
 	}
 
 	DSNode getNode() {

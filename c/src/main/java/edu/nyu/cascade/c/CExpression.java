@@ -9,30 +9,31 @@ import edu.nyu.cascade.ir.impl.IRExpressionImpl;
 import edu.nyu.cascade.util.IOUtils;
 
 class CExpression extends IRExpressionImpl {
-/*  public CExpression(Node sourceNode) {
-    super(sourceNode);
-  }*/
+	/*
+	 * public CExpression(Node sourceNode) { super(sourceNode); }
+	 */
 
-  public CExpression(Node sourceNode, Scope scope) {
-    super(sourceNode,scope);
-  }
+	public CExpression(Node sourceNode, Scope scope) {
+		super(sourceNode, scope);
+	}
 
-/*  public static CExpression create(Node sourceNode) {
-    return new CExpression(sourceNode);
-  }*/
+	/*
+	 * public static CExpression create(Node sourceNode) { return new
+	 * CExpression(sourceNode); }
+	 */
 
-  public static CExpression create(Node sourceNode,SymbolTable.Scope scope) {
-    return new CExpression(sourceNode,scope);
-  }
+	public static CExpression create(Node sourceNode, SymbolTable.Scope scope) {
+		return new CExpression(sourceNode, scope);
+	}
 
-  @Override
-  public void format(Printer printer) {
-    CPrinter cp = new CPrinter(printer);
-    cp.dispatch(getSourceNode());
-  }
+	@Override
+	public void format(Printer printer) {
+		CPrinter cp = new CPrinter(printer);
+		cp.dispatch(getSourceNode());
+	}
 
-  @Override
-  public String toString() {
-    return IOUtils.formatC(getSourceNode());
-  }
+	@Override
+	public String toString() {
+		return IOUtils.formatC(getSourceNode());
+	}
 }

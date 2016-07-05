@@ -17,23 +17,23 @@ import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.util.Preferences;
 
 public class OrderStmtLinearMemSafetyEncoding extends
-    AbstractStmtMemSafetyEncoding {
+		AbstractStmtMemSafetyEncoding {
 
 	private final static Collection<String> FUN_NAMES = Lists.newArrayList(
-	    SafetyPredicate.Kind.VALID_ACCESS_RANGE.name(),
-	    SafetyPredicate.Kind.VALID_ACCESS.name(),
-	    SafetyPredicate.Kind.STACK_ORDERED.name(),
-	    SafetyPredicate.Kind.HEAP_ORDERED.name());
+			SafetyPredicate.Kind.VALID_ACCESS_RANGE.name(),
+			SafetyPredicate.Kind.VALID_ACCESS.name(),
+			SafetyPredicate.Kind.STACK_ORDERED.name(),
+			SafetyPredicate.Kind.HEAP_ORDERED.name());
 	private final static Collection<String> FUN_ORDER_NAMES = Lists.newArrayList(
-	    SafetyPredicate.Kind.STACK_ORDERED.name(),
-	    SafetyPredicate.Kind.HEAP_ORDERED.name());
+			SafetyPredicate.Kind.STACK_ORDERED.name(),
+			SafetyPredicate.Kind.HEAP_ORDERED.name());
 	private final static Collection<String> PRED_NAMES = Collections.singleton(
-	    SafetyPredicate.Kind.PRE_DISJOINT.name());
+			SafetyPredicate.Kind.PRE_DISJOINT.name());
 
 	private final Expression ptrVar, sizeVar;
 
 	private OrderStmtLinearMemSafetyEncoding(ExpressionEncoding encoding,
-	    IRDataFormatter formatter) {
+			IRDataFormatter formatter) {
 		super(encoding, formatter);
 		ExpressionManager exprManager = encoding.getExpressionManager();
 		ptrVar = exprManager.variable(ptrVarName, formatter.getAddressType(), true);
@@ -41,7 +41,7 @@ public class OrderStmtLinearMemSafetyEncoding extends
 	}
 
 	public static OrderStmtLinearMemSafetyEncoding create(
-	    ExpressionEncoding encoding, IRDataFormatter formatter) {
+			ExpressionEncoding encoding, IRDataFormatter formatter) {
 		return new OrderStmtLinearMemSafetyEncoding(encoding, formatter);
 	}
 
@@ -54,12 +54,12 @@ public class OrderStmtLinearMemSafetyEncoding extends
 
 	@Override
 	public BooleanExpression validFree(ArrayExpression markArr,
-	    Expression region) {
+			Expression region) {
 		Preconditions.checkArgument(markArr.getType().getIndexType().equals(
-		    formatter.getAddressType()));
+				formatter.getAddressType()));
 		Preconditions.checkArgument(markArr.getType().getElementType().isBoolean());
 		Preconditions.checkArgument(region.getType().equals(formatter
-		    .getAddressType()));
+				.getAddressType()));
 
 		BooleanExpression mark = markArr.index(region).asBooleanExpression();
 		BooleanExpression tt = mark.getType().asBooleanType().tt();
@@ -79,7 +79,7 @@ public class OrderStmtLinearMemSafetyEncoding extends
 
 	@Override
 	public void updateHeapMemSafetyPredicates(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		if (Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
 			updateHeapFunValidAccess(state, ptrExpr, sizeExpr);
 			updateHeapFunValidAccessRange(state, ptrExpr, sizeExpr);
@@ -91,7 +91,7 @@ public class OrderStmtLinearMemSafetyEncoding extends
 
 	@Override
 	public void updateStackMemSafetyPredicates(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		if (Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
 			updateStackFunValidAccess(state, ptrExpr, sizeExpr);
 			updateStackFunValidAccessRange(state, ptrExpr, sizeExpr);
@@ -109,14 +109,14 @@ public class OrderStmtLinearMemSafetyEncoding extends
 	@Override
 	public Collection<String> getClosurePropNames() {
 		return Preferences.isSet(Preferences.OPTION_MEMORY_CHECK) ? FUN_NAMES
-		    : FUN_ORDER_NAMES;
+				: FUN_ORDER_NAMES;
 	}
 
 	private void updateStackFunValidAccess(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		String propName = SafetyPredicate.Kind.VALID_ACCESS.name();
 		PredicateClosure valid_access_closure = state.getSafetyPredicateClosure(
-		    propName);
+				propName);
 
 		Expression func = valid_access_closure.getUninterpretedFunc();
 		Expression body = valid_access_closure.getBodyExpr();
@@ -124,18 +124,18 @@ public class OrderStmtLinearMemSafetyEncoding extends
 
 		assert (vars.length == 1);
 		Expression bodyPrime = encoding.or(encoding.within(ptrExpr, sizeExpr,
-		    vars[0]), body);
+				vars[0]), body);
 
 		PredicateClosure valid_access_closure_prime = suspend(func, bodyPrime,
-		    vars[0]);
+				vars[0]);
 		state.putSafetyPredicateClosure(propName, valid_access_closure_prime);
 	}
 
 	private void updateHeapFunValidAccess(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		String propName = SafetyPredicate.Kind.VALID_ACCESS.name();
 		PredicateClosure valid_access_closure = state.getSafetyPredicateClosure(
-		    propName);
+				propName);
 
 		Expression func = valid_access_closure.getUninterpretedFunc();
 		Expression body = valid_access_closure.getBodyExpr();
@@ -143,19 +143,19 @@ public class OrderStmtLinearMemSafetyEncoding extends
 
 		assert (vars.length == 1);
 		Expression bodyPrime = encoding.or(encoding.and(ptrExpr.neq(formatter
-		    .getNullAddress()), sizeExpr.neq(formatter.getSizeZero()), encoding
-		        .within(ptrExpr, sizeExpr, vars[0])), body);
+				.getNullAddress()), sizeExpr.neq(formatter.getSizeZero()), encoding
+						.within(ptrExpr, sizeExpr, vars[0])), body);
 
 		PredicateClosure valid_access_closure_prime = suspend(func, bodyPrime,
-		    vars[0]);
+				vars[0]);
 		state.putSafetyPredicateClosure(propName, valid_access_closure_prime);
 	}
 
 	private void updateStackFunValidAccessRange(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		String propName = SafetyPredicate.Kind.VALID_ACCESS_RANGE.name();
 		PredicateClosure valid_access_range_closure = state
-		    .getSafetyPredicateClosure(propName);
+				.getSafetyPredicateClosure(propName);
 
 		Expression func = valid_access_range_closure.getUninterpretedFunc();
 		Expression body = valid_access_range_closure.getBodyExpr();
@@ -163,18 +163,18 @@ public class OrderStmtLinearMemSafetyEncoding extends
 
 		assert (vars.length == 2);
 		Expression bodyPrime = encoding.or(encoding.within(ptrExpr, sizeExpr,
-		    vars[0], vars[1]), body);
+				vars[0], vars[1]), body);
 
 		PredicateClosure valid_access_range_closure_prime = suspend(func, bodyPrime,
-		    vars);
+				vars);
 		state.putSafetyPredicateClosure(propName, valid_access_range_closure_prime);
 	}
 
 	private void updateHeapFunValidAccessRange(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		String propName = SafetyPredicate.Kind.VALID_ACCESS_RANGE.name();
 		PredicateClosure valid_access_range_closure = state
-		    .getSafetyPredicateClosure(propName);
+				.getSafetyPredicateClosure(propName);
 
 		Expression func = valid_access_range_closure.getUninterpretedFunc();
 		Expression body = valid_access_range_closure.getBodyExpr();
@@ -182,19 +182,19 @@ public class OrderStmtLinearMemSafetyEncoding extends
 
 		assert (vars.length == 2);
 		Expression bodyPrime = encoding.or(encoding.and(ptrExpr.neq(formatter
-		    .getNullAddress()), sizeExpr.neq(formatter.getSizeZero()), encoding
-		        .within(ptrExpr, sizeExpr, vars[0], vars[1])), body);
+				.getNullAddress()), sizeExpr.neq(formatter.getSizeZero()), encoding
+						.within(ptrExpr, sizeExpr, vars[0], vars[1])), body);
 
 		PredicateClosure valid_access_range_closure_prime = suspend(func, bodyPrime,
-		    vars);
+				vars);
 		state.putSafetyPredicateClosure(propName, valid_access_range_closure_prime);
 	}
 
 	private void updateFunHeapOrdered(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		String propName = SafetyPredicate.Kind.HEAP_ORDERED.name();
 		PredicateClosure heap_order_closure = state.getSafetyPredicateClosure(
-		    propName);
+				propName);
 
 		Expression func = heap_order_closure.getUninterpretedFunc();
 		Expression[] vars = heap_order_closure.getVars();
@@ -204,17 +204,17 @@ public class OrderStmtLinearMemSafetyEncoding extends
 
 		// size might be zero.
 		Expression bodyPrime = encoding.implies(ptrExpr.neq(formatter
-		    .getNullAddress()), encoding.lessThan(ptrBound, vars[0]));
+				.getNullAddress()), encoding.lessThan(ptrBound, vars[0]));
 
 		PredicateClosure heap_order_closure_prime = suspend(func, bodyPrime, vars);
 		state.putSafetyPredicateClosure(propName, heap_order_closure_prime);
 	}
 
 	private void updateFunStackOrdred(SingleLambdaStateExpression state,
-	    Expression ptrExpr) {
+			Expression ptrExpr) {
 		String propName = SafetyPredicate.Kind.STACK_ORDERED.name();
 		PredicateClosure stack_order_closure = state.getSafetyPredicateClosure(
-		    propName);
+				propName);
 
 		Expression func = stack_order_closure.getUninterpretedFunc();
 		Expression[] vars = stack_order_closure.getVars();
@@ -227,23 +227,23 @@ public class OrderStmtLinearMemSafetyEncoding extends
 	}
 
 	private void updateHeapPreDisjoint(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		String stackOrdered = SafetyPredicate.Kind.STACK_ORDERED.name();
 		String heapOrdered = SafetyPredicate.Kind.HEAP_ORDERED.name();
 		String preDisjoint = SafetyPredicate.Kind.PRE_DISJOINT.name();
 
 		PredicateClosure stack_order_closure = state.getSafetyPredicateClosure(
-		    stackOrdered);
+				stackOrdered);
 		PredicateClosure heap_order_closure = state.getSafetyPredicateClosure(
-		    heapOrdered);
+				heapOrdered);
 		BooleanExpression pre_disjoint = state.getSafetyPredicate(preDisjoint);
 
 		Expression ptrBound = encoding.plus(ptrExpr, sizeExpr);
 
 		BooleanExpression pre_disjoint_prime = encoding.and(pre_disjoint, encoding
-		    .implies(ptrExpr.neq(formatter.getNullAddress()), encoding.and(encoding
-		        .notOverflow(ptrExpr, sizeExpr), stack_order_closure.eval(ptrBound),
-		        heap_order_closure.eval(ptrExpr)))).asBooleanExpression();
+				.implies(ptrExpr.neq(formatter.getNullAddress()), encoding.and(encoding
+						.notOverflow(ptrExpr, sizeExpr), stack_order_closure.eval(ptrBound),
+						heap_order_closure.eval(ptrExpr)))).asBooleanExpression();
 
 		state.putSafetyPredicate(preDisjoint, pre_disjoint_prime);
 
@@ -254,23 +254,23 @@ public class OrderStmtLinearMemSafetyEncoding extends
 	}
 
 	private void updateStackPreDisjoint(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		String stackOrdered = SafetyPredicate.Kind.STACK_ORDERED.name();
 		String heapOrdered = SafetyPredicate.Kind.HEAP_ORDERED.name();
 		String preDisjoint = SafetyPredicate.Kind.PRE_DISJOINT.name();
 
 		PredicateClosure stack_order_closure = state.getSafetyPredicateClosure(
-		    stackOrdered);
+				stackOrdered);
 		PredicateClosure heap_order_closure = state.getSafetyPredicateClosure(
-		    heapOrdered);
+				heapOrdered);
 		BooleanExpression pre_disjoint = state.getSafetyPredicate(preDisjoint);
 
 		Expression ptrBound = encoding.plus(ptrExpr, sizeExpr);
 
 		BooleanExpression pre_disjoint_prime = encoding.and(pre_disjoint, ptrExpr
-		    .neq(formatter.getNullAddress()), encoding.greaterThan(ptrBound,
-		        ptrExpr), stack_order_closure.eval(ptrBound), heap_order_closure
-		            .eval(ptrExpr)).asBooleanExpression();
+				.neq(formatter.getNullAddress()), encoding.greaterThan(ptrBound,
+						ptrExpr), stack_order_closure.eval(ptrBound), heap_order_closure
+								.eval(ptrExpr)).asBooleanExpression();
 
 		state.putSafetyPredicate(preDisjoint, pre_disjoint_prime);
 
@@ -282,8 +282,8 @@ public class OrderStmtLinearMemSafetyEncoding extends
 
 	@Override
 	public void freeUpdateHeapMemSafetyPredicates(
-	    SingleLambdaStateExpression state, Expression ptrExpr,
-	    Expression sizeExpr) {
+			SingleLambdaStateExpression state, Expression ptrExpr,
+			Expression sizeExpr) {
 		if (Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
 			updateHeapFunValidAccessFree(state, ptrExpr, sizeExpr);
 			updateHeapFunValidAccessRangeFree(state, ptrExpr, sizeExpr);
@@ -291,10 +291,10 @@ public class OrderStmtLinearMemSafetyEncoding extends
 	}
 
 	private void updateHeapFunValidAccessFree(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		String propName = SafetyPredicate.Kind.VALID_ACCESS.name();
 		PredicateClosure valid_access_closure = state.getSafetyPredicateClosure(
-		    propName);
+				propName);
 
 		Expression func = valid_access_closure.getUninterpretedFunc();
 		Expression body = valid_access_closure.getBodyExpr();
@@ -302,19 +302,19 @@ public class OrderStmtLinearMemSafetyEncoding extends
 
 		assert (vars.length == 1);
 		Expression bodyPrime = encoding.and(body, encoding.not(encoding.within(
-		    ptrExpr, sizeExpr, vars[0])));
+				ptrExpr, sizeExpr, vars[0])));
 
 		PredicateClosure valid_access_closure_prime = suspend(func, bodyPrime,
-		    vars[0]);
+				vars[0]);
 		state.putSafetyPredicateClosure(propName, valid_access_closure_prime);
 	}
 
 	private void updateHeapFunValidAccessRangeFree(
-	    SingleLambdaStateExpression state, Expression ptrExpr,
-	    Expression sizeExpr) {
+			SingleLambdaStateExpression state, Expression ptrExpr,
+			Expression sizeExpr) {
 		String propName = SafetyPredicate.Kind.VALID_ACCESS_RANGE.name();
 		PredicateClosure valid_access_range_closure = state
-		    .getSafetyPredicateClosure(propName);
+				.getSafetyPredicateClosure(propName);
 
 		Expression func = valid_access_range_closure.getUninterpretedFunc();
 		Expression body = valid_access_range_closure.getBodyExpr();
@@ -322,10 +322,10 @@ public class OrderStmtLinearMemSafetyEncoding extends
 
 		assert (vars.length == 2);
 		Expression bodyPrime = encoding.and(body, encoding.not(encoding.within(
-		    ptrExpr, sizeExpr, vars[0], vars[1])));
+				ptrExpr, sizeExpr, vars[0], vars[1])));
 
 		PredicateClosure valid_access_range_closure_prime = suspend(func, bodyPrime,
-		    vars);
+				vars);
 		state.putSafetyPredicateClosure(propName, valid_access_range_closure_prime);
 	}
 }

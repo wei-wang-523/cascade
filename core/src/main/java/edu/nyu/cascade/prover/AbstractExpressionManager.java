@@ -57,7 +57,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public BitVectorExpression bitVectorMult(int size, Expression a,
-	    Expression b) {
+			Expression b) {
 		Preconditions.checkArgument(a.isBitVector());
 		Type type = a.getType();
 		return type.asBitVectorType().mult(size, a, b);
@@ -65,7 +65,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public BitVectorExpression bitVectorPlus(int size, Expression a,
-	    Expression b) {
+			Expression b) {
 		Preconditions.checkArgument(a.isBitVector());
 		Type type = a.getType();
 		return type.asBitVectorType().add(size, a, b);
@@ -129,13 +129,13 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public InductiveExpression construct(Constructor constructor,
-	    Expression... args) {
+			Expression... args) {
 		return constructor.apply(args);
 	}
 
 	@Override
 	public InductiveExpression construct(Constructor constructor,
-	    Iterable<? extends Expression> args) {
+			Iterable<? extends Expression> args) {
 		return constructor.apply(args);
 	}
 
@@ -148,7 +148,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public BitVectorExpression signedDivide(Expression numerator,
-	    Expression denominator) {
+			Expression denominator) {
 		Preconditions.checkArgument(numerator.isBitVector());
 		Type type = numerator.getType();
 		return type.asBitVectorType().signedDivide(numerator, denominator);
@@ -163,7 +163,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public BitVectorExpression signedRem(Expression numerator,
-	    Expression denominator) {
+			Expression denominator) {
 		Preconditions.checkArgument(numerator.isBitVector());
 		Type type = numerator.getType();
 		return type.asBitVectorType().signedRem(numerator, denominator);
@@ -176,80 +176,80 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public BooleanExpression exists(Expression var, Expression body,
-	    Iterable<? extends Expression> patterns) {
+			Iterable<? extends Expression> patterns) {
 		return exists(ImmutableList.of(var), body, patterns);
 	}
 
 	@Override
 	public BooleanExpression exists(Expression var, Expression body,
-	    Iterable<? extends Expression> patterns,
-	    Iterable<? extends Expression> noPatterns) {
+			Iterable<? extends Expression> patterns,
+			Iterable<? extends Expression> noPatterns) {
 		return exists(ImmutableList.of(var), body, patterns, noPatterns);
 	}
 
 	@Override
 	public BooleanExpression exists(Expression var1, Expression var2,
-	    Expression body) {
+			Expression body) {
 		return exists(ImmutableList.of(var1, var2), body);
 	}
 
 	@Override
 	public BooleanExpression exists(Expression var1, Expression var2,
-	    Expression body, Iterable<? extends Expression> patterns) {
+			Expression body, Iterable<? extends Expression> patterns) {
 		return exists(ImmutableList.of(var1, var2), body, patterns);
 	}
 
 	@Override
 	public BooleanExpression exists(Expression var1, Expression var2,
-	    Expression body, Iterable<? extends Expression> patterns,
-	    Iterable<? extends Expression> noPatterns) {
+			Expression body, Iterable<? extends Expression> patterns,
+			Iterable<? extends Expression> noPatterns) {
 		return exists(ImmutableList.of(var1, var2), body, patterns, noPatterns);
 	}
 
 	@Override
 	public BooleanExpression exists(Expression var1, Expression var2,
-	    Expression var3, Expression body) {
+			Expression var3, Expression body) {
 		return exists(ImmutableList.of(var1, var2, var3), body);
 	}
 
 	@Override
 	public BooleanExpression exists(Expression var1, Expression var2,
-	    Expression var3, Expression body,
-	    Iterable<? extends Expression> patterns) {
+			Expression var3, Expression body,
+			Iterable<? extends Expression> patterns) {
 		return exists(ImmutableList.of(var1, var2, var3), body, patterns);
 	}
 
 	@Override
 	public BooleanExpression exists(Expression var1, Expression var2,
-	    Expression var3, Expression body, Iterable<? extends Expression> patterns,
-	    Iterable<? extends Expression> noPatterns) {
+			Expression var3, Expression body, Iterable<? extends Expression> patterns,
+			Iterable<? extends Expression> noPatterns) {
 		return exists(ImmutableList.of(var1, var2, var3), body, patterns,
-		    noPatterns);
+				noPatterns);
 	}
 
 	@Override
 	public BooleanExpression exists(Iterable<? extends Expression> vars,
-	    Expression body) {
+			Expression body) {
 		return exists(vars, body);
 	}
 
 	@Override
 	public BooleanExpression exists(Iterable<? extends Expression> vars,
-	    Expression body, Iterable<? extends Expression> patterns) {
+			Expression body, Iterable<? extends Expression> patterns) {
 		return exists(vars, body, patterns);
 	}
 
 	@Override
 	public BooleanExpression exists(Iterable<? extends Expression> vars,
-	    Expression body, Iterable<? extends Expression> patterns,
-	    Iterable<? extends Expression> noPatterns) {
+			Expression body, Iterable<? extends Expression> patterns,
+			Iterable<? extends Expression> noPatterns) {
 		return exists(vars, body, patterns, noPatterns);
 	}
 
 	@Override
 	public BooleanExpression forall(Expression var, Expression body,
-	    Iterable<? extends Expression> patterns,
-	    Iterable<? extends Expression> noPatterns) {
+			Iterable<? extends Expression> patterns,
+			Iterable<? extends Expression> noPatterns) {
 		return forall(ImmutableList.of(var), body, patterns, noPatterns);
 	}
 
@@ -260,66 +260,66 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public BooleanExpression forall(Expression var, Expression body,
-	    Iterable<? extends Expression> patterns) {
+			Iterable<? extends Expression> patterns) {
 		return forall(ImmutableList.of(var), body, patterns);
 	}
 
 	@Override
 	public BooleanExpression forall(Expression var1, Expression var2,
-	    Expression body) {
+			Expression body) {
 		return forall(ImmutableList.of(var1, var2), body);
 	}
 
 	@Override
 	public BooleanExpression forall(Expression var1, Expression var2,
-	    Expression body, Iterable<? extends Expression> patterns) {
+			Expression body, Iterable<? extends Expression> patterns) {
 		return forall(ImmutableList.of(var1, var2), body, patterns);
 	}
 
 	@Override
 	public BooleanExpression forall(Expression var1, Expression var2,
-	    Expression body, Iterable<? extends Expression> patterns,
-	    Iterable<? extends Expression> noPatterns) {
+			Expression body, Iterable<? extends Expression> patterns,
+			Iterable<? extends Expression> noPatterns) {
 		return forall(ImmutableList.of(var1, var2), body, patterns, noPatterns);
 	}
 
 	@Override
 	public BooleanExpression forall(Expression var1, Expression var2,
-	    Expression var3, Expression body) {
+			Expression var3, Expression body) {
 		return forall(ImmutableList.of(var1, var2, var3), body);
 	}
 
 	@Override
 	public BooleanExpression forall(Expression var1, Expression var2,
-	    Expression var3, Expression body,
-	    Iterable<? extends Expression> patterns) {
+			Expression var3, Expression body,
+			Iterable<? extends Expression> patterns) {
 		return forall(ImmutableList.of(var1, var2, var3), body, patterns);
 	}
 
 	@Override
 	public BooleanExpression forall(Expression var1, Expression var2,
-	    Expression var3, Expression body, Iterable<? extends Expression> patterns,
-	    Iterable<? extends Expression> noPatterns) {
+			Expression var3, Expression body, Iterable<? extends Expression> patterns,
+			Iterable<? extends Expression> noPatterns) {
 		return forall(ImmutableList.of(var1, var2, var3), body, patterns,
-		    noPatterns);
+				noPatterns);
 	}
 
 	@Override
 	public BooleanExpression forall(Iterable<? extends Expression> vars,
-	    Expression body, Iterable<? extends Expression> patterns,
-	    Iterable<? extends Expression> noPatterns) {
+			Expression body, Iterable<? extends Expression> patterns,
+			Iterable<? extends Expression> noPatterns) {
 		return booleanType().forall(vars, body, patterns, noPatterns);
 	}
 
 	@Override
 	public BooleanExpression forall(Iterable<? extends Expression> vars,
-	    Expression body) {
+			Expression body) {
 		return booleanType().forall(vars, body);
 	}
 
 	@Override
 	public BooleanExpression forall(Iterable<? extends Expression> vars,
-	    Expression body, Iterable<? extends Expression> patterns) {
+			Expression body, Iterable<? extends Expression> patterns) {
 		return booleanType().forall(vars, body, patterns);
 	}
 
@@ -373,7 +373,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public BooleanExpression greaterThanOrEqual(Expression left,
-	    Expression right) {
+			Expression right) {
 		Type type = left.getType();
 		Preconditions.checkArgument(type.isComparableType());
 		return type.asComparableType().geq(left, right);
@@ -381,7 +381,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public BooleanExpression signedGreaterThanOrEqual(Expression left,
-	    Expression right) {
+			Expression right) {
 		Type type = left.getType();
 		Preconditions.checkArgument(type.isComparableType());
 		return type.asComparableType().sgeq(left, right);
@@ -396,7 +396,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public BooleanExpression signedGreaterThan(Expression left,
-	    Expression right) {
+			Expression right) {
 		Type type = left.getType();
 		Preconditions.checkArgument(type.isComparableType());
 		return type.asComparableType().sgt(left, right);
@@ -411,7 +411,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public BooleanExpression signedLessThanOrEqual(Expression left,
-	    Expression right) {
+			Expression right) {
 		Type type = left.getType();
 		Preconditions.checkArgument(type.isComparableType());
 		return type.asComparableType().sleq(left, right);
@@ -505,13 +505,13 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public BitVectorExpression bitVectorPlus(int size, Expression first,
-	    Expression... rest) {
+			Expression... rest) {
 		return bitVectorPlus(size, Lists.asList(first, rest));
 	}
 
 	@Override
 	public BitVectorExpression bitVectorPlus(int size,
-	    Iterable<? extends Expression> args) {
+			Iterable<? extends Expression> args) {
 		Preconditions.checkArgument(Iterables.size(args) >= 1);
 		Expression first = Iterables.get(args, 0);
 		Preconditions.checkArgument(first.isBitVector());
@@ -532,7 +532,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public Expression boundExpression(String name, int index, Type type,
-	    boolean fresh) {
+			boolean fresh) {
 		Preconditions.checkArgument(type.isScalarType());
 		return type.asScalarType().boundExpression(name, index, fresh);
 	}
@@ -549,13 +549,13 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public BooleanExpression rewriteRule(Iterable<? extends Expression> vars,
-	    Expression guard, Expression rule) {
+			Expression guard, Expression rule) {
 		return booleanType().rewriteRule(vars, guard, rule);
 	}
 
 	@Override
 	public BooleanExpression rrRewrite(Expression head, Expression body,
-	    Iterable<? extends Expression> triggers) {
+			Iterable<? extends Expression> triggers) {
 		return booleanType().rrRewrite(head, body, triggers);
 	}
 
@@ -566,7 +566,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public BooleanExpression rrReduction(Expression head, Expression body,
-	    Iterable<? extends Expression> triggers) {
+			Iterable<? extends Expression> triggers) {
 		return booleanType().rrReduction(head, body, triggers);
 	}
 
@@ -577,7 +577,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public BooleanExpression rrDeduction(Expression head, Expression body,
-	    Iterable<? extends Expression> triggers) {
+			Iterable<? extends Expression> triggers) {
 		return booleanType().rrDeduction(head, body, triggers);
 	}
 
@@ -649,13 +649,13 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public Expression subst(Expression e, Iterable<? extends Expression> oldExprs,
-	    Iterable<? extends Expression> newExprs) {
+			Iterable<? extends Expression> newExprs) {
 		return e.subst(oldExprs, newExprs);
 	}
 
 	@Override
 	public BooleanExpression testConstructor(Constructor constructor,
-	    Expression val) {
+			Expression val) {
 		Preconditions.checkArgument(val.isInductive());
 		Type type = val.getType();
 		return type.asInductive().test(constructor, val);
@@ -668,7 +668,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public ArrayExpression update(Expression array, Expression index,
-	    Expression value) {
+			Expression value) {
 		Preconditions.checkArgument(array.isArray());
 		Type type = array.getType();
 		return type.asArrayType().update(array, index, value);
@@ -688,7 +688,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public RecordExpression update(Expression record, String fieldName,
-	    Expression value) {
+			Expression value) {
 		Preconditions.checkArgument(record.isRecord());
 		Type type = record.getType();
 		return type.asRecord().update(record, fieldName, value);
@@ -702,13 +702,13 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public Expression applyExpr(Expression fun,
-	    Iterable<? extends Expression> args) {
+			Iterable<? extends Expression> args) {
 		return fun.asFunctionExpression().apply(args);
 	}
 
 	@Override
 	public Expression applyExpr(Expression fun, Expression first,
-	    Expression... rest) {
+			Expression... rest) {
 		return fun.asFunctionExpression().apply(first, rest);
 	}
 
@@ -721,7 +721,7 @@ public abstract class AbstractExpressionManager implements ExpressionManager {
 
 	@Override
 	public BooleanExpression distinct(Expression first, Expression second,
-	    Expression... rest) {
+			Expression... rest) {
 		return booleanType().distinct(first, second, rest);
 	}
 

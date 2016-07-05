@@ -4,7 +4,7 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.IntegerExpression;
 
 public interface IntegerType extends Type, AddableType, ComparableType,
-    MultiplicativeType, ScalarType {
+		MultiplicativeType, ScalarType {
 	Expression mod(Expression left, Expression right);
 
 	@Override

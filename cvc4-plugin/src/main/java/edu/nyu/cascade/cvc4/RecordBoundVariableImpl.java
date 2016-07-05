@@ -7,20 +7,20 @@ import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.type.Type;
 
 final class RecordBoundVariableImpl extends BoundVariableExpressionImpl
-    implements RecordExpression {
+		implements RecordExpression {
 
 	static RecordBoundVariableImpl create(ExpressionManagerImpl exprManager,
-	    String name, RecordTypeImpl type, boolean fresh) {
+			String name, RecordTypeImpl type, boolean fresh) {
 		return new RecordBoundVariableImpl(exprManager, name, type, fresh);
 	}
 
 	private RecordBoundVariableImpl(ExpressionManagerImpl exprManager,
-	    String name, RecordTypeImpl type, boolean fresh) {
+			String name, RecordTypeImpl type, boolean fresh) {
 		super(exprManager, name, type, fresh);
 	}
 
 	private RecordBoundVariableImpl(ExpressionManagerImpl em, String name,
-	    Type type, boolean fresh) {
+			Type type, boolean fresh) {
 		super(em, name, type, fresh);
 		Preconditions.checkArgument(type.isRecord());
 	}
@@ -33,12 +33,12 @@ final class RecordBoundVariableImpl extends BoundVariableExpressionImpl
 	@Override
 	public Expression select(String name) {
 		return RecordExpressionImpl.mkRecordIndex(getExpressionManager(), this,
-		    name);
+				name);
 	}
 
 	@Override
 	public RecordExpression update(String name, Expression val) {
 		return RecordExpressionImpl.mkUpdate(getExpressionManager(), this, name,
-		    val);
+				val);
 	}
 }

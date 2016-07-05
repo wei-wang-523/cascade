@@ -23,7 +23,7 @@ public abstract class AbstractLocation implements IRLocation {
 	public boolean follows(IRBasicBlock block) {
 		Preconditions.checkNotNull(block);
 		return block.getEndLocation() == null ? true
-		    : follows(block.getEndLocation());
+				: follows(block.getEndLocation());
 	}
 
 	@Override
@@ -81,7 +81,7 @@ public abstract class AbstractLocation implements IRLocation {
 	public boolean precedes(IRBasicBlock block) {
 		Preconditions.checkNotNull(block);
 		return block.getEndLocation() == null ? true
-		    : precedes(block.getStartLocation());
+				: precedes(block.getStartLocation());
 	}
 
 	@Override
@@ -130,7 +130,7 @@ public abstract class AbstractLocation implements IRLocation {
 	public boolean strictFollows(IRBasicBlock block) {
 		Preconditions.checkNotNull(block);
 		return block.getEndLocation() == null ? true
-		    : strictFollows(block.getEndLocation());
+				: strictFollows(block.getEndLocation());
 	}
 
 	@Override
@@ -155,7 +155,7 @@ public abstract class AbstractLocation implements IRLocation {
 	public boolean strictPrecedes(IRBasicBlock block) {
 		Preconditions.checkNotNull(block);
 		return block.getEndLocation() == null ? true
-		    : strictPrecedes(block.getStartLocation());
+				: strictPrecedes(block.getStartLocation());
 	}
 
 	@Override

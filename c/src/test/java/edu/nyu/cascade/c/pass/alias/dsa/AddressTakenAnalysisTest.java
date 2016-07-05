@@ -30,12 +30,12 @@ import xtc.tree.Node;
 @RunWith(Parameterized.class)
 public class AddressTakenAnalysisTest {
 	private static final File programs_syntax = FileUtils.absoluteResourcePath(
-	    "syntax");
+			"syntax");
 	private static final File programs_c = FileUtils.absoluteResourcePath("c");
 	private static final File mini_invalids = FileUtils.filePath(programs_c,
-	    "mini_bnc", "invalid");
+			"mini_bnc", "invalid");
 	private static final File mini_valids = FileUtils.filePath(programs_c,
-	    "mini_bnc", "valid");
+			"mini_bnc", "valid");
 	private static final File nec_programs = new File(programs_c, "nec_bnc");
 
 	private Main main;
@@ -44,7 +44,7 @@ public class AddressTakenAnalysisTest {
 	@Parameterized.Parameters
 	public static Collection<File> cFiles() {
 		File[] programs_dirs = { programs_syntax, mini_invalids, mini_valids,
-		    nec_programs };
+				nec_programs };
 		Collection<File> fileList = Lists.newArrayList();
 
 		for (File programs_dir : programs_dirs) {
@@ -91,17 +91,17 @@ public class AddressTakenAnalysisTest {
 		Collection<IRControlFlowGraph> CFGs = main.getControlFlowGraphs();
 
 		IRControlFlowGraph globalCFG = Iterables.find(CFGs,
-		    new Predicate<IRControlFlowGraph>() {
-			    @Override
-			    public boolean apply(IRControlFlowGraph cfg) {
-				    return cfg.getName().equals(Identifiers.GLOBAL_CFG);
-			    }
-		    });
+				new Predicate<IRControlFlowGraph>() {
+					@Override
+					public boolean apply(IRControlFlowGraph cfg) {
+						return cfg.getName().equals(Identifiers.GLOBAL_CFG);
+					}
+				});
 		CFGs.remove(globalCFG);
 
 		SymbolTable symbolTable = main.getSymbolTable();
 		AddressTakenAnalysis AddrTakenAnalyzer = AddressTakenAnalysis.create(
-		    symbolTable);
+				symbolTable);
 		AddrTakenAnalyzer.analysis(globalCFG, CFGs);
 	}
 }

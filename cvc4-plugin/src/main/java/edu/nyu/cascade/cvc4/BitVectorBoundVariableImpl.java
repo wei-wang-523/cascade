@@ -10,10 +10,10 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 
 final class BitVectorBoundVariableImpl extends BoundVariableExpressionImpl
-    implements BitVectorExpression {
+		implements BitVectorExpression {
 
 	BitVectorBoundVariableImpl(ExpressionManagerImpl em, String name,
-	    BitVectorTypeImpl type, boolean fresh) {
+			BitVectorTypeImpl type, boolean fresh) {
 		super(em, name, type, fresh);
 	}
 
@@ -37,7 +37,7 @@ final class BitVectorBoundVariableImpl extends BoundVariableExpressionImpl
 	@Override
 	public BitVectorExpressionImpl extract(int i, int j) {
 		return BitVectorExpressionImpl.mkExtract(getExpressionManager(), this, i,
-		    j);
+				j);
 
 	}
 
@@ -91,7 +91,7 @@ final class BitVectorBoundVariableImpl extends BoundVariableExpressionImpl
 	@Override
 	public BitVectorExpressionImpl plus(Iterable<? extends Expression> args) {
 		return BitVectorExpressionImpl.mkPlus(getExpressionManager(), Iterables
-		    .concat(Collections.singletonList(this), args));
+				.concat(Collections.singletonList(this), args));
 	}
 
 	@Override
@@ -162,26 +162,26 @@ final class BitVectorBoundVariableImpl extends BoundVariableExpressionImpl
 	public BitVectorExpression signedDivides(Expression e) {
 		Preconditions.checkArgument(e.isBitVector());
 		throw new UnsupportedOperationException(
-		    "Unsupported signed divides for BitVector.");
+				"Unsupported signed divides for BitVector.");
 	}
 
 	@Override
 	public BitVectorExpression signedRems(Expression e) {
 		Preconditions.checkArgument(e.isBitVector());
 		throw new UnsupportedOperationException(
-		    "Unsupported signed reminders for BitVector.");
+				"Unsupported signed reminders for BitVector.");
 	}
 
 	@Override
 	public BitVectorExpression zeroExtend(int size) {
 		return BitVectorExpressionImpl.mkZeroExtend(getExpressionManager(), size,
-		    this);
+				this);
 	}
 
 	@Override
 	public BitVectorExpression signExtend(int size) {
 		return BitVectorExpressionImpl.mkSignExtend(getExpressionManager(), size,
-		    this);
+				this);
 	}
 
 	@Override
@@ -197,6 +197,6 @@ final class BitVectorBoundVariableImpl extends BoundVariableExpressionImpl
 	@Override
 	public BitVectorExpression times(Iterable<? extends Expression> args) {
 		return BitVectorExpressionImpl.mkMult(getExpressionManager(), Iterables
-		    .concat(Collections.singletonList(this), args));
+				.concat(Collections.singletonList(this), args));
 	}
 }

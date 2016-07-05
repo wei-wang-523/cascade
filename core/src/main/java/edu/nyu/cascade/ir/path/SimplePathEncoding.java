@@ -27,7 +27,7 @@ import edu.nyu.cascade.util.ReservedFunction;
 public class SimplePathEncoding extends AbstractPathEncoding {
 
 	public static <Mem extends Expression> SimplePathEncoding create(
-	    ExpressionEncoder encoder) {
+			ExpressionEncoder encoder) {
 		return new SimplePathEncoding(encoder);
 	}
 
@@ -42,13 +42,13 @@ public class SimplePathEncoding extends AbstractPathEncoding {
 
 	@Override
 	public StateExpression declare(StateExpression preState, Expression lval,
-	    Node sourceNode) {
+			Node sourceNode) {
 		StateFactory<?> stateFactory = getStateFactory();
 		StateExpression currState = preState;
 
 		String name = sourceNode.getString(0);
 		IRVarInfo info = (IRVarInfo) getExpressionEncoder().getCurrentScope()
-		    .lookup(name);
+				.lookup(name);
 		stateFactory.addStackVar(currState, lval, info);
 		xtc.type.Type type = info.getXtcType();
 
@@ -71,19 +71,19 @@ public class SimplePathEncoding extends AbstractPathEncoding {
 
 	@Override
 	public StateExpression declareVarArray(StateExpression preState,
-	    Expression lval, Node sourceNode, Expression rval) {
+			Expression lval, Node sourceNode, Expression rval) {
 		StateFactory<?> stateFactory = getStateFactory();
 		StateExpression currState = preState;
 		String name = sourceNode.getString(0);
 		IRVarInfo info = (IRVarInfo) getExpressionEncoder().getCurrentScope()
-		    .lookup(name);
+				.lookup(name);
 		stateFactory.addStackArray(currState, lval, rval, info, sourceNode);
 		return currState;
 	}
 
 	@Override
 	public StateExpression init(StateExpression preState, Expression lval,
-	    Node lNode, Expression rval, Node rNode) {
+			Node lNode, Expression rval, Node rNode) {
 		StateFactory<?> stateFactory = getStateFactory();
 		StateExpression currState = preState;
 		stateFactory.assign(currState, lval, lNode, rval, rNode);
@@ -92,7 +92,7 @@ public class SimplePathEncoding extends AbstractPathEncoding {
 
 	@Override
 	public StateExpression malloc(StateExpression preState, Expression lval,
-	    Node lNode, Expression rval) {
+			Node lNode, Expression rval) {
 		StateFactory<?> stateFactory = getStateFactory();
 		StateExpression currState = preState;
 		stateFactory.malloc(currState, lval, rval, lNode);
@@ -101,7 +101,7 @@ public class SimplePathEncoding extends AbstractPathEncoding {
 
 	@Override
 	public StateExpression calloc(StateExpression preState, Expression lval,
-	    Node lNode, Expression nitem, Expression size) {
+			Node lNode, Expression nitem, Expression size) {
 		StateFactory<?> stateFactory = getStateFactory();
 		StateExpression currState = preState;
 		stateFactory.calloc(currState, lval, nitem, size, lNode);
@@ -110,7 +110,7 @@ public class SimplePathEncoding extends AbstractPathEncoding {
 
 	@Override
 	public StateExpression alloca(StateExpression preState, Expression lval,
-	    Node lNode, Expression rval) {
+			Node lNode, Expression rval) {
 		StateFactory<?> stateFactory = getStateFactory();
 		StateExpression currState = preState;
 		stateFactory.alloca(currState, lval, rval, lNode);
@@ -119,7 +119,7 @@ public class SimplePathEncoding extends AbstractPathEncoding {
 
 	@Override
 	public StateExpression assign(StateExpression preState, Expression lval,
-	    Node lNode, Expression rval, Node rNode) {
+			Node lNode, Expression rval, Node rNode) {
 		StateFactory<?> stateFactory = getStateFactory();
 		StateExpression currState = preState;
 		stateFactory.assign(currState, lval, lNode, rval, rNode);
@@ -128,7 +128,7 @@ public class SimplePathEncoding extends AbstractPathEncoding {
 
 	@Override
 	public StateExpression assume(StateExpression preState, Expression expr,
-	    boolean isGuard) {
+			boolean isGuard) {
 		Preconditions.checkArgument(expr.isBoolean());
 		StateExpression currState = preState;
 
@@ -149,7 +149,7 @@ public class SimplePathEncoding extends AbstractPathEncoding {
 
 	@Override
 	public StateExpression free(StateExpression preState, Expression region,
-	    Node pNode) {
+			Node pNode) {
 		StateFactory<?> stateFactory = getStateFactory();
 		StateExpression currState = preState;
 
@@ -159,12 +159,12 @@ public class SimplePathEncoding extends AbstractPathEncoding {
 
 	@Override
 	public StateExpression havoc(StateExpression preState, Expression lval,
-	    Node lNode) {
+			Node lNode) {
 		StateFactory<?> stateFactory = getStateFactory();
 		StateExpression currState = preState;
 
 		Expression rval = stateFactory.getDataFormatter().getUnknownValue(CType
-		    .getType(lNode));
+				.getType(lNode));
 
 		stateFactory.assign(currState, lval, lNode, rval, null);
 		return currState;
@@ -180,7 +180,7 @@ public class SimplePathEncoding extends AbstractPathEncoding {
 
 	@Override
 	public StateExpression call(StateExpression preState, String funcName,
-	    Node funcNode, List<Expression> args, List<Node> argNodes) {
+			Node funcNode, List<Expression> args, List<Node> argNodes) {
 		StateFactory<?> stateFactory = getStateFactory();
 
 		if (funcName.equals(ReservedFunction.MEMSET)) {
@@ -197,10 +197,10 @@ public class SimplePathEncoding extends AbstractPathEncoding {
 				// The value constant must be less than 256
 				int valueConstant = (int) valueNodeType.getConstant().longValue();
 				memset = stateFactory.applyMemset(preState, region, size, valueConstant,
-				    regionNode);
+						regionNode);
 			} else {
 				memset = stateFactory.applyMemset(preState, region, size, value,
-				    regionNode);
+						regionNode);
 			}
 
 			preState.addConstraint(memset);
@@ -213,7 +213,7 @@ public class SimplePathEncoding extends AbstractPathEncoding {
 			Node destNode = argNodes.get(1);
 			Node srcNode = argNodes.get(2);
 			BooleanExpression memcpy = stateFactory.applyMemcpy(preState, destRegion,
-			    srcRegion, size, destNode, srcNode);
+					srcRegion, size, destNode, srcNode);
 			preState.addConstraint(memcpy);
 		}
 

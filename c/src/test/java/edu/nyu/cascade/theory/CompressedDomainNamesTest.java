@@ -22,7 +22,7 @@ public class CompressedDomainNamesTest {
 
 	@Before
 	public void setUp() throws ExpressionFactoryException,
-	    TheoremProverFactoryException {
+			TheoremProverFactoryException {
 		theoremProver = TheoremProverFactory.getInstance();
 		exprManager = theoremProver.getExpressionManager();
 		cdn = new CompressedDomainNames(exprManager).getEncoding();
@@ -31,7 +31,7 @@ public class CompressedDomainNamesTest {
 	@Ignore("Bug with z3 push scope")
 	@Test
 	public void testAssumptions() throws TheoremProverException,
-	    ExpressionFactoryException {
+			ExpressionFactoryException {
 		theoremProver.assume(cdn.getAssumptions());
 		assertTrue(theoremProver.checkValidity(cdn.tt()).isValid());
 	}
@@ -39,7 +39,7 @@ public class CompressedDomainNamesTest {
 	@Ignore("Too slow to Run")
 	@Test
 	public void testAssumptions2() throws TheoremProverException,
-	    ExpressionFactoryException {
+			ExpressionFactoryException {
 		theoremProver.assume(cdn.getAssumptions());
 		assertTrue(!theoremProver.checkValidity(cdn.ff()).isValid());
 	}

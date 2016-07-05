@@ -5,15 +5,15 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.Type;
 
 final class ArrayVariableImpl extends VariableExpressionImpl implements
-    ArrayExpression {
+		ArrayExpression {
 
 	static ArrayVariableImpl create(ExpressionManagerImpl exprManager,
-	    String name, ArrayTypeImpl type, boolean fresh) {
+			String name, ArrayTypeImpl type, boolean fresh) {
 		return new ArrayVariableImpl(exprManager, name, type, fresh);
 	}
 
 	private ArrayVariableImpl(ExpressionManagerImpl exprManager, String name,
-	    ArrayTypeImpl type, boolean fresh) {
+			ArrayTypeImpl type, boolean fresh) {
 		super(exprManager, name, type, fresh);
 	}
 

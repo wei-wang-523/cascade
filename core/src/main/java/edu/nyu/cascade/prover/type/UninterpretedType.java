@@ -13,5 +13,5 @@ public interface UninterpretedType extends Type, ScalarType {
 
 	@Override
 	UninterpretedExpression boundExpression(String name, int index,
-	    boolean fresh);
+			boolean fresh);
 }

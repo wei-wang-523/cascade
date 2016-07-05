@@ -8,7 +8,7 @@ import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
 
 public class UnimplementedPointerEncoding<T extends Expression> implements
-    PointerEncoding<T> {
+		PointerEncoding<T> {
 
 	@Override
 	public Type getType() {

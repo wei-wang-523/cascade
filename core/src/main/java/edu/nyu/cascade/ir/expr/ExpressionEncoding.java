@@ -157,15 +157,15 @@ public interface ExpressionEncoding {
 	Expression castToPointer(Expression e);
 
 	/*  *//**
-	       * The conversion of the given expression to a rational, according to
-	       * the conversion rule of the underlying encoding.
-	       * 
-	       * @param e
-	       *          a boolean- or integer-encoded expression
-	       * @return a rational-encoded expression
-	       *//*
-	         * Expression castToRational(Expression e) ;
-	         */
+				 * The conversion of the given expression to a rational, according to
+				 * the conversion rule of the underlying encoding.
+				 * 
+				 * @param e
+				 *          a boolean- or integer-encoded expression
+				 * @return a rational-encoded expression
+				 *//*
+					 * Expression castToRational(Expression e) ;
+					 */
 
 	/**
 	 * A shortcut for <code>minus(e,one())</code>.
@@ -211,7 +211,7 @@ public interface ExpressionEncoding {
 	Expression exists(Expression var1, Expression var2, Expression body);
 
 	Expression exists(Expression var1, Expression var2, Expression var3,
-	    Expression body);
+			Expression body);
 
 	Expression exists(Iterable<? extends Expression> vars, Expression body);
 
@@ -235,7 +235,7 @@ public interface ExpressionEncoding {
 	Expression forall(Expression var1, Expression var2, Expression body);
 
 	Expression forall(Expression var1, Expression var2, Expression var3,
-	    Expression body);
+			Expression body);
 
 	Expression forall(Iterable<? extends Expression> vars, Expression body);
 
@@ -393,7 +393,7 @@ public interface ExpressionEncoding {
 	 *         <code>elseExpr</code>
 	 */
 	Expression ifThenElse(Expression bool, Expression thenExpr,
-	    Expression elseExpr);
+			Expression elseExpr);
 
 	/**
 	 * An boolean expression
@@ -872,7 +872,7 @@ public interface ExpressionEncoding {
 	 * @return an expression of the same type as <code>array</code>
 	 */
 	Expression updateArray(Expression array, Expression index,
-	    Expression newValue);
+			Expression newValue);
 
 	/**
 	 * A variable in the encoding. Creates the variable if it doesn't already
@@ -940,7 +940,7 @@ public interface ExpressionEncoding {
 	 * @return
 	 */
 	Expression disjoint(Expression base1, Expression size1, Expression base2,
-	    Expression size2);
+			Expression size2);
 
 	/**
 	 * Regions <code>[base1, base1 + size1)</code> and <code>base2</code> are
@@ -964,7 +964,7 @@ public interface ExpressionEncoding {
 	 * @return
 	 */
 	Expression within(Expression base1, Expression size1, Expression base2,
-	    Expression size2);
+			Expression size2);
 
 	/**
 	 * <code>base2</code> is within region <code>[base1, base1 + size1)</code>
@@ -1010,7 +1010,7 @@ public interface ExpressionEncoding {
 	 * @return an expression encoding the bound expression
 	 */
 	Expression boundExpression(String name, int index, IRType type,
-	    boolean fresh);
+			boolean fresh);
 
 	/**
 	 * Get the unknown expression for <code>type</code>
@@ -1028,7 +1028,7 @@ public interface ExpressionEncoding {
 	 * @return
 	 */
 	Pair<Expression, Expression> arithTypeConversion(Expression lhs,
-	    Expression rhs, Type lhsType, Type rhsType);
+			Expression rhs, Type lhsType, Type rhsType);
 
 	/**
 	 * Generate the corresponding rval-binding

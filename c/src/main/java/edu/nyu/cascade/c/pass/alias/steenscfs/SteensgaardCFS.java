@@ -36,56 +36,61 @@ import edu.nyu.cascade.util.Preferences;
  * @author Wei
  *
  */
-public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {	
-  private final UnionFindECR uf;
-  private final SymbolTable symbolTable;
-  private final ECREncoder ecrEncoder;
-  private ECRChecker ecrChecker;
-  private ImmutableMap<ECR, Collection<IRVar>> snapShot;
-  private IRControlFlowGraph currentCFG;
-  
-  private SteensgaardCFS (SymbolTable symbolTable) {
-    uf = UnionFindECR.create();
-    ecrEncoder = ECREncoder.create(uf, symbolTable); 
-    this.symbolTable = symbolTable;
-  }
-  
-  public static SteensgaardCFS create(SymbolTable symbolTable) {
-    return new SteensgaardCFS(symbolTable);
-  }
-  
+public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
+	private final UnionFindECR uf;
+	private final SymbolTable symbolTable;
+	private final ECREncoder ecrEncoder;
+	private ECRChecker ecrChecker;
+	private ImmutableMap<ECR, Collection<IRVar>> snapShot;
+	private IRControlFlowGraph currentCFG;
+
+	private SteensgaardCFS(SymbolTable symbolTable) {
+		uf = UnionFindECR.create();
+		ecrEncoder = ECREncoder.create(uf, symbolTable);
+		this.symbolTable = symbolTable;
+	}
+
+	public static SteensgaardCFS create(SymbolTable symbolTable) {
+		return new SteensgaardCFS(symbolTable);
+	}
+
 	@Override
-	public void analysis(IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs) {
+	public void analysis(IRControlFlowGraph globalCFG,
+			Collection<IRControlFlowGraph> CFGs) {
 		// Analyze non-global CFGs
 		{
 			symbolTable.enterScope(globalCFG);
 			currentCFG = globalCFG;
-		
-			final Collection<IRBasicBlock> topologicSeq = Lists.reverse(globalCFG.topologicalSeq(globalCFG.getEntry()));
-		
-			for(IRBasicBlock block : topologicSeq) {			
-				for(IRStatement stmt : block.getStatements()) analysis(stmt);
-			
-				for(IREdge<?> outgoing : globalCFG.getOutgoingEdges(block)) {
-					if(null != outgoing.getGuard()) 
+
+			final Collection<IRBasicBlock> topologicSeq = Lists.reverse(globalCFG
+					.topologicalSeq(globalCFG.getEntry()));
+
+			for (IRBasicBlock block : topologicSeq) {
+				for (IRStatement stmt : block.getStatements())
+					analysis(stmt);
+
+				for (IREdge<?> outgoing : globalCFG.getOutgoingEdges(block)) {
+					if (null != outgoing.getGuard())
 						ecrEncoder.toRval(outgoing.getGuard().getSourceNode());
 				}
 			}
 		}
-		
+
 		// Analyze non-global CFGs
-		
-		for(IRControlFlowGraph CFG : CFGs) {
+
+		for (IRControlFlowGraph CFG : CFGs) {
 			symbolTable.enterScope(CFG);
 			currentCFG = CFG;
 			GNode declarator = CFG.getSourceNode().getGeneric(2);
 			GNode identifier = CAnalyzer.getDeclaredId(declarator);
-			FunctionT funcXtcType = symbolTable.lookupType(identifier.getString(0)).resolve().toFunction();
-			
-			if(!funcXtcType.getParameters().isEmpty()) {	  		
-				GNode parameters = CAnalyzer.getFunctionDeclarator(declarator).getGeneric(1);
+			FunctionT funcXtcType = symbolTable.lookupType(identifier.getString(0))
+					.resolve().toFunction();
+
+			if (!funcXtcType.getParameters().isEmpty()) {
+				GNode parameters = CAnalyzer.getFunctionDeclarator(declarator)
+						.getGeneric(1);
 				parameters = parameters.getGeneric(0);
-				
+
 				List<ECR> paramECRs = Lists.newArrayList();
 				for (Object o : parameters) {
 					GNode paramNode = ((Node) o).getGeneric(1);
@@ -94,266 +99,289 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 					ECR paramECR = ecrEncoder.toRval(paramIdNode);
 					paramECRs.add(paramECR);
 				}
-	     
+
 				ECR funcECR = ecrEncoder.toRval(identifier);
 				LambdaType lamType = uf.getType(uf.getFunc(funcECR)).asLambda();
 				List<ECR> lamECRs = lamType.getParams();
 				assert lamECRs.size() >= paramECRs.size();
-	  		
-				for(int i = 0; i < paramECRs.size(); i++) {
+
+				for (int i = 0; i < paramECRs.size(); i++) {
 					ECR lamECR = lamECRs.get(i);
 					ECR paramECR = paramECRs.get(i);
 					uf.cjoin(lamECR, paramECR);
 				}
 			}
-			
-			final Collection<IRBasicBlock> topologicSeq = Lists.reverse(CFG.topologicalSeq(CFG.getEntry()));
-			
-			for(IRBasicBlock block : topologicSeq) {			
-				for(IRStatement stmt : block.getStatements()) analysis(stmt);
-				
-				for(IREdge<?> outgoing : CFG.getOutgoingEdges(block)) {
-					if(null != outgoing.getGuard()) {
+
+			final Collection<IRBasicBlock> topologicSeq = Lists.reverse(CFG
+					.topologicalSeq(CFG.getEntry()));
+
+			for (IRBasicBlock block : topologicSeq) {
+				for (IRStatement stmt : block.getStatements())
+					analysis(stmt);
+
+				for (IREdge<?> outgoing : CFG.getOutgoingEdges(block)) {
+					if (null != outgoing.getGuard()) {
 						ecrEncoder.toRval(outgoing.getGuard().getSourceNode());
 					}
 				}
 			}
 		}
-		
+
 		initChecker();
 	}
-	
+
 	private void analysis(IRStatement stmt) {
-	  	IOUtils.debug().pln("Preprocess: " + stmt.getLocation() + ": " + stmt);
-		  switch (stmt.getType()) {
-		  case DECLARE:
-		  case DECLARE_ARRAY: {
-		  	Node lhs = stmt.getOperand(0).getSourceNode();
-		  	ecrEncoder.toLval(lhs);
-		  	break;
-		  }
-		  case INIT: {
-		  	Node lhsNode = stmt.getOperand(0).getSourceNode();
-		    Node rhsNode = stmt.getOperand(1).getSourceNode();
-				
-		    ECR lhsECR = ecrEncoder.toRval(lhsNode);
-		    ECR rhsECR = ecrEncoder.toRval(rhsNode);
-		    
-		    Type lhsType = CType.getType(lhsNode);
-		    simpleAssign(lhsType, lhsECR, rhsECR);
-				break;
-		  }
-		  case RETURN: {
-		  	String functionName = currentCFG.getName();
-		    ECR funcECR = ecrEncoder.getFunctionECR(functionName);
-	  		LambdaType funcType = uf.getType(uf.getFunc(uf.getLoc(funcECR))).asLambda();
-		    ECR retECR = funcType.getRet();
-		    
-		  	Node srcNode = stmt.getOperand(0).getSourceNode();
-		  	ECR srcECR = ecrEncoder.toRval(srcNode);
-		  	
-		  	Type resType = symbolTable.lookupType(functionName).resolve().toFunction().getResult();
-		  	simpleAssign(resType, retECR, srcECR);
-		  	break;
-		  }
-		  case ASSIGN: {
-		    Node lhsNode = stmt.getOperand(0).getSourceNode();
-		    Node rhsNode = stmt.getOperand(1).getSourceNode();
-		    
-		    Type lhsType = CType.getType(lhsNode);
-		    Type rhsType = CType.getType(rhsNode);
-	
-		    ECR lhsECR = ecrEncoder.toRval(lhsNode);
-		    
-		    /* Resolve the syntax sugar of assign function to a function pointer */
-		    boolean isFuncType = rhsType.resolve().isFunction();
-		    ECR rhsECR = isFuncType ? ecrEncoder.toLval(rhsNode) : ecrEncoder.toRval(rhsNode);
-		    
-		    simpleAssign(lhsType, lhsECR, rhsECR);
-		    break;
-		  }
-		  case ALLOCA:
-		  case CALLOC:
-		  case MALLOC: {
-		    Node lhs = stmt.getOperand(0).getSourceNode();
-		    Type lhsType = CType.getType(lhs);
-		    ECR lhsECR = ecrEncoder.toRval(lhs);
-		    
-		    heapAssign(lhsType, lhsECR);
-		    break;
-		  }
-		  case CALL: {			  
-		  	Node funcNode = stmt.getOperand(0).getSourceNode();
-		  	ECR funcECR = ecrEncoder.toRval(funcNode);
-		  	assert (null != funcECR);
-		  	
-		  	Type funcXtcType = CType.getType(funcNode).resolve();
-		  	if(funcXtcType.isPointer()) {
-		  		funcECR = uf.getLoc(funcECR);
-		  		funcXtcType = funcXtcType.toPointer().getType();
-		  	}
-				
-		  	/* For the function pointer parameters declared but not yet assigned */
-		  	if(uf.getType(funcECR).isBottom()) {
-		  		IOUtils.err().println("WARNING: get Loc of " + funcECR);
-		  		Size size = Size.createForType(CType.getInstance().pointerize(funcXtcType));
-		  		uf.expand(funcECR, size);
-		  	}
-		  	
-		  	ECR lamECR = uf.getFunc(funcECR);
-		  	
-		  	if(uf.getType(lamECR).isBottom()) {
-		  		ValueType lamType = ecrEncoder.getLamdaType(funcXtcType);
-		  		uf.setType(lamECR, lamType);
-		  	}
-		  	
-		  	LambdaType lamType = uf.getType(lamECR).asLambda();
-		  	
-		  	if(funcXtcType.toFunction().getResult().isVoid()) {
-		  		Iterator<ECR> paramECRItr = lamType.getParams().iterator();
-		  		for(int i = 1; i < stmt.getOperands().size(); i++) {
-		  			Node srcNode = stmt.getOperand(i).getSourceNode();
-		  			
-		  			/* Resolve the syntax sugar of assign function to a function pointer */
-		  			boolean isFuncType = CType.getType(srcNode).resolve().isFunction();
-		  			ECR argECR = isFuncType ? ecrEncoder.toLval(srcNode) : ecrEncoder.toRval(srcNode);
-		  			
-		  			if(paramECRItr.hasNext()) {
-			  			ECR paramECR = paramECRItr.next();
-			  			ValueType argType = uf.getType(argECR);
-			  			paramRetAssign(argType.getSize(), paramECR, argECR);
-		  			} else {
-		  				lamType.addParamECR(argECR);
-		  			}
-		  		}
-		  	} 
-		  	
-		  	else {
-		  		Node retNode = stmt.getOperand(1).getSourceNode();
-		  		ECR retECR = ecrEncoder.toRval(retNode);
-		  		ECR lamRetECR = lamType.getRet();
-		  		ValueType lamRetType = uf.getType(lamRetECR);
-		  		paramRetAssign(lamRetType.getSize(), retECR, lamRetECR);
-		  		
-		  		Iterator<ECR> paramECRItr = lamType.getParams().iterator();
-		  		
-		  		int i;
-		  		for(i = 2; i < stmt.getOperands().size(); i++) {
-		  			Node srcNode = stmt.getOperand(i).getSourceNode();
-		  			
-		  			/* Resolve the syntax sugar of assign function to a function pointer */
-		  			boolean isFuncType = CType.getType(srcNode).resolve().isFunction();
-		  			ECR argECR = isFuncType ? ecrEncoder.toLval(srcNode) : ecrEncoder.toRval(srcNode);
-		  			
-		  			if(!paramECRItr.hasNext()) break;
-		  			
-		  			ECR paramECR = paramECRItr.next();
-		  			ValueType argType = uf.getType(argECR);
-		  			paramRetAssign(argType.getSize(), paramECR, argECR);
-		  		}
-		  		
-		  		for(; i < stmt.getOperands().size(); i++) {
-		  			Node srcNode = stmt.getOperand(i).getSourceNode();
-		  			/* Resolve the syntax sugar of assign function to a function pointer */
-		  			ECR argECR = CType.getType(srcNode).resolve().isFunction() ?
-		  					ecrEncoder.toLval(srcNode) : ecrEncoder.toRval(srcNode);
-		  			lamType.addParamECR(argECR);
-		  		}
-		  	}
-	  		break;
-		  }
-		  case FREE:
-		  case ASSERT:
-		  case ASSUME: {
-		  	Node src = stmt.getOperand(0).getSourceNode();
-		  	ecrEncoder.toRval(src);
-		  	break;
-		  }
-		  default:
-		  }
+		IOUtils.debug().pln("Preprocess: " + stmt.getLocation() + ": " + stmt);
+		switch (stmt.getType()) {
+		case DECLARE:
+		case DECLARE_ARRAY: {
+			Node lhs = stmt.getOperand(0).getSourceNode();
+			ecrEncoder.toLval(lhs);
+			break;
+		}
+		case INIT: {
+			Node lhsNode = stmt.getOperand(0).getSourceNode();
+			Node rhsNode = stmt.getOperand(1).getSourceNode();
+
+			ECR lhsECR = ecrEncoder.toRval(lhsNode);
+			ECR rhsECR = ecrEncoder.toRval(rhsNode);
+
+			Type lhsType = CType.getType(lhsNode);
+			simpleAssign(lhsType, lhsECR, rhsECR);
+			break;
+		}
+		case RETURN: {
+			String functionName = currentCFG.getName();
+			ECR funcECR = ecrEncoder.getFunctionECR(functionName);
+			LambdaType funcType = uf.getType(uf.getFunc(uf.getLoc(funcECR)))
+					.asLambda();
+			ECR retECR = funcType.getRet();
+
+			Node srcNode = stmt.getOperand(0).getSourceNode();
+			ECR srcECR = ecrEncoder.toRval(srcNode);
+
+			Type resType = symbolTable.lookupType(functionName).resolve().toFunction()
+					.getResult();
+			simpleAssign(resType, retECR, srcECR);
+			break;
+		}
+		case ASSIGN: {
+			Node lhsNode = stmt.getOperand(0).getSourceNode();
+			Node rhsNode = stmt.getOperand(1).getSourceNode();
+
+			Type lhsType = CType.getType(lhsNode);
+			Type rhsType = CType.getType(rhsNode);
+
+			ECR lhsECR = ecrEncoder.toRval(lhsNode);
+
+			/* Resolve the syntax sugar of assign function to a function pointer */
+			boolean isFuncType = rhsType.resolve().isFunction();
+			ECR rhsECR = isFuncType ? ecrEncoder.toLval(rhsNode)
+					: ecrEncoder.toRval(rhsNode);
+
+			simpleAssign(lhsType, lhsECR, rhsECR);
+			break;
+		}
+		case ALLOCA:
+		case CALLOC:
+		case MALLOC: {
+			Node lhs = stmt.getOperand(0).getSourceNode();
+			Type lhsType = CType.getType(lhs);
+			ECR lhsECR = ecrEncoder.toRval(lhs);
+
+			heapAssign(lhsType, lhsECR);
+			break;
+		}
+		case CALL: {
+			Node funcNode = stmt.getOperand(0).getSourceNode();
+			ECR funcECR = ecrEncoder.toRval(funcNode);
+			assert (null != funcECR);
+
+			Type funcXtcType = CType.getType(funcNode).resolve();
+			if (funcXtcType.isPointer()) {
+				funcECR = uf.getLoc(funcECR);
+				funcXtcType = funcXtcType.toPointer().getType();
+			}
+
+			/* For the function pointer parameters declared but not yet assigned */
+			if (uf.getType(funcECR).isBottom()) {
+				IOUtils.err().println("WARNING: get Loc of " + funcECR);
+				Size size = Size.createForType(CType.getInstance().pointerize(
+						funcXtcType));
+				uf.expand(funcECR, size);
+			}
+
+			ECR lamECR = uf.getFunc(funcECR);
+
+			if (uf.getType(lamECR).isBottom()) {
+				ValueType lamType = ecrEncoder.getLamdaType(funcXtcType);
+				uf.setType(lamECR, lamType);
+			}
+
+			LambdaType lamType = uf.getType(lamECR).asLambda();
+
+			if (funcXtcType.toFunction().getResult().isVoid()) {
+				Iterator<ECR> paramECRItr = lamType.getParams().iterator();
+				for (int i = 1; i < stmt.getOperands().size(); i++) {
+					Node srcNode = stmt.getOperand(i).getSourceNode();
+
+					/*
+					 * Resolve the syntax sugar of assign function to a function pointer
+					 */
+					boolean isFuncType = CType.getType(srcNode).resolve().isFunction();
+					ECR argECR = isFuncType ? ecrEncoder.toLval(srcNode)
+							: ecrEncoder.toRval(srcNode);
+
+					if (paramECRItr.hasNext()) {
+						ECR paramECR = paramECRItr.next();
+						ValueType argType = uf.getType(argECR);
+						paramRetAssign(argType.getSize(), paramECR, argECR);
+					} else {
+						lamType.addParamECR(argECR);
+					}
+				}
+			}
+
+			else {
+				Node retNode = stmt.getOperand(1).getSourceNode();
+				ECR retECR = ecrEncoder.toRval(retNode);
+				ECR lamRetECR = lamType.getRet();
+				ValueType lamRetType = uf.getType(lamRetECR);
+				paramRetAssign(lamRetType.getSize(), retECR, lamRetECR);
+
+				Iterator<ECR> paramECRItr = lamType.getParams().iterator();
+
+				int i;
+				for (i = 2; i < stmt.getOperands().size(); i++) {
+					Node srcNode = stmt.getOperand(i).getSourceNode();
+
+					/*
+					 * Resolve the syntax sugar of assign function to a function pointer
+					 */
+					boolean isFuncType = CType.getType(srcNode).resolve().isFunction();
+					ECR argECR = isFuncType ? ecrEncoder.toLval(srcNode)
+							: ecrEncoder.toRval(srcNode);
+
+					if (!paramECRItr.hasNext())
+						break;
+
+					ECR paramECR = paramECRItr.next();
+					ValueType argType = uf.getType(argECR);
+					paramRetAssign(argType.getSize(), paramECR, argECR);
+				}
+
+				for (; i < stmt.getOperands().size(); i++) {
+					Node srcNode = stmt.getOperand(i).getSourceNode();
+					/*
+					 * Resolve the syntax sugar of assign function to a function pointer
+					 */
+					ECR argECR = CType.getType(srcNode).resolve().isFunction()
+							? ecrEncoder.toLval(srcNode) : ecrEncoder.toRval(srcNode);
+					lamType.addParamECR(argECR);
+				}
+			}
+			break;
+		}
+		case FREE:
+		case ASSERT:
+		case ASSUME: {
+			Node src = stmt.getOperand(0).getSourceNode();
+			ecrEncoder.toRval(src);
+			break;
+		}
+		default:
+		}
 	}
-	
+
 	private void initChecker() {
 		uf.clearPointerArithmetic();
 		ecrChecker = ECRChecker.create(uf, symbolTable, ecrEncoder);
 	}
 
 	@Override
-  public void reset() {
-  	uf.reset();
-  }
+	public void reset() {
+		uf.reset();
+	}
 
 	@Override
 	public ECR getPtsToFieldRep(ECR base) {
-    if(base.getType().isBottom())
-    	IOUtils.err().println("WARNING: get points-to Loc ECR of bottom " + base);
-    return uf.findRoot(uf.getLoc(base));
+		if (base.getType().isBottom())
+			IOUtils.err().println("WARNING: get points-to Loc ECR of bottom " + base);
+		return uf.findRoot(uf.getLoc(base));
 	}
-	
+
 	@Override
 	public ECR getPtsToRep(Node node) {
-    return getPtsToFieldRep(getRep(node));
+		return getPtsToFieldRep(getRep(node));
 	}
-	
+
 	@Override
 	public Map<Range<Long>, ECR> getStructMap(ECR structECR, long length) {
 		ValueType structType = uf.getType(structECR);
-		if(!structType.isStruct()) return Collections.emptyMap();
-			
+		if (!structType.isStruct())
+			return Collections.emptyMap();
+
 		return structType.asStruct().getFieldMap().asMapOfRanges();
 	}
 
 	/**
-	 * Return <code>void</code> type is <code>rep</code> is 
-	 * with the bottom type (not yet allocated)
+	 * Return <code>void</code> type is <code>rep</code> is with the bottom type
+	 * (not yet allocated)
 	 */
 	@Override
 	public long getRepWidth(ECR ecr) {
 		long defaultWidth = CType.getInstance().getWidth(CType.getUnitType());
-		if(Preferences.isSet(Preferences.OPTION_MULTI_CELL)) return defaultWidth;
-		
+		if (Preferences.isSet(Preferences.OPTION_MULTI_CELL))
+			return defaultWidth;
+
 		long ptrWidth = CType.getInstance().getWidth(PointerT.TO_VOID);
-		
-		switch(ecr.getType().getKind()) {
+
+		switch (ecr.getType().getKind()) {
 		// structure's cell type is pointer (not the size of structure)
-		case STRUCT:	return ptrWidth;
-		case BOTTOM:	return defaultWidth;
+		case STRUCT:
+			return ptrWidth;
+		case BOTTOM:
+			return defaultWidth;
 		default: {
 			Size size = ecr.getType().getSize();
-			if(!size.isNumber()) return defaultWidth;
-			
+			if (!size.isNumber())
+				return defaultWidth;
+
 			long value = size.getValue();
-			if(value == 0)	return defaultWidth; // array type without length (stdlib.h)
-			
+			if (value == 0)
+				return defaultWidth; // array type without length (stdlib.h)
+
 			return CType.getInstance().toWidth(value);
 		}
 		}
 	}
-	
+
 	@Override
 	public void buildSnapShot() {
-	  snapShot = uf.snapshot();
+		snapShot = uf.snapshot();
 	}
-	
+
 	@Override
 	public String getRepId(ECR ecr) {
 		return String.valueOf(ecr.getId());
 	}
-	
+
 	@Override
 	public ECR getRep(Node node) {
 		return uf.findRoot(ecrChecker.toRval(node));
 	}
-	
+
 	@Override
 	public ECR getStackRep(Node node) {
 		ECR rep = getRep(node);
 		xtc.type.Type lvalType = CType.getType(node);
-		
-		/* The address should belongs to the group it points-to, where to reason
-		 * about disjointness */
-		if(lvalType.resolve().isStruct() || lvalType.resolve().isUnion() ||
-				lvalType.resolve().isArray() ||	lvalType.resolve().isFunction()) {
+
+		/*
+		 * The address should belongs to the group it points-to, where to reason
+		 * about disjointness
+		 */
+		if (lvalType.resolve().isStruct() || lvalType.resolve().isUnion()
+				|| lvalType.resolve().isArray() || lvalType.resolve().isFunction()) {
 			rep = getPtsToFieldRep(rep);
 		}
 		return rep;
@@ -361,8 +389,9 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 
 	@Override
 	public void addRegion(Expression region, Node ptrNode) {
-		if(!IOUtils.debugEnabled()) return;
-		
+		if (!IOUtils.debugEnabled())
+			return;
+
 		/* The freshRegionVar should have the same scope and type as place holder */
 		ecrChecker.createRegionVar(region, ptrNode);
 		IOUtils.debug().pln(displaySnapShot());
@@ -370,78 +399,89 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 
 	@Override
 	public void addVar(Expression lval, Node lvalNode) {
-		if(!IOUtils.debugEnabled()) return;
-		
+		if (!IOUtils.debugEnabled())
+			return;
+
 		ecrChecker.addStackVar(lval, lvalNode);
 		IOUtils.debug().pln(displaySnapShot());
 	}
-	
+
 	@Override
 	public String displaySnapShot() {
 		buildSnapShot();
-		
-	  StringBuilder sb = new StringBuilder().append('\n')
-	  		.append("The result of cell-based field-sensitive Steensgaard analysis:\n");
-	  
-	  for(Entry<ECR, Collection<IRVar>> entry : snapShot.entrySet()) {
-	  	ECR ecr = entry.getKey();
-	  	if(uf.getType(ecr).isLambda()) continue;
-	  	Collection<IRVar> vars = entry.getValue();
-	  	if(!vars.isEmpty()) {
-	  		sb.append("Partition ").append(ecr.getId()).append(": ");
-	  		sb.append(uf.getType(ecr)).append("\n { ");
-	  		
-	  		for(IRVar var : vars) sb.append(var.getName()).append(' ');
-	  		sb.append("}\n");
-	  	}
-	  }
-	  return sb.toString();
+
+		StringBuilder sb = new StringBuilder().append('\n').append(
+				"The result of cell-based field-sensitive Steensgaard analysis:\n");
+
+		for (Entry<ECR, Collection<IRVar>> entry : snapShot.entrySet()) {
+			ECR ecr = entry.getKey();
+			if (uf.getType(ecr).isLambda())
+				continue;
+			Collection<IRVar> vars = entry.getValue();
+			if (!vars.isEmpty()) {
+				sb.append("Partition ").append(ecr.getId()).append(": ");
+				sb.append(uf.getType(ecr)).append("\n { ");
+
+				for (IRVar var : vars)
+					sb.append(var.getName()).append(' ');
+				sb.append("}\n");
+			}
+		}
+		return sb.toString();
 	}
 
 	@Override
 	public Collection<IRVar> getEquivFuncVars(Node funcNode) {
 		ECR rep = ecrChecker.toRval(funcNode);
 		Type funcType = CType.getType(funcNode).resolve();
-		if(funcType.isPointer()) rep = getPtsToFieldRep(rep);
+		if (funcType.isPointer())
+			rep = getPtsToFieldRep(rep);
 		ECR funcRep = uf.getFunc(rep);
-	  return uf.getEquivClass(funcRep);
+		return uf.getEquivClass(funcRep);
 	}
-	
+
 	@Override
 	public Collection<ECR> getFieldReps(ECR rep, Type Ty) {
 		Collection<ECR> reps = Sets.newLinkedHashSet();
 		collectFieldReps(reps, rep);
-	  return reps;
+		return reps;
 	}
-	
+
 	@Override
 	public boolean isAccessTypeSafe(ECR rep) {
 		ValueType type = uf.getType(rep);
-		if(type.hasOpTag()) return false;
-		
-		switch(type.getKind()) {
-		case BOTTOM:	return false;
-		case STRUCT:	return true;
+		if (type.hasOpTag())
+			return false;
+
+		switch (type.getKind()) {
+		case BOTTOM:
+			return false;
+		case STRUCT:
+			return true;
 		default: {
 			Size size = type.getSize();
-			if(!size.isNumber()) return false;
-			
+			if (!size.isNumber())
+				return false;
+
 			long value = size.getValue();
-			if(value == 0)	return false; // array type without length (stdlib.h)
-			
+			if (value == 0)
+				return false; // array type without length (stdlib.h)
+
 			return true;
 		}
 		}
 	}
-	
+
 	private void collectFieldReps(Collection<ECR> reps, ECR rep) {
-		if(reps.contains(rep)) return;
-		
-		reps.add(rep); 
+		if (reps.contains(rep))
+			return;
+
+		reps.add(rep);
 		ValueType repType = uf.getType(rep);
-		
-		if(repType.isStruct()) {
-			for(ECR elem : repType.asStruct().getFieldMap().asMapOfRanges().values()) {
+
+		if (repType.isStruct()) {
+			for (ECR elem : repType.asStruct().getFieldMap().asMapOfRanges()
+					.values()) {
 				ECR elemRep = uf.findRoot(uf.getLoc(elem));
 				collectFieldReps(reps, elemRep);
 			}
@@ -450,19 +490,17 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 
 	private void heapAssign(Type lhsType, ECR lhs) {
 		Size rangeSize = Size.createForType(lhsType);
-		
+
 		ValueType lhsECRType = uf.getType(lhs);
 		Size lhsSize = lhsECRType.getSize();
-		if(!Size.isLessThan(rangeSize, lhsSize)) {
+		if (!Size.isLessThan(rangeSize, lhsSize)) {
 			uf.expand(lhs, rangeSize);
 		}
-	  
+
 		ECR lhsLoc = uf.getLoc(lhs);
 		ValueType lhsLocType = uf.getType(lhsLoc);
-		if(lhsLocType.isBottom()) {					
-			ValueType blankType = ValueType.blank(
-					Size.getBot(),
-					Parent.getBottom(),
+		if (lhsLocType.isBottom()) {
+			ValueType blankType = ValueType.blank(Size.getBot(), Parent.getBottom(),
 					lhsLocType.hasOpTag());
 			uf.setType(lhsLoc, blankType);
 		}
@@ -472,25 +510,28 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		targetType = targetType.resolve();
 		// structure assign, treat like structure pointer assign to unify
 		// the structures involved
-		if(targetType.isStruct())  targetType = new PointerT(targetType);
-		Size rangeSize = CType.isArithmetic(targetType) ? 
-				Size.getBot() : Size.createForType(targetType);
-	  uf.ccjoin(rangeSize, rhs, lhs);
+		if (targetType.isStruct())
+			targetType = new PointerT(targetType);
+		Size rangeSize = CType.isArithmetic(targetType) ? Size.getBot()
+				: Size.createForType(targetType);
+		uf.ccjoin(rangeSize, rhs, lhs);
 	}
-	
+
 	private void paramRetAssign(Size rangeSize, ECR lhs, ECR rhs) {
-	  ValueType lhs_type = uf.getType(lhs);
-	  ValueType rhs_type = uf.getType(rhs);
-	  
+		ValueType lhs_type = uf.getType(lhs);
+		ValueType rhs_type = uf.getType(rhs);
+
 		Size lhs_size = lhs_type.getSize();
 		Size rhs_size = rhs_type.getSize();
-		
-		if(!Size.isLessThan(rangeSize, lhs_size)) uf.expand(lhs, rangeSize);
-		if(!Size.isLessThan(rangeSize, rhs_size)) uf.expand(rhs, rangeSize);
-		
+
+		if (!Size.isLessThan(rangeSize, lhs_size))
+			uf.expand(lhs, rangeSize);
+		if (!Size.isLessThan(rangeSize, rhs_size))
+			uf.expand(rhs, rangeSize);
+
 		ECR lhsLoc = uf.getLoc(lhs), rhsLoc = uf.getLoc(rhs);
 		ECR lhsFunc = uf.getFunc(lhs), rhsFunc = uf.getFunc(rhs);
-		
+
 		uf.join(rhsLoc, lhsLoc);
 		uf.join(rhsFunc, lhsFunc);
 	}
@@ -498,6 +539,6 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 	@Override
 	public void analyzeVarArg(String func, Type funcTy, Node varArgN) {
 		// TODO Auto-generated method stub
-		
+
 	}
 }

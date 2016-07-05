@@ -15,15 +15,15 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 	private final Type elementType;
 
 	static ArrayTypeImpl create(ExpressionManagerImpl exprManager, Type index,
-	    Type elem) {
+			Type elem) {
 		return new ArrayTypeImpl(exprManager, index, elem);
 	}
 
 	@Override
 	ArrayExpressionImpl createExpression(Expr res, Expression oldExpr,
-	    Iterable<? extends ExpressionImpl> children) {
+			Iterable<? extends ExpressionImpl> children) {
 		return ArrayExpressionImpl.create(getExpressionManager(), oldExpr.getKind(),
-		    res, oldExpr.getType(), children);
+				res, oldExpr.getType(), children);
 	}
 
 	static ArrayTypeImpl valueOf(ExpressionManagerImpl exprManager, Type type) {
@@ -33,12 +33,12 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 		} else {
 			ArrayType arrayType = type.asArrayType();
 			return create(exprManager, arrayType.getIndexType(), arrayType
-			    .getElementType());
+					.getElementType());
 		}
 	}
 
 	private ArrayTypeImpl(ExpressionManagerImpl exprManager, Type index,
-	    Type elem) {
+			Type elem) {
 		super(exprManager);
 		this.indexType = index;
 		this.elementType = elem;
@@ -46,7 +46,7 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 			Sort indexZ3Type = exprManager.toZ3Type(indexType);
 			Sort elementZ3Type = exprManager.toZ3Type(elementType);
 			setZ3Type(exprManager.getTheoremProver().getZ3Context().mkArraySort(
-			    indexZ3Type, elementZ3Type));
+					indexZ3Type, elementZ3Type));
 		} catch (Exception e) {
 			throw new TheoremProverException(e);
 		}
@@ -65,14 +65,14 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 	@Override
 	public ArrayBoundExpressionImpl boundVar(String name, boolean fresh) {
 		return ArrayBoundExpressionImpl.create(getExpressionManager(), name, this,
-		    fresh);
+				fresh);
 	}
 
 	@Override
 	public ArrayBoundExpressionImpl boundExpression(String name, int index,
-	    boolean fresh) {
+			boolean fresh) {
 		return ArrayBoundExpressionImpl.create(getExpressionManager(), name, index,
-		    this, fresh);
+				this, fresh);
 	}
 
 	@Override
@@ -107,8 +107,8 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 		case ARRAY_UPDATE:
 			assert (expression.getArity() == 3);
 			return ArrayExpressionImpl.mkUpdate(getExpressionManager(),
-			    (Expression) expression.getChild(0), (Expression) expression.getChild(
-			        1), (Expression) expression.getChild(2));
+					(Expression) expression.getChild(0), (Expression) expression.getChild(
+							1), (Expression) expression.getChild(2));
 
 		default:
 			return super.importExpression(expression);
@@ -119,21 +119,21 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 	public Expression index(Expression array, Expression index) {
 		Preconditions.checkArgument(array.isArray());
 		Preconditions.checkArgument(index.getType().equals(array.asArray()
-		    .getIndexType()));
+				.getIndexType()));
 		return ArrayExpressionImpl.mkArrayIndex(getExpressionManager(), array,
-		    index);
+				index);
 	}
 
 	@Override
 	public ArrayExpression update(Expression array, Expression index,
-	    Expression value) {
+			Expression value) {
 		Preconditions.checkArgument(array.isArray());
 		Preconditions.checkArgument(index.getType().equals(array.asArray()
-		    .getIndexType()));
+				.getIndexType()));
 		Preconditions.checkArgument(value.getType().equals(array.asArray()
-		    .getElementType()));
+				.getElementType()));
 		return ArrayExpressionImpl.mkUpdate(getExpressionManager(), array, index,
-		    value);
+				value);
 	}
 
 	@Override

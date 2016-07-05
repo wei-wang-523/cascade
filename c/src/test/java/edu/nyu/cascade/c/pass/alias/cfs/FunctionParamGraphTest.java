@@ -20,7 +20,7 @@ import edu.nyu.cascade.util.UnionFind;
 
 public class FunctionParamGraphTest {
 	private static final long PtrSize = CType.getInstance().getSize(new PointerT(
-	    VoidT.TYPE));
+			VoidT.TYPE));
 
 	private FunctionParamGraph funcGraph;
 	private CellManager cellManager;
@@ -46,7 +46,7 @@ public class FunctionParamGraphTest {
 		Cell param1Cell = cellManager.scalar(PtrSize);
 		Cell param2Cell = cellManager.scalar(PtrSize);
 		List<Cell> paramCells = Lists.newArrayList(returnCell, param1Cell,
-		    param2Cell);
+				param2Cell);
 		funcGraph.put(funcCell, paramCells);
 		assertEquals(1, funcGraph.getSize());
 	}
@@ -58,7 +58,7 @@ public class FunctionParamGraphTest {
 		Cell param1Cell = cellManager.scalar(PtrSize);
 		Cell param2Cell = cellManager.scalar(PtrSize);
 		List<Cell> paramCells = Lists.newArrayList(returnCell, param1Cell,
-		    param2Cell);
+				param2Cell);
 		funcGraph.put(funcCell, paramCells);
 	}
 
@@ -70,7 +70,7 @@ public class FunctionParamGraphTest {
 			Cell param1Cell = cellManager.scalar(PtrSize);
 			Cell param2Cell = cellManager.scalar(PtrSize);
 			List<Cell> paramCells = Lists.newArrayList(returnCell, param1Cell,
-			    param2Cell);
+					param2Cell);
 			funcGraph.put(func1Cell, paramCells);
 		}
 
@@ -80,7 +80,7 @@ public class FunctionParamGraphTest {
 			Cell param1Cell = cellManager.scalar(PtrSize);
 			Cell param2Cell = cellManager.scalar(PtrSize);
 			List<Cell> paramCells = Lists.newArrayList(returnCell, param1Cell,
-			    param2Cell);
+					param2Cell);
 			funcGraph.put(func2Cell, paramCells);
 		}
 
@@ -95,7 +95,7 @@ public class FunctionParamGraphTest {
 			Cell param1Cell = cellManager.scalar(PtrSize);
 			Cell param2Cell = cellManager.scalar(PtrSize);
 			List<Cell> param1Cells = Lists.newArrayList(return1Cell, param1Cell,
-			    param2Cell);
+					param2Cell);
 			funcGraph.put(func1Cell, param1Cells);
 		}
 
@@ -105,7 +105,7 @@ public class FunctionParamGraphTest {
 			Cell param3Cell = cellManager.scalar(PtrSize);
 			Cell param4Cell = cellManager.scalar(PtrSize);
 			List<Cell> param2Cells = Lists.newArrayList(return2Cell, param3Cell,
-			    param4Cell);
+					param4Cell);
 			funcGraph.put(func2Cell, param2Cells);
 		}
 
@@ -120,7 +120,7 @@ public class FunctionParamGraphTest {
 		Cell param1Cell = cellManager.scalar(PtrSize);
 		Cell param2Cell = cellManager.scalar(PtrSize);
 		List<Cell> param1Cells = Lists.newArrayList(return1Cell, param1Cell,
-		    param2Cell);
+				param2Cell);
 		funcGraph.put(func1Cell, param1Cells);
 
 		Cell func2Cell = cellManager.function();

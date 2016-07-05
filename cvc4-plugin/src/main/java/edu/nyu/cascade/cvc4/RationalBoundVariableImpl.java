@@ -7,17 +7,17 @@ import edu.nyu.cascade.prover.RationalExpression;
 import edu.nyu.cascade.prover.type.Type;
 
 final class RationalBoundVariableImpl extends BoundVariableExpressionImpl
-    implements RationalExpression {
+		implements RationalExpression {
 
 	static RationalBoundVariableImpl create(ExpressionManagerImpl em, String name,
-	    Type type, boolean fresh) {
+			Type type, boolean fresh) {
 		Preconditions.checkArgument(type.isRational());
 		return new RationalBoundVariableImpl(em, name, type, fresh);
 	}
 
 	/** Create a new variable of a rational sub-type (e.g., a range type). */
 	private RationalBoundVariableImpl(ExpressionManagerImpl em, String name,
-	    Type type, boolean fresh) {
+			Type type, boolean fresh) {
 		super(em, name, type, fresh);
 	}
 

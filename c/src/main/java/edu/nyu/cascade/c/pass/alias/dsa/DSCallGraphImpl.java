@@ -9,7 +9,8 @@ import xtc.tree.Node;
 class DSCallGraphImpl extends DSCallGraph {
 
 	@Override
-	int tarjan_rec(Function F, Set<Function> Stack, int NextID, Map<Function, Integer> ValMap) {
+	int tarjan_rec(Function F, Set<Function> Stack, int NextID,
+			Map<Function, Integer> ValMap) {
 		// TODO Auto-generated method stub
 		return 0;
 	}

@@ -14,16 +14,16 @@ class IntegerTypeImpl extends TypeImpl implements IntegerType {
 	IntegerTypeImpl(ExpressionManagerImpl expressionManager) {
 		super(expressionManager);
 		setCVC4Type(expressionManager.getTheoremProver().getCvc4ExprManager()
-		    .integerType());
+				.integerType());
 	}
 
 	protected IntegerTypeImpl(ExpressionManagerImpl expressionManager,
-	    BinaryConstructionStrategy strategy, Expression expr1, Expression expr2) {
+			BinaryConstructionStrategy strategy, Expression expr1, Expression expr2) {
 		super(expressionManager, strategy, expr1, expr2);
 	}
 
 	protected IntegerTypeImpl(ExpressionManagerImpl em,
-	    UnaryConstructionStrategy strategy, Expression expr) {
+			UnaryConstructionStrategy strategy, Expression expr) {
 		super(em, strategy, expr);
 	}
 
@@ -35,7 +35,7 @@ class IntegerTypeImpl extends TypeImpl implements IntegerType {
 	@Override
 	public IntegerExpressionImpl add(Expression first, Expression... rest) {
 		return IntegerExpressionImpl.mkPlus(getExpressionManager(), Lists.asList(
-		    first, rest));
+				first, rest));
 	}
 
 	@Override
@@ -141,12 +141,12 @@ class IntegerTypeImpl extends TypeImpl implements IntegerType {
 	@Override
 	public IntegerBoundVariableImpl boundVar(String name, boolean fresh) {
 		return IntegerBoundVariableImpl.create(getExpressionManager(), name, this,
-		    fresh);
+				fresh);
 	}
 
 	@Override
 	public IntegerBoundVariableImpl boundExpression(String name, int index,
-	    boolean fresh) {
+			boolean fresh) {
 		return boundVar(name, fresh);
 	}
 
@@ -157,9 +157,9 @@ class IntegerTypeImpl extends TypeImpl implements IntegerType {
 
 	@Override
 	IntegerExpressionImpl createExpression(Expr res, Expression e, Kind kind,
-	    Iterable<ExpressionImpl> children) {
+			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isInteger());
 		return IntegerExpressionImpl.create(getExpressionManager(), kind, res, e
-		    .getType().asInteger(), children);
+				.getType().asInteger(), children);
 	}
 }

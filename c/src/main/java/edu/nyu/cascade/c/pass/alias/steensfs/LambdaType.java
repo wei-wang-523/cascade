@@ -11,7 +11,7 @@ class LambdaType extends ValueType {
 	private final ECR ret;
 	private Size size;
 	private Parent parent;
-	
+
 	LambdaType(ECR ret, List<ECR> args, Size size, Parent parent) {
 		this.params = Lists.newArrayList(args);
 		this.ret = ret;
@@ -20,27 +20,28 @@ class LambdaType extends ValueType {
 	}
 
 	@Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder()
-    .append("LAMBDA (").append(params).append("->").append(ret).append(")");
-    return sb.toString();
-  }
-  
-  @Override
-  public boolean equals(Object t) {
-    if(!(t instanceof LambdaType))   return false;
-    LambdaType ft = (LambdaType) t;
-    return EqualsUtil.areEqual(params, ft.params) && ret.equals(ft.ret);
-  }
-	
+	public String toString() {
+		StringBuilder sb = new StringBuilder().append("LAMBDA (").append(params)
+				.append("->").append(ret).append(")");
+		return sb.toString();
+	}
+
+	@Override
+	public boolean equals(Object t) {
+		if (!(t instanceof LambdaType))
+			return false;
+		LambdaType ft = (LambdaType) t;
+		return EqualsUtil.areEqual(params, ft.params) && ret.equals(ft.ret);
+	}
+
 	ValueTypeKind getKind() {
 		return ValueTypeKind.LAMBDA;
 	}
-	
+
 	List<ECR> getParams() {
 		return params;
 	}
-	
+
 	ECR getRet() {
 		return ret;
 	}
@@ -54,8 +55,8 @@ class LambdaType extends ValueType {
 	 * @param paramECR
 	 */
 	void addParamECR(ECR paramECR) {
-	  params.add(paramECR);
-  }
+		params.add(paramECR);
+	}
 
 	@Override
 	Size getSize() {
@@ -71,7 +72,7 @@ class LambdaType extends ValueType {
 	Parent getParent() {
 		return parent;
 	}
-	
+
 	@Override
 	void setParent(Parent parent) {
 		this.parent = parent;

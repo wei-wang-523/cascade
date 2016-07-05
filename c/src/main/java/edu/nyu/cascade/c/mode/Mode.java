@@ -6,8 +6,11 @@ import edu.nyu.cascade.ir.pass.IRAliasAnalyzer;
 import edu.nyu.cascade.ir.state.StateFactory;
 
 public interface Mode {
-  ExpressionEncoding getEncoding();
+	ExpressionEncoding getEncoding();
+
 	StateFactory<?> getStateFactory();
+
 	boolean hasPreprocessor();
+
 	IRAliasAnalyzer<?> buildPreprocessor(SymbolTable symbolTable);
 }

@@ -29,7 +29,7 @@ public class TraceNode implements IRTraceNode {
 	private final List<IRStatement> stmts = Lists.newArrayList();
 	private final List<TraceNode> successors = Lists.newArrayList();
 	private final Map<IRStatement, Expression> stmtTraceExprMap = Maps
-	    .newHashMap();
+			.newHashMap();
 	private final Map<IRStatement, Boolean> edgeStmtMap = Maps.newHashMap();
 	private final Set<String> labels = Sets.newHashSet();
 
@@ -142,7 +142,7 @@ public class TraceNode implements IRTraceNode {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder().append(id).append(" ").append(
-		    labels);
+				labels);
 		return sb.toString();
 	}
 
@@ -182,7 +182,7 @@ public class TraceNode implements IRTraceNode {
 
 		final TheoremProver theoremProver = exprManager.getTheoremProver();
 		Collection<IRStatement> statements = Collections.unmodifiableSet(
-		    stmtTraceExprMap.keySet());
+				stmtTraceExprMap.keySet());
 		for (IRStatement stmt : statements) {
 			Expression traceExpr = stmtTraceExprMap.get(stmt);
 			Expression traceExprPrime = theoremProver.evaluate(traceExpr);

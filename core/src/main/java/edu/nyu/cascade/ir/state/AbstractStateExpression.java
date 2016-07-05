@@ -17,7 +17,7 @@ import edu.nyu.cascade.util.Preferences;
 
 public abstract class AbstractStateExpression implements StateExpression {
 	private final Multimap<String, BooleanExpression> asserts = HashMultimap
-	    .create();
+			.create();
 	private final Map<String, Object> properties = Maps.newHashMap();
 	private BooleanExpression guard;
 	private BooleanExpression constraint;
@@ -113,7 +113,7 @@ public abstract class AbstractStateExpression implements StateExpression {
 
 	@Override
 	final public void setAssertions(
-	    Multimap<String, BooleanExpression> assertions) {
+			Multimap<String, BooleanExpression> assertions) {
 		asserts.putAll(assertions);
 	}
 

@@ -26,18 +26,18 @@ public final class SingleCellLinearFormatter extends AbstractDataFormatter {
 	@Override
 	public Type getValueType() {
 		return encoding.getExpressionManager().bitVectorType(encoding
-		    .getCTypeAnalyzer().getWordSize());
+				.getCTypeAnalyzer().getWordSize());
 	}
 
 	@Override
 	public Expression castToSize(Expression size) {
 		return encoding.castToInteger(size, getSizeType().asBitVectorType()
-		    .getSize());
+				.getSize());
 	}
 
 	@Override
 	public Expression indexMemoryArray(ArrayExpression memory, Expression index,
-	    xtc.type.Type idxType) {
+			xtc.type.Type idxType) {
 		return memory.index(index);
 	}
 
@@ -66,28 +66,28 @@ public final class SingleCellLinearFormatter extends AbstractDataFormatter {
 
 	@Override
 	protected ArrayExpression updateScalarInMem(ArrayExpression memory,
-	    xtc.type.Type idxType, Expression index, Expression value) {
+			xtc.type.Type idxType, Expression index, Expression value) {
 		return memory.update(index, value);
 	}
 
 	@Override
 	public BooleanExpression memorySet(ArrayExpression memory, Expression region,
-	    Expression size, Expression value) {
+			Expression size, Expression value) {
 		// FIXME: single cell linear format is unsound for memory set
 		return encoding.tt().asBooleanExpression();
 	}
 
 	@Override
 	public BooleanExpression memorySet(ArrayExpression memory, Expression region,
-	    Expression size, int value) {
+			Expression size, int value) {
 		// FIXME: single cell linear format is unsound for memory set
 		return encoding.tt().asBooleanExpression();
 	}
 
 	@Override
 	public BooleanExpression memoryCopy(ArrayExpression destMemory,
-	    ArrayExpression srcMemory, Expression destRegion, Expression srcRegion,
-	    Expression size) {
+			ArrayExpression srcMemory, Expression destRegion, Expression srcRegion,
+			Expression size) {
 		// FIXME: single cell linear format is unsound for memory copy
 		return encoding.tt().asBooleanExpression();
 	}

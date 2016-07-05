@@ -1,25 +1,28 @@
 package edu.nyu.cascade.c.pass.alias.steenscfsopt;
 
 class BottomType extends ValueType {
-	
+
 	private boolean op;
-	
+
 	@Override
 	public boolean equals(Object o) {
-		if(!(o instanceof BottomType)) return false;
+		if (!(o instanceof BottomType))
+			return false;
 		BottomType that = (BottomType) o;
-		if(op != that.op) return false;
+		if (op != that.op)
+			return false;
 		return true;
 	}
-	
+
 	@Override
 	ValueTypeKind getKind() {
 		return ValueTypeKind.BOTTOM;
 	}
-	
+
 	@Override
 	public String toString() {
-		return new StringBuilder().append("(BOT, ").append(op).append(")").toString();
+		return new StringBuilder().append("(BOT, ").append(op).append(")")
+				.toString();
 	}
 
 	@Override
@@ -28,15 +31,15 @@ class BottomType extends ValueType {
 	}
 
 	@Override
-  Parent getParent() {
-	  return Parent.getBottom();
-  }
-	
+	Parent getParent() {
+		return Parent.getBottom();
+	}
+
 	@Override
 	void setParent(Parent parent) {
 		throw new UnsupportedOperationException();
 	}
-	
+
 	@Override
 	boolean hasOpTag() {
 		return op;

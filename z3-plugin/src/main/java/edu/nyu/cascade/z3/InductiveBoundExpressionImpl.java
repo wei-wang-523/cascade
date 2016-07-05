@@ -7,25 +7,25 @@ import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.Selector;
 
 final class InductiveBoundExpressionImpl extends BoundExpressionImpl implements
-    InductiveExpression {
+		InductiveExpression {
 
 	static InductiveBoundExpressionImpl create(ExpressionManagerImpl em,
-	    String name, InductiveTypeImpl type, boolean fresh) {
+			String name, InductiveTypeImpl type, boolean fresh) {
 		return new InductiveBoundExpressionImpl(em, name, type, fresh);
 	}
 
 	private InductiveBoundExpressionImpl(ExpressionManagerImpl em, String name,
-	    InductiveTypeImpl type, boolean fresh) {
+			InductiveTypeImpl type, boolean fresh) {
 		super(em, name, type, fresh);
 	}
 
 	static InductiveBoundExpressionImpl create(ExpressionManagerImpl em,
-	    String name, int index, InductiveTypeImpl type, boolean fresh) {
+			String name, int index, InductiveTypeImpl type, boolean fresh) {
 		return new InductiveBoundExpressionImpl(em, name, index, type, fresh);
 	}
 
 	private InductiveBoundExpressionImpl(ExpressionManagerImpl em, String name,
-	    int index, InductiveTypeImpl type, boolean fresh) {
+			int index, InductiveTypeImpl type, boolean fresh) {
 		super(em, name, index, type, fresh);
 	}
 

@@ -27,16 +27,16 @@ import edu.nyu.cascade.util.CacheException;
 final class RecordTypeImpl extends TypeImpl implements RecordType {
 
 	private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, RecordTypeImpl>> typeCache = CacheBuilder
-	    .newBuilder().build(
-	        new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, RecordTypeImpl>>() {
-		        public ConcurrentMap<String, RecordTypeImpl> load(
-	              ExpressionManagerImpl expressionManager) {
-			        return new MapMaker().makeMap();
-		        }
-	        });
+			.newBuilder().build(
+					new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, RecordTypeImpl>>() {
+						public ConcurrentMap<String, RecordTypeImpl> load(
+								ExpressionManagerImpl expressionManager) {
+							return new MapMaker().makeMap();
+						}
+					});
 
 	static RecordTypeImpl create(ExpressionManagerImpl em, String name,
-	    Iterable<String> elemNames, Iterable<? extends Type> elemTypes) {
+			Iterable<String> elemNames, Iterable<? extends Type> elemTypes) {
 		try {
 			RecordTypeImpl res = null;
 			if (typeCache.get(em).containsKey(name))
@@ -52,13 +52,13 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 	}
 
 	static RecordTypeImpl create(ExpressionManagerImpl em, String name,
-	    String elemName, Type elemType) {
+			String elemName, Type elemType) {
 		try {
 			if (typeCache.get(em).containsKey(name))
 				return typeCache.get(em).get(name);
 			else {
 				RecordTypeImpl res = new RecordTypeImpl(em, name, Lists.newArrayList(
-				    elemName), Lists.newArrayList(elemType));
+						elemName), Lists.newArrayList(elemType));
 				typeCache.get(em).put(name, res);
 				return res;
 			}
@@ -78,7 +78,7 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 			return (RecordTypeImpl) t;
 		} else {
 			return create(em, ((RecordType) t).getName(), ((RecordType) t)
-			    .getElementNames(), ((RecordType) t).getElementTypes());
+					.getElementNames(), ((RecordType) t).getElementTypes());
 		}
 	}
 
@@ -87,7 +87,7 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 	private final String typeName;
 
 	private RecordTypeImpl(ExpressionManagerImpl em, String name,
-	    Iterable<String> elemNames, Iterable<? extends Type> elemTypes) {
+			Iterable<String> elemNames, Iterable<? extends Type> elemTypes) {
 		super(em);
 		this.elementTypes = ImmutableList.copyOf(elemTypes);
 		this.typeName = name;
@@ -95,33 +95,33 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 
 		StringBuilder sb = new StringBuilder();
 		sb.append("() ( (" + typeName + "\n                          (mk-"
-		    + typeName); // Type parameter
+				+ typeName); // Type parameter
 
 		try {
 			Context z3_context = em.getTheoremProver().getZ3Context();
 			Sort[] z3Types = new Sort[Iterables.size(elemTypes)];
 			String[] symbols = Iterables.toArray(Iterables.transform(elemNames,
-			    new Function<String, String>() {
-				    @Override
-				    public String apply(String arg) {
-					    return arg;
-				    }
-			    }), String.class);
+					new Function<String, String>() {
+						@Override
+						public String apply(String arg) {
+							return arg;
+						}
+					}), String.class);
 			int[] refs = new int[Iterables.size(elemTypes)];
 			for (int i = 0; i < Iterables.size(elemTypes); i++) {
 				z3Types[i] = em.toZ3Type(Iterables.get(elemTypes, i));
 				refs[i] = 0;
 				sb.append(" \n                             (" + Iterables.get(elemNames,
-				    i) + " " + z3Types[i] + ")");
+						i) + " " + z3Types[i] + ")");
 			}
 			Constructor[] cons = new Constructor[] { z3_context.mkConstructor("mk-"
-			    + typeName, "is-" + typeName, symbols, z3Types, refs) };
+					+ typeName, "is-" + typeName, symbols, z3Types, refs) };
 			setZ3Type(z3_context.mkDatatypeSort(typeName, cons));
 			sb.append(")))");
 			em.addToTypeCache(this);
 
 			TheoremProverImpl.z3FileCommand("(declare-datatypes " + sb.toString()
-			    + ")");
+					+ ")");
 		} catch (Z3Exception e) {
 			throw new TheoremProverException(e);
 		}
@@ -155,14 +155,14 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 	@Override
 	public RecordBoundExpressionImpl boundVar(String name, boolean fresh) {
 		return RecordBoundExpressionImpl.create(getExpressionManager(), name, this,
-		    fresh);
+				fresh);
 	}
 
 	@Override
 	public RecordBoundExpressionImpl boundExpression(String name, int index,
-	    boolean fresh) {
+			boolean fresh) {
 		return RecordBoundExpressionImpl.create(getExpressionManager(), name, index,
-		    this, fresh);
+				this, fresh);
 	}
 
 	@Override
@@ -189,15 +189,15 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 
 	@Override
 	public RecordExpression update(Expression record, String fieldName,
-	    Expression value) {
+			Expression value) {
 		return RecordExpressionImpl.mkUpdate(getExpressionManager(), record,
-		    fieldName, value);
+				fieldName, value);
 	}
 
 	@Override
 	protected RecordExpressionImpl createExpression(Expr res, Expression oldExpr,
-	    Iterable<? extends ExpressionImpl> children) {
+			Iterable<? extends ExpressionImpl> children) {
 		return RecordExpressionImpl.create(getExpressionManager(), oldExpr
-		    .getKind(), res, oldExpr.getType(), children);
+				.getKind(), res, oldExpr.getType(), children);
 	}
 }

@@ -8,8 +8,8 @@ import edu.nyu.cascade.prover.BoundExpression;
 import edu.nyu.cascade.prover.ExpressionManager;
 
 public class DefaultBooleanEncoding extends
-    AbstractTypeEncoding<BooleanExpression> implements
-    BooleanEncoding<BooleanExpression> {
+		AbstractTypeEncoding<BooleanExpression> implements
+		BooleanEncoding<BooleanExpression> {
 	private static final String UNKNOWN_VARIABLE_NAME = "bool_encoding_unknown";
 
 	public DefaultBooleanEncoding(ExpressionManager exprManager) {
@@ -23,7 +23,7 @@ public class DefaultBooleanEncoding extends
 
 	@Override
 	public BooleanExpression and(
-	    Iterable<? extends BooleanExpression> conjuncts) {
+			Iterable<? extends BooleanExpression> conjuncts) {
 		return getExpressionManager().and(conjuncts);
 	}
 
@@ -34,13 +34,13 @@ public class DefaultBooleanEncoding extends
 
 	@Override
 	public BooleanExpression forall(Iterable<? extends BoundExpression> ids,
-	    BooleanExpression expr) {
+			BooleanExpression expr) {
 		return expr.forall(ids);
 	}
 
 	@Override
 	public BooleanExpression exists(Iterable<? extends BoundExpression> ids,
-	    BooleanExpression expr) {
+			BooleanExpression expr) {
 		return expr.exists(ids);
 	}
 
@@ -51,7 +51,7 @@ public class DefaultBooleanEncoding extends
 
 	@Override
 	public BooleanExpression implies(BooleanExpression lhs,
-	    BooleanExpression rhs) {
+			BooleanExpression rhs) {
 		return lhs.implies(rhs);
 	}
 
@@ -108,8 +108,8 @@ public class DefaultBooleanEncoding extends
 
 	@Override
 	public BooleanExpression ifThenElse(BooleanExpression b,
-	    BooleanExpression thenExpr, BooleanExpression elseExpr) {
+			BooleanExpression thenExpr, BooleanExpression elseExpr) {
 		return getExpressionManager().ifThenElse(b, thenExpr, elseExpr)
-		    .asBooleanExpression();
+				.asBooleanExpression();
 	}
 }

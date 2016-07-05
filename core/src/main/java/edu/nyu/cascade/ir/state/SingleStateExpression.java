@@ -9,7 +9,7 @@ public final class SingleStateExpression extends AbstractStateExpression {
 	private ArrayExpression mem, size, mark;
 
 	private SingleStateExpression(String _name, ArrayExpression _mem,
-	    ArrayExpression _size, ArrayExpression _mark) {
+			ArrayExpression _size, ArrayExpression _mark) {
 		name = _name;
 		mem = _mem;
 		size = _size;
@@ -21,7 +21,7 @@ public final class SingleStateExpression extends AbstractStateExpression {
 	}
 
 	static SingleStateExpression create(String name, ArrayExpression mem,
-	    ArrayExpression size, ArrayExpression mark) {
+			ArrayExpression size, ArrayExpression mark) {
 		return new SingleStateExpression(name, mem, size, mark);
 	}
 
@@ -44,7 +44,7 @@ public final class SingleStateExpression extends AbstractStateExpression {
 	public String toStringShort() {
 		StringBuilder sb = new StringBuilder();
 		sb.append(mem).append("\n").append(size).append("\n").append(mark).append(
-		    "\n");
+				"\n");
 		return sb.toString();
 	}
 

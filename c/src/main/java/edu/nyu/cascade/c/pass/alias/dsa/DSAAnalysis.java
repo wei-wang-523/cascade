@@ -31,9 +31,10 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 	private final LocalDataStructureImpl local;
 	private final SteensDataStructureImpl steens;
 	private final RegionPassImpl regPass;
-	private final Multimap<DSNodeHandle, Expression> snapshot = HashMultimap.create();
-	
-	private DSAAnalysis(SymbolTable symTbl) { 
+	private final Multimap<DSNodeHandle, Expression> snapshot = HashMultimap
+			.create();
+
+	private DSAAnalysis(SymbolTable symTbl) {
 		addrTaken = AddressTakenAnalysis.create(symTbl);
 		local = LocalDataStructureImpl.create(addrTaken).init(symTbl);
 		steens = SteensDataStructureImpl.create(local).init(symTbl);
@@ -52,7 +53,7 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 	@Override
 	public void buildSnapShot() {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
@@ -60,19 +61,19 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 		Type ty = CType.getType(node);
 		DSNodeHandle reg = getRep(node);
 		assert !CType.isArithmetic(ty) : "Invalid pointer type";
-		if (ty.resolve().isPointer()) 
+		if (ty.resolve().isPointer())
 			return reg.getLink(0);
 		else
 			return reg;
 	}
-	
+
 	public DSNodeHandle getPtsToFieldRep(DSNodeHandle rep) {
 		return rep;
 	}
 
 	@Override
 	public long getRepWidth(DSNodeHandle NH) {
-		//TODO: word-level analysis
+		// TODO: word-level analysis
 		return CType.getInstance().getByteSize();
 	}
 
@@ -85,13 +86,13 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 
 	@Override
 	public DSNodeHandle getRep(Node Node) {
-		Map<Pair<Node,String>, Region> regionMap = regPass.getRegionMap();
+		Map<Pair<Node, String>, Region> regionMap = regPass.getRegionMap();
 		String Scope = CType.getScopeName(Node);
 		assert regionMap.containsKey(Pair.of(Node, Scope)) : "No region for node";
 		Region region = regionMap.get(Pair.of(Node, Scope));
 		return new DSNodeHandle(region.getNode(), region.getOffset());
 	}
-	
+
 	@Override
 	public DSNodeHandle getStackRep(Node Node) {
 		return getRep(Node);
@@ -106,12 +107,12 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 		Region newReg = new Region(NH.getNode(), null, NH.getOffset(), length);
 		Collection<DSNodeHandle> overlapNHs = Lists.newArrayList();
 		Iterator<Region> RegItr = regPass.getRegions().iterator();
-		while(RegItr.hasNext()) {
+		while (RegItr.hasNext()) {
 			Region reg = RegItr.next();
-			if (reg.overlaps(newReg)) 
+			if (reg.overlaps(newReg))
 				overlapNHs.add(new DSNodeHandle(reg.getNode(), reg.getOffset()));
 		}
-		if(!overlapNHs.isEmpty()) {
+		if (!overlapNHs.isEmpty()) {
 			return overlapNHs;
 		} else {
 			return Collections.singleton(NH);
@@ -119,11 +120,12 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 	}
 
 	@Override
-	public void analysis(IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs) {
+	public void analysis(IRControlFlowGraph globalCFG,
+			Collection<IRControlFlowGraph> CFGs) {
 		addrTaken.analysis(globalCFG, CFGs);
 		local.analysis(globalCFG, CFGs);
 		steens.analysis(globalCFG, CFGs);
-		
+
 		if (IOUtils.debugEnabled()) {
 			IOUtils.out().println("dsa analysis: ");
 			steens.getResultGraph().dump(IOUtils.outPrinter());
@@ -134,7 +136,8 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 
 	@Override
 	public void addRegion(Expression regExpr, Node node) {
-		if (!IOUtils.debugEnabled())	return;
+		if (!IOUtils.debugEnabled())
+			return;
 		DSNodeHandle region = getPtsToRep(node);
 		snapshot.put(region, regExpr);
 		IOUtils.out().println(displaySnapShot());
@@ -142,8 +145,10 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 
 	@Override
 	public void addVar(Expression lval, Node node) {
-		if (!IOUtils.debugEnabled())	return;
-		if (CType.getType(node).resolve().isFunction()) return;
+		if (!IOUtils.debugEnabled())
+			return;
+		if (CType.getType(node).resolve().isFunction())
+			return;
 		String scope = CType.getScopeName(node);
 		Region region = regPass.getRegionMap().get(Pair.of(node, scope));
 		snapshot.put(new DSNodeHandle(region.getNode(), region.getOffset()), lval);
@@ -151,16 +156,17 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 	}
 
 	@Override
-	public Map<Range<Long>, DSNodeHandle> getStructMap(DSNodeHandle NH, long length) {
+	public Map<Range<Long>, DSNodeHandle> getStructMap(DSNodeHandle NH,
+			long length) {
 		Region newReg = new Region(NH.getNode(), null, NH.getOffset(), length);
 		Map<Range<Long>, DSNodeHandle> overlapRegions = Maps.newHashMap();
 		Iterator<Region> RegItr = regPass.getRegions().iterator();
-		while(RegItr.hasNext()) {
+		while (RegItr.hasNext()) {
 			Region reg = RegItr.next();
 			if (reg.overlaps(newReg)) {
 				long offset = reg.getOffset() - NH.getOffset();
 				assert (offset >= 0) : "negative offset";
-				overlapRegions.put(Range.closedOpen(offset, offset + reg.getLength()), 
+				overlapRegions.put(Range.closedOpen(offset, offset + reg.getLength()),
 						new DSNodeHandle(reg.getNode(), reg.getOffset()));
 			}
 		}
@@ -171,13 +177,13 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 	public Collection<IRVar> getEquivFuncVars(Node funcNode) {
 		Type funcTy = CType.getType(funcNode);
 		Collection<IRVar> Functions = Lists.newArrayList();
-		
+
 		String Scope = CType.getScopeName(funcNode);
-		Map<Pair<Node,String>, Region> regionMap = regPass.getRegionMap();
+		Map<Pair<Node, String>, Region> regionMap = regPass.getRegionMap();
 		if (!regionMap.containsKey(Pair.of(funcNode, Scope))) {
 			return Functions;
 		}
-		
+
 		DSNodeHandle NH;
 		if (funcTy.resolve().isPointer()) {
 			NH = getPtsToRep(funcNode);
@@ -185,9 +191,10 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 			NH = getRep(funcNode);
 		}
 		Collection<GlobalValue> GVs = NH.getNode().getGlobals();
-		for(GlobalValue GV : GVs) {
-			if (!(GV instanceof Function)) continue;
-			Functions.add(GV); 
+		for (GlobalValue GV : GVs) {
+			if (!(GV instanceof Function))
+				continue;
+			Functions.add(GV);
 		}
 		return Functions;
 	}
@@ -210,7 +217,8 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 		Type Ty = CType.getType(varArgElem);
 		long length = CType.getInstance().getSize(Ty);
 		Region region = new Region(VArgNH.getNode(), Ty, 0, length);
-		regPass.getRegionMap().put(Pair.of(varArgElem, CType.getScopeName(varArgElem)), region);
+		regPass.getRegionMap().put(Pair.of(varArgElem, CType.getScopeName(
+				varArgElem)), region);
 		regPass.getRegions().add(region);
 	}
 

@@ -98,174 +98,173 @@ public class Main {
 	private static final String INSUFFICIENT_UNROLL = "insufficient_loop_unroll";
 
 	private static final Options options = new Options() //
-	    .addOption(OPTION_HELP_SHORT, OPTION_HELP, false, //
-	        "Print usage information") //
-	    .addOption(OPTION_VERSION_SHORT, OPTION_VERSION, false, //
-	        "Print version and exit") //
-	    .addOption(Option.builder().longOpt(OPTION_PROPERTIES) //
-	        .hasArg() //
-	        .argName("FILE") //
-	        .type(File.class) //
-	        .desc("Specify a user properties file").build()) //
-	    .addOption(Option.builder("r").longOpt(Preferences.OPTION_REACHABILITY) //
-	        .hasArg() //
-	        .argName("LABEL") //
-	        .type(String.class) //
-	        .desc("Enable reachability of a LABEL") //
-	        .build()) //
-	    .addOption(Option.builder("i").longOpt(Preferences.OPTION_INCREMENTAL) //
-	        .desc(
-	            "Run reachability checking incrementally until reach the bound set for function inline.") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_CHECK_EXIT_UNROLL) //
-	        .desc("Check if ERROR code unreachable is due to early loop exit.") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_CHECK_KEEP_UNROLL) //
-	        .desc(
-	            "Check if loop can keep unrolling after currrent iteration time, error may exist in further loop unrolling") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(OPTION_CHECK_FUNC_INLINE).desc(
-	        "Check if the function inline bound is enough, will report unknown if it is not") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(OPTION_NO_THREADS) //
-	        .desc("Run all sub-processes in a single thread") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(OPTION_PARSEC) //
-	        .desc("Parse input as C source file") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(OPTION_DRY_RUN) //
-	        .desc("Do a dry run (no theorem prover calls)") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(OPTION_PEDANTIC) //
-	        .desc("Enforce strict C99 compliance.") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_TRACE) //
-	        .desc("Dump trace when detect failure.") //
-	        .build()) //
-	    .addOption(Option.builder("D").longOpt(OPTION_DEBUG) //
-	        .desc("Run in debug mode.") //
-	        .build()) //
-	    .addOption(Option.builder("ST").longOpt(OPTION_STATS) //
-	        .desc("Enable statistics.") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(OPTION_SMT2_FILE) //
-	        .desc("Dump theorem prover input file into FILE") //
-	        .hasArg() //
-	        .argName("FILE") //
-	        .type(File.class) //
-	        .build()).addOption(Option.builder().longOpt(
-	            Preferences.OPTION_MEM_CELL_SIZE) //
-	            .hasArg() //
-	            .argName("N") //
-	            .type(Integer.class) //
-	            .desc("Set the size of memory model cell to N.") //
-	            .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_FUNC_INLINE) //
-	        .hasArg() //
-	        .argName("N") //
-	        .type(Integer.class) //
-	        .desc("Set effort level for the function inline to N.") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_TIMEOUT) //
-	        .hasArg() //
-	        .argName("S") //
-	        .type(Integer.class) //
-	        .desc("Set timeout for Cascade to S sec.") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(OPTION_FEASIBILITY) //
-	        .desc("Check path feasibility for runs.") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(
-	        CompressedDomainNamesEncoding.OPTION_EXPLICIT_UNDEFINED) //
-	        .desc("Use explicit unknowns in datatype theories.") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(
-	        CompressedDomainNamesEncoding.OPTION_FRAME_AXIOM) //
-	        .desc("Omit the frame axiom in datatype theories.") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_SOUND_ALLOC) //
-	        .desc("Use a sound allocation model (may be slow).") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_ORDER_ALLOC) //
-	        .desc("Use an ordered allocation model (unsound).") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_M32) //
-	        .desc("Use a 32bit architecture.") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_M64) //
-	        .desc("Use a 64bit architecture.") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_VARI_CELL) //
-	        .desc(
-	            "Enable the various size of cell based on type information (for field-sensitive partition model only).") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_MODE) //
-	        .desc("Use a particular mode: Flat(default), Burstall, Partition") //
-	        .hasArg() //
-	        .type(String.class).build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_MEMORY_CHECK) //
-	        .desc("Enable checking of memory manipulations") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_INLINE_ANNOTATION) //
-	        .desc("Eable annotation inlined in code.") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_MULTI_CELL) //
-	        .desc("Enable multi-cell datatype formatter.") //
-	        .build()) //
-	    .addOption(Option.builder("sbe").longOpt(Preferences.OPTION_SBE) //
-	        .desc("Small block-based encoding") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_PLUGINS_DIRECTORY) //
-	        .desc("Directory where Cascade plugins are stored.") //
-	        .hasArg() //
-	        .argName("DIR") //
-	        .type(File.class) //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_ITERATION_TIMES)
-	        .desc("Default iteration times of loop unrolling.").hasArg() //
-	        .argName("N") //
-	        .type(Integer.class) //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_LAMBDA) //
-	        .desc("Enable lambda encoding.") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_STMT) //
-	        .desc("Enable statement based lambda encoding.") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_HOARE) //
-	        .desc("Enable hoare encoding (treate stack variables without" //
-	            + " & op as pure logic variable .") //
-	        .build()) //
-	    .addOption(Option.builder("fs").longOpt(
-	        Preferences.OPTION_FIELD_SENSITIVE) //
-	        .desc("Enable field sensitive pointer analysis.") //
-	        .build()) //
-	    .addOption(Option.builder("cfs").longOpt(
-	        Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE) //
-	        .desc("Enable cell based field sensitive pointer analysis.") //
-	        .build()) //
-	    .addOption(Option.builder("cfscs").longOpt(
-	        Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE) //
-	        .desc("Enable cell based field sensitive and context sensitive " //
-	            + "pointer analysis.") //
-	        .build()) //
-	    .addOption(Option.builder("dsa").longOpt(Preferences.OPTION_DSA) //
-	        .desc("Enable data-structure alias analysis.") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_CFS_POINTER_ARITH) //
-	        .desc(
-	            "Enable optimization of pointer arithmetic in cfs pointer "
-	            + "analysis.") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_INLINE_MALLOC) //
-	        .desc("Inline malloc function") //
-	        .build()) //
-	    .addOption(Option.builder().longOpt(Preferences.OPTION_TWOROUND_MEMCHECK) //
-	        .desc("Two round memory check") //
-	        .build());
+			.addOption(OPTION_HELP_SHORT, OPTION_HELP, false, //
+					"Print usage information") //
+			.addOption(OPTION_VERSION_SHORT, OPTION_VERSION, false, //
+					"Print version and exit") //
+			.addOption(Option.builder().longOpt(OPTION_PROPERTIES) //
+					.hasArg() //
+					.argName("FILE") //
+					.type(File.class) //
+					.desc("Specify a user properties file").build()) //
+			.addOption(Option.builder("r").longOpt(Preferences.OPTION_REACHABILITY) //
+					.hasArg() //
+					.argName("LABEL") //
+					.type(String.class) //
+					.desc("Enable reachability of a LABEL") //
+					.build()) //
+			.addOption(Option.builder("i").longOpt(Preferences.OPTION_INCREMENTAL) //
+					.desc(
+							"Run reachability checking incrementally until reach the bound set for function inline.") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_CHECK_EXIT_UNROLL) //
+					.desc("Check if ERROR code unreachable is due to early loop exit.") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_CHECK_KEEP_UNROLL) //
+					.desc(
+							"Check if loop can keep unrolling after currrent iteration time, error may exist in further loop unrolling") //
+					.build()) //
+			.addOption(Option.builder().longOpt(OPTION_CHECK_FUNC_INLINE).desc(
+					"Check if the function inline bound is enough, will report unknown if it is not") //
+					.build()) //
+			.addOption(Option.builder().longOpt(OPTION_NO_THREADS) //
+					.desc("Run all sub-processes in a single thread") //
+					.build()) //
+			.addOption(Option.builder().longOpt(OPTION_PARSEC) //
+					.desc("Parse input as C source file") //
+					.build()) //
+			.addOption(Option.builder().longOpt(OPTION_DRY_RUN) //
+					.desc("Do a dry run (no theorem prover calls)") //
+					.build()) //
+			.addOption(Option.builder().longOpt(OPTION_PEDANTIC) //
+					.desc("Enforce strict C99 compliance.") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_TRACE) //
+					.desc("Dump trace when detect failure.") //
+					.build()) //
+			.addOption(Option.builder("D").longOpt(OPTION_DEBUG) //
+					.desc("Run in debug mode.") //
+					.build()) //
+			.addOption(Option.builder("ST").longOpt(OPTION_STATS) //
+					.desc("Enable statistics.") //
+					.build()) //
+			.addOption(Option.builder().longOpt(OPTION_SMT2_FILE) //
+					.desc("Dump theorem prover input file into FILE") //
+					.hasArg() //
+					.argName("FILE") //
+					.type(File.class) //
+					.build()).addOption(Option.builder().longOpt(
+							Preferences.OPTION_MEM_CELL_SIZE) //
+							.hasArg() //
+							.argName("N") //
+							.type(Integer.class) //
+							.desc("Set the size of memory model cell to N.") //
+							.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_FUNC_INLINE) //
+					.hasArg() //
+					.argName("N") //
+					.type(Integer.class) //
+					.desc("Set effort level for the function inline to N.") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_TIMEOUT) //
+					.hasArg() //
+					.argName("S") //
+					.type(Integer.class) //
+					.desc("Set timeout for Cascade to S sec.") //
+					.build()) //
+			.addOption(Option.builder().longOpt(OPTION_FEASIBILITY) //
+					.desc("Check path feasibility for runs.") //
+					.build()) //
+			.addOption(Option.builder().longOpt(
+					CompressedDomainNamesEncoding.OPTION_EXPLICIT_UNDEFINED) //
+					.desc("Use explicit unknowns in datatype theories.") //
+					.build()) //
+			.addOption(Option.builder().longOpt(
+					CompressedDomainNamesEncoding.OPTION_FRAME_AXIOM) //
+					.desc("Omit the frame axiom in datatype theories.") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_SOUND_ALLOC) //
+					.desc("Use a sound allocation model (may be slow).") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_ORDER_ALLOC) //
+					.desc("Use an ordered allocation model (unsound).") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_M32) //
+					.desc("Use a 32bit architecture.") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_M64) //
+					.desc("Use a 64bit architecture.") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_VARI_CELL) //
+					.desc(
+							"Enable the various size of cell based on type information (for field-sensitive partition model only).") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_MODE) //
+					.desc("Use a particular mode: Flat(default), Burstall, Partition") //
+					.hasArg() //
+					.type(String.class).build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_MEMORY_CHECK) //
+					.desc("Enable checking of memory manipulations") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_INLINE_ANNOTATION) //
+					.desc("Eable annotation inlined in code.") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_MULTI_CELL) //
+					.desc("Enable multi-cell datatype formatter.") //
+					.build()) //
+			.addOption(Option.builder("sbe").longOpt(Preferences.OPTION_SBE) //
+					.desc("Small block-based encoding") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_PLUGINS_DIRECTORY) //
+					.desc("Directory where Cascade plugins are stored.") //
+					.hasArg() //
+					.argName("DIR") //
+					.type(File.class) //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_ITERATION_TIMES)
+					.desc("Default iteration times of loop unrolling.").hasArg() //
+					.argName("N") //
+					.type(Integer.class) //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_LAMBDA) //
+					.desc("Enable lambda encoding.") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_STMT) //
+					.desc("Enable statement based lambda encoding.") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_HOARE) //
+					.desc("Enable hoare encoding (treate stack variables without" //
+							+ " & op as pure logic variable .") //
+					.build()) //
+			.addOption(Option.builder("fs").longOpt(
+					Preferences.OPTION_FIELD_SENSITIVE) //
+					.desc("Enable field sensitive pointer analysis.") //
+					.build()) //
+			.addOption(Option.builder("cfs").longOpt(
+					Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE) //
+					.desc("Enable cell based field sensitive pointer analysis.") //
+					.build()) //
+			.addOption(Option.builder("cfscs").longOpt(
+					Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE) //
+					.desc("Enable cell based field sensitive and context sensitive " //
+							+ "pointer analysis.") //
+					.build()) //
+			.addOption(Option.builder("dsa").longOpt(Preferences.OPTION_DSA) //
+					.desc("Enable data-structure alias analysis.") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_CFS_POINTER_ARITH) //
+					.desc("Enable optimization of pointer arithmetic in cfs pointer "
+							+ "analysis.") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_INLINE_MALLOC) //
+					.desc("Inline malloc function") //
+					.build()) //
+			.addOption(Option.builder().longOpt(Preferences.OPTION_TWOROUND_MEMCHECK) //
+					.desc("Two round memory check") //
+					.build());
 
 	public static void main(String[] args) throws IOException, ParseException,
-	    TheoremProverException {
+			TheoremProverException {
 		IOUtils.enableOut();
 		IOUtils.enableErr();
 
@@ -298,7 +297,7 @@ public class Main {
 
 	interface EncodingStrategy {
 		SafeResult apply(RunProcessor processor, IRControlFlowGraph cfg,
-		    LoopInfo loopInfo, Integer iterTimes) throws RunProcessorException;
+				LoopInfo loopInfo, Integer iterTimes) throws RunProcessorException;
 	}
 
 	@Inject
@@ -355,8 +354,8 @@ public class Main {
 		// The following are needed by CAnalyzer.
 		// We'll fill them in with appropriate values in prepare()
 		runtime.bool(OPTION_MARK_AST, OPTION_MARK_AST, true,
-		    "Mark AST nodes with types.").bool(OPTION_PEDANTIC,
-		        OPTION_INTERNAL_PEDANTIC, false, "Enforce strict C99 compliance.");
+				"Mark AST nodes with types.").bool(OPTION_PEDANTIC,
+						OPTION_INTERNAL_PEDANTIC, false, "Enforce strict C99 compliance.");
 
 		TheoremProverFactory.discover();
 
@@ -388,7 +387,7 @@ public class Main {
 			File preprocessedSource = preprocessToTempFile(in, file);
 			Reader preprocessedInput = new FileReader(preprocessedSource);
 			parser = new CParser(preprocessedInput, preprocessedSource.toString(),
-			    (int) preprocessedSource.length());
+					(int) preprocessedSource.length());
 			result = parser.pTranslationUnit(0);
 
 			preprocessedSource.delete();
@@ -406,7 +405,7 @@ public class Main {
 				int returnCode = cppProcess.get();
 				if (returnCode != 0) {
 					throw new ParseException("Preprocessor failed (retcode=" + returnCode
-					    + ")");
+							+ ")");
 				}
 			} catch (InterruptedException e) {
 				throw new AssertionError("Unexpected interrupt");
@@ -429,7 +428,7 @@ public class Main {
 		Preconditions.checkArgument(symbolTable == null);
 		runtime.initDefaultValues();
 		runtime.setValue(OPTION_INTERNAL_PEDANTIC, Preferences.isSet(
-		    OPTION_PEDANTIC));
+				OPTION_PEDANTIC));
 		cAnalyzer = new CAnalyzer(CType.getInstance().c(), runtime);
 
 		if (Preferences.isSet(OPTION_DEBUG)) {
@@ -446,7 +445,7 @@ public class Main {
 			if (Preferences.isSet(OPTION_SMT2_FILE)) {
 				IOUtils.enableTpFile();
 				IOUtils.setTpFileStream(new PrintStream(Preferences.getFile(
-				    OPTION_SMT2_FILE)));
+						OPTION_SMT2_FILE)));
 			}
 		} catch (FileNotFoundException e) {
 			failOnException(e);
@@ -454,7 +453,7 @@ public class Main {
 
 		/* Set the byte-based or value-based encoding */
 		if (Preferences.isSet(Preferences.OPTION_MULTI_CELL) || Preferences.isSet(
-		    Preferences.OPTION_VARI_CELL)) {
+				Preferences.OPTION_VARI_CELL)) {
 			Preferences.set(Preferences.OPTION_BYTE_BASED);
 		}
 
@@ -475,7 +474,7 @@ public class Main {
 	}
 
 	private File preprocessToTempFile(Reader source, File file)
-	    throws IOException, ParseException {
+			throws IOException, ParseException {
 		String cpp_command = Preferences.getString(C_PREPROCESSOR_TO_FILE);
 		assert (cpp_command != null);
 		IOUtils.debug().pln("cpp_command: \'" + cpp_command + "\'");
@@ -492,7 +491,7 @@ public class Main {
 			if (returnCode != 0) {
 				preprocessedSource.delete();
 				throw new ParseException("Preprocessor failed (retcode=" + returnCode
-				    + ")");
+						+ ")");
 			}
 			return preprocessedSource;
 		} catch (InterruptedException e) {
@@ -503,7 +502,7 @@ public class Main {
 
 	private void printUsage() {
 		IOUtils.err().print(getName() + ", v. " + getVersion() + ", " + getCopy()
-		    + "\n\n");
+				+ "\n\n");
 		String name = System.getenv("_");
 		if (null != name) {
 			name = new File(name).getName();
@@ -512,7 +511,7 @@ public class Main {
 		}
 		PrintWriter writer = new PrintWriter(IOUtils.err());
 		new HelpFormatter().printHelp(writer, 78, name
-		    + " [OPTIONS...] FILE [FILES...]\n", "Options:", options, 2, 4, "");
+				+ " [OPTIONS...] FILE [FILES...]\n", "Options:", options, 2, 4, "");
 		writer.flush();
 	}
 
@@ -539,11 +538,11 @@ public class Main {
 		long solverTime = theoremProver.getStatsTime();
 		double encoding = (runTime - solverTime) / 1000.0;
 		out.append("Encoding took ").append(String.valueOf(encoding)).append('s')
-		    .append('\n');
+				.append('\n');
 		out.append(theoremProver.getProviderName()).append(" took ").append(String
-		    .valueOf(solverTime / 1000.0)).append('s').append('\n');
+				.valueOf(solverTime / 1000.0)).append('s').append('\n');
 		out.append(getName()).append(" took ").append(String.valueOf(runTime
-		    / 1000.0)).append('s').append('\n');
+				/ 1000.0)).append('s').append('\n');
 		out.flush();
 	}
 
@@ -576,14 +575,14 @@ public class Main {
 		IOUtils.debug().pln("<source>").incr().flush();
 		IOUtils.debugC(ast);
 		IOUtils.debug().decr().pln("\n</source>").pln("<ast>").incr().format(ast)
-		    .decr().pln("\n</ast>").flush();
+				.decr().pln("\n</ast>").flush();
 
 		xtc.util.SymbolTable xtcSymbolTable = cAnalyzer.analyze(ast);
 		symbolTable = CSymbolTable.create(file, symbolTableFactory, xtcSymbolTable);
 		Map<Node, IRControlFlowGraph> currCfgs = CfgBuilder.getCfgs(symbolTable,
-		    ast, callGraph);
+				ast, callGraph);
 		FuncInlineProcessor<?> funcInliner = FuncInlineProcessor.create(
-		    symbolTable);
+				symbolTable);
 		funcInliner.inlineMalloc(currCfgs, callGraph);
 		cfgs.putAll(currCfgs);
 	}
@@ -646,7 +645,7 @@ public class Main {
 				assert (FileUtils.isCSourceFile(file) || FileUtils.isISourceFile(file));
 
 				Preferences.set(OPTION_NO_THREADS); // threads will cause broken pipe in
-				                                    // parse source file
+																						// parse source file
 
 				try {
 
@@ -667,14 +666,14 @@ public class Main {
 					Mode mode = AbstractMode.getMode(theoremProver);
 
 					RunProcessor runProcessor = RunProcessorImpl.create(mode, symbolTable,
-					    cfgs, callGraph);
+							cfgs, callGraph);
 
 					if (Preferences.isSet(Preferences.OPTION_TRACE))
 						IOUtils.enableTrace(file);
 
 					if (Preferences.isSet(Preferences.OPTION_REACHABILITY)) {
 						final String label = Preferences.getString(
-						    Preferences.OPTION_REACHABILITY);
+								Preferences.OPTION_REACHABILITY);
 						runProcessor.init(label);
 						if (!preprocess(runProcessor, mainCfg))
 							return;
@@ -688,10 +687,10 @@ public class Main {
 						check(runProcessor, mainCfg, new EncodingStrategy() {
 							@Override
 							public SafeResult apply(RunProcessor processor,
-						      IRControlFlowGraph cfg, LoopInfo loopInfo, Integer iterTimes)
-						      throws RunProcessorException {
+									IRControlFlowGraph cfg, LoopInfo loopInfo, Integer iterTimes)
+									throws RunProcessorException {
 								return processor.processReachability(cfg, loopInfo, label,
-						        iterTimes);
+										iterTimes);
 							}
 						});
 					} else {
@@ -708,8 +707,8 @@ public class Main {
 						check(runProcessor, mainCfg, new EncodingStrategy() {
 							@Override
 							public SafeResult apply(RunProcessor processor,
-						      IRControlFlowGraph cfg, LoopInfo loopInfo, Integer iterTimes)
-						      throws RunProcessorException {
+									IRControlFlowGraph cfg, LoopInfo loopInfo, Integer iterTimes)
+									throws RunProcessorException {
 								return processor.processAssertion(cfg, loopInfo, iterTimes);
 							}
 						});
@@ -760,7 +759,7 @@ public class Main {
 	}
 
 	private boolean preprocess(RunProcessor runProcessor,
-	    IRControlFlowGraph mainCfg) {
+			IRControlFlowGraph mainCfg) {
 		if (Preferences.isSet(OPTION_FEASIBILITY))
 			runProcessor.enableFeasibilityChecking();
 
@@ -769,13 +768,13 @@ public class Main {
 
 		double aliastime = StatsTimer.cascadeElapseTime() - preTime;
 		IOUtils.err().println("Points-to-analysis took " + aliastime / 1000.0
-		    + "s");
+				+ "s");
 
 		/* Merge graph and function inline */
 		runProcessor.prepare(mainCfg);
 
 		if (Preferences.isSet(OPTION_CHECK_FUNC_INLINE) && !runProcessor
-		    .isFullyFuncInlined(mainCfg)) {
+				.isFullyFuncInlined(mainCfg)) {
 			safeResult = SafeResult.unknown("Insufficient_function_inline");
 			printResult(0, IOUtils.outPrinter());
 			return false;
@@ -785,7 +784,7 @@ public class Main {
 	}
 
 	private void check(RunProcessor runProcessor, IRControlFlowGraph mainCfg,
-	    EncodingStrategy strategy) throws RunProcessorException {
+			EncodingStrategy strategy) throws RunProcessorException {
 
 		LoopInfo loopInfo = LoopInfoUtil.analyze(mainCfg);
 
@@ -802,7 +801,7 @@ public class Main {
 
 		if (!Preferences.isSet(Preferences.OPTION_INCREMENTAL)) {
 			int iterTime = Preferences.isSet(Preferences.OPTION_ITERATION_TIMES)
-			    ? Preferences.getInt(Preferences.OPTION_ITERATION_TIMES) : 0;
+					? Preferences.getInt(Preferences.OPTION_ITERATION_TIMES) : 0;
 
 			safeResult = strategy.apply(runProcessor, mainCfg, loopInfo, iterTime);
 			printResult(iterTime, IOUtils.outPrinter());
@@ -810,11 +809,11 @@ public class Main {
 				runProcessor.dumpErrorTrace(mainCfg);
 		} else {
 			Collection<Integer> iterTimesSet = Sets.newTreeSet(
-			    Preferences.REACH_MAGIC_ITER_TIMES);
+					Preferences.REACH_MAGIC_ITER_TIMES);
 			boolean checkKeepUnroll = Preferences.isSet(
-			    Preferences.OPTION_CHECK_KEEP_UNROLL);
+					Preferences.OPTION_CHECK_KEEP_UNROLL);
 			boolean checkExitUnroll = Preferences.isSet(
-			    Preferences.OPTION_CHECK_EXIT_UNROLL);
+					Preferences.OPTION_CHECK_EXIT_UNROLL);
 
 			for (int currIterTime : iterTimesSet) {
 				if (checkKeepUnroll)
@@ -823,7 +822,7 @@ public class Main {
 					runProcessor.enableCheckExitUnroll();
 
 				safeResult = strategy.apply(runProcessor, mainCfg, loopInfo,
-				    currIterTime);
+						currIterTime);
 				if (safeResult.isUnsafe()) {
 					printResult(currIterTime, IOUtils.outPrinter());
 					runProcessor.dumpErrorTrace(mainCfg);
@@ -852,9 +851,9 @@ public class Main {
 
 	private void printResult(int iterTime, Printer printer) {
 		String funcInline = Preferences.isSet(Preferences.OPTION_FUNC_INLINE)
-		    ? Preferences.getString(Preferences.OPTION_FUNC_INLINE) : "all-inline";
+				? Preferences.getString(Preferences.OPTION_FUNC_INLINE) : "all-inline";
 		IOUtils.outPrinter().p('{').p(iterTime).p(':').p(funcInline).p("}..").p(
-		    safeResult.toString()).pln();
+				safeResult.toString()).pln();
 	}
 
 	/**
@@ -865,7 +864,7 @@ public class Main {
 	 *           if an I/O error occurs
 	 */
 	private PipedInputProcess startPreprocessorThread(Reader source, File file)
-	    throws IOException {
+			throws IOException {
 		String cpp_command = Preferences.getString(C_PREPROCESSOR);
 		assert (cpp_command != null);
 		IOUtils.debug().pln("cpp_command: \'" + cpp_command + "\'");

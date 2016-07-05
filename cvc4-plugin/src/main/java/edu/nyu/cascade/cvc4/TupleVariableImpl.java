@@ -7,20 +7,20 @@ import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.Type;
 
 final class TupleVariableImpl extends VariableExpressionImpl implements
-    TupleExpression {
+		TupleExpression {
 
 	static TupleVariableImpl create(ExpressionManagerImpl exprManager,
-	    String name, TupleTypeImpl type, boolean fresh) {
+			String name, TupleTypeImpl type, boolean fresh) {
 		return new TupleVariableImpl(exprManager, name, type, fresh);
 	}
 
 	private TupleVariableImpl(ExpressionManagerImpl exprManager, String name,
-	    TupleTypeImpl type, boolean fresh) {
+			TupleTypeImpl type, boolean fresh) {
 		super(exprManager, name, type, fresh);
 	}
 
 	private TupleVariableImpl(ExpressionManagerImpl em, String name, Type type,
-	    boolean fresh) {
+			boolean fresh) {
 		super(em, name, type, fresh);
 		Preconditions.checkArgument(type.isTuple());
 	}
@@ -43,6 +43,6 @@ final class TupleVariableImpl extends VariableExpressionImpl implements
 	@Override
 	public TupleExpression update(int index, Expression val) {
 		return TupleExpressionImpl.mkUpdate(getExpressionManager(), this, index,
-		    val);
+				val);
 	}
 }

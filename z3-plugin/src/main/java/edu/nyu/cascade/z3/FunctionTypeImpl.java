@@ -13,14 +13,14 @@ import edu.nyu.cascade.prover.type.Type;
 final class FunctionTypeImpl extends TypeImpl implements FunctionType {
 
 	static FunctionTypeImpl create(final ExpressionManagerImpl exprManager,
-	    Iterable<? extends Type> argTypes, Type range) {
+			Iterable<? extends Type> argTypes, Type range) {
 		Iterable<TypeImpl> argTypes1 = Iterables.transform(argTypes,
-		    new Function<Type, TypeImpl>() {
-			    @Override
-			    public TypeImpl apply(Type t) {
-				    return exprManager.importType(t);
-			    }
-		    });
+				new Function<Type, TypeImpl>() {
+					@Override
+					public TypeImpl apply(Type t) {
+						return exprManager.importType(t);
+					}
+				});
 
 		TypeImpl rangeType = exprManager.importType(range);
 
@@ -32,7 +32,7 @@ final class FunctionTypeImpl extends TypeImpl implements FunctionType {
 			return (FunctionTypeImpl) t;
 		} else {
 			return create(exprManager, ((FunctionType) t).getArgTypes(),
-			    ((FunctionType) t).getRangeType());
+					((FunctionType) t).getRangeType());
 		}
 	}
 
@@ -40,7 +40,7 @@ final class FunctionTypeImpl extends TypeImpl implements FunctionType {
 	private final TypeImpl rangeType;
 
 	private FunctionTypeImpl(final ExpressionManagerImpl exprManager,
-	    Iterable<? extends TypeImpl> argTypes, TypeImpl range) {
+			Iterable<? extends TypeImpl> argTypes, TypeImpl range) {
 		super(exprManager);
 		this.argTypes = ImmutableList.copyOf(argTypes);
 		this.rangeType = range;
@@ -78,7 +78,7 @@ final class FunctionTypeImpl extends TypeImpl implements FunctionType {
 
 	@Override
 	ExpressionImpl createExpression(Expr res, Expression oldExpr,
-	    Iterable<? extends ExpressionImpl> children) {
+			Iterable<? extends ExpressionImpl> children) {
 		throw new UnsupportedOperationException();
 	}
 

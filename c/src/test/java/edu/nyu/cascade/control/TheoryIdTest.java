@@ -20,7 +20,7 @@ public class TheoryIdTest {
 
 	@Test
 	public void testToTheory() throws TheoremProverException,
-	    ControlFileException {
+			ControlFileException {
 		String qname = CompressedDomainNames.class.getName();
 		TheoryId tid = new TheoryId(qname);
 		Assert.assertNotNull(tid.getInstance(exprManager));

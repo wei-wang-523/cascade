@@ -37,7 +37,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 	}
 
 	public static <T> StateFactory<T> create(
-	    AbstractStateFactory<T> _stateFactory) {
+			AbstractStateFactory<T> _stateFactory) {
 		return new HoareStateFactory<T>(_stateFactory);
 	}
 
@@ -52,7 +52,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 		int preStatesSize = preStates.size();
 		Map<Expression, Multimap<Expression, BooleanExpression>> hoareGuardTable = Maps
-		    .newHashMap();
+				.newHashMap();
 
 		for (StateExpression preState : preStates) {
 			BooleanExpression guard = preState.getGuard();
@@ -75,16 +75,16 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 		Collection<Expression> keySet = hoareGuardTable.keySet();
 		Map<Expression, Expression> joinHoareMap = Maps.newHashMapWithExpectedSize(
-		    keySet.size());
+				keySet.size());
 		ExpressionEncoding encoding = getExpressionEncoding();
 		for (Expression key : keySet) {
 			Multimap<Expression, BooleanExpression> guardHoareMap = hoareGuardTable
-			    .get(key);
+					.get(key);
 			Expression joinValue;
 			if (guardHoareMap.size() < preStatesSize) {
 				Expression defaultValue = encoding.getRvalBinding(key);
 				joinValue = stateFactory.getITEExpressionWithDefaultValue(guardHoareMap,
-				    defaultValue);
+						defaultValue);
 			} else {
 				joinValue = stateFactory.getITEExpression(guardHoareMap);
 			}
@@ -97,13 +97,13 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public BooleanExpression applyValidMalloc(StateExpression state,
-	    Expression ptr, Expression size, Node pNode) {
+			Expression ptr, Expression size, Node pNode) {
 		return stateFactory.applyValidMalloc(state, ptr, size, pNode);
 	}
 
 	@Override
 	public BooleanExpression applyValidFree(StateExpression state, Expression ptr,
-	    Node pNode) {
+			Node pNode) {
 		return stateFactory.applyValidFree(state, ptr, pNode);
 	}
 
@@ -114,27 +114,27 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public BooleanExpression applyMemset(StateExpression state, Expression region,
-	    Expression size, Expression value, Node ptrNode) {
+			Expression size, Expression value, Node ptrNode) {
 		return stateFactory.applyMemset(state, region, size, value, ptrNode);
 	}
 
 	@Override
 	public BooleanExpression applyMemset(StateExpression state, Expression region,
-	    Expression size, int value, Node ptrNode) {
+			Expression size, int value, Node ptrNode) {
 		return stateFactory.applyMemset(state, region, size, value, ptrNode);
 	}
 
 	@Override
 	public BooleanExpression applyMemcpy(StateExpression state,
-	    Expression destRegion, Expression srcRegion, Expression size,
-	    Node destNode, Node srcNode) {
+			Expression destRegion, Expression srcRegion, Expression size,
+			Node destNode, Node srcNode) {
 		return stateFactory.applyMemcpy(state, destRegion, srcRegion, size,
-		    destNode, srcNode);
+				destNode, srcNode);
 	}
 
 	@Override
 	public BooleanExpression validAccess(StateExpression state, Expression ptr,
-	    Node pNode) {
+			Node pNode) {
 		if (ptr.isHoareLogic())
 			return stateFactory.getExpressionManager().tt();
 		else
@@ -143,7 +143,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public BooleanExpression validAccessRange(StateExpression state,
-	    Expression ptr, Expression size, Node pNode) {
+			Expression ptr, Expression size, Node pNode) {
 		return stateFactory.validAccessRange(state, ptr, size, pNode);
 	}
 
@@ -159,7 +159,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public void malloc(StateExpression state, Expression ptr, Expression size,
-	    Node ptrNode) {
+			Node ptrNode) {
 		if (ptr.isHoareLogic()) {
 			VariableExpression region = stateFactory.createFreshRegion();
 			state.addRegion(region);
@@ -176,7 +176,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public void calloc(StateExpression state, Expression ptr, Expression nitem,
-	    Expression size, Node ptrNode) {
+			Expression size, Node ptrNode) {
 		if (ptr.isHoareLogic()) {
 			ExpressionEncoding encoding = getExpressionEncoding();
 
@@ -191,7 +191,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 			stateFactory.plusRegionSize(state, multSize);
 			state.addConstraint(applyValidMalloc(state, region, multSize, ptrNode));
 			state.addConstraint(applyMemset(state, region, multSize,
-			    getExpressionEncoding().characterConstant(0), ptrNode));
+					getExpressionEncoding().characterConstant(0), ptrNode));
 		} else {
 			stateFactory.calloc(state, ptr, nitem, size, ptrNode);
 		}
@@ -199,7 +199,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public void alloca(StateExpression state, Expression ptr, Expression size,
-	    Node ptrNode) {
+			Node ptrNode) {
 		if (ptr.isHoareLogic()) {
 			VariableExpression region = stateFactory.createFreshRegion();
 			state.addRegion(region);
@@ -213,7 +213,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public void assign(StateExpression state, Expression memIdx, Node idxNode,
-	    Expression memVal, Node valNode) {
+			Expression memVal, Node valNode) {
 		if (memIdx.isHoareLogic()) {
 			updateHoareMemState(state, memIdx, idxNode, memVal, valNode);
 		} else {
@@ -228,11 +228,11 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public Expression deref(StateExpression state, Expression memIdx,
-	    Node memIdxNode) {
+			Node memIdxNode) {
 		if (memIdx.isHoareLogic()) {
 			Map<Expression, Expression> hoareMap = state.getHoareValues();
 			return hoareMap.containsKey(memIdx) ? hoareMap.get(memIdx)
-			    : stateFactory.getExpressionEncoding().getRvalBinding(memIdx);
+					: stateFactory.getExpressionEncoding().getRvalBinding(memIdx);
 		} else {
 			return stateFactory.deref(state, memIdx, memIdxNode);
 		}
@@ -240,7 +240,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public Expression lookupSize(StateExpression state, Expression ptr,
-	    Node node) {
+			Node node) {
 		return stateFactory.lookupSize(state, ptr, node);
 	}
 
@@ -251,7 +251,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public void addStackVar(StateExpression state, Expression lval,
-	    IRVarInfo info) {
+			IRVarInfo info) {
 		if (lval.isHoareLogic()) {
 			if (!info.isStatic())
 				state.addVar(lval.asVariable());
@@ -265,7 +265,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public void addStackArray(StateExpression state, Expression lval,
-	    Expression rval, IRVarInfo info, Node sourceNode) {
+			Expression rval, IRVarInfo info, Node sourceNode) {
 		stateFactory.addStackArray(state, lval, rval, info, sourceNode);
 	}
 
@@ -276,7 +276,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public void propagateState(StateExpression cleanState,
-	    StateExpression stateArg) {
+			StateExpression stateArg) {
 		Collection<Expression> fromElems = Lists.newArrayList();
 		Collection<Expression> toElems = Lists.newArrayList();
 		Collection<Expression> fromPredicates = Lists.newArrayList();
@@ -290,9 +290,9 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 		cleanState.addConstraint(stateArg.getConstraint());
 
 		stateFactory.getSubstPredicatesPair(cleanState, stateArg, fromPredicates,
-		    toPredicates);
+				toPredicates);
 		stateFactory.substPredicatesConstraint(cleanState, fromPredicates,
-		    toPredicates);
+				toPredicates);
 		stateFactory.substAssertions(cleanState, fromPredicates, toPredicates);
 
 		stateFactory.propagateAssertions(stateArg, cleanState);
@@ -316,8 +316,8 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public void substitute(StateExpression state,
-	    Collection<? extends Expression> fromElems,
-	    Collection<? extends Expression> toElems) {
+			Collection<? extends Expression> fromElems,
+			Collection<? extends Expression> toElems) {
 		if (fromElems.isEmpty())
 			return;
 		stateFactory.substitute(state, fromElems, toElems);
@@ -326,7 +326,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public void setValidAccess(StateExpression pre, Expression lhsExpr,
-	    Node lNode) {
+			Node lNode) {
 		if (!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK))
 			return;
 		if (lhsExpr.isHoareLogic())
@@ -343,14 +343,14 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public void setValidAccessRange(StateExpression pre, Expression lhsExpr,
-	    Expression sizeExpr, Node lNode) {
+			Expression sizeExpr, Node lNode) {
 		if (!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK))
 			return;
 		if (lhsExpr.isHoareLogic())
 			return;
 
 		BooleanExpression validAccess = validAccessRange(pre, lhsExpr, sizeExpr,
-		    lNode);
+				lNode);
 		BooleanExpression tt = stateFactory.getExpressionManager().tt();
 		if (validAccess.equals(tt))
 			return;
@@ -361,7 +361,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public void setValidFree(StateExpression pre, Expression regionExpr,
-	    Node ptrNode) {
+			Node ptrNode) {
 		if (!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK))
 			return;
 		BooleanExpression validFree = applyValidFree(pre, regionExpr, ptrNode);
@@ -384,7 +384,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 	}
 
 	private void updateHoareMemState(StateExpression state, Expression index,
-	    Node idxNode, Expression value, @Nullable Node valNode) {
+			Node idxNode, Expression value, @Nullable Node valNode) {
 		Preconditions.checkArgument(index.isHoareLogic());
 		ExpressionEncoding encoding = stateFactory.getExpressionEncoding();
 
@@ -393,7 +393,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 			value = encoding.castToBoolean(value);
 		} else {
 			boolean isUnsigned = valNode != null && CType.isUnsigned(CType.getType(
-			    valNode));
+					valNode));
 			int size = (int) stateFactory.getCTypeAnalyzer().getWidth(idxType);
 			value = encoding.castToInteger(value, size, !isUnsigned);
 		}
@@ -401,8 +401,8 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 	}
 
 	private void substHoareMap(StateExpression state,
-	    Collection<? extends Expression> fromElems,
-	    Collection<? extends Expression> toElems) {
+			Collection<? extends Expression> fromElems,
+			Collection<? extends Expression> toElems) {
 		Map<Expression, Expression> hoareMap = state.getHoareValues();
 		for (Expression idx : ImmutableSet.copyOf(hoareMap.keySet())) {
 			Expression value = hoareMap.remove(idx);
@@ -414,7 +414,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 	}
 
 	private void propagateMap(StateExpression fromState,
-	    StateExpression toState) {
+			StateExpression toState) {
 		Map<Expression, Expression> fromHoareMap = fromState.getHoareValues();
 		Map<Expression, Expression> toHoareMap = toState.getHoareValues();
 
@@ -426,7 +426,7 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 	}
 
 	private void getSubstVars(StateExpression state,
-	    Collection<Expression> fromElems, Collection<Expression> toElems) {
+			Collection<Expression> fromElems, Collection<Expression> toElems) {
 		Map<Expression, Expression> hoareMap = state.getHoareValues();
 		ExpressionEncoding encoding = stateFactory.getExpressionEncoding();
 		for (Entry<Expression, Expression> entry : hoareMap.entrySet()) {

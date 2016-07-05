@@ -13,15 +13,15 @@ import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.prover.type.Type;
 
 final class UninterpretedExpressionImpl extends ExpressionImpl implements
-    UninterpretedExpression {
+		UninterpretedExpression {
 
 	static UninterpretedExpressionImpl create(ExpressionManagerImpl exprManager,
-	    Type type, String name) {
+			Type type, String name) {
 		return new UninterpretedExpressionImpl(exprManager, type, name);
 	}
 
 	private UninterpretedExpressionImpl(final ExpressionManagerImpl exprManager,
-	    final Type type, final String name) {
+			final Type type, final String name) {
 		super(exprManager, UNINTERPRETED, new NullaryConstructionStrategy() {
 			@Override
 			public Expr apply(Context ctx) throws Z3Exception {
@@ -37,20 +37,20 @@ final class UninterpretedExpressionImpl extends ExpressionImpl implements
 	}
 
 	private UninterpretedExpressionImpl(ExpressionManagerImpl em, Kind kind,
-	    Expr expr, UninterpretedType type,
-	    Iterable<? extends ExpressionImpl> children) {
+			Expr expr, UninterpretedType type,
+			Iterable<? extends ExpressionImpl> children) {
 		super(em, kind, expr, type, children);
 	}
 
 	static UninterpretedExpressionImpl create(ExpressionManagerImpl em, Kind kind,
-	    Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
+			Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
 		Preconditions.checkArgument(type.isUninterpreted());
 		return new UninterpretedExpressionImpl(em, kind, expr, type
-		    .asUninterpreted(), children);
+				.asUninterpreted(), children);
 	}
 
 	static UninterpretedExpressionImpl valueOf(ExpressionManagerImpl exprManager,
-	    ExpressionImpl expr) {
+			ExpressionImpl expr) {
 		Preconditions.checkArgument(expr.isUninterpreted());
 		if (expr instanceof UninterpretedExpressionImpl) {
 			return (UninterpretedExpressionImpl) expr;

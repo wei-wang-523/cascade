@@ -11,44 +11,45 @@ import edu.nyu.cascade.c.pass.GlobalValue;
 /***
  * ReachabilityCloner - This class is used to incrementally clone and merge
  * nodes from a non-changing source graph into a potentially mutating
- * destination graph.  Nodes are only cloned over on demand, either in
- * responds to a merge() or getClonedNH() call.  When a node is cloned over,
- * all of the nodes reachable from it are automatically brought over as well.
+ * destination graph. Nodes are only cloned over on demand, either in responds
+ * to a merge() or getClonedNH() call. When a node is cloned over, all of the
+ * nodes reachable from it are automatically brought over as well.
  *
  */
 
 class ReachabilityCloner {
 	DSGraph Dest, Src;
-	
+
 	// BitsToKeep - These bits are retained from the source node when the
 	// source nodes are merged into the destination graph.
 	int BitsToKeep;
-	
+
 	int CloneFlags;
-	
+
 	boolean CreateDest;
-	
+
 	// NodeMap - A mapping from nodes in the source graph to the nodes that
 	// represent them in the destination graph.
 	// We cannot use a densemap here as references into it are not stable across
 	// insertion
 	final Map<DSNode, DSNodeHandle> NodeMap = Maps.newTreeMap();
-	
 
-	ReachabilityCloner(DSGraph dest, DSGraph src, int cloneFlags, boolean createDest) {
+	ReachabilityCloner(DSGraph dest, DSGraph src, int cloneFlags,
+			boolean createDest) {
 		Preconditions.checkArgument(dest != src);
 		Dest = dest;
 		Src = src;
 		CreateDest = createDest;
-		
+
 		BitsToKeep = ~DSSupport.NodeTy.DeadNode.value();
 		if ((CloneFlags & DSSupport.CloneFlags.StripAllocaBit.value()) != 0) {
 			BitsToKeep &= ~DSSupport.NodeTy.AllocaNode.value();
 		}
 
 		if ((CloneFlags & DSSupport.CloneFlags.StripModRefBits.value()) != 0) {
-			BitsToKeep &= ~(DSSupport.NodeTy.ModifiedNode.value() | DSSupport.NodeTy.ReadNode.value());
-		} 
+			BitsToKeep &= ~(DSSupport.NodeTy.ModifiedNode.value()
+					| DSSupport.NodeTy.ReadNode.value());
+		}
 
 		if ((CloneFlags & DSSupport.CloneFlags.StripIncompleteBit.value()) != 0) {
 			BitsToKeep &= ~DSSupport.NodeTy.IncompleteNode.value();
@@ -56,11 +57,12 @@ class ReachabilityCloner {
 	}
 
 	DSNodeHandle getClonedNH(DSNodeHandle SrcNH) {
-		if (SrcNH.isNull()) return new DSNodeHandle();
+		if (SrcNH.isNull())
+			return new DSNodeHandle();
 		DSNode SN = SrcNH.getNode();
-		
+
 		final DSNodeHandle NH = getOrCreate(NodeMap, SN);
-		
+
 		if (!NH.isNull()) { // Node already mapped?
 			DSNode NHN = NH.getNode();
 			long NewOffset = NH.getOffset() + SrcNH.getOffset();
@@ -70,8 +72,9 @@ class ReachabilityCloner {
 			}
 			return new DSNodeHandle(NHN, NewOffset);
 		}
-		
-		// If SrcNH has globals and the destination graph has one of the same globals,
+
+		// If SrcNH has globals and the destination graph has one of the same
+		// globals,
 		// merge this node with the destination node, which is much more efficient.
 		if (!SN.Globals.isEmpty()) {
 			DSScalarMap DestSM = Dest.getScalarMap();
@@ -80,7 +83,7 @@ class ReachabilityCloner {
 				if (DestNH != null && !DestNH.isNull()) {
 					// We found one, use merge instead!
 					merge(DestNH, Src.getNodeForValue(GV));
-					assert (! NH.isNull()) : "Didn't merge node!";
+					assert (!NH.isNull()) : "Didn't merge node!";
 					DSNode NHN = NH.getNode();
 					long NewOffset = NH.getOffset() + SrcNH.getOffset();
 					if (NHN != null) {
@@ -91,24 +94,25 @@ class ReachabilityCloner {
 				}
 			}
 		}
-		
-		if (!CreateDest) return new DSNodeHandle(null, 0);
-		
+
+		if (!CreateDest)
+			return new DSNodeHandle(null, 0);
+
 		DSNode DN = new DSNodeImpl(SN, Dest, true /* Null out all links */);
 		DN.maskNodeTypes(BitsToKeep);
 		NH.setTo(DN, 0);
-		
-		// Next, recursively clone all outgoing links as necessary.  Note that
+
+		// Next, recursively clone all outgoing links as necessary. Note that
 		// adding these links can cause the node to collapse itself at any time, and
-		// the current node may be merged with arbitrary other nodes.  For this
+		// the current node may be merged with arbitrary other nodes. For this
 		// reason, we must always go through NH.
 		DN = null;
-		for(Entry<Long, DSNodeHandle> edge : SN.Links.entrySet()) {
+		for (Entry<Long, DSNodeHandle> edge : SN.Links.entrySet()) {
 			final DSNodeHandle edgeNH = edge.getValue();
 			if (edgeNH.isNull()) {
 				final DSNodeHandle DestEdge = getClonedNH(edgeNH);
 				// Compute the offset into the current node at which to
-				// merge this link.  In the common case, this is a linear
+				// merge this link. In the common case, this is a linear
 				// relation to the offset in the original node (with
 				// wrapping), but if the current node gets collapsed due to
 				// recursive merging, we must make sure to merge in all remaining
@@ -121,17 +125,17 @@ class ReachabilityCloner {
 				CN.addEdgeTo(MergeOffset, DestEdge);
 			}
 		}
-		
+
 		// If this node contains any globals, make sure they end up in the scalar
 		// map with the correct offset.
 		for (GlobalValue GV : SN.Globals) {
 			final DSNodeHandle SrcGNH = Src.getNodeForValue(GV);
 			DSNodeHandle DestGNH = getOrCreate(NodeMap, SrcGNH.getNode());
 			assert DestGNH.getNode() == NH.getNode() : "Global mapping inconsistent";
-			Dest.getNodeForValue(GV).mergeWith(
-					new DSNodeHandle(DestGNH.getNode(), DestGNH.getOffset()+SrcGNH.getOffset()));
+			Dest.getNodeForValue(GV).mergeWith(new DSNodeHandle(DestGNH.getNode(),
+					DestGNH.getOffset() + SrcGNH.getOffset()));
 		}
-		
+
 		NH.getNode().mergeGlobals(SN);
 
 		DSNode NHN = NH.getNode();
@@ -140,49 +144,55 @@ class ReachabilityCloner {
 			NHN.checkOffsetFoldIfNeeded(NewOffset);
 			NHN = NH.getNode();
 		}
-		
+
 		return new DSNodeHandle(NHN, NewOffset);
 	}
-	
+
 	void merge(final DSNodeHandle NH, final DSNodeHandle SrcNH) {
-		if (SrcNH.isNull())	return; // Noop
+		if (SrcNH.isNull())
+			return; // Noop
 		if (NH.isNull()) {
 			// If there is no destination node, just clone the source and assign the
 			// destination node to be it.
 			NH.mergeWith(getClonedNH(SrcNH));
 			return;
 		}
-		
+
 		// Okay, at this point, we know that we have both a destination and a source
-		// node that need to be merged.  Check to see if the source node has already
+		// node that need to be merged. Check to see if the source node has already
 		// been cloned.
 		final DSNode SN = SrcNH.getNode();
 		final DSNodeHandle SCNH = getOrCreate(NodeMap, SN); // SourceClonedNodeHandle
-		if (!SCNH.isNull()) {   // Node already cloned?
+		if (!SCNH.isNull()) { // Node already cloned?
 			DSNode SCNHN = SCNH.getNode();
-		    NH.mergeWith(new DSNodeHandle(SCNHN,
-		    		SCNH.getOffset()+SrcNH.getOffset()));
-		    return;  // Nothing to do!
+			NH.mergeWith(new DSNodeHandle(SCNHN, SCNH.getOffset() + SrcNH
+					.getOffset()));
+			return; // Nothing to do!
 		}
-		
-		// Okay, so the source node has not already been cloned.  Instead of creating
-		// a new DSNode, only to merge it into the one we already have, try to perform
-		// the merge in-place.  The only case we cannot handle here is when the offset
-		// into the existing node is less than the offset into the virtual node we are
-		// merging in.  In this case, we have to extend the existing node, which
+
+		// Okay, so the source node has not already been cloned. Instead of creating
+		// a new DSNode, only to merge it into the one we already have, try to
+		// perform
+		// the merge in-place. The only case we cannot handle here is when the
+		// offset
+		// into the existing node is less than the offset into the virtual node we
+		// are
+		// merging in. In this case, we have to extend the existing node, which
 		// requires an allocation anyway.
-		DSNode DN = NH.getNode();   // Make sure the Offset is up-to-date
+		DSNode DN = NH.getNode(); // Make sure the Offset is up-to-date
 		if (NH.getOffset() >= SrcNH.getOffset()) {
 			if (!DN.isNodeCompletelyFolded()) {
-				// Make sure the destination node is folded if the source node is folded.
+				// Make sure the destination node is folded if the source node is
+				// folded.
 				if (SN.isNodeCompletelyFolded()) {
 					DN.foldNodeCompletely();
 					DN = NH.getNode();
 				} else if (SN.getSize() != DN.getSize()) {
-					// If the two nodes are of different size, and the smaller node has the
+					// If the two nodes are of different size, and the smaller node has
+					// the
 					// array bit set, collapse!
-					
-					//	#if COLLAPSE_ARRAYS_AGGRESSIVELY
+
+					// #if COLLAPSE_ARRAYS_AGGRESSIVELY
 					if (SN.getSize() < DN.getSize()) {
 						if (SN.isArrayNode()) {
 							DN.foldNodeCompletely();
@@ -192,9 +202,9 @@ class ReachabilityCloner {
 						DN.foldNodeCompletely();
 						DN = NH.getNode();
 					}
-					//	#endif
+					// #endif
 				}
-						
+
 				if (!DN.isArrayNode() && SN.isArrayNode()) {
 					if (DN.getSize() != 0 && SN.getSize() != 0) {
 						if (DN.getSize() != SN.getSize()) {
@@ -207,10 +217,10 @@ class ReachabilityCloner {
 						}
 					}
 				}
-					
+
 				if (!SN.isArrayNode() && DN.isArrayNode()) {
 					if (DN.getSize() != 0 && SN.getSize() != 0) {
-						if(DN.getSize() != SN.getSize()) {
+						if (DN.getSize() != SN.getSize()) {
 							if (NH.getOffset() != 0 || SrcNH.getOffset() != 0) {
 								if (DN.getSize() < SN.getSize()) {
 									DN.foldNodeCompletely();
@@ -229,73 +239,76 @@ class ReachabilityCloner {
 						}
 					}
 				}
-		
+
 				if (!DN.isNodeCompletelyFolded() && DN.getSize() < SN.getSize()) {
 					DN.growSize(SN.getSize());
 				}
-					
+
 				// Merge the type entries of the two nodes together...
 				if (!DN.isNodeCompletelyFolded()) {
 					DN.mergeTypeInfo(SN, NH.getOffset() - SrcNH.getOffset());
 				}
 			}
-		
-			assert(!DN.isDeadNode());
-		
+
+			assert (!DN.isDeadNode());
+
 			// Merge the NodeType information.
 			DN.mergeNodeFlags(SN.getNodeFlags() & BitsToKeep);
-			
-			// Before we start merging outgoing links and updating the scalar map, make
+
+			// Before we start merging outgoing links and updating the scalar map,
+			// make
 			// sure it is known that this is the representative node for the src node.
 			assert SCNH.isNull() : "SCNH must be null";
-			SCNH.setTo(DN, NH.getOffset()-SrcNH.getOffset());
-			
+			SCNH.setTo(DN, NH.getOffset() - SrcNH.getOffset());
+
 			// If the source node contains any globals, make sure they end up in the
 			// scalar map with the correct offset.
 			if (!SN.getGlobals().isEmpty()) {
 				// Update the globals in the destination node itself.
 				DN.mergeGlobals(SN);
-				
-				// Update the scalar map for the graph we are merging the source node into.
+
+				// Update the scalar map for the graph we are merging the source node
+				// into.
 				for (GlobalValue GV : SN.getGlobals()) {
 					final DSNodeHandle SrcGNH = Src.getNodeForValue(GV);
 					final DSNodeHandle DestGNH = getOrCreate(NodeMap, SrcGNH.getNode());
-					assert DestGNH.getNode() == NH.getNode() : "Global mapping inconsistent";
+					assert DestGNH.getNode() == NH
+							.getNode() : "Global mapping inconsistent";
 					DSNodeHandle DestGNHPrime = Dest.getNodeForValue(GV);
-					DestGNHPrime.mergeWith(
-							new DSNodeHandle(DestGNH.getNode(),
-									DestGNH.getOffset()+SrcGNH.getOffset()));
+					DestGNHPrime.mergeWith(new DSNodeHandle(DestGNH.getNode(), DestGNH
+							.getOffset() + SrcGNH.getOffset()));
 				}
-	    	
+
 				NH.getNode().mergeGlobals(SN);
 			}
 		} else { // NH.getOffset() < SrcNH.getOffset()
-			// We cannot handle this case without allocating a temporary node.  Fall
+			// We cannot handle this case without allocating a temporary node. Fall
 			// back on being simple.
 			DSNode NewDN = new DSNodeImpl(SN, Dest, true /* Null out all links */);
 			NewDN.maskNodeTypes(BitsToKeep);
 			NH.mergeWith(new DSNodeHandle(NewDN, SrcNH.getOffset()));
-			
-			// Before we start merging outgoing links and updating the scalar map, make
+
+			// Before we start merging outgoing links and updating the scalar map,
+			// make
 			// sure it is known that this is the representative node for the src node.
 			assert SCNH.isNull() : "SCNH must be null";
-			SCNH.setTo(NH.getNode(), NH.getOffset()-SrcNH.getOffset());
-			
+			SCNH.setTo(NH.getNode(), NH.getOffset() - SrcNH.getOffset());
+
 			// If the source node contained any globals, make sure to create entries
 			// in the scalar map for them!
 			for (GlobalValue GV : SN.getGlobals()) {
 				final DSNodeHandle SrcGNH = Src.getNodeForValue(GV);
 				final DSNodeHandle DestGNH = getOrCreate(NodeMap, SrcGNH.getNode());
-	          
-				assert DestGNH.getNode() == NH.getNode() : "Global mapping inconsistent";
+
+				assert DestGNH.getNode() == NH
+						.getNode() : "Global mapping inconsistent";
 				assert SrcGNH.getNode() == SN : "Global mapping inconsistent";
-				Dest.getNodeForValue(GV).mergeWith(
-						new DSNodeHandle(DestGNH.getNode(),
-								DestGNH.getOffset()+SrcGNH.getOffset()));
+				Dest.getNodeForValue(GV).mergeWith(new DSNodeHandle(DestGNH.getNode(),
+						DestGNH.getOffset() + SrcGNH.getOffset()));
 			}
 		}
 
-		// Nest, recursively merge all outgoing links as necessary.  Note that
+		// Nest, recursively merge all outgoing links as necessary. Note that
 		// adding these links can cause the destination node to collapse itself at
 		// any time, and the current node may be merged with arbitrary other nodes.
 		// For this reason, we must always got through NH.
@@ -304,52 +317,60 @@ class ReachabilityCloner {
 			final DSNodeHandle SrcEdge = entry.getValue();
 			if (!SrcEdge.isNull()) {
 				// Compute the offset into the current node at which to
-				// merge this link.  In the common case, this is a linear
+				// merge this link. In the common case, this is a linear
 				// relation to the offset in the original node (with
 				// wrapping), but if the current node gets collapsed due to
-				// recursive merging, we must make sure to merge in all remaining 
+				// recursive merging, we must make sure to merge in all remaining
 				// links at offset zero.
 				assert !SCNH.isNull();
 				DSNode CN = SCNH.getNode();
 				long MergeOffset = (entry.getKey() + SCNH.getOffset()) % CN.getSize();
-	    		
+
 				DSNodeHandle Tmp = CN.getLink(MergeOffset);
 				if (!Tmp.isNull()) {
-					// Perform the recursive merging.  Make sure to create a temp NH,
+					// Perform the recursive merging. Make sure to create a temp NH,
 					// because the Link can disappear in the process of recursive merging.
 					merge(Tmp, SrcEdge);
 				} else {
 					Tmp.mergeWith(getClonedNH(SrcEdge));
 					// Merging this could cause all kinds of recursive things to happened,
-					// culminating in the current node being eliminated.  Since this is
+					// culminating in the current node being eliminated. Since this is
 					// possible, make sure to re-acquire the link from CN.
 					CN = SCNH.getNode();
-					long TmpMergeOffset = (entry.getKey() + SCNH.getOffset()) % CN.getSize();
+					long TmpMergeOffset = (entry.getKey() + SCNH.getOffset()) % CN
+							.getSize();
 					CN.getLink(TmpMergeOffset).mergeWith(Tmp);
 				}
 			}
 		}
 	}
-	
+
 	/**
-	 * mergeCallSite - Merge the nodes reachable from the specified src call
-	 * site into the nodes reachable from DestCS.
+	 * mergeCallSite - Merge the nodes reachable from the specified src call site
+	 * into the nodes reachable from DestCS.
 	 */
 	void mergeCallSite(DSCallSite DestCS, DSCallSite SrcCS) {
-		
+
 	}
-	
+
 	DSCallSite cloneCallSite(DSCallSite SrcCS) {
 		return null;
 	}
 
-	boolean clonedAnyNodes() { return !NodeMap.isEmpty(); }
-	
-	boolean hasClonedNode(DSNode N) { return NodeMap.containsKey(N); }
+	boolean clonedAnyNodes() {
+		return !NodeMap.isEmpty();
+	}
 
-	void destroy() { NodeMap.clear(); }
-	
-	private DSNodeHandle getOrCreate(Map<DSNode, DSNodeHandle> NodeMap, DSNode DN) {
+	boolean hasClonedNode(DSNode N) {
+		return NodeMap.containsKey(N);
+	}
+
+	void destroy() {
+		NodeMap.clear();
+	}
+
+	private DSNodeHandle getOrCreate(Map<DSNode, DSNodeHandle> NodeMap,
+			DSNode DN) {
 		Preconditions.checkNotNull(NodeMap);
 		DSNodeHandle NH;
 		if (NodeMap.containsKey(DN)) {

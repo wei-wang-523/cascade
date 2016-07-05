@@ -22,162 +22,162 @@ import edu.nyu.cascade.prover.type.RationalType;
 import edu.nyu.cascade.prover.type.Type;
 
 final class RationalExpressionImpl extends ExpressionImpl implements
-    RationalExpression {
+		RationalExpression {
 
 	static RationalExpressionImpl mkConstant(ExpressionManagerImpl em,
-	    final int numerator, final int denominator) {
+			final int numerator, final int denominator) {
 		return new RationalExpressionImpl(em, CONSTANT,
-		    new NullaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx) throws Z3Exception {
-				    return ctx.mkReal(numerator, denominator);
-			    }
-		    });
+				new NullaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx) throws Z3Exception {
+						return ctx.mkReal(numerator, denominator);
+					}
+				});
 	}
 
 	static RationalExpressionImpl mkDivide(ExpressionManagerImpl exprManager,
-	    Expression numerator, Expression denominator) {
+			Expression numerator, Expression denominator) {
 		Preconditions.checkArgument(isRatOrInt(numerator));
 		Preconditions.checkArgument(isRatOrInt(denominator));
 		return new RationalExpressionImpl(exprManager, DIVIDE,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkDiv((ArithExpr) left, (ArithExpr) right);
-			    }
-		    }, numerator, denominator);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkDiv((ArithExpr) left, (ArithExpr) right);
+					}
+				}, numerator, denominator);
 	}
 
 	static RationalExpressionImpl mkMinus(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new RationalExpressionImpl(exprManager, MINUS,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkSub(new ArithExpr[] { (ArithExpr) left,
-		            (ArithExpr) right });
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkSub(new ArithExpr[] { (ArithExpr) left,
+								(ArithExpr) right });
+					}
+				}, a, b);
 	}
 
 	static RationalExpressionImpl mkMult(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new RationalExpressionImpl(exprManager, MULT,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkMul(new ArithExpr[] { (ArithExpr) left,
-		            (ArithExpr) right });
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkMul(new ArithExpr[] { (ArithExpr) left,
+								(ArithExpr) right });
+					}
+				}, a, b);
 	}
 
 	static RationalExpressionImpl mkMult(ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> terms) {
+			Iterable<? extends Expression> terms) {
 		Preconditions.checkArgument(!Iterables.isEmpty(terms));
 		return new RationalExpressionImpl(exprManager, MULT,
-		    new NaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr[] args) throws Z3Exception {
-				    return ctx.mkMul((ArithExpr[]) args);
-			    }
-		    }, terms);
+				new NaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr[] args) throws Z3Exception {
+						return ctx.mkMul((ArithExpr[]) args);
+					}
+				}, terms);
 	}
 
 	static RationalExpressionImpl mkPlus(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new RationalExpressionImpl(exprManager, PLUS,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkAdd(new ArithExpr[] { (ArithExpr) left,
-		            (ArithExpr) right });
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkAdd(new ArithExpr[] { (ArithExpr) left,
+								(ArithExpr) right });
+					}
+				}, a, b);
 	}
 
 	static RationalExpressionImpl mkPlus(ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> args) {
+			Iterable<? extends Expression> args) {
 		Preconditions.checkArgument(!Iterables.isEmpty(args));
 		return new RationalExpressionImpl(exprManager, PLUS,
-		    new NaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr[] args) throws Z3Exception {
-				    return ctx.mkAdd((ArithExpr[]) args);
-			    }
-		    }, args);
+				new NaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr[] args) throws Z3Exception {
+						return ctx.mkAdd((ArithExpr[]) args);
+					}
+				}, args);
 	}
 
 	static RationalExpressionImpl mkPow(ExpressionManagerImpl exprManager,
-	    Expression base, Expression exp) {
+			Expression base, Expression exp) {
 		return new RationalExpressionImpl(exprManager, POW,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkPower((ArithExpr) left, (ArithExpr) right);
-			    }
-		    }, base, exp);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkPower((ArithExpr) left, (ArithExpr) right);
+					}
+				}, base, exp);
 	}
 
 	static RationalExpressionImpl mkUminus(ExpressionManagerImpl exprManager,
-	    Expression a) {
+			Expression a) {
 		return new RationalExpressionImpl(exprManager, UNARY_MINUS,
-		    new UnaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left) throws Z3Exception {
-				    return ctx.mkUnaryMinus((ArithExpr) left);
-			    }
-		    }, a);
+				new UnaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left) throws Z3Exception {
+						return ctx.mkUnaryMinus((ArithExpr) left);
+					}
+				}, a);
 	}
 
 	private static <T extends Type> boolean isRatOrInt(Expression e) {
 		Type t = e.getType();
 		return ((Type) t instanceof RationalType
-		    || (Type) t instanceof IntegerType);
+				|| (Type) t instanceof IntegerType);
 	}
 
 	RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    UnaryConstructionStrategy strategy, Expression a) {
+			UnaryConstructionStrategy strategy, Expression a) {
 		super(exprManager, kind, strategy, a);
 	}
 
 	RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    NullaryConstructionStrategy strategy) {
+			NullaryConstructionStrategy strategy) {
 		super(exprManager, kind, strategy);
 		setType(exprManager.rationalType());
 	}
 
 	RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    BinaryConstructionStrategy strategy, Expression left, Expression right) {
+			BinaryConstructionStrategy strategy, Expression left, Expression right) {
 		super(exprManager, kind, strategy, left, right);
 		setType(getExpressionManager().rationalType());
 	}
 
 	RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    NaryConstructionStrategy strategy, Iterable<? extends Expression> args) {
+			NaryConstructionStrategy strategy, Iterable<? extends Expression> args) {
 		super(exprManager, kind, strategy, args);
 		setType(getExpressionManager().rationalType());
 	}
 
 	private RationalExpressionImpl(ExpressionManagerImpl em, Kind kind, Expr expr,
-	    RationalType type, Iterable<? extends ExpressionImpl> children) {
+			RationalType type, Iterable<? extends ExpressionImpl> children) {
 		super(em, kind, expr, type, children);
 	}
 
 	static RationalExpressionImpl create(ExpressionManagerImpl em, Kind kind,
-	    Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
+			Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
 		Preconditions.checkArgument(type.isRational());
 		return new RationalExpressionImpl(em, kind, expr, type.asRational(),
-		    children);
+				children);
 	}
 
 	static RationalExpressionImpl valueOf(ExpressionManagerImpl exprManager,
-	    Expression e) {
+			Expression e) {
 		if (e instanceof RationalExpressionImpl) {
 			return (RationalExpressionImpl) e;
 		} else {

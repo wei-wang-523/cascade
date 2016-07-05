@@ -15,18 +15,18 @@ public interface IRMemSafetyEncoding {
 	BooleanExpression validFree(ArrayExpression markArr, Expression region);
 
 	PredicateClosure suspend(Expression func, Expression expr,
-	    Expression... vars);
+			Expression... vars);
 
 	void initMemSafetyPredicates(SingleLambdaStateExpression state);
 
 	void updateStackMemSafetyPredicates(SingleLambdaStateExpression state,
-	    Expression lval, Expression lvalSize);
+			Expression lval, Expression lvalSize);
 
 	void updateHeapMemSafetyPredicates(SingleLambdaStateExpression state,
-	    Expression hpRegExpr, Expression hpRegSize);
+			Expression hpRegExpr, Expression hpRegSize);
 
 	void freeUpdateHeapMemSafetyPredicates(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr);
+			Expression ptrExpr, Expression sizeExpr);
 
 	/**
 	 * Propagate the memory safety predicates of <code>fromState</code> to
@@ -36,7 +36,7 @@ public interface IRMemSafetyEncoding {
 	 * @param toState
 	 */
 	void propagateSafetyPredicates(SingleLambdaStateExpression fromState,
-	    SingleLambdaStateExpression toState);
+			SingleLambdaStateExpression toState);
 
 	// /**
 	// * Refresh the safety properties related to <code>state</code> with
@@ -63,7 +63,7 @@ public interface IRMemSafetyEncoding {
 	 * @return
 	 */
 	Expression applyUpdatedPredicate(SingleLambdaStateExpression state,
-	    FunctionExpression predicate, Collection<Expression> args);
+			FunctionExpression predicate, Collection<Expression> args);
 
 	Collection<BooleanExpression> getAssumptions();
 

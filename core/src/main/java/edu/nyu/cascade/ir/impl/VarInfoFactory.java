@@ -16,12 +16,12 @@ public class VarInfoFactory {
 	 * @return
 	 */
 	public static IRVarInfo createVarInfo(String scope, String name,
-	    Type srcType) {
+			Type srcType) {
 		Preconditions.checkNotNull(scope);
 		Preconditions.checkArgument(srcType.isSealed() || srcType.hasScope()
-		    && scope.equals(srcType.getScope()) || srcType.hasScope() && srcType
-		        .getScope().equals(CAnalyzer.EXTERN_PATH));
+				&& scope.equals(srcType.getScope()) || srcType.hasScope() && srcType
+						.getScope().equals(CAnalyzer.EXTERN_PATH));
 		return new VarInfo(srcType.getScope(), name, IRType.getIRType(srcType),
-		    srcType);
+				srcType);
 	}
 }

@@ -10,10 +10,10 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 
 final class BitVectorVariableImpl extends VariableExpressionImpl implements
-    BitVectorExpression {
+		BitVectorExpression {
 
 	BitVectorVariableImpl(ExpressionManagerImpl em, String name,
-	    BitVectorTypeImpl type, boolean fresh) {
+			BitVectorTypeImpl type, boolean fresh) {
 		super(em, name, type, fresh);
 	}
 
@@ -37,7 +37,7 @@ final class BitVectorVariableImpl extends VariableExpressionImpl implements
 	@Override
 	public BitVectorExpressionImpl extract(int i, int j) {
 		return BitVectorExpressionImpl.mkExtract(getExpressionManager(), this, i,
-		    j);
+				j);
 
 	}
 
@@ -91,7 +91,7 @@ final class BitVectorVariableImpl extends VariableExpressionImpl implements
 	@Override
 	public BitVectorExpressionImpl plus(Iterable<? extends Expression> args) {
 		return BitVectorExpressionImpl.mkPlus(getExpressionManager(), Iterables
-		    .concat(Collections.singletonList(this), args));
+				.concat(Collections.singletonList(this), args));
 	}
 
 	@Override
@@ -107,7 +107,7 @@ final class BitVectorVariableImpl extends VariableExpressionImpl implements
 	@Override
 	public BitVectorExpression times(Iterable<? extends Expression> args) {
 		return BitVectorExpressionImpl.mkMult(getExpressionManager(), Iterables
-		    .concat(Collections.singletonList(this), args));
+				.concat(Collections.singletonList(this), args));
 	}
 
 	@Override
@@ -182,13 +182,13 @@ final class BitVectorVariableImpl extends VariableExpressionImpl implements
 	@Override
 	public BitVectorExpression zeroExtend(int size) {
 		return BitVectorExpressionImpl.mkZeroExtend(getExpressionManager(), size,
-		    this);
+				this);
 	}
 
 	@Override
 	public BitVectorExpression signExtend(int size) {
 		return BitVectorExpressionImpl.mkSignExtend(getExpressionManager(), size,
-		    this);
+				this);
 	}
 
 	@Override

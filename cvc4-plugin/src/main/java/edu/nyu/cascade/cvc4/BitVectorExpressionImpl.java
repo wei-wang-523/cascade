@@ -54,30 +54,30 @@ import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.util.CacheException;
 
 final class BitVectorExpressionImpl extends ExpressionImpl implements
-    BitVectorExpression {
+		BitVectorExpression {
 	static final LoadingCache<ExpressionManagerImpl, LoadingCache<String, BitVectorExpressionImpl>> constantCache = CacheBuilder
-	    .newBuilder().build(
-	        new CacheLoader<ExpressionManagerImpl, LoadingCache<String, BitVectorExpressionImpl>>() {
-		        public LoadingCache<String, BitVectorExpressionImpl> load(
-	              final ExpressionManagerImpl exprManager) {
-			        return CacheBuilder.newBuilder().build(
-	                new CacheLoader<String, BitVectorExpressionImpl>() {
-		                public BitVectorExpressionImpl load(String binaryRep) {
-			                try {
-				                return new BitVectorExpressionImpl(exprManager,
-	                          binaryRep);
-			                } catch (TheoremProverException e) {
-				                throw new ComputationException(e);
-			                }
-		                }
-	                });
-		        }
-	        });
+			.newBuilder().build(
+					new CacheLoader<ExpressionManagerImpl, LoadingCache<String, BitVectorExpressionImpl>>() {
+						public LoadingCache<String, BitVectorExpressionImpl> load(
+								final ExpressionManagerImpl exprManager) {
+							return CacheBuilder.newBuilder().build(
+									new CacheLoader<String, BitVectorExpressionImpl>() {
+										public BitVectorExpressionImpl load(String binaryRep) {
+											try {
+												return new BitVectorExpressionImpl(exprManager,
+														binaryRep);
+											} catch (TheoremProverException e) {
+												throw new ComputationException(e);
+											}
+										}
+									});
+						}
+					});
 
 	/* TODO: AND, OR, XOR have n-ary variants */
 
 	static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
-	    int size, int value) {
+			int size, int value) {
 		Preconditions.checkArgument(size > 0);
 		String binary = Integer.toBinaryString(value);
 		int repSize = binary.length();
@@ -100,7 +100,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
-	    int size, long value) {
+			int size, long value) {
 		Preconditions.checkArgument(size > 0);
 		String binary = Long.toBinaryString(value);
 		int repSize = binary.length();
@@ -123,17 +123,17 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
-	    int size, BigInteger value) {
+			int size, BigInteger value) {
 		Preconditions.checkArgument(size > 0);
 		int repSize = value.bitLength(); // bit-length of 0 would be 0 (treat 0 as
-		                                 // sign bit)
+																			// sign bit)
 		String binary = value.toString(2);
 		if (repSize < size) { /* Sign-extend the value */
 			int prefix_length = (int) (size - repSize);
 			char[] prefix = new char[prefix_length];
 			Arrays.fill(prefix, value.compareTo(BigInteger.ZERO) >= 0 ? '0' : '1');
 			binary = repSize == 0 ? String.valueOf(prefix)
-			    : String.valueOf(prefix) + binary;
+					: String.valueOf(prefix) + binary;
 		} else if (repSize > size) { /* truncate */
 			binary = binary.substring((int) (repSize - size), repSize);
 		}
@@ -147,7 +147,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
-	    int size, edu.nyu.acsys.CVC4.Integer cvc4Int) {
+			int size, edu.nyu.acsys.CVC4.Integer cvc4Int) {
 		Preconditions.checkArgument(size > 0);
 		String binary = cvc4Int.toString(2);
 		int repSize = binary.length();
@@ -170,7 +170,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
-	    int c) {
+			int c) {
 		try {
 			String binaryString = Integer.toBinaryString(c);
 			return constantCache.get(exprManager).get(binaryString);
@@ -180,7 +180,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
-	    long c) {
+			long c) {
 		try {
 			String binaryString = Long.toBinaryString(c);
 			return constantCache.get(exprManager).get(binaryString);
@@ -190,7 +190,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
-	    BigInteger c) {
+			BigInteger c) {
 		try {
 			String binaryString = c.toString(2);
 			return constantCache.get(exprManager).get(binaryString);
@@ -200,7 +200,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkConstant(ExpressionManagerImpl exprManager,
-	    String rep) {
+			String rep) {
 		try {
 			return constantCache.get(exprManager).get(rep);
 		} catch (ExecutionException e) {
@@ -211,7 +211,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	/* TODO: AND, OR, XOR have n-ary variants */
 
 	static BitVectorExpressionImpl mkAnd(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return mkBinary(exprManager, BV_AND, new BinaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr left, Expr right) {
@@ -221,7 +221,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkConcat(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return mkBinary(exprManager, BV_CONCAT, new BinaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr left, Expr right) {
@@ -231,7 +231,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkExtract(ExpressionManagerImpl exprManager,
-	    Expression arg, final int high, final int low) {
+			Expression arg, final int high, final int low) {
 		Preconditions.checkArgument(arg.isBitVector());
 		Preconditions.checkArgument(0 <= low);
 		Preconditions.checkArgument(low <= high);
@@ -243,13 +243,13 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 			@Override
 			public Expr apply(ExprManager em, Expr arg) throws Exception {
 				return em.mkExpr(edu.nyu.acsys.CVC4.Kind.BITVECTOR_EXTRACT, em.mkConst(
-		        new BitVectorExtract(high, low)), arg);
+						new BitVectorExtract(high, low)), arg);
 			}
 		}, arg, size);
 	}
 
 	static BitVectorExpressionImpl mkMinus(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return mkBinary(exprManager, MINUS, new BinaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr left, Expr right) {
@@ -259,7 +259,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkMult(final ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return mkBinary(exprManager, MULT, new BinaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr left, Expr right) {
@@ -269,7 +269,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkMult(final ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> args) {
+			Iterable<? extends Expression> args) {
 		Preconditions.checkArgument(!Iterables.isEmpty(args));
 		return mkNary(exprManager, PLUS, new NaryConstructionStrategy() {
 			@Override
@@ -280,7 +280,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 						result = arg;
 					} else {
 						result = em.mkExpr(edu.nyu.acsys.CVC4.Kind.BITVECTOR_MULT, result,
-		            arg);
+								arg);
 					}
 				}
 				return result;
@@ -289,12 +289,12 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkMult(ExpressionManagerImpl exprManager,
-	    Expression first, Expression... rest) {
+			Expression first, Expression... rest) {
 		return mkMult(exprManager, Lists.asList(first, rest));
 	}
 
 	static BitVectorExpressionImpl mkSDivide(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return mkBinary(exprManager, SDIVIDE, new BinaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr left, Expr right) {
@@ -304,7 +304,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkDivide(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return mkBinary(exprManager, DIVIDE, new BinaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr left, Expr right) {
@@ -314,7 +314,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkSRem(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return mkBinary(exprManager, SREM, new BinaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr left, Expr right) {
@@ -324,7 +324,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkRem(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return mkBinary(exprManager, REM, new BinaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr left, Expr right) {
@@ -334,7 +334,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkNand(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return mkBinary(exprManager, BV_NAND, new BinaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr left, Expr right) {
@@ -344,7 +344,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkNor(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return mkBinary(exprManager, BV_NOR, new BinaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr left, Expr right) {
@@ -354,7 +354,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkNot(ExpressionManagerImpl exprManager,
-	    Expression a) {
+			Expression a) {
 		int size = a.asBitVector().getSize();
 		return mkUnary(exprManager, BV_NOT, new UnaryConstructionStrategy() {
 			@Override
@@ -365,7 +365,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkNegate(ExpressionManagerImpl exprManager,
-	    Expression a) {
+			Expression a) {
 		int size = a.asBitVector().getSize();
 		return mkUnary(exprManager, BV_NEG, new UnaryConstructionStrategy() {
 			@Override
@@ -376,7 +376,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkOr(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return mkBinary(exprManager, BV_OR, new BinaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr left, Expr right) {
@@ -386,7 +386,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkSignExtend(ExpressionManagerImpl exprManager,
-	    int size, Expression arg) {
+			int size, Expression arg) {
 		Preconditions.checkArgument(arg.isBitVector());
 		Preconditions.checkArgument(size >= arg.asBitVector().getSize());
 
@@ -398,17 +398,17 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 		final int extend_size = size - argSize;
 
 		return mkUnary(exprManager, BV_SIGN_EXTEND,
-		    new UnaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, Expr arg) {
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.BITVECTOR_SIGN_EXTEND, em
-		            .mkConst(new BitVectorSignExtend(extend_size)), arg);
-			    }
-		    }, arg, size);
+				new UnaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, Expr arg) {
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.BITVECTOR_SIGN_EXTEND, em
+								.mkConst(new BitVectorSignExtend(extend_size)), arg);
+					}
+				}, arg, size);
 	}
 
 	static BitVectorExpressionImpl mkZeroExtend(ExpressionManagerImpl exprManager,
-	    int size, Expression arg) {
+			int size, Expression arg) {
 		Preconditions.checkArgument(arg.isBitVector());
 		Preconditions.checkArgument(size >= arg.asBitVector().getSize());
 
@@ -419,17 +419,17 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 
 		final int extend_size = size - arg.asBitVector().getSize();
 		return mkUnary(exprManager, BV_ZERO_EXTEND,
-		    new UnaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, Expr arg) {
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.BITVECTOR_ZERO_EXTEND, em
-		            .mkConst(new BitVectorZeroExtend(extend_size)), arg);
-			    }
-		    }, arg, size);
+				new UnaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, Expr arg) {
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.BITVECTOR_ZERO_EXTEND, em
+								.mkConst(new BitVectorZeroExtend(extend_size)), arg);
+					}
+				}, arg, size);
 	}
 
 	static BitVectorExpressionImpl mkPlus(final ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return mkBinary(exprManager, PLUS, new BinaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr left, Expr right) {
@@ -439,7 +439,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkPlus(final ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> args) {
+			Iterable<? extends Expression> args) {
 		Preconditions.checkArgument(!Iterables.isEmpty(args));
 
 		return mkNary(exprManager, PLUS, new NaryConstructionStrategy() {
@@ -451,7 +451,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 						result = arg;
 					} else {
 						result = em.mkExpr(edu.nyu.acsys.CVC4.Kind.BITVECTOR_PLUS, result,
-		            arg);
+								arg);
 					}
 				}
 				return result;
@@ -460,12 +460,12 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkPlus(final ExpressionManagerImpl exprManager,
-	    Expression first, Expression... rest) {
+			Expression first, Expression... rest) {
 		return mkPlus(exprManager, Lists.asList(first, rest));
 	}
 
 	static BitVectorExpressionImpl mkUminus(ExpressionManagerImpl exprManager,
-	    Expression a) {
+			Expression a) {
 		int size = a.asBitVector().getSize();
 
 		return mkUnary(exprManager, UNARY_MINUS, new UnaryConstructionStrategy() {
@@ -477,7 +477,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkXnor(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return mkBinary(exprManager, BV_XNOR, new BinaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr left, Expr right) {
@@ -487,7 +487,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkXor(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return mkBinary(exprManager, BV_XOR, new BinaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr left, Expr right) {
@@ -497,7 +497,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkLShift(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return mkBinary(exprManager, BV_LSHIFT, new BinaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr left, Expr right) {
@@ -507,7 +507,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkRShift(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return mkBinary(exprManager, BV_RSHIFT, new BinaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr left, Expr right) {
@@ -517,7 +517,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl mkSRShift(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return mkBinary(exprManager, BV_RSHIFT, new BinaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr left, Expr right) {
@@ -527,7 +527,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl valueOf(ExpressionManagerImpl exprManager,
-	    Expression e) {
+			Expression e) {
 		if (exprManager.equals(e.getExpressionManager())) {
 			if (e instanceof BitVectorExpressionImpl) {
 				return (BitVectorExpressionImpl) e;
@@ -545,7 +545,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	/* TODO: AND, OR, XOR have n-ary variants */
 
 	static BitVectorExpressionImpl typeConversion(
-	    ExpressionManagerImpl exprManager, int size, Expression a) {
+			ExpressionManagerImpl exprManager, int size, Expression a) {
 		Preconditions.checkArgument(a.isBitVector());
 		BitVectorExpression bv = a.asBitVector();
 
@@ -560,14 +560,14 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BitVectorExpressionImpl create(ExpressionManagerImpl exprManager,
-	    Kind kind, Expr expr, BitVectorType type,
-	    Iterable<? extends ExpressionImpl> children) {
+			Kind kind, Expr expr, BitVectorType type,
+			Iterable<? extends ExpressionImpl> children) {
 		return new BitVectorExpressionImpl(exprManager, kind, expr, type, children);
 	}
 
 	private static BitVectorExpressionImpl mkBinary(
-	    ExpressionManagerImpl exprManager, Kind kind,
-	    BinaryConstructionStrategy strategy, Expression a, Expression b) {
+			ExpressionManagerImpl exprManager, Kind kind,
+			BinaryConstructionStrategy strategy, Expression a, Expression b) {
 
 		BitVectorType aType = a.asBitVector().getType();
 		BitVectorType bType = b.asBitVector().getType();
@@ -604,23 +604,23 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 			throw new IllegalArgumentException("Unknown kind " + kind);
 		}
 		BitVectorExpressionImpl e = new BitVectorExpressionImpl(exprManager, kind,
-		    strategy, lhs, rhs);
+				strategy, lhs, rhs);
 		e.setType(exprManager.bitVectorType(size));
 		return e;
 	}
 
 	private static BitVectorExpressionImpl mkUnary(
-	    ExpressionManagerImpl exprManager, Kind kind,
-	    UnaryConstructionStrategy strategy, Expression a, int size) {
+			ExpressionManagerImpl exprManager, Kind kind,
+			UnaryConstructionStrategy strategy, Expression a, int size) {
 		BitVectorExpressionImpl e = new BitVectorExpressionImpl(exprManager, kind,
-		    strategy, a);
+				strategy, a);
 		e.setType(exprManager.bitVectorType(size));
 		return e;
 	}
 
 	private static BitVectorExpressionImpl mkNary(
-	    final ExpressionManagerImpl exprManager, final Kind kind,
-	    NaryConstructionStrategy strategy, Iterable<? extends Expression> args) {
+			final ExpressionManagerImpl exprManager, final Kind kind,
+			NaryConstructionStrategy strategy, Iterable<? extends Expression> args) {
 		int maxSize = 0;
 		for (Expression arg : args) {
 			assert arg.isBitVector();
@@ -629,27 +629,27 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 
 		final int size = maxSize;
 		Iterable<? extends Expression> argsPrime = Iterables.transform(args,
-		    new Function<Expression, Expression>() {
-			    @Override
-			    public Expression apply(Expression input) {
-				    switch (kind) {
-				    case BV_AND:
-				    case BV_NAND:
-				    case BV_NOR:
-				    case BV_XOR:
-				    case BV_OR:
-				    case PLUS:
-				    case MULT: {
-					    return typeConversion(exprManager, size, input);
-				    }
-				    default:
-					    throw new IllegalArgumentException("Unknown kind " + kind);
-				    }
-			    }
-		    });
+				new Function<Expression, Expression>() {
+					@Override
+					public Expression apply(Expression input) {
+						switch (kind) {
+						case BV_AND:
+						case BV_NAND:
+						case BV_NOR:
+						case BV_XOR:
+						case BV_OR:
+						case PLUS:
+						case MULT: {
+							return typeConversion(exprManager, size, input);
+						}
+						default:
+							throw new IllegalArgumentException("Unknown kind " + kind);
+						}
+					}
+				});
 
 		BitVectorExpressionImpl expr = new BitVectorExpressionImpl(exprManager,
-		    kind, strategy, argsPrime);
+				kind, strategy, argsPrime);
 		expr.setType(exprManager.bitVectorType(maxSize));
 		return expr;
 	}
@@ -659,12 +659,12 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	private BitVectorExpressionImpl(ExpressionManagerImpl exprManager,
-	    Expression e) {
+			Expression e) {
 		super(exprManager, e);
 	}
 
 	private BitVectorExpressionImpl(ExpressionManagerImpl exprManager,
-	    final String rep) {
+			final String rep) {
 		super(exprManager, CONSTANT, new NullaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em) {
@@ -688,7 +688,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	 */
 
 	private BitVectorExpressionImpl(ExpressionManagerImpl exprManager,
-	    final long val, final int len) {
+			final long val, final int len) {
 		super(exprManager, CONSTANT, new NullaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em) {
@@ -699,35 +699,35 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	}
 
 	private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    BinaryConstructionStrategy strategy, Expression a, Expression b) {
+			BinaryConstructionStrategy strategy, Expression a, Expression b) {
 		super(exprManager, kind, strategy, a, b);
 	}
 
 	private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    NaryConstructionStrategy strategy, Expression first, Expression[] rest) {
+			NaryConstructionStrategy strategy, Expression first, Expression[] rest) {
 		super(exprManager, kind, strategy, first, rest);
 	}
 
 	private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    UnaryConstructionStrategy strategy, Expression a) {
+			UnaryConstructionStrategy strategy, Expression a) {
 		super(exprManager, kind, strategy, a);
 		setType(a.getType());
 	}
 
 	private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    NaryConstructionStrategy strategy, Iterable<? extends Expression> args) {
+			NaryConstructionStrategy strategy, Iterable<? extends Expression> args) {
 		super(exprManager, kind, strategy, args);
 	}
 
 	private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    TernaryConstructionStrategy strategy, Expression arg1, Expression arg2,
-	    Expression arg3) {
+			TernaryConstructionStrategy strategy, Expression arg1, Expression arg2,
+			Expression arg3) {
 		super(exprManager, kind, strategy, arg1, arg2, arg3);
 	}
 
 	private BitVectorExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    Expr expr, BitVectorType type,
-	    Iterable<? extends ExpressionImpl> children) {
+			Expr expr, BitVectorType type,
+			Iterable<? extends ExpressionImpl> children) {
 		super(exprManager, kind, expr, type);
 	}
 
@@ -804,7 +804,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	@Override
 	public BitVectorExpressionImpl plus(Iterable<? extends Expression> args) {
 		return mkPlus(getExpressionManager(), Iterables.concat(Collections
-		    .singletonList(this), args));
+				.singletonList(this), args));
 	}
 
 	@Override
@@ -820,7 +820,7 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 	@Override
 	public BitVectorExpression times(Iterable<? extends Expression> args) {
 		return mkMult(getExpressionManager(), Iterables.concat(Collections
-		    .singletonList(this), args));
+				.singletonList(this), args));
 	}
 
 	@Override

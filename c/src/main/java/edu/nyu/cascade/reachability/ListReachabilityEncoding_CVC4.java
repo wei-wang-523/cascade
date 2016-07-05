@@ -46,149 +46,160 @@ import edu.nyu.cascade.prover.type.Selector;
 
 public class ListReachabilityEncoding_CVC4 extends ListReachabilityEncoding {
 
-  /* The list inductive data type */
-  private final InductiveType list;
-  
-  /* The constructors for list */
-  private final Constructor consConstr, nilConstr;
-  
-  /* Selector for the head of list in consConstr */
-  private final Selector headSel;
-  /* Selector for the tail of list in consConstr */
-  private final Selector tailSel;
-  
-  private final ImmutableSet<BooleanExpression> rewrite_rules;
-  
-  /** The list -> length (int) mapping */
-  private final FunctionExpression lengthList;
-  
-  public static ListReachabilityEncoding_CVC4 create(
-      ExpressionManager exprManager) throws ExpressionFactoryException {
-    IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding.create(exprManager);
-    BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(exprManager);
-    ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(exprManager);
-    PointerEncoding<Expression> pointerEncoding = new UnimplementedPointerEncoding<Expression>();
-    
-    return new ListReachabilityEncoding_CVC4(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
-  }
-  
-  private ListReachabilityEncoding_CVC4(
-      IntegerEncoding<BitVectorExpression> integerEncoding,
-      BooleanEncoding<BooleanExpression> booleanEncoding,
-      ArrayEncoding<ArrayExpression> arrayEncoding,
-      PointerEncoding<Expression> tupleEncoding) {
-    super(integerEncoding, booleanEncoding, arrayEncoding, tupleEncoding);
+	/* The list inductive data type */
+	private final InductiveType list;
 
-    try {
-      ExpressionManager exprManager = getExpressionManager();
-      
-      IntegerType lenType = exprManager.integerType();
-      
-      /* Create datatype constructors */
-      // labelTagSel = exprManager.selector(LABEL_TAG_SELECTOR_NAME, tagType);
-      headSel = exprManager.selector(HEAD_SELECTOR_NAME, exprManager.integerType());
-      tailSel = exprManager.selector(TAIL_SELECTOR_NAME, exprManager
-          .inductiveType(DATATYPE_NAME));
-      consConstr = exprManager.constructor(CONS_CONSTR_NAME, headSel, tailSel);
-      nilConstr = exprManager.constructor(NIL_CONSTR_NAME);
+	/* The constructors for list */
+	private final Constructor consConstr, nilConstr;
 
-      /* Create datatype */
-      list = exprManager.dataType(DATATYPE_NAME, consConstr, nilConstr);
-      lengthList = exprManager.functionDeclarator(FUN_LENGTH_LIST,
-      		exprManager.functionType(list, lenType), false);
-      
+	/* Selector for the head of list in consConstr */
+	private final Selector headSel;
+	/* Selector for the tail of list in consConstr */
+	private final Selector tailSel;
 
-      /* Create data constraints */
-      ImmutableSet.Builder<BooleanExpression> rewrite_rulesetBuilder = ImmutableSet
-          .builder();
-      
-      Expression l1 = list.boundVar("l1", true);
-      Collection<Expression> var = Collections.singletonList(l1);
-      BooleanExpression guard = exprManager.testConstructor(nilConstr, l1);
-      Expression head = applyLengthList(l1);
-      Expression body = exprManager.zero();      
-      BooleanExpression rrRewrite = exprManager.rrRewrite(head, body);
-      BooleanExpression rewrite_rule1 = exprManager.rewriteRule(var, guard, rrRewrite);
-      
-      rewrite_rulesetBuilder.add(rewrite_rule1);
-      
-      Expression l = list.boundVar("l", true);
-      Expression e = lenType.boundVar("e", true);
-      Collection<Expression> vars = Lists.newArrayList(l, e);
-      guard = exprManager.tt();
+	private final ImmutableSet<BooleanExpression> rewrite_rules;
 
-      head = applyLengthList(exprManager.construct(consConstr, e, l));
-      body = exprManager.plus(exprManager.one(), exprManager.applyExpr(lengthList, Lists.newArrayList(l)));
-      rrRewrite = exprManager.rrRewrite(head, body);
-      BooleanExpression rewrite_rule2 = exprManager.rewriteRule(vars, guard, rrRewrite);
-      
-      rewrite_rulesetBuilder.add(rewrite_rule2);
-      
-      rewrite_rules = rewrite_rulesetBuilder.build();
-      
-    } catch (TheoremProverException e) {
-      throw new ExpressionFactoryException(e);
-    }
-  }
-  
-  @Override
-  public Expression functionCall(String name, Iterable<? extends Expression> argsIter) {
-    List<Expression> args = ImmutableList.copyOf(argsIter);
-    try {
-      if (FUN_LIST.equals(name)) {
-        checkArgument(args.size() == 1);
-        return args.get(0);
-      }
+	/** The list -> length (int) mapping */
+	private final FunctionExpression lengthList;
 
-      if (FUN_LENGTH_LIST.equals(name)) {
-        checkArgument(args.size() == 1);
-        return getExpressionManager().applyExpr(lengthList, args.get(0));
-      }
+	public static ListReachabilityEncoding_CVC4 create(
+			ExpressionManager exprManager) throws ExpressionFactoryException {
+		IntegerEncoding<BitVectorExpression> integerEncoding = BitVectorIntegerEncoding
+				.create(exprManager);
+		BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(
+				exprManager);
+		ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(
+				exprManager);
+		PointerEncoding<Expression> pointerEncoding = new UnimplementedPointerEncoding<Expression>();
 
-      /* Otherwise, pass through to the underlying bit-vector encoding */
-      List<BitVectorExpression> newArgs = Lists
-          .newArrayListWithCapacity(args.size());
-      for (Expression e : args) {
-        checkArgument(e.isBitVector());
-        newArgs.add(e.asBitVector());
-      }
+		return new ListReachabilityEncoding_CVC4(integerEncoding, booleanEncoding,
+				arrayEncoding, pointerEncoding);
+	}
 
-      return super.functionCall(name, newArgs);
-    } catch (TheoremProverException e) {
-      throw new ExpressionFactoryException(e);
-    }
-  }
+	private ListReachabilityEncoding_CVC4(
+			IntegerEncoding<BitVectorExpression> integerEncoding,
+			BooleanEncoding<BooleanExpression> booleanEncoding,
+			ArrayEncoding<ArrayExpression> arrayEncoding,
+			PointerEncoding<Expression> tupleEncoding) {
+		super(integerEncoding, booleanEncoding, arrayEncoding, tupleEncoding);
 
-  @Override
-  public IntegerExpression applyLengthList(Expression x) {
-    Preconditions.checkArgument(x.isInductive());
-    return getExpressionManager().applyExpr(lengthList, x).asIntegerExpression();
-  }
-  
-  @Override
-  public Expression applyConsConstr(Expression ... args) {
-    ImmutableList<Expression> newArgs = ImmutableList.copyOf(Arrays.asList(args));
-    Preconditions.checkArgument(newArgs.size() == 2);
-    return getExpressionManager().construct(consConstr, newArgs);
-  }
-  
-  @Override
-  public Expression applyNilConstr() {
-    return getExpressionManager().construct(nilConstr);
-  }
+		try {
+			ExpressionManager exprManager = getExpressionManager();
 
-  @Override
-  public Expression applyHeadSel(Expression arg) {
-    return getExpressionManager().select(headSel, arg);
-  }
+			IntegerType lenType = exprManager.integerType();
 
-  @Override
-  public Expression applyTailSel(Expression arg) {
-    return getExpressionManager().select(tailSel, arg);
-  }
-  
-  @Override
-  public ImmutableSet<BooleanExpression> getAssumptions() {
-    return ImmutableSet.copyOf(Sets.union(rewrite_rules, super.getAssumptions()));
-  }
+			/* Create datatype constructors */
+			// labelTagSel = exprManager.selector(LABEL_TAG_SELECTOR_NAME, tagType);
+			headSel = exprManager.selector(HEAD_SELECTOR_NAME, exprManager
+					.integerType());
+			tailSel = exprManager.selector(TAIL_SELECTOR_NAME, exprManager
+					.inductiveType(DATATYPE_NAME));
+			consConstr = exprManager.constructor(CONS_CONSTR_NAME, headSel, tailSel);
+			nilConstr = exprManager.constructor(NIL_CONSTR_NAME);
+
+			/* Create datatype */
+			list = exprManager.dataType(DATATYPE_NAME, consConstr, nilConstr);
+			lengthList = exprManager.functionDeclarator(FUN_LENGTH_LIST, exprManager
+					.functionType(list, lenType), false);
+
+			/* Create data constraints */
+			ImmutableSet.Builder<BooleanExpression> rewrite_rulesetBuilder = ImmutableSet
+					.builder();
+
+			Expression l1 = list.boundVar("l1", true);
+			Collection<Expression> var = Collections.singletonList(l1);
+			BooleanExpression guard = exprManager.testConstructor(nilConstr, l1);
+			Expression head = applyLengthList(l1);
+			Expression body = exprManager.zero();
+			BooleanExpression rrRewrite = exprManager.rrRewrite(head, body);
+			BooleanExpression rewrite_rule1 = exprManager.rewriteRule(var, guard,
+					rrRewrite);
+
+			rewrite_rulesetBuilder.add(rewrite_rule1);
+
+			Expression l = list.boundVar("l", true);
+			Expression e = lenType.boundVar("e", true);
+			Collection<Expression> vars = Lists.newArrayList(l, e);
+			guard = exprManager.tt();
+
+			head = applyLengthList(exprManager.construct(consConstr, e, l));
+			body = exprManager.plus(exprManager.one(), exprManager.applyExpr(
+					lengthList, Lists.newArrayList(l)));
+			rrRewrite = exprManager.rrRewrite(head, body);
+			BooleanExpression rewrite_rule2 = exprManager.rewriteRule(vars, guard,
+					rrRewrite);
+
+			rewrite_rulesetBuilder.add(rewrite_rule2);
+
+			rewrite_rules = rewrite_rulesetBuilder.build();
+
+		} catch (TheoremProverException e) {
+			throw new ExpressionFactoryException(e);
+		}
+	}
+
+	@Override
+	public Expression functionCall(String name,
+			Iterable<? extends Expression> argsIter) {
+		List<Expression> args = ImmutableList.copyOf(argsIter);
+		try {
+			if (FUN_LIST.equals(name)) {
+				checkArgument(args.size() == 1);
+				return args.get(0);
+			}
+
+			if (FUN_LENGTH_LIST.equals(name)) {
+				checkArgument(args.size() == 1);
+				return getExpressionManager().applyExpr(lengthList, args.get(0));
+			}
+
+			/* Otherwise, pass through to the underlying bit-vector encoding */
+			List<BitVectorExpression> newArgs = Lists.newArrayListWithCapacity(args
+					.size());
+			for (Expression e : args) {
+				checkArgument(e.isBitVector());
+				newArgs.add(e.asBitVector());
+			}
+
+			return super.functionCall(name, newArgs);
+		} catch (TheoremProverException e) {
+			throw new ExpressionFactoryException(e);
+		}
+	}
+
+	@Override
+	public IntegerExpression applyLengthList(Expression x) {
+		Preconditions.checkArgument(x.isInductive());
+		return getExpressionManager().applyExpr(lengthList, x)
+				.asIntegerExpression();
+	}
+
+	@Override
+	public Expression applyConsConstr(Expression... args) {
+		ImmutableList<Expression> newArgs = ImmutableList.copyOf(Arrays.asList(
+				args));
+		Preconditions.checkArgument(newArgs.size() == 2);
+		return getExpressionManager().construct(consConstr, newArgs);
+	}
+
+	@Override
+	public Expression applyNilConstr() {
+		return getExpressionManager().construct(nilConstr);
+	}
+
+	@Override
+	public Expression applyHeadSel(Expression arg) {
+		return getExpressionManager().select(headSel, arg);
+	}
+
+	@Override
+	public Expression applyTailSel(Expression arg) {
+		return getExpressionManager().select(tailSel, arg);
+	}
+
+	@Override
+	public ImmutableSet<BooleanExpression> getAssumptions() {
+		return ImmutableSet.copyOf(Sets.union(rewrite_rules,
+				super.getAssumptions()));
+	}
 }

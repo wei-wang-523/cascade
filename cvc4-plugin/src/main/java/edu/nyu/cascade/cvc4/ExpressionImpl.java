@@ -65,12 +65,12 @@ public class ExpressionImpl implements Expression {
 
 	static interface BinderTriggersConstructionStrategy {
 		Expr apply(ExprManager em, List<Expr> vars, Expr body, List<Expr> triggers)
-		    throws Exception;
+				throws Exception;
 	}
 
 	static interface BinderTriggersWithRewriteRuleConstructionStrategy {
 		Expr apply(ExprManager em, Expr head, Expr body, List<Expr> triggers)
-		    throws Exception;
+				throws Exception;
 	}
 
 	static interface NaryConstructionStrategy {
@@ -103,64 +103,64 @@ public class ExpressionImpl implements Expression {
 
 	static ExpressionImpl mkNullExpr(ExpressionManagerImpl exprManager) {
 		ExpressionImpl result = new ExpressionImpl(exprManager, NULL_EXPR,
-		    new NullaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em) {
-				    return em.mkConst(edu.nyu.acsys.CVC4.Kind.NULL_EXPR);
-			    }
-		    });
+				new NullaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em) {
+						return em.mkConst(edu.nyu.acsys.CVC4.Kind.NULL_EXPR);
+					}
+				});
 		return result;
 	}
 
 	static ExpressionImpl mkFunApply(ExpressionManagerImpl exprManager,
-	    Expression fun, Iterable<? extends Expression> args) {
+			Expression fun, Iterable<? extends Expression> args) {
 		Preconditions.checkArgument(fun.isFunction());
 		int numArgs = Iterables.size(args);
 		Preconditions.checkArgument(fun.getType().asFunction()
-		    .getArity() == numArgs);
+				.getArity() == numArgs);
 		List<Expression> args1 = Lists.newArrayListWithCapacity(numArgs + 1);
 		args1.add(fun);
 		Iterables.addAll(args1, args);
 		ExpressionImpl result = new ExpressionImpl(exprManager, APPLY,
-		    new NaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, List<Expr> children) {
-				    vectorExpr opkids = new vectorExpr();
-				    for (Expr child : children)
-					    opkids.add(child);
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.APPLY_UF, opkids);
-			    }
-		    }, args1);
+				new NaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, List<Expr> children) {
+						vectorExpr opkids = new vectorExpr();
+						for (Expr child : children)
+							opkids.add(child);
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.APPLY_UF, opkids);
+					}
+				}, args1);
 		result.setType(fun.asFunctionExpression().getRange());
 		return result;
 	}
 
 	static ExpressionImpl mkFunApply(ExpressionManagerImpl exprManager,
-	    Expression fun, Expression firstArg, Expression... restArgs) {
+			Expression fun, Expression firstArg, Expression... restArgs) {
 		return mkFunApply(exprManager, fun, Lists.asList(firstArg, restArgs));
 	}
 
 	static ExpressionImpl mkIte(ExpressionManagerImpl exprManager,
-	    Expression cond, Expression thenPart, Expression elsePart) {
+			Expression cond, Expression thenPart, Expression elsePart) {
 		Preconditions.checkArgument(cond.isBoolean());
 		Preconditions.checkArgument(thenPart.getType().equals(elsePart.getType()));
 
 		ExpressionImpl e = new ExpressionImpl(exprManager, IF_THEN_ELSE,
-		    new TernaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, Expr arg1, Expr arg2, Expr arg3) {
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.ITE, arg1, arg2, arg3);
-			    }
-		    }, cond, thenPart, elsePart);
+				new TernaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, Expr arg1, Expr arg2, Expr arg3) {
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.ITE, arg1, arg2, arg3);
+					}
+				}, cond, thenPart, elsePart);
 		e.setType(thenPart.getType());
 		return e;
 	}
 
 	static ExpressionImpl mkSubst(final ExpressionManagerImpl exprManager,
-	    Expression e, Iterable<? extends Expression> oldExprs,
-	    Iterable<? extends Expression> newExprs) {
+			Expression e, Iterable<? extends Expression> oldExprs,
+			Iterable<? extends Expression> newExprs) {
 		Preconditions.checkArgument(Iterables.size(oldExprs) == Iterables.size(
-		    newExprs));
+				newExprs));
 
 		/* Don't bother to SUBST a constant */
 		if (CONSTANT.equals(e.getKind())) {
@@ -176,24 +176,24 @@ public class ExpressionImpl implements Expression {
 		int n = Iterables.size(oldExprs);
 
 		Iterable<Expr> oldArgs = Iterables.transform(oldExprs,
-		    new Function<Expression, Expr>() {
-			    @Override
-			    public Expr apply(Expression expr) {
-				    return exprManager.importExpression(expr).getCvc4Expression();
-			    }
-		    });
+				new Function<Expression, Expr>() {
+					@Override
+					public Expr apply(Expression expr) {
+						return exprManager.importExpression(expr).getCvc4Expression();
+					}
+				});
 
 		vectorExpr oldArgVec = new vectorExpr(n);
 		for (Expr arg : oldArgs)
 			oldArgVec.add(arg);
 
 		Iterable<Expr> newArgs = Iterables.transform(newExprs,
-		    new Function<Expression, Expr>() {
-			    @Override
-			    public Expr apply(Expression expr) {
-				    return exprManager.importExpression(expr).getCvc4Expression();
-			    }
-		    });
+				new Function<Expression, Expr>() {
+					@Override
+					public Expr apply(Expression expr) {
+						return exprManager.importExpression(expr).getCvc4Expression();
+					}
+				});
 
 		vectorExpr newArgVec = new vectorExpr(n);
 		for (Expr arg : newArgs)
@@ -201,18 +201,18 @@ public class ExpressionImpl implements Expression {
 
 		Expr res = exprManager.toCvc4Expr(e).substitute(oldArgVec, newArgVec);
 		return exprManager.importType(e.getType()).createExpression(res, e, e
-		    .getKind(), exprManager.importExpressions(newExprs));
+				.getKind(), exprManager.importExpressions(newExprs));
 	}
 
 	static ExpressionImpl mkTypeStub(ExpressionManagerImpl exprManager,
-	    final String name) {
+			final String name) {
 		ExpressionImpl result = new ExpressionImpl(exprManager, Kind.TYPE_STUB,
-		    new NullaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em) {
-				    return em.mkConst(new edu.nyu.acsys.CVC4.CVC4String(name));
-			    }
-		    });
+				new NullaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em) {
+						return em.mkConst(new edu.nyu.acsys.CVC4.CVC4String(name));
+					}
+				});
 		InductiveTypeImpl t = InductiveTypeImpl.stub(exprManager, name);
 		result.setType(t);
 		return result;
@@ -274,15 +274,15 @@ public class ExpressionImpl implements Expression {
 	 * responsible for making sure it gets set!
 	 */
 	protected ExpressionImpl(final ExpressionManagerImpl exprManager,
-	    Expression expr) {
+			Expression expr) {
 		this(exprManager, expr.getKind());
 		children = ImmutableList.copyOf(Lists.transform(expr.getChildren(),
-		    new Function<Expression, ExpressionImpl>() {
-			    @Override
-			    public ExpressionImpl apply(Expression from) {
-				    return exprManager.importExpression(from);
-			    }
-		    }));
+				new Function<Expression, ExpressionImpl>() {
+					@Override
+					public ExpressionImpl apply(Expression from) {
+						return exprManager.importExpression(from);
+					}
+				}));
 		setType(expr.getType());
 	}
 
@@ -293,8 +293,8 @@ public class ExpressionImpl implements Expression {
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
-	    ArrayStoreAllConstructionStrategy strategy, Type arrayType,
-	    Expression expr) {
+			ArrayStoreAllConstructionStrategy strategy, Type arrayType,
+			Expression expr) {
 		this(em, kind, arrayType);
 		init(expr);
 		List<Expr> exprs = convertChildrenToExpr();
@@ -310,12 +310,12 @@ public class ExpressionImpl implements Expression {
 
 		// Create the new expression
 		edu.nyu.acsys.CVC4.ArrayType atype = new edu.nyu.acsys.CVC4.ArrayType(type
-		    .getCVC4Type());
+				.getCVC4Type());
 		setCvc4Expression(strategy.apply(cvc4_em, atype, body_expr));
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
-	    BinaryConstructionStrategy strategy, Expression left, Expression right) {
+			BinaryConstructionStrategy strategy, Expression left, Expression right) {
 		this(em, kind);
 		init(left, right);
 		List<Expr> exprs = convertChildrenToExpr();
@@ -335,8 +335,8 @@ public class ExpressionImpl implements Expression {
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
-	    BinderConstructionStrategy strategy, Iterable<? extends Expression> vars,
-	    Expression body) {
+			BinderConstructionStrategy strategy, Iterable<? extends Expression> vars,
+			Expression body) {
 		this(em, kind);
 		init(body);
 		List<Expr> exprs = convertChildrenToExpr();
@@ -346,16 +346,16 @@ public class ExpressionImpl implements Expression {
 		Expr cvc4_body = exprs.get(0);
 
 		List<Expr> cvc4_vars = ImmutableList.copyOf(getExpressionManager()
-		    .toCvc4Exprs(vars));
+				.toCvc4Exprs(vars));
 
 		ExprManager cvc4_em = getExpressionManager().getTheoremProver()
-		    .getCvc4ExprManager();
+				.getCvc4ExprManager();
 		setCvc4Expression(strategy.apply(cvc4_em, cvc4_vars, cvc4_body));
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
-	    BinderGuardConstructionStrategy strategy,
-	    Iterable<? extends Expression> vars, Expression guard, Expression body) {
+			BinderGuardConstructionStrategy strategy,
+			Iterable<? extends Expression> vars, Expression guard, Expression body) {
 		this(em, kind);
 		init(guard, body);
 		List<Expr> exprs = convertChildrenToExpr();
@@ -367,7 +367,7 @@ public class ExpressionImpl implements Expression {
 
 		// New list for the cvc4 variables
 		List<Expr> cvc4_vars = ImmutableList.copyOf(getExpressionManager()
-		    .toCvc4Exprs(vars));
+				.toCvc4Exprs(vars));
 
 		/*
 		 * List<Expr> cvc4_triggers = ImmutableList.copyOf(ExpressionManager
@@ -375,15 +375,15 @@ public class ExpressionImpl implements Expression {
 		 */
 		// Call the construct method for quantification
 		ExprManager cvc4_em = getExpressionManager().getTheoremProver()
-		    .getCvc4ExprManager();
+				.getCvc4ExprManager();
 		setCvc4Expression(strategy.apply(cvc4_em, cvc4_vars, cvc4_guard,
-		    cvc4_body));
+				cvc4_body));
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
-	    BinderTriggersConstructionStrategy strategy,
-	    Iterable<? extends Expression> vars, Expression body,
-	    Iterable<? extends Expression> triggers) {
+			BinderTriggersConstructionStrategy strategy,
+			Iterable<? extends Expression> vars, Expression body,
+			Iterable<? extends Expression> triggers) {
 		this(em, kind);
 		init(body);
 		List<Expr> exprs = convertChildrenToExpr();
@@ -394,22 +394,22 @@ public class ExpressionImpl implements Expression {
 
 		// New list for the cvc4 variables
 		List<Expr> cvc4_vars = ImmutableList.copyOf(getExpressionManager()
-		    .toCvc4Exprs(vars));
+				.toCvc4Exprs(vars));
 
 		List<Expr> cvc4_triggers = ImmutableList.copyOf(getExpressionManager()
-		    .toCvc4Exprs(triggers));
+				.toCvc4Exprs(triggers));
 
 		// Call the construct method for quantification
 		ExprManager cvc4_em = getExpressionManager().getTheoremProver()
-		    .getCvc4ExprManager();
+				.getCvc4ExprManager();
 		setCvc4Expression(strategy.apply(cvc4_em, cvc4_vars, cvc4_body,
-		    cvc4_triggers));
+				cvc4_triggers));
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
-	    BinderTriggersWithRewriteRuleConstructionStrategy strategy,
-	    Expression head, Expression body,
-	    Iterable<? extends Expression> triggers) {
+			BinderTriggersWithRewriteRuleConstructionStrategy strategy,
+			Expression head, Expression body,
+			Iterable<? extends Expression> triggers) {
 		this(em, kind);
 		init(head, body);
 		List<Expr> exprs = convertChildrenToExpr();
@@ -421,17 +421,17 @@ public class ExpressionImpl implements Expression {
 
 		// New list for the cvc4 triggers
 		List<Expr> cvc4_triggers = ImmutableList.copyOf(getExpressionManager()
-		    .toCvc4Exprs(triggers));
+				.toCvc4Exprs(triggers));
 
 		// Call the construct method for quantification
 		ExprManager cvc4_em = getExpressionManager().getTheoremProver()
-		    .getCvc4ExprManager();
+				.getCvc4ExprManager();
 		setCvc4Expression(strategy.apply(cvc4_em, cvc4_head, cvc4_body,
-		    cvc4_triggers));
+				cvc4_triggers));
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind, Expr e,
-	    Type type) {
+			Type type) {
 		this(em, kind, type);
 		setCvc4Expression(e);
 	}
@@ -450,19 +450,19 @@ public class ExpressionImpl implements Expression {
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
-	    NaryConstructionStrategy strategy, Expression first, Expression... rest) {
+			NaryConstructionStrategy strategy, Expression first, Expression... rest) {
 		this(em, kind, strategy, Lists.asList(first, rest));
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
-	    NaryConstructionStrategy strategy, Expression first, Expression second,
-	    Expression... rest) {
+			NaryConstructionStrategy strategy, Expression first, Expression second,
+			Expression... rest) {
 		this(em, kind, strategy, Lists.asList(first, second, rest));
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
-	    NaryConstructionStrategy strategy,
-	    Iterable<? extends Expression> subExpressions) {
+			NaryConstructionStrategy strategy,
+			Iterable<? extends Expression> subExpressions) {
 		this(em, kind);
 		// checkArgument(!Iterables.isEmpty(subExpressions));
 		init(subExpressions);
@@ -476,8 +476,8 @@ public class ExpressionImpl implements Expression {
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
-	    NarySubstitutionStrategy strategy,
-	    Iterable<? extends Expression> expressions) {
+			NarySubstitutionStrategy strategy,
+			Iterable<? extends Expression> expressions) {
 		this(em, kind);
 		// FIXME: the initialization actually compose the incorrect children of the
 		// new expression
@@ -495,7 +495,7 @@ public class ExpressionImpl implements Expression {
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
-	    NullaryConstructionStrategy strategy) {
+			NullaryConstructionStrategy strategy) {
 		this(em, kind);
 
 		// Get the cvc4 expression manager
@@ -506,8 +506,8 @@ public class ExpressionImpl implements Expression {
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
-	    TernaryConstructionStrategy strategy, Expression arg1, Expression arg2,
-	    Expression arg3) {
+			TernaryConstructionStrategy strategy, Expression arg1, Expression arg2,
+			Expression arg3) {
 		this(em, kind);
 		init(arg1, arg2, arg3);
 		List<Expr> exprs = convertChildrenToExpr();
@@ -530,7 +530,7 @@ public class ExpressionImpl implements Expression {
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
-	    UnaryConstructionStrategy strategy, Expression subExpression) {
+			UnaryConstructionStrategy strategy, Expression subExpression) {
 		this(em, kind);
 		init(subExpression);
 		List<Expr> exprs = convertChildrenToExpr();
@@ -554,8 +554,8 @@ public class ExpressionImpl implements Expression {
 	 * augment current variable creation functions with "fresh" variants.
 	 */
 	protected ExpressionImpl(ExpressionManagerImpl em,
-	    VariableConstructionStrategy strategy, String name, Type itype,
-	    boolean uniquify) {
+			VariableConstructionStrategy strategy, String name, Type itype,
+			boolean uniquify) {
 		this(em, Kind.VARIABLE, itype);
 		assert (type != null);
 
@@ -567,8 +567,8 @@ public class ExpressionImpl implements Expression {
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em,
-	    BoundVariableConstructionStrategy strategy, String name, Type itype,
-	    boolean uniquify) {
+			BoundVariableConstructionStrategy strategy, String name, Type itype,
+			boolean uniquify) {
 		this(em, Kind.BOUND, itype);
 		assert (type != null);
 
@@ -580,7 +580,7 @@ public class ExpressionImpl implements Expression {
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind, Expr expr,
-	    Type type, Iterable<? extends ExpressionImpl> children) {
+			Type type, Iterable<? extends ExpressionImpl> children) {
 		this(em, kind, expr, type);
 		initChildren(children);
 	}
@@ -640,7 +640,7 @@ public class ExpressionImpl implements Expression {
 	public boolean equals(Object obj) {
 		if (obj instanceof Expression) {
 			return getCvc4Expression().equals((getExpressionManager()
-			    .importExpression((Expression) obj)).getCvc4Expression());
+					.importExpression((Expression) obj)).getCvc4Expression());
 
 		}
 		return super.equals(obj);
@@ -731,7 +731,7 @@ public class ExpressionImpl implements Expression {
 		 */
 		// checkArgument(!Iterables.isEmpty(subExpressions));
 		children = ImmutableList.copyOf(getExpressionManager().importExpressions(
-		    subExpressions));
+				subExpressions));
 	}
 
 	@Override
@@ -789,7 +789,7 @@ public class ExpressionImpl implements Expression {
 
 	@Override
 	public Expression subst(Iterable<? extends Expression> oldExprs,
-	    Iterable<? extends Expression> newExprs) {
+			Iterable<? extends Expression> newExprs) {
 		return mkSubst(getExpressionManager(), this, oldExprs, newExprs);
 	}
 
@@ -797,7 +797,7 @@ public class ExpressionImpl implements Expression {
 	public Expression simplify() {
 		ExpressionManagerImpl em = getExpressionManager();
 		Expr cvc4_expr_simp = em.getTheoremProver().getSmtEngine().simplify(
-		    cvc4_expr);
+				cvc4_expr);
 		return new ExpressionImpl(em, this.kind, cvc4_expr_simp, type);
 	}
 

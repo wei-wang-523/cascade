@@ -105,7 +105,7 @@ public class ExpressionManagerTest {
 	@Test
 	public void testBitVectorSlice() {
 		VariableExpression bv = exprManager.variable("b", exprManager.bitVectorType(
-		    8), true);
+				8), true);
 		BitVectorExpression slice = exprManager.extract(bv, 0, 7);
 		assertEquals(8, slice.getSize());
 
@@ -119,7 +119,7 @@ public class ExpressionManagerTest {
 	@Test
 	public void testBitVectorExtend() {
 		VariableExpression bv = exprManager.variable("b", exprManager.bitVectorType(
-		    8), true);
+				8), true);
 		BitVectorExpression slice = exprManager.signedExtend(8, bv);
 		assertEquals(8, slice.getSize());
 
@@ -133,7 +133,7 @@ public class ExpressionManagerTest {
 	@Test
 	public void testBitVectorPlus() {
 		Expression bv1 = exprManager.variable("bv1", exprManager.bitVectorType(64),
-		    true);
+				true);
 		Expression bv2 = exprManager.bitVectorConstant(1, 32);
 
 		BitVectorExpression sum = exprManager.bitVectorPlus(64, bv1, bv2);
@@ -143,7 +143,7 @@ public class ExpressionManagerTest {
 	@Test
 	public void testBitVectorMinus() {
 		Expression bv1 = exprManager.variable("bv1", exprManager.bitVectorType(64),
-		    true);
+				true);
 		Expression bv2 = exprManager.bitVectorConstant(1, 32);
 
 		BitVectorExpression res = exprManager.bitVectorMinus(bv1, bv2);
@@ -153,9 +153,9 @@ public class ExpressionManagerTest {
 	@Test
 	public void testBitVectorMult() {
 		VariableExpression bv1 = exprManager.variable("bv1", exprManager
-		    .bitVectorType(4), true);
+				.bitVectorType(4), true);
 		VariableExpression bv2 = exprManager.variable("bv2", exprManager
-		    .bitVectorType(8), true);
+				.bitVectorType(8), true);
 
 		BitVectorExpression res = exprManager.bitVectorMult(4, bv1, bv2);
 		assertEquals(4, res.getSize());
@@ -164,7 +164,7 @@ public class ExpressionManagerTest {
 	@Test
 	public void testBitVectorShift() {
 		VariableExpression bv1 = exprManager.variable("bv1", exprManager
-		    .bitVectorType(8), true);
+				.bitVectorType(8), true);
 		BitVectorExpression bv2 = exprManager.bitVectorConstant(2);
 
 		BitVectorExpression res = bv1.asBitVector().lshift(bv2);
@@ -180,7 +180,7 @@ public class ExpressionManagerTest {
 	@Test
 	public void testBitVectorDivide() {
 		VariableExpression bv1 = exprManager.variable("bv1", exprManager
-		    .bitVectorType(8), true);
+				.bitVectorType(8), true);
 		BitVectorExpression bv2 = exprManager.bitVectorConstant(2);
 
 		BitVectorExpression res = bv1.asBitVector().divides(bv2);
@@ -193,7 +193,7 @@ public class ExpressionManagerTest {
 	@Test
 	public void testBitVectorRem() {
 		VariableExpression bv1 = exprManager.variable("bv1", exprManager
-		    .bitVectorType(8), true);
+				.bitVectorType(8), true);
 		BitVectorExpression bv2 = exprManager.bitVectorConstant(2);
 
 		BitVectorExpression res = bv1.asBitVector().rems(bv2);
@@ -206,7 +206,7 @@ public class ExpressionManagerTest {
 	@Test
 	public void testBitVectorConcact() {
 		VariableExpression bv1 = exprManager.variable("bv1", exprManager
-		    .bitVectorType(8), true);
+				.bitVectorType(8), true);
 		BitVectorExpression bv2 = exprManager.bitVectorConstant(2);
 
 		BitVectorExpression res = exprManager.concat(bv1, bv2);
@@ -216,21 +216,21 @@ public class ExpressionManagerTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void testBitVectorSliceInverted() {
 		VariableExpression bv = exprManager.variable("b", exprManager.bitVectorType(
-		    8), true);
+				8), true);
 		exprManager.extract(bv, 5, 0);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testBitVectorSliceOverflow() {
 		VariableExpression bv = exprManager.variable("b", exprManager.bitVectorType(
-		    8), true);
+				8), true);
 		exprManager.extract(bv, 0, 8);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void testBitVectorSliceUnderflow() {
 		VariableExpression bv = exprManager.variable("b", exprManager.bitVectorType(
-		    8), true);
+				8), true);
 		exprManager.extract(bv, -1, 7);
 	}
 
@@ -296,7 +296,7 @@ public class ExpressionManagerTest {
 		Constructor bottomConstructor = exprManager.constructor("bottom");
 
 		InductiveType memType = exprManager.dataType("memory", okConstructor,
-		    bottomConstructor);
+				bottomConstructor);
 		assertNotNull(memType);
 	}
 
@@ -414,7 +414,7 @@ public class ExpressionManagerTest {
 	public void testForallExpr() {
 		BoundExpression x = intType.boundVar("x", true);
 		assertInvalid(exprManager.forall(ImmutableList.of(x), exprManager
-		    .greaterThan(x, exprManager.zero())));
+				.greaterThan(x, exprManager.zero())));
 	}
 
 	@Test
@@ -422,7 +422,7 @@ public class ExpressionManagerTest {
 		ExprManager em = exprManager.getTheoremProver().getCvc4ExprManager();
 		Expr p = em.mkBoundVar("p", em.integerType());
 		FunctionType funcType = em.mkFunctionType(em.integerType(), em
-		    .booleanType());
+				.booleanType());
 		Expr isGood = em.mkVar("f", funcType);
 		Expr body = em.mkExpr(Kind.APPLY_UF, isGood, p);
 		vectorExpr varList = new vectorExpr();
@@ -431,15 +431,15 @@ public class ExpressionManagerTest {
 		Expr qTerm = em.mkExpr(Kind.EXISTS, boundVarList, body);
 
 		FunctionType funcType2 = em.mkFunctionType(em.integerType(), em
-		    .booleanType());
+				.booleanType());
 		Expr isBad = em.mkVar("g", funcType2);
 		Expr body2 = em.mkExpr(Kind.APPLY_UF, isBad, p);
 		Expr qTerm2 = em.mkExpr(Kind.EXISTS, boundVarList, body2);
 
 		IOUtils.err().println(exprManager.getTheoremProver().getSmtEngine()
-		    .checkSat(qTerm));
+				.checkSat(qTerm));
 		IOUtils.err().println(exprManager.getTheoremProver().getSmtEngine()
-		    .checkSat(qTerm2));
+				.checkSat(qTerm2));
 	}
 
 	@Test
@@ -458,7 +458,7 @@ public class ExpressionManagerTest {
 		Expr y = em.mkVar("y", em.integerType());
 		Expr a = em.mkExpr(Kind.APPLY_UF, op, y, y);
 		IOUtils.err().println(exprManager.getTheoremProver().getSmtEngine()
-		    .checkSat(a));
+				.checkSat(a));
 	}
 
 	@Test
@@ -467,14 +467,14 @@ public class ExpressionManagerTest {
 		BoundExpression y = intType.boundVar("y", true);
 
 		FunctionExpression f = exprManager.functionDeclarator("f", exprManager
-		    .functionType(intType, intType), true).asFunctionExpression();
+				.functionType(intType, intType), true).asFunctionExpression();
 		Expression fx = exprManager.applyExpr(f, x);
 		Expression fy = exprManager.applyExpr(f, y);
 
 		// Using a trigger
 		List<? extends Expression> triggers = ImmutableList.of(fx);
 		BooleanExpression b = exprManager.forall(ImmutableList.of(x, y), x.eq(y)
-		    .implies(fx.eq(fy)), triggers);
+				.implies(fx.eq(fy)), triggers);
 
 		assertValid(b);
 		assertEquals(ImmutableList.of(triggers), b.getTriggers());
@@ -485,7 +485,7 @@ public class ExpressionManagerTest {
 		BoundExpression x = intType.boundVar("x", true);
 		BoundExpression y = intType.boundVar("y", true);
 		Expression a = exprManager.applyExpr(((ExpressionManagerImpl) exprManager)
-		    .lambda(x, x), y);
+				.lambda(x, x), y);
 		assertValid(a.eq(y));
 	}
 
@@ -495,7 +495,7 @@ public class ExpressionManagerTest {
 		BoundExpression y = intType.boundVar("y", true);
 
 		FunctionExpression f = exprManager.functionDeclarator("f", exprManager
-		    .functionType(intType, intType), true).asFunctionExpression();
+				.functionType(intType, intType), true).asFunctionExpression();
 
 		Expression fx = exprManager.applyExpr(f, x);
 		Expression fy = exprManager.applyExpr(f, y);
@@ -509,7 +509,7 @@ public class ExpressionManagerTest {
 		BoundExpression y = intType.boundVar("y", true);
 
 		FunctionExpression f = exprManager.functionDeclarator("f", exprManager
-		    .functionType(intType, intType), true).asFunctionExpression();
+				.functionType(intType, intType), true).asFunctionExpression();
 		FunctionExpression f1 = ((ExpressionManagerImpl) exprManager).lambda(x, x);
 
 		assume(f.eq(f1));
@@ -530,33 +530,33 @@ public class ExpressionManagerTest {
 		assertValid(exprManager.greaterThan(two, one)); // 2 > 1
 		assertValid(exprManager.eq(two, exprManager.plus(one, one))); // 2==1+1
 		assertValid(exprManager.eq(exprManager.negate(one), negOne)); // -(1)
-		                                                              // ==
-		                                                              // (-1)
+																																	// ==
+																																	// (-1)
 
 		Expression x = exprManager.variable("x", exprManager.integerType(), true);
 		assertValid(exprManager.eq(exprManager.plus(zero, x), x)); // 0
-		                                                           // +
-		                                                           // x
-		                                                           // ==
-		                                                           // x
+																																// +
+																																// x
+																																// ==
+																																// x
 		assertValid(exprManager.eq(exprManager.mult(zero, x), zero)); // 0
-		                                                              // *
-		                                                              // x
-		                                                              // ==
-		                                                              // 0
+																																	// *
+																																	// x
+																																	// ==
+																																	// 0
 		assertValid(exprManager.eq(exprManager.mult(one, x), x)); // 1
-		                                                          // *
-		                                                          // x
-		                                                          // ==
-		                                                          // x
+																															// *
+																															// x
+																															// ==
+																															// x
 		assertValid(exprManager.eq(exprManager.mult(negOne, x), exprManager.negate(
-		    x))); // -1 * x == -x
+				x))); // -1 * x == -x
 
 		assertValid(exprManager.eq(exprManager.minus(x, x), zero)); // x
-		                                                            // -
-		                                                            // x
-		                                                            // ==
-		                                                            // 0
+																																// -
+																																// x
+																																// ==
+																																// 0
 
 		/*
 		 * // divide isn't implemented yet
@@ -568,12 +568,12 @@ public class ExpressionManagerTest {
 		 * .unaryMinusExpr(x), x), negOne)); // -x / x == -1
 		 */
 		assertValid(exprManager.eq(exprManager.plus(x, exprManager.negate(x)),
-		    zero)); // x + -x == 0
+				zero)); // x + -x == 0
 		assertValid(exprManager.eq(exprManager.mult(negOne, negOne), one)); // -1 *
-		                                                                    // -1 ==
-		                                                                    // 1
+																																				// -1 ==
+																																				// 1
 		assertValid(exprManager.eq(exprManager.minus(zero, x), exprManager.negate(
-		    x))); // 0 - x == -x
+				x))); // 0 - x == -x
 	}
 
 	@Test
@@ -593,11 +593,11 @@ public class ExpressionManagerTest {
 		Selector s2 = exprManager.selector("s2", t1Stub);
 		Constructor c2 = exprManager.constructor("c2", s2);
 		Constructor c3 = exprManager.constructor("c3"); // important: this is the
-		                                                // base case!
+																										// base case!
 
 		ImmutableList<? extends InductiveType> ts = exprManager.dataTypes(
-		    ImmutableList.of("t1", "t2"), ImmutableList.of(c1), ImmutableList.of(c2,
-		        c3));
+				ImmutableList.of("t1", "t2"), ImmutableList.of(c1), ImmutableList.of(c2,
+						c3));
 
 		assertEquals(2, ts.size());
 		InductiveType t1 = ts.get(0);
@@ -630,10 +630,10 @@ public class ExpressionManagerTest {
 		Selector s2 = exprManager.selector("s", t1Stub);
 		Constructor c2 = exprManager.constructor("c", s2);
 		Constructor c3 = exprManager.constructor("c2"); // important: this is the
-		                                                // base case!
+																										// base case!
 
 		exprManager.dataTypes(ImmutableList.of("t1", "t2"), ImmutableList.of(c1),
-		    ImmutableList.of(c2, c3));
+				ImmutableList.of(c2, c3));
 
 	}
 
@@ -690,14 +690,14 @@ public class ExpressionManagerTest {
 		TupleExpression tuple = exprManager.tuple(t1, one, two);
 		assertEquals(ImmutableList.of(one, two), tuple.getChildren());
 		assertEquals(ImmutableList.of(intType, intType), tuple.getType()
-		    .getElementTypes());
+				.getElementTypes());
 
 		TupleType t2 = exprManager.tupleType("t2", three.getType(), half.getType(),
-		    one.getType());
+				one.getType());
 		tuple = exprManager.tuple(t2, three, half, one);
 		assertEquals(ImmutableList.of(three, half, one), tuple.getChildren());
 		assertEquals(ImmutableList.of(intType, ratType, intType), tuple.getType()
-		    .getElementTypes());
+				.getElementTypes());
 	}
 
 	@Test
@@ -710,11 +710,11 @@ public class ExpressionManagerTest {
 
 		TupleType tupleType = exprManager.tupleType("tuple_1", intType, intType);
 		assertEquals(ImmutableList.of(intType, intType), tupleType
-		    .getElementTypes());
+				.getElementTypes());
 
 		tupleType = exprManager.tupleType("tuple_2", ratType, intType, ratType);
 		assertEquals(ImmutableList.of(ratType, intType, ratType), tupleType
-		    .getElementTypes());
+				.getElementTypes());
 	}
 
 	@Test
@@ -726,52 +726,52 @@ public class ExpressionManagerTest {
 
 		/** Record expression must have more than one child */
 		RecordType r1 = exprManager.recordType("record_1", ImmutableList.of("fld_1",
-		    "fld_2"), ImmutableList.of(one.getType(), two.getType()));
+				"fld_2"), ImmutableList.of(one.getType(), two.getType()));
 		RecordExpression record_1 = exprManager.record(r1, one, two);
 		assertEquals(ImmutableList.of(one, two), record_1.getChildren());
 		assertEquals(ImmutableList.of(intType, intType), record_1.getType()
-		    .getElementTypes());
+				.getElementTypes());
 
 		RecordType r2 = exprManager.recordType("record_2", ImmutableList.of("fld_1",
-		    "fld_2", "fld_3"), ImmutableList.of(three.getType(), half.getType(), one
-		        .getType()));
+				"fld_2", "fld_3"), ImmutableList.of(three.getType(), half.getType(), one
+						.getType()));
 		RecordExpression record_2 = exprManager.record(r2, three, half, one);
 		assertEquals(ImmutableList.of(three, half, one), record_2.getChildren());
 		assertEquals(ImmutableList.of(intType, ratType, intType), record_2.getType()
-		    .getElementTypes());
+				.getElementTypes());
 	}
 
 	@Test
 	public void testRecordType() {
 		RecordType recordType = exprManager.recordType("record_1", "fld_1",
-		    intType);
+				intType);
 		assertEquals(ImmutableList.of(intType), recordType.getElementTypes());
 
 		RecordType recordType_2 = exprManager.recordType("record_2", ImmutableList
-		    .of("fld_1", "fld_2"), ImmutableList.of(intType, intType));
+				.of("fld_1", "fld_2"), ImmutableList.of(intType, intType));
 		assertEquals(ImmutableList.of(intType, intType), recordType_2
-		    .getElementTypes());
+				.getElementTypes());
 
 		RecordType recordType_3 = exprManager.recordType("record_3", ImmutableList
-		    .of("fld_1", "fld_2", "fld_3"), ImmutableList.of(ratType, intType,
-		        ratType));
+				.of("fld_1", "fld_2", "fld_3"), ImmutableList.of(ratType, intType,
+						ratType));
 		assertEquals(ImmutableList.of(ratType, intType, ratType), recordType_3
-		    .getElementTypes());
+				.getElementTypes());
 	}
 
 	@Test
 	public void testVarIntegerExpression() {
 		VariableExpression x = exprManager.variable("x", exprManager.integerType(),
-		    true);
+				true);
 		assertEquals(intType, x.getType());
 	}
 
 	@Test
 	public void testVarIntegerExpression2() {
 		VariableExpression x = exprManager.variable("x", exprManager.integerType(),
-		    true);
+				true);
 		VariableExpression x2 = exprManager.variable("x", exprManager.integerType(),
-		    true);
+				true);
 		assertTrue(!x.equals(x2));
 	}
 }

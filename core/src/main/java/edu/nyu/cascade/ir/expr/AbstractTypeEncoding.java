@@ -13,7 +13,7 @@ import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
 
 public abstract class AbstractTypeEncoding<E extends Expression> implements
-    TypeEncoding<E> {
+		TypeEncoding<E> {
 	private final ExpressionManager exprManager;
 	private final Type type;
 
@@ -23,7 +23,7 @@ public abstract class AbstractTypeEncoding<E extends Expression> implements
 	}
 
 	protected AbstractTypeEncoding(ExpressionManager exprManager, Type type,
-	    List<TypeEncoding<?>> subEncodings) {
+			List<TypeEncoding<?>> subEncodings) {
 		this.exprManager = exprManager;
 		this.type = type;
 	}
@@ -98,7 +98,7 @@ public abstract class AbstractTypeEncoding<E extends Expression> implements
 	 */
 	@Override
 	public E boundExpression(String name, int index, IRType iType,
-	    boolean fresh) {
+			boolean fresh) {
 		return boundExpression(name, index, fresh);
 	}
 

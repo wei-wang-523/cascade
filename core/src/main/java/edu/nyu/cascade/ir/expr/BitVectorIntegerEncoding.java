@@ -17,8 +17,8 @@ import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 
 public class BitVectorIntegerEncoding extends
-    AbstractTypeEncoding<BitVectorExpression> implements
-    IntegerEncoding<BitVectorExpression> {
+		AbstractTypeEncoding<BitVectorExpression> implements
+		IntegerEncoding<BitVectorExpression> {
 	private static final String UNKNOWN_VARIABLE_NAME = "bv_encoding_unknown";
 
 	public static BitVectorIntegerEncoding create(ExpressionManager exprManager) {
@@ -28,25 +28,25 @@ public class BitVectorIntegerEncoding extends
 	}
 
 	private BitVectorIntegerEncoding(ExpressionManager exprManager,
-	    BitVectorType type) {
+			BitVectorType type) {
 		super(exprManager, type);
 	}
 
 	@Override
 	public BitVectorExpression bitwiseAnd(BitVectorExpression a,
-	    BitVectorExpression b) {
+			BitVectorExpression b) {
 		return a.and(b);
 	}
 
 	@Override
 	public BitVectorExpression bitwiseOr(BitVectorExpression a,
-	    BitVectorExpression b) {
+			BitVectorExpression b) {
 		return a.or(b);
 	}
 
 	@Override
 	public BitVectorExpression bitwiseXor(BitVectorExpression a,
-	    BitVectorExpression b) {
+			BitVectorExpression b) {
 		return a.xor(b);
 	}
 
@@ -58,19 +58,19 @@ public class BitVectorIntegerEncoding extends
 	@Override
 	public BitVectorExpression characterConstant(int c) {
 		return getExpressionManager().bitVectorConstant(c, (int) getCTypeAnalyzer()
-		    .getWidth(NumberT.CHAR));
+				.getWidth(NumberT.CHAR));
 	}
 
 	@Override
 	public BitVectorExpression constant(int c) {
 		return getExpressionManager().bitVectorConstant(c, (int) getCTypeAnalyzer()
-		    .getWidth(NumberT.INT));
+				.getWidth(NumberT.INT));
 	}
 
 	@Override
 	public BitVectorExpression constant(long c) {
 		return getExpressionManager().bitVectorConstant(c, (int) getCTypeAnalyzer()
-		    .getWidth(NumberT.LONG));
+				.getWidth(NumberT.LONG));
 	}
 
 	@Override
@@ -91,7 +91,7 @@ public class BitVectorIntegerEncoding extends
 
 	@Override
 	public BooleanExpression distinct(
-	    Iterable<? extends BitVectorExpression> exprs) {
+			Iterable<? extends BitVectorExpression> exprs) {
 		return getExpressionManager().distinct(exprs);
 	}
 
@@ -102,61 +102,61 @@ public class BitVectorIntegerEncoding extends
 
 	@Override
 	public BooleanExpression greaterThan(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return getExpressionManager().greaterThan(lhs, rhs);
 	}
 
 	@Override
 	public BooleanExpression signedGreaterThan(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return getExpressionManager().signedGreaterThan(lhs, rhs);
 	}
 
 	@Override
 	public BooleanExpression greaterThanOrEqual(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return getExpressionManager().greaterThanOrEqual(lhs, rhs);
 	}
 
 	@Override
 	public BooleanExpression signedGreaterThanOrEqual(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return getExpressionManager().signedGreaterThanOrEqual(lhs, rhs);
 	}
 
 	@Override
 	public BitVectorExpression ifThenElse(BooleanExpression b,
-	    BitVectorExpression thenExpr, BitVectorExpression elseExpr) {
+			BitVectorExpression thenExpr, BitVectorExpression elseExpr) {
 		return b.ifThenElse(thenExpr, elseExpr).asBitVector();
 	}
 
 	@Override
 	public BooleanExpression lessThan(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return getExpressionManager().lessThan(lhs, rhs);
 	}
 
 	@Override
 	public BooleanExpression signedLessThan(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return getExpressionManager().signedLessThan(lhs, rhs);
 	}
 
 	@Override
 	public BooleanExpression lessThanOrEqual(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return getExpressionManager().lessThanOrEqual(lhs, rhs);
 	}
 
 	@Override
 	public BooleanExpression signedLessThanOrEqual(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return getExpressionManager().signedLessThanOrEqual(lhs, rhs);
 	}
 
 	@Override
 	public BitVectorExpression minus(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return getExpressionManager().bitVectorMinus(lhs, rhs);
 	}
 
@@ -167,7 +167,7 @@ public class BitVectorIntegerEncoding extends
 
 	@Override
 	public BooleanExpression neq(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return lhs.neq(rhs);
 	}
 
@@ -183,7 +183,7 @@ public class BitVectorIntegerEncoding extends
 
 	@Override
 	public BitVectorExpression ofInteger(BitVectorExpression bv, int size,
-	    boolean isSigned) {
+			boolean isSigned) {
 		int srcSize = bv.getSize();
 		if (srcSize == size)
 			return bv;
@@ -195,37 +195,37 @@ public class BitVectorIntegerEncoding extends
 
 	@Override
 	public BitVectorExpression plus(BitVectorExpression first,
-	    Iterable<? extends BitVectorExpression> rest) {
+			Iterable<? extends BitVectorExpression> rest) {
 		return first.plus(rest);
 	}
 
 	@Override
 	public BitVectorExpression plus(BitVectorExpression first,
-	    BitVectorExpression... rest) {
+			BitVectorExpression... rest) {
 		return first.plus(rest);
 	}
 
 	@Override
 	public BitVectorExpression plus(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return lhs.plus(rhs);
 	}
 
 	@Override
 	public BitVectorExpression times(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return lhs.times(rhs);
 	}
 
 	@Override
 	public BitVectorExpression divide(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return lhs.divides(rhs);
 	}
 
 	@Override
 	public BitVectorExpression mod(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return lhs.signedRems(rhs);
 	}
 
@@ -270,37 +270,37 @@ public class BitVectorIntegerEncoding extends
 
 	@Override
 	public BitVectorExpression lshift(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return lhs.lshift(rhs);
 	}
 
 	@Override
 	public BitVectorExpression rshift(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return lhs.rshift(rhs);
 	}
 
 	@Override
 	public BitVectorExpression signedRshift(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return lhs.signedRshift(rhs);
 	}
 
 	@Override
 	public BitVectorExpression signedDivide(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return lhs.signedDivides(rhs);
 	}
 
 	@Override
 	public BitVectorExpression rem(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return lhs.rems(rhs);
 	}
 
 	@Override
 	public BitVectorExpression signedRem(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		return lhs.signedRems(rhs);
 	}
 
@@ -316,7 +316,7 @@ public class BitVectorIntegerEncoding extends
 
 	@Override
 	public BooleanExpression eq(BitVectorExpression lhs,
-	    BitVectorExpression rhs) {
+			BitVectorExpression rhs) {
 		if (lhs.getSize() > rhs.getSize())
 			rhs = rhs.signExtend(lhs.getSize());
 		if (lhs.getSize() < rhs.getSize())
@@ -332,10 +332,10 @@ public class BitVectorIntegerEncoding extends
 
 	@Override
 	public BitVectorExpression variable(String name, IRType iType,
-	    boolean fresh) {
+			boolean fresh) {
 		Preconditions.checkArgument(iType.getKind().equals(IRType.Kind.INTEGER));
 		int size = (int) getCTypeAnalyzer().getWidth(((IRIntegerType) iType)
-		    .getSrcType());
+				.getSrcType());
 		Type intType = getExpressionManager().bitVectorType(size);
 		return variable(name, intType, fresh);
 	}

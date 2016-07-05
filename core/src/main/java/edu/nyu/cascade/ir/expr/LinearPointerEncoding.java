@@ -8,7 +8,7 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 
 public class LinearPointerEncoding<T extends Expression> extends
-    AbstractTypeEncoding<T> implements PointerEncoding<T> {
+		AbstractTypeEncoding<T> implements PointerEncoding<T> {
 
 	private static final String UNKNOWN_VARIABLE_NAME = "ptr_encoding_unknown";
 
@@ -20,7 +20,7 @@ public class LinearPointerEncoding<T extends Expression> extends
 	}
 
 	public static <T extends Expression> LinearPointerEncoding<T> create(
-	    IntegerEncoding<T> _encoding) {
+			IntegerEncoding<T> _encoding) {
 		return new LinearPointerEncoding<T>(_encoding);
 	}
 

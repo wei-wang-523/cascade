@@ -16,15 +16,15 @@ import edu.nyu.cascade.prover.type.Selector;
 
 final class SelectExpressionImpl extends ExpressionImpl {
 	static SelectExpressionImpl create(ExpressionManagerImpl exprManager,
-	    Selector selector, Expression val) {
+			Selector selector, Expression val) {
 		checkArgument(val.isInductive());
 		checkArgument(val.asInductive().getType().getConstructors().contains(
-		    selector.getConstructor()));
+				selector.getConstructor()));
 		return new SelectExpressionImpl(exprManager, selector, val);
 	}
 
 	private SelectExpressionImpl(final ExpressionManagerImpl exprManager,
-	    final Selector selector, Expression val) {
+			final Selector selector, Expression val) {
 		super(exprManager, DATATYPE_SELECT, new UnaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr arg) throws Exception {
@@ -32,10 +32,10 @@ final class SelectExpressionImpl extends ExpressionImpl {
 				DatatypeType dtt = new DatatypeType(type);
 				Datatype dt = dtt.getDatatype();
 				long constructorIndex = Datatype.indexOf(dt.getConstructor(selector
-		        .getConstructor().getName()));
+						.getConstructor().getName()));
 				DatatypeConstructor dtc = dt.get(constructorIndex);
 				return em.mkExpr(edu.nyu.acsys.CVC4.Kind.APPLY_SELECTOR, dtc
-		        .getSelector(selector.getName()), arg);
+						.getSelector(selector.getName()), arg);
 				/* return em.datatypeSelExpr(selector.getName(), arg); */
 			}
 		}, val);

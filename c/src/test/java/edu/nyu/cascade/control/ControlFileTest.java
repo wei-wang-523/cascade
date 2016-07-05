@@ -17,9 +17,9 @@ import edu.nyu.cascade.util.FileUtils;
 
 public class ControlFileTest {
 	public static final File programs_location = FileUtils.absoluteResourcePath(
-	    "syntax");
+			"syntax");
 	public static final File bad_programs_location = FileUtils.filePath(
-	    programs_location, "bad");
+			programs_location, "bad");
 
 	private void checkPosition(Position p) {
 		assertNotNull("No File for Position", p.getFile());
@@ -49,12 +49,12 @@ public class ControlFileTest {
 
 			List<File> sfs = cf.getSourceFiles();
 			assertFalse("No source files in control file.", sfs == null || sfs
-			    .isEmpty());
+					.isEmpty());
 
 			for (File sf : sfs) {
 				assertNotNull(sf);
 				assertTrue("file " + sf.getAbsolutePath() + " does not exist", sf
-				    .exists());
+						.exists());
 			}
 
 			// for( TheoryId theory : cf.getTheories() ) {

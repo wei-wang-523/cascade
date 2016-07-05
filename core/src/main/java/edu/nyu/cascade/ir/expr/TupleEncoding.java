@@ -25,7 +25,7 @@ public interface TupleEncoding<T extends Expression> {
 	ExpressionManager getExpressionManager();
 
 	Instance<T> getInstance(String name,
-	    Iterable<TypeEncoding<?>> elementEncodings);
+			Iterable<TypeEncoding<?>> elementEncodings);
 
 	Instance<T> getInstance(String name, TypeEncoding<?>... elementEncodings);
 

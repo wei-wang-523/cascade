@@ -242,7 +242,7 @@ public interface ExpressionManager {
 	InductiveExpression construct(Constructor constructor, Expression... args);
 
 	InductiveExpression construct(Constructor constructor,
-	    Iterable<? extends Expression> args);
+			Iterable<? extends Expression> args);
 
 	/**
 	 * Create a datatype constructor with the given selectors. If
@@ -276,7 +276,7 @@ public interface ExpressionManager {
 	 *           <code>names.size()</code>
 	 */
 	ImmutableList<? extends InductiveType> dataTypes(List<String> names,
-	    List<? extends Constructor>... constructorLists);
+			List<? extends Constructor>... constructorLists);
 
 	/**
 	 * Create an expression stating that all of the children are pairwise
@@ -296,7 +296,7 @@ public interface ExpressionManager {
 	 *         are pairwise distinct
 	 */
 	BooleanExpression distinct(Expression first, Expression second,
-	    Expression... rest);
+			Expression... rest);
 
 	/**
 	 * Create an expression stating that all of the children are pairwise
@@ -326,7 +326,7 @@ public interface ExpressionManager {
 	Expression divide(Expression numerator, Expression denominator);
 
 	BitVectorExpression signedDivide(Expression numerator,
-	    Expression denominator);
+			Expression denominator);
 
 	/**
 	 * Given two integer expression, create the bit-vector expression representing
@@ -367,40 +367,40 @@ public interface ExpressionManager {
 	BooleanExpression exists(Expression var, Expression body);
 
 	BooleanExpression exists(Expression var, Expression body,
-	    Iterable<? extends Expression> patterns);
+			Iterable<? extends Expression> patterns);
 
 	BooleanExpression exists(Expression var, Expression body,
-	    Iterable<? extends Expression> patterns,
-	    Iterable<? extends Expression> noPatterns);
+			Iterable<? extends Expression> patterns,
+			Iterable<? extends Expression> noPatterns);
 
 	BooleanExpression exists(Expression var1, Expression var2, Expression body);
 
 	BooleanExpression exists(Expression var1, Expression var2, Expression body,
-	    Iterable<? extends Expression> patterns);
+			Iterable<? extends Expression> patterns);
 
 	BooleanExpression exists(Expression var1, Expression var2, Expression body,
-	    Iterable<? extends Expression> patterns,
-	    Iterable<? extends Expression> noPatterns);
+			Iterable<? extends Expression> patterns,
+			Iterable<? extends Expression> noPatterns);
 
 	BooleanExpression exists(Expression var1, Expression var2, Expression var3,
-	    Expression body);
+			Expression body);
 
 	BooleanExpression exists(Expression var1, Expression var2, Expression var3,
-	    Expression body, Iterable<? extends Expression> patterns);
+			Expression body, Iterable<? extends Expression> patterns);
 
 	BooleanExpression exists(Expression var1, Expression var2, Expression var3,
-	    Expression body, Iterable<? extends Expression> patterns,
-	    Iterable<? extends Expression> noPatterns);
+			Expression body, Iterable<? extends Expression> patterns,
+			Iterable<? extends Expression> noPatterns);
 
 	BooleanExpression exists(Iterable<? extends Expression> vars,
-	    Expression body);
+			Expression body);
 
 	BooleanExpression exists(Iterable<? extends Expression> vars, Expression body,
-	    Iterable<? extends Expression> patterns);
+			Iterable<? extends Expression> patterns);
 
 	BooleanExpression exists(Iterable<? extends Expression> vars, Expression body,
-	    Iterable<? extends Expression> patterns,
-	    Iterable<? extends Expression> noPatterns);
+			Iterable<? extends Expression> patterns,
+			Iterable<? extends Expression> noPatterns);
 
 	/**
 	 * Get the sub-vector between indices i and j in bitvector b, where i is the
@@ -435,40 +435,40 @@ public interface ExpressionManager {
 	BooleanExpression forall(Expression var, Expression body);
 
 	BooleanExpression forall(Expression var, Expression body,
-	    Iterable<? extends Expression> patterns);
+			Iterable<? extends Expression> patterns);
 
 	BooleanExpression forall(Expression var, Expression body,
-	    Iterable<? extends Expression> patterns,
-	    Iterable<? extends Expression> noPatterns);
+			Iterable<? extends Expression> patterns,
+			Iterable<? extends Expression> noPatterns);
 
 	BooleanExpression forall(Expression var1, Expression var2, Expression body);
 
 	BooleanExpression forall(Expression var1, Expression var2, Expression body,
-	    Iterable<? extends Expression> patterns);
+			Iterable<? extends Expression> patterns);
 
 	BooleanExpression forall(Expression var1, Expression var2, Expression body,
-	    Iterable<? extends Expression> patterns,
-	    Iterable<? extends Expression> noPatterns);
+			Iterable<? extends Expression> patterns,
+			Iterable<? extends Expression> noPatterns);
 
 	BooleanExpression forall(Expression var1, Expression var2, Expression var3,
-	    Expression body);
+			Expression body);
 
 	BooleanExpression forall(Expression var1, Expression var2, Expression var3,
-	    Expression body, Iterable<? extends Expression> patterns);
+			Expression body, Iterable<? extends Expression> patterns);
 
 	BooleanExpression forall(Expression var1, Expression var2, Expression var3,
-	    Expression body, Iterable<? extends Expression> patterns,
-	    Iterable<? extends Expression> noPatterns);
+			Expression body, Iterable<? extends Expression> patterns,
+			Iterable<? extends Expression> noPatterns);
 
 	BooleanExpression forall(Iterable<? extends Expression> vars,
-	    Expression body);
+			Expression body);
 
 	BooleanExpression forall(Iterable<? extends Expression> vars, Expression body,
-	    Iterable<? extends Expression> patterns);
+			Iterable<? extends Expression> patterns);
 
 	BooleanExpression forall(Iterable<? extends Expression> vars, Expression body,
-	    Iterable<? extends Expression> patterns,
-	    Iterable<? extends Expression> noPatterns);
+			Iterable<? extends Expression> patterns,
+			Iterable<? extends Expression> noPatterns);
 
 	/**
 	 * Wrap the arg into a rewrite rule axiom
@@ -477,24 +477,24 @@ public interface ExpressionManager {
 	 * @return the rewrite rule
 	 */
 	BooleanExpression rewriteRule(Iterable<? extends Expression> vars,
-	    Expression guard, Expression rule);
+			Expression guard, Expression rule);
 
 	/**
 	 * Compose rewrite rule
 	 */
 
 	BooleanExpression rrRewrite(Expression head, Expression body,
-	    Iterable<? extends Expression> triggers);
+			Iterable<? extends Expression> triggers);
 
 	BooleanExpression rrRewrite(Expression head, Expression body);
 
 	BooleanExpression rrReduction(Expression head, Expression body,
-	    Iterable<? extends Expression> triggers);
+			Iterable<? extends Expression> triggers);
 
 	BooleanExpression rrReduction(Expression head, Expression body);
 
 	BooleanExpression rrDeduction(Expression head, Expression body,
-	    Iterable<? extends Expression> triggers);
+			Iterable<? extends Expression> triggers);
 
 	BooleanExpression rrDeduction(Expression head, Expression body);
 
@@ -529,7 +529,7 @@ public interface ExpressionManager {
 	FunctionType functionType(Type argType, Type range);
 
 	FunctionExpression functionDeclarator(String name, FunctionType functionType,
-	    boolean fresh);
+			boolean fresh);
 
 	/**
 	 * Create a new greater than or equal expression.
@@ -729,10 +729,10 @@ public interface ExpressionManager {
 	Expression plus(Expression first, Expression... rest);
 
 	BitVectorExpression bitVectorPlus(int size, Expression first,
-	    Expression... rest);
+			Expression... rest);
 
 	BitVectorExpression bitVectorPlus(int size,
-	    Iterable<? extends Expression> args);
+			Iterable<? extends Expression> args);
 
 	/**
 	 * Given a list of integer expressions, create a new integer expression
@@ -809,7 +809,7 @@ public interface ExpressionManager {
 	 * same number of elements.
 	 */
 	Expression subst(Expression e, Iterable<? extends Expression> oldExprs,
-	    Iterable<? extends Expression> newExprs);
+			Iterable<? extends Expression> newExprs);
 
 	BooleanExpression testConstructor(Constructor constructor, Expression val);
 
@@ -830,7 +830,7 @@ public interface ExpressionManager {
 	RecordExpression record(Type type, Expression first, Expression... rest);
 
 	RecordType recordType(String tname, Iterable<String> names,
-	    Iterable<? extends Type> elementTypes);
+			Iterable<? extends Type> elementTypes);
 
 	RecordType recordType(String tname, String name, Type elementType);
 
@@ -888,10 +888,10 @@ public interface ExpressionManager {
 	BitVectorExpression zeroExtend(int size, Expression bv);
 
 	BitVectorExpression bitVectorPlus(int size, Expression left,
-	    Expression right);
+			Expression right);
 
 	BitVectorExpression bitVectorMult(int size, Expression left,
-	    Expression right);
+			Expression right);
 
 	TupleExpression asTuple(Expression e);
 

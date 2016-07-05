@@ -27,19 +27,19 @@ public class VariCellLinearFormatter extends AbstractDataFormatter {
 
 	public static VariCellLinearFormatter create(ExpressionEncoding encoding) {
 		Preconditions.checkArgument(Preferences.isSet(
-		    Preferences.OPTION_BYTE_BASED));
+				Preferences.OPTION_BYTE_BASED));
 		return new VariCellLinearFormatter(encoding);
 	}
 
 	@Override
 	public Type getValueType() {
 		return encoding.getExpressionManager().bitVectorType(encoding
-		    .getCTypeAnalyzer().getByteSize());
+				.getCTypeAnalyzer().getByteSize());
 	}
 
 	@Override
 	public Expression indexMemoryArray(ArrayExpression memory, Expression index,
-	    xtc.type.Type idxType) {
+			xtc.type.Type idxType) {
 		Preconditions.checkArgument(index.isBitVector());
 		int valueSize = (int) encoding.getCTypeAnalyzer().getWidth(idxType);
 		int cellSize = memory.getElementType().asBitVectorType().getSize();
@@ -51,7 +51,7 @@ public class VariCellLinearFormatter extends AbstractDataFormatter {
 		Expression res = null;
 		for (int i = 0; i < length; i++) {
 			Expression offExpr = ptrEncoding.ofExpression(encoding.integerConstant(
-			    i));
+					i));
 			Expression idxExpr = encoding.pointerPlus(index, offExpr);
 			Expression value = memory.index(idxExpr);
 			if (res == null)
@@ -66,7 +66,7 @@ public class VariCellLinearFormatter extends AbstractDataFormatter {
 	public Expression castToSize(Expression size) {
 		// size is unsigned long
 		return encoding.castToInteger(size, getSizeType().asBitVectorType()
-		    .getSize(), false);
+				.getSize(), false);
 	}
 
 	@Override
@@ -93,9 +93,9 @@ public class VariCellLinearFormatter extends AbstractDataFormatter {
 
 	@Override
 	public BooleanExpression memorySet(ArrayExpression memory, Expression region,
-	    Expression size, Expression value) {
+			Expression size, Expression value) {
 		int cellSize = memory.getType().getElementType().asBitVectorType()
-		    .getSize();
+				.getSize();
 		int byteSize = CType.getInstance().getByteSize();
 		// Extract the the low 8 bit of value
 		Expression valueToChar = encoding.castToInteger(value, byteSize);
@@ -108,21 +108,21 @@ public class VariCellLinearFormatter extends AbstractDataFormatter {
 		}
 
 		Expression idxVar = getSizeType().asBitVectorType().boundVar(QF_IDX_NAME,
-		    true);
+				true);
 		Expression idxWithinRrange = encoding.and(encoding.greaterThanOrEqual(
-		    idxVar, getSizeZero()), encoding.lessThan(idxVar, size));
+				idxVar, getSizeZero()), encoding.lessThan(idxVar, size));
 		Expression setToValue = memory.index(encoding.pointerPlus(region, idxVar))
-		    .eq(valueInCellSize);
+				.eq(valueInCellSize);
 
 		return encoding.forall(idxVar, encoding.implies(idxWithinRrange,
-		    setToValue)).asBooleanExpression();
+				setToValue)).asBooleanExpression();
 	}
 
 	@Override
 	public BooleanExpression memorySet(ArrayExpression memory, Expression region,
-	    Expression size, int value) {
+			Expression size, int value) {
 		int cellSize = memory.getType().getElementType().asBitVectorType()
-		    .getSize();
+				.getSize();
 		int byteSize = CType.getInstance().getByteSize();
 		while (cellSize >= byteSize) {
 			byteSize += byteSize;
@@ -130,39 +130,39 @@ public class VariCellLinearFormatter extends AbstractDataFormatter {
 		}
 
 		Expression valueInCellSize = encoding.castToInteger(encoding
-		    .integerConstant(value), cellSize);
+				.integerConstant(value), cellSize);
 		Expression idxVar = getSizeType().asBitVectorType().boundVar(QF_IDX_NAME,
-		    true);
+				true);
 		Expression idxWithinRrange = encoding.and(encoding.greaterThanOrEqual(
-		    idxVar, getSizeZero()), encoding.lessThan(idxVar, size));
+				idxVar, getSizeZero()), encoding.lessThan(idxVar, size));
 		Expression setToValue = memory.index(encoding.pointerPlus(region, idxVar))
-		    .eq(valueInCellSize);
+				.eq(valueInCellSize);
 
 		return encoding.forall(idxVar, encoding.implies(idxWithinRrange,
-		    setToValue)).asBooleanExpression();
+				setToValue)).asBooleanExpression();
 	}
 
 	@Override
 	public BooleanExpression memoryCopy(ArrayExpression destMemory,
-	    ArrayExpression srcMemory, Expression destRegion, Expression srcRegion,
-	    Expression size) {
+			ArrayExpression srcMemory, Expression destRegion, Expression srcRegion,
+			Expression size) {
 		Expression idxVar = getSizeType().asBitVectorType().boundVar(QF_IDX_NAME,
-		    true);
+				true);
 		Expression idxWithinRrange = encoding.and(encoding.greaterThanOrEqual(
-		    idxVar, getSizeZero()), encoding.lessThan(idxVar, size));
+				idxVar, getSizeZero()), encoding.lessThan(idxVar, size));
 
 		Expression destValue = destMemory.index(encoding.pointerPlus(destRegion,
-		    idxVar));
+				idxVar));
 		Expression srcValue = srcMemory.index(encoding.pointerPlus(srcRegion,
-		    idxVar));
+				idxVar));
 
 		return encoding.forall(idxVar, encoding.implies(idxWithinRrange, destValue
-		    .eq(srcValue))).asBooleanExpression();
+				.eq(srcValue))).asBooleanExpression();
 	}
 
 	@Override
 	protected ArrayExpression updateScalarInMem(ArrayExpression memory,
-	    xtc.type.Type idxType, Expression index, Expression value) {
+			xtc.type.Type idxType, Expression index, Expression value) {
 		Preconditions.checkArgument(!(idxType.isUnion() || idxType.isArray()));
 
 		if (isSingleCell(memory, idxType))
@@ -179,7 +179,7 @@ public class VariCellLinearFormatter extends AbstractDataFormatter {
 
 		for (int i = 0; i < length; i++) {
 			Expression offExpr = ptrEncoding.ofExpression(encoding.integerConstant(
-			    i));
+					i));
 			Expression idxExpr = encoding.pointerPlus(index, offExpr);
 			int high = (i + 1) * cellSize - 1;
 			int low = i * cellSize;

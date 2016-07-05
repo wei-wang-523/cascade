@@ -5,10 +5,10 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.Type;
 
 final class ArrayBoundVariableImpl extends BoundVariableExpressionImpl
-    implements ArrayExpression {
+		implements ArrayExpression {
 
 	ArrayBoundVariableImpl(ExpressionManagerImpl exprManager, String name,
-	    ArrayTypeImpl type, boolean fresh) {
+			ArrayTypeImpl type, boolean fresh) {
 		super(exprManager, name, type, fresh);
 	}
 

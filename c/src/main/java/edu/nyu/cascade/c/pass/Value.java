@@ -11,7 +11,7 @@ public class Value implements Comparable<Value>, IRVar {
 	private String Scope;
 	private BigInteger ID;
 	private static BigInteger nextID = BigInteger.ZERO;
-	
+
 	Value(Type type) {
 		ID = nextID;
 		Type = type;
@@ -22,10 +22,10 @@ public class Value implements Comparable<Value>, IRVar {
 	public int compareTo(Value o) {
 		return ID.compareTo(o.ID);
 	}
-	
+
 	@Override
 	public String toString() {
-		if(Name == null || Scope == null) 
+		if (Name == null || Scope == null)
 			return "";
 		else
 			return Scope + ", " + Name;
@@ -38,19 +38,19 @@ public class Value implements Comparable<Value>, IRVar {
 	void setType(Type type) {
 		Type = type;
 	}
-	
+
 	void setName(String name) {
 		Name = name;
 	}
-	
+
 	public String getName() {
 		return Name;
 	}
-	
+
 	boolean hasName() {
 		return Name != null;
 	}
-	
+
 	@Override
 	public String getScopeName() {
 		return Scope;
@@ -59,7 +59,7 @@ public class Value implements Comparable<Value>, IRVar {
 	void setScope(String scope) {
 		Scope = scope;
 	}
-	
+
 	boolean hasScope() {
 		return Scope != null;
 	}
@@ -67,7 +67,7 @@ public class Value implements Comparable<Value>, IRVar {
 	@Override
 	public void setProperty(String id, Object o) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override

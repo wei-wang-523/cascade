@@ -64,7 +64,7 @@ public class TraceFactory {
 	}
 
 	public void filterCounterExample(ExpressionManager exprManager,
-	    IRTraceNode entry) {
+			IRTraceNode entry) {
 		entry.filterSuccessor(exprManager);
 	}
 

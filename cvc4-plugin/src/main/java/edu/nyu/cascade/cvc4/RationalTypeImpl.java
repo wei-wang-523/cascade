@@ -10,12 +10,12 @@ class RationalTypeImpl extends TypeImpl implements RationalType {
 	RationalTypeImpl(ExpressionManagerImpl expressionManager) {
 		super(expressionManager);
 		setCVC4Type(expressionManager.getTheoremProver().getCvc4ExprManager()
-		    .realType());
+				.realType());
 	}
 
 	protected RationalTypeImpl(ExpressionManagerImpl em,
-	    BinaryConstructionStrategy strategy, Expression lowerBound,
-	    Expression upperBound) {
+			BinaryConstructionStrategy strategy, Expression lowerBound,
+			Expression upperBound) {
 		super(em, strategy, lowerBound, upperBound);
 	}
 
@@ -23,14 +23,14 @@ class RationalTypeImpl extends TypeImpl implements RationalType {
 	public RationalExpressionImpl add(Expression first, Expression... rest) {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException(
-		    "RationalType.add(IExpression,IExpression...);");
+				"RationalType.add(IExpression,IExpression...);");
 	}
 
 	@Override
 	public RationalExpressionImpl add(Expression a, Expression b) {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException(
-		    "RationalType.add(IExpression,IExpression);");
+				"RationalType.add(IExpression,IExpression);");
 	}
 
 	@Override
@@ -42,7 +42,7 @@ class RationalTypeImpl extends TypeImpl implements RationalType {
 	@Override
 	public RationalExpressionImpl constant(int numerator, int denominator) {
 		return RationalExpressionImpl.mkConstant(getExpressionManager(), numerator,
-		    denominator);
+				denominator);
 	}
 
 	@Override
@@ -139,18 +139,18 @@ class RationalTypeImpl extends TypeImpl implements RationalType {
 	@Override
 	public RationalVariableImpl variable(String name, boolean fresh) {
 		return RationalVariableImpl.create(getExpressionManager(), name, this,
-		    fresh);
+				fresh);
 	}
 
 	@Override
 	public RationalBoundVariableImpl boundVar(String name, boolean fresh) {
 		return RationalBoundVariableImpl.create(getExpressionManager(), name, this,
-		    fresh);
+				fresh);
 	}
 
 	@Override
 	public RationalBoundVariableImpl boundExpression(String name, int index,
-	    boolean fresh) {
+			boolean fresh) {
 		return boundVar(name, fresh);
 	}
 
@@ -166,9 +166,9 @@ class RationalTypeImpl extends TypeImpl implements RationalType {
 
 	@Override
 	RationalExpressionImpl createExpression(Expr res, Expression e, Kind kind,
-	    Iterable<ExpressionImpl> children) {
+			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isRational());
 		return RationalExpressionImpl.create(getExpressionManager(), kind, res, e
-		    .getType().asRational(), children);
+				.getType().asRational(), children);
 	}
 }

@@ -9,9 +9,9 @@ import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
 
 public class UnimplementedArrayEncoding<T extends Expression> implements
-    ArrayEncoding<T> {
+		ArrayEncoding<T> {
 	private static class Instance<T extends Expression> implements
-	    ArrayEncoding.Instance<T> {
+			ArrayEncoding.Instance<T> {
 
 		@Override
 		public T symbolicConstant(String name, boolean fresh) {
@@ -99,7 +99,7 @@ public class UnimplementedArrayEncoding<T extends Expression> implements
 
 		@Override
 		public T boundExpression(String name, int index, IRType type,
-		    boolean fresh) {
+				boolean fresh) {
 			// TODO Auto-generated method stub
 			return null;
 		}
@@ -129,7 +129,7 @@ public class UnimplementedArrayEncoding<T extends Expression> implements
 
 	@Override
 	public ArrayEncoding.Instance<T> getInstance(TypeEncoding<?> indexEncoding,
-	    TypeEncoding<?> elementEncoding) {
+			TypeEncoding<?> elementEncoding) {
 		return new Instance<T>();
 	}
 

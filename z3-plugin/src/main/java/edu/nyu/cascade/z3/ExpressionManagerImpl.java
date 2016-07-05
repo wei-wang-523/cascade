@@ -91,9 +91,9 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 	 * Z3 in a counter-example.
 	 */
 	private final ConcurrentMap<String, TypeImpl> typeCache = new MapMaker()
-	    .makeMap();
+			.makeMap();
 	private final ConcurrentMap<Expr, ExpressionImpl> exprCache = new MapMaker()
-	    .makeMap();
+			.makeMap();
 
 	ExpressionManagerImpl(TheoremProverImpl theoremProver) {
 		this.theoremProver = theoremProver;
@@ -238,7 +238,7 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 	@Override
 	public ConstructorImpl constructor(String name, Selector... selectors) {
 		return InductiveTypeImpl.constructor(this, Identifiers.uniquify(name),
-		    selectors);
+				selectors);
 	}
 
 	@Override
@@ -260,13 +260,13 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 	 */
 	@Override
 	public ImmutableList<? extends InductiveType> dataTypes(List<String> names,
-	    List<? extends Constructor>... constructorLists) {
+			List<? extends Constructor>... constructorLists) {
 		return InductiveTypeImpl.recursiveTypes(this, names, constructorLists);
 	}
 
 	@Override
 	public FunctionType functionType(Iterable<? extends Type> argTypes,
-	    Type range) {
+			Type range) {
 		return FunctionTypeImpl.create(this, argTypes, range);
 	}
 
@@ -321,13 +321,13 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 
 	@Override
 	public void setTriggers(Expression e,
-	    Iterable<? extends Expression> triggers) {
+			Iterable<? extends Expression> triggers) {
 		e.asBooleanExpression().setTriggers(triggers);
 	}
 
 	@Override
 	public TupleExpressionImpl tuple(Type type, Expression first,
-	    Expression... rest) {
+			Expression... rest) {
 		Preconditions.checkArgument(rest.length > 0);
 		return TupleExpressionImpl.create(this, type, first, rest);
 	}
@@ -339,21 +339,21 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 
 	@Override
 	public TupleExpressionImpl tuple(Type type,
-	    Iterable<? extends Expression> elements) {
+			Iterable<? extends Expression> elements) {
 		Preconditions.checkArgument(Iterables.size(elements) >= 2);
 		return TupleExpressionImpl.create(this, type, elements);
 	}
 
 	@Override
 	public TupleTypeImpl tupleType(String tname,
-	    Iterable<? extends Type> elementTypes) {
+			Iterable<? extends Type> elementTypes) {
 		Preconditions.checkArgument(Iterables.size(elementTypes) >= 2);
 		return TupleTypeImpl.create(this, tname, elementTypes);
 	}
 
 	@Override
 	public TupleTypeImpl tupleType(String tname, Type firstType,
-	    Type... otherTypes) {
+			Type... otherTypes) {
 		Preconditions.checkArgument(otherTypes.length > 0);
 		return TupleTypeImpl.create(this, tname, firstType, otherTypes);
 	}
@@ -365,9 +365,9 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 
 	@Override
 	public RecordTypeImpl recordType(String tname, Iterable<String> elemenNames,
-	    Iterable<? extends Type> elementTypes) {
+			Iterable<? extends Type> elementTypes) {
 		Preconditions.checkArgument(Iterables.size(elementTypes) == Iterables.size(
-		    elemenNames));
+				elemenNames));
 		return RecordTypeImpl.create(this, tname, elemenNames, elementTypes);
 	}
 
@@ -396,7 +396,7 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 	@Override
 	public int valueOfIntegerConstant(Expression e) {
 		Preconditions.checkArgument(e.isConstant() && (e.isInteger() || e
-		    .isBitVector()));
+				.isBitVector()));
 		return ((BitVecNum) toZ3Expr(e)).getBigInteger().intValue();
 	}
 
@@ -416,7 +416,7 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 
 	@Override
 	public RecordExpression record(Type type,
-	    Iterable<? extends Expression> args) {
+			Iterable<? extends Expression> args) {
 		return RecordExpressionImpl.create(this, type, args);
 	}
 
@@ -427,7 +427,7 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 
 	@Override
 	public RecordExpression record(Type type, Expression first,
-	    Expression... rest) {
+			Expression... rest) {
 		return RecordExpressionImpl.create(this, type, first, rest);
 	}
 
@@ -462,14 +462,14 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 			return (TypeImpl) asRecordType((Type) type);
 		} else {
 			throw new UnsupportedOperationException("Unimplemented type conversion: "
-			    + type);
+					+ type);
 		}
 	}
 
 	ExpressionImpl importExpression(Expression expr) {
 		Preconditions.checkNotNull(expr);
 		if (expr instanceof ExpressionImpl && this.equals(expr
-		    .getExpressionManager())) {
+				.getExpressionManager())) {
 			return (ExpressionImpl) expr;
 		} else if (expr.isVariable()) {
 			return VariableExpressionImpl.valueOf(this, expr);
@@ -481,15 +481,15 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 	}
 
 	Iterable<ExpressionImpl> importExpressions(
-	    Iterable<? extends Expression> subExpressions) {
+			Iterable<? extends Expression> subExpressions) {
 		return Iterables.transform(subExpressions,
-		    new Function<Expression, ExpressionImpl>() {
+				new Function<Expression, ExpressionImpl>() {
 
-			    @Override
-			    public ExpressionImpl apply(Expression from) {
-				    return importExpression(from);
-			    }
-		    });
+					@Override
+					public ExpressionImpl apply(Expression from) {
+						return importExpression(from);
+					}
+				});
 	}
 
 	Expr toZ3Expr(Expression expr) {
@@ -498,11 +498,11 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 
 	List<Expr> toZ3Exprs(Iterable<? extends Expression> subExpressions) {
 		return Lists.newArrayList(Iterables.transform(subExpressions,
-		    new Function<Expression, Expr>() {
-			    public Expr apply(Expression child) {
-				    return toZ3Expr(child);
-			    }
-		    }));
+				new Function<Expression, Expr>() {
+					public Expr apply(Expression child) {
+						return toZ3Expr(child);
+					}
+				}));
 	}
 
 	Sort toZ3Type(Type type) {
@@ -530,21 +530,21 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 				TypeImpl resType = lookupType(sort.getName().toString());
 				if (resType == null) {
 					throw new TheoremProverException("Unknown datatype: " + sort.getName()
-					    .toString());
+							.toString());
 				}
 				return resType;
 			} else if (sort instanceof UninterpretedSort) {
 				TypeImpl resType = lookupType(sort.getName().toString());
 				if (resType == null) {
 					throw new TheoremProverException("Unknown datatype: " + sort.getName()
-					    .toString());
+							.toString());
 				}
 				return resType;
 			} else if (sort instanceof TupleSort) {
 				TypeImpl resType = lookupType(sort.getName().toString());
 				if (resType == null) {
 					throw new TheoremProverException("Unknown datatype: " + sort.getName()
-					    .toString());
+							.toString());
 				}
 				return resType;
 			} else {
@@ -556,9 +556,9 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 	}
 
 	BooleanExpressionImpl toBooleanExpression(Expr e)
-	    throws TheoremProverException {
+			throws TheoremProverException {
 		IOUtils.debug().indent().incr().pln(">> toBooleanExpression(" + e.toString()
-		    + ")");
+				+ ")");
 
 		if (exprCache.containsKey(e))
 			return (BooleanExpressionImpl) exprCache.get(e);
@@ -569,45 +569,45 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 			if (e.isBVNOT() || e.isNot()) {
 				Preconditions.checkArgument(e.getNumArgs() == 1);
 				res = BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.NOT, e,
-				    toExpressionList(e.getArgs())));
+						toExpressionList(e.getArgs())));
 			} else if (e.isLE() || e.isBVSLE() || e.isBVULE()) {
 				Preconditions.checkArgument(e.getNumArgs() == 2);
 				res = BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.LEQ, e,
-				    toExpressionList(e.getArgs())));
+						toExpressionList(e.getArgs())));
 			} else if (e.isLT() || e.isBVSLT() || e.isBVULT()) {
 				Preconditions.checkArgument(e.getNumArgs() == 2);
 				res = BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.LT, e,
-				    toExpressionList(e.getArgs())));
+						toExpressionList(e.getArgs())));
 			} else if (e.isGE() || e.isBVSGE() || e.isBVUGE()) {
 				Preconditions.checkArgument(e.getNumArgs() == 2);
 				res = BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.GEQ, e,
-				    toExpressionList(e.getArgs())));
+						toExpressionList(e.getArgs())));
 			} else if (e.isGT() || e.isBVSGT() || e.isBVUGT()) {
 				Preconditions.checkArgument(e.getNumArgs() == 2);
 				res = BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.GT, e,
-				    toExpressionList(e.getArgs())));
+						toExpressionList(e.getArgs())));
 			} else if (e.isEq()) {
 				Preconditions.checkArgument(e.getNumArgs() == 2);
 				res = BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.EQUAL,
-				    e, toExpressionList(e.getArgs())));
+						e, toExpressionList(e.getArgs())));
 			} else if (e.isAnd()) {
 				res = BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.AND, e,
-				    toExpressionList(e.getArgs())));
+						toExpressionList(e.getArgs())));
 			} else if (e.isOr()) {
 				res = BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.OR, e,
-				    toExpressionList(e.getArgs())));
+						toExpressionList(e.getArgs())));
 			} else if (e.isXor()) {
 				Preconditions.checkArgument(e.getNumArgs() == 2);
 				res = BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.XOR, e,
-				    toExpressionList(e.getArgs())));
+						toExpressionList(e.getArgs())));
 			} else if (e.isImplies()) {
 				Preconditions.checkArgument(e.getNumArgs() == 2);
 				res = BooleanExpressionImpl.valueOf(this, rebuildExpression(
-				    Kind.IMPLIES, e, toExpressionList(e.getArgs())));
+						Kind.IMPLIES, e, toExpressionList(e.getArgs())));
 			} else if (e.isIff()) {
 				Preconditions.checkArgument(e.getNumArgs() == 2);
 				res = BooleanExpressionImpl.valueOf(this, rebuildExpression(Kind.IFF, e,
-				    toExpressionList(e.getArgs())));
+						toExpressionList(e.getArgs())));
 			} else if (e.isBool() && e.isConst()) {
 				Preconditions.checkArgument(e.getNumArgs() == 0);
 				if (e.equals(getTheoremProver().getZ3Context().mkTrue()))
@@ -625,7 +625,7 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 				List<BoundExpression> vars = Lists.newArrayList();
 				for (int i = 0; i < size; i++) {
 					BoundExpression var = BoundExpressionImpl.valueOfBound(this, names[i],
-					    toType(sorts[i]));
+							toType(sorts[i]));
 					vars.add(var);
 				}
 
@@ -653,10 +653,10 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 
 				if (isForall)
 					res = BooleanExpressionImpl.valueOf(this, forall(vars, body, triggers,
-					    noTriggers));
+							noTriggers));
 				else
 					res = BooleanExpressionImpl.valueOf(this, exists(vars, body, triggers,
-					    noTriggers));
+							noTriggers));
 
 			} else if (e.getFuncDecl().getName() != null
 			/*
@@ -690,7 +690,7 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 
 	ExpressionImpl toExpression(Expr e) throws TheoremProverException {
 		IOUtils.debug().indent().incr().pln(">> toExpression(" + e.toString()
-		    + ")");
+				+ ")");
 
 		if (exprCache.containsKey(e))
 			return exprCache.get(e);
@@ -706,7 +706,7 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 				res = rebuildExpression(Kind.MULT, e, toExpressionList(e.getArgs()));
 			} else if (e.isConst()) {
 				res = VariableExpressionImpl.valueOfVariable(this, e, toType(e
-				    .getSort()));
+						.getSort()));
 			} else if (e.isBVNOT()) {
 				Preconditions.checkArgument(e.getNumArgs() == 1);
 				res = rebuildExpression(Kind.BV_NOT, e, toExpressionList(e.getArgs()));
@@ -717,21 +717,21 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 			} else if (e.isSelect()) {
 				Preconditions.checkArgument(e.getNumArgs() == 2);
 				res = rebuildExpression(Kind.ARRAY_INDEX, e, toExpressionList(e
-				    .getArgs()));
+						.getArgs()));
 			} else if (e.isStore()) {
 				Preconditions.checkArgument(e.getNumArgs() == 3);
 				res = rebuildExpression(Kind.ARRAY_UPDATE, e, toExpressionList(e
-				    .getArgs()));
+						.getArgs()));
 			} else if (e.isITE()) {
 				Preconditions.checkArgument(e.getNumArgs() == 3);
 				res = rebuildExpression(Kind.IF_THEN_ELSE, e, toExpressionList(e
-				    .getArgs()));
+						.getArgs()));
 			} else if (e.isBool()) {
 				res = (ExpressionImpl) toBooleanExpression(e);
 			} else if (e.isNumeral()) {
 				if (e.isRatNum()) {
 					throw new UnsupportedOperationException("Unexpected expression: " + e
-					    + "\n expression " + e);
+							+ "\n expression " + e);
 				} else if (e.isIntNum()) {
 					int val = ((IntNum) e).getInt();
 					res = IntegerExpressionImpl.mkConstant(this, val);
@@ -743,11 +743,11 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 			} else if (e.isBVConcat()) {
 				Preconditions.checkArgument(e.getNumArgs() >= 2);
 				res = rebuildExpression(Kind.BV_CONCAT, e, toExpressionList(e
-				    .getArgs()));
+						.getArgs()));
 			} else if (e.isBVExtract()) {
 				Preconditions.checkArgument(e.getNumArgs() == 1);
 				res = rebuildExpression(Kind.BV_EXTRACT, e, toExpressionList(e
-				    .getArgs()));
+						.getArgs()));
 			} else if (e.isBVULE()) {
 				Preconditions.checkArgument(e.getNumArgs() == 2);
 				res = rebuildExpression(Kind.LT, e, toExpressionList(e.getArgs()));
@@ -759,13 +759,13 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 					res = rebuildExpression(Kind.TUPLE, e, toExpressionList(e.getArgs()));
 				} else if (type instanceof RecordTypeImpl) {
 					res = rebuildExpression(Kind.RECORD, e, toExpressionList(e
-					    .getArgs()));
+							.getArgs()));
 				} else if (type instanceof InductiveTypeImpl) {
 					res = rebuildExpression(Kind.DATATYPE_CONSTRUCT, e, toExpressionList(e
-					    .getArgs()));
+							.getArgs()));
 				} else {
 					throw new UnsupportedOperationException("Unexpected type: " + type
-					    + "\n of expression " + e);
+							+ "\n of expression " + e);
 				}
 			} else if (e.getFuncDecl() != null) {
 				FuncDecl func = e.getFuncDecl();
@@ -776,7 +776,7 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 						if (srcExpr.isTuple()) {
 							String funcName = func.getName().toString();
 							int idx = Integer.parseInt(funcName.substring(funcName
-							    .lastIndexOf("@") + 1));
+									.lastIndexOf("@") + 1));
 							res = srcExpr.asTuple().index(idx);
 						} else if (srcExpr.isRecord()) {
 							String funcName = func.getName().toString();
@@ -796,15 +796,15 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 							res = srcExpr.asInductive().select(selector);
 						} else {
 							throw new UnsupportedOperationException("Unexpected expression: "
-							    + e + "\n expression " + e);
+									+ e + "\n expression " + e);
 						}
 					} else {
 						throw new UnsupportedOperationException("Unexpected expression: "
-						    + e + "\n expression " + e);
+								+ e + "\n expression " + e);
 					}
 				} else {
 					throw new UnsupportedOperationException("Unexpected expression: " + e
-					    + "\n expression " + e);
+							+ "\n expression " + e);
 				}
 			}
 
@@ -838,7 +838,7 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 	}
 
 	private ExpressionImpl rebuildExpression(Kind kind, Expr expr,
-	    Iterable<? extends ExpressionImpl> args) {
+			Iterable<? extends ExpressionImpl> args) {
 		try {
 			Type type = toType(expr.getSort());
 			return new ExpressionImpl(this, kind, expr, type, args);
@@ -849,7 +849,7 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 
 	@Override
 	public FunctionExpression functionDeclarator(String name,
-	    FunctionType functionType, boolean fresh) {
+			FunctionType functionType, boolean fresh) {
 		return FunctionDeclarator.create(this, name, functionType, fresh);
 	}
 
@@ -861,7 +861,7 @@ class ExpressionManagerImpl extends AbstractExpressionManager {
 
 	@Override
 	public FunctionExpression lambda(Collection<Expression> args,
-	    Expression body) {
+			Expression body) {
 		// TODO Auto-generated method stub
 		return null;
 	}

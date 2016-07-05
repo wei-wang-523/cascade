@@ -49,40 +49,40 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 
 	@Inject
 	public AbstractStateFactory(ExpressionEncoding encoding,
-	    IRDataFormatter formatter) {
+			IRDataFormatter formatter) {
 		this.encoding = encoding;
 		this.formatter = formatter;
 		this.cTypeAnalyzer = encoding.getCTypeAnalyzer();
 	}
 
 	public static <T> SingleLambdaStateFactory<T> createSingleLambda(
-	    ExpressionEncoding encoding, IRDataFormatter formatter,
-	    IRMemSafetyEncoding memSafetyEncoding) {
+			ExpressionEncoding encoding, IRDataFormatter formatter,
+			IRMemSafetyEncoding memSafetyEncoding) {
 		return new SingleLambdaStateFactory<T>(encoding, formatter,
-		    memSafetyEncoding);
+				memSafetyEncoding);
 	}
 
 	public static <T> MultiStateFactory<T> createMultiple(
-	    ExpressionEncoding encoding, IRDataFormatter formatter,
-	    IRPartitionHeapEncoder heapEncoder) {
+			ExpressionEncoding encoding, IRDataFormatter formatter,
+			IRPartitionHeapEncoder heapEncoder) {
 		return new MultiStateFactory<T>(encoding, formatter, heapEncoder);
 	}
 
 	public static <T> SingleStateFactory<T> createSingle(
-	    ExpressionEncoding encoding, IRDataFormatter formatter,
-	    IRSingleHeapEncoder heapEncoder) {
+			ExpressionEncoding encoding, IRDataFormatter formatter,
+			IRSingleHeapEncoder heapEncoder) {
 		return new SingleStateFactory<T>(encoding, formatter, heapEncoder);
 	}
 
 	public static <T> MultiLambdaStateFactory<T> createMultipleLambda(
-	    ExpressionEncoding encoding, IRDataFormatter formatter,
-	    IRMemSafetyEncoding memSafetyEncoding) {
+			ExpressionEncoding encoding, IRDataFormatter formatter,
+			IRMemSafetyEncoding memSafetyEncoding) {
 		return new MultiLambdaStateFactory<T>(encoding, formatter,
-		    memSafetyEncoding);
+				memSafetyEncoding);
 	}
 
 	static <T> SingleStateFactory<T> createSingle(ExpressionEncoding encoding,
-	    IRDataFormatter formatter) {
+			IRDataFormatter formatter) {
 		return new SingleStateFactory<T>(encoding, formatter, null);
 	}
 
@@ -111,13 +111,13 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public void assign(StateExpression state, Expression index, Node idxNode,
-	    Expression value, Node valNode) {
+			Expression value, Node valNode) {
 		updateMemState(state, index, idxNode, value, valNode);
 	}
 
 	@Override
 	public Expression deref(StateExpression state, Expression index,
-	    Node idxNode) {
+			Node idxNode) {
 		return dereference(state, index, idxNode);
 	}
 
@@ -134,7 +134,7 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public void setValidAccess(StateExpression pre, Expression lhsExpr,
-	    Node lNode) {
+			Node lNode) {
 		if (!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK))
 			return;
 		BooleanExpression validAccess = validAccess(pre, lhsExpr, lNode);
@@ -149,11 +149,11 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public void setValidAccessRange(StateExpression pre, Expression lhsExpr,
-	    Expression sizeExpr, Node lNode) {
+			Expression sizeExpr, Node lNode) {
 		if (!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK))
 			return;
 		BooleanExpression validAccessRange = validAccessRange(pre, lhsExpr,
-		    sizeExpr, lNode);
+				sizeExpr, lNode);
 		BooleanExpression tt = getExpressionManager().tt();
 		if (validAccessRange.equals(tt))
 			return;
@@ -165,7 +165,7 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 
 	@Override
 	public void setValidFree(StateExpression pre, Expression regionExpr,
-	    Node ptrNode) {
+			Node ptrNode) {
 		if (!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK))
 			return;
 		BooleanExpression validFree = applyValidFree(pre, regionExpr, ptrNode);
@@ -204,15 +204,15 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 	 * @return
 	 */
 	protected abstract Expression getSizeOfRegion(StateExpression state,
-	    Expression region, Node ptrNode);
+			Expression region, Node ptrNode);
 
 	protected abstract void substState(StateExpression state,
-	    Collection<? extends Expression> fromElems,
-	    Collection<? extends Expression> toElems);
+			Collection<? extends Expression> fromElems,
+			Collection<? extends Expression> toElems);
 
 	protected abstract void substSafetyPredicates(StateExpression state,
-	    Collection<? extends Expression> fromElems,
-	    Collection<? extends Expression> toElems);
+			Collection<? extends Expression> fromElems,
+			Collection<? extends Expression> toElems);
 
 	/**
 	 * Update the memory safety predicates registered in the predicate map of
@@ -227,8 +227,8 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 	 * @return
 	 */
 	protected abstract void getSubstPredicatesPair(StateExpression cleanState,
-	    StateExpression preState, Collection<Expression> fromPredicates,
-	    Collection<Expression> toPredicates);
+			StateExpression preState, Collection<Expression> fromPredicates,
+			Collection<Expression> toPredicates);
 
 	/**
 	 * Get the substitution element expressions pair from <code>fromState</code>
@@ -242,24 +242,24 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 	 * @return
 	 */
 	protected abstract void getSubstElemsPair(StateExpression fromState,
-	    StateExpression toState, Collection<Expression> fromElems,
-	    Collection<Expression> toElems);
+			StateExpression toState, Collection<Expression> fromElems,
+			Collection<Expression> toElems);
 
 	abstract protected void propagateMemSafetyPredicates(StateExpression stateArg,
-	    StateExpression cleanState);
+			StateExpression cleanState);
 
 	abstract protected StateExpression joinPreStates(
-	    Iterable<StateExpression> preStates,
-	    Iterable<BooleanExpression> preGuards);
+			Iterable<StateExpression> preStates,
+			Iterable<BooleanExpression> preGuards);
 
 	abstract protected void updateMemState(StateExpression state,
-	    Expression index, Node idxNode, Expression value, @Nullable Node valNode);
+			Expression index, Node idxNode, Expression value, @Nullable Node valNode);
 
 	abstract protected void updateSizeStateWithFree(StateExpression state,
-	    Expression region, Expression sizeVal, Node ptrNode);
+			Expression region, Expression sizeVal, Node ptrNode);
 
 	abstract protected void updateMarkState(StateExpression state,
-	    Expression region, BooleanExpression mark, Node ptrNode);
+			Expression region, BooleanExpression mark, Node ptrNode);
 
 	/**
 	 * Update the size array in <code>state</code> with <code>
@@ -273,22 +273,22 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 	 * @return
 	 */
 	protected abstract void updateSizeStateWithAlloc(StateExpression state,
-	    Expression region, Expression size, Node ptrNode);
+			Expression region, Expression size, Node ptrNode);
 
 	abstract protected Expression dereference(StateExpression state,
-	    Expression index, Node idxNode);
+			Expression index, Node idxNode);
 
 	abstract protected BooleanExpression getDisjointAssumption(
-	    StateExpression state);
+			StateExpression state);
 
 	ExpressionManager getExpressionManager() {
 		return encoding.getExpressionManager();
 	}
 
 	BooleanExpression joinConstraints(
-	    Iterable<? extends StateExpression> preStates) {
+			Iterable<? extends StateExpression> preStates) {
 		Multimap<Expression, BooleanExpression> guardPCMap = LinkedHashMultimap
-		    .create();
+				.create();
 		for (StateExpression preState : preStates) {
 			if (preState.getConstraint() == null)
 				continue;
@@ -299,18 +299,18 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 			return null;
 		if (guardPCMap.size() < Iterables.size(preStates))
 			return getITEExpressionWithDefaultValue(guardPCMap, encoding.tt())
-			    .asBooleanExpression();
+					.asBooleanExpression();
 		else
 			return getITEExpression(guardPCMap).asBooleanExpression();
 	}
 
 	void joinMemTrackers(StateExpression joinState,
-	    Iterable<? extends StateExpression> preStates) {
+			Iterable<? extends StateExpression> preStates) {
 		if (!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK))
 			return;
 
 		Multimap<Expression, BooleanExpression> guardRegionSizeTrackerMap = LinkedHashMultimap
-		    .create();
+				.create();
 		for (StateExpression preState : preStates) {
 			Expression regionSizeTracker = preState.getMemTracker();
 			guardRegionSizeTrackerMap.put(regionSizeTracker, preState.getGuard());
@@ -322,7 +322,7 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 		Expression joinMemTracker;
 		if (guardRegionSizeTrackerMap.size() < Iterables.size(preStates))
 			joinMemTracker = getITEExpressionWithDefaultValue(
-			    guardRegionSizeTrackerMap, formatter.getSizeZero());
+					guardRegionSizeTrackerMap, formatter.getSizeZero());
 		else
 			joinMemTracker = getITEExpression(guardRegionSizeTrackerMap);
 
@@ -331,7 +331,7 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 
 	BooleanExpression joinGuards(Iterable<? extends StateExpression> preStates) {
 		Iterable<BooleanExpression> guards = Iterables.transform(preStates,
-		    pickGuard);
+				pickGuard);
 		return encoding.or(guards).asBooleanExpression();
 	}
 
@@ -341,7 +341,7 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 	}
 
 	Expression getITEExpression(
-	    Multimap<Expression, BooleanExpression> guardHoareMap) {
+			Multimap<Expression, BooleanExpression> guardHoareMap) {
 		// Check if all the cases are same, then just return the case
 		Collection<Expression> caseSet = guardHoareMap.keySet();
 		if (caseSet.size() == 1)
@@ -353,7 +353,7 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 				resExpr = currCase;
 			} else {
 				BooleanExpression guard = getExpressionManager().or(guardHoareMap.get(
-				    currCase));
+						currCase));
 				resExpr = guard.ifThenElse(currCase, resExpr);
 			}
 		}
@@ -362,8 +362,8 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 	}
 
 	Expression getITEExpressionWithDefaultValue(
-	    Multimap<Expression, BooleanExpression> guardHoareMap,
-	    final Expression defaultCase) {
+			Multimap<Expression, BooleanExpression> guardHoareMap,
+			final Expression defaultCase) {
 		Preconditions.checkNotNull(defaultCase);
 		Collection<Expression> caseSet = guardHoareMap.keySet();
 
@@ -373,7 +373,7 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 		Expression resExpr = defaultCase;
 		for (Expression currCase : caseSet) {
 			BooleanExpression guard = getExpressionManager().or(guardHoareMap.get(
-			    currCase));
+					currCase));
 			assert (currCase.getType().equals(resExpr.getType()));
 			resExpr = guard.ifThenElse(currCase, resExpr);
 		}
@@ -398,7 +398,7 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 			if (Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
 				Expression size = getSizeOfRegion(state, region, ptrNode);
 				state.addConstraint(encoding.neq(size, formatter.getSizeZero())
-				    .asBooleanExpression());
+						.asBooleanExpression());
 			}
 		}
 
@@ -409,8 +409,8 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 	}
 
 	void substMemTracker(StateExpression state,
-	    Collection<? extends Expression> fromElems,
-	    Collection<? extends Expression> toElems) {
+			Collection<? extends Expression> fromElems,
+			Collection<? extends Expression> toElems) {
 		if (!Preferences.isSet(Preferences.OPTION_MEMORY_CHECK))
 			return;
 		Expression memTracker = state.getMemTracker();
@@ -419,46 +419,46 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 	}
 
 	void substConstraintGuard(StateExpression state,
-	    Collection<? extends Expression> fromElems,
-	    Collection<? extends Expression> toElems) {
+			Collection<? extends Expression> fromElems,
+			Collection<? extends Expression> toElems) {
 		if (fromElems.isEmpty())
 			return;
 
 		if (state.getGuard() != null) { /* Substitute guards */
 			BooleanExpression guard = state.getGuard();
 			BooleanExpression guardPrime = guard.subst(fromElems, toElems)
-			    .asBooleanExpression();
+					.asBooleanExpression();
 			state.setGuard(guardPrime);
 		}
 
 		if (state.getConstraint() != null) { /* Substitute constraint */
 			BooleanExpression pc = state.getConstraint();
 			BooleanExpression pcPrime = pc.subst(fromElems, toElems)
-			    .asBooleanExpression();
+					.asBooleanExpression();
 			state.setConstraint(pcPrime);
 		}
 	}
 
 	void substAssertions(StateExpression state,
-	    Collection<? extends Expression> fromElems,
-	    Collection<? extends Expression> toElems) {
+			Collection<? extends Expression> fromElems,
+			Collection<? extends Expression> toElems) {
 		if (fromElems.isEmpty())
 			return;
 
 		Multimap<String, BooleanExpression> assertions = state.getAssertions();
 		for (Entry<String, BooleanExpression> entry : ImmutableList.copyOf(
-		    assertions.entries())) {
+				assertions.entries())) {
 			BooleanExpression assertion = entry.getValue();
 			BooleanExpression assertionPrime = assertion.subst(fromElems, toElems)
-			    .asBooleanExpression();
+					.asBooleanExpression();
 			assertions.remove(entry.getKey(), assertion);
 			assertions.put(entry.getKey(), assertionPrime);
 		}
 	}
 
 	void substPredicatesConstraint(StateExpression state,
-	    Collection<Expression> fromPredicates,
-	    Collection<Expression> toPredicates) {
+			Collection<Expression> fromPredicates,
+			Collection<Expression> toPredicates) {
 		if (fromPredicates.isEmpty())
 			return;
 		if (state.getConstraint() == null)
@@ -466,7 +466,7 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 
 		BooleanExpression pc = state.getConstraint();
 		BooleanExpression pcPrime = pc.subst(fromPredicates, toPredicates)
-		    .asBooleanExpression();
+				.asBooleanExpression();
 		state.setConstraint(pcPrime);
 	}
 
@@ -487,12 +487,12 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 	 * @param toState
 	 */
 	void propagateNewSubState(StateExpression fromState,
-	    StateExpression toState) {
+			StateExpression toState) {
 		if (fromState.isLambda()) {
 			Map<String, SingleLambdaStateExpression> fromMap = fromState
-			    .asMultiLambda().getStateMap();
+					.asMultiLambda().getStateMap();
 			Map<String, SingleLambdaStateExpression> toMap = toState.asMultiLambda()
-			    .getStateMap();
+					.getStateMap();
 
 			Collection<String> newSubStateNames = Sets.newHashSet(fromMap.keySet());
 			newSubStateNames.removeAll(toMap.keySet());
@@ -505,9 +505,9 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 			}
 		} else {
 			Map<String, SingleStateExpression> fromMap = fromState.asMultiple()
-			    .getStateMap();
+					.getStateMap();
 			Map<String, SingleStateExpression> toMap = toState.asMultiple()
-			    .getStateMap();
+					.getStateMap();
 
 			Collection<String> newSubStateNames = Sets.newHashSet(fromMap.keySet());
 			newSubStateNames.removeAll(toMap.keySet());
@@ -522,12 +522,12 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 	}
 
 	void propagateAssertions(StateExpression stateArg,
-	    StateExpression cleanState) {
+			StateExpression cleanState) {
 		BooleanExpression assumption = stateToBoolean(stateArg);
 
 		Multimap<String, BooleanExpression> assertions = cleanState.getAssertions();
 		for (Entry<String, BooleanExpression> entry : ImmutableList.copyOf(
-		    assertions.entries())) {
+				assertions.entries())) {
 			BooleanExpression assertion = entry.getValue();
 			BooleanExpression assertionPrime = assumption.implies(assertion);
 			assertions.remove(entry.getKey(), assertion);

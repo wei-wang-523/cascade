@@ -223,7 +223,7 @@ public class CAnalyzer extends Visitor {
 		 */
 		public boolean isDefault() {
 			return type.hasTag(Tag.INTEGER) && type.resolve().hasAttribute(
-			    Constants.ATT_IMPLICIT);
+					Constants.ATT_IMPLICIT);
 		}
 
 		/**
@@ -340,7 +340,7 @@ public class CAnalyzer extends Visitor {
 				return false;
 			} else {
 				runtime.error("multiple storage classes in declaration specifiers",
-				    specifiers);
+						specifiers);
 				return true;
 			}
 		}
@@ -348,13 +348,13 @@ public class CAnalyzer extends Visitor {
 		/** Test for previous type. */
 		protected boolean hasType() {
 			return (seenBool || seenChar || seenShort || seenInt || (0 < longCount)
-			    || seenFloat || seenDouble || seenComplex || (null != type));
+					|| seenFloat || seenDouble || seenComplex || (null != type));
 		}
 
 		/** Report error indicating multiple types. */
 		protected void multipleTypes() {
 			runtime.error("multiple data types in declaration specifiers",
-			    specifiers);
+					specifiers);
 			type = ErrorT.TYPE;
 		}
 
@@ -464,7 +464,7 @@ public class CAnalyzer extends Visitor {
 			if (seenUnsigned) {
 				seenSigned = true;
 				runtime.error("both 'signed' and 'unsigned' in declaration "
-				    + "specifiers", specifiers);
+						+ "specifiers", specifiers);
 			} else if (seenSigned) {
 				runtime.error("duplicate 'signed'", n);
 			} else {
@@ -477,7 +477,7 @@ public class CAnalyzer extends Visitor {
 			if (seenSigned) {
 				seenUnsigned = true;
 				runtime.error("both 'signed' and 'unsigned' in declaration "
-				    + "specifiers", specifiers);
+						+ "specifiers", specifiers);
 			} else if (seenUnsigned) {
 				runtime.error("duplicate 'unsigned'", n);
 			} else {
@@ -506,7 +506,7 @@ public class CAnalyzer extends Visitor {
 		/** Process the short specifier. */
 		public void visitShort(GNode n) {
 			if (seenBool || seenChar || seenShort || (0 < longCount) || seenFloat
-			    || seenDouble || seenComplex || (null != type)) {
+					|| seenDouble || seenComplex || (null != type)) {
 				multipleTypes();
 			} else {
 				seenShort = true;
@@ -516,7 +516,7 @@ public class CAnalyzer extends Visitor {
 		/** Process the int type specifier. */
 		public void visitInt(GNode n) {
 			if (seenBool || seenChar || seenInt || seenFloat || seenDouble
-			    || seenComplex || (null != type)) {
+					|| seenComplex || (null != type)) {
 				multipleTypes();
 			} else {
 				seenInt = true;
@@ -526,8 +526,8 @@ public class CAnalyzer extends Visitor {
 		/** Process the long type specifier. */
 		public void visitLong(GNode n) {
 			if (seenBool || seenChar || seenShort || (1 < longCount) || seenFloat
-			    || ((seenDouble || seenComplex) && (0 < longCount))
-			    || (null != type)) {
+					|| ((seenDouble || seenComplex) && (0 < longCount))
+					|| (null != type)) {
 				multipleTypes();
 			} else {
 				longCount++;
@@ -537,7 +537,7 @@ public class CAnalyzer extends Visitor {
 		/** Process the float type specifier. */
 		public void visitFloat(GNode n) {
 			if (seenBool || seenChar || seenShort || seenInt || (0 < longCount)
-			    || seenDouble || (null != type)) {
+					|| seenDouble || (null != type)) {
 				multipleTypes();
 			} else {
 				seenFloat = true;
@@ -547,7 +547,7 @@ public class CAnalyzer extends Visitor {
 		/** Process the double type specifier. */
 		public void visitDouble(GNode n) {
 			if (seenBool || seenChar || seenShort || seenInt || (1 < longCount)
-			    || seenFloat || (null != type)) {
+					|| seenFloat || (null != type)) {
 				multipleTypes();
 			} else {
 				seenDouble = true;
@@ -557,7 +557,7 @@ public class CAnalyzer extends Visitor {
 		/** Process the complex type specifier. */
 		public void visitComplex(GNode n) {
 			if (seenBool || seenChar || seenShort || seenInt || (1 < longCount)
-			    || (null != type)) {
+					|| (null != type)) {
 				multipleTypes();
 			} else {
 				seenComplex = true;
@@ -594,7 +594,7 @@ public class CAnalyzer extends Visitor {
 		 * union's scope.
 		 */
 		private List<VariableT> processMembers(GNode declarationList,
-		    boolean isStruct) {
+				boolean isStruct) {
 			final int size = declarationList.size() - 1;
 			List<VariableT> members = new ArrayList<VariableT>(size);
 			HashSet<String> names = new HashSet<String>();
@@ -609,21 +609,21 @@ public class CAnalyzer extends Visitor {
 					final Type type = spec.annotateFull(spec.getBaseType());
 
 					if (type.hasStructOrUnion() && type.toTagged().isUnnamed()
-					    && !pedantic) {
+							&& !pedantic) {
 						// Check for incomplete types (C99 6.7.2.1).
 						if (c().isIncomplete(type)) {
 							final String kind = type.hasTag(Tag.STRUCT) ? "struct" : "union";
 							runtime.error("unnamed " + kind + " has incomplete type",
-							    declaration);
+									declaration);
 						} else if (c().hasTrailingArray(type)) {
 							runtime.error("unnamed struct ends with flexible array member",
-							    declaration);
+									declaration);
 						}
 						members.add(VariableT.newField(type, null));
 
 					} else {
 						runtime.warning("declaration does not declare anything",
-						    declaration);
+								declaration);
 					}
 
 				} else {
@@ -652,21 +652,21 @@ public class CAnalyzer extends Visitor {
 						if (isBitField) {
 							final Type resolved = type.resolve();
 							final NumberT.Kind kind = resolved.isInteger() ? resolved
-							    .toInteger().getKind() : null;
+									.toInteger().getKind() : null;
 
 							// Make sure the base type is valid. Consistent with
 							// GCC, we allow any integer type, not just __Bool,
 							// (signed) int, and unsigned int (unless, of course, we
 							// are running in pedantic mode).
 							if ((!resolved.isBoolean()) && ((!resolved.isInteger())
-							    || (resolved.isInteger() && pedantic && (!NumberT.equal(
-							        NumberT.Kind.INT, kind)) && (!NumberT.equal(
-							            NumberT.Kind.U_INT, kind))))) {
+									|| (resolved.isInteger() && pedantic && (!NumberT.equal(
+											NumberT.Kind.INT, kind)) && (!NumberT.equal(
+													NumberT.Kind.U_INT, kind))))) {
 								if (null == identifier) {
 									runtime.error("bit-field has invalid type", original);
 								} else {
 									runtime.error("bit-field '" + name + "' has invalid type",
-									    original);
+											original);
 								}
 							}
 
@@ -679,13 +679,13 @@ public class CAnalyzer extends Visitor {
 								width = 0;
 
 							} else if ((!widthType.hasConstant()) || (!c().isIntegral(
-							    widthType))) {
+									widthType))) {
 								if (null == identifier) {
 									runtime.error("bit-field width not an integer constant",
-									    widthExpr);
+											widthExpr);
 								} else {
 									runtime.error("bit-field '" + name
-									    + "' width not an integer constant", widthExpr);
+											+ "' width not an integer constant", widthExpr);
 								}
 								// Patch in width.
 								width = 0;
@@ -699,10 +699,10 @@ public class CAnalyzer extends Visitor {
 								} catch (IllegalStateException x) {
 									if (null == identifier) {
 										runtime.error("can't compute width in bit-field",
-										    widthExpr);
+												widthExpr);
 									} else {
 										runtime.error("can't compute width in bit-field '" + name
-										    + "'", widthExpr);
+												+ "'", widthExpr);
 									}
 									widthValue = BigInteger.ZERO;
 								}
@@ -711,10 +711,10 @@ public class CAnalyzer extends Visitor {
 								if (widthValue.compareTo(BigInteger.valueOf(typeWidth)) > 0) {
 									if (null == identifier) {
 										runtime.error("bit-field width exceeds its type",
-										    widthExpr);
+												widthExpr);
 									} else {
 										runtime.error("bit-field '" + name
-										    + "' width exceeds its type", widthExpr);
+												+ "' width exceeds its type", widthExpr);
 									}
 									// Patch in width.
 									width = typeWidth;
@@ -725,7 +725,7 @@ public class CAnalyzer extends Visitor {
 										runtime.error("negative width in bit-field", widthExpr);
 									} else {
 										runtime.error("negative width in bit-field '" + name + "'",
-										    widthExpr);
+												widthExpr);
 									}
 									// Patch in width.
 									width = 0;
@@ -734,7 +734,7 @@ public class CAnalyzer extends Visitor {
 									// C99 6.7.2.1-3: Zero width bit-fields have no declarator.
 									if (null != identifier) {
 										runtime.error("zero width for bit-field '" + name + "'",
-										    widthExpr);
+												widthExpr);
 									}
 									width = 0;
 
@@ -758,67 +758,67 @@ public class CAnalyzer extends Visitor {
 
 							} else if (resolved.isFunction()) {
 								runtime.error("field '" + name + "' declared as a function",
-								    declaration);
+										declaration);
 
 							} else if (resolved.isArray()) {
 								ArrayT array = resolved.toArray();
 
 								if (c().isIncomplete(array.getType()) || c().hasTrailingArray(
-								    array.getType())) {
+										array.getType())) {
 									runtime.error("field '" + name
-									    + "' has array with incomplete element type",
-									    declaration);
+											+ "' has array with incomplete element type",
+											declaration);
 
 								} else if (array.isVarLength()) {
 									// GCC allows variable length arrays in structs and
 									// unions outside external declarations.
 									if (pedantic) {
 										runtime.error("field '" + name + "' has variable length "
-										    + "array type", declaration);
+												+ "array type", declaration);
 									} else if (isTopLevel && (!TMP_SCOPE.equals(table.current()
-									    .getName()))) {
+											.getName()))) {
 										runtime.error("variable length array type declared "
-										    + "outside of any function", declaration);
+												+ "outside of any function", declaration);
 									}
 
 								} else if (!array.hasLength()) {
 									if (!isStruct) {
 										runtime.error("flexible array member '" + name
-										    + "' in union", declaration);
+												+ "' in union", declaration);
 									} else if ((i < size - 1) || iter.hasNext()) {
 										runtime.error("flexible array member '" + name
-										    + "' not at end of struct", declaration);
+												+ "' not at end of struct", declaration);
 									} else if (1 >= count) {
 										runtime.error("flexible array member '" + name
-										    + "' in otherwise empty struct", declaration);
+												+ "' in otherwise empty struct", declaration);
 									}
 								}
 
 							} else if (c().isIncomplete(type)) {
 								if (resolved.isVoid()) {
 									runtime.error("field '" + name + "' declared void",
-									    declaration);
+											declaration);
 								} else {
 									runtime.error("field '" + name + "' has incomplete type",
-									    declaration);
+											declaration);
 								}
 							} else if (c().hasTrailingArray(type)) {
 								// GCC allows struct fileds with flexible array
 								// members.
 								if (pedantic) {
 									runtime.error("field '" + name
-									    + "' has struct with flexible array member", declaration);
+											+ "' has struct with flexible array member", declaration);
 								}
 							} else if (c().isVariablyModified(type)) {
 								// GCC allows variably modified types in structs and
 								// unions outside external declarations.
 								if (pedantic) {
 									runtime.error("field '" + name + "' has variably modified "
-									    + "type", declaration);
+											+ "type", declaration);
 								} else if (isTopLevel && (!TMP_SCOPE.equals(table.current()
-								    .getName()))) {
+										.getName()))) {
 									runtime.error("variably modified type declared "
-									    + "outside of any function", declaration);
+											+ "outside of any function", declaration);
 								}
 							}
 						}
@@ -921,7 +921,7 @@ public class CAnalyzer extends Visitor {
 				final String name = SymbolTable.toTagName(tag);
 
 				if ((refIsDecl && table.current().isDefinedLocally(name))
-				    || ((!refIsDecl) && table.isDefined(name))) {
+						|| ((!refIsDecl) && table.isDefined(name))) {
 					final Type t = (Type) table.lookup(name);
 
 					if (!t.isStruct()) {
@@ -1036,7 +1036,7 @@ public class CAnalyzer extends Visitor {
 				final String name = SymbolTable.toTagName(tag);
 
 				if ((refIsDecl && table.current().isDefinedLocally(name))
-				    || ((!refIsDecl) && table.isDefined(name))) {
+						|| ((!refIsDecl) && table.isDefined(name))) {
 					final Type t = (Type) table.lookup(name);
 
 					if (!t.isUnion()) {
@@ -1112,7 +1112,7 @@ public class CAnalyzer extends Visitor {
 				// Process the enumerators.
 				final GNode enumerators = n.getGeneric(2);
 				final List<EnumeratorT> types = new ArrayList<EnumeratorT>(enumerators
-				    .size());
+						.size());
 				BigInteger lastValue = BigInteger.ONE.negate();
 				for (Object o : enumerators) {
 					final GNode rator = GNode.cast(o);
@@ -1129,7 +1129,7 @@ public class CAnalyzer extends Visitor {
 
 						} else if ((!vtype.hasConstant()) || (!c().isIntegral(vtype))) {
 							runtime.error("enumerator value for '" + rname
-							    + "' is not an integer constant", vnode);
+									+ "' is not an integer constant", vnode);
 
 						} else {
 							try {
@@ -1137,7 +1137,7 @@ public class CAnalyzer extends Visitor {
 								lastValue = value;
 							} catch (IllegalStateException x) {
 								runtime.warning("can't compute value for '" + rname + "'",
-								    vnode);
+										vnode);
 								value = lastValue.add(BigInteger.ONE);
 								lastValue = value;
 							}
@@ -1153,7 +1153,7 @@ public class CAnalyzer extends Visitor {
 
 					// Record the enumerator in the symbol table.
 					final EnumeratorT ratorT = new EnumeratorT(c().fit(value), rname,
-					    value);
+							value);
 					if (table.current().isDefinedLocally(rname)) {
 						runtime.error("redefinition of '" + rname + "'", rator);
 					} else {
@@ -1192,11 +1192,11 @@ public class CAnalyzer extends Visitor {
 				} else if (cops.fitsLongLong(min) && cops.fitsLongLong(max)) {
 					baseT = NumberT.LONG_LONG;
 				} else if (cops.fitsUnsignedLongLong(min) && cops.fitsUnsignedLongLong(
-				    max)) {
+						max)) {
 					baseT = NumberT.U_LONG_LONG;
 				} else {
 					runtime.error("enumeration values exceed range of largest integer",
-					    n);
+							n);
 					baseT = ErrorT.TYPE;
 				}
 
@@ -1480,7 +1480,7 @@ public class CAnalyzer extends Visitor {
 						break;
 					case ARRAY: {
 						new Initializer(initializer, element, element.toArray().getType()
-						    .resolve(), auto).process();
+								.resolve(), auto).process();
 					}
 						break;
 					default:
@@ -1491,7 +1491,7 @@ public class CAnalyzer extends Visitor {
 					// Determine the right hand type.
 					final Type right;
 					if (runtime.test("optionMarkAST") && initializer.getBooleanProperty(
-					    MARKED)) {
+							MARKED)) {
 						right = (Type) initializer.getProperty(Constants.TYPE);
 					} else {
 						right = processExpression(initializer);
@@ -1511,7 +1511,7 @@ public class CAnalyzer extends Visitor {
 								runtime.console().indent().p(toString()).p(" = ");
 								if (right.hasConstant()) {
 									runtime.console().p(right.getConstant().getValue()
-									    .toString());
+											.toString());
 								} else if (c().hasConstRef(right)) {
 									runtime.console().p(c().getConstRef(right).toString());
 								} else {
@@ -1522,9 +1522,9 @@ public class CAnalyzer extends Visitor {
 
 							// Process the assignment and string size for any warnings.
 							processAssignment(true, "initializer", initializer, element,
-							    right);
+									right);
 							processStringSize(initializer, "initializer", true, element,
-							    right);
+									right);
 							break;
 						}
 
@@ -1557,7 +1557,7 @@ public class CAnalyzer extends Visitor {
 						default:
 							// The assignment fails.
 							processAssignment(true, "initializer", initializer, element,
-							    right);
+									right);
 							break loop;
 						}
 					}
@@ -1614,10 +1614,10 @@ public class CAnalyzer extends Visitor {
 							// Report excess elements first.
 							if (pedantic) {
 								runtime.error("excess elements in " + c().toDesignation(base)
-								    + " initializer", excess);
+										+ " initializer", excess);
 							} else {
 								runtime.warning("excess elements in " + c().toDesignation(base)
-								    + " initializer", excess);
+										+ " initializer", excess);
 							}
 
 							// Report any extra brace groups.
@@ -1666,23 +1666,23 @@ public class CAnalyzer extends Visitor {
 					final GNode designator = GNode.cast(iter.next());
 
 					if (designator.hasName("ObsoleteFieldDesignation") || ".".equals(
-					    designator.getString(0))) {
+							designator.getString(0))) {
 						// A struct/union field.
 						if (!base.hasStructOrUnion()) {
 							runtime.error("field name not in struct or union initializer",
-							    designator);
+									designator);
 							return false;
 						}
 
 						// Extract the field name.
 						String name = designator.hasName("ObsoleteFieldDesignation")
-						    ? designator.getString(0)
-						    : designator.getGeneric(1).getString(0);
+								? designator.getString(0)
+								: designator.getGeneric(1).getString(0);
 
 						// Find the field.
 						if (!lookup(name)) {
 							runtime.error("unknown field '" + name + "' in initializer",
-							    designator);
+									designator);
 							return false;
 						}
 
@@ -1696,19 +1696,19 @@ public class CAnalyzer extends Visitor {
 						// Determine the index types.
 						final Type t1 = processExpression(designator.getNode(1));
 						final Type t2 = (3 == designator.size()) ? processExpression(
-						    designator.getNode(2)) : null;
+								designator.getNode(2)) : null;
 
 						// Make sure that the indices are constant integers.
 						if ((!c().isIntegral(t1)) || ((null != t2) && (!c().isIntegral(
-						    t2)))) {
+								t2)))) {
 							runtime.error("array index in initializer not of integer type",
-							    designator);
+									designator);
 							return false;
 
 						} else if ((!t1.hasConstant()) || ((null != t2) && (!t2
-						    .hasConstant()))) {
+								.hasConstant()))) {
 							runtime.error("nonconstant array index in initializer",
-							    designator);
+									designator);
 							return false;
 
 						}
@@ -1717,19 +1717,19 @@ public class CAnalyzer extends Visitor {
 						// too large and that the range is not empty.
 						final BigInteger i1 = t1.getConstant().bigIntValue();
 						final BigInteger i2 = (null == t2) ? null
-						    : t2.getConstant().bigIntValue();
+								: t2.getConstant().bigIntValue();
 
 						// Test: i1 < 0, i2 < 0
 						if ((i1.compareTo(BigInteger.ZERO) < 0) || ((null != i2) && (i2
-						    .compareTo(BigInteger.ZERO) < 0))) {
+								.compareTo(BigInteger.ZERO) < 0))) {
 							runtime.error("negative array index in initializer", designator);
 							return false;
 
 							// Test: i1 > ARRAY_MAX, i2 > ARRAY_MAX
 						} else if ((i1.compareTo(cops.ARRAY_MAX()) > 0) || ((null != i2)
-						    && (i2.compareTo(cops.ARRAY_MAX()) > 0))) {
+								&& (i2.compareTo(cops.ARRAY_MAX()) > 0))) {
 							runtime.error("array index in initializer is too large",
-							    designator);
+									designator);
 							return false;
 
 							// Test: i2 < i1
@@ -1744,7 +1744,7 @@ public class CAnalyzer extends Visitor {
 						final long max = (null == i2) ? i1.longValue() : i2.longValue();
 						if ((-1 < size) && (max >= size)) {
 							runtime.error("array index in initializer exceeds array bounds",
-							    designator);
+									designator);
 							return false;
 						}
 
@@ -1860,7 +1860,7 @@ public class CAnalyzer extends Visitor {
 		 */
 		private Type getResult() {
 			if ((!hasSize(type)) && (((0 == states.size()) && top) || ((0 < states
-			    .size()) && states.get(0).top))) {
+					.size()) && states.get(0).top))) {
 				type = type.copy();
 				type.resolve().toArray().setLength(count);
 			}
@@ -1886,7 +1886,7 @@ public class CAnalyzer extends Visitor {
 
 					} else if (state.base.hasStructOrUnion()) {
 						final VariableT m = state.base.toTagged().getMember(
-						    (int) state.index).toVariable();
+								(int) state.index).toVariable();
 						if (m.hasName()) {
 							buf.append('.');
 							buf.append(m.getName());
@@ -1905,7 +1905,7 @@ public class CAnalyzer extends Visitor {
 
 				} else if (base.hasStructOrUnion()) {
 					final VariableT m = base.toTagged().getMember((int) index)
-					    .toVariable();
+							.toVariable();
 					if (m.hasName()) {
 						buf.append('.');
 						buf.append(m.getName());
@@ -2135,7 +2135,7 @@ public class CAnalyzer extends Visitor {
 		for (CompletenessCheck check : checks) {
 			if (c().isIncomplete(check.type)) {
 				runtime.error("storage size of '" + check.name + "' isn't known",
-				    check.node);
+						check.node);
 			}
 		}
 	}
@@ -2157,16 +2157,16 @@ public class CAnalyzer extends Visitor {
 			}
 			if (null != spec.getStorageClass()) {
 				runtime.warning("useless storage class specifier in empty declaration",
-				    n);
+						n);
 			}
 			if (spec.contains(Constants.ATT_VOLATILE) || spec.contains(
-			    Constants.ATT_CONSTANT) || spec.contains(Constants.ATT_RESTRICT)) {
+					Constants.ATT_CONSTANT) || spec.contains(Constants.ATT_RESTRICT)) {
 				runtime.warning("useless type qualifier in empty declaration", n);
 			}
 
 			// Make sure the type is tagged.
 			if ((!spec.getBaseType().hasError()) && (!spec.getBaseType()
-			    .hasTagged())) {
+					.hasTagged())) {
 				runtime.warning("empty declaration", n);
 			}
 
@@ -2190,7 +2190,7 @@ public class CAnalyzer extends Visitor {
 					// Check for invalid attributes.
 					if (spec.contains(Constants.ATT_INLINE)) {
 						runtime.error("typedef '" + name + "' is declared 'inline'",
-						    getSpecifier("FunctionSpecifier", specifiers));
+								getSpecifier("FunctionSpecifier", specifiers));
 					}
 					if (spec.contains(Constants.ATT_THREAD_LOCAL)) {
 						runtime.error("'__thread' used with 'typedef'", initDecl);
@@ -2212,13 +2212,13 @@ public class CAnalyzer extends Visitor {
 							runtime.error("redefinition of typedef '" + name + "'", initDecl);
 						} else {
 							runtime.error("'" + name
-							    + "' redeclared as different kind of symbol", initDecl);
+									+ "' redeclared as different kind of symbol", initDecl);
 						}
 						reportPrevious(name, previous);
 
 					} else {
 						table.current().define(name, new AliasT(name, type).locate(n)
-						    .seal());
+								.seal());
 					}
 
 				} else {
@@ -2249,29 +2249,29 @@ public class CAnalyzer extends Visitor {
 						FunctionT function = resolved.toFunction();
 
 						if (type.hasAttribute(Constants.ATT_STORAGE_AUTO) || type
-						    .hasAttribute(Constants.ATT_STORAGE_REGISTER) || type
-						        .hasAttribute(Constants.ATT_THREAD_LOCAL)) {
+								.hasAttribute(Constants.ATT_STORAGE_REGISTER) || type
+										.hasAttribute(Constants.ATT_THREAD_LOCAL)) {
 							runtime.error("invalid storage class for function '" + name + "'",
-							    initDecl);
+									initDecl);
 						}
 
 						if (type.hasAttribute(Constants.ATT_STYLE_OLD) && (!function
-						    .getParameters().isEmpty())) {
+								.getParameters().isEmpty())) {
 							runtime.warning("parameter names (without types) in function "
-							    + "declaration", initDecl);
+									+ "declaration", initDecl);
 							function.getParameters().clear();
 						}
 
 						if (null != initializer) {
 							runtime.error("function '" + name + "' is initialized like a "
-							    + "variable", initDecl);
+									+ "variable", initDecl);
 						}
 
 					} else {
 						// Check non-function types for inline specifier.
 						if (type.hasAttribute(Constants.ATT_INLINE)) {
 							runtime.warning("variable '" + name + "' declared 'inline'",
-							    getSpecifier("FunctionSpecifier", specifiers));
+									getSpecifier("FunctionSpecifier", specifiers));
 							type.removeAttribute(Constants.ATT_INLINE);
 						}
 
@@ -2282,12 +2282,12 @@ public class CAnalyzer extends Visitor {
 							} else if (type.hasAttribute(Constants.ATT_STORAGE_REGISTER)) {
 								runtime.error("'__thread' used with 'register'", specifiers);
 							} else if (!type.hasAttribute(Constants.NAME_STORAGE)
-							    && !isTopLevel) {
+									&& !isTopLevel) {
 								runtime.error("function-scope '" + name + "' implicitly auto "
-								    + "and declared '__thread'", initDecl);
+										+ "and declared '__thread'", initDecl);
 							} else if (!c().hasThreadLocals()) {
 								runtime.error("thread-local storage not supported for this "
-								    + "target", initDecl);
+										+ "target", initDecl);
 							}
 						}
 					}
@@ -2300,8 +2300,8 @@ public class CAnalyzer extends Visitor {
 						if (!resolved.isFunction()) {
 							if (type.hasAttribute(Constants.ATT_STORAGE_AUTO)) {
 								runtime.error("file-scope declaration of '" + name
-								    + "' specifies 'auto'", getSpecifier("AutoSpecifier",
-								        specifiers));
+										+ "' specifies 'auto'", getSpecifier("AutoSpecifier",
+												specifiers));
 
 							} else if (type.hasAttribute(Constants.ATT_STORAGE_REGISTER)) {
 								// As a GCC extension, the register specifier may
@@ -2310,8 +2310,8 @@ public class CAnalyzer extends Visitor {
 								// assembly expression.
 								if (pedantic || null == initDecl.get(2)) {
 									runtime.error("file-scope declaration of '" + name
-									    + "' specifies 'register'", getSpecifier(
-									        "RegisterSpecifier", specifiers));
+											+ "' specifies 'register'", getSpecifier(
+													"RegisterSpecifier", specifiers));
 								}
 							}
 						}
@@ -2320,7 +2320,7 @@ public class CAnalyzer extends Visitor {
 						final boolean global = table.current().isDefinedLocally(name);
 						if (null != extern || global) {
 							final Type previous = global ? (Type) table.current()
-							    .lookupLocally(name) : extern;
+									.lookupLocally(name) : extern;
 
 							// Check for same symbol kind and type compatibility.
 							Type composite = compose(initDecl, name, type, previous, false);
@@ -2330,30 +2330,30 @@ public class CAnalyzer extends Visitor {
 								define = (null != extern);
 
 							} else if ((null != initializer) && previous.hasAttribute(
-							    Constants.ATT_DEFINED)) {
+									Constants.ATT_DEFINED)) {
 								runtime.error("redefinition of '" + name + "'", initDecl);
 								reportPrevious(name, previous);
 								define = (null != extern);
 
 							} else if ((!resolved.isFunction()) && previous.hasAttribute(
-							    Constants.ATT_STORAGE_STATIC) && (!type.hasAttribute(
-							        Constants.ATT_STORAGE_STATIC)) && (!type.hasAttribute(
-							            Constants.ATT_STORAGE_EXTERN))) {
+									Constants.ATT_STORAGE_STATIC) && (!type.hasAttribute(
+											Constants.ATT_STORAGE_STATIC)) && (!type.hasAttribute(
+													Constants.ATT_STORAGE_EXTERN))) {
 								runtime.error("non-static declaration of '" + name
-								    + "' follows static declaration", initDecl);
+										+ "' follows static declaration", initDecl);
 								reportPrevious(name, previous);
 								define = (null != extern);
 
 							} else if ((!previous.hasAttribute(Constants.ATT_MACRO))
-							    && (!previous.hasAttribute(Constants.ATT_STORAGE_STATIC))
-							    && type.hasAttribute(Constants.ATT_STORAGE_STATIC)) {
+									&& (!previous.hasAttribute(Constants.ATT_STORAGE_STATIC))
+									&& type.hasAttribute(Constants.ATT_STORAGE_STATIC)) {
 								runtime.error("static declaration of '" + name
-								    + "' follows non-static declaration", initDecl);
+										+ "' follows non-static declaration", initDecl);
 								reportPrevious(name, previous);
 								define = (null != extern);
 
 							} else if (previous.hasAttribute(Constants.ATT_MACRO) || previous
-							    .hasAttribute(Constants.ATT_DEFINED)) {
+									.hasAttribute(Constants.ATT_DEFINED)) {
 								// There's nothing to add.
 								define = (null != extern);
 
@@ -2365,16 +2365,16 @@ public class CAnalyzer extends Visitor {
 								// once. Similarly for static.
 								if (resolved.isFunction()) {
 									if ((previous.hasAttribute(Constants.ATT_INLINE) || type
-									    .hasAttribute(Constants.ATT_INLINE)) && (!composite
-									        .hasAttribute(Constants.ATT_INLINE))) {
+											.hasAttribute(Constants.ATT_INLINE)) && (!composite
+													.hasAttribute(Constants.ATT_INLINE))) {
 										composite = composite.attribute(Constants.ATT_INLINE);
 									}
 									if ((previous.hasAttribute(Constants.ATT_STORAGE_STATIC)
-									    || type.hasAttribute(Constants.ATT_STORAGE_STATIC))
-									    && (!composite.hasAttribute(
-									        Constants.ATT_STORAGE_STATIC))) {
+											|| type.hasAttribute(Constants.ATT_STORAGE_STATIC))
+											&& (!composite.hasAttribute(
+													Constants.ATT_STORAGE_STATIC))) {
 										composite = composite.attribute(
-										    Constants.ATT_STORAGE_STATIC);
+												Constants.ATT_STORAGE_STATIC);
 									}
 								}
 
@@ -2405,21 +2405,21 @@ public class CAnalyzer extends Visitor {
 						// A block-level declaration/definition.
 
 						if (type.hasAttribute(Constants.ATT_STORAGE_EXTERN) || resolved
-						    .isFunction()) {
+								.isFunction()) {
 							// Extern and function declarations at the block-level
 							// are effectively external declarations.
 
 							// Process the function type's storage class.
 							if (resolved.isFunction()) {
 								if (type.hasAttribute(Constants.ATT_STORAGE_AUTO) || type
-								    .hasAttribute(Constants.ATT_STORAGE_REGISTER) || type
-								        .hasAttribute(Constants.ATT_STORAGE_STATIC) || type
-								            .hasAttribute(Constants.ATT_THREAD_LOCAL)) {
+										.hasAttribute(Constants.ATT_STORAGE_REGISTER) || type
+												.hasAttribute(Constants.ATT_STORAGE_STATIC) || type
+														.hasAttribute(Constants.ATT_THREAD_LOCAL)) {
 									// C99 6.7.1-5
 									runtime.error("invalid storage class for function '" + name
-									    + "'", initDecl);
+											+ "'", initDecl);
 									type.removeAttribute(type.getAttribute(
-									    Constants.NAME_STORAGE));
+											Constants.NAME_STORAGE));
 								}
 
 								// C99 6.2.2
@@ -2446,14 +2446,14 @@ public class CAnalyzer extends Visitor {
 									define = false;
 
 								} else if (null != local && !previous.resolve().isFunction()
-								    && !previous.hasAttribute(Constants.ATT_STORAGE_EXTERN)) {
+										&& !previous.hasAttribute(Constants.ATT_STORAGE_EXTERN)) {
 									runtime.error("extern declaration of '" + name + "' follows "
-									    + "declaration with no linkage", initDecl);
+											+ "declaration with no linkage", initDecl);
 									reportPrevious(name, previous);
 									define = false;
 
 								} else if (previous.hasAttribute(Constants.ATT_STORAGE_STATIC)
-								    && previous != table.current().getParent().lookup(name)) {
+										&& previous != table.current().getParent().lookup(name)) {
 									// C99 6.2.2-4: If the previous declaration has
 									// internal linkage (i.e., is declared as static)
 									// and is not visible in the surrounding scope, then
@@ -2465,11 +2465,11 @@ public class CAnalyzer extends Visitor {
 									// dependent on an identifier of the same name in
 									// the surrounding scope.
 									runtime.error("variable previously declared 'static' "
-									    + "redeclared 'extern'", initDecl);
+											+ "redeclared 'extern'", initDecl);
 									reportPrevious(name, previous);
 
 								} else if (previous.hasAttribute(Constants.ATT_MACRO)
-								    || previous.hasAttribute(Constants.ATT_DEFINED)) {
+										|| previous.hasAttribute(Constants.ATT_DEFINED)) {
 									// There's nothing to add.
 									type = previous;
 									resolved = type.resolve();
@@ -2482,16 +2482,16 @@ public class CAnalyzer extends Visitor {
 									// Preserve inline and static attributes for functions.
 									if (resolved.isFunction()) {
 										if ((previous.hasAttribute(Constants.ATT_INLINE) || type
-										    .hasAttribute(Constants.ATT_INLINE)) && (!composite
-										        .hasAttribute(Constants.ATT_INLINE))) {
+												.hasAttribute(Constants.ATT_INLINE)) && (!composite
+														.hasAttribute(Constants.ATT_INLINE))) {
 											composite = composite.attribute(Constants.ATT_INLINE);
 										}
 										if ((previous.hasAttribute(Constants.ATT_STORAGE_STATIC)
-										    || type.hasAttribute(Constants.ATT_STORAGE_STATIC))
-										    && (!composite.hasAttribute(
-										        Constants.ATT_STORAGE_STATIC))) {
+												|| type.hasAttribute(Constants.ATT_STORAGE_STATIC))
+												&& (!composite.hasAttribute(
+														Constants.ATT_STORAGE_STATIC))) {
 											composite = composite.attribute(
-											    Constants.ATT_STORAGE_STATIC);
+													Constants.ATT_STORAGE_STATIC);
 										}
 									}
 
@@ -2529,20 +2529,20 @@ public class CAnalyzer extends Visitor {
 							// kind of error.
 							final Type previous = (Type) table.current().lookupLocally(name);
 							final Type composite = compose(initDecl, name, type, previous,
-							    false);
+									false);
 
 							if (composite.isError()) {
 								define = false;
 
 							} else if (previous.hasAttribute(Constants.ATT_STORAGE_EXTERN)) {
 								runtime.error("declaration of '" + name + "' with no "
-								    + "linkage follows extern declaration", initDecl);
+										+ "linkage follows extern declaration", initDecl);
 								reportPrevious(name, previous);
 								define = false;
 
 							} else {
 								runtime.error("redeclaration of '" + name + "' with no linkage",
-								    initDecl);
+										initDecl);
 								reportPrevious(name, previous);
 								define = false;
 							}
@@ -2557,7 +2557,7 @@ public class CAnalyzer extends Visitor {
 
 							// Create an lvalue.
 							type = type.shape(type.hasAttribute(Constants.ATT_STORAGE_STATIC),
-							    name);
+									name);
 
 							// Remember the location.
 							type = type.locate(n);
@@ -2567,14 +2567,14 @@ public class CAnalyzer extends Visitor {
 					// Check for incomplete types.
 					boolean incomplete = false;
 					if ((!type.hasAttribute(Constants.ATT_STORAGE_EXTERN))
-					    || (null != initializer)) {
+							|| (null != initializer)) {
 
 						if (resolved.isArray()) {
 							final Type element = resolved.toArray().getType();
 							if (c().isIncomplete(element) || (pedantic && c()
-							    .hasTrailingArray(element))) {
+									.hasTrailingArray(element))) {
 								runtime.error("array type has incomplete element type",
-								    initDecl);
+										initDecl);
 								incomplete = true;
 							}
 
@@ -2587,19 +2587,19 @@ public class CAnalyzer extends Visitor {
 								// the completeness check at the end of the
 								// translation unit.
 								if (isTopLevel && type.hasTagged() && (null == type.toTagged()
-								    .getMembers())) {
+										.getMembers())) {
 									checks.add(new CompletenessCheck(type, name, initDecl));
 
 								} else if (resolved.isVoid()) {
 									runtime.error("variable '" + name + "' declared void",
-									    initDecl);
+											initDecl);
 								} else {
 									runtime.error("storage size of '" + name + "' isn't known",
-									    initDecl);
+											initDecl);
 								}
 							} else {
 								runtime.error("variable '" + name + "' has initializer but "
-								    + "incomplete type", initDecl);
+										+ "incomplete type", initDecl);
 							}
 							incomplete = true;
 						}
@@ -2610,11 +2610,11 @@ public class CAnalyzer extends Visitor {
 						if (type.hasAttribute(Constants.ATT_STORAGE_EXTERN)) {
 							if (isTopLevel) {
 								runtime.warning("'" + name
-								    + "' initialized and declared 'extern'", initDecl);
+										+ "' initialized and declared 'extern'", initDecl);
 								type = type.attribute(Constants.ATT_DEFINED);
 							} else {
 								runtime.error("'" + name
-								    + "' has both 'extern' and initializer", initDecl);
+										+ "' has both 'extern' and initializer", initDecl);
 							}
 						} else {
 							type = type.attribute(Constants.ATT_DEFINED);
@@ -2664,7 +2664,7 @@ public class CAnalyzer extends Visitor {
 	 *          The literal node.
 	 */
 	protected Type processInitializer(GNode expr, String name, Type left,
-	    GNode literal) {
+			GNode literal) {
 		if (left.hasError())
 			return left;
 
@@ -2673,25 +2673,25 @@ public class CAnalyzer extends Visitor {
 
 		// Determine whether the left-hand size has automatic storage.
 		final boolean auto = (left.hasAttribute(Constants.ATT_STORAGE_AUTO) || left
-		    .hasAttribute(Constants.ATT_STORAGE_REGISTER));
+				.hasAttribute(Constants.ATT_STORAGE_REGISTER));
 
 		// Check the actual initializer.
 		if (literal.hasName("InitializerList")) {
 
 			// Take care of braced string literals here.
 			if ((c().isString(left) || c().isWideString(left)) && (0 < literal.size())
-			    && (null == literal.getGeneric(0).get(0)) && (!literal.getGeneric(0)
-			        .getGeneric(1).hasName("InitializerList"))) {
+					&& (null == literal.getGeneric(0).get(0)) && (!literal.getGeneric(0)
+							.getGeneric(1).hasName("InitializerList"))) {
 				final Type right = (Type) dispatch(literal.getGeneric(0).getGeneric(1));
 
 				if (c().isStringLiteral(right)) {
 					if (1 < literal.size()) {
 						if (c().isString(left)) {
 							runtime.error("excess elements in char array initializer",
-							    literal);
+									literal);
 						} else {
 							runtime.error("excess elements in wchar_t array initializer",
-							    literal);
+									literal);
 						}
 						return left;
 					} else {
@@ -2746,18 +2746,18 @@ public class CAnalyzer extends Visitor {
 	 * @return The updated type.
 	 */
 	protected Type processStringSize(GNode expr, String desc, boolean nested,
-	    Type left, Type right) {
+			Type left, Type right) {
 		if (((c().isString(left) && c().isString(right)) || (c().isWideString(left)
-		    && c().isWideString(right))) && right.hasConstant()) {
+				&& c().isWideString(right))) && right.hasConstant()) {
 
 			final ArrayT array = left.resolve().toArray();
 			if ((!array.isVarLength()) && (!array.hasLength()) && (!nested)) {
 				left = left.copy();
 				left.resolve().toArray().setLength(right.resolve().toArray().getLength()
-				    + 1);
+						+ 1);
 
 			} else if (array.hasLength() && (array.getLength() < right.resolve()
-			    .toArray().getLength())) {
+					.toArray().getLength())) {
 				runtime.warning("string literal in " + desc + " is too long", expr);
 			}
 		}
@@ -2779,7 +2779,7 @@ public class CAnalyzer extends Visitor {
 		// Make sure the type actually is a function.
 		if (!type.resolve().isFunction()) {
 			runtime.error("function definition without function declarator",
-			    declarator);
+					declarator);
 			return;
 		}
 
@@ -2799,8 +2799,8 @@ public class CAnalyzer extends Visitor {
 
 		// The flag for a GCC inline extern function, i.e., macro.
 		final boolean isMacro = (!pedantic && type.hasAttribute(
-		    Constants.ATT_STORAGE_EXTERN) && type.hasAttribute(
-		        Constants.ATT_INLINE));
+				Constants.ATT_STORAGE_EXTERN) && type.hasAttribute(
+						Constants.ATT_INLINE));
 
 		// The flag for whether to enter the definition into the symbol table.
 		boolean define = true;
@@ -2810,23 +2810,23 @@ public class CAnalyzer extends Visitor {
 		final boolean global = table.current().isDefinedLocally(name);
 		if (null != extern || global) {
 			final Type previous = global ? (Type) table.current().lookupLocally(name)
-			    : extern;
+					: extern;
 			final Type composite = compose(n, name, type, previous, true);
 
 			if (composite.isError()) {
 				define = (null != extern);
 
 			} else if (previous.hasAttribute(Constants.ATT_DEFINED) || (isMacro
-			    && previous.hasAttribute(Constants.ATT_MACRO))) {
+					&& previous.hasAttribute(Constants.ATT_MACRO))) {
 				runtime.error("redefinition of '" + name + "'", n);
 				reportPrevious(name, previous);
 				define = (null != extern);
 
 			} else if ((!previous.hasAttribute(Constants.ATT_MACRO)) && (!previous
-			    .hasAttribute(Constants.ATT_STORAGE_STATIC)) && type.hasAttribute(
-			        Constants.ATT_STORAGE_STATIC)) {
+					.hasAttribute(Constants.ATT_STORAGE_STATIC)) && type.hasAttribute(
+							Constants.ATT_STORAGE_STATIC)) {
 				runtime.error("static declaration of '" + name
-				    + "' follows non-static declaration", n);
+						+ "' follows non-static declaration", n);
 				reportPrevious(name, previous);
 				define = (null != extern);
 
@@ -2836,13 +2836,13 @@ public class CAnalyzer extends Visitor {
 
 				// Preserve inline and static attributes.
 				if ((!previous.hasAttribute(Constants.ATT_MACRO)) && previous
-				    .hasAttribute(Constants.ATT_INLINE) && (!type.hasAttribute(
-				        Constants.ATT_INLINE))) {
+						.hasAttribute(Constants.ATT_INLINE) && (!type.hasAttribute(
+								Constants.ATT_INLINE))) {
 					type = type.annotate().attribute(Constants.ATT_INLINE);
 				}
 
 				if (previous.hasAttribute(Constants.ATT_STORAGE_STATIC) && (!type
-				    .hasAttribute(Constants.ATT_STORAGE_STATIC))) {
+						.hasAttribute(Constants.ATT_STORAGE_STATIC))) {
 					type = type.annotate().attribute(Constants.ATT_STORAGE_STATIC);
 				}
 
@@ -2853,7 +2853,7 @@ public class CAnalyzer extends Visitor {
 			// Mark the type as defined.
 			if (type.resolve().isSealed()) {
 				type = isMacro ? type.attribute(Constants.ATT_MACRO)
-				    : type.attribute(Constants.ATT_DEFINED);
+						: type.attribute(Constants.ATT_DEFINED);
 			} else if (isMacro) {
 				type.resolve().addAttribute(Constants.ATT_MACRO);
 			} else {
@@ -2888,13 +2888,13 @@ public class CAnalyzer extends Visitor {
 
 		// Check that main's return type is int.
 		if ("main".equals(name) && type.resolve().isFunction() && !NumberT.INT
-		    .equals(type.resolve().toFunction().getResult())) {
+				.equals(type.resolve().toFunction().getResult())) {
 			runtime.warning("return type of 'main' is not 'int'", n);
 		}
 
 		// Enter function scope.
 		final String scopeName = isMacro ? SymbolTable.toMacroScopeName(name)
-		    : SymbolTable.toFunctionScopeName(name);
+				: SymbolTable.toFunctionScopeName(name);
 		table.enter(scopeName);
 		table.mark(n);
 
@@ -2939,7 +2939,7 @@ public class CAnalyzer extends Visitor {
 	public static Type toFuncType(String name) {
 		final Type elem = NumberT.CHAR.annotate().attribute(Constants.ATT_CONSTANT);
 		final Type array = new ArrayT(elem, name.length()).annotate().attribute(
-		    Constants.ATT_STORAGE_STATIC).shape(true, "__func__").seal();
+				Constants.ATT_STORAGE_STATIC).shape(true, "__func__").seal();
 
 		return array;
 	}
@@ -2985,7 +2985,7 @@ public class CAnalyzer extends Visitor {
 					final GNode declaration = GNode.cast(o);
 					final GNode specifiers = declaration.getGeneric(1);
 					final Specifiers spec = newSpecifiers(specifiers, null == declaration
-					    .get(2));
+							.get(2));
 
 					if (null == declaration.get(2)) {
 						runtime.warning("empty declaration", declaration);
@@ -3005,7 +3005,7 @@ public class CAnalyzer extends Visitor {
 							switch (type.tag()) {
 							case ARRAY:
 								type = c().qualify(new PointerT(type.resolve().toArray()
-								    .getType()), type);
+										.getType()), type);
 								break;
 							case FUNCTION:
 								type = c().qualify(new PointerT(type.resolve()), type);
@@ -3014,44 +3014,44 @@ public class CAnalyzer extends Visitor {
 
 							// Annotate the type.
 							type = spec.annotateFull(VariableT.newParam(type, name))
-							    .attribute(toAttributeList(initDecl.getGeneric(0))).attribute(
-							        toAttributeList(initDecl.getGeneric(3))).shape(false,
-							            name);
+									.attribute(toAttributeList(initDecl.getGeneric(0))).attribute(
+											toAttributeList(initDecl.getGeneric(3))).shape(false,
+													name);
 
 							// Check for storage class specifiers and initializers.
 							if ((type.hasAttribute(Constants.NAME_STORAGE) && (!type
-							    .hasAttribute(Constants.ATT_STORAGE_REGISTER))) || type
-							        .hasAttribute(Constants.ATT_THREAD_LOCAL)) {
+									.hasAttribute(Constants.ATT_STORAGE_REGISTER))) || type
+											.hasAttribute(Constants.ATT_THREAD_LOCAL)) {
 								runtime.error("storage class specified for parameter '" + name
-								    + "'", declaration);
+										+ "'", declaration);
 							} else if (!type.hasAttribute(Constants.NAME_STORAGE)) {
 								type = type.attribute(Constants.ATT_STORAGE_AUTO);
 							}
 
 							if (null != initDecl.get(4)) {
 								runtime.error("parameter '" + name + "' is initialized",
-								    initDecl.getNode(4));
+										initDecl.getNode(4));
 							}
 
 							// Check for incomplete types.
 							if (c().isIncomplete(type)) {
 								if (type.resolve().isVoid()) {
 									runtime.error("parameter '" + name + "' declared void",
-									    declaration);
+											declaration);
 								} else {
 									runtime.error("parameter '" + name + "' has incomplete type",
-									    declaration);
+											declaration);
 								}
 							}
 
 							// Check parameter name and previous definitions.
 							if (!names.contains(name)) {
 								runtime.error("declaration for parameter '" + name
-								    + "' but no such parameter", declaration);
+										+ "' but no such parameter", declaration);
 
 							} else if (table.current().isDefinedLocally(name)) {
 								runtime.error("redefinition of parameter '" + name + "'",
-								    declaration);
+										declaration);
 							} else {
 								define(table.current(), name, type);
 							}
@@ -3064,7 +3064,7 @@ public class CAnalyzer extends Visitor {
 			for (String name : names) {
 				if (!table.current().isDefinedLocally(name)) {
 					final Type type = VariableT.newParam(C.IMPLICIT, name).attribute(
-					    Constants.ATT_STORAGE_AUTO).shape(false, name);
+							Constants.ATT_STORAGE_AUTO).shape(false, name);
 					define(table.current(), name, type);
 
 					if (pedantic) {
@@ -3109,19 +3109,19 @@ public class CAnalyzer extends Visitor {
 					final int size = parameters.size();
 					for (int i = 0; i < size; i++) {
 						final Type t1 = (Type) table.current().lookupLocally(
-						    (String) parameters.get(i));
+								(String) parameters.get(i));
 						final Type t2 = function.getParameters().get(i);
 
 						if (t1.hasError() || t2.hasError()) {
 							// Ignore.
 						} else if (c().compose(t2, c().promoteArgument(t1), pedantic)
-						    .isError()) {
+								.isError()) {
 							runtime.error("argument '" + t1.toVariable().getName()
-							    + "' doesn't match prototype", node);
+									+ "' doesn't match prototype", node);
 						} else if (pedantic && !c().hasSameQualifiers(t2, t1)) {
 							// C99 6.7.5.3 15
 							runtime.error("type qualifiers of argument '" + t1.toVariable()
-							    .getName() + "' don't match prototype", node);
+									.getName() + "' don't match prototype", node);
 						}
 					}
 				}
@@ -3131,7 +3131,7 @@ public class CAnalyzer extends Visitor {
 			// A new-style definition.
 			if (null != node.get(3)) {
 				runtime.error("old-style parameter declarations in prototyped "
-				    + "function definition", node.getNode(3));
+						+ "function definition", node.getNode(3));
 			}
 
 			// Note that void parameter lists are checked for
@@ -3146,7 +3146,7 @@ public class CAnalyzer extends Visitor {
 					final GNode decl = GNode.cast(iter1.next());
 					final Type type = iter2.next();
 					final String name = type.hasVariable() ? type.toVariable().getName()
-					    : null;
+							: null;
 
 					// Check for incomplete types.
 					if (c().isIncomplete(type)) {
@@ -3154,7 +3154,7 @@ public class CAnalyzer extends Visitor {
 							runtime.error("unnamed parameter has incomplete type", decl);
 						} else {
 							runtime.error("parameter '" + name + "' has incomplete type",
-							    decl);
+									decl);
 						}
 					}
 
@@ -3196,7 +3196,7 @@ public class CAnalyzer extends Visitor {
 			Scope scope = table.current();
 
 			// If there is a local declaration or definition, use that
-	    // one.
+			// one.
 			while (!isFunctionScope(scope.getName())) {
 				final Type type = (Type) scope.lookupLocally(name);
 				if (null != type) {
@@ -3285,9 +3285,9 @@ public class CAnalyzer extends Visitor {
 							checkedDefined.put(type, type);
 
 							if (type.hasAttribute(Constants.ATT_UNINITIALIZED) && !type
-		              .hasAttribute(Constants.ATT_USED)) {
+									.hasAttribute(Constants.ATT_USED)) {
 								runtime.warning("label '" + id + "' declared but not defined",
-		                n);
+										n);
 							}
 						}
 					}
@@ -3338,7 +3338,7 @@ public class CAnalyzer extends Visitor {
 				assert type.isLabel() : "Malformed label type";
 				if (type.hasAttribute(Constants.ATT_UNINITIALIZED)) {
 					define(scope, name, new LabelT(id).locate(n).attribute(
-					    Constants.ATT_DEFINED).attribute(atts));
+							Constants.ATT_DEFINED).attribute(atts));
 				} else {
 					runtime.error("duplicate label '" + id + "'", n);
 					reportPrevious(id, type);
@@ -3357,7 +3357,7 @@ public class CAnalyzer extends Visitor {
 			reportPrevious(id, (Type) scope.lookupLocally(name));
 		} else {
 			define(scope, name, new LabelT(id).locate(n).attribute(
-			    Constants.ATT_DEFINED).attribute(atts));
+					Constants.ATT_DEFINED).attribute(atts));
 		}
 	}
 
@@ -3377,7 +3377,7 @@ public class CAnalyzer extends Visitor {
 			return;
 
 		} else if ((!c().isIntegral(t1)) || ((null != t2) && (!c().isIntegral(
-		    t2)))) {
+				t2)))) {
 			runtime.error("case label not of integer type", n);
 			return;
 
@@ -3390,7 +3390,7 @@ public class CAnalyzer extends Visitor {
 			// Test: i2 < i1
 			try {
 				if (t2.getConstant().bigIntValue().compareTo(t2.getConstant()
-				    .bigIntValue()) < 0) {
+						.bigIntValue()) < 0) {
 					runtime.error("empty range in case label", n);
 				}
 			} catch (IllegalStateException x) {
@@ -3420,7 +3420,7 @@ public class CAnalyzer extends Visitor {
 				reportPrevious(id, (Type) table.current().lookupLocally(name));
 			} else {
 				define(table.current(), name, new LabelT(id).locate(n).attribute(
-				    Constants.ATT_UNINITIALIZED));
+						Constants.ATT_UNINITIALIZED));
 			}
 		}
 	}
@@ -3565,7 +3565,7 @@ public class CAnalyzer extends Visitor {
 				processAssignment(false, "return", n, result, t1);
 			} else if (pedantic) {
 				runtime.warning("'return' with no value, in function returning "
-				    + "non-void", n);
+						+ "non-void", n);
 			}
 		}
 
@@ -3683,7 +3683,7 @@ public class CAnalyzer extends Visitor {
 
 			default:
 				runtime.error("invalid " + toDescription(n1) + " where scalar required",
-				    n1);
+						n1);
 				result = ErrorT.TYPE;
 			}
 
@@ -3732,19 +3732,19 @@ public class CAnalyzer extends Visitor {
 			result = valueConditional(result, t1, t2, t3);
 
 		} else if ((r2.isStruct() && r3.isStruct() && c().equal(t2, t3)) || (r2
-		    .isUnion() && r3.isUnion() && c().equal(t2, t3))) {
+				.isUnion() && r3.isUnion() && c().equal(t2, t3))) {
 			result = cond1 ? c().qualify(r2, t2) : ErrorT.TYPE;
 
 		} else if (r2.isVoid() && r3.isVoid()) {
 			result = cond1 ? (Type) VoidT.TYPE : ErrorT.TYPE;
 
 		} else if (r2.isPointer() && t3.hasConstant() && t3.getConstant()
-		    .isNull()) {
+				.isNull()) {
 			result = cond1 ? c().qualify(r2, t2) : ErrorT.TYPE;
 			result = valueConditional(result, t1, t2, t3);
 
 		} else if (t2.hasConstant() && t2.getConstant().isNull() && r3
-		    .isPointer()) {
+				.isPointer()) {
 			result = cond1 ? c().qualify(r3, t3) : ErrorT.TYPE;
 			result = valueConditional(result, t1, t2, t3);
 
@@ -3782,9 +3782,9 @@ public class CAnalyzer extends Visitor {
 			}
 
 		} else if ((c().isIntegral(t2) && r3.isPointer()) || (r2.isPointer() && c()
-		    .isIntegral(t3))) {
+				.isIntegral(t3))) {
 			runtime.error("pointer/integer type mismatch in conditional expression",
-			    n);
+					n);
 			result = ErrorT.TYPE;
 
 		} else {
@@ -3903,7 +3903,7 @@ public class CAnalyzer extends Visitor {
 				result = result.annotate();
 				try {
 					result = result.constant(c().mask(t1.getConstant().bigIntValue(),
-					    result).or(c().mask(t2.getConstant().bigIntValue(), result)));
+							result).or(c().mask(t2.getConstant().bigIntValue(), result)));
 				} catch (IllegalStateException x) {
 					result = result.constant(new StaticReference(result));
 				}
@@ -3935,7 +3935,7 @@ public class CAnalyzer extends Visitor {
 				result = result.annotate();
 				try {
 					result = result.constant(c().mask(t1.getConstant().bigIntValue(),
-					    result).xor(c().mask(t2.getConstant().bigIntValue(), result)));
+							result).xor(c().mask(t2.getConstant().bigIntValue(), result)));
 				} catch (IllegalStateException x) {
 					result = result.constant(new StaticReference(result));
 				}
@@ -3967,7 +3967,7 @@ public class CAnalyzer extends Visitor {
 				result = result.annotate();
 				try {
 					result = result.constant(c().mask(t1.getConstant().bigIntValue(),
-					    result).and(c().mask(t2.getConstant().bigIntValue(), result)));
+							result).and(c().mask(t2.getConstant().bigIntValue(), result)));
 				} catch (IllegalStateException x) {
 					result = result.constant(new StaticReference(result));
 				}
@@ -4008,7 +4008,7 @@ public class CAnalyzer extends Visitor {
 						final BigInteger i2 = t2.getConstant().bigIntValue();
 
 						result = result.constant("==".equals(op) ? i1.compareTo(i2) == 0
-						    : i1.compareTo(i2) != 0);
+								: i1.compareTo(i2) != 0);
 
 					} else {
 						final double d1 = t1.getConstant().doubleValue();
@@ -4022,7 +4022,7 @@ public class CAnalyzer extends Visitor {
 			}
 
 		} else if (r1.isPointer() && t2.hasConstant() && t2.getConstant()
-		    .isNull()) {
+				.isNull()) {
 			result = NumberT.INT;
 
 			if (t1.hasConstant()) {
@@ -4030,7 +4030,7 @@ public class CAnalyzer extends Visitor {
 			}
 
 		} else if (t1.hasConstant() && t1.getConstant().isNull() && r2
-		    .isPointer()) {
+				.isPointer()) {
 			result = NumberT.INT;
 
 			if (t2.hasConstant()) {
@@ -4038,13 +4038,13 @@ public class CAnalyzer extends Visitor {
 			}
 
 		} else if (!pedantic && ((r1.isPointer() && c().isIntegral(r2)) || (c()
-		    .isIntegral(r1) && r2.isPointer()))) {
+				.isIntegral(r1) && r2.isPointer()))) {
 			runtime.warning("comparison between pointer and integer", n);
 			result = NumberT.INT;
 
 			if (t1.hasConstant() && t2.hasConstant()) {
 				final boolean equal = t1.getConstant().getValue().equals(t2
-				    .getConstant().getValue());
+						.getConstant().getValue());
 				result = result.annotate().constant("==".equals(op) ? equal : !equal);
 			}
 
@@ -4060,7 +4060,7 @@ public class CAnalyzer extends Visitor {
 
 				if (t1.hasConstant() && t2.hasConstant()) {
 					final boolean equal = t1.getConstant().getValue().equals(t2
-					    .getConstant().getValue());
+							.getConstant().getValue());
 					result = result.annotate().constant("==".equals(op) ? equal : !equal);
 				}
 
@@ -4260,29 +4260,29 @@ public class CAnalyzer extends Visitor {
 					// If one of the terms has a reference value, try to
 					// preserve a meaningful value.
 					if (t1.getConstant().isReference() && (!t2.getConstant()
-					    .isReference())) {
+							.isReference())) {
 
 						if ("+".equals(op)) {
 							// ref + int
 							result = result.constant(t1.getConstant().refValue().add(t2
-							    .getConstant().bigIntValue()));
+									.getConstant().bigIntValue()));
 						} else {
 							// ref - int
 							result = result.constant(t1.getConstant().refValue().subtract(t2
-							    .getConstant().bigIntValue()));
+									.getConstant().bigIntValue()));
 						}
 
 					} else if ((!t1.getConstant().isReference()) && "+".equals(op) && t2
-					    .getConstant().isReference()) {
+							.getConstant().isReference()) {
 						// int + ref
 						result = result.constant(t2.getConstant().refValue().add(t1
-						    .getConstant().bigIntValue()));
+								.getConstant().bigIntValue()));
 
 					} else if (t1.getConstant().isReference() && "-".equals(op) && t2
-					    .getConstant().isReference()) {
+							.getConstant().isReference()) {
 						// ref - ref
 						final BigInteger diff = t1.getConstant().refValue().difference(t2
-						    .getConstant().refValue());
+								.getConstant().refValue());
 						if (null != diff) {
 							result = result.constant(diff);
 						} else {
@@ -4296,7 +4296,7 @@ public class CAnalyzer extends Visitor {
 
 							// int + int
 							result = result.constant("+".equals(op) ? i1.add(i2)
-							    : i1.subtract(i2));
+									: i1.subtract(i2));
 						} catch (IllegalStateException x) {
 							// ref + ref
 							result = result.constant(new StaticReference(result));
@@ -4324,7 +4324,7 @@ public class CAnalyzer extends Visitor {
 						result = result.annotate();
 						try {
 							result = result.constant(c().getConstRef(t1).add(t2.getConstant()
-							    .bigIntValue()));
+									.bigIntValue()));
 						} catch (IllegalStateException x) {
 							result = result.constant(new StaticReference(result));
 						}
@@ -4341,7 +4341,7 @@ public class CAnalyzer extends Visitor {
 						result = result.annotate();
 						try {
 							result = result.constant(c().getConstRef(t2).add(t1.getConstant()
-							    .bigIntValue()));
+									.bigIntValue()));
 						} catch (IllegalStateException x) {
 							result = result.constant(new StaticReference(result));
 						}
@@ -4388,7 +4388,7 @@ public class CAnalyzer extends Visitor {
 					result = result.annotate();
 					try {
 						result = result.constant(c().getConstRef(t1).subtract(t2
-						    .getConstant().bigIntValue()));
+								.getConstant().bigIntValue()));
 					} catch (IllegalStateException x) {
 						result = result.constant(new StaticReference(result));
 					}
@@ -4417,9 +4417,9 @@ public class CAnalyzer extends Visitor {
 
 		Type result;
 		final boolean cond1 = (("%".equals(op) && ensureInteger(n1, t1)) || ((!"%"
-		    .equals(op)) && ensureArithmetic(n1, t1)));
+				.equals(op)) && ensureArithmetic(n1, t1)));
 		final boolean cond2 = (("%".equals(op) && ensureInteger(n2, t2)) || ((!"%"
-		    .equals(op)) && ensureArithmetic(n2, t2)));
+				.equals(op)) && ensureArithmetic(n2, t2)));
 		if (cond1 && cond2) {
 			result = c().convert(t1, t2);
 
@@ -4479,7 +4479,7 @@ public class CAnalyzer extends Visitor {
 		// As an exception, GCC allows a struct or union cast to itself,
 		// ignoring qualifiers.
 		final boolean gcc = (!pedantic && r1.hasStructOrUnion() && r2
-		    .hasStructOrUnion() && c().equal(r1, r2));
+				.hasStructOrUnion() && c().equal(r1, r2));
 		Type result;
 		final boolean cond2 = r1.isVoid() || gcc || ensureScalar(n2, r2);
 		switch (r1.tag()) {
@@ -4542,7 +4542,7 @@ public class CAnalyzer extends Visitor {
 					} else {
 						// The types have different shapes.
 						result = result.constant(new CastReference(pt1, c().getConstRef(
-						    t2)));
+								t2)));
 					}
 				}
 			}
@@ -4675,7 +4675,7 @@ public class CAnalyzer extends Visitor {
 
 			if (!c().isVariablyModified(r1)) {
 				result = result.annotate().constant(BigInteger.valueOf(c().getSize(
-				    r1)));
+						r1)));
 			}
 		}
 
@@ -4710,7 +4710,7 @@ public class CAnalyzer extends Visitor {
 
 		} else {
 			result = C.SIZEOF.annotate().constant(BigInteger.valueOf(c().getAlignment(
-			    t1)));
+					t1)));
 		}
 
 		mark(n, result);
@@ -4769,7 +4769,7 @@ public class CAnalyzer extends Visitor {
 				return member;
 
 			final long offset = base.getConstant().longValue() + c().getOffset(base
-			    .toStructOrUnion(), name);
+					.toStructOrUnion(), name);
 			return member.annotate().constant(BigInteger.valueOf(offset));
 
 		} else if (selection.hasName("SubscriptExpression")) {
@@ -4789,12 +4789,12 @@ public class CAnalyzer extends Visitor {
 				return element;
 
 			final long offset = base.getConstant().longValue() + c().getSize(element)
-			    * index.getConstant().longValue();
+					* index.getConstant().longValue();
 			return element.annotate().constant(BigInteger.valueOf(offset));
 
 		} else {
 			runtime.error("second argument to 'offsetof' neither a "
-			    + "selection nor a subscript", selection);
+					+ "selection nor a subscript", selection);
 			return ErrorT.TYPE;
 		}
 	}
@@ -4805,7 +4805,7 @@ public class CAnalyzer extends Visitor {
 		final Type t2 = (Type) dispatch(n.getNode(1));
 
 		final Type result = NumberT.INT.annotate().constant(c().compose(t1, t2,
-		    pedantic).isError() ? BigInteger.ZERO : BigInteger.ONE);
+				pedantic).isError() ? BigInteger.ZERO : BigInteger.ONE);
 
 		mark(n, result);
 		return result;
@@ -4826,7 +4826,7 @@ public class CAnalyzer extends Visitor {
 				try {
 					if (c().isIntegral(result)) {
 						result = result.constant(c().mask(t1.getConstant().bigIntValue()
-						    .negate(), result));
+								.negate(), result));
 					} else {
 						result = result.constant(-t1.getConstant().doubleValue());
 					}
@@ -4901,7 +4901,7 @@ public class CAnalyzer extends Visitor {
 			if (t1.hasConstant()) {
 				try {
 					result = result.annotate().constant(c().mask(t1.getConstant()
-					    .bigIntValue().not(), result));
+							.bigIntValue().not(), result));
 				} catch (IllegalStateException x) {
 					result = result.constant(new StaticReference(result));
 				}
@@ -4976,7 +4976,7 @@ public class CAnalyzer extends Visitor {
 				Reference ref = null;
 
 				if (base.resolve().isArray() && base.hasShape() && base.getShape()
-				    .isConstant()) {
+						.isConstant()) {
 					// Account for pointer decay.
 					ref = base.getShape();
 
@@ -4991,7 +4991,7 @@ public class CAnalyzer extends Visitor {
 					result = result.annotate();
 					try {
 						result = result.constant(ref.add(index.getConstant()
-						    .bigIntValue()));
+								.bigIntValue()));
 					} catch (IllegalStateException x) {
 						result = result.constant(new StaticReference(result));
 					}
@@ -5035,12 +5035,12 @@ public class CAnalyzer extends Visitor {
 		} else if (type.hasShape()) {
 			if (type.hasVariable() && type.toVariable().hasWidth()) {
 				runtime.error("cannot take address of bit-field '" + type.toVariable()
-				    .getName() + "'", n);
+						.getName() + "'", n);
 				return ErrorT.TYPE;
 
 			} else if (type.hasAttribute(Constants.ATT_STORAGE_REGISTER)) {
 				runtime.error("address of register " + toDescription(n.getNode(0))
-				    + " requested", n);
+						+ " requested", n);
 				return ErrorT.TYPE;
 
 			} else {
@@ -5063,7 +5063,7 @@ public class CAnalyzer extends Visitor {
 		// function's labels have been added to the symbol table. Here,
 		// we only construt the appropriate type (void *).
 		final Type result = PointerT.TO_VOID.annotate().constant(
-		    new StaticReference(n.getString(0), VoidT.TYPE));
+				new StaticReference(n.getString(0), VoidT.TYPE));
 
 		mark(n, result);
 		return result;
@@ -5144,7 +5144,7 @@ public class CAnalyzer extends Visitor {
 
 		Type result;
 		if (ensureScalar(n1, t1) && ensurePointerArithmetic(n, t1) && ensureLValue(
-		    n1, t1)) {
+				n1, t1)) {
 			result = t1.resolve();
 		} else {
 			result = ErrorT.TYPE;
@@ -5162,7 +5162,7 @@ public class CAnalyzer extends Visitor {
 
 		Type result;
 		if (ensureScalar(n1, t1) && ensurePointerArithmetic(n, t1) && ensureLValue(
-		    n1, t1)) {
+				n1, t1)) {
 			result = t1.resolve();
 		} else {
 			result = ErrorT.TYPE;
@@ -5241,7 +5241,7 @@ public class CAnalyzer extends Visitor {
 				if (base.hasShape() && index.hasConstant()) {
 					try {
 						ref = base.getShape().indirect(base).add(index.getConstant()
-						    .bigIntValue());
+								.bigIntValue());
 					} catch (IllegalStateException x) {
 						ref = new StaticReference(ptr1);
 					}
@@ -5302,7 +5302,7 @@ public class CAnalyzer extends Visitor {
 	 *         malformed type or field name.
 	 */
 	protected Type processSelection(Node node, Type type, String name,
-	    boolean indirect) {
+			boolean indirect) {
 		if (type.hasError())
 			return ErrorT.TYPE;
 
@@ -5337,7 +5337,7 @@ public class CAnalyzer extends Visitor {
 
 			if (result.isError()) {
 				runtime.error("'" + (tag.isStruct() ? "struct " : "union ") + tag
-				    .getName() + "' has no member named '" + name + "'", node);
+						.getName() + "' has no member named '" + name + "'", node);
 				return ErrorT.TYPE;
 
 			} else {
@@ -5363,7 +5363,7 @@ public class CAnalyzer extends Visitor {
 
 		} else {
 			runtime.error("request for member '" + name
-			    + "' in something not a struct or union", node);
+					+ "' in something not a struct or union", node);
 			return ErrorT.TYPE;
 		}
 	}
@@ -5414,9 +5414,9 @@ public class CAnalyzer extends Visitor {
 					// the lookup failed, the identifier is not declared in the
 					// current scope nor in the global scope.
 					t1 = new FunctionT(NumberT.INT, new ArrayList<Type>(0), false)
-					    .attribute(Constants.ATT_STYLE_OLD).attribute(
-					        Constants.ATT_IMPLICIT).annotate().attribute(
-					            Constants.ATT_STORAGE_EXTERN);
+							.attribute(Constants.ATT_STYLE_OLD).attribute(
+									Constants.ATT_IMPLICIT).annotate().attribute(
+											Constants.ATT_STORAGE_EXTERN);
 
 					// Always enter the implicit declaration in the local scope.
 					define(table.current(), name, t1.shape(true, name).locate(n));
@@ -5450,9 +5450,9 @@ public class CAnalyzer extends Visitor {
 			result = ErrorT.TYPE;
 
 		} else if (r1.isPointer() && r1.toPointer().getType().hasTag(
-		    Tag.FUNCTION)) {
+				Tag.FUNCTION)) {
 			final FunctionT function = r1.toPointer().getType().resolve()
-			    .toFunction();
+					.toFunction();
 			final List<Type> parameters = function.getParameters();
 
 			// If the function has a prototype, check the types.
@@ -5503,7 +5503,7 @@ public class CAnalyzer extends Visitor {
 
 		Type result;
 		if (ensureScalar(n1, t1) && ensurePointerArithmetic(n, t1) && ensureLValue(
-		    n1, t1)) {
+				n1, t1)) {
 			result = t1.resolve();
 		} else {
 			result = ErrorT.TYPE;
@@ -5521,7 +5521,7 @@ public class CAnalyzer extends Visitor {
 
 		Type result;
 		if (ensureScalar(n1, t1) && ensurePointerArithmetic(n, t1) && ensureLValue(
-		    n1, t1)) {
+				n1, t1)) {
 			result = t1.resolve();
 		} else {
 			result = ErrorT.TYPE;
@@ -5557,7 +5557,7 @@ public class CAnalyzer extends Visitor {
 				runtime.error("unnamed " + kind + " has incomplete type", n);
 			} else {
 				runtime.error("'" + kind + " " + t1.toTagged().getName()
-				    + "' has incomplete type", n);
+						+ "' has incomplete type", n);
 			}
 			result = ErrorT.TYPE;
 		} else {
@@ -5625,7 +5625,7 @@ public class CAnalyzer extends Visitor {
 
 			// Reconstruct value.
 			result = result.resolve().annotate().constant(c().mask(result
-			    .getConstant().bigIntValue(), result));
+					.getConstant().bigIntValue(), result));
 		}
 
 		mark(n, result);
@@ -5641,7 +5641,7 @@ public class CAnalyzer extends Visitor {
 
 			// Reconstruct value.
 			result = result.resolve().annotate().constant(c().mask(result
-			    .getConstant().bigIntValue(), result));
+					.getConstant().bigIntValue(), result));
 		}
 
 		mark(n, result);
@@ -5791,7 +5791,7 @@ public class CAnalyzer extends Visitor {
 					runtime.error("declaration of function returning an array", node);
 				} else {
 					runtime.error("'" + name + "' declared as function returning "
-					    + "an array", node);
+							+ "an array", node);
 				}
 				return false;
 
@@ -5800,7 +5800,7 @@ public class CAnalyzer extends Visitor {
 					runtime.error("declaration of function returning a function", node);
 				} else {
 					runtime.error("'" + name + "' declared as function returning "
-					    + "a function", node);
+							+ "a function", node);
 				}
 				return false;
 
@@ -5832,11 +5832,11 @@ public class CAnalyzer extends Visitor {
 	 *         compatible.
 	 */
 	public Type compose(GNode decl, String name, Type type, Type previous,
-	    boolean isFuncDef) {
+			boolean isFuncDef) {
 		if (previous.isAlias() || type.resolve().isFunction() != previous.resolve()
-		    .isFunction()) {
+				.isFunction()) {
 			runtime.error("'" + name + "' redeclared as different kind of symbol",
-			    decl);
+					decl);
 			reportPrevious(name, previous);
 			return ErrorT.TYPE;
 		}
@@ -5846,7 +5846,7 @@ public class CAnalyzer extends Visitor {
 		// the extern attribute.
 		Type composite;
 		if (previous.hasAttribute(Constants.ATT_STORAGE_EXTERN) || (!type
-		    .hasAttribute(Constants.ATT_STORAGE_EXTERN)) || isFuncDef) {
+				.hasAttribute(Constants.ATT_STORAGE_EXTERN)) || isFuncDef) {
 			composite = c().compose(type, previous, pedantic);
 		} else {
 			composite = c().compose(previous, type, pedantic);
@@ -5854,9 +5854,9 @@ public class CAnalyzer extends Visitor {
 
 		if (composite.isError()) {
 			if (previous.hasAttribute(Constants.ATT_BUILTIN) && previous.resolve()
-			    .isFunction()) {
+					.isFunction()) {
 				runtime.error("conflicting types for built-in function '" + name + "'",
-				    decl);
+						decl);
 			} else {
 				runtime.error("conflicting types for '" + name + "'", decl);
 				reportPrevious(name, previous);
@@ -5941,7 +5941,7 @@ public class CAnalyzer extends Visitor {
 					if ("packed".equals(name)) { // -------------------------------------
 						if (null != value) {
 							runtime.error("wrong number of arguments specified for 'packed'"
-							    + " attribute", entry);
+									+ " attribute", entry);
 							seenError = true;
 						}
 
@@ -5950,14 +5950,14 @@ public class CAnalyzer extends Visitor {
 							// Ignore.
 						} else if (value instanceof List) {
 							runtime.error("wrong number of arguments specified for 'aligned'"
-							    + " attribute", entry);
+									+ " attribute", entry);
 							seenError = true;
 						} else if (value instanceof Node) {
 							runtime.error("requested alignment is not a constant", entry);
 							seenError = true;
 						} else if (!(value instanceof BigInteger)) {
 							runtime.error("requested alignment is not an integer constant",
-							    entry);
+									entry);
 							seenError = true;
 						} else {
 							BigInteger i = (BigInteger) value;
@@ -5975,7 +5975,7 @@ public class CAnalyzer extends Visitor {
 					// Create attribute.
 					if (!seenError) {
 						result.add(new Attribute(Constants.NAME_GCC, new Attribute(name,
-						    value)));
+								value)));
 					}
 				}
 			}
@@ -6079,7 +6079,7 @@ public class CAnalyzer extends Visitor {
 		if (null == parameters) {
 			// No parameters.
 			final FunctionT function = new FunctionT(null, new ArrayList<Type>(0),
-			    false);
+					false);
 			function.addAttribute(Constants.ATT_STYLE_OLD);
 			return function;
 
@@ -6105,16 +6105,16 @@ public class CAnalyzer extends Visitor {
 				// class, qualifier, or function specifier.
 				if (type.hasAttribute(Constants.NAME_STORAGE)) {
 					runtime.error("'void' as only parameter may not have storage class",
-					    parameters);
+							parameters);
 				}
 				if (c().hasQualifiers(type)) {
 					runtime.error("'void' as only parameter may not be qualified",
-					    parameters);
+							parameters);
 
 				}
 				if (type.hasAttribute(Constants.ATT_INLINE)) {
 					runtime.error("'void' as only parameter may not be declared 'inline'",
-					    parameters);
+							parameters);
 				}
 
 			} else {
@@ -6136,7 +6136,7 @@ public class CAnalyzer extends Visitor {
 					switch (type.tag()) {
 					case ARRAY:
 						type = c().qualify(new PointerT(type.resolve().toArray().getType()),
-						    type);
+								type);
 						break;
 					case FUNCTION:
 						type = c().qualify(new PointerT(type.resolve()), type);
@@ -6150,17 +6150,17 @@ public class CAnalyzer extends Visitor {
 						type = VariableT.newParam(type, name).shape(false, name);
 					}
 					type = spec.annotateFull(type).attribute(toAttributeList(param
-					    .getGeneric(2)));
+							.getGeneric(2)));
 
 					// Check that any storage class specifier is register.
 					if ((type.hasAttribute(Constants.NAME_STORAGE) && (!type.hasAttribute(
-					    Constants.ATT_STORAGE_REGISTER))) || type.hasAttribute(
-					        Constants.ATT_THREAD_LOCAL)) {
+							Constants.ATT_STORAGE_REGISTER))) || type.hasAttribute(
+									Constants.ATT_THREAD_LOCAL)) {
 						if (null == name) {
 							runtime.error("storage class specified for parameter", param);
 						} else {
 							runtime.error("storage class specified for parameter '" + name
-							    + "'", param);
+									+ "'", param);
 						}
 					}
 
@@ -6170,7 +6170,7 @@ public class CAnalyzer extends Visitor {
 							runtime.error("parameter declared 'inline'", param);
 						} else {
 							runtime.error("parameter '" + name + "' declared 'inline'",
-							    param);
+									param);
 						}
 					}
 
@@ -6218,7 +6218,7 @@ public class CAnalyzer extends Visitor {
 
 		} else {
 			throw new AssertionError("Unrecognized parameter representation: "
-			    + parameters);
+					+ parameters);
 		}
 	}
 
@@ -6251,7 +6251,7 @@ public class CAnalyzer extends Visitor {
 	 */
 	@SuppressWarnings("unused")
 	public Type getDeclaredType(final boolean isParam, final Type base,
-	    final GNode declarator) {
+			final GNode declarator) {
 		return (null == declarator) ? base : (Type) new Visitor() {
 			private Type result = base;
 			private List<Attribute> list1 = null;
@@ -6284,7 +6284,7 @@ public class CAnalyzer extends Visitor {
 				// Process the size expression.
 				if ((null != expr) && expr.hasName("VariableLength")) {
 					// [*] denotes an incomplete variable length array. We
-		      // simply return an incomplete array type.
+					// simply return an incomplete array type.
 					if (!isParam) {
 						runtime.error("'[*]' in non-parameter array declarator", decl);
 					}
@@ -6304,10 +6304,10 @@ public class CAnalyzer extends Visitor {
 						final GNode id = getDeclaredId(decl);
 						if (null == id) {
 							runtime.error("size of array has non-integer type", GNode.cast(
-		              expr));
+									expr));
 						} else {
 							runtime.error("size of array '" + id.getString(0)
-		              + "' has non-integer type", GNode.cast(expr));
+									+ "' has non-integer type", GNode.cast(expr));
 						}
 						return new ArrayT(element);
 
@@ -6319,10 +6319,10 @@ public class CAnalyzer extends Visitor {
 							final GNode id = getDeclaredId(decl);
 							if (null == id) {
 								runtime.warning("can't compute size of array", GNode.cast(
-		                expr));
+										expr));
 							} else {
 								runtime.warning("can't compute size of array '" + id.getString(
-		                0) + "'", GNode.cast(expr));
+										0) + "'", GNode.cast(expr));
 							}
 							value = BigInteger.ONE;
 						}
@@ -6333,10 +6333,10 @@ public class CAnalyzer extends Visitor {
 								final GNode id = getDeclaredId(decl);
 								if (null == id) {
 									runtime.error("ISO C forbids zero-size array", GNode.cast(
-		                  expr));
+											expr));
 								} else {
 									runtime.error("ISO C forbids zero-size array '" + id
-		                  .getString(0) + "'", GNode.cast(expr));
+											.getString(0) + "'", GNode.cast(expr));
 								}
 							}
 							return new ArrayT(element, 0);
@@ -6348,7 +6348,7 @@ public class CAnalyzer extends Visitor {
 								runtime.error("size of array is negative", GNode.cast(expr));
 							} else {
 								runtime.error("size of array '" + id.getString(0)
-		                + "' is negative", GNode.cast(expr));
+										+ "' is negative", GNode.cast(expr));
 							}
 							return new ArrayT(element, 0);
 
@@ -6359,7 +6359,7 @@ public class CAnalyzer extends Visitor {
 								runtime.error("size of array is too large", GNode.cast(expr));
 							} else {
 								runtime.error("size of array '" + id.getString(0)
-		                + "' is too large", GNode.cast(expr));
+										+ "' is too large", GNode.cast(expr));
 							}
 							return new ArrayT(element, 0);
 
@@ -6404,12 +6404,12 @@ public class CAnalyzer extends Visitor {
 						}
 					} else if (0 < n.getGeneric(1).size()) {
 						runtime.error("static or type qualifiers not in outermost "
-		            + "array type derivation", n);
+								+ "array type derivation", n);
 					}
 
 				} else if (0 < n.getGeneric(1).size()) {
 					runtime.error("static or type qualifiers in non-parameter "
-		          + "array declarator", n);
+							+ "array declarator", n);
 				}
 
 				// Process any annotations.
@@ -6703,7 +6703,7 @@ public class CAnalyzer extends Visitor {
 			// the left-hand type is a (wide) C string and the right-hand
 			// type is a matching C string constant.
 			return (t2.hasConstant() && ((c().isString(r1) && c().isString(t2))
-			    || (c().isWideString(r1) && c().isWideString(t2))));
+					|| (c().isWideString(r1) && c().isWideString(t2))));
 		}
 
 		case POINTER: {
@@ -6715,7 +6715,7 @@ public class CAnalyzer extends Visitor {
 				final Type ptr2 = pt2.resolve();
 
 				if (c().hasQualifiers(pt1, pt2) && (c().equal(ptr1, ptr2) || ptr1
-				    .isVoid() || ptr2.isVoid())) {
+						.isVoid() || ptr2.isVoid())) {
 					return true;
 				} else {
 					// GCC extension.
@@ -6736,7 +6736,7 @@ public class CAnalyzer extends Visitor {
 
 		default:
 			return (r1.isInternal() && r2.isInternal() && r1.toInternal().getName()
-			    .equals(r2.toInternal().getName()));
+					.equals(r2.toInternal().getName()));
 		}
 	}
 
@@ -6759,7 +6759,7 @@ public class CAnalyzer extends Visitor {
 	 * @return The resulting type.
 	 */
 	protected Type processAssignment(boolean init, String op, Node n, Type t1,
-	    Type t2) {
+			Type t2) {
 		if (t1.hasError() || t2.hasError())
 			return ErrorT.TYPE;
 
@@ -6856,28 +6856,28 @@ public class CAnalyzer extends Visitor {
 
 					} else if (pedantic) {
 						runtime.error(op + " discards qualifiers from pointer target "
-						    + "type", n);
+								+ "type", n);
 						result = ErrorT.TYPE;
 
 					} else {
 						runtime.warning(op + " discards qualifiers from pointer target "
-						    + "type", n);
+								+ "type", n);
 						result = r1;
 					}
 
 				} else if (ptr1.isNumber() && ptr2.isNumber() && NumberT
-				    .equalIgnoringSign(ptr1.toNumber().getKind(), ptr2.toNumber()
-				        .getKind())) {
+						.equalIgnoringSign(ptr1.toNumber().getKind(), ptr2.toNumber()
+								.getKind())) {
 					// Note: We don't need to consider booleans here because all
 					// booleans are unsigned.
 					if (pedantic) {
 						runtime.error("pointer targets in " + op + " differ in signedness",
-						    n);
+								n);
 						result = ErrorT.TYPE;
 					} else {
 						// GCC extension.
 						runtime.warning("pointer targets in " + op
-						    + " differ in signedness", n);
+								+ " differ in signedness", n);
 						result = r1;
 					}
 
@@ -6909,7 +6909,7 @@ public class CAnalyzer extends Visitor {
 
 		default:
 			if (r1.isInternal() && r2.isInternal() && r1.toInternal().getName()
-			    .equals(r2.toInternal().getName())) {
+					.equals(r2.toInternal().getName())) {
 				result = r1;
 			}
 		}
@@ -6980,7 +6980,7 @@ public class CAnalyzer extends Visitor {
 			return false;
 		} else if (!c().isScalar(t)) {
 			runtime.error("invalid " + toDescription(n) + " where scalar required",
-			    n);
+					n);
 			return false;
 		} else {
 			return true;
@@ -7035,7 +7035,7 @@ public class CAnalyzer extends Visitor {
 			return false;
 		} else if (!c().isArithmetic(t)) {
 			runtime.error("invalid " + toDescription(n)
-			    + " where arithmetic value required", n);
+					+ " where arithmetic value required", n);
 			return false;
 		} else {
 			return true;
@@ -7057,7 +7057,7 @@ public class CAnalyzer extends Visitor {
 			return false;
 		} else if (!c().isIntegral(t)) {
 			runtime.error("invalid " + toDescription(n) + " where integer required",
-			    n);
+					n);
 			return false;
 		} else {
 			return true;
@@ -7077,7 +7077,7 @@ public class CAnalyzer extends Visitor {
 		if (node.hasName("PrimaryIdentifier")) {
 			return "variable '" + node.getString(0) + "'";
 		} else if (node.hasName("DirectComponentSelection") || node.hasName(
-		    "IndirectComponentSelection")) {
+				"IndirectComponentSelection")) {
 			return "field '" + node.getString(1) + "'";
 		} else if (node.hasName("IndirectionExpression")) {
 			final GNode child = node.getGeneric(0);
@@ -7107,7 +7107,7 @@ public class CAnalyzer extends Visitor {
 		if (node.hasName("PrimaryIdentifier")) {
 			return node.getString(0);
 		} else if (node.hasName("DirectComponentSelection") || node.hasName(
-		    "IndirectComponentSelection")) {
+				"IndirectComponentSelection")) {
 			return node.getString(1);
 		} else if (node.hasName("IndirectionExpression")) {
 			final GNode child = node.getGeneric(0);
@@ -7132,7 +7132,7 @@ public class CAnalyzer extends Visitor {
 	 */
 	public static boolean isFunctionScope(String name) {
 		return (SymbolTable.isFunctionScopeName(name) || SymbolTable
-		    .isMacroScopeName(name));
+				.isMacroScopeName(name));
 	}
 
 	/**
@@ -7186,7 +7186,7 @@ public class CAnalyzer extends Visitor {
 		if (type.hasLocation()) {
 			runtime.errConsole().loc(type).p(": error: previous ");
 			if (type.hasAttribute(Constants.ATT_MACRO) || type.hasAttribute(
-			    Constants.ATT_DEFINED)) {
+					Constants.ATT_DEFINED)) {
 				runtime.errConsole().p("definition");
 			} else {
 				runtime.errConsole().p("declaration");

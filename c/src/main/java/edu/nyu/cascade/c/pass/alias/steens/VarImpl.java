@@ -8,53 +8,53 @@ import edu.nyu.cascade.ir.pass.IRVar;
 import xtc.type.Type;
 
 class VarImpl implements IRVar {
-  private final ECR ecr;
-  private final String name;
-  private final Type type;
-  private final String scopeName;
-  private final Map<String, Object> properties;
-  
-  VarImpl(String name, Type type, String scopeName, ECR ecr) {
-    this.name = name;
-    this.type = type;
-    this.scopeName = scopeName;
-    this.ecr = ecr;
-    this.properties = Maps.newHashMap();
-  }
-  
-  ECR getECR() {
-    return (ECR) ecr.findRoot();
-  }
-  
-  @Override
-  public String toString() {
-  	StringBuilder sb = new StringBuilder();
-  	sb.append(name).append('@').append(scopeName);
-  	return sb.toString();
-  }
+	private final ECR ecr;
+	private final String name;
+	private final Type type;
+	private final String scopeName;
+	private final Map<String, Object> properties;
+
+	VarImpl(String name, Type type, String scopeName, ECR ecr) {
+		this.name = name;
+		this.type = type;
+		this.scopeName = scopeName;
+		this.ecr = ecr;
+		this.properties = Maps.newHashMap();
+	}
+
+	ECR getECR() {
+		return (ECR) ecr.findRoot();
+	}
 
 	@Override
-  public String getName() {
-	  return name;
-  }
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(name).append('@').append(scopeName);
+		return sb.toString();
+	}
 
 	@Override
-  public Type getType() {
-	  return type;
-  }
+	public String getName() {
+		return name;
+	}
 
 	@Override
-  public String getScopeName() {
-	  return scopeName;
-  }
+	public Type getType() {
+		return type;
+	}
 
 	@Override
-  public void setProperty(String id, Object o) {
-	  properties.put(id, o);
-  }
+	public String getScopeName() {
+		return scopeName;
+	}
 
 	@Override
-  public Object getProperty(String id) {
-	  return properties.get(id);
-  }
+	public void setProperty(String id, Object o) {
+		properties.put(id, o);
+	}
+
+	@Override
+	public Object getProperty(String id) {
+		return properties.get(id);
+	}
 }

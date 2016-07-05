@@ -363,7 +363,7 @@ public class CParserState implements State {
 		if (top.next.isSet(FLAG_PARAMS) || top.next.isSet(FLAG_STRUCTURE)) {
 			if (DEBUG) {
 				System.out.println("ignoring bind(" + id + ", " + top.isSet(
-				    FLAG_TYPEDEF) + ")");
+						FLAG_TYPEDEF) + ")");
 			}
 			return;
 		} else if (DEBUG) {
@@ -383,7 +383,7 @@ public class CParserState implements State {
 			}
 		} else {
 			c.bindings.put(id, top.isSet(FLAG_TYPEDEF) ? Boolean.TRUE
-			    : Boolean.FALSE);
+					: Boolean.FALSE);
 			c.set(FLAG_MODIFIED);
 		}
 	}
@@ -503,8 +503,8 @@ public class CParserState implements State {
 	 *          The line marker's source location.
 	 */
 	public void lineMarker(String file, int line, String isStartFile,
-	    String isReturnToFile, String isSystemHeader, String isExternC,
-	    Location location) {
+			String isReturnToFile, String isSystemHeader, String isExternC,
+			Location location) {
 		if (DEBUG)
 			System.out.println("lineMarker(" + file + ": " + line + ")");
 

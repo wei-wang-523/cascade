@@ -17,7 +17,7 @@ public interface RecordType extends Type, ScalarType {
 	List<String> getElementNames();
 
 	RecordExpression update(Expression record, String fieldName,
-	    Expression value);
+			Expression value);
 
 	@Override
 	RecordExpression variable(String name, boolean fresh);

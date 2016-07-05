@@ -11,14 +11,14 @@ import com.google.common.collect.Lists;
 
 public class IdentifiersTest {
 	private static final List<String> validCIds = Lists.newArrayList("x", "_",
-	    "__x", "x_y_z", "x0", "camelCaseId");
+			"__x", "x_y_z", "x0", "camelCaseId");
 	private static final List<String> validIds = Lists.asList("x'", "a'b",
-	    validCIds.toArray(new String[0]));
+			validCIds.toArray(new String[0]));
 
 	private static final List<String> invalidIds = Lists.newArrayList("0", "0x",
-	    "x.y", "a#b", "#", "f(x)");
+			"x.y", "a#b", "#", "f(x)");
 	private static final List<String> invalidCIds = Lists.asList("x'", "a'b",
-	    invalidIds.toArray(new String[0]));
+			invalidIds.toArray(new String[0]));
 
 	@Test
 	public void testIsValidId() {

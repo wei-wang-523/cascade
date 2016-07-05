@@ -135,7 +135,7 @@ public interface BooleanExpression extends Expression {
 	 * Concrete implementations of IBooleanExpresison may ignore triggers.
 	 */
 	void setMultiTriggers(
-	    Iterable<? extends Iterable<? extends Expression>> multiTriggers);
+			Iterable<? extends Iterable<? extends Expression>> multiTriggers);
 
 	/**
 	 * Returns a new Boolean expression that is the exclusive or (xor) of this

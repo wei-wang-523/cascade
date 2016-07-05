@@ -19,12 +19,12 @@ import edu.nyu.cascade.util.IOUtils;
 
 final class TupleTypeImpl extends TypeImpl implements TupleType {
 	static TupleTypeImpl create(ExpressionManagerImpl em, String tname,
-	    Type firstType, Type... otherTypes) {
+			Type firstType, Type... otherTypes) {
 		return new TupleTypeImpl(em, tname, Lists.asList(firstType, otherTypes));
 	}
 
 	static TupleTypeImpl create(ExpressionManagerImpl em, String tname,
-	    Iterable<? extends Type> types) {
+			Iterable<? extends Type> types) {
 		return new TupleTypeImpl(em, tname, types);
 	}
 
@@ -33,7 +33,7 @@ final class TupleTypeImpl extends TypeImpl implements TupleType {
 			return (TupleTypeImpl) t;
 		} else {
 			return create(em, ((TupleType) t).getName(), ((TupleType) t)
-			    .getElementTypes());
+					.getElementTypes());
 		}
 	}
 
@@ -41,7 +41,7 @@ final class TupleTypeImpl extends TypeImpl implements TupleType {
 	private final String typeName;
 
 	private TupleTypeImpl(ExpressionManagerImpl em, String tname,
-	    Iterable<? extends Type> types) {
+			Iterable<? extends Type> types) {
 		super(em);
 
 		this.elementTypes = ImmutableList.copyOf(types);
@@ -51,9 +51,9 @@ final class TupleTypeImpl extends TypeImpl implements TupleType {
 		PrintStream tpFileStream = IOUtils.tpFileStream();
 		// Type parameter
 		debugStream.append("(declare-datatypes () ( (" + typeName
-		    + "\n                          (" + typeName);
+				+ "\n                          (" + typeName);
 		tpFileStream.append("(declare-datatypes () ( (" + typeName
-		    + "\n                          (" + typeName);
+				+ "\n                          (" + typeName);
 
 		vectorType cvc4Types = new vectorType();
 		int i = 0;
@@ -61,11 +61,11 @@ final class TupleTypeImpl extends TypeImpl implements TupleType {
 			edu.nyu.acsys.CVC4.Type cvc4Type = em.toCvc4Type(t);
 			cvc4Types.add(cvc4Type);
 			debugStream.append(" \n                             (").append(typeName
-			    + "@" + i++).append(" ");
+					+ "@" + i++).append(" ");
 			cvc4Type.toStream(debugStream);
 
 			tpFileStream.append(" \n                             (").append(typeName
-			    + "@" + i++).append(" ");
+					+ "@" + i++).append(" ");
 			cvc4Type.toStream(tpFileStream);
 		}
 
@@ -74,7 +74,7 @@ final class TupleTypeImpl extends TypeImpl implements TupleType {
 
 		try {
 			setCVC4Type(em.getTheoremProver().getCvc4ExprManager().mkTupleType(
-			    cvc4Types));
+					cvc4Types));
 			debugStream.append('\n').flush();
 			tpFileStream.append('\n').flush();
 		} catch (Exception e) {
@@ -105,12 +105,12 @@ final class TupleTypeImpl extends TypeImpl implements TupleType {
 	@Override
 	public TupleBoundVariableImpl boundVar(String name, boolean fresh) {
 		return TupleBoundVariableImpl.create(getExpressionManager(), name, this,
-		    fresh);
+				fresh);
 	}
 
 	@Override
 	public TupleBoundVariableImpl boundExpression(String name, int index,
-	    boolean fresh) {
+			boolean fresh) {
 		return boundVar(name, fresh);
 	}
 
@@ -127,20 +127,20 @@ final class TupleTypeImpl extends TypeImpl implements TupleType {
 	@Override
 	public Expression index(Expression tuple, int index) {
 		return TupleExpressionImpl.mkTupleIndex(getExpressionManager(), tuple,
-		    index);
+				index);
 	}
 
 	@Override
 	public TupleExpression update(Expression tuple, int index, Expression value) {
 		return TupleExpressionImpl.mkUpdate(getExpressionManager(), tuple, index,
-		    value);
+				value);
 	}
 
 	@Override
 	TupleExpressionImpl createExpression(Expr res, Expression e, Kind kind,
-	    Iterable<ExpressionImpl> children) {
+			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isTuple());
 		return TupleExpressionImpl.create(getExpressionManager(), kind, res, e
-		    .getType().asTuple(), children);
+				.getType().asTuple(), children);
 	}
 }

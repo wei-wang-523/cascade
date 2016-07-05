@@ -10,7 +10,7 @@ public interface InductiveType extends Type, ScalarType {
 	InductiveExpression construct(Constructor constructor, Expression... args);
 
 	InductiveExpression construct(Constructor constructor,
-	    Iterable<? extends Expression> args);
+			Iterable<? extends Expression> args);
 
 	String getName();
 

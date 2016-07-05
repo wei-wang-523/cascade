@@ -56,7 +56,7 @@ public class ControlFileTest {
 
 			List<SourceFile> sfs = cf.getSourceFile();
 			assertFalse("No SourceFile tags found in control file.", sfs == null
-			    || sfs.isEmpty());
+					|| sfs.isEmpty());
 
 			for (SourceFile sf : sfs) {
 				assertNotNull("No Name for SourceFile", sf.getName());
@@ -65,7 +65,7 @@ public class ControlFileTest {
 
 			List<Run> runs = cf.getRun();
 			assertFalse("No Run tags found in control file.", runs == null || runs
-			    .isEmpty());
+					.isEmpty());
 
 			for (Run run : runs) {
 				assertNotNull("null Run found in control file", run);

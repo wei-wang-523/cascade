@@ -11,22 +11,22 @@ import edu.nyu.cascade.prover.IntegerExpression;
 import edu.nyu.cascade.prover.type.Type;
 
 final class IntegerBoundVariableImpl extends BoundVariableExpressionImpl
-    implements IntegerExpression {
+		implements IntegerExpression {
 
 	static IntegerBoundVariableImpl create(ExpressionManagerImpl exprManager,
-	    String name, IntegerTypeImpl type, boolean fresh) {
+			String name, IntegerTypeImpl type, boolean fresh) {
 		return new IntegerBoundVariableImpl(exprManager, name, type, fresh);
 	}
 
 	/** Create a new integer variable. */
 	private IntegerBoundVariableImpl(ExpressionManagerImpl em, String name,
-	    boolean fresh) {
+			boolean fresh) {
 		super(em, name, em.integerType(), fresh);
 	}
 
 	/** Create a new variable of an integer subtype (e.g., a range type). */
 	private IntegerBoundVariableImpl(ExpressionManagerImpl em, String name,
-	    Type type, boolean fresh) {
+			Type type, boolean fresh) {
 		super(em, name, type, fresh);
 		Preconditions.checkArgument(type.isInteger());
 	}
@@ -99,6 +99,6 @@ final class IntegerBoundVariableImpl extends BoundVariableExpressionImpl
 	@Override
 	public IntegerExpression plus(Iterable<? extends IntegerExpression> rest) {
 		return getType().add(Iterables.concat(Collections.singletonList(this),
-		    rest));
+				rest));
 	}
 }

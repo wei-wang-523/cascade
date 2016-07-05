@@ -18,12 +18,12 @@ public interface FormulaEncoder {
 
 	interface BlockEncodingStrategy<T> {
 		Pair<Boolean, T> apply(IRBasicBlock block, T preState)
-		    throws PathFactoryException;
+				throws PathFactoryException;
 	}
 
 	interface EdgeEncodingStrategy<T> {
 		Pair<Boolean, T> apply(IREdge<?> edge, T preState)
-		    throws PathFactoryException;
+				throws PathFactoryException;
 	}
 
 	interface PhiNodeResolveStrategy<T> {
@@ -42,7 +42,7 @@ public interface FormulaEncoder {
 
 	interface EdgeFilterStrategy<T> {
 		boolean apply(Map<IREdge<?>, T> state, IREdge<?> edge)
-		    throws PathFactoryException;
+				throws PathFactoryException;
 	}
 
 	/**
@@ -66,20 +66,20 @@ public interface FormulaEncoder {
 	void setIterTimes(int iterTimes);
 
 	void encode(IRControlFlowGraph cfg, LoopInfo loopInfo)
-	    throws PathFactoryException;
+			throws PathFactoryException;
 
 	void checkReach(IRControlFlowGraph cfg, LoopInfo loopInfo, String label)
-	    throws PathFactoryException;
+			throws PathFactoryException;
 
 	Pair<Boolean, StateExpression> encodeEdge(TraceFactory factory,
-	    IREdge<?> edge, StateExpression preState) throws PathFactoryException;
+			IREdge<?> edge, StateExpression preState) throws PathFactoryException;
 
 	Pair<Boolean, StateExpression> checkReachBlock(TraceFactory factory,
-	    IRBasicBlock block, StateExpression preState, String label)
-	    throws PathFactoryException;
+			IRBasicBlock block, StateExpression preState, String label)
+			throws PathFactoryException;
 
 	Pair<Boolean, StateExpression> encodeBlock(TraceFactory factory,
-	    IRBasicBlock block, StateExpression preState) throws PathFactoryException;
+			IRBasicBlock block, StateExpression preState) throws PathFactoryException;
 
 	IRTraceNode getErrorTrace(IRControlFlowGraph cfg);
 

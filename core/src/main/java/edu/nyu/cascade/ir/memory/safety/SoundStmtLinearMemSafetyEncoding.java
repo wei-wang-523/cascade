@@ -17,21 +17,21 @@ import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.util.Preferences;
 
 public class SoundStmtLinearMemSafetyEncoding extends
-    AbstractStmtMemSafetyEncoding {
+		AbstractStmtMemSafetyEncoding {
 
 	private final static Collection<String> FUN_NAMES = Lists.newArrayList(
-	    SafetyPredicate.Kind.VALID_ACCESS_RANGE.name(),
-	    SafetyPredicate.Kind.VALID_ACCESS.name(), SafetyPredicate.Kind.DISJOINT
-	        .name());
+			SafetyPredicate.Kind.VALID_ACCESS_RANGE.name(),
+			SafetyPredicate.Kind.VALID_ACCESS.name(), SafetyPredicate.Kind.DISJOINT
+					.name());
 	private final static Collection<String> FUN_DISJOINT_NAMES = Lists
-	    .newArrayList(SafetyPredicate.Kind.DISJOINT.name());
+			.newArrayList(SafetyPredicate.Kind.DISJOINT.name());
 	private final static Collection<String> PRED_NAMES = Collections.singleton(
-	    SafetyPredicate.Kind.PRE_DISJOINT.name());
+			SafetyPredicate.Kind.PRE_DISJOINT.name());
 
 	private final Expression ptrVar, sizeVar;
 
 	private SoundStmtLinearMemSafetyEncoding(ExpressionEncoding encoding,
-	    IRDataFormatter formatter) {
+			IRDataFormatter formatter) {
 		super(encoding, formatter);
 		ExpressionManager exprManager = encoding.getExpressionManager();
 		ptrVar = exprManager.variable(ptrVarName, formatter.getAddressType(), true);
@@ -39,7 +39,7 @@ public class SoundStmtLinearMemSafetyEncoding extends
 	}
 
 	public static SoundStmtLinearMemSafetyEncoding create(
-	    ExpressionEncoding encoding, IRDataFormatter formatter) {
+			ExpressionEncoding encoding, IRDataFormatter formatter) {
 		return new SoundStmtLinearMemSafetyEncoding(encoding, formatter);
 	}
 
@@ -55,7 +55,7 @@ public class SoundStmtLinearMemSafetyEncoding extends
 
 	@Override
 	public void updateHeapMemSafetyPredicates(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		if (Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
 			updateHeapFunValidAccess(state, ptrExpr, sizeExpr);
 			updateHeapFunValidAccessRange(state, ptrExpr, sizeExpr);
@@ -67,7 +67,7 @@ public class SoundStmtLinearMemSafetyEncoding extends
 
 	@Override
 	public void updateStackMemSafetyPredicates(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		if (Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
 			updateStackFunValidAccess(state, ptrExpr, sizeExpr);
 			updateStackFunValidAccessRange(state, ptrExpr, sizeExpr);
@@ -89,12 +89,12 @@ public class SoundStmtLinearMemSafetyEncoding extends
 
 	@Override
 	public BooleanExpression validFree(ArrayExpression markArr,
-	    Expression region) {
+			Expression region) {
 		Preconditions.checkArgument(markArr.getType().getIndexType().equals(
-		    formatter.getAddressType()));
+				formatter.getAddressType()));
 		Preconditions.checkArgument(markArr.getType().getElementType().isBoolean());
 		Preconditions.checkArgument(region.getType().equals(formatter
-		    .getAddressType()));
+				.getAddressType()));
 
 		BooleanExpression mark = markArr.index(region).asBooleanExpression();
 		BooleanExpression tt = mark.getType().asBooleanType().tt();
@@ -109,11 +109,11 @@ public class SoundStmtLinearMemSafetyEncoding extends
 	@Override
 	public Collection<String> getClosurePropNames() {
 		return Preferences.isSet(Preferences.OPTION_MEMORY_CHECK) ? FUN_NAMES
-		    : FUN_DISJOINT_NAMES;
+				: FUN_DISJOINT_NAMES;
 	}
 
 	private void updateStackFunValidAccess(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		String propName = SafetyPredicate.Kind.VALID_ACCESS.name();
 		PredicateClosure closure = state.getSafetyPredicateClosure(propName);
 
@@ -123,14 +123,14 @@ public class SoundStmtLinearMemSafetyEncoding extends
 
 		assert (vars.length == 1);
 		Expression bodyPrime = encoding.or(encoding.within(ptrExpr, sizeExpr,
-		    vars[0]), body);
+				vars[0]), body);
 
 		PredicateClosure closurePrime = suspend(func, bodyPrime, vars[0]);
 		state.putSafetyPredicateClosure(propName, closurePrime);
 	}
 
 	private void updateHeapFunValidAccess(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		String propName = SafetyPredicate.Kind.VALID_ACCESS.name();
 		PredicateClosure closure = state.getSafetyPredicateClosure(propName);
 
@@ -140,15 +140,15 @@ public class SoundStmtLinearMemSafetyEncoding extends
 
 		assert (vars.length == 1);
 		Expression bodyPrime = encoding.or(encoding.and(ptrExpr.neq(formatter
-		    .getNullAddress()), sizeExpr.neq(formatter.getSizeZero()), encoding
-		        .within(ptrExpr, sizeExpr, vars[0])), body);
+				.getNullAddress()), sizeExpr.neq(formatter.getSizeZero()), encoding
+						.within(ptrExpr, sizeExpr, vars[0])), body);
 
 		PredicateClosure closurePrime = suspend(func, bodyPrime, vars[0]);
 		state.putSafetyPredicateClosure(propName, closurePrime);
 	}
 
 	private void updateStackFunValidAccessRange(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		String propName = SafetyPredicate.Kind.VALID_ACCESS_RANGE.name();
 		PredicateClosure closure = state.getSafetyPredicateClosure(propName);
 
@@ -158,14 +158,14 @@ public class SoundStmtLinearMemSafetyEncoding extends
 
 		assert (vars.length == 2);
 		Expression bodyPrime = encoding.or(encoding.within(ptrExpr, sizeExpr,
-		    vars[0], vars[1]), body);
+				vars[0], vars[1]), body);
 
 		PredicateClosure closurePrime = suspend(func, bodyPrime, vars);
 		state.putSafetyPredicateClosure(propName, closurePrime);
 	}
 
 	private void updateHeapFunValidAccessRange(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		String propName = SafetyPredicate.Kind.VALID_ACCESS_RANGE.name();
 		PredicateClosure closure = state.getSafetyPredicateClosure(propName);
 
@@ -175,15 +175,15 @@ public class SoundStmtLinearMemSafetyEncoding extends
 
 		assert (vars.length == 2);
 		Expression bodyPrime = encoding.or(encoding.and(ptrExpr.neq(formatter
-		    .getNullAddress()), sizeExpr.neq(formatter.getSizeZero()), encoding
-		        .within(ptrExpr, sizeExpr, vars[0], vars[1])), body);
+				.getNullAddress()), sizeExpr.neq(formatter.getSizeZero()), encoding
+						.within(ptrExpr, sizeExpr, vars[0], vars[1])), body);
 
 		PredicateClosure closurePrime = suspend(func, bodyPrime, vars);
 		state.putSafetyPredicateClosure(propName, closurePrime);
 	}
 
 	private void updateHeapFunDisjoint(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		String propName = SafetyPredicate.Kind.DISJOINT.name();
 		PredicateClosure closure = state.getSafetyPredicateClosure(propName);
 
@@ -194,16 +194,16 @@ public class SoundStmtLinearMemSafetyEncoding extends
 		assert (vars.length == 2);
 
 		Expression bodyPrime = encoding.and(body, encoding.implies(ptrExpr.neq(
-		    formatter.getNullAddress()), encoding.ifThenElse(sizeExpr.neq(formatter
-		        .getSizeZero()), encoding.disjoint(vars[0], vars[1], ptrExpr,
-		            sizeExpr), encoding.disjoint(vars[0], vars[1], ptrExpr))));
+				formatter.getNullAddress()), encoding.ifThenElse(sizeExpr.neq(formatter
+						.getSizeZero()), encoding.disjoint(vars[0], vars[1], ptrExpr,
+								sizeExpr), encoding.disjoint(vars[0], vars[1], ptrExpr))));
 
 		PredicateClosure closurePrime = suspend(func, bodyPrime, vars);
 		state.putSafetyPredicateClosure(propName, closurePrime);
 	}
 
 	private void updateStackFunDisjoint(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		String propName = SafetyPredicate.Kind.DISJOINT.name();
 		PredicateClosure closure = state.getSafetyPredicateClosure(propName);
 
@@ -213,25 +213,25 @@ public class SoundStmtLinearMemSafetyEncoding extends
 
 		assert (vars.length == 2);
 		Expression bodyPrime = encoding.and(body, encoding.disjoint(ptrExpr,
-		    sizeExpr, vars[0], vars[1]));
+				sizeExpr, vars[0], vars[1]));
 
 		PredicateClosure closurePrime = suspend(func, bodyPrime, vars);
 		state.putSafetyPredicateClosure(propName, closurePrime);
 	}
 
 	private void updateStackPreDisjoint(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		String disjointName = SafetyPredicate.Kind.DISJOINT.name();
 		String preDisjointName = SafetyPredicate.Kind.PRE_DISJOINT.name();
 
 		PredicateClosure disjoint_closure = state.getSafetyPredicateClosure(
-		    disjointName);
+				disjointName);
 		BooleanExpression pre_disjoint = state.getSafetyPredicate(preDisjointName);
 
 		BooleanExpression pre_disjoint_prime = encoding.and(pre_disjoint,
-		    disjoint_closure.eval(ptrExpr, sizeExpr), encoding.notOverflow(ptrExpr,
-		        sizeExpr), ptrExpr.neq(formatter.getNullAddress()))
-		    .asBooleanExpression();
+				disjoint_closure.eval(ptrExpr, sizeExpr), encoding.notOverflow(ptrExpr,
+						sizeExpr), ptrExpr.neq(formatter.getNullAddress()))
+				.asBooleanExpression();
 
 		state.putSafetyPredicate(preDisjointName, pre_disjoint_prime);
 		Expression func = disjoint_closure.getUninterpretedFunc();
@@ -239,12 +239,12 @@ public class SoundStmtLinearMemSafetyEncoding extends
 	}
 
 	private void updateHeapPreDisjoint(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		String disjointName = SafetyPredicate.Kind.DISJOINT.name();
 		String preDisjointName = SafetyPredicate.Kind.PRE_DISJOINT.name();
 
 		PredicateClosure disjoint_closure = state.getSafetyPredicateClosure(
-		    disjointName);
+				disjointName);
 		BooleanExpression pre_disjoint = state.getSafetyPredicate(preDisjointName);
 
 		/*
@@ -254,7 +254,7 @@ public class SoundStmtLinearMemSafetyEncoding extends
 		 * valid_malloc(ptr, size) has already specify it as assumption
 		 */
 		BooleanExpression pre_disjoint_prime = encoding.and(pre_disjoint,
-		    disjoint_closure.eval(ptrExpr, sizeExpr)).asBooleanExpression();
+				disjoint_closure.eval(ptrExpr, sizeExpr)).asBooleanExpression();
 
 		state.putSafetyPredicate(preDisjointName, pre_disjoint_prime);
 		Expression func = disjoint_closure.getUninterpretedFunc();
@@ -263,8 +263,8 @@ public class SoundStmtLinearMemSafetyEncoding extends
 
 	@Override
 	public void freeUpdateHeapMemSafetyPredicates(
-	    SingleLambdaStateExpression state, Expression ptrExpr,
-	    Expression sizeExpr) {
+			SingleLambdaStateExpression state, Expression ptrExpr,
+			Expression sizeExpr) {
 		if (Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
 			updateHeapFunValidAccessFree(state, ptrExpr, sizeExpr);
 			updateHeapFunValidAccessRangeFree(state, ptrExpr, sizeExpr);
@@ -272,7 +272,7 @@ public class SoundStmtLinearMemSafetyEncoding extends
 	}
 
 	private void updateHeapFunValidAccessFree(SingleLambdaStateExpression state,
-	    Expression ptrExpr, Expression sizeExpr) {
+			Expression ptrExpr, Expression sizeExpr) {
 		String propName = SafetyPredicate.Kind.VALID_ACCESS.name();
 		PredicateClosure closure = state.getSafetyPredicateClosure(propName);
 
@@ -282,15 +282,15 @@ public class SoundStmtLinearMemSafetyEncoding extends
 
 		assert (vars.length == 1);
 		Expression bodyPrime = encoding.and(body, encoding.not(encoding.within(
-		    ptrExpr, sizeExpr, vars[0])));
+				ptrExpr, sizeExpr, vars[0])));
 
 		PredicateClosure closurePrime = suspend(func, bodyPrime, vars[0]);
 		state.putSafetyPredicateClosure(propName, closurePrime);
 	}
 
 	private void updateHeapFunValidAccessRangeFree(
-	    SingleLambdaStateExpression state, Expression ptrExpr,
-	    Expression sizeExpr) {
+			SingleLambdaStateExpression state, Expression ptrExpr,
+			Expression sizeExpr) {
 		String propName = SafetyPredicate.Kind.VALID_ACCESS_RANGE.name();
 		PredicateClosure closure = state.getSafetyPredicateClosure(propName);
 
@@ -300,7 +300,7 @@ public class SoundStmtLinearMemSafetyEncoding extends
 
 		assert (vars.length == 2);
 		Expression bodyPrime = encoding.and(body, encoding.not(encoding.within(
-		    ptrExpr, sizeExpr, vars[0], vars[1])));
+				ptrExpr, sizeExpr, vars[0], vars[1])));
 
 		PredicateClosure closurePrime = suspend(func, bodyPrime, vars);
 		state.putSafetyPredicateClosure(propName, closurePrime);

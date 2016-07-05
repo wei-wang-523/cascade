@@ -22,7 +22,7 @@ public class TheoremProverFactory {
 	 * supports.
 	 */
 	public static enum Capability {
-	  /** Satisfiability modulo theories (general first-order solving) */
+		/** Satisfiability modulo theories (general first-order solving) */
 		SMT,
 
 		/** BDD representation */
@@ -34,7 +34,7 @@ public class TheoremProverFactory {
 
 	public static final String DEFAULT_PLUGINS_DIRECTORY_NAME = "plugins";
 	public static final File DEFAULT_PLUGINS_DIRECTORY = new File(
-	    Preferences.DEFAULT_CONFIG_DIRECTORY, DEFAULT_PLUGINS_DIRECTORY_NAME);
+			Preferences.DEFAULT_CONFIG_DIRECTORY, DEFAULT_PLUGINS_DIRECTORY_NAME);
 
 	private static final String OPTION_PROVER = "prover";
 
@@ -49,11 +49,11 @@ public class TheoremProverFactory {
 	}
 
 	private static final Set<TheoremProver.Provider> allProviders = Sets
-	    .newHashSet();
+			.newHashSet();
 	private static final Map<Capability, ImmutableSet<TheoremProver.Provider>> capMap = Maps
-	    .newEnumMap(Capability.class);
+			.newEnumMap(Capability.class);
 	private static final Map<String, TheoremProver.Provider> nameMap = Maps
-	    .newHashMap();
+			.newHashMap();
 
 	/**
 	 * Searches through the classpath and the plugins directory for providers of
@@ -168,12 +168,12 @@ public class TheoremProverFactory {
 		// }
 
 		ServiceLoader<TheoremProver.Provider> tpServiceLoader = ServiceLoader.load(
-		    TheoremProver.Provider.class, classLoader);
+				TheoremProver.Provider.class, classLoader);
 
 		if (Iterables.isEmpty(tpServiceLoader)) {
 			IOUtils.err().println("No theorem prover providers found.");
 			IOUtils.err().println("Put plugin JAR in CLASSPATH or "
-			    + DEFAULT_PLUGINS_DIRECTORY.getAbsolutePath());
+					+ DEFAULT_PLUGINS_DIRECTORY.getAbsolutePath());
 		}
 
 		/* Register each TheoremProver provider */
@@ -194,7 +194,7 @@ public class TheoremProverFactory {
 			IOUtils.debug().pln("Capability: " + cap);
 			ImmutableSet<TheoremProver.Provider> s = getProvidersWithCapability(cap);
 			s = ImmutableSet.<TheoremProver.Provider> builder().addAll(s).add(tp)
-			    .build();
+					.build();
 			capMap.put(cap, s);
 		}
 	}
@@ -213,7 +213,7 @@ public class TheoremProverFactory {
 	 *           <code>OPTION_PROVER</code> preference is not available.
 	 */
 	public static TheoremProver getInstance()
-	    throws TheoremProverFactoryException {
+			throws TheoremProverFactoryException {
 		TheoremProver.Provider tp;
 		if (!discoverCalled) {
 			discover();
@@ -224,7 +224,7 @@ public class TheoremProverFactory {
 			tp = nameMap.get(name);
 			if (tp == null) {
 				throw new TheoremProverFactoryException(
-				    "No registered theorem prover with name: '" + name + "'");
+						"No registered theorem prover with name: '" + name + "'");
 			}
 		} else {
 			tp = nameMap.get("z3");
@@ -252,10 +252,10 @@ public class TheoremProverFactory {
 
 		ImmutableList.Builder<Option> listBuilder = ImmutableList.builder();
 		listBuilder.add(Option.builder().longOpt(OPTION_PROVER) //
-		    .hasArg() //
-		    .argName("NAME") //
-		    .desc("Enable the named theorem prover plugin") //
-		    .build());
+				.hasArg() //
+				.argName("NAME") //
+				.desc("Enable the named theorem prover plugin") //
+				.build());
 		for (TheoremProver.Provider tp : allProviders) {
 			listBuilder.addAll(tp.getOptions());
 		}
@@ -274,7 +274,7 @@ public class TheoremProverFactory {
 	 */
 
 	public static TheoremProver getSmtInstance()
-	    throws TheoremProverFactoryException {
+			throws TheoremProverFactoryException {
 		if (!discoverCalled) {
 			discover();
 		}
@@ -295,7 +295,7 @@ public class TheoremProverFactory {
 	 */
 
 	public static TheoremProver getInstance(Capability... capabilities)
-	    throws TheoremProverFactoryException {
+			throws TheoremProverFactoryException {
 		if (!discoverCalled) {
 			discover();
 		}
@@ -308,7 +308,7 @@ public class TheoremProverFactory {
 		TheoremProver.Provider tp = chooseProvider(candidates);
 		if (tp == null) {
 			throw new TheoremProverFactoryException("Unsatisfiable capabilities: "
-			    + capabilities);
+					+ capabilities);
 		} else {
 			return tp.create();
 		}
@@ -316,7 +316,7 @@ public class TheoremProverFactory {
 
 	/** Choose an arbitrary <code>TheoremProver</code> instance from the set. */
 	private static TheoremProver.Provider chooseProvider(
-	    Set<TheoremProver.Provider> candidates) {
+			Set<TheoremProver.Provider> candidates) {
 		if (candidates.isEmpty()) {
 			return null;
 		} else {
@@ -329,7 +329,7 @@ public class TheoremProverFactory {
 	 * with the given capability.
 	 */
 	private static ImmutableSet<TheoremProver.Provider> getProvidersWithCapability(
-	    Capability cap) {
+			Capability cap) {
 		ImmutableSet<TheoremProver.Provider> s = capMap.get(cap);
 		return s == null ? ImmutableSet.<TheoremProver.Provider> of() : s;
 	}

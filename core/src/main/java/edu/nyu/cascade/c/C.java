@@ -28,28 +28,29 @@ import java.math.BigInteger;
  */
 public abstract class C extends xtc.type.C {
 
-  /** Create a new instance. */
-  public C() { /* Nothing to do. */ }
-  
-  abstract public boolean fitsInt(BigInteger num);
-  
-  abstract public boolean fitsUnsignedInt(BigInteger num);
-  
-  abstract boolean fitsLong(BigInteger num);
-  
-  abstract boolean fitsUnsignedLong(BigInteger num);
-  
-  abstract public boolean fitsLongLong(BigInteger num);
-  
-  abstract public boolean fitsUnsignedLongLong(BigInteger num);
+	/** Create a new instance. */
+	public C() {
+		/* Nothing to do. */ }
 
-  abstract public int BYTE_SIZE();
-  
-  abstract public BigInteger ARRAY_MAX();
-  
-  abstract public BigInteger INT_MAX();
-  
-  abstract public boolean IS_STRING_CONST();
- 
+	abstract public boolean fitsInt(BigInteger num);
+
+	abstract public boolean fitsUnsignedInt(BigInteger num);
+
+	abstract boolean fitsLong(BigInteger num);
+
+	abstract boolean fitsUnsignedLong(BigInteger num);
+
+	abstract public boolean fitsLongLong(BigInteger num);
+
+	abstract public boolean fitsUnsignedLongLong(BigInteger num);
+
+	abstract public int BYTE_SIZE();
+
+	abstract public BigInteger ARRAY_MAX();
+
+	abstract public BigInteger INT_MAX();
+
+	abstract public boolean IS_STRING_CONST();
+
 	abstract long toWidth(long size);
 }

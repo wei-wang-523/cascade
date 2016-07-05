@@ -46,22 +46,22 @@ import edu.nyu.cascade.util.Preferences;
 public class TheoremProverImpl implements TheoremProver {
 
 	static final LoadingCache<TheoremProverImpl, ConcurrentMap<Expr, ValidityResult<?>>> queryCache = CacheBuilder
-	    .newBuilder().build(
-	        new CacheLoader<TheoremProverImpl, ConcurrentMap<Expr, ValidityResult<?>>>() {
-		        public ConcurrentMap<Expr, ValidityResult<?>> load(
-	              TheoremProverImpl thereomProver) {
-			        return new MapMaker().makeMap();
-		        }
-	        });
+			.newBuilder().build(
+					new CacheLoader<TheoremProverImpl, ConcurrentMap<Expr, ValidityResult<?>>>() {
+						public ConcurrentMap<Expr, ValidityResult<?>> load(
+								TheoremProverImpl thereomProver) {
+							return new MapMaker().makeMap();
+						}
+					});
 
 	static final LoadingCache<TheoremProverImpl, ConcurrentMap<Expr, SatResult<?>>> satCache = CacheBuilder
-	    .newBuilder().build(
-	        new CacheLoader<TheoremProverImpl, ConcurrentMap<Expr, SatResult<?>>>() {
-		        public ConcurrentMap<Expr, SatResult<?>> load(
-	              TheoremProverImpl thereomProver) {
-			        return new MapMaker().makeMap();
-		        }
-	        });
+			.newBuilder().build(
+					new CacheLoader<TheoremProverImpl, ConcurrentMap<Expr, SatResult<?>>>() {
+						public ConcurrentMap<Expr, SatResult<?>> load(
+								TheoremProverImpl thereomProver) {
+							return new MapMaker().makeMap();
+						}
+					});
 
 	public static class Provider implements TheoremProver.Provider {
 
@@ -83,18 +83,18 @@ public class TheoremProverImpl implements TheoremProver {
 		@Override
 		public ImmutableList<Option> getOptions() {
 			return ImmutableList.of(Option.builder().longOpt(OPTION_CVC4_STATS) //
-			    .desc("Enable CVC4 stats") //
-			    .build(), //
-			    Option.builder().longOpt(OPTION_CVC4_DECISION) //
-			        .desc("Set CVC4 decision") //
-			        .hasArg().argName("S").type(String.class) //
-			        .build(), //
-			    Option.builder().longOpt(OPTION_CVC4_ITE_SIMP) //
-			        .desc("Enable CVC4 ite-simp") //
-			        .build(), //
-			    Option.builder().longOpt(OPTION_CVC4_NO_ITE_SIMP) //
-			        .desc("Enable CVC4 no-ite-simp") //
-			        .build() //
+					.desc("Enable CVC4 stats") //
+					.build(), //
+					Option.builder().longOpt(OPTION_CVC4_DECISION) //
+							.desc("Set CVC4 decision") //
+							.hasArg().argName("S").type(String.class) //
+							.build(), //
+					Option.builder().longOpt(OPTION_CVC4_ITE_SIMP) //
+							.desc("Enable CVC4 ite-simp") //
+							.build(), //
+					Option.builder().longOpt(OPTION_CVC4_NO_ITE_SIMP) //
+							.desc("Enable CVC4 no-ite-simp") //
+							.build() //
 			);
 		}
 	}
@@ -121,7 +121,7 @@ public class TheoremProverImpl implements TheoremProver {
 	}
 
 	static void cvc4FileCommand(String prefix, Expr cvc4Expr, Type cvc4Type,
-	    String postfix) {
+			String postfix) {
 		if (IOUtils.tpFileEnabled()) {
 			PrintStream stream = IOUtils.tpFileStream().append(prefix);
 			cvc4Expr.toStream(stream);
@@ -226,7 +226,7 @@ public class TheoremProverImpl implements TheoremProver {
 				res = SatResult.valueOf(resultType, expr, assumptions);
 			} else { // resultType = UNKNOWN
 				res = SatResult.valueOf(resultType, expr, assumptions, cvc4SatResult
-				    .whyUnknown().toString());
+						.whyUnknown().toString());
 			}
 
 			if (Preferences.isSet(OPTION_CVC4_STATS)) {
@@ -289,7 +289,7 @@ public class TheoremProverImpl implements TheoremProver {
 				res = ValidityResult.valueOf(resultType, expr, assumptions);
 			} else { // resultType = UNKNOWN
 				res = ValidityResult.valueOf(resultType, expr, assumptions,
-				    cvc4QueryResult.whyUnknown().toString());
+						cvc4QueryResult.whyUnknown().toString());
 			}
 
 			if (Preferences.isSet(OPTION_CVC4_STATS)) {

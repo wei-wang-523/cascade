@@ -11,42 +11,42 @@ public class CFPGraphManager {
 
 	void addPointsEdge(Cell from, Cell to) {
 		pointsToGraph.put(from, to);
-  }
+	}
 
 	Cell getPointsCell(Cell from) {
-	  return pointsToGraph.get(from);
-  }
-	
+		return pointsToGraph.get(from);
+	}
+
 	boolean hasPointsCell(Cell from) {
 		return pointsToGraph.has(from);
 	}
 
 	void addFunctionEdge(Cell lambdaCell, List<Cell> paramCells) {
-	  funcGraph.put(lambdaCell, paramCells);
-  }
+		funcGraph.put(lambdaCell, paramCells);
+	}
 
 	boolean hasContainsCell(Cell baseCell, long low, long high) {
-	  return containsGraph.has(baseCell, low, high);
-  }
+		return containsGraph.has(baseCell, low, high);
+	}
 
 	Cell getContainsCell(Cell baseCell, long low, long high) {
-	  return containsGraph.get(baseCell, low, high);
-  }
+		return containsGraph.get(baseCell, low, high);
+	}
 
 	void addContainsEdge(Cell baseCell, long low, long high, Cell fieldCell) {
-	  containsGraph.put(baseCell, low, high, fieldCell);
-  }
+		containsGraph.put(baseCell, low, high, fieldCell);
+	}
 
 	void addCCjoinEdge(Cell rhsCell, Cell lhsCell) {
-	  ccjoinModule.put(rhsCell, lhsCell);
-  }
-	
+		ccjoinModule.put(rhsCell, lhsCell);
+	}
+
 	void addTypeCastEdge(Cell oldCell, Cell newCell) {
-	  castModule.put(newCell, oldCell);
-  }
+		castModule.put(newCell, oldCell);
+	}
 
 	Cell getCastSourceCell(Cell cell) {
-	  return castModule.get(cell);
-  }
+		return castModule.get(cell);
+	}
 
 }

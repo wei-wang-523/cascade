@@ -11,8 +11,8 @@ import edu.nyu.cascade.prover.IntegerExpression;
 import edu.nyu.cascade.prover.type.Type;
 
 public class DefaultIntegerEncoding extends
-    AbstractTypeEncoding<IntegerExpression> implements
-    IntegerEncoding<IntegerExpression> {
+		AbstractTypeEncoding<IntegerExpression> implements
+		IntegerEncoding<IntegerExpression> {
 	private static final String UNKNOWN_VARIABLE_NAME = "int_encoding_unknown";
 
 	public DefaultIntegerEncoding(ExpressionManager exprManager) {
@@ -21,7 +21,7 @@ public class DefaultIntegerEncoding extends
 
 	@Override
 	public IntegerExpression bitwiseAnd(IntegerExpression a,
-	    IntegerExpression b) {
+			IntegerExpression b) {
 		return unknown();
 	}
 
@@ -37,7 +37,7 @@ public class DefaultIntegerEncoding extends
 
 	@Override
 	public IntegerExpression bitwiseXor(IntegerExpression a,
-	    IntegerExpression b) {
+			IntegerExpression b) {
 		return unknown();
 	}
 
@@ -68,37 +68,37 @@ public class DefaultIntegerEncoding extends
 
 	@Override
 	public BooleanExpression distinct(
-	    Iterable<? extends IntegerExpression> exprs) {
+			Iterable<? extends IntegerExpression> exprs) {
 		return getExpressionManager().distinct(exprs);
 	}
 
 	@Override
 	public BooleanExpression greaterThan(IntegerExpression lhs,
-	    IntegerExpression rhs) {
+			IntegerExpression rhs) {
 		return lhs.greaterThan(rhs);
 	}
 
 	@Override
 	public BooleanExpression signedGreaterThan(IntegerExpression lhs,
-	    IntegerExpression rhs) {
+			IntegerExpression rhs) {
 		return greaterThan(lhs, rhs);
 	}
 
 	@Override
 	public BooleanExpression greaterThanOrEqual(IntegerExpression lhs,
-	    IntegerExpression rhs) {
+			IntegerExpression rhs) {
 		return lhs.greaterThanOrEqual(rhs);
 	}
 
 	@Override
 	public BooleanExpression signedGreaterThanOrEqual(IntegerExpression lhs,
-	    IntegerExpression rhs) {
+			IntegerExpression rhs) {
 		return greaterThanOrEqual(lhs, rhs);
 	}
 
 	@Override
 	public IntegerExpression ifThenElse(BooleanExpression b,
-	    IntegerExpression thenExpr, IntegerExpression elseExpr) {
+			IntegerExpression thenExpr, IntegerExpression elseExpr) {
 		return b.ifThenElse(thenExpr, elseExpr).asIntegerExpression();
 	}
 
@@ -109,25 +109,25 @@ public class DefaultIntegerEncoding extends
 
 	@Override
 	public BooleanExpression lessThan(IntegerExpression lhs,
-	    IntegerExpression rhs) {
+			IntegerExpression rhs) {
 		return lhs.lessThan(rhs);
 	}
 
 	@Override
 	public BooleanExpression signedLessThan(IntegerExpression lhs,
-	    IntegerExpression rhs) {
+			IntegerExpression rhs) {
 		return lessThan(lhs, rhs);
 	}
 
 	@Override
 	public BooleanExpression lessThanOrEqual(IntegerExpression lhs,
-	    IntegerExpression rhs) {
+			IntegerExpression rhs) {
 		return lhs.lessThanOrEqual(rhs);
 	}
 
 	@Override
 	public BooleanExpression signedLessThanOrEqual(IntegerExpression lhs,
-	    IntegerExpression rhs) {
+			IntegerExpression rhs) {
 		return lessThanOrEqual(lhs, rhs);
 	}
 
@@ -143,7 +143,7 @@ public class DefaultIntegerEncoding extends
 
 	@Override
 	public IntegerExpression divide(IntegerExpression lhs,
-	    IntegerExpression rhs) {
+			IntegerExpression rhs) {
 		return lhs.divides(rhs);
 	}
 
@@ -178,7 +178,7 @@ public class DefaultIntegerEncoding extends
 
 	@Override
 	public IntegerExpression ofInteger(IntegerExpression i, int size,
-	    boolean isSigned) {
+			boolean isSigned) {
 		/*
 		 * FIXME: default integer encoding do not support casting between different
 		 * integer kind
@@ -199,7 +199,7 @@ public class DefaultIntegerEncoding extends
 
 	@Override
 	public IntegerExpression plus(IntegerExpression first,
-	    IntegerExpression... rest) {
+			IntegerExpression... rest) {
 		return first.plus(rest);
 	}
 
@@ -210,7 +210,7 @@ public class DefaultIntegerEncoding extends
 
 	@Override
 	public IntegerExpression plus(IntegerExpression first,
-	    Iterable<? extends IntegerExpression> rest) {
+			Iterable<? extends IntegerExpression> rest) {
 		return first.plus(rest);
 	}
 
@@ -246,20 +246,20 @@ public class DefaultIntegerEncoding extends
 
 	@Override
 	public IntegerExpression lshift(IntegerExpression lhs,
-	    IntegerExpression rhs) {
+			IntegerExpression rhs) {
 		return lhs.times(constant(2).pow(rhs));
 	}
 
 	@Override
 	public IntegerExpression rshift(IntegerExpression lhs,
-	    IntegerExpression rhs) {
+			IntegerExpression rhs) {
 		return ifThenElse(lhs.greaterThanOrEqual(zero()), lhs.divides(constant(2)
-		    .pow(rhs)), uminus(lhs).divides(constant(2).pow(rhs)));
+				.pow(rhs)), uminus(lhs).divides(constant(2).pow(rhs)));
 	}
 
 	@Override
 	public IntegerExpression signedRshift(IntegerExpression lhs,
-	    IntegerExpression rhs) {
+			IntegerExpression rhs) {
 		return lhs.divides(constant(2).pow(rhs));
 	}
 
@@ -270,13 +270,13 @@ public class DefaultIntegerEncoding extends
 
 	@Override
 	public IntegerExpression signedRem(IntegerExpression lhs,
-	    IntegerExpression rhs) {
+			IntegerExpression rhs) {
 		return rem(lhs, rhs);
 	}
 
 	@Override
 	public IntegerExpression signedDivide(IntegerExpression lhs,
-	    IntegerExpression rhs) {
+			IntegerExpression rhs) {
 		return divide(lhs, rhs);
 	}
 

@@ -22,13 +22,13 @@ import edu.nyu.cascade.prover.type.Type;
 
 final class RecordTypeImpl extends TypeImpl implements RecordType {
 	static RecordTypeImpl create(ExpressionManagerImpl em, String tname,
-	    String elemName, Type elemType) {
+			String elemName, Type elemType) {
 		return new RecordTypeImpl(em, tname, Lists.newArrayList(elemName), Lists
-		    .newArrayList(elemType));
+				.newArrayList(elemType));
 	}
 
 	static RecordTypeImpl create(ExpressionManagerImpl em, String tname,
-	    Iterable<String> elemNames, Iterable<? extends Type> elemTypes) {
+			Iterable<String> elemNames, Iterable<? extends Type> elemTypes) {
 		return new RecordTypeImpl(em, tname, elemNames, elemTypes);
 	}
 
@@ -40,10 +40,10 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 
 	@Override
 	RecordExpressionImpl createExpression(Expr res, Expression e, Kind kind,
-	    Iterable<ExpressionImpl> children) {
+			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isRecord());
 		return RecordExpressionImpl.create(getExpressionManager(), kind, res, e
-		    .getType().asRecord(), children);
+				.getType().asRecord(), children);
 	}
 
 	static RecordTypeImpl valueOf(ExpressionManagerImpl em, Type t) {
@@ -51,7 +51,7 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 			return (RecordTypeImpl) t;
 		} else {
 			return create(em, ((RecordType) t).getName(), ((RecordType) t)
-			    .getElementNames(), ((RecordType) t).getElementTypes());
+					.getElementNames(), ((RecordType) t).getElementTypes());
 		}
 	}
 
@@ -60,10 +60,10 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 	private final String typeName;
 
 	private RecordTypeImpl(ExpressionManagerImpl em, String tname,
-	    Iterable<String> fields, Iterable<? extends Type> types) {
+			Iterable<String> fields, Iterable<? extends Type> types) {
 		super(em);
 		Preconditions.checkArgument(Iterables.size(fields) == Iterables.size(
-		    types));
+				types));
 		this.elementTypes = ImmutableList.copyOf(types);
 		this.elementNames = ImmutableList.copyOf(fields);
 		this.typeName = tname;
@@ -83,7 +83,7 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 			}
 			Record record = new Record(vectorPair);
 			setCVC4Type(em.getTheoremProver().getCvc4ExprManager().mkRecordType(
-			    record));
+					record));
 		} catch (Exception e) {
 			throw new TheoremProverException(e);
 		}
@@ -117,12 +117,12 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 	@Override
 	public RecordBoundVariableImpl boundVar(String name, boolean fresh) {
 		return RecordBoundVariableImpl.create(getExpressionManager(), name, this,
-		    fresh);
+				fresh);
 	}
 
 	@Override
 	public RecordBoundVariableImpl boundExpression(String name, int index,
-	    boolean fresh) {
+			boolean fresh) {
 		return boundVar(name, fresh);
 	}
 
@@ -144,8 +144,8 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 
 	@Override
 	public RecordExpression update(Expression record, String fieldName,
-	    Expression value) {
+			Expression value) {
 		return RecordExpressionImpl.mkUpdate(getExpressionManager(), record,
-		    fieldName, value);
+				fieldName, value);
 	}
 }

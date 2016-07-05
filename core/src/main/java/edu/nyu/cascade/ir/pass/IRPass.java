@@ -15,7 +15,7 @@ public interface IRPass {
 	 * Analysis control flow graphs <code>globalCFG</code> and <code>CFGs</code>
 	 */
 	void analysis(IRControlFlowGraph globalCFG,
-	    Collection<IRControlFlowGraph> CFGs);
+			Collection<IRControlFlowGraph> CFGs);
 
 	void reset();
 }

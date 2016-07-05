@@ -12,13 +12,13 @@ public class SatResult<T> extends QueryResult<SatResult.Type> {
 	}
 
 	public static <T> SatResult<T> valueOf(Type result, Expression phi,
-	    Iterable<? extends BooleanExpression> assumptions) {
+			Iterable<? extends BooleanExpression> assumptions) {
 		Preconditions.checkArgument(!Type.UNSAT.equals(result));
 		return new SatResult<T>(result, phi, assumptions);
 	}
 
 	public static <T> SatResult<T> valueOf(Type result, Expression phi,
-	    Iterable<? extends BooleanExpression> assumptions, String reason) {
+			Iterable<? extends BooleanExpression> assumptions, String reason) {
 		Preconditions.checkArgument(!Type.UNSAT.equals(result));
 		return new SatResult<T>(result, phi, assumptions, reason);
 	}
@@ -28,12 +28,12 @@ public class SatResult<T> extends QueryResult<SatResult.Type> {
 	}
 
 	private SatResult(Type result, Expression phi,
-	    Iterable<? extends BooleanExpression> assumptions) {
+			Iterable<? extends BooleanExpression> assumptions) {
 		super(result, phi, assumptions);
 	}
 
 	private SatResult(Type result, Expression phi,
-	    Iterable<? extends BooleanExpression> assumptions, String reason) {
+			Iterable<? extends BooleanExpression> assumptions, String reason) {
 		super(result, phi, assumptions, reason);
 	}
 

@@ -33,7 +33,7 @@ public interface ExpressionEncoder {
 	BooleanExpression toBoolean(StateExpression pre, Node node, boolean negated);
 
 	BooleanExpression toBoolean(StateExpression pre, Node node, boolean negated,
-	    Scope scope);
+			Scope scope);
 
 	Expression toExpression(StateExpression pre, Node node);
 

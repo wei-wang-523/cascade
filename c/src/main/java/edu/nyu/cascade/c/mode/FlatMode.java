@@ -21,58 +21,64 @@ import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.util.Preferences;
 
 public class FlatMode extends AbstractMode {
-  private final ExpressionEncoding encoding;
-  private StateFactory<?> stateFactory;
-  
-  @Inject
-  public FlatMode(ExpressionManager exprManager) {
-  	encoding = BitVectorExpressionEncoding.create(exprManager);
-  	
-  	Strategy strategy;
-  	
-  	if(Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
-  		strategy = Strategy.ORDER;
-    } else {
-  		strategy = Strategy.SOUND;
-    }
-    
-  	IRDataFormatter formatter = getFormatter(encoding);
-  	
-  	if(Preferences.isSet(Preferences.OPTION_LAMBDA)) {
-  		IRMemSafetyEncoding memSafetyEncoding = Preferences.isSet(Preferences.OPTION_STMT) ? 
-  				AbstractStmtMemSafetyEncoding.getInstance(encoding, formatter, strategy) :
-  					AbstractMemSafetyEncoding.getInstance(encoding, formatter, strategy);
-  		
-      stateFactory = AbstractStateFactory.createSingleLambda(encoding, formatter, memSafetyEncoding);
-  	} else {
-    	IRSingleHeapEncoder heapEncoder = SingleHeapEncoder.create(encoding, formatter, strategy);
-    	stateFactory = AbstractStateFactory.createSingle(encoding, formatter, heapEncoder);
-  	}
-  	
-  	if(Preferences.isSet(Preferences.OPTION_HOARE)) {
-  		stateFactory = HoareStateFactory.create((AbstractStateFactory<?>) stateFactory);
-  	}
-  }
+	private final ExpressionEncoding encoding;
+	private StateFactory<?> stateFactory;
 
-  @Override
-  public ExpressionEncoding getEncoding() {
-    return encoding;
-  }
-	
-	@Override
-  public StateFactory<?> getStateFactory() {
-	  return stateFactory;
-  }
+	@Inject
+	public FlatMode(ExpressionManager exprManager) {
+		encoding = BitVectorExpressionEncoding.create(exprManager);
+
+		Strategy strategy;
+
+		if (Preferences.isSet(Preferences.OPTION_ORDER_ALLOC)) {
+			strategy = Strategy.ORDER;
+		} else {
+			strategy = Strategy.SOUND;
+		}
+
+		IRDataFormatter formatter = getFormatter(encoding);
+
+		if (Preferences.isSet(Preferences.OPTION_LAMBDA)) {
+			IRMemSafetyEncoding memSafetyEncoding = Preferences.isSet(
+					Preferences.OPTION_STMT) ? AbstractStmtMemSafetyEncoding.getInstance(
+							encoding, formatter, strategy)
+							: AbstractMemSafetyEncoding.getInstance(encoding, formatter,
+									strategy);
+
+			stateFactory = AbstractStateFactory.createSingleLambda(encoding,
+					formatter, memSafetyEncoding);
+		} else {
+			IRSingleHeapEncoder heapEncoder = SingleHeapEncoder.create(encoding,
+					formatter, strategy);
+			stateFactory = AbstractStateFactory.createSingle(encoding, formatter,
+					heapEncoder);
+		}
+
+		if (Preferences.isSet(Preferences.OPTION_HOARE)) {
+			stateFactory = HoareStateFactory.create(
+					(AbstractStateFactory<?>) stateFactory);
+		}
+	}
 
 	@Override
-  public boolean hasPreprocessor() {
-	  return true;
-  }
+	public ExpressionEncoding getEncoding() {
+		return encoding;
+	}
+
+	@Override
+	public StateFactory<?> getStateFactory() {
+		return stateFactory;
+	}
+
+	@Override
+	public boolean hasPreprocessor() {
+		return true;
+	}
 
 	@Override
 	public IRAliasAnalyzer<?> buildPreprocessor(SymbolTable symbolTable) {
 		IRAliasAnalyzer<?> preProcessor = Steensgaard.create(symbolTable);
-//		stateFactory.setLabelAnalyzer(preProcessor);
+		// stateFactory.setLabelAnalyzer(preProcessor);
 		return preProcessor;
 	}
 }

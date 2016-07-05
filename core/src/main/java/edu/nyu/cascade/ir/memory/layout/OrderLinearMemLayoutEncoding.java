@@ -27,7 +27,7 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	private final CType cTypeAnalyzer;
 
 	private OrderLinearMemLayoutEncoding(ExpressionEncoding exprEncoding,
-	    IRDataFormatter dataFormatter) {
+			IRDataFormatter dataFormatter) {
 		this.exprEncoding = exprEncoding;
 		this.dataFormatter = dataFormatter;
 		addrType = dataFormatter.getAddressType();
@@ -36,13 +36,13 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 	}
 
 	public static OrderLinearMemLayoutEncoding create(
-	    ExpressionEncoding exprEncoding, IRDataFormatter dataFormatter) {
+			ExpressionEncoding exprEncoding, IRDataFormatter dataFormatter) {
 		return new OrderLinearMemLayoutEncoding(exprEncoding, dataFormatter);
 	}
 
 	@Override
 	public ImmutableSet<BooleanExpression> disjointMemLayout(
-	    MemoryVarSets varSets, ArrayExpression sizeArr, Expression lastRegion) {
+			MemoryVarSets varSets, ArrayExpression sizeArr, Expression lastRegion) {
 		Preconditions.checkNotNull(lastRegion);
 		ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
 
@@ -60,12 +60,12 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 
 				Expression stVarSizeExpr = exprEncoding.integerConstant(stVarSize);
 				builder.add(exprEncoding.notOverflow(stVar, stVarSizeExpr)
-				    .asBooleanExpression());
+						.asBooleanExpression());
 			}
 
 			/* All the stack vars are ordered */
 			Iterator<Entry<Expression, xtc.type.Type>> stVarItr = stVarsMap.entrySet()
-			    .iterator();
+					.iterator();
 			Expression stackBound = null;
 
 			if (stVarItr.hasNext()) {
@@ -83,7 +83,7 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 				Expression stVarSizeExpr2 = exprEncoding.integerConstant(stVarSize2);
 				Expression stVarBound2 = exprEncoding.plus(stVar2, stVarSizeExpr2);
 				builder.add(exprEncoding.greaterThan(stackBound, stVarBound2)
-				    .asBooleanExpression());
+						.asBooleanExpression());
 				stackBound = stVar2;
 			}
 
@@ -91,17 +91,17 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 				Expression nullPtr = dataFormatter.getNullAddress();
 				if (sizeArr == null) {
 					builder.add(exprEncoding.greaterThan(stackBound, nullPtr)
-					    .asBooleanExpression());
+							.asBooleanExpression());
 				} else {
 					/*
 					 * lastRegionBound = lastRegion != 0 ? lastRegion + size[lastRegion] :
 					 * 0;
 					 */
 					Expression heapBound = lastRegion.neq(nullPtr).ifThenElse(exprEncoding
-					    .plus(lastRegion, sizeArr.index(lastRegion)), nullPtr);
+							.plus(lastRegion, sizeArr.index(lastRegion)), nullPtr);
 
 					builder.add(exprEncoding.greaterThan(stackBound, heapBound)
-					    .asBooleanExpression());
+							.asBooleanExpression());
 				}
 			}
 		} catch (TheoremProverException e) {
@@ -112,29 +112,29 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 
 	@Override
 	public BooleanExpression validMalloc(ArrayExpression sizeArr,
-	    Expression lastRegion, Expression ptr, Expression size) {
+			Expression lastRegion, Expression ptr, Expression size) {
 		Preconditions.checkNotNull(sizeArr);
 		Preconditions.checkNotNull(lastRegion);
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(
-		    addrType));
+				addrType));
 		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(
-		    sizeType));
+				sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(addrType));
 		Preconditions.checkArgument(size.getType().equals(sizeType));
 
 		try {
 			Expression lastRegionBound = exprEncoding.plus(lastRegion, sizeArr.index(
-			    lastRegion));
+					lastRegion));
 			Expression ptrBound = exprEncoding.plus(ptr, size);
 			Expression nullPtr = dataFormatter.getNullAddress();
 
 			BooleanExpression notNull = ptr.neq(nullPtr);
 			BooleanExpression validMalloc = exprEncoding.and(exprEncoding
-			    .lessThanOrEqual(ptr, ptrBound),
-			    // not over flow but size could be zero
-			    exprEncoding.or(lastRegion.eq(nullPtr),
-			        // last region is null (not allocated)
-			        exprEncoding.lessThanOrEqual(lastRegionBound, ptr)
+					.lessThanOrEqual(ptr, ptrBound),
+					// not over flow but size could be zero
+					exprEncoding.or(lastRegion.eq(nullPtr),
+							// last region is null (not allocated)
+							exprEncoding.lessThanOrEqual(lastRegionBound, ptr)
 			// larger than the last allocated region
 			)).asBooleanExpression();
 
@@ -146,11 +146,11 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 
 	@Override
 	public ImmutableSet<BooleanExpression> validMemAccess(MemoryVarSets varSets,
-	    ArrayExpression sizeArr, Expression ptr) {
+			ArrayExpression sizeArr, Expression ptr) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(
-		    addrType));
+				addrType));
 		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(
-		    sizeType));
+				sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(addrType));
 
 		ImmutableSet.Builder<BooleanExpression> disjs = new ImmutableSet.Builder<BooleanExpression>();
@@ -171,7 +171,7 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 				long stVarSize = cTypeAnalyzer.getSize(stVarType);
 				Expression stVarSizeExpr = exprEncoding.integerConstant(stVarSize);
 				disjs.add(exprEncoding.within(stVar, stVarSizeExpr, ptr)
-				    .asBooleanExpression());
+						.asBooleanExpression());
 			}
 
 			/* In any heap region */
@@ -181,8 +181,8 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 			for (Expression hpReg : hpRegs) {
 				Expression hpRegSizeExpr = sizeArr.index(hpReg);
 				disjs.add(exprEncoding.and(hpReg.neq(nullPtr), hpRegSizeExpr.neq(
-				    sizeZro), exprEncoding.within(hpReg, hpRegSizeExpr, ptr))
-				    .asBooleanExpression());
+						sizeZro), exprEncoding.within(hpReg, hpRegSizeExpr, ptr))
+						.asBooleanExpression());
 			}
 		} catch (TheoremProverException e) {
 			throw new ExpressionFactoryException(e);
@@ -192,11 +192,11 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 
 	@Override
 	public ImmutableSet<BooleanExpression> validMemAccess(MemoryVarSets varSets,
-	    ArrayExpression sizeArr, Expression ptr, Expression size) {
+			ArrayExpression sizeArr, Expression ptr, Expression size) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(
-		    addrType));
+				addrType));
 		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(
-		    sizeType));
+				sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(addrType));
 		Preconditions.checkArgument(size.getType().equals(sizeType));
 
@@ -214,7 +214,7 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 				long stVarSize = cTypeAnalyzer.getSize(stVarType);
 				Expression stVarSizeExpr = exprEncoding.integerConstant(stVarSize);
 				disjs.add(exprEncoding.within(stVar, stVarSizeExpr, ptr, size)
-				    .asBooleanExpression());
+						.asBooleanExpression());
 			}
 
 			Expression nullPtr = dataFormatter.getNullAddress();
@@ -225,8 +225,8 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 				Expression hpRegSizeExpr = sizeArr.index(hpReg);
 
 				disjs.add(exprEncoding.and(hpReg.neq(nullPtr), hpRegSizeExpr.neq(
-				    sizeZro), exprEncoding.within(hpReg, hpRegSizeExpr, ptr, size))
-				    .asBooleanExpression());
+						sizeZro), exprEncoding.within(hpReg, hpRegSizeExpr, ptr, size))
+						.asBooleanExpression());
 			}
 		} catch (TheoremProverException e) {
 			throw new ExpressionFactoryException(e);
@@ -237,9 +237,9 @@ public class OrderLinearMemLayoutEncoding implements IROrderMemLayoutEncoding {
 
 	@Override
 	public BooleanExpression validFree(ArrayExpression markArr,
-	    Expression region) {
+			Expression region) {
 		Preconditions.checkArgument(markArr.getType().getIndexType().equals(
-		    addrType));
+				addrType));
 		Preconditions.checkArgument(markArr.getType().getElementType().isBoolean());
 		Preconditions.checkArgument(region.getType().equals(addrType));
 

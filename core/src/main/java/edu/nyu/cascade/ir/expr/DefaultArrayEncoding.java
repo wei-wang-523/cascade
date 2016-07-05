@@ -21,9 +21,9 @@ public class DefaultArrayEncoding implements ArrayEncoding<ArrayExpression> {
 
 	@Override
 	public Instance<ArrayExpression> getInstance(TypeEncoding<?> indexEncoding,
-	    TypeEncoding<?> elementEncoding) {
+			TypeEncoding<?> elementEncoding) {
 		return new DefaultArrayInstance(exprManager, indexEncoding,
-		    elementEncoding);
+				elementEncoding);
 	}
 
 	@Override
@@ -49,7 +49,7 @@ public class DefaultArrayEncoding implements ArrayEncoding<ArrayExpression> {
 
 	@Override
 	public ArrayExpression update(ArrayExpression array, Expression index,
-	    Expression elem) {
+			Expression elem) {
 		return array.update(index, elem);
 	}
 }
@@ -59,7 +59,7 @@ class DefaultArrayInstance implements ArrayEncoding.Instance<ArrayExpression> {
 	private final TypeEncoding<?> indexEncoding, elementEncoding;
 
 	public DefaultArrayInstance(ExpressionManager exprManager,
-	    TypeEncoding<?> indexEncoding, TypeEncoding<?> elementEncoding) {
+			TypeEncoding<?> indexEncoding, TypeEncoding<?> elementEncoding) {
 		this.exprManager = exprManager;
 		this.indexEncoding = indexEncoding;
 		this.elementEncoding = elementEncoding;
@@ -79,8 +79,8 @@ class DefaultArrayInstance implements ArrayEncoding.Instance<ArrayExpression> {
 		}
 		DefaultArrayInstance instance = (DefaultArrayInstance) obj;
 		return EqualsUtil.areEqual(exprManager, instance.exprManager) && EqualsUtil
-		    .areEqual(indexEncoding, instance.indexEncoding) && EqualsUtil.areEqual(
-		        elementEncoding, instance.elementEncoding);
+				.areEqual(indexEncoding, instance.indexEncoding) && EqualsUtil.areEqual(
+						elementEncoding, instance.elementEncoding);
 	}
 
 	@Override
@@ -100,7 +100,7 @@ class DefaultArrayInstance implements ArrayEncoding.Instance<ArrayExpression> {
 	@Override
 	public ArrayType getType() {
 		return exprManager.arrayType(getIndexEncoding().getType(),
-		    getElementEncoding().getType());
+				getElementEncoding().getType());
 	}
 
 	@Override
@@ -124,7 +124,7 @@ class DefaultArrayInstance implements ArrayEncoding.Instance<ArrayExpression> {
 		}
 		ArrayExpression ax = x.asArray();
 		return ax.getIndexType().equals(indexEncoding.getType()) && ax
-		    .getElementType().equals(elementEncoding.getType());
+				.getElementType().equals(elementEncoding.getType());
 	}
 
 	@Override
@@ -136,7 +136,7 @@ class DefaultArrayInstance implements ArrayEncoding.Instance<ArrayExpression> {
 	@Override
 	public ArrayExpression symbolicConstant(String name, boolean fresh) {
 		return exprManager.arrayType(getIndexEncoding().getType(),
-		    getElementEncoding().getType()).variable(name, fresh);
+				getElementEncoding().getType()).variable(name, fresh);
 	}
 
 	@Override
@@ -152,27 +152,27 @@ class DefaultArrayInstance implements ArrayEncoding.Instance<ArrayExpression> {
 
 	@Override
 	public ArrayExpression update(ArrayExpression array, Expression index,
-	    Expression val) {
+			Expression val) {
 		return array.update(index, val);
 	}
 
 	@Override
 	public ArrayExpression variable(String name, boolean fresh) {
 		return exprManager.arrayType(getIndexEncoding().getType(),
-		    getElementEncoding().getType()).variable(name, fresh);
+				getElementEncoding().getType()).variable(name, fresh);
 	}
 
 	@Override
 	public ArrayExpression boundVar(String name, boolean fresh) {
 		return exprManager.arrayType(getIndexEncoding().getType(),
-		    getElementEncoding().getType()).boundVar(name, fresh);
+				getElementEncoding().getType()).boundVar(name, fresh);
 	}
 
 	@Override
 	public ArrayExpression boundExpression(String name, int index,
-	    boolean fresh) {
+			boolean fresh) {
 		return exprManager.arrayType(getIndexEncoding().getType(),
-		    getElementEncoding().getType()).boundExpression(name, index, fresh);
+				getElementEncoding().getType()).boundExpression(name, index, fresh);
 	}
 
 	@Override
@@ -187,7 +187,7 @@ class DefaultArrayInstance implements ArrayEncoding.Instance<ArrayExpression> {
 
 	@Override
 	public ArrayExpression boundExpression(String name, int index, IRType iType,
-	    boolean fresh) {
+			boolean fresh) {
 		return boundExpression(name, index, fresh);
 	}
 }

@@ -19,7 +19,7 @@ public class Loop {
 	private final IRBasicBlock loopHeader;
 	private final List<IRBasicBlock> blocks;
 	private Collection<IREdge<? extends IRBasicBlock>> backEdges, exitEdges,
-	    loopEdges;
+			loopEdges;
 	private Collection<IRBasicBlock> blocksInExitRound, blocksInLoopRound;
 	private int numBlocks;
 	private int numSubLoops;
@@ -84,12 +84,12 @@ public class Loop {
 	public Collection<IREdge<? extends IRBasicBlock>> getBackEdges() {
 		if (backEdges == null) {
 			backEdges = Lists.<IREdge<? extends IRBasicBlock>> newArrayList(Iterables
-			    .filter(cfg.getIncomingEdges(loopHeader), new Predicate<IREdge<?>>() {
-				    @Override
-				    public boolean apply(IREdge<?> incomingEdge) {
-					    return blocks.contains(incomingEdge.getSource());
-				    }
-			    }));
+					.filter(cfg.getIncomingEdges(loopHeader), new Predicate<IREdge<?>>() {
+						@Override
+						public boolean apply(IREdge<?> incomingEdge) {
+							return blocks.contains(incomingEdge.getSource());
+						}
+					}));
 		}
 		return backEdges;
 	}
@@ -99,7 +99,7 @@ public class Loop {
 			exitEdges = Lists.newArrayList();
 			for (IRBasicBlock block : blocks) {
 				for (IREdge<? extends IRBasicBlock> outgoing : cfg.getOutgoingEdges(
-				    block)) {
+						block)) {
 					IRBasicBlock dest = outgoing.getTarget();
 					if (blocks.contains(dest))
 						continue;
@@ -115,7 +115,7 @@ public class Loop {
 			loopEdges = Lists.newArrayList();
 			for (IRBasicBlock block : blocks) {
 				for (IREdge<? extends IRBasicBlock> outgoing : cfg.getOutgoingEdges(
-				    block)) {
+						block)) {
 					IRBasicBlock dest = outgoing.getTarget();
 					if (blocks.contains(dest))
 						loopEdges.add(outgoing);

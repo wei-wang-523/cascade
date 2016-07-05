@@ -39,22 +39,22 @@ abstract class TypeImpl implements Type {
 	private ExpressionManagerImpl em = null;
 
 	protected TypeImpl(ExpressionManagerImpl em,
-	    BinaryConstructionStrategy strategy, Expression expr1, Expression expr2) {
+			BinaryConstructionStrategy strategy, Expression expr1, Expression expr2) {
 		this.em = em;
 		Expr cvc4Expr1 = em.importExpression(expr1).getCvc4Expression();
 		Expr cvc4Expr2 = em.importExpression(expr2).getCvc4Expression();
 
 		this.cvc4_type = strategy.apply(em.getTheoremProver().getCvc4ExprManager(),
-		    cvc4Expr1, cvc4Expr2);
+				cvc4Expr1, cvc4Expr2);
 	}
 
 	protected TypeImpl(ExpressionManagerImpl em,
-	    UnaryConstructionStrategy strategy, Expression expr) {
+			UnaryConstructionStrategy strategy, Expression expr) {
 		this.em = em;
 		Expr cvc4Expr = em.importExpression(expr).getCvc4Expression();
 
 		this.cvc4_type = strategy.apply(em.getTheoremProver().getCvc4ExprManager(),
-		    cvc4Expr);
+				cvc4Expr);
 	}
 
 	protected TypeImpl(ExpressionManagerImpl em) {
@@ -64,7 +64,7 @@ abstract class TypeImpl implements Type {
 	abstract String getName();
 
 	abstract ExpressionImpl createExpression(Expr res, Expression e, Kind subst,
-	    Iterable<ExpressionImpl> importExpressions);
+			Iterable<ExpressionImpl> importExpressions);
 
 	edu.nyu.acsys.CVC4.Type getCVC4Type() {
 		return cvc4_type;
@@ -79,7 +79,7 @@ abstract class TypeImpl implements Type {
 	}
 
 	void setCVC4UnresolvedDatatype(
-	    DatatypeUnresolvedType cvc4_unresolved_datatype) {
+			DatatypeUnresolvedType cvc4_unresolved_datatype) {
 		this.cvc4_unresolved_datatype = cvc4_unresolved_datatype;
 	}
 
@@ -105,7 +105,7 @@ abstract class TypeImpl implements Type {
 				return getCVC4Type().equals(((TypeImpl) obj).getCVC4Type());
 			else
 				return getCVC4UnresolvedDatatype().equals(((TypeImpl) obj)
-				    .getCVC4UnresolvedDatatype());
+						.getCVC4UnresolvedDatatype());
 		}
 		return super.equals(obj);
 	}
@@ -142,18 +142,18 @@ abstract class TypeImpl implements Type {
 			assert (arity % 2 == 1);
 			Expression orig = (Expression) expression.getChild(0);
 			List<? extends Expression> oldVars = expression.getChildren().subList(1,
-			    arity / 2 + 1);
+					arity / 2 + 1);
 			List<? extends Expression> newVars = expression.getChildren().subList(
-			    arity / 2 + 1, arity);
+					arity / 2 + 1, arity);
 			return ExpressionImpl.mkSubst(getExpressionManager(), orig, oldVars,
-			    newVars);
+					newVars);
 
 		case VARIABLE:
 			assert (arity == 0);
 			return VariableExpressionImpl.valueOf(getExpressionManager(), expression);
 		default:
 			throw new IllegalArgumentException("Unexpected kind: " + expression + "{ "
-			    + expression.getKind() + "}");
+					+ expression.getKind() + "}");
 		}
 	}
 

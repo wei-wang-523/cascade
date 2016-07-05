@@ -31,21 +31,21 @@ import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.util.CacheException;
 
 final class IntegerExpressionImpl extends ExpressionImpl implements
-    IntegerExpression {
+		IntegerExpression {
 
 	static final LoadingCache<ExpressionManagerImpl, LoadingCache<BigInteger, IntegerExpressionImpl>> constantCache = CacheBuilder
-	    .newBuilder().build(
-	        new CacheLoader<ExpressionManagerImpl, LoadingCache<BigInteger, IntegerExpressionImpl>>() {
-		        public LoadingCache<BigInteger, IntegerExpressionImpl> load(
-	              final ExpressionManagerImpl exprManager) {
-			        return CacheBuilder.newBuilder().build(
-	                new CacheLoader<BigInteger, IntegerExpressionImpl>() {
-		                public IntegerExpressionImpl load(BigInteger value) {
-			                return new IntegerExpressionImpl(exprManager, value);
-		                }
-	                });
-		        }
-	        });
+			.newBuilder().build(
+					new CacheLoader<ExpressionManagerImpl, LoadingCache<BigInteger, IntegerExpressionImpl>>() {
+						public LoadingCache<BigInteger, IntegerExpressionImpl> load(
+								final ExpressionManagerImpl exprManager) {
+							return CacheBuilder.newBuilder().build(
+									new CacheLoader<BigInteger, IntegerExpressionImpl>() {
+										public IntegerExpressionImpl load(BigInteger value) {
+											return new IntegerExpressionImpl(exprManager, value);
+										}
+									});
+						}
+					});
 
 	static IntegerExpressionImpl mkConstant(ExpressionManagerImpl em, int c) {
 		try {
@@ -64,7 +64,7 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 	}
 
 	static IntegerExpressionImpl mkConstant(ExpressionManagerImpl em,
-	    BigInteger c) {
+			BigInteger c) {
 		try {
 			return constantCache.get(em).get(c);
 		} catch (ExecutionException e) {
@@ -73,138 +73,138 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 	}
 
 	static IntegerExpressionImpl mkMinus(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new IntegerExpressionImpl(exprManager, MINUS,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, Expr left, Expr right)
-		          throws Exception {
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.MINUS, left, right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, Expr left, Expr right)
+							throws Exception {
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.MINUS, left, right);
+					}
+				}, a, b);
 	}
 
 	static IntegerExpressionImpl mkMult(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new IntegerExpressionImpl(exprManager, MULT,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, Expr left, Expr right)
-		          throws Exception {
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.MULT, left, right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, Expr left, Expr right)
+							throws Exception {
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.MULT, left, right);
+					}
+				}, a, b);
 	}
 
 	static IntegerExpressionImpl mkDivide(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new IntegerExpressionImpl(exprManager, DIVIDE,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, Expr left, Expr right)
-		          throws Exception { // support divides by zero
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.INTS_DIVISION_TOTAL, left,
-		            right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, Expr left, Expr right)
+							throws Exception { // support divides by zero
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.INTS_DIVISION_TOTAL, left,
+								right);
+					}
+				}, a, b);
 	}
 
 	static IntegerExpressionImpl mkModulous(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new IntegerExpressionImpl(exprManager, MOD,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, Expr left, Expr right)
-		          throws Exception { // support modulus by zero
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.INTS_MODULUS_TOTAL, left,
-		            right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, Expr left, Expr right)
+							throws Exception { // support modulus by zero
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.INTS_MODULUS_TOTAL, left,
+								right);
+					}
+				}, a, b);
 	}
 
 	static IntegerExpressionImpl mkMult(ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> terms) {
+			Iterable<? extends Expression> terms) {
 		Preconditions.checkArgument(!Iterables.isEmpty(terms));
 		return new IntegerExpressionImpl(exprManager, MULT,
-		    new NaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, List<Expr> args) throws Exception {
-				    Expr result = null;
-				    for (Expr arg : args) {
-					    if (result == null) {
-						    result = arg;
-					    } else {
-						    result = em.mkExpr(edu.nyu.acsys.CVC4.Kind.MULT, result, arg);
-					    }
-				    }
-				    return result;
-			    }
+				new NaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, List<Expr> args) throws Exception {
+						Expr result = null;
+						for (Expr arg : args) {
+							if (result == null) {
+								result = arg;
+							} else {
+								result = em.mkExpr(edu.nyu.acsys.CVC4.Kind.MULT, result, arg);
+							}
+						}
+						return result;
+					}
 
-		    }, terms);
+				}, terms);
 	}
 
 	static IntegerExpressionImpl mkPlus(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new IntegerExpressionImpl(exprManager, PLUS,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, Expr left, Expr right)
-		          throws Exception {
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.PLUS, left, right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, Expr left, Expr right)
+							throws Exception {
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.PLUS, left, right);
+					}
+				}, a, b);
 	}
 
 	static IntegerExpressionImpl mkPlus(ExpressionManagerImpl exprManager,
-	    Expression first, Expression... rest) {
+			Expression first, Expression... rest) {
 		return mkPlus(exprManager, Lists.asList(first, rest));
 	}
 
 	static IntegerExpressionImpl mkPlus(ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> args) {
+			Iterable<? extends Expression> args) {
 		Preconditions.checkArgument(!Iterables.isEmpty(args));
 		return new IntegerExpressionImpl(exprManager, PLUS,
-		    new NaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, List<Expr> args) throws Exception {
-				    Expr result = null;
-				    for (Expr arg : args) {
-					    if (result == null) {
-						    result = arg;
-					    } else {
-						    result = em.mkExpr(edu.nyu.acsys.CVC4.Kind.PLUS, result, arg);
-					    }
-				    }
-				    return result;
-			    }
-		    }, args);
+				new NaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, List<Expr> args) throws Exception {
+						Expr result = null;
+						for (Expr arg : args) {
+							if (result == null) {
+								result = arg;
+							} else {
+								result = em.mkExpr(edu.nyu.acsys.CVC4.Kind.PLUS, result, arg);
+							}
+						}
+						return result;
+					}
+				}, args);
 	}
 
 	static IntegerExpressionImpl mkPow(ExpressionManagerImpl exprManager,
-	    Expression base, Expression exp) {
+			Expression base, Expression exp) {
 		return new IntegerExpressionImpl(exprManager, POW,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, Expr left, Expr right)
-		          throws Exception {
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.POW, left, right);
-			    }
-		    }, base, exp);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, Expr left, Expr right)
+							throws Exception {
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.POW, left, right);
+					}
+				}, base, exp);
 	}
 
 	static IntegerExpressionImpl mkUminus(ExpressionManagerImpl exprManager,
-	    Expression a) {
+			Expression a) {
 		return new IntegerExpressionImpl(exprManager, UNARY_MINUS,
-		    new UnaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, Expr left) throws Exception {
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.UMINUS, left);
-			    }
-		    }, a);
+				new UnaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, Expr left) throws Exception {
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.UMINUS, left);
+					}
+				}, a);
 	}
 
 	static IntegerExpressionImpl valueOf(ExpressionManagerImpl exprManager,
-	    ExpressionImpl e) {
+			ExpressionImpl e) {
 		if (exprManager.equals(e.getExpressionManager())) {
 			if (e instanceof IntegerExpressionImpl) {
 				return (IntegerExpressionImpl) e;
@@ -216,7 +216,7 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 		switch (e.getKind()) {
 		default:
 			throw new UnsupportedOperationException("Unexpected kind: " + e + " {" + e
-			    .getKind() + "}");
+					.getKind() + "}");
 		}
 	}
 
@@ -232,32 +232,32 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 	}
 
 	private IntegerExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    BinaryConstructionStrategy strategy, Expression a, Expression b) {
+			BinaryConstructionStrategy strategy, Expression a, Expression b) {
 		super(exprManager, kind, strategy, a, b);
 		setType(getExpressionManager().integerType());
 	}
 
 	private IntegerExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    NaryConstructionStrategy strategy, Iterable<? extends Expression> args) {
+			NaryConstructionStrategy strategy, Iterable<? extends Expression> args) {
 		super(exprManager, kind, strategy, args);
 		setType(getExpressionManager().integerType());
 	}
 
 	private IntegerExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    UnaryConstructionStrategy strategy, Expression a) {
+			UnaryConstructionStrategy strategy, Expression a) {
 		super(exprManager, kind, strategy, a);
 		setType(getExpressionManager().integerType());
 	}
 
 	private IntegerExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    Expr expr, IntegerType type,
-	    Iterable<? extends ExpressionImpl> children) {
+			Expr expr, IntegerType type,
+			Iterable<? extends ExpressionImpl> children) {
 		super(exprManager, kind, expr, type);
 	}
 
 	static IntegerExpressionImpl create(ExpressionManagerImpl exprManager,
-	    Kind kind, Expr expr, IntegerType type,
-	    Iterable<? extends ExpressionImpl> children) {
+			Kind kind, Expr expr, IntegerType type,
+			Iterable<? extends ExpressionImpl> children) {
 		return new IntegerExpressionImpl(exprManager, kind, expr, type, children);
 	}
 
@@ -309,7 +309,7 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 	@Override
 	public IntegerExpression plus(Iterable<? extends IntegerExpression> rest) {
 		return mkPlus(getExpressionManager(), Iterables.concat(Collections
-		    .singletonList(this), rest));
+				.singletonList(this), rest));
 	}
 
 	@Override

@@ -27,7 +27,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	private final CType cTypeAnalyzer;
 
 	private SoundLinearMemLayoutEncoding(ExpressionEncoding exprEncoding,
-	    IRDataFormatter dataFormatter) {
+			IRDataFormatter dataFormatter) {
 		this.exprEncoding = exprEncoding;
 		this.dataFormatter = dataFormatter;
 		addrType = dataFormatter.getAddressType();
@@ -36,13 +36,13 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	}
 
 	public static SoundLinearMemLayoutEncoding create(
-	    ExpressionEncoding exprEncoding, IRDataFormatter dataFormatter) {
+			ExpressionEncoding exprEncoding, IRDataFormatter dataFormatter) {
 		return new SoundLinearMemLayoutEncoding(exprEncoding, dataFormatter);
 	}
 
 	@Override
 	public ImmutableSet<BooleanExpression> disjointMemLayout(
-	    MemoryVarSets varSets, ArrayExpression sizeArr) {
+			MemoryVarSets varSets, ArrayExpression sizeArr) {
 
 		ImmutableSet.Builder<BooleanExpression> builder = ImmutableSet.builder();
 		Map<Expression, xtc.type.Type> stVarsMap = varSets.getStackVarsMap();
@@ -54,7 +54,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 			Expression sizeZro = dataFormatter.getSizeZero();
 
 			for (Entry<Expression, xtc.type.Type> stVarEntry1 : stVarsMap
-			    .entrySet()) {
+					.entrySet()) {
 				Expression stVar1 = stVarEntry1.getKey();
 				xtc.type.Type stVarType1 = stVarEntry1.getValue();
 				long stVarSize1 = cTypeAnalyzer.getSize(stVarType1);
@@ -67,13 +67,13 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 				/* The upper bound of the stack variable won't overflow. */
 				Expression stVarSizeExpr1 = exprEncoding.integerConstant(stVarSize1);
 				builder.add(exprEncoding.notOverflow(stVar1, stVarSizeExpr1)
-				    .asBooleanExpression());
+						.asBooleanExpression());
 
 				/*
 				 * The size of the stack var will be larger than zero (won't be zero).
 				 */
 				for (Entry<Expression, xtc.type.Type> stVarEntry2 : stVarsMap
-				    .entrySet()) {
+						.entrySet()) {
 					Expression stVar2 = stVarEntry2.getKey();
 					xtc.type.Type stVarType2 = stVarEntry2.getValue();
 
@@ -84,12 +84,12 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 
 						if (stVarSize2 > 0) {
 							Expression stVarSizeExpr2 = exprEncoding.integerConstant(
-							    stVarSize2);
+									stVarSize2);
 							builder.add(exprEncoding.disjoint(stVar1, stVarSizeExpr1, stVar2,
-							    stVarSizeExpr2).asBooleanExpression());
+									stVarSizeExpr2).asBooleanExpression());
 						} else {
 							builder.add(exprEncoding.disjoint(stVar1, stVarSizeExpr1, stVar2)
-							    .asBooleanExpression());
+									.asBooleanExpression());
 						}
 					}
 				}
@@ -101,7 +101,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 
 					/* Disjoint of the heap region or stack variable */
 					for (Entry<Expression, xtc.type.Type> stVarEntry : stVarsMap
-					    .entrySet()) {
+							.entrySet()) {
 						Expression stVar = stVarEntry.getKey();
 						xtc.type.Type stVarType = stVarEntry.getValue();
 						long stVarSize = cTypeAnalyzer.getSize(stVarType);
@@ -115,9 +115,9 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 						 * not be equal to stVar
 						 */
 						builder.add(hpReg.neq(nullPtr).implies(hpRegSizeExpr.neq(sizeZro)
-						    .ifThenElse(exprEncoding.disjoint(stVar, stVarSizeExpr, hpReg,
-						        hpRegSizeExpr), exprEncoding.disjoint(stVar, stVarSizeExpr,
-						            hpReg))));
+								.ifThenElse(exprEncoding.disjoint(stVar, stVarSizeExpr, hpReg,
+										hpRegSizeExpr), exprEncoding.disjoint(stVar, stVarSizeExpr,
+												hpReg))));
 					}
 				}
 			}
@@ -129,11 +129,11 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 
 	@Override
 	public BooleanExpression validMalloc(MemoryVarSets varSet,
-	    ArrayExpression sizeArr, Expression ptr, Expression size) {
+			ArrayExpression sizeArr, Expression ptr, Expression size) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(
-		    addrType));
+				addrType));
 		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(
-		    sizeType));
+				sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(addrType));
 		Preconditions.checkArgument(size.getType().equals(sizeType));
 
@@ -148,7 +148,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 
 			/* size not overflow, but could be zero -- malloc(0) */
 			builder.add(exprEncoding.lessThanOrEqual(ptr, ptrBound)
-			    .asBooleanExpression());
+					.asBooleanExpression());
 
 			Collection<Expression> hpRegs = varSet.getHeapRegions();
 			Iterator<Expression> hpRegItr = hpRegs.iterator();
@@ -160,12 +160,12 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 
 				/* region is not null and not freed before */
 				BooleanExpression assump_local = exprEncoding.and(exprEncoding
-				    .greaterThan(hpRegSizeExpr, sizeZro), hpReg.neq(nullPtr))
-				    .asBooleanExpression();
+						.greaterThan(hpRegSizeExpr, sizeZro), hpReg.neq(nullPtr))
+						.asBooleanExpression();
 
 				/* Disjoint */
 				Expression assert_local = exprEncoding.disjoint(hpReg, hpRegSizeExpr,
-				    ptr, size);
+						ptr, size);
 
 				builder.add(assump_local.implies(assert_local));
 			}
@@ -179,11 +179,11 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 
 	@Override
 	public ImmutableSet<BooleanExpression> validMemAccess(MemoryVarSets varSets,
-	    ArrayExpression sizeArr, Expression ptr) {
+			ArrayExpression sizeArr, Expression ptr) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(
-		    addrType));
+				addrType));
 		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(
-		    sizeType));
+				sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(addrType));
 
 		ImmutableSet.Builder<BooleanExpression> disjs = new ImmutableSet.Builder<BooleanExpression>();
@@ -201,7 +201,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 				long stVarSize = cTypeAnalyzer.getSize(stVarType);
 				Expression stVarSizeExpr = exprEncoding.integerConstant(stVarSize);
 				disjs.add(exprEncoding.within(stVar, stVarSizeExpr, ptr)
-				    .asBooleanExpression());
+						.asBooleanExpression());
 			}
 
 			// In any heap region
@@ -211,8 +211,8 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 			for (Expression hpReg : hpRegs) {
 				Expression hpRegSizeExpr = sizeArr.index(hpReg);
 				disjs.add(exprEncoding.and(hpReg.neq(nullPtr), hpRegSizeExpr.neq(
-				    sizeZro), exprEncoding.within(hpReg, hpRegSizeExpr, ptr))
-				    .asBooleanExpression());
+						sizeZro), exprEncoding.within(hpReg, hpRegSizeExpr, ptr))
+						.asBooleanExpression());
 			}
 		} catch (TheoremProverException e) {
 			throw new ExpressionFactoryException(e);
@@ -222,11 +222,11 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 
 	@Override
 	public ImmutableSet<BooleanExpression> validMemAccess(MemoryVarSets varSets,
-	    ArrayExpression sizeArr, Expression ptr, Expression size) {
+			ArrayExpression sizeArr, Expression ptr, Expression size) {
 		Preconditions.checkArgument(sizeArr.getType().getIndexType().equals(
-		    addrType));
+				addrType));
 		Preconditions.checkArgument(sizeArr.getType().getElementType().equals(
-		    sizeType));
+				sizeType));
 		Preconditions.checkArgument(ptr.getType().equals(addrType));
 		Preconditions.checkArgument(size.getType().equals(sizeType));
 
@@ -247,7 +247,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 				long stVarSize = cTypeAnalyzer.getSize(stVarType);
 				Expression stVarSizeExpr = exprEncoding.integerConstant(stVarSize);
 				disjs.add(exprEncoding.within(stVar, stVarSizeExpr, ptr, size)
-				    .asBooleanExpression());
+						.asBooleanExpression());
 			}
 
 			/* In any heap region */
@@ -255,8 +255,8 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 				Expression hpRegSizeExpr = sizeArr.index(hpReg);
 
 				disjs.add(exprEncoding.and(hpReg.neq(nullPtr), hpRegSizeExpr.neq(
-				    sizeZro), exprEncoding.within(hpReg, hpRegSizeExpr, ptr, size))
-				    .asBooleanExpression());
+						sizeZro), exprEncoding.within(hpReg, hpRegSizeExpr, ptr, size))
+						.asBooleanExpression());
 			}
 		} catch (TheoremProverException e) {
 			throw new ExpressionFactoryException(e);
@@ -268,7 +268,7 @@ public class SoundLinearMemLayoutEncoding implements IRSoundMemLayoutEncoding {
 	@Override
 	public BooleanExpression validFree(ArrayExpression markArr, Expression ptr) {
 		Preconditions.checkArgument(markArr.getType().getIndexType().equals(
-		    addrType));
+				addrType));
 		Preconditions.checkArgument(markArr.getType().getElementType().isBoolean());
 		Preconditions.checkArgument(ptr.getType().equals(addrType));
 

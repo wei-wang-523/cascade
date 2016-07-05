@@ -15,7 +15,7 @@ import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.FunctionExpression;
 
 public abstract class AbstractStmtMemSafetyEncoding implements
-    IRMemSafetyEncoding {
+		IRMemSafetyEncoding {
 
 	protected final static String ptrVarName = "ptrVar";
 	protected final static String sizeVarName = "sizeVar";
@@ -28,7 +28,7 @@ public abstract class AbstractStmtMemSafetyEncoding implements
 		static Kind parse(Expression key) {
 			Preconditions.checkArgument(key.isFunction() || key.isBoolean());
 			String name = key.isFunction() ? key.asFunctionExpression().getName()
-			    : key.asVariable().getName();
+					: key.asVariable().getName();
 
 			if (name.equals(Kind.VALID_ACCESS_RANGE.name()))
 				return Kind.VALID_ACCESS_RANGE;
@@ -56,13 +56,13 @@ public abstract class AbstractStmtMemSafetyEncoding implements
 	protected final ExpressionEncoding encoding;
 
 	protected AbstractStmtMemSafetyEncoding(ExpressionEncoding encoding,
-	    IRDataFormatter formatter) {
+			IRDataFormatter formatter) {
 		this.formatter = formatter;
 		this.encoding = encoding;
 	}
 
 	public static IRMemSafetyEncoding getInstance(ExpressionEncoding encoding,
-	    IRDataFormatter formatter, Strategy strategy) {
+			IRDataFormatter formatter, Strategy strategy) {
 		switch (strategy) {
 		case ORDER:
 			return OrderStmtLinearMemSafetyEncoding.create(encoding, formatter);
@@ -73,13 +73,13 @@ public abstract class AbstractStmtMemSafetyEncoding implements
 
 	@Override
 	public PredicateClosure suspend(final Expression func, final Expression expr,
-	    final Expression... vars) {
+			final Expression... vars) {
 		return new PredicateClosure() {
 
 			@Override
 			public String toString() {
 				return new StringBuilder().append("\n\tfunc: ").append(func).append(
-		        "\n\texpr: ").append(expr).toString();
+						"\n\texpr: ").append(expr).toString();
 			}
 
 			@Override
@@ -106,10 +106,10 @@ public abstract class AbstractStmtMemSafetyEncoding implements
 
 	@Override
 	public Expression applyUpdatedPredicate(SingleLambdaStateExpression state,
-	    FunctionExpression func, Collection<Expression> args) {
+			FunctionExpression func, Collection<Expression> args) {
 		String funcName = func.getName();
 		PredicateClosure predicateClosure = state.getSafetyPredicateClosure(
-		    funcName);
+				funcName);
 		Expression[] argsArray = new Expression[args.size()];
 		argsArray = args.toArray(argsArray);
 		state.registerPredicate(predicateClosure.getUninterpretedFunc(), argsArray);
@@ -123,7 +123,7 @@ public abstract class AbstractStmtMemSafetyEncoding implements
 
 	@Override
 	public PredicateClosure getValidAccessRange(
-	    SingleLambdaStateExpression state) {
+			SingleLambdaStateExpression state) {
 		return state.getSafetyPredicateClosure(Kind.VALID_ACCESS_RANGE.name());
 	}
 
@@ -134,7 +134,7 @@ public abstract class AbstractStmtMemSafetyEncoding implements
 
 	@Override
 	public void propagateSafetyPredicates(SingleLambdaStateExpression fromState,
-	    SingleLambdaStateExpression toState) {
+			SingleLambdaStateExpression toState) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -144,7 +144,7 @@ public abstract class AbstractStmtMemSafetyEncoding implements
 	}
 
 	final void initSafetyPredicate(Kind kind, SingleLambdaStateExpression state,
-	    Expression ptrVar, Expression sizeVar) {
+			Expression ptrVar, Expression sizeVar) {
 		ExpressionManager exprManager = encoding.getExpressionManager();
 		String fname = kind.name();
 

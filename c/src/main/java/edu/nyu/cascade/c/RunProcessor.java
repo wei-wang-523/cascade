@@ -25,7 +25,7 @@ public interface RunProcessor {
 	 * @throws RunProcessorException
 	 */
 	SafeResult processReachability(IRControlFlowGraph mainCfg, LoopInfo loopInfo,
-	    String label, int iterTime) throws RunProcessorException;
+			String label, int iterTime) throws RunProcessorException;
 
 	/**
 	 * Process assertion checking in CFG
@@ -34,7 +34,7 @@ public interface RunProcessor {
 	 * @throws RunProcessorException
 	 */
 	SafeResult processAssertion(IRControlFlowGraph mainCFG, LoopInfo loopInfo,
-	    int iterTime) throws RunProcessorException;
+			int iterTime) throws RunProcessorException;
 
 	void dumpErrorTrace(IRControlFlowGraph cfg);
 

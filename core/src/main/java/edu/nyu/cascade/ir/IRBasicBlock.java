@@ -11,7 +11,7 @@ import com.google.common.collect.ImmutableSet;
 public interface IRBasicBlock {
 
 	public static enum Type {
-	  /** A standard block, with a non-branching list of statements. */
+		/** A standard block, with a non-branching list of statements. */
 		BLOCK,
 		/**
 		 * A loop header. The block has no statements and two successors: the body

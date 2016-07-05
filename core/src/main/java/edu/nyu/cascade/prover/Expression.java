@@ -17,7 +17,7 @@ import edu.nyu.cascade.prover.type.Type;
 
 public interface Expression {
 	public static enum Kind {
-	  /** Boolean AND. Two or more children, all booleans. */
+		/** Boolean AND. Two or more children, all booleans. */
 		AND,
 		/**
 		 * Function application. Two or more children: a function and a number of
@@ -381,7 +381,7 @@ public interface Expression {
 	 * <code>e'</code> in <code>newExprs</code>.
 	 */
 	Expression subst(Iterable<? extends Expression> oldExprs,
-	    Iterable<? extends Expression> newExprs);
+			Iterable<? extends Expression> newExprs);
 
 	ArrayExpression asArray();
 

@@ -31,7 +31,7 @@ public class ListReachabilityTest {
 
 	@Before
 	public void setUp() throws ExpressionFactoryException,
-	    TheoremProverFactoryException {
+			TheoremProverFactoryException {
 		theoremProver = TheoremProverFactory.getInstance();
 		exprManager = theoremProver.getExpressionManager();
 		listEncoding = new ListReachability(exprManager).getEncoding();
@@ -44,7 +44,7 @@ public class ListReachabilityTest {
 
 	@Test
 	public void testAssumptions() throws TheoremProverException,
-	    ExpressionFactoryException {
+			ExpressionFactoryException {
 		theoremProver.assume(listEncoding.getAssumptions());
 		assertTrue(theoremProver.checkValidity(listEncoding.tt()).isValid());
 	}
@@ -52,23 +52,23 @@ public class ListReachabilityTest {
 	@Test
 	@Ignore
 	public void testAssumptions2() throws TheoremProverException,
-	    ExpressionFactoryException {
+			ExpressionFactoryException {
 		theoremProver.assume(listEncoding.getAssumptions());
 		assertTrue(!theoremProver.checkValidity(listEncoding.ff()).isValid());
 	}
 
 	@Test
 	public void testAssumptions3() throws TheoremProverException,
-	    ExpressionFactoryException {
+			ExpressionFactoryException {
 		theoremProver.assume(listEncoding.getAssumptions());
 		ExpressionManager exprManager = listEncoding.getExpressionManager();
 		Expression listNil = listEncoding.applyNilConstr();
 		Expression list1 = listEncoding.applyConsConstr(exprManager.constant(3),
-		    listNil);
+				listNil);
 		Expression list2 = listEncoding.applyConsConstr(exprManager.constant(2),
-		    list1);
+				list1);
 		Expression list3 = listEncoding.applyConsConstr(exprManager.constant(1),
-		    list2);
+				list2);
 		IntegerExpression lengthExpr = listEncoding.applyLengthList(list3);
 		BooleanExpression targetExpr = lengthExpr.neq(exprManager.constant(3));
 		assertTrue(theoremProver.checkSat(targetExpr).isUnsatisfiable());

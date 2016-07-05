@@ -68,7 +68,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 
 		private BooleanExpression coerceToBoolean(Expression e) {
 			return encoding.isBoolean(e) ? e.asBooleanExpression()
-			    : encoding.castToBoolean(e).asBooleanExpression();
+					: encoding.castToBoolean(e).asBooleanExpression();
 		}
 
 		private Expression coerceToInteger(Expression e) {
@@ -82,7 +82,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 		@Override
 		public Expression unableToVisit(Node node) {
 			IOUtils.err().println("APPROX: Treating unexpected node type as unknown: "
-			    + node.getName());
+					+ node.getName());
 			return encoding.getIntegerEncoding().unknown();
 		}
 
@@ -98,9 +98,9 @@ class CExpressionEncoder implements ExpressionEncoder {
 			} else {
 				int size = (int) encoding.getCTypeAnalyzer().getWidth(targetType);
 				trueCase = encoding.castToInteger(trueCase, size, !CType.isUnsigned(
-				    CType.getType(node.getNode(1))));
+						CType.getType(node.getNode(1))));
 				falseCase = encoding.castToInteger(falseCase, size, !CType.isUnsigned(
-				    CType.getType(node.getNode(2))));
+						CType.getType(node.getNode(2))));
 			}
 
 			return condition.ifThenElse(trueCase, falseCase);
@@ -129,11 +129,11 @@ class CExpressionEncoder implements ExpressionEncoder {
 				if ("-".equals(additiveOp))
 					return pointerMinus(left, right, lhsType, rhsType);
 				throw new ExpressionFactoryException("Invalid operation: "
-				    + additiveOp);
+						+ additiveOp);
 			}
 
 			Pair<Expression, Expression> pair = encoding.arithTypeConversion(left,
-			    right, lhsType, rhsType);
+					right, lhsType, rhsType);
 			left = pair.fst();
 			right = pair.snd();
 
@@ -153,7 +153,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 			Type rhsType = CType.getType(node.getNode(2)).resolve();
 
 			Pair<Expression, Expression> pair = encoding.arithTypeConversion(left,
-			    right, lhsType, rhsType);
+					right, lhsType, rhsType);
 			left = pair.fst();
 			right = pair.snd();
 
@@ -165,7 +165,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 					return encoding.rshift(coerceToInteger(left), coerceToInteger(right));
 				else
 					return encoding.signedRshift(coerceToInteger(left), coerceToInteger(
-					    right));
+							right));
 
 			throw new ExpressionFactoryException("Invalid operation: " + shiftOp);
 		}
@@ -199,7 +199,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 					return pointerPlus(left, right, lhsType, rhsType);
 				} else {
 					Pair<Expression, Expression> pair = encoding.arithTypeConversion(left,
-					    right, lhsType, rhsType);
+							right, lhsType, rhsType);
 					left = pair.fst();
 					right = pair.snd();
 					return encoding.plus(coerceToInteger(left), coerceToInteger(right));
@@ -210,7 +210,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 					return pointerMinus(left, right, lhsType, rhsType);
 				} else {
 					Pair<Expression, Expression> pair = encoding.arithTypeConversion(left,
-					    right, lhsType, rhsType);
+							right, lhsType, rhsType);
 					left = pair.fst();
 					right = pair.snd();
 					return encoding.minus(coerceToInteger(left), coerceToInteger(right));
@@ -218,54 +218,54 @@ class CExpressionEncoder implements ExpressionEncoder {
 			}
 			if ("*=".equals(assignOp)) {
 				Pair<Expression, Expression> pair = encoding.arithTypeConversion(left,
-				    right, lhsType, rhsType);
+						right, lhsType, rhsType);
 				left = pair.fst();
 				right = pair.snd();
 				return encoding.times(coerceToInteger(left), coerceToInteger(right));
 			}
 
 			boolean isUnsigned = CType.isUnsigned(lhsType) || CType.isUnsigned(
-			    rhsType);
+					rhsType);
 
 			if ("/=".equals(assignOp)) {
 				Pair<Expression, Expression> pair = encoding.arithTypeConversion(left,
-				    right, lhsType, rhsType);
+						right, lhsType, rhsType);
 				left = pair.fst();
 				right = pair.snd();
 				if (isUnsigned)
 					return encoding.divide(coerceToInteger(left), coerceToInteger(right));
 				else
 					return encoding.signedDivide(coerceToInteger(left), coerceToInteger(
-					    right));
+							right));
 			}
 			if ("%=".equals(assignOp)) {
 				Pair<Expression, Expression> pair = encoding.arithTypeConversion(left,
-				    right, lhsType, rhsType);
+						right, lhsType, rhsType);
 				left = pair.fst();
 				right = pair.snd();
 				if (isUnsigned)
 					return encoding.rem(coerceToInteger(left), coerceToInteger(right));
 				else
 					return encoding.signedRem(coerceToInteger(left), coerceToInteger(
-					    right));
+							right));
 			}
 			if ("|=".equals(assignOp)) {
 				Pair<Expression, Expression> pair = encoding.arithTypeConversion(left,
-				    right, lhsType, rhsType);
+						right, lhsType, rhsType);
 				left = pair.fst();
 				right = pair.snd();
 				return encoding.bitwiseOr(left, right);
 			}
 			if ("&=".equals(assignOp)) {
 				Pair<Expression, Expression> pair = encoding.arithTypeConversion(left,
-				    right, lhsType, rhsType);
+						right, lhsType, rhsType);
 				left = pair.fst();
 				right = pair.snd();
 				return encoding.bitwiseAnd(left, right);
 			}
 			if ("^=".equals(assignOp)) {
 				Pair<Expression, Expression> pair = encoding.arithTypeConversion(left,
-				    right, lhsType, rhsType);
+						right, lhsType, rhsType);
 				left = pair.fst();
 				right = pair.snd();
 				return encoding.bitwiseXor(left, right);
@@ -282,7 +282,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 			Type rhsType = CType.getType(node.getNode(1));
 
 			Pair<Expression, Expression> pair = encoding.arithTypeConversion(left,
-			    right, lhsType, rhsType);
+					right, lhsType, rhsType);
 			left = pair.fst();
 			right = pair.snd();
 			return encoding.bitwiseAnd(left, right);
@@ -296,7 +296,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 			Type rhsType = CType.getType(node.getNode(1));
 
 			Pair<Expression, Expression> pair = encoding.arithTypeConversion(left,
-			    right, lhsType, rhsType);
+					right, lhsType, rhsType);
 			left = pair.fst();
 			right = pair.snd();
 			return encoding.bitwiseOr(left, right);
@@ -310,7 +310,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 			Type rhsType = CType.getType(node.getNode(1));
 
 			Pair<Expression, Expression> pair = encoding.arithTypeConversion(left,
-			    right, lhsType, rhsType);
+					right, lhsType, rhsType);
 			left = pair.fst();
 			right = pair.snd();
 			return encoding.bitwiseXor(left, right);
@@ -349,7 +349,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 			Type rhsType = CType.getType(node.getNode(2));
 
 			Pair<Expression, Expression> pair = encoding.arithTypeConversion(left,
-			    right, lhsType, rhsType);
+					right, lhsType, rhsType);
 			left = pair.fst();
 			right = pair.snd();
 
@@ -363,7 +363,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 
 		public List<Expression> visitExpressionList(GNode node) {
 			List<Expression> subExprList = Lists.newArrayListWithCapacity(node
-			    .size());
+					.size());
 			for (Object elem : node) {
 				Expression subExpr = encodeExpression(GNode.cast(elem));
 				subExprList.add(subExpr);
@@ -416,7 +416,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 			}
 
 			if (ReservedFunction.FUN_FORALL.equals(name)
-			    || ReservedFunction.FUN_EXISTS.equals(name)) {
+					|| ReservedFunction.FUN_EXISTS.equals(name)) {
 				ImmutableList.Builder<Expression> argsBuilder = new ImmutableList.Builder<Expression>();
 				int lastIdx = argList.size() - 1;
 				for (int idx = 0; idx < lastIdx; idx++) {
@@ -424,7 +424,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 					assert (argNode.hasName("PrimaryIdentifier"));
 					IRVarInfo info = createCtrlVar(argNode);
 					String tpProviderName = encoding.getExpressionManager()
-					    .getTheoremProver().getProviderName();
+							.getTheoremProver().getProviderName();
 
 					Expression boundVar;
 					if (Preferences.PROVER_Z3.equals(tpProviderName)) {
@@ -447,7 +447,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 				visitExpressionList(GNode.cast(argList));
 
 			IOUtils.debug().pln("APPROX: Treating un-inlined function call " + node
-			    + " as unknown");
+					+ " as unknown");
 
 			return encoding.unknown(CType.getType(node));
 		}
@@ -460,7 +460,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 		public Expression visitIntegerConstant(GNode node) {
 			Type srcType = CType.getType(node);
 			Expression value = encoding.integerConstant(srcType.getConstant()
-			    .bigIntValue(), CType.getInstance().getWidth(srcType));
+					.bigIntValue(), CType.getInstance().getWidth(srcType));
 			return value;
 		}
 
@@ -543,7 +543,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 			boolean isUnsigned = CType.isUnsigned(lType) || CType.isUnsigned(rType);
 
 			Pair<Expression, Expression> pair = encoding.arithTypeConversion(left,
-			    right, lType, rType);
+					right, lType, rType);
 			left = pair.fst();
 			right = pair.snd();
 
@@ -579,7 +579,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 		public Expression visitStringConstant(GNode node) {
 			// FIXME: make a string constant into integer variable? improper
 			return encoding.variable(node.getString(0), IRType.getIRType(node),
-			    false);
+					false);
 		}
 
 		public Expression visitSubscriptExpression(GNode node) {
@@ -674,7 +674,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 			Type rhsType = CType.getType(node.getNode(2));
 
 			Pair<Expression, Expression> pair = encoding.arithTypeConversion(left,
-			    right, lhsType, rhsType);
+					right, lhsType, rhsType);
 			left = pair.fst();
 			right = pair.snd();
 
@@ -682,14 +682,14 @@ class CExpressionEncoder implements ExpressionEncoder {
 				return encoding.times(coerceToInteger(left), coerceToInteger(right));
 
 			boolean isUnsigned = CType.isUnsigned(lhsType) || CType.isUnsigned(
-			    rhsType);
+					rhsType);
 
 			if ("/".equals(mulOp)) {
 				if (isUnsigned)
 					return encoding.divide(coerceToInteger(left), coerceToInteger(right));
 				else
 					return encoding.signedDivide(coerceToInteger(left), coerceToInteger(
-					    right));
+							right));
 			}
 
 			if ("%".equals(mulOp)) {
@@ -697,7 +697,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 					return encoding.rem(coerceToInteger(left), coerceToInteger(right));
 				else
 					return encoding.signedRem(coerceToInteger(left), coerceToInteger(
-					    right));
+							right));
 			}
 
 			throw new ExpressionFactoryException("Invalid operation: " + mulOp);
@@ -707,11 +707,11 @@ class CExpressionEncoder implements ExpressionEncoder {
 			String fieldName = node.getString(1);
 			Type baseType = CType.getType(node.getNode(0)).resolve();
 			long offset = encoding.getCTypeAnalyzer().getOffset(baseType
-			    .toStructOrUnion(), fieldName);
+					.toStructOrUnion(), fieldName);
 			Expression baseLoc = lvalVisitor.encodeExpression(node.getNode(0));
 			Expression offsetExpr = encoding.integerConstant(offset);
 			Expression resLoc = encoding.pointerPlus(coerceToPointer(baseLoc),
-			    coerceToInteger(offsetExpr));
+					coerceToInteger(offsetExpr));
 			Type type = CType.getType(node);
 			return derefMemory(currState, resLoc, node, type);
 		}
@@ -719,19 +719,19 @@ class CExpressionEncoder implements ExpressionEncoder {
 		public Expression visitIndirectComponentSelection(GNode node) {
 			String fieldName = node.getString(1);
 			Type baseType = CType.getType(node.getNode(0)).resolve().toPointer()
-			    .getType();
+					.getType();
 			long offset = encoding.getCTypeAnalyzer().getOffset(baseType
-			    .toStructOrUnion(), fieldName);
+					.toStructOrUnion(), fieldName);
 			Expression baseLoc = encodeExpression(node.getNode(0));
 			Expression offsetExpr = encoding.integerConstant(offset);
 			Expression resLoc = encoding.pointerPlus(coerceToPointer(baseLoc),
-			    coerceToInteger(offsetExpr));
+					coerceToInteger(offsetExpr));
 			Type type = CType.getType(node);
 			return derefMemory(currState, resLoc, node, type);
 		}
 
 		private Expression derefMemory(StateExpression state, Expression lvalExpr,
-		    Node node, Type type) {
+				Node node, Type type) {
 			Preconditions.checkArgument(!Tag.VOID.equals(type.tag()));
 			if (!CType.isScalar(type))
 				return lvalExpr;
@@ -761,7 +761,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 			String name = node.getString(0);
 			Type ty = CType.getType(node);
 			IRVarInfo varInfo = VarInfoFactory.createVarInfo(currScope
-			    .getQualifiedName(), name, ty);
+					.getQualifiedName(), name, ty);
 			varInfo.setDeclarationNode(node);
 			varInfo.setProperty(Identifiers.CTRLVAR, true);
 			currScope.define(name, varInfo);
@@ -829,7 +829,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 				return info.getLValBinding();
 
 			Expression lValue = info.hasLogicLabel() ? encoding.variable(info
-			    .getName(), info.getIRType(), true) : getLvalBinding(info);
+					.getName(), info.getIRType(), true) : getLvalBinding(info);
 			lValue.setHoareLogic(info.hasLogicLabel());
 
 			info.setLValBinding(lValue);
@@ -845,7 +845,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 			Expression base = exprVisitor.encodeExpression(node.getNode(0));
 			Expression index = exprVisitor.encodeExpression(node.getNode(1));
 			return pointerPlus(base, index, CType.getType(node.getNode(0)), CType
-			    .getType(node.getNode(1)));
+					.getType(node.getNode(1)));
 		}
 
 		public Expression visitCastExpression(GNode node) {
@@ -856,11 +856,11 @@ class CExpressionEncoder implements ExpressionEncoder {
 			String fieldName = node.getString(1);
 			Type baseType = CType.getType(node.getNode(0));
 			long offset = encoding.getCTypeAnalyzer().getOffset(baseType
-			    .toStructOrUnion(), fieldName);
+					.toStructOrUnion(), fieldName);
 			Expression offsetExpr = encoding.integerConstant(offset);
 			Expression baseLoc = encodeExpression(node.getNode(0));
 			return encoding.pointerPlus(coerceToPointer(baseLoc), coerceToInteger(
-			    offsetExpr));
+					offsetExpr));
 		}
 
 		public Expression visitFunctionCall(GNode node) {
@@ -870,13 +870,13 @@ class CExpressionEncoder implements ExpressionEncoder {
 		public Expression visitIndirectComponentSelection(GNode node) {
 			String fieldName = node.getString(1);
 			Type baseType = CType.getType(node.getNode(0)).resolve().toPointer()
-			    .getType();
+					.getType();
 			long offset = encoding.getCTypeAnalyzer().getOffset(baseType
-			    .toStructOrUnion(), fieldName);
+					.toStructOrUnion(), fieldName);
 			Expression offsetExpr = encoding.integerConstant(offset);
 			Expression baseLoc = exprVisitor.encodeExpression(node.getNode(0));
 			return encoding.pointerPlus(coerceToPointer(baseLoc), coerceToInteger(
-			    offsetExpr));
+					offsetExpr));
 		}
 
 		public Expression visitParameterDeclaration(GNode node) {
@@ -911,7 +911,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 
 	@Override
 	public BooleanExpression toBoolean(StateExpression pre, Node node,
-	    boolean negated) {
+			boolean negated) {
 		return new ExpressionVisitor(pre).toBoolean(node, negated);
 	}
 
@@ -927,13 +927,13 @@ class CExpressionEncoder implements ExpressionEncoder {
 
 	@Override
 	public BooleanExpression toBoolean(StateExpression pre, Node node,
-	    Scope scope) {
+			Scope scope) {
 		return toBoolean(pre, node, false, scope);
 	}
 
 	@Override
 	public BooleanExpression toBoolean(StateExpression pre, Node node,
-	    boolean negated, Scope scope) {
+			boolean negated, Scope scope) {
 		currScope = scope;
 		return toBoolean(pre, node, negated);
 	}
@@ -955,7 +955,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 		StateFactory<?> stateFactory = mode.getStateFactory();
 
 		IOUtils.debug().pln("Creating CExpressionEncoder with encoding: "
-		    + encoding);
+				+ encoding);
 		return new CExpressionEncoder(encoding, stateFactory);
 	}
 
@@ -964,7 +964,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 	private final StateFactory<?> stateFactory;
 
 	private CExpressionEncoder(ExpressionEncoding encoding,
-	    StateFactory<?> stateFactory) {
+			StateFactory<?> stateFactory) {
 		this.encoding = encoding;
 		this.stateFactory = stateFactory;
 	}
@@ -988,7 +988,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 	 * Pointer plus: T* ptr; ptr + i = ptr + sizeof(T) * i
 	 */
 	private Expression pointerPlus(Expression lhs, Expression rhs, Type lhsType,
-	    Type rhsType) {
+			Type rhsType) {
 		lhsType = lhsType.resolve();
 		rhsType = rhsType.resolve();
 		CType cTypeAnalyzer = encoding.getCTypeAnalyzer();
@@ -1040,7 +1040,7 @@ class CExpressionEncoder implements ExpressionEncoder {
 	 * Pointer minus: T* ptr; ptr - i = ptr - sizeof(T) * i
 	 */
 	private Expression pointerMinus(Expression lhs, Expression rhs, Type lhsType,
-	    Type rhsType) {
+			Type rhsType) {
 		lhsType = lhsType.resolve();
 		rhsType = rhsType.resolve();
 		CType cTypeAnalyzer = encoding.getCTypeAnalyzer();

@@ -8,8 +8,8 @@ import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.RationalExpression;
 
 public class DefaultRationalEncoding extends
-    AbstractTypeEncoding<RationalExpression> implements
-    RationalEncoding<RationalExpression> {
+		AbstractTypeEncoding<RationalExpression> implements
+		RationalEncoding<RationalExpression> {
 
 	public DefaultRationalEncoding(ExpressionManager exprManager) {
 		super(exprManager, exprManager.rationalType());
@@ -42,31 +42,31 @@ public class DefaultRationalEncoding extends
 
 	@Override
 	public RationalExpression plus(RationalExpression lhs,
-	    RationalExpression rhs) {
+			RationalExpression rhs) {
 		return lhs.plus(rhs);
 	}
 
 	@Override
 	public RationalExpression minus(RationalExpression lhs,
-	    RationalExpression rhs) {
+			RationalExpression rhs) {
 		return lhs.minus(rhs);
 	}
 
 	@Override
 	public RationalExpression mult(RationalExpression lhs,
-	    RationalExpression rhs) {
+			RationalExpression rhs) {
 		return lhs.mult(rhs);
 	}
 
 	@Override
 	public RationalExpression divide(RationalExpression lhs,
-	    RationalExpression rhs) {
+			RationalExpression rhs) {
 		return lhs.divide(rhs);
 	}
 
 	@Override
 	public RationalExpression pow(RationalExpression lhs,
-	    RationalExpression rhs) {
+			RationalExpression rhs) {
 		return lhs.pow(rhs);
 	}
 

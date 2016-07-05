@@ -12,22 +12,22 @@ public class IntExpressionEncoding extends AbstractExpressionEncoding {
 
 	public static IntExpressionEncoding create(ExpressionManager exprManager) {
 		IntegerEncoding<IntegerExpression> integerEncoding = new DefaultIntegerEncoding(
-		    exprManager);
+				exprManager);
 		BooleanEncoding<BooleanExpression> booleanEncoding = new DefaultBooleanEncoding(
-		    exprManager);
+				exprManager);
 		ArrayEncoding<ArrayExpression> arrayEncoding = new DefaultArrayEncoding(
-		    exprManager);
+				exprManager);
 		PointerEncoding<? extends Expression> pointerEncoding = LinearPointerEncoding
-		    .create(integerEncoding);
+				.create(integerEncoding);
 		return new IntExpressionEncoding(integerEncoding, booleanEncoding,
-		    arrayEncoding, pointerEncoding);
+				arrayEncoding, pointerEncoding);
 	}
 
 	public IntExpressionEncoding(
-	    IntegerEncoding<IntegerExpression> integerEncoding,
-	    BooleanEncoding<BooleanExpression> booleanEncoding,
-	    ArrayEncoding<ArrayExpression> arrayEncoding,
-	    PointerEncoding<? extends Expression> pointerEncoding) {
+			IntegerEncoding<IntegerExpression> integerEncoding,
+			BooleanEncoding<BooleanExpression> booleanEncoding,
+			ArrayEncoding<ArrayExpression> arrayEncoding,
+			PointerEncoding<? extends Expression> pointerEncoding) {
 		super(integerEncoding, booleanEncoding, arrayEncoding, pointerEncoding);
 	}
 }

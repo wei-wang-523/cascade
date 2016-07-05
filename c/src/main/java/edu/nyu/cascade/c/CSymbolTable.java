@@ -28,10 +28,10 @@ import edu.nyu.cascade.util.IOUtils;
 public class CSymbolTable implements SymbolTable {
 	/** Copy the bindings from the given symbol table into a new symbol table. */
 	public static CSymbolTable create(File file, SymbolTableFactory factory,
-	    xtc.util.SymbolTable xtcSymbolTable) {
+			xtc.util.SymbolTable xtcSymbolTable) {
 		Scope rootScope = xtcSymbolTable.root();
 		xtc.util.SymbolTable newXtcSymbolTable = new xtc.util.SymbolTable(rootScope
-		    .getName());
+				.getName());
 		xtcSymbolTable.setScope(rootScope);
 
 		if (rootScope.hasNested(CAnalyzer.EXTERN_SCOPE)) {
@@ -47,11 +47,11 @@ public class CSymbolTable implements SymbolTable {
 	}
 
 	private static void copyScope(File file, xtc.util.SymbolTable xtcSymbolTable,
-	    xtc.util.SymbolTable newXtcSymbolTable) {
+			xtc.util.SymbolTable newXtcSymbolTable) {
 		Scope scope = xtcSymbolTable.current();
 		String scopeName = scope.getQualifiedName();
 		Preconditions.checkArgument(scopeName.equals(newXtcSymbolTable.current()
-		    .getQualifiedName()));
+				.getQualifiedName()));
 
 		IOUtils.debug().pln("Visiting scope: '" + scopeName + "'");
 
@@ -68,7 +68,7 @@ public class CSymbolTable implements SymbolTable {
 			 */
 			assert (binding instanceof Type);
 			IRVarInfo varInfo = VarInfoFactory.createVarInfo(scopeName, name,
-			    (Type) binding);
+					(Type) binding);
 			newXtcSymbolTable.current().define(name, varInfo);
 		}
 
@@ -89,7 +89,7 @@ public class CSymbolTable implements SymbolTable {
 	private final xtc.util.SymbolTable originalSymbolTable;
 
 	CSymbolTable(SymbolTable symbolTable,
-	    xtc.util.SymbolTable originalSymbolTable) {
+			xtc.util.SymbolTable originalSymbolTable) {
 		this.symbolTable = symbolTable;
 		this.originalSymbolTable = originalSymbolTable;
 	}

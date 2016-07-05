@@ -21,15 +21,15 @@ public final class SingleLambdaStateExpression extends AbstractStateExpression {
 	 * boolean value (true or false)
 	 */
 	private Multimap<Expression, Collection<Expression>> predicateMap = HashMultimap
-	    .create();
+			.create();
 
 	/** Store all safety predicate closures */
 	private final Map<String, PredicateClosure> safetyPredicateClosures = Maps
-	    .newHashMap();
+			.newHashMap();
 
 	/** Store all safety predicates */
 	private final Map<String, BooleanExpression> safetyPredicates = Maps
-	    .newHashMap();
+			.newHashMap();
 
 	private final SingleStateExpression singleState;
 
@@ -62,14 +62,14 @@ public final class SingleLambdaStateExpression extends AbstractStateExpression {
 		StringBuilder sb = new StringBuilder().append(singleState.toStringShort());
 		if (!safetyPredicateClosures.isEmpty()) {
 			for (Entry<String, PredicateClosure> entry : safetyPredicateClosures
-			    .entrySet())
+					.entrySet())
 				sb.append('\n').append(entry.getKey()).append(": ").append(entry
-				    .getValue());
+						.getValue());
 		}
 		if (!safetyPredicates.isEmpty()) {
 			for (Entry<String, BooleanExpression> entry : safetyPredicates.entrySet())
 				sb.append('\n').append(entry.getKey()).append(": ").append(entry
-				    .getValue());
+						.getValue());
 		}
 		return sb.toString();
 	}
@@ -79,7 +79,7 @@ public final class SingleLambdaStateExpression extends AbstractStateExpression {
 	}
 
 	public void putSafetyPredicateClosure(String label,
-	    PredicateClosure predicateClosure) {
+			PredicateClosure predicateClosure) {
 		safetyPredicateClosures.put(label, predicateClosure);
 	}
 
@@ -106,7 +106,7 @@ public final class SingleLambdaStateExpression extends AbstractStateExpression {
 	}
 
 	public void setPredicateMap(
-	    Multimap<Expression, Collection<Expression>> _predicateMap) {
+			Multimap<Expression, Collection<Expression>> _predicateMap) {
 		Preconditions.checkNotNull(_predicateMap);
 		predicateMap = _predicateMap;
 	}
@@ -132,7 +132,7 @@ public final class SingleLambdaStateExpression extends AbstractStateExpression {
 	}
 
 	void putAllPredicateMap(
-	    Multimap<Expression, Collection<Expression>> _predicateMap) {
+			Multimap<Expression, Collection<Expression>> _predicateMap) {
 		predicateMap.putAll(_predicateMap);
 	}
 

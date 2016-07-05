@@ -50,13 +50,13 @@ import edu.nyu.cascade.util.Preferences;
 public class TheoremProverImpl implements TheoremProver {
 
 	static final LoadingCache<TheoremProverImpl, ConcurrentMap<Expr, QueryResult<?>>> queryCache = CacheBuilder
-	    .newBuilder().build(
-	        new CacheLoader<TheoremProverImpl, ConcurrentMap<Expr, QueryResult<?>>>() {
-		        public ConcurrentMap<Expr, QueryResult<?>> load(
-	              TheoremProverImpl thereomProver) {
-			        return new MapMaker().makeMap();
-		        }
-	        });
+			.newBuilder().build(
+					new CacheLoader<TheoremProverImpl, ConcurrentMap<Expr, QueryResult<?>>>() {
+						public ConcurrentMap<Expr, QueryResult<?>> load(
+								TheoremProverImpl thereomProver) {
+							return new MapMaker().makeMap();
+						}
+					});
 
 	public static class Provider implements TheoremProver.Provider {
 
@@ -78,13 +78,13 @@ public class TheoremProverImpl implements TheoremProver {
 		@Override
 		public ImmutableList<Option> getOptions() {
 			return ImmutableList.of(Option.builder().longOpt(OPTION_PBQI) //
-			    .desc("Enable Z3 pattern based quantifier instantiation") //
-			    .build(), //
-			    Option.builder().longOpt(OPTION_MBQI) //
-			        .desc("Enable Z3 model based quantifier instantiation") //
-			        .build(), //
-			    Option.builder().longOpt(OPTION_Z3_STATS).desc("Show z3 statistics.")
-			        .build());
+					.desc("Enable Z3 pattern based quantifier instantiation") //
+					.build(), //
+					Option.builder().longOpt(OPTION_MBQI) //
+							.desc("Enable Z3 model based quantifier instantiation") //
+							.build(), //
+					Option.builder().longOpt(OPTION_Z3_STATS).desc("Show z3 statistics.")
+							.build());
 		}
 
 	}
@@ -102,7 +102,7 @@ public class TheoremProverImpl implements TheoremProver {
 	}
 
 	static void z3FileCommand(String prefix, Expr z3Expr, Sort z3Type,
-	    String postfix) {
+			String postfix) {
 		if (IOUtils.tpFileEnabled()) {
 			PrintStream stream = IOUtils.tpFileStream().append(prefix);
 			stream.append(z3Expr.toString());
@@ -167,7 +167,7 @@ public class TheoremProverImpl implements TheoremProver {
 	 * @throws Z3Exception
 	 */
 	TheoremProverImpl(HashMap<String, String> cfg) throws TheoremProverException,
-	    Z3Exception {
+			Z3Exception {
 		settings = cfg;
 		initializePreferences(settings);
 		z3Context = new Context();
@@ -232,10 +232,10 @@ public class TheoremProverImpl implements TheoremProver {
 				 * using a counter-example.
 				 */
 				res = SatResult.valueOf(resultType, expr, assumptions, getSolver()
-				    .getModel().toString());
+						.getModel().toString());
 			} else { // resultType = UNKNOWN
 				res = SatResult.valueOf(resultType, expr, assumptions, getSolver()
-				    .getReasonUnknown());
+						.getReasonUnknown());
 			}
 
 			if (Preferences.isSet(OPTION_Z3_STATS)) {
@@ -301,7 +301,7 @@ public class TheoremProverImpl implements TheoremProver {
 				res = ValidityResult.valueOf(resultType, expr, assumptions);
 			} else { // resultType = UNKNOWN
 				res = ValidityResult.valueOf(resultType, expr, assumptions, getSolver()
-				    .getReasonUnknown());
+						.getReasonUnknown());
 			}
 
 			if (Preferences.isSet(OPTION_Z3_STATS)) {

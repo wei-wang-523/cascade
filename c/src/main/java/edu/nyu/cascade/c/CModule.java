@@ -12,6 +12,6 @@ public class CModule extends AbstractModule {
 	@Override
 	public void configure() {
 		install(new FactoryModuleBuilder().implement(SymbolTable.class,
-		    SymbolTableImpl.class).build(SymbolTableFactory.class));
+				SymbolTableImpl.class).build(SymbolTableFactory.class));
 	}
 }

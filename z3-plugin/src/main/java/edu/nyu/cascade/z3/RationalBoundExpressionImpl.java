@@ -7,27 +7,27 @@ import edu.nyu.cascade.prover.RationalExpression;
 import edu.nyu.cascade.prover.type.Type;
 
 final class RationalBoundExpressionImpl extends BoundExpressionImpl implements
-    RationalExpression {
+		RationalExpression {
 
 	static RationalBoundExpressionImpl create(ExpressionManagerImpl em,
-	    String name, Type type, boolean fresh) {
+			String name, Type type, boolean fresh) {
 		Preconditions.checkArgument(type.isRational());
 		return new RationalBoundExpressionImpl(em, name, type, fresh);
 	}
 
 	private RationalBoundExpressionImpl(ExpressionManagerImpl em, String name,
-	    Type type, boolean fresh) {
+			Type type, boolean fresh) {
 		super(em, name, type, fresh);
 	}
 
 	static RationalBoundExpressionImpl create(ExpressionManagerImpl em,
-	    String name, int index, Type type, boolean fresh) {
+			String name, int index, Type type, boolean fresh) {
 		Preconditions.checkArgument(type.isRational());
 		return new RationalBoundExpressionImpl(em, name, index, type, fresh);
 	}
 
 	private RationalBoundExpressionImpl(ExpressionManagerImpl em, String name,
-	    int index, Type type, boolean fresh) {
+			int index, Type type, boolean fresh) {
 		super(em, name, index, type, fresh);
 	}
 

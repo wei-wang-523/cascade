@@ -58,11 +58,11 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 	private int iterTimes;
 
 	private BlockBasedFormulaEncoder(PathEncoding pathEncoding,
-	    TraceFactory traceFactory) {
+			TraceFactory traceFactory) {
 		this.pathEncoding = pathEncoding;
 		stateFactory = pathEncoding.getStateFactory();
 		stmtFormulaEncoder = StmtBasedFormulaEncoder.create(pathEncoding,
-		    traceFactory);
+				traceFactory);
 		cleanBlockStateClosureMap = Maps.newHashMap();
 		cleanEdgeStateMap = Maps.newHashMap();
 		varsFreshMap = Maps.newLinkedHashMap();
@@ -70,7 +70,7 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 	}
 
 	public static BlockBasedFormulaEncoder create(PathEncoding encoding,
-	    TraceFactory traceFactory) {
+			TraceFactory traceFactory) {
 		return new BlockBasedFormulaEncoder(encoding, traceFactory);
 	}
 
@@ -132,14 +132,14 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 
 	@Override
 	public void encode(final IRControlFlowGraph cfg, LoopInfo loopInfo)
-	    throws PathFactoryException {
+			throws PathFactoryException {
 
 		final TraceFactory factory = new TraceFactory();
 
 		BlockEncodingStrategy<StateExpression> blockStrategy = new BlockEncodingStrategy<StateExpression>() {
 			@Override
 			public Pair<Boolean, StateExpression> apply(IRBasicBlock block,
-		      StateExpression preState) throws PathFactoryException {
+					StateExpression preState) throws PathFactoryException {
 				return encodeBlock(factory, block, preState);
 			}
 		};
@@ -147,7 +147,7 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 		EdgeEncodingStrategy<StateExpression> edgeStrategy = new EdgeEncodingStrategy<StateExpression>() {
 			@Override
 			public Pair<Boolean, StateExpression> apply(IREdge<?> edge,
-		      StateExpression preState) throws PathFactoryException {
+					StateExpression preState) throws PathFactoryException {
 				return encodeEdge(factory, edge, preState);
 			}
 		};
@@ -192,7 +192,7 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 					return;
 
 				BooleanExpression query = stateFactory.stateToBoolean(state).implies(
-		        memory_no_leak);
+						memory_no_leak);
 				checkAssertion(query, Identifiers.VALID_MEMORY_TRACE);
 			}
 		};
@@ -200,21 +200,21 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 		stmtFormulaEncoder.initLoopCountDownLatch(loopInfo, iterTimes);
 
 		stmtFormulaEncoder.statePropagateDFS(cfg, loopInfo, blockStrategy,
-		    edgeStrategy, mergeStrategy, traceEncodeStrategy, memLeakCheckStrategy,
-		    checkExitUnroll, checkKeepUnroll, pathEncoding.emptyState());
+				edgeStrategy, mergeStrategy, traceEncodeStrategy, memLeakCheckStrategy,
+				checkExitUnroll, checkKeepUnroll, pathEncoding.emptyState());
 		CScopeAnalyzer.reset();
 	}
 
 	@Override
 	public void checkReach(IRControlFlowGraph cfg, LoopInfo loopInfo,
-	    final String label) throws PathFactoryException {
+			final String label) throws PathFactoryException {
 
 		final TraceFactory factory = new TraceFactory();
 
 		BlockEncodingStrategy<StateExpression> blockStrategy = new BlockEncodingStrategy<StateExpression>() {
 			@Override
 			public Pair<Boolean, StateExpression> apply(IRBasicBlock block,
-		      StateExpression preState) throws PathFactoryException {
+					StateExpression preState) throws PathFactoryException {
 				return checkReachBlock(factory, block, preState, label);
 			}
 		};
@@ -222,7 +222,7 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 		EdgeEncodingStrategy<StateExpression> edgeStrategy = new EdgeEncodingStrategy<StateExpression>() {
 			@Override
 			public Pair<Boolean, StateExpression> apply(IREdge<?> edge,
-		      StateExpression preState) throws PathFactoryException {
+					StateExpression preState) throws PathFactoryException {
 				return encodeEdge(factory, edge, preState);
 			}
 		};
@@ -267,16 +267,16 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 		stmtFormulaEncoder.initLoopCountDownLatch(loopInfo, iterTimes);
 
 		stmtFormulaEncoder.statePropagateDFS(cfg, loopInfo, blockStrategy,
-		    edgeStrategy, mergeStrategy, traceEncodeStrategy, memLeakCheckStrategy,
-		    checkExitUnroll, checkKeepUnroll, pathEncoding.emptyState());
+				edgeStrategy, mergeStrategy, traceEncodeStrategy, memLeakCheckStrategy,
+				checkExitUnroll, checkKeepUnroll, pathEncoding.emptyState());
 
 		CScopeAnalyzer.reset();
 	}
 
 	@Override
 	public Pair<Boolean, StateExpression> checkReachBlock(TraceFactory factory,
-	    IRBasicBlock block, StateExpression preState, String label)
-	    throws PathFactoryException {
+			IRBasicBlock block, StateExpression preState, String label)
+			throws PathFactoryException {
 
 		if (block.getPreLabels().contains(label)) {
 			SatResult<?> res = pathEncoding.checkPath(preState);
@@ -293,7 +293,7 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 
 	@Override
 	public Pair<Boolean, StateExpression> encodeEdge(TraceFactory factory,
-	    IREdge<?> edge, StateExpression preState) throws PathFactoryException {
+			IREdge<?> edge, StateExpression preState) throws PathFactoryException {
 		if (edge.getGuard() == null)
 			return Pair.of(true, preState);
 
@@ -308,7 +308,7 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 			boolean succeed = checkAssertion(assertion, failReason);
 			if (!succeed)
 				return Pair.of(succeed, postState); // return false to interrupt
-				                                    // encoding
+																						// encoding
 		}
 
 		assertions.clear();
@@ -317,8 +317,8 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 
 	@Override
 	public Pair<Boolean, StateExpression> encodeBlock(TraceFactory factory,
-	    IRBasicBlock block, StateExpression preState)
-	    throws PathFactoryException {
+			IRBasicBlock block, StateExpression preState)
+			throws PathFactoryException {
 		StateExpression postState = getBlockState(block);
 		stateFactory.propagateState(postState, preState);
 
@@ -329,7 +329,7 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 			boolean succeed = checkAssertion(assertion, failReason);
 			if (!succeed)
 				return Pair.of(succeed, postState); // return false to interrupt
-				                                    // encoding
+																						// encoding
 		}
 
 		assertions.clear();
@@ -351,7 +351,7 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 	 * @throws PathFactoryException
 	 */
 	private StateExpression getBlockState(IRBasicBlock block)
-	    throws PathFactoryException {
+			throws PathFactoryException {
 
 		if (cleanBlockStateClosureMap.containsKey(block)) {
 			StateExpression state = cleanBlockStateClosureMap.get(block);
@@ -380,7 +380,7 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 				ExpressionEncoder exprEncoder = pathEncoding.getExpressionEncoder();
 				Expression assertion = stmt.getPreCondition(postState, exprEncoder);
 				BooleanExpression query = stateFactory.stateToBoolean(postState)
-				    .implies(assertion);
+						.implies(assertion);
 				postState.addAssertion(stmt.toString(), query);
 			}
 		}
@@ -388,7 +388,7 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 		cleanBlockStateClosureMap.put(block, postState);
 		StateExpression stateCopy = stateFactory.copy(postState);
 		stateFactory.substitute(stateCopy, varsFreshMap.keySet(), varsFreshMap
-		    .values());
+				.values());
 		return stateCopy;
 	}
 
@@ -402,26 +402,26 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 	 * @throws PathFactoryException
 	 */
 	private StateExpression getEdgeState(IREdge<?> edge)
-	    throws PathFactoryException {
+			throws PathFactoryException {
 		if (cleanEdgeStateMap.containsKey(edge)) {
 			StateExpression state = cleanEdgeStateMap.get(edge);
 			StateExpression stateCopy = stateFactory.copy(state);
 			stateFactory.substitute(stateCopy, varsFreshMap.keySet(), varsFreshMap
-			    .values());
+					.values());
 			return stateCopy;
 		}
 
 		StateExpression emptyState = pathEncoding.emptyState();
 		IRStatement assumeStmt = Statement.assumeStmt(edge.getSourceNode(), edge
-		    .getGuard(), true);
+				.getGuard(), true);
 		IOUtils.debug().pln("Encoding: " + assumeStmt);
 
 		StateExpression state = stmtFormulaEncoder.getPostCondition(emptyState,
-		    assumeStmt);
+				assumeStmt);
 		cleanEdgeStateMap.put(edge, state);
 		StateExpression stateCopy = stateFactory.copy(state);
 		stateFactory.substitute(stateCopy, varsFreshMap.keySet(), varsFreshMap
-		    .values());
+				.values());
 		return stateCopy;
 	}
 
@@ -435,7 +435,7 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 	 *         or an infeasible path; true otherwise.
 	 */
 	private boolean checkAssertion(Expression query, String failReason)
-	    throws PathFactoryException {
+			throws PathFactoryException {
 		/*
 		 * If the statement has a precondition, we have to check it before
 		 * continuing with the encoding.
@@ -451,7 +451,7 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 
 		if (checkFeasibility)
 			IOUtils.out().println("Cannot checking path feasibility with "
-			    + "block based encoding");
+					+ "block based encoding");
 
 		return true;
 	}
@@ -466,14 +466,14 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 		ExpressionEncoding encoding = pathEncoding.getExpressionEncoding();
 		for (VariableExpression var : state.getVars()) {
 			VariableExpression freshVar = exprManager.variable(var.getName(), var
-			    .getType(), true);
+					.getType(), true);
 			freshVar.setHoareLogic(var.isHoareLogic());
 			varsFreshMap.put(var, freshVar);
 
 			if (var.isHoareLogic()) {
 				VariableExpression rvalBindingVar = encoding.getRvalBinding(var);
 				VariableExpression rvalBidningFreshVar = encoding.getRvalBinding(
-				    freshVar);
+						freshVar);
 				varsFreshMap.put(rvalBindingVar, rvalBidningFreshVar);
 			}
 		}
@@ -485,8 +485,8 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 	 * @param state
 	 */
 	private void collectFreshRegions(StateExpression state,
-	    Collection<VariableExpression> fromElems,
-	    Collection<VariableExpression> toElems) {
+			Collection<VariableExpression> fromElems,
+			Collection<VariableExpression> toElems) {
 		if (state.getRegions().isEmpty())
 			return;
 

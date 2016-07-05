@@ -16,15 +16,15 @@ import edu.nyu.cascade.prover.type.Constructor;
 
 final class TestExpressionImpl extends BooleanExpressionImpl {
 	static TestExpressionImpl create(ExpressionManagerImpl exprManager,
-	    Constructor constructor, Expression val) {
+			Constructor constructor, Expression val) {
 		checkArgument(val.isInductive());
 		checkArgument(val.asInductive().getType().getConstructors().contains(
-		    constructor));
+				constructor));
 		return new TestExpressionImpl(exprManager, constructor, val);
 	}
 
 	private TestExpressionImpl(final ExpressionManagerImpl exprManager,
-	    final Constructor constructor, Expression val) {
+			final Constructor constructor, Expression val) {
 		super(exprManager, DATATYPE_TEST, new UnaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr arg) throws Exception {
@@ -32,10 +32,10 @@ final class TestExpressionImpl extends BooleanExpressionImpl {
 				DatatypeType dtt = new DatatypeType(type);
 				Datatype dt = dtt.getDatatype();
 				long constructorIndex = Datatype.indexOf(dt.getConstructor(constructor
-		        .getName()));
+						.getName()));
 				DatatypeConstructor dtc = dt.get(constructorIndex);
 				return em.mkExpr(edu.nyu.acsys.CVC4.Kind.APPLY_TESTER, dtc.getTester(),
-		        arg);
+						arg);
 			}
 		}, val);
 	}

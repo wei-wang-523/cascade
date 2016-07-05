@@ -18,21 +18,21 @@ import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.Type;
 
 final class FunctionExpressionImpl extends ExpressionImpl implements
-    FunctionExpression {
+		FunctionExpression {
 
 	static FunctionExpressionImpl create(ExpressionManagerImpl exprManager,
-	    Iterable<Expression> vars, Expression body) {
+			Iterable<Expression> vars, Expression body) {
 		return new FunctionExpressionImpl(exprManager, vars, body);
 	}
 
 	static FunctionExpressionImpl create(ExpressionManagerImpl exprManager,
-	    Kind kind, Expr expr, FunctionType type,
-	    Iterable<? extends ExpressionImpl> children) {
+			Kind kind, Expr expr, FunctionType type,
+			Iterable<? extends ExpressionImpl> children) {
 		return new FunctionExpressionImpl(exprManager, kind, expr, type, children);
 	}
 
 	static FunctionExpressionImpl valueOf(ExpressionManagerImpl exprManager,
-	    Expression f) {
+			Expression f) {
 		if (exprManager.equals(f.getExpressionManager())) {
 			if (f instanceof FunctionExpressionImpl) {
 				return (FunctionExpressionImpl) f;
@@ -55,14 +55,14 @@ final class FunctionExpressionImpl extends ExpressionImpl implements
 	}
 
 	private FunctionExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    Expr expr, FunctionType type,
-	    Iterable<? extends ExpressionImpl> children) {
+			Expr expr, FunctionType type,
+			Iterable<? extends ExpressionImpl> children) {
 		super(exprManager, kind, expr, type, children);
 		this.op = getCvc4Expression().getOperator();
 	}
 
 	private FunctionExpressionImpl(ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> vars, Expression body) {
+			Iterable<? extends Expression> vars, Expression body) {
 		super(exprManager, LAMBDA, new BinderConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, List<Expr> vars, Expr body) {
@@ -70,7 +70,7 @@ final class FunctionExpressionImpl extends ExpressionImpl implements
 				for (Expr var : vars)
 					varList.add(var);
 				Expr boundVarList = em.mkExpr(edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST,
-		        varList);
+						varList);
 				Expr op = em.mkExpr(edu.nyu.acsys.CVC4.Kind.LAMBDA, boundVarList, body);
 				return op;
 			}
@@ -87,14 +87,14 @@ final class FunctionExpressionImpl extends ExpressionImpl implements
 	@Override
 	public Expression apply(Expression arg1, Expression... otherArgs) {
 		Preconditions.checkArgument(getType().getArgTypes()
-		    .size() == otherArgs.length + 1);
+				.size() == otherArgs.length + 1);
 		return apply(Lists.asList(arg1, otherArgs));
 	}
 
 	@Override
 	public Expression apply(Iterable<? extends Expression> args) {
 		Preconditions.checkArgument(Iterables.size(args) == getType().getArgTypes()
-		    .size());
+				.size());
 		return ExpressionImpl.mkFunApply(getExpressionManager(), this, args);
 	}
 

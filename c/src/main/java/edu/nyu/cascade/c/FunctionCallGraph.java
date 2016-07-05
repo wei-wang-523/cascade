@@ -70,7 +70,7 @@ class FunctionCallGraph {
 	 */
 	void retainFunctions(Collection<String> funcNames) {
 		for (Iterator<Entry<String, String>> it = incomingEdges.entries()
-		    .iterator(); it.hasNext();) {
+				.iterator(); it.hasNext();) {
 			Entry<String, String> entry = it.next();
 			String callee = entry.getKey(), caller = entry.getValue();
 			if (!(funcNames.contains(callee) && funcNames.contains(caller))) {

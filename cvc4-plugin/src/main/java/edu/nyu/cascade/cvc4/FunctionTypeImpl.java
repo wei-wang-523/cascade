@@ -18,16 +18,16 @@ import edu.nyu.cascade.prover.type.Type;
 final class FunctionTypeImpl extends TypeImpl implements FunctionType {
 
 	static FunctionTypeImpl create(final ExpressionManagerImpl exprManager,
-	    Iterable<? extends Type> argTypes, Type range) {
+			Iterable<? extends Type> argTypes, Type range) {
 		Iterable<TypeImpl> argTypes1 = Iterables.transform(argTypes,
-		    new Function<Type, TypeImpl>() {
-			    @Override
-			    public TypeImpl apply(Type t) {
-				    return exprManager.importType(t);
-			    }
-		    });
+				new Function<Type, TypeImpl>() {
+					@Override
+					public TypeImpl apply(Type t) {
+						return exprManager.importType(t);
+					}
+				});
 		return new FunctionTypeImpl(exprManager, argTypes1, exprManager.importType(
-		    range));
+				range));
 	}
 
 	static FunctionTypeImpl valueOf(ExpressionManagerImpl exprManager, Type t) {
@@ -35,7 +35,7 @@ final class FunctionTypeImpl extends TypeImpl implements FunctionType {
 			return (FunctionTypeImpl) t;
 		} else {
 			return create(exprManager, ((FunctionType) t).getArgTypes(),
-			    ((FunctionType) t).getRangeType());
+					((FunctionType) t).getRangeType());
 		}
 	}
 
@@ -43,7 +43,7 @@ final class FunctionTypeImpl extends TypeImpl implements FunctionType {
 	private final TypeImpl rangeType;
 
 	private FunctionTypeImpl(final ExpressionManagerImpl exprManager,
-	    Iterable<? extends TypeImpl> argTypes, TypeImpl range) {
+			Iterable<? extends TypeImpl> argTypes, TypeImpl range) {
 		super(exprManager);
 		this.argTypes = ImmutableList.copyOf(argTypes);
 		this.rangeType = range;
@@ -54,7 +54,7 @@ final class FunctionTypeImpl extends TypeImpl implements FunctionType {
 			}
 			edu.nyu.acsys.CVC4.Type rangeType1 = exprManager.toCvc4Type(rangeType);
 			setCVC4Type(exprManager.getTheoremProver().getCvc4ExprManager()
-			    .mkFunctionType(argTypes1, rangeType1));
+					.mkFunctionType(argTypes1, rangeType1));
 		} catch (Exception e) {
 			throw new TheoremProverException(e);
 		}
@@ -92,9 +92,9 @@ final class FunctionTypeImpl extends TypeImpl implements FunctionType {
 
 	@Override
 	FunctionExpressionImpl createExpression(Expr res, Expression e, Kind kind,
-	    Iterable<ExpressionImpl> children) {
+			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isFunction());
 		return FunctionExpressionImpl.create(getExpressionManager(), kind, res, e
-		    .getType().asFunction(), children);
+				.getType().asFunction(), children);
 	}
 }

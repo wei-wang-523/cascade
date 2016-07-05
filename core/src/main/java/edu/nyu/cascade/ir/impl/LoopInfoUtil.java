@@ -25,16 +25,16 @@ public class LoopInfoUtil {
 	}
 
 	public static Loop getLoop(IRControlFlowGraph cfg,
-	    final IRBasicBlock loopHeader) {
+			final IRBasicBlock loopHeader) {
 		final DominatorTree domTree = DominatorTree.analyze(cfg, loopHeader);
 		Iterable<? extends IREdge<? extends IRBasicBlock>> backEdges = Iterables
-		    .filter(cfg.getIncomingEdges(loopHeader), new Predicate<IREdge<?>>() {
-			    @Override
-			    public boolean apply(IREdge<?> edge) {
-				    IRBasicBlock src = edge.getSource();
-				    return domTree.dominates(loopHeader, src);
-			    }
-		    });
+				.filter(cfg.getIncomingEdges(loopHeader), new Predicate<IREdge<?>>() {
+					@Override
+					public boolean apply(IREdge<?> edge) {
+						IRBasicBlock src = edge.getSource();
+						return domTree.dominates(loopHeader, src);
+					}
+				});
 
 		Loop loop = new Loop(cfg, loopHeader);
 		Deque<IREdge<?>> backEdgesWorkList = Queues.newArrayDeque();
@@ -74,20 +74,20 @@ public class LoopInfoUtil {
 	 * @return
 	 */
 	static void analyzeNatural(IRControlFlowGraph cfg,
-	    Map<IRBasicBlock, Loop> innerLoopMap, Collection<Loop> topLevelLoops) {
+			Map<IRBasicBlock, Loop> innerLoopMap, Collection<Loop> topLevelLoops) {
 		final DominatorTree domTree = DominatorTree.analyze(cfg);
 
 		Collection<IRBasicBlock> postOrderSeq = Lists.reverse(domTree.getBlocks());
 		for (final IRBasicBlock potentialHeader : postOrderSeq) {
 			Iterable<? extends IREdge<? extends IRBasicBlock>> backEdges = Iterables
-			    .filter(cfg.getIncomingEdges(potentialHeader),
-			        new Predicate<IREdge<?>>() {
-				        @Override
-				        public boolean apply(IREdge<?> edge) {
-					        IRBasicBlock src = edge.getSource();
-					        return domTree.dominates(potentialHeader, src);
-				        }
-			        });
+					.filter(cfg.getIncomingEdges(potentialHeader),
+							new Predicate<IREdge<?>>() {
+								@Override
+								public boolean apply(IREdge<?> edge) {
+									IRBasicBlock src = edge.getSource();
+									return domTree.dominates(potentialHeader, src);
+								}
+							});
 
 			if (!Iterables.isEmpty(backEdges)) {
 				Loop loop = new Loop(cfg, potentialHeader);
@@ -124,20 +124,20 @@ public class LoopInfoUtil {
 	 * @return
 	 */
 	static void analyzeUnnatural(IRControlFlowGraph cfg,
-	    Map<IRBasicBlock, Loop> innerLoopMap, Collection<Loop> topLevelLoops) {
+			Map<IRBasicBlock, Loop> innerLoopMap, Collection<Loop> topLevelLoops) {
 
 		final Collection<IREdge<?>> backEdgeDFS = detectBackEdges(cfg);
 		Collection<IRBasicBlock> postOrderSeq = cfg.topologicalSeq(cfg.getEntry());
 
 		for (final IRBasicBlock potentialHeader : postOrderSeq) {
 			Iterable<? extends IREdge<? extends IRBasicBlock>> backEdges = Iterables
-			    .filter(cfg.getIncomingEdges(potentialHeader),
-			        new Predicate<IREdge<?>>() {
-				        @Override
-				        public boolean apply(IREdge<?> edge) {
-					        return backEdgeDFS.contains(edge);
-				        }
-			        });
+					.filter(cfg.getIncomingEdges(potentialHeader),
+							new Predicate<IREdge<?>>() {
+								@Override
+								public boolean apply(IREdge<?> edge) {
+									return backEdgeDFS.contains(edge);
+								}
+							});
 
 			if (!Iterables.isEmpty(backEdges)) {
 				Loop loop = new Loop(cfg, potentialHeader);
@@ -162,7 +162,7 @@ public class LoopInfoUtil {
 	 * @param block
 	 */
 	private static void insertIntoLoop(Map<IRBasicBlock, Loop> innerLoopMap,
-	    Collection<Loop> topLevelLoops, IRBasicBlock block) {
+			Collection<Loop> topLevelLoops, IRBasicBlock block) {
 		if (!innerLoopMap.containsKey(block))
 			return;
 		Loop subLoop = innerLoopMap.get(block);
@@ -190,8 +190,8 @@ public class LoopInfoUtil {
 	 * within this loop have their parent loop set to this loop or a subloop.
 	 */
 	private static void discoverAndMapSubloopNatural(IRControlFlowGraph cfg,
-	    Map<IRBasicBlock, Loop> innerLoopMap, Loop loop,
-	    Iterable<? extends IREdge<? extends IRBasicBlock>> backEdges) {
+			Map<IRBasicBlock, Loop> innerLoopMap, Loop loop,
+			Iterable<? extends IREdge<? extends IRBasicBlock>> backEdges) {
 		int numBlocks = 0, numSubLoops = 0;
 
 		Deque<IREdge<?>> backEdgesWorkList = Queues.newArrayDeque();
@@ -255,8 +255,8 @@ public class LoopInfoUtil {
 	 * within this loop have their parent loop set to this loop or a subloop.
 	 */
 	private static void discoverAndMapSubloopUnnatural(IRControlFlowGraph cfg,
-	    Map<IRBasicBlock, Loop> innerLoopMap, Loop loop,
-	    Iterable<? extends IREdge<? extends IRBasicBlock>> backEdges) {
+			Map<IRBasicBlock, Loop> innerLoopMap, Loop loop,
+			Iterable<? extends IREdge<? extends IRBasicBlock>> backEdges) {
 		int numBlocks = 0, numSubLoops = 0;
 
 		Deque<IREdge<?>> backEdgesWorkList = Queues.newArrayDeque();
@@ -315,8 +315,8 @@ public class LoopInfoUtil {
 	}
 
 	private static Collection<IREdge<?>> detectBackEdge(Deque<IRBasicBlock> stack,
-	    Set<IRBasicBlock> visited, IRControlFlowGraph cfg,
-	    IRBasicBlock currBlock) {
+			Set<IRBasicBlock> visited, IRControlFlowGraph cfg,
+			IRBasicBlock currBlock) {
 		Collection<IREdge<?>> backEdges = Sets.newHashSet();
 		if (visited.contains(currBlock))
 			return backEdges;
@@ -327,7 +327,7 @@ public class LoopInfoUtil {
 				backEdges.add(out);
 			} else {
 				Collection<IREdge<?>> resEdges = detectBackEdge(stack, visited, cfg,
-				    dest);
+						dest);
 				backEdges.addAll(resEdges);
 			}
 		}

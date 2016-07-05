@@ -9,25 +9,25 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.IntegerExpression;
 
 final class IntegerBoundExpressionImpl extends BoundExpressionImpl implements
-    IntegerExpression {
+		IntegerExpression {
 
 	static IntegerBoundExpressionImpl create(ExpressionManagerImpl em,
-	    String name, IntegerTypeImpl type, boolean fresh) {
+			String name, IntegerTypeImpl type, boolean fresh) {
 		return new IntegerBoundExpressionImpl(em, name, type, fresh);
 	}
 
 	IntegerBoundExpressionImpl(ExpressionManagerImpl em, String name,
-	    IntegerTypeImpl type, boolean fresh) {
+			IntegerTypeImpl type, boolean fresh) {
 		super(em, name, type, fresh);
 	}
 
 	static IntegerBoundExpressionImpl create(ExpressionManagerImpl em,
-	    String name, int index, IntegerTypeImpl type, boolean fresh) {
+			String name, int index, IntegerTypeImpl type, boolean fresh) {
 		return new IntegerBoundExpressionImpl(em, name, index, type, fresh);
 	}
 
 	IntegerBoundExpressionImpl(ExpressionManagerImpl em, String name, int index,
-	    IntegerTypeImpl type, boolean fresh) {
+			IntegerTypeImpl type, boolean fresh) {
 		super(em, name, index, type, fresh);
 	}
 
@@ -79,7 +79,7 @@ final class IntegerBoundExpressionImpl extends BoundExpressionImpl implements
 	@Override
 	public IntegerExpression plus(Iterable<? extends IntegerExpression> rest) {
 		return getType().add(Iterables.concat(Collections.singletonList(this),
-		    rest));
+				rest));
 	}
 
 	@Override

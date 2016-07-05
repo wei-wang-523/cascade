@@ -52,7 +52,7 @@ final class DryRunTheoremProver implements TheoremProver {
 		private final ExpressionManager exprManager;
 
 		DryRunExpressionManager(DryRunTheoremProver theoremProver,
-		    ExpressionManager exprManager) {
+				ExpressionManager exprManager) {
 			this.theoremProver = theoremProver;
 			this.exprManager = exprManager;
 		}
@@ -73,19 +73,19 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public BooleanExpression and(
-		    Iterable<? extends Expression> subExpressions) {
+				Iterable<? extends Expression> subExpressions) {
 			return exprManager.and(subExpressions);
 		}
 
 		@Override
 		public Expression applyExpr(Expression fun, Expression arg,
-		    Expression... rest) {
+				Expression... rest) {
 			return exprManager.applyExpr(fun, arg, rest);
 		}
 
 		@Override
 		public Expression applyExpr(Expression fun,
-		    Iterable<? extends Expression> args) {
+				Iterable<? extends Expression> args) {
 			return exprManager.applyExpr(fun, args);
 		}
 
@@ -169,7 +169,7 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public BitVectorExpression bitVectorPlus(final int size,
-		    Iterable<? extends Expression> args) {
+				Iterable<? extends Expression> args) {
 			return exprManager.bitVectorPlus(size, args);
 		}
 
@@ -245,13 +245,13 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public InductiveExpression construct(Constructor constructor,
-		    Expression... args) {
+				Expression... args) {
 			return exprManager.construct(constructor, args);
 		}
 
 		@Override
 		public InductiveExpression construct(Constructor constructor,
-		    Iterable<? extends Expression> args) {
+				Iterable<? extends Expression> args) {
 			return exprManager.construct(constructor, args);
 		}
 
@@ -267,13 +267,13 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public ImmutableList<? extends InductiveType> dataTypes(List<String> names,
-		    List<? extends Constructor>... constructorLists) {
+				List<? extends Constructor>... constructorLists) {
 			return exprManager.dataTypes(names, constructorLists);
 		}
 
 		@Override
 		public BooleanExpression distinct(Expression first, Expression second,
-		    Expression... rest) {
+				Expression... rest) {
 			return exprManager.distinct(first, second, rest);
 		}
 
@@ -289,19 +289,19 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public BitVectorExpression signedDivide(Expression numerator,
-		    Expression denominator) {
+				Expression denominator) {
 			return exprManager.signedDivide(numerator, denominator);
 		}
 
 		@Override
 		public BitVectorExpression rem(Expression numerator,
-		    Expression denominator) {
+				Expression denominator) {
 			return exprManager.rem(numerator, denominator);
 		}
 
 		@Override
 		public BitVectorExpression signedRem(Expression numerator,
-		    Expression denominator) {
+				Expression denominator) {
 			return exprManager.signedRem(numerator, denominator);
 		}
 
@@ -312,7 +312,7 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public BooleanExpression exists(Iterable<? extends Expression> vars,
-		    Expression body) {
+				Expression body) {
 			return exprManager.exists(vars, body);
 		}
 
@@ -323,61 +323,61 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public BooleanExpression exists(Expression var1, Expression var2,
-		    Expression body) {
+				Expression body) {
 			return exprManager.exists(var1, var2, body);
 		}
 
 		@Override
 		public BooleanExpression exists(Expression var, Expression body,
-		    Iterable<? extends Expression> patterns) {
+				Iterable<? extends Expression> patterns) {
 			return exprManager.exists(var, body, patterns);
 		}
 
 		@Override
 		public BooleanExpression exists(Expression var, Expression body,
-		    Iterable<? extends Expression> patterns,
-		    Iterable<? extends Expression> noPatterns) {
+				Iterable<? extends Expression> patterns,
+				Iterable<? extends Expression> noPatterns) {
 			return exprManager.exists(var, body, patterns, noPatterns);
 		}
 
 		@Override
 		public BooleanExpression exists(Expression var1, Expression var2,
-		    Expression body, Iterable<? extends Expression> patterns) {
+				Expression body, Iterable<? extends Expression> patterns) {
 			return exprManager.exists(var1, var2, body, patterns);
 		}
 
 		@Override
 		public BooleanExpression exists(Expression var1, Expression var2,
-		    Expression body, Iterable<? extends Expression> patterns,
-		    Iterable<? extends Expression> noPatterns) {
+				Expression body, Iterable<? extends Expression> patterns,
+				Iterable<? extends Expression> noPatterns) {
 			return exprManager.exists(var1, var2, body, patterns, noPatterns);
 		}
 
 		@Override
 		public BooleanExpression exists(Expression var1, Expression var2,
-		    Expression var3, Expression body,
-		    Iterable<? extends Expression> patterns) {
+				Expression var3, Expression body,
+				Iterable<? extends Expression> patterns) {
 			return exprManager.exists(var1, var2, var3, body, patterns);
 		}
 
 		@Override
 		public BooleanExpression exists(Expression var1, Expression var2,
-		    Expression var3, Expression body,
-		    Iterable<? extends Expression> patterns,
-		    Iterable<? extends Expression> noPatterns) {
+				Expression var3, Expression body,
+				Iterable<? extends Expression> patterns,
+				Iterable<? extends Expression> noPatterns) {
 			return exprManager.exists(var1, var2, var3, body, patterns, noPatterns);
 		}
 
 		@Override
 		public BooleanExpression exists(Iterable<? extends Expression> vars,
-		    Expression body, Iterable<? extends Expression> patterns) {
+				Expression body, Iterable<? extends Expression> patterns) {
 			return exprManager.exists(vars, body, patterns);
 		}
 
 		@Override
 		public BooleanExpression exists(Iterable<? extends Expression> vars,
-		    Expression body, Iterable<? extends Expression> patterns,
-		    Iterable<? extends Expression> noPatterns) {
+				Expression body, Iterable<? extends Expression> patterns,
+				Iterable<? extends Expression> noPatterns) {
 			return exprManager.exists(vars, body, patterns, noPatterns);
 		}
 
@@ -393,13 +393,13 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public BooleanExpression forall(Iterable<? extends Expression> vars,
-		    Expression body) {
+				Expression body) {
 			return exprManager.forall(vars, body);
 		}
 
 		@Override
 		public BooleanExpression forall(Iterable<? extends Expression> vars,
-		    Expression body, Iterable<? extends Expression> triggers) {
+				Expression body, Iterable<? extends Expression> triggers) {
 			return exprManager.forall(vars, body, triggers);
 		}
 
@@ -410,73 +410,73 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public BooleanExpression forall(Expression var1, Expression var2,
-		    Expression body) {
+				Expression body) {
 			return exprManager.forall(var1, var2, body);
 		}
 
 		@Override
 		public BooleanExpression forall(Expression var1, Expression var2,
-		    Expression var3, Expression body) {
+				Expression var3, Expression body) {
 			return exprManager.forall(var1, var2, var3, body);
 		}
 
 		@Override
 		public BooleanExpression forall(Expression var, Expression body,
-		    Iterable<? extends Expression> patterns) {
+				Iterable<? extends Expression> patterns) {
 			return exprManager.forall(var, body, patterns);
 		}
 
 		@Override
 		public BooleanExpression forall(Expression var, Expression body,
-		    Iterable<? extends Expression> patterns,
-		    Iterable<? extends Expression> noPatterns) {
+				Iterable<? extends Expression> patterns,
+				Iterable<? extends Expression> noPatterns) {
 			return exprManager.forall(var, body, patterns, noPatterns);
 		}
 
 		@Override
 		public BooleanExpression forall(Expression var1, Expression var2,
-		    Expression body, Iterable<? extends Expression> patterns) {
+				Expression body, Iterable<? extends Expression> patterns) {
 			return exprManager.forall(var1, var2, body, patterns);
 		}
 
 		@Override
 		public BooleanExpression forall(Expression var1, Expression var2,
-		    Expression body, Iterable<? extends Expression> patterns,
-		    Iterable<? extends Expression> noPatterns) {
+				Expression body, Iterable<? extends Expression> patterns,
+				Iterable<? extends Expression> noPatterns) {
 			return exprManager.forall(var1, var2, body, patterns, noPatterns);
 		}
 
 		@Override
 		public BooleanExpression forall(Expression var1, Expression var2,
-		    Expression var3, Expression body,
-		    Iterable<? extends Expression> patterns) {
+				Expression var3, Expression body,
+				Iterable<? extends Expression> patterns) {
 			return exprManager.forall(var1, var2, var3, body, patterns);
 		}
 
 		@Override
 		public BooleanExpression forall(Expression var1, Expression var2,
-		    Expression var3, Expression body,
-		    Iterable<? extends Expression> patterns,
-		    Iterable<? extends Expression> noPatterns) {
+				Expression var3, Expression body,
+				Iterable<? extends Expression> patterns,
+				Iterable<? extends Expression> noPatterns) {
 			return exprManager.forall(var1, var2, var3, body, patterns, noPatterns);
 		}
 
 		@Override
 		public BooleanExpression forall(Iterable<? extends Expression> vars,
-		    Expression body, Iterable<? extends Expression> patterns,
-		    Iterable<? extends Expression> noPatterns) {
+				Expression body, Iterable<? extends Expression> patterns,
+				Iterable<? extends Expression> noPatterns) {
 			return exprManager.forall(vars, body, patterns, noPatterns);
 		}
 
 		@Override
 		public BooleanExpression rewriteRule(Iterable<? extends Expression> vars,
-		    Expression guard, Expression rule) {
+				Expression guard, Expression rule) {
 			return exprManager.rewriteRule(vars, guard, rule);
 		}
 
 		@Override
 		public BooleanExpression rrRewrite(Expression head, Expression body,
-		    Iterable<? extends Expression> triggers) {
+				Iterable<? extends Expression> triggers) {
 			return exprManager.rrRewrite(head, body, triggers);
 		}
 
@@ -487,7 +487,7 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public BooleanExpression rrReduction(Expression head, Expression body,
-		    Iterable<? extends Expression> triggers) {
+				Iterable<? extends Expression> triggers) {
 			return exprManager.rrReduction(head, body, triggers);
 		}
 
@@ -498,7 +498,7 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public BooleanExpression rrDeduction(Expression head, Expression body,
-		    Iterable<? extends Expression> triggers) {
+				Iterable<? extends Expression> triggers) {
 			return exprManager.rrDeduction(head, body, triggers);
 		}
 
@@ -509,13 +509,13 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public FunctionType functionType(Iterable<? extends Type> domains,
-		    Type range) {
+				Type range) {
 			return exprManager.functionType(domains, range);
 		}
 
 		@Override
 		public FunctionType functionType(Type argType1, Type argType2,
-		    Type... rest) {
+				Type... rest) {
 			return exprManager.functionType(argType1, argType2, rest);
 		}
 
@@ -546,13 +546,13 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public BooleanExpression greaterThanOrEqual(Expression left,
-		    Expression right) {
+				Expression right) {
 			return exprManager.greaterThanOrEqual(left, right);
 		}
 
 		@Override
 		public BooleanExpression signedGreaterThanOrEqual(Expression left,
-		    Expression right) {
+				Expression right) {
 			return exprManager.signedGreaterThanOrEqual(left, right);
 		}
 
@@ -563,7 +563,7 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public Expression ifThenElse(Expression cond, Expression tt,
-		    Expression ff) {
+				Expression ff) {
 			return exprManager.ifThenElse(cond, tt, ff);
 		}
 
@@ -604,13 +604,13 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public BooleanExpression lessThanOrEqual(Expression left,
-		    Expression right) {
+				Expression right) {
 			return exprManager.lessThanOrEqual(left, right);
 		}
 
 		@Override
 		public BooleanExpression signedLessThanOrEqual(Expression left,
-		    Expression right) {
+				Expression right) {
 			return exprManager.signedLessThanOrEqual(left, right);
 		}
 
@@ -626,7 +626,7 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public BitVectorExpression bitVectorMult(int size, Expression left,
-		    Expression right) {
+				Expression right) {
 			return exprManager.bitVectorMult(size, left, right);
 		}
 
@@ -732,7 +732,7 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public void setTriggers(Expression e,
-		    Iterable<? extends Expression> triggers) {
+				Iterable<? extends Expression> triggers) {
 			exprManager.setTriggers(e, triggers);
 		}
 
@@ -743,14 +743,14 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public Expression subst(Expression e,
-		    Iterable<? extends Expression> oldExprs,
-		    Iterable<? extends Expression> newExprs) {
+				Iterable<? extends Expression> oldExprs,
+				Iterable<? extends Expression> newExprs) {
 			return exprManager.subst(e, oldExprs, newExprs);
 		}
 
 		@Override
 		public BooleanExpression testConstructor(Constructor constructor,
-		    Expression val) {
+				Expression val) {
 			return exprManager.testConstructor(constructor, val);
 		}
 
@@ -761,31 +761,31 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public TupleExpression tuple(Type tupleType, Expression first,
-		    Expression... rest) {
+				Expression... rest) {
 			return exprManager.tuple(tupleType, first, rest);
 		}
 
 		@Override
 		public TupleExpression tuple(Type tupleType,
-		    Iterable<? extends Expression> elements) {
+				Iterable<? extends Expression> elements) {
 			return exprManager.tuple(tupleType, elements);
 		}
 
 		@Override
 		public TupleType tupleType(String tupleName,
-		    Iterable<? extends Type> elementTypes) {
+				Iterable<? extends Type> elementTypes) {
 			return exprManager.tupleType(tupleName, elementTypes);
 		}
 
 		@Override
 		public TupleType tupleType(String tupleName, Type firstType,
-		    Type... elementTypes) {
+				Type... elementTypes) {
 			return exprManager.tupleType(tupleName, firstType, elementTypes);
 		}
 
 		@Override
 		public ArrayExpression update(Expression array, Expression index,
-		    Expression value) {
+				Expression value) {
 			return exprManager.update(array, index, value);
 		}
 
@@ -841,7 +841,7 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public RecordExpression record(Type type,
-		    Iterable<? extends Expression> args) {
+				Iterable<? extends Expression> args) {
 			return exprManager.record(type, args);
 		}
 
@@ -852,7 +852,7 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public RecordType recordType(String tname, Iterable<String> names,
-		    Iterable<? extends Type> elementTypes) {
+				Iterable<? extends Type> elementTypes) {
 			return exprManager.recordType(tname, names, elementTypes);
 		}
 
@@ -868,7 +868,7 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public RecordExpression update(Expression record, String fieldName,
-		    Expression val) {
+				Expression val) {
 			return exprManager.update(record, fieldName, val);
 		}
 
@@ -894,7 +894,7 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public RecordExpression record(Type type, Expression first,
-		    Expression... rest) {
+				Expression... rest) {
 			return exprManager.record(type, first, rest);
 		}
 
@@ -930,7 +930,7 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public BitVectorExpression bitVectorPlus(final int size, Expression first,
-		    Expression... rest) {
+				Expression... rest) {
 			return bitVectorPlus(size, Lists.asList(first, rest));
 		}
 
@@ -941,7 +941,7 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public BitVectorExpression bitVectorPlus(int size, Expression a,
-		    Expression b) {
+				Expression b) {
 			return exprManager.bitVectorPlus(size, a, b);
 		}
 
@@ -952,13 +952,13 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public BooleanExpression exists(Expression var1, Expression var2,
-		    Expression var3, Expression body) {
+				Expression var3, Expression body) {
 			return exprManager.exists(var1, var2, var3, body);
 		}
 
 		@Override
 		public FunctionExpression functionDeclarator(String name,
-		    FunctionType functionType, boolean fresh) {
+				FunctionType functionType, boolean fresh) {
 			return exprManager.functionDeclarator(name, functionType, fresh);
 		}
 
@@ -969,7 +969,7 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public Expression boundExpression(String name, int i, Type type,
-		    boolean fresh) {
+				boolean fresh) {
 			return exprManager.boundExpression(name, i, type, fresh);
 		}
 
@@ -980,7 +980,7 @@ final class DryRunTheoremProver implements TheoremProver {
 
 		@Override
 		public FunctionExpression lambda(Collection<Expression> args,
-		    Expression body) {
+				Expression body) {
 			return exprManager.lambda(args, body);
 		}
 
@@ -1024,7 +1024,7 @@ final class DryRunTheoremProver implements TheoremProver {
 	DryRunTheoremProver(TheoremProver theoremProver) {
 		this.theoremProver = theoremProver;
 		this.exprManager = new DryRunExpressionManager(this, theoremProver
-		    .getExpressionManager());
+				.getExpressionManager());
 	}
 
 	@Override

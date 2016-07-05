@@ -9,18 +9,20 @@ import edu.nyu.cascade.prover.TheoremProverFactory;
 import edu.nyu.cascade.prover.TheoremProverFactory.TheoremProverFactoryException;
 
 public class CascadeModule extends AbstractModule {
-  @Override
-  protected void configure() {
-  }
+	@Override
+	protected void configure() {
+	}
 
-  @Provides
-  public TheoremProver provideTheoremProver() throws TheoremProverFactoryException {
-    return TheoremProverFactory.getInstance();
-  }
+	@Provides
+	public TheoremProver provideTheoremProver()
+			throws TheoremProverFactoryException {
+		return TheoremProverFactory.getInstance();
+	}
 
- @Provides
-  public ExpressionManager provideExpressionManager(TheoremProver theoremProver) {
-    return theoremProver.getExpressionManager();
-  }
+	@Provides
+	public ExpressionManager provideExpressionManager(
+			TheoremProver theoremProver) {
+		return theoremProver.getExpressionManager();
+	}
 
 }

@@ -12,13 +12,13 @@ public class ValidityResult<T> extends QueryResult<ValidityResult.Type> {
 	}
 
 	public static <T> ValidityResult<T> valueOf(Type result, Expression phi,
-	    Iterable<? extends BooleanExpression> assumptions) {
+			Iterable<? extends BooleanExpression> assumptions) {
 		Preconditions.checkArgument(!Type.VALID.equals(result));
 		return new ValidityResult<T>(result, phi, assumptions);
 	}
 
 	public static <T> ValidityResult<T> valueOf(Type result, Expression phi,
-	    Iterable<? extends BooleanExpression> assumptions, String reason) {
+			Iterable<? extends BooleanExpression> assumptions, String reason) {
 		Preconditions.checkArgument(!Type.VALID.equals(result));
 		return new ValidityResult<T>(result, phi, assumptions, reason);
 	}
@@ -28,12 +28,12 @@ public class ValidityResult<T> extends QueryResult<ValidityResult.Type> {
 	}
 
 	private ValidityResult(Type result, Expression phi,
-	    Iterable<? extends BooleanExpression> assumptions) {
+			Iterable<? extends BooleanExpression> assumptions) {
 		super(result, phi, assumptions);
 	}
 
 	private ValidityResult(Type result, Expression phi,
-	    Iterable<? extends BooleanExpression> assumptions, String reason) {
+			Iterable<? extends BooleanExpression> assumptions, String reason) {
 		super(result, phi, assumptions, reason);
 	}
 

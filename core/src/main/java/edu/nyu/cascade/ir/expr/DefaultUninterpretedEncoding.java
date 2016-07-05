@@ -8,12 +8,12 @@ import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.UninterpretedExpression;
 
 public class DefaultUninterpretedEncoding extends
-    AbstractTypeEncoding<UninterpretedExpression> implements
-    UninterpretedEncoding<UninterpretedExpression> {
+		AbstractTypeEncoding<UninterpretedExpression> implements
+		UninterpretedEncoding<UninterpretedExpression> {
 	private static final String UNKNOWN_VARIABLE_NAME = "uninterpreted_encoding_unknown";
 
 	public DefaultUninterpretedEncoding(ExpressionManager exprManager,
-	    String typeName) {
+			String typeName) {
 		super(exprManager, exprManager.uninterpretedType(typeName));
 	}
 
@@ -25,31 +25,31 @@ public class DefaultUninterpretedEncoding extends
 
 	@Override
 	public BooleanExpression distinct(
-	    Iterable<? extends UninterpretedExpression> exprs) {
+			Iterable<? extends UninterpretedExpression> exprs) {
 		return getExpressionManager().distinct(exprs);
 	}
 
 	@Override
 	public BooleanExpression eq(UninterpretedExpression lhs,
-	    UninterpretedExpression rhs) {
+			UninterpretedExpression rhs) {
 		return lhs.eq(rhs);
 	}
 
 	@Override
 	public BooleanExpression neq(UninterpretedExpression lhs,
-	    UninterpretedExpression rhs) {
+			UninterpretedExpression rhs) {
 		return lhs.neq(rhs);
 	}
 
 	@Override
 	public UninterpretedExpression ifThenElse(BooleanExpression b,
-	    UninterpretedExpression thenExpr, UninterpretedExpression elseExpr) {
+			UninterpretedExpression thenExpr, UninterpretedExpression elseExpr) {
 		return b.ifThenElse(thenExpr, elseExpr).asUninterpreted();
 	}
 
 	@Override
 	public UninterpretedExpression unknown() {
 		return getExpressionManager().variable(UNKNOWN_VARIABLE_NAME, getType(),
-		    true).asUninterpreted();
+				true).asUninterpreted();
 	}
 }

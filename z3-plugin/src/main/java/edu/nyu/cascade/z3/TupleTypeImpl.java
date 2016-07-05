@@ -26,22 +26,22 @@ import edu.nyu.cascade.util.CacheException;
 final class TupleTypeImpl extends TypeImpl implements TupleType {
 
 	private static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, TupleTypeImpl>> typeCache = CacheBuilder
-	    .newBuilder().build(
-	        new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, TupleTypeImpl>>() {
-		        public ConcurrentMap<String, TupleTypeImpl> load(
-	              ExpressionManagerImpl expressionManager) {
-			        return new MapMaker().makeMap();
-		        }
-	        });
+			.newBuilder().build(
+					new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, TupleTypeImpl>>() {
+						public ConcurrentMap<String, TupleTypeImpl> load(
+								ExpressionManagerImpl expressionManager) {
+							return new MapMaker().makeMap();
+						}
+					});
 
 	static TupleTypeImpl create(ExpressionManagerImpl em, String name,
-	    Type firstType, Type... otherTypes) {
+			Type firstType, Type... otherTypes) {
 		try {
 			if (typeCache.get(em).containsKey(name))
 				return typeCache.get(em).get(name);
 			else {
 				TupleTypeImpl res = new TupleTypeImpl(em, name, Lists.asList(firstType,
-				    otherTypes));
+						otherTypes));
 				typeCache.get(em).put(name, res);
 				return res;
 			}
@@ -51,7 +51,7 @@ final class TupleTypeImpl extends TypeImpl implements TupleType {
 	}
 
 	static TupleTypeImpl create(ExpressionManagerImpl em, String name,
-	    Iterable<? extends Type> types) {
+			Iterable<? extends Type> types) {
 		try {
 			if (typeCache.get(em).containsKey(name))
 				return typeCache.get(em).get(name);
@@ -67,9 +67,9 @@ final class TupleTypeImpl extends TypeImpl implements TupleType {
 
 	@Override
 	TupleExpressionImpl createExpression(Expr res, Expression oldExpr,
-	    Iterable<? extends ExpressionImpl> children) {
+			Iterable<? extends ExpressionImpl> children) {
 		return TupleExpressionImpl.create(getExpressionManager(), oldExpr.getKind(),
-		    res, oldExpr.getType(), children);
+				res, oldExpr.getType(), children);
 	}
 
 	static TupleTypeImpl valueOf(ExpressionManagerImpl em, Type t) {
@@ -77,7 +77,7 @@ final class TupleTypeImpl extends TypeImpl implements TupleType {
 			return (TupleTypeImpl) t;
 		} else {
 			return create(em, ((TupleType) t).getName(), ((TupleType) t)
-			    .getElementTypes());
+					.getElementTypes());
 		}
 	}
 
@@ -85,14 +85,14 @@ final class TupleTypeImpl extends TypeImpl implements TupleType {
 	private final String typeName;
 
 	private TupleTypeImpl(ExpressionManagerImpl em, String name,
-	    Iterable<? extends Type> types) {
+			Iterable<? extends Type> types) {
 		super(em);
 		this.elementTypes = ImmutableList.copyOf(types);
 		this.typeName = name;
 
 		StringBuilder sb = new StringBuilder();
 		sb.append("() ( (" + typeName + "\n                          (" + typeName); // Type
-		                                                                             // parameter
+																																									// parameter
 
 		try {
 			Context z3_context = em.getTheoremProver().getZ3Context();
@@ -103,14 +103,14 @@ final class TupleTypeImpl extends TypeImpl implements TupleType {
 				z3Types[i] = em.toZ3Type(Iterables.get(types, i));
 				symbols[i] = z3_context.mkSymbol(typeName + "@" + i);
 				sb.append(" \n                             (" + symbols[i] + " "
-				    + z3Types[i] + ")");
+						+ z3Types[i] + ")");
 			}
 			setZ3Type(z3_context.mkTupleSort(tname, symbols, z3Types));
 			sb.append(")))");
 			em.addToTypeCache(this);
 
 			TheoremProverImpl.z3FileCommand("(declare-datatypes " + sb.toString()
-			    + ")");
+					+ ")");
 		} catch (Z3Exception e) {
 			throw new TheoremProverException(e);
 		}
@@ -154,25 +154,25 @@ final class TupleTypeImpl extends TypeImpl implements TupleType {
 	@Override
 	public Expression index(Expression tuple, int index) {
 		return TupleExpressionImpl.mkTupleIndex(getExpressionManager(), tuple,
-		    index);
+				index);
 	}
 
 	@Override
 	public TupleExpression update(Expression tuple, int index, Expression value) {
 		return TupleExpressionImpl.mkUpdate(getExpressionManager(), tuple, index,
-		    value);
+				value);
 	}
 
 	@Override
 	public TupleBoundExpressionImpl boundVar(String name, boolean fresh) {
 		return TupleBoundExpressionImpl.create(getExpressionManager(), name, this,
-		    fresh);
+				fresh);
 	}
 
 	@Override
 	public TupleBoundExpressionImpl boundExpression(String name, int index,
-	    boolean fresh) {
+			boolean fresh) {
 		return TupleBoundExpressionImpl.create(getExpressionManager(), name, index,
-		    this, fresh);
+				this, fresh);
 	}
 }

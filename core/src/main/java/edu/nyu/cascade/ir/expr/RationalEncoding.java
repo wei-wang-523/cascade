@@ -4,7 +4,7 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.BooleanExpression;
 
 public interface RationalEncoding<T extends Expression> extends
-    TypeEncoding<T> {
+		TypeEncoding<T> {
 
 	BooleanExpression gt(T lhs, T rhs);
 

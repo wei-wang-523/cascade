@@ -30,13 +30,13 @@ public class DefaultTupleEncoding implements TupleEncoding<TupleExpression> {
 
 	@Override
 	public edu.nyu.cascade.ir.expr.TupleEncoding.Instance<TupleExpression> getInstance(
-	    String name, Iterable<TypeEncoding<?>> elementEncodings) {
+			String name, Iterable<TypeEncoding<?>> elementEncodings) {
 		return new DefaultTupleInstance(exprManager, name, elementEncodings);
 	}
 
 	@Override
 	public edu.nyu.cascade.ir.expr.TupleEncoding.Instance<TupleExpression> getInstance(
-	    String name, TypeEncoding<?>... elementEncodings) {
+			String name, TypeEncoding<?>... elementEncodings) {
 		return new DefaultTupleInstance(exprManager, name, elementEncodings);
 	}
 
@@ -47,7 +47,7 @@ public class DefaultTupleEncoding implements TupleEncoding<TupleExpression> {
 
 	@Override
 	public TupleExpression update(TupleExpression tuple, int index,
-	    Expression elem) {
+			Expression elem) {
 		return tuple.update(index, elem);
 	}
 
@@ -63,13 +63,13 @@ public class DefaultTupleEncoding implements TupleEncoding<TupleExpression> {
 	}
 
 	class DefaultTupleInstance implements
-	    TupleEncoding.Instance<TupleExpression> {
+			TupleEncoding.Instance<TupleExpression> {
 		private final ExpressionManager exprManager;
 		private final Iterable<TypeEncoding<?>> elementEncodings;
 		private final String name;
 
 		public DefaultTupleInstance(ExpressionManager exprManager, String name,
-		    Iterable<TypeEncoding<?>> elementEncodings) {
+				Iterable<TypeEncoding<?>> elementEncodings) {
 			Preconditions.checkArgument(Iterables.size(elementEncodings) >= 2);
 			this.exprManager = exprManager;
 			this.name = name;
@@ -77,7 +77,7 @@ public class DefaultTupleEncoding implements TupleEncoding<TupleExpression> {
 		}
 
 		public DefaultTupleInstance(ExpressionManager exprManager, String name,
-		    TypeEncoding<?>... elementEncodings) {
+				TypeEncoding<?>... elementEncodings) {
 			Preconditions.checkArgument(elementEncodings.length >= 2);
 			this.exprManager = exprManager;
 			this.name = name;
@@ -98,7 +98,7 @@ public class DefaultTupleEncoding implements TupleEncoding<TupleExpression> {
 			}
 			DefaultTupleInstance instance = (DefaultTupleInstance) obj;
 			return EqualsUtil.areEqual(exprManager, instance.exprManager)
-			    && EqualsUtil.areEqual(elementEncodings, instance.elementEncodings);
+					&& EqualsUtil.areEqual(elementEncodings, instance.elementEncodings);
 		}
 
 		@Override
@@ -118,12 +118,12 @@ public class DefaultTupleEncoding implements TupleEncoding<TupleExpression> {
 		@Override
 		public TupleType getType() {
 			return getExpressionManager().tupleType(name, Iterables.transform(
-			    getElementEncodings(), new Function<TypeEncoding<?>, Type>() {
-				    @Override
-				    public Type apply(TypeEncoding<?> encoding) {
-					    return encoding.getType();
-				    }
-			    }));
+					getElementEncodings(), new Function<TypeEncoding<?>, Type>() {
+						@Override
+						public Type apply(TypeEncoding<?> encoding) {
+							return encoding.getType();
+						}
+					}));
 		}
 
 		@Override
@@ -173,7 +173,7 @@ public class DefaultTupleEncoding implements TupleEncoding<TupleExpression> {
 
 		@Override
 		public TupleExpression update(TupleExpression Tuple, int index,
-		    Expression val) {
+				Expression val) {
 			return Tuple.update(index, val);
 		}
 
@@ -189,7 +189,7 @@ public class DefaultTupleEncoding implements TupleEncoding<TupleExpression> {
 
 		@Override
 		public TupleExpression boundExpression(String name, int index,
-		    boolean fresh) {
+				boolean fresh) {
 			return boundExpression(name, index, fresh);
 		}
 
@@ -205,9 +205,9 @@ public class DefaultTupleEncoding implements TupleEncoding<TupleExpression> {
 
 		@Override
 		public TupleExpression boundExpression(String name, int index, IRType iType,
-		    boolean fresh) {
+				boolean fresh) {
 			return getExpressionManager().boundExpression(name, index, getType(),
-			    fresh).asTuple();
+					fresh).asTuple();
 		}
 	}
 }

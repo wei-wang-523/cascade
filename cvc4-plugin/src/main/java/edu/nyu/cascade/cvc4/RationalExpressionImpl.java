@@ -24,137 +24,137 @@ import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.Type;
 
 class RationalExpressionImpl extends ExpressionImpl implements
-    RationalExpression {
+		RationalExpression {
 
 	static RationalExpressionImpl mkConstant(ExpressionManagerImpl em,
-	    final int numerator, final int denominator) {
+			final int numerator, final int denominator) {
 		RationalExpressionImpl e = new RationalExpressionImpl(em, CONSTANT,
-		    new NullaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em) {
-				    return em.mkConst(new Rational(numerator, denominator));
-			    }
-		    });
+				new NullaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em) {
+						return em.mkConst(new Rational(numerator, denominator));
+					}
+				});
 		return e;
 	}
 
 	static RationalExpressionImpl mkDivide(ExpressionManagerImpl exprManager,
-	    Expression numerator, Expression denominator) {
+			Expression numerator, Expression denominator) {
 		Preconditions.checkArgument(isRatOrInt(numerator));
 		Preconditions.checkArgument(isRatOrInt(denominator));
 		return new RationalExpressionImpl(exprManager, DIVIDE,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, Expr left, Expr right) {
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.DIVISION, left, right);
-			    }
-		    }, numerator, denominator);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, Expr left, Expr right) {
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.DIVISION, left, right);
+					}
+				}, numerator, denominator);
 	}
 
 	static RationalExpressionImpl mkMinus(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new RationalExpressionImpl(exprManager, MINUS,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, Expr left, Expr right)
-		          throws Exception {
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.MINUS, left, right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, Expr left, Expr right)
+							throws Exception {
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.MINUS, left, right);
+					}
+				}, a, b);
 	}
 
 	static RationalExpressionImpl mkMult(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new RationalExpressionImpl(exprManager, MULT,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, Expr left, Expr right)
-		          throws Exception {
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.MULT, left, right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, Expr left, Expr right)
+							throws Exception {
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.MULT, left, right);
+					}
+				}, a, b);
 	}
 
 	static RationalExpressionImpl mkMult(ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> terms) {
+			Iterable<? extends Expression> terms) {
 		Preconditions.checkArgument(!Iterables.isEmpty(terms));
 		return new RationalExpressionImpl(exprManager, MULT,
-		    new NaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, List<Expr> args) throws Exception {
-				    Expr result = null;
-				    for (Expr arg : args) {
-					    if (result == null) {
-						    result = arg;
-					    } else {
-						    result = em.mkExpr(edu.nyu.acsys.CVC4.Kind.MULT, arg, result);
-					    }
-				    }
-				    return result;
-			    }
+				new NaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, List<Expr> args) throws Exception {
+						Expr result = null;
+						for (Expr arg : args) {
+							if (result == null) {
+								result = arg;
+							} else {
+								result = em.mkExpr(edu.nyu.acsys.CVC4.Kind.MULT, arg, result);
+							}
+						}
+						return result;
+					}
 
-		    }, terms);
+				}, terms);
 	}
 
 	static RationalExpressionImpl mkPlus(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new RationalExpressionImpl(exprManager, PLUS,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, Expr left, Expr right)
-		          throws Exception {
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.PLUS, left, right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, Expr left, Expr right)
+							throws Exception {
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.PLUS, left, right);
+					}
+				}, a, b);
 	}
 
 	static RationalExpressionImpl mkPlus(ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> args) {
+			Iterable<? extends Expression> args) {
 		Preconditions.checkArgument(!Iterables.isEmpty(args));
 		return new RationalExpressionImpl(exprManager, PLUS,
-		    new NaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, List<Expr> args) throws Exception {
-				    Expr result = null;
-				    for (Expr arg : args) {
-					    if (result == null) {
-						    result = arg;
-					    } else {
-						    result = em.mkExpr(edu.nyu.acsys.CVC4.Kind.PLUS, arg, result);
-					    }
-				    }
-				    return result;
-			    }
-		    }, args);
+				new NaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, List<Expr> args) throws Exception {
+						Expr result = null;
+						for (Expr arg : args) {
+							if (result == null) {
+								result = arg;
+							} else {
+								result = em.mkExpr(edu.nyu.acsys.CVC4.Kind.PLUS, arg, result);
+							}
+						}
+						return result;
+					}
+				}, args);
 	}
 
 	static RationalExpressionImpl mkPow(ExpressionManagerImpl exprManager,
-	    Expression base, Expression exp) {
+			Expression base, Expression exp) {
 		return new RationalExpressionImpl(exprManager, POW,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, Expr left, Expr right)
-		          throws Exception {
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.POW, left, right);
-			    }
-		    }, base, exp);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, Expr left, Expr right)
+							throws Exception {
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.POW, left, right);
+					}
+				}, base, exp);
 	}
 
 	static RationalExpressionImpl mkUminus(ExpressionManagerImpl exprManager,
-	    Expression a) {
+			Expression a) {
 		return new RationalExpressionImpl(exprManager, UNARY_MINUS,
-		    new UnaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, Expr left) throws Exception {
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.UMINUS, left);
-			    }
-		    }, a);
+				new UnaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, Expr left) throws Exception {
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.UMINUS, left);
+					}
+				}, a);
 	}
 
 	private static <T extends Type> boolean isRatOrInt(Expression e) {
 		Type t = e.getType();
 		return ((Type) t instanceof RationalType
-		    || (Type) t instanceof IntegerType);
+				|| (Type) t instanceof IntegerType);
 	}
 
 	/*
@@ -172,37 +172,37 @@ class RationalExpressionImpl extends ExpressionImpl implements
 	 */
 
 	private RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    UnaryConstructionStrategy strategy, Expression a) {
+			UnaryConstructionStrategy strategy, Expression a) {
 		super(exprManager, kind, strategy, a);
 	}
 
 	private RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    NullaryConstructionStrategy strategy) {
+			NullaryConstructionStrategy strategy) {
 		super(exprManager, kind, strategy);
 		setType(exprManager.rationalType());
 	}
 
 	private RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    BinaryConstructionStrategy strategy, Expression left, Expression right) {
+			BinaryConstructionStrategy strategy, Expression left, Expression right) {
 		super(exprManager, kind, strategy, left, right);
 		setType(getExpressionManager().rationalType());
 	}
 
 	private RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    NaryConstructionStrategy strategy, Iterable<? extends Expression> args) {
+			NaryConstructionStrategy strategy, Iterable<? extends Expression> args) {
 		super(exprManager, kind, strategy, args);
 		setType(getExpressionManager().rationalType());
 	}
 
 	private RationalExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    Expr expr, RationalType type,
-	    Iterable<? extends ExpressionImpl> children) {
+			Expr expr, RationalType type,
+			Iterable<? extends ExpressionImpl> children) {
 		super(exprManager, kind, expr, type);
 	}
 
 	static RationalExpressionImpl create(ExpressionManagerImpl exprManager,
-	    Kind kind, Expr expr, RationalType type,
-	    Iterable<? extends ExpressionImpl> children) {
+			Kind kind, Expr expr, RationalType type,
+			Iterable<? extends ExpressionImpl> children) {
 		return new RationalExpressionImpl(exprManager, kind, expr, type, children);
 	}
 
@@ -226,7 +226,7 @@ class RationalExpressionImpl extends ExpressionImpl implements
 	}
 
 	public static RationalExpressionImpl valueOf(
-	    ExpressionManagerImpl exprManager, Expression e) {
+			ExpressionManagerImpl exprManager, Expression e) {
 		if (e instanceof RationalExpressionImpl) {
 			return (RationalExpressionImpl) e;
 		} else {

@@ -10,7 +10,7 @@ import edu.nyu.cascade.prover.Expression;
 public interface IRSoundMemLayoutEncoding {
 
 	ImmutableSet<BooleanExpression> disjointMemLayout(MemoryVarSets multiSets,
-	    ArrayExpression sizeArr);
+			ArrayExpression sizeArr);
 
 	/**
 	 * Newly-allocated region with <code>size</code> at address <code>ptr</code>
@@ -23,13 +23,13 @@ public interface IRSoundMemLayoutEncoding {
 	 * @return
 	 */
 	BooleanExpression validMalloc(MemoryVarSets memoryVarSets,
-	    ArrayExpression sizeArr, Expression ptr, Expression size);
+			ArrayExpression sizeArr, Expression ptr, Expression size);
 
 	BooleanExpression validFree(ArrayExpression sizeArr, Expression ptr);
 
 	ImmutableSet<BooleanExpression> validMemAccess(MemoryVarSets varSets,
-	    ArrayExpression sizeArr, Expression ptr);
+			ArrayExpression sizeArr, Expression ptr);
 
 	ImmutableSet<BooleanExpression> validMemAccess(MemoryVarSets varSets,
-	    ArrayExpression sizeArr, Expression ptr, Expression size);
+			ArrayExpression sizeArr, Expression ptr, Expression size);
 }

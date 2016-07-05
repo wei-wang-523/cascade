@@ -8,10 +8,10 @@ import com.google.common.collect.Maps;
 public final class IRUnionType extends IRType {
 
 	private static final Map<String, IRUnionType> singletonMap = Maps
-	    .newHashMap();
+			.newHashMap();
 
 	public static IRUnionType create(String name, Iterable<String> elemNames,
-	    Iterable<? extends IRType> elemTypes) {
+			Iterable<? extends IRType> elemTypes) {
 		if (singletonMap.containsKey(name))
 			return singletonMap.get(name);
 
@@ -25,7 +25,7 @@ public final class IRUnionType extends IRType {
 	private final Iterable<? extends IRType> elemTypes;
 
 	private IRUnionType(String name, Iterable<String> elemNames,
-	    Iterable<? extends IRType> elemTypes) {
+			Iterable<? extends IRType> elemTypes) {
 		this.name = name;
 		this.elemTypes = elemTypes;
 		this.elemNames = elemNames;
@@ -51,14 +51,14 @@ public final class IRUnionType extends IRType {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder().append("Union ").append(name).append(
-		    "(\n");
+				"(\n");
 
 		Iterator<String> elemNameItr = elemNames.iterator();
 		Iterator<? extends IRType> elemTypeItr = elemTypes.iterator();
 
 		while (elemNameItr.hasNext() && elemTypeItr.hasNext()) {
 			sb.append(elemNameItr.next()).append(" : ").append(elemTypeItr.next())
-			    .append('\n');
+					.append('\n');
 		}
 		sb.append(')');
 

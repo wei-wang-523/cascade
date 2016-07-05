@@ -41,10 +41,10 @@ public class CfgProcessor {
 	 * @param mainCFG
 	 */
 	public static void appendPreCFG(IRControlFlowGraph preCFG,
-	    IRControlFlowGraph mainCFG) {
+			IRControlFlowGraph mainCFG) {
 		for (IRBasicBlock preBlock : preCFG.getBlocks()) {
 			for (IREdge<? extends IRBasicBlock> edge : preCFG.getIncomingEdges(
-			    preBlock))
+					preBlock))
 				mainCFG.addEdge(edge);
 		}
 
@@ -57,7 +57,7 @@ public class CfgProcessor {
 	}
 
 	public static void insertParamArgAssignStmts(IRControlFlowGraph funcCfg,
-	    Collection<IRStatement> assignStmts) {
+			Collection<IRStatement> assignStmts) {
 		IRBasicBlock entry = funcCfg.getEntry();
 		IRBasicBlock currBlock = entry;
 
@@ -65,13 +65,13 @@ public class CfgProcessor {
 			@Override
 			public boolean apply(IRStatement stmt) {
 				return StatementType.DECLARE.equals(stmt.getType())
-		        || StatementType.DECLARE_ARRAY.equals(stmt.getType());
+						|| StatementType.DECLARE_ARRAY.equals(stmt.getType());
 			}
 		};
 
 		while (!Iterables.any(currBlock.getStatements(), isDeclareStmt)) {
 			Collection<? extends IRBasicBlock> succs = funcCfg.getSuccessors(
-			    currBlock);
+					currBlock);
 			assert (succs.size() == 1);
 			currBlock = succs.iterator().next();
 		}
@@ -81,7 +81,7 @@ public class CfgProcessor {
 		for (IRStatement stmt : currBlock.getStatements()) {
 			newStmts.add(stmt);
 			if (StatementType.DECLARE.equals(stmt.getType())
-			    || StatementType.DECLARE_ARRAY.equals(stmt.getType())) {
+					|| StatementType.DECLARE_ARRAY.equals(stmt.getType())) {
 				if (itr.hasNext())
 					newStmts.add(itr.next());
 			}
@@ -95,7 +95,7 @@ public class CfgProcessor {
 	}
 
 	public static void appendReturnStmt(IRControlFlowGraph funcCfg,
-	    IRStatement callStmt) {
+			IRStatement callStmt) {
 		Preconditions.checkArgument(callStmt.getType().equals(CALL));
 		Preconditions.checkNotNull(funcCfg.getExit());
 
@@ -107,7 +107,7 @@ public class CfgProcessor {
 				if (lExpr.getSourceNode().equals(rExpr.getSourceNode()))
 					return;
 				Node assignNode = GNode.create("AssignmentExpression", lExpr
-				    .getSourceNode(), "=", rExpr.getSourceNode());
+						.getSourceNode(), "=", rExpr.getSourceNode());
 				assignNode.setLocation(callStmt.getSourceNode().getLocation());
 				IRStatement retAssign = Statement.assign(assignNode, lExpr, rExpr);
 				lastBlock.addStatement(retAssign);
@@ -171,7 +171,7 @@ public class CfgProcessor {
 	}
 
 	public static void havocLoop(IRControlFlowGraph cfg, IRBasicBlock loopHeader,
-	    IRStatement preLoopAssertion, IRStatement postLoopAssumption) {
+			IRStatement preLoopAssertion, IRStatement postLoopAssumption) {
 		Preconditions.checkArgument(cfg.getEntry() == cfg.getExit());
 
 		Loop loop = LoopInfoUtil.getLoop(cfg, loopHeader);
@@ -188,7 +188,7 @@ public class CfgProcessor {
 
 		Collection<IREdge<?>> backEdges = loop.getBackEdges();
 		Collection<IREdge<?>> enterEdges = ImmutableList.copyOf(cfg
-		    .getIncomingEdges(loopHeader));
+				.getIncomingEdges(loopHeader));
 		enterEdges.removeAll(backEdges);
 
 		for (IREdge<?> enterEdge : enterEdges) {
@@ -216,10 +216,10 @@ public class CfgProcessor {
 	}
 
 	private static void replaceBlock(IRControlFlowGraph cfg,
-	    IRBasicBlock oldBlock, IRBasicBlock newBlock) {
+			IRBasicBlock oldBlock, IRBasicBlock newBlock) {
 
 		if (cfg.getBlocks().size() == 1 && cfg.getEdges().isEmpty()) { // singleton
-		                                                               // CFG
+																																		// CFG
 			cfg.setEntry(newBlock);
 			cfg.setExit(newBlock);
 			cfg.removeBlock(oldBlock);
@@ -228,7 +228,7 @@ public class CfgProcessor {
 		}
 
 		Collection<? extends IREdge<? extends IRBasicBlock>> incomings = ImmutableList
-		    .copyOf(cfg.getIncomingEdges(oldBlock));
+				.copyOf(cfg.getIncomingEdges(oldBlock));
 
 		for (IREdge<?> edge : incomings) {
 			cfg.addEdge(edge.getSource(), edge.getGuard(), newBlock);
@@ -236,7 +236,7 @@ public class CfgProcessor {
 		}
 
 		Collection<? extends IREdge<? extends IRBasicBlock>> outgoings = ImmutableList
-		    .copyOf(cfg.getOutgoingEdges(oldBlock));
+				.copyOf(cfg.getOutgoingEdges(oldBlock));
 
 		for (IREdge<?> edge : outgoings) {
 			cfg.addEdge(newBlock, edge.getGuard(), edge.getTarget());
@@ -256,7 +256,7 @@ public class CfgProcessor {
 	 * @param cfg
 	 */
 	private static boolean mergeBlockIntoPredecessor(IRControlFlowGraph cfg,
-	    IRBasicBlock block) {
+			IRBasicBlock block) {
 		Collection<? extends IRBasicBlock> predBBs = cfg.getPredecessors(block);
 		/* No merge with multiple predecessors, or no predecessors */
 		if (predBBs.size() != 1)
@@ -296,18 +296,18 @@ public class CfgProcessor {
 		 * statement of predBB).
 		 */
 		Collection<? extends IREdge<? extends IRBasicBlock>> incomings = cfg
-		    .getIncomingEdges(uniqueSucc);
+				.getIncomingEdges(uniqueSucc);
 		assert (incomings.size() == 1);
 		IREdge<?> incoming = incomings.iterator().next();
 		if (incoming.getGuard() != null) {
 			IRStatement assumeStmt = Statement.assumeStmt(incoming.getSourceNode(),
-			    incoming.getGuard(), false);
+					incoming.getGuard(), false);
 			predBB.addStatement(assumeStmt);
 		}
 
 		/* Replace all use with BB with PredBB */
 		Collection<IREdge<?>> outgoings = ImmutableList.copyOf(cfg.getOutgoingEdges(
-		    uniqueSucc));
+				uniqueSucc));
 		for (IREdge<?> outgoing : outgoings) {
 			IRBasicBlock dest = outgoing.getTarget();
 			cfg.removeEdge(outgoing);
@@ -337,7 +337,7 @@ public class CfgProcessor {
 
 		if (deadBlocks.contains(cfg.getExit()))
 			IOUtils.err().println("CFG " + cfg.getName()
-			    + "'s exit block has been deleted as the dead block");
+					+ "'s exit block has been deleted as the dead block");
 
 		for (IRBasicBlock block : deadBlocks)
 			cfg.removeBlock(block);
@@ -352,7 +352,7 @@ public class CfgProcessor {
 
 		if (deadBlocks.contains(cfg.getEntry()))
 			throw new IllegalStateException(
-			    "Entry block has been deleted as the dead block");
+					"Entry block has been deleted as the dead block");
 
 		for (IRBasicBlock block : deadBlocks)
 			cfg.removeBlock(block);
@@ -368,7 +368,7 @@ public class CfgProcessor {
 
 		// Use the reverse of post-order
 		List<IRBasicBlock> blocks = Lists.reverse(ImmutableList.copyOf(loop
-		    .getBlocks()));
+				.getBlocks()));
 		for (IRBasicBlock block : blocks) {
 			for (IRStatement stmt : block.getStatements()) {
 				switch (stmt.getType()) {
@@ -376,7 +376,7 @@ public class CfgProcessor {
 				case ASSIGN:
 					/* Pick up havoc statements for any update */
 					Statement havocStmt = Statement.havoc(stmt.getSourceNode(), stmt
-					    .getOperand(0));
+							.getOperand(0));
 					GNode havocGNode = GNode.cast(stmt.getOperand(0).getSourceNode());
 					if (havocGNodeSet.contains(havocGNode))
 						continue;

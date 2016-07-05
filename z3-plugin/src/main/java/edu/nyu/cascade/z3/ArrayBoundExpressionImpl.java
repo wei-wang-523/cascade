@@ -5,25 +5,25 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.Type;
 
 final class ArrayBoundExpressionImpl extends BoundExpressionImpl implements
-    ArrayExpression {
+		ArrayExpression {
 
 	static ArrayBoundExpressionImpl create(ExpressionManagerImpl em, String name,
-	    ArrayTypeImpl type, boolean fresh) {
+			ArrayTypeImpl type, boolean fresh) {
 		return new ArrayBoundExpressionImpl(em, name, type, fresh);
 	}
 
 	static ArrayBoundExpressionImpl create(ExpressionManagerImpl em, String name,
-	    int index, ArrayTypeImpl type, boolean fresh) {
+			int index, ArrayTypeImpl type, boolean fresh) {
 		return new ArrayBoundExpressionImpl(em, name, index, type, fresh);
 	}
 
 	private ArrayBoundExpressionImpl(ExpressionManagerImpl em, String name,
-	    ArrayTypeImpl type, boolean fresh) {
+			ArrayTypeImpl type, boolean fresh) {
 		super(em, name, type, fresh);
 	}
 
 	private ArrayBoundExpressionImpl(ExpressionManagerImpl em, String name,
-	    int index, ArrayTypeImpl type, boolean fresh) {
+			int index, ArrayTypeImpl type, boolean fresh) {
 		super(em, name, index, type, fresh);
 	}
 

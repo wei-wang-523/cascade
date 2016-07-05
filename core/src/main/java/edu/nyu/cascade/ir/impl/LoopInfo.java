@@ -12,7 +12,7 @@ public class LoopInfo {
 	private final Collection<Loop> topLevelLoops;
 
 	LoopInfo(Map<IRBasicBlock, Loop> innerLoopMap,
-	    Collection<Loop> topLevelLoops) {
+			Collection<Loop> topLevelLoops) {
 		this.innerLoopMap = innerLoopMap;
 		this.topLevelLoops = topLevelLoops;
 	}

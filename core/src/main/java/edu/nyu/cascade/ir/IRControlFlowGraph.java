@@ -52,11 +52,11 @@ public interface IRControlFlowGraph {
 
 	/** Get the list of incoming edges. */
 	Collection<? extends IREdge<? extends IRBasicBlock>> getIncomingEdges(
-	    IRBasicBlock block);
+			IRBasicBlock block);
 
 	/** Get the list of outgoing edges. */
 	Collection<? extends IREdge<? extends IRBasicBlock>> getOutgoingEdges(
-	    IRBasicBlock block);
+			IRBasicBlock block);
 
 	Scope getScope();
 
@@ -81,7 +81,7 @@ public interface IRControlFlowGraph {
 	void addEdge(IRBasicBlock currentBlock, IRBasicBlock succ);
 
 	void addEdge(IRBasicBlock source, IRBooleanExpression guard,
-	    IRBasicBlock target);
+			IRBasicBlock target);
 
 	void setEntry(IRBasicBlock newEntry);
 

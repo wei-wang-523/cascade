@@ -25,7 +25,7 @@ public interface ArrayEncoding<T extends Expression> {
 	ExpressionManager getExpressionManager();
 
 	Instance<T> getInstance(TypeEncoding<?> indexEncoding,
-	    TypeEncoding<?> elementEncoding);
+			TypeEncoding<?> elementEncoding);
 
 	Expression index(T array, Expression index);
 

@@ -20,31 +20,32 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.IntegerExpression;
 
-public abstract class ListReachabilityEncoding extends AbstractExpressionEncoding {
+public abstract class ListReachabilityEncoding extends
+		AbstractExpressionEncoding {
 
-  protected static final String DATATYPE_NAME = "list";
-  protected static final String CONS_CONSTR_NAME = "cons";
-  protected static final String NIL_CONSTR_NAME = "nil";
-  protected static final String HEAD_SELECTOR_NAME = "head";
-  protected static final String TAIL_SELECTOR_NAME = "tail";
-  protected static final String FUN_LIST = DATATYPE_NAME;
-  protected static final String FUN_LENGTH_LIST = "lengthList";
-  
-  public ListReachabilityEncoding(
-      IntegerEncoding<BitVectorExpression> integerEncoding,
-      BooleanEncoding<BooleanExpression> booleanEncoding,
-      ArrayEncoding<ArrayExpression> arrayEncoding,
-      PointerEncoding<Expression> tupleEncoding) {
-    super(integerEncoding,booleanEncoding,arrayEncoding,tupleEncoding);
-  }
+	protected static final String DATATYPE_NAME = "list";
+	protected static final String CONS_CONSTR_NAME = "cons";
+	protected static final String NIL_CONSTR_NAME = "nil";
+	protected static final String HEAD_SELECTOR_NAME = "head";
+	protected static final String TAIL_SELECTOR_NAME = "tail";
+	protected static final String FUN_LIST = DATATYPE_NAME;
+	protected static final String FUN_LENGTH_LIST = "lengthList";
 
-  public abstract IntegerExpression applyLengthList(Expression x) ;
-  
-  public abstract Expression applyConsConstr(Expression ... args) ;
+	public ListReachabilityEncoding(
+			IntegerEncoding<BitVectorExpression> integerEncoding,
+			BooleanEncoding<BooleanExpression> booleanEncoding,
+			ArrayEncoding<ArrayExpression> arrayEncoding,
+			PointerEncoding<Expression> tupleEncoding) {
+		super(integerEncoding, booleanEncoding, arrayEncoding, tupleEncoding);
+	}
 
-  public abstract Expression applyNilConstr() ;
+	public abstract IntegerExpression applyLengthList(Expression x);
 
-  public abstract Expression applyHeadSel(Expression arg) ;
+	public abstract Expression applyConsConstr(Expression... args);
 
-  public abstract Expression applyTailSel(Expression arg) ;
+	public abstract Expression applyNilConstr();
+
+	public abstract Expression applyHeadSel(Expression arg);
+
+	public abstract Expression applyTailSel(Expression arg);
 }

@@ -14,18 +14,18 @@ public interface IRPartitionHeapEncoder {
 	void addFreshAddress(String key, Expression address, IRVarInfo info);
 
 	ImmutableSet<BooleanExpression> disjointMemLayout(String key,
-	    ArrayExpression sizeArr);
+			ArrayExpression sizeArr);
 
 	BooleanExpression validMalloc(String key, ArrayExpression sizeArr,
-	    Expression ptr, Expression size);
+			Expression ptr, Expression size);
 
 	BooleanExpression validFree(ArrayExpression markArr, Expression ptr);
 
 	ImmutableSet<BooleanExpression> validMemAccess(String key,
-	    ArrayExpression sizeArr, Expression ptr);
+			ArrayExpression sizeArr, Expression ptr);
 
 	ImmutableSet<BooleanExpression> validMemAccess(String key,
-	    ArrayExpression sizeArr, Expression ptr, Expression size);
+			ArrayExpression sizeArr, Expression ptr, Expression size);
 
 	void reset();
 }

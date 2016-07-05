@@ -8,17 +8,17 @@ import edu.nyu.cascade.ir.state.StateExpression;
 import edu.nyu.cascade.prover.Expression;
 
 public interface IRExpression {
-  void format(Printer printer);
+	void format(Printer printer);
 
-  Node getSourceNode();
+	Node getSourceNode();
 
-  IRLocation getLocation();
+	IRLocation getLocation();
 
-  Expression toBoolean(StateExpression pre, ExpressionEncoder encoder);
+	Expression toBoolean(StateExpression pre, ExpressionEncoder encoder);
 
-  Expression toExpression(StateExpression pre, ExpressionEncoder encoder);
+	Expression toExpression(StateExpression pre, ExpressionEncoder encoder);
 
-  Expression toLval(StateExpression pre, ExpressionEncoder encoder);
+	Expression toLval(StateExpression pre, ExpressionEncoder encoder);
 
-  Scope getScope();
+	Scope getScope();
 }

@@ -167,7 +167,7 @@ public class CPrinter extends Visitor {
 		for (Object o : specs) {
 			GNode node = GNode.cast(o);
 			if (node.hasName("EnumerationTypeDefinition") || node.hasName(
-			    "StructureTypeDefinition") || node.hasName("UnionTypeDefinition")) {
+					"StructureTypeDefinition") || node.hasName("UnionTypeDefinition")) {
 				return true;
 			}
 		}
@@ -1485,14 +1485,14 @@ public class CPrinter extends Visitor {
 		int prec1 = startExpression(60);
 		GNode op1 = n.getGeneric(0);
 		boolean paren1 = (op1.hasName("AdditiveExpression") || op1.hasName(
-		    "BitwiseAndExpression") || op1.hasName("BitwiseXorExpression") || op1
-		        .hasName("RelationalExpression") || op1.hasName(
-		            "EqualityExpression"));
+				"BitwiseAndExpression") || op1.hasName("BitwiseXorExpression") || op1
+						.hasName("RelationalExpression") || op1.hasName(
+								"EqualityExpression"));
 		GNode op2 = n.getGeneric(1);
 		boolean paren2 = (op2.hasName("AdditiveExpression") || op2.hasName(
-		    "BitwiseAndExpression") || op2.hasName("BitwiseXorExpression") || op2
-		        .hasName("RelationalExpression") || op2.hasName(
-		            "EqualityExpression"));
+				"BitwiseAndExpression") || op2.hasName("BitwiseXorExpression") || op2
+						.hasName("RelationalExpression") || op2.hasName(
+								"EqualityExpression"));
 
 		if (EXTRA_PARENTHESES && paren1) {
 			// Force parentheses to make gcc happy.
@@ -1520,12 +1520,12 @@ public class CPrinter extends Visitor {
 		int prec1 = startExpression(70);
 		GNode op1 = n.getGeneric(0);
 		boolean paren1 = (op1.hasName("AdditiveExpression") || op1.hasName(
-		    "BitwiseAndExpression") || op1.hasName("RelationalExpression") || op1
-		        .hasName("EqualityExpression"));
+				"BitwiseAndExpression") || op1.hasName("RelationalExpression") || op1
+						.hasName("EqualityExpression"));
 		GNode op2 = n.getGeneric(1);
 		boolean paren2 = (op2.hasName("AdditiveExpression") || op2.hasName(
-		    "BitwiseAndExpression") || op2.hasName("RelationalExpression") || op2
-		        .hasName("EqualityExpression"));
+				"BitwiseAndExpression") || op2.hasName("RelationalExpression") || op2
+						.hasName("EqualityExpression"));
 
 		if (EXTRA_PARENTHESES && paren1) {
 			// Force parentheses to make gcc happy.
@@ -1553,10 +1553,10 @@ public class CPrinter extends Visitor {
 		int prec1 = startExpression(80);
 		GNode op1 = n.getGeneric(0);
 		boolean paren1 = (op1.hasName("AdditiveExpression") || op1.hasName(
-		    "RelationalExpression") || op1.hasName("EqualityExpression"));
+				"RelationalExpression") || op1.hasName("EqualityExpression"));
 		GNode op2 = n.getGeneric(1);
 		boolean paren2 = (op2.hasName("AdditiveExpression") || op2.hasName(
-		    "RelationalExpression") || op2.hasName("EqualityExpression"));
+				"RelationalExpression") || op2.hasName("EqualityExpression"));
 
 		if (EXTRA_PARENTHESES && paren1) {
 			// Force parentheses to make gcc happy.
@@ -1584,10 +1584,10 @@ public class CPrinter extends Visitor {
 		int prec1 = startExpression(90);
 		GNode op1 = n.getGeneric(0);
 		boolean paren1 = (op1.hasName("RelationalExpression") || op1.hasName(
-		    "EqualityExpression"));
+				"EqualityExpression"));
 		GNode op2 = n.getGeneric(2);
 		boolean paren2 = (op2.hasName("RelationalExpression") || op2.hasName(
-		    "EqualityExpression"));
+				"EqualityExpression"));
 
 		if (EXTRA_PARENTHESES && paren1) {
 			// Force parentheses to make gcc happy.
@@ -1615,10 +1615,10 @@ public class CPrinter extends Visitor {
 		int prec1 = startExpression(100);
 		GNode op1 = n.getGeneric(0);
 		boolean paren1 = (op1.hasName("RelationalExpression") || op1.hasName(
-		    "EqualityExpression"));
+				"EqualityExpression"));
 		GNode op2 = n.getGeneric(2);
 		boolean paren2 = (op2.hasName("RelationalExpression") || op2.hasName(
-		    "EqualityExpression"));
+				"EqualityExpression"));
 
 		if (EXTRA_PARENTHESES && paren1) {
 			// Force parentheses to make gcc happy.
@@ -1721,7 +1721,7 @@ public class CPrinter extends Visitor {
 	public void visitOffsetofExpression(GNode n) {
 		int prec = startExpression(160);
 		printer.p("__builtin_offsetof(").p(n.getNode(0)).p(", ").p(n.getNode(1)).p(
-		    ')');
+				')');
 		endExpression(prec);
 	}
 
@@ -1743,7 +1743,7 @@ public class CPrinter extends Visitor {
 		int prec = startExpression(150);
 		GNode e = n.getGeneric(0);
 		if (e.hasName("UnaryMinusExpression") || e.hasName(
-		    "PredecrementExpression")) {
+				"PredecrementExpression")) {
 			printer.p("-(").p(n.getNode(0)).p(')');
 		} else {
 			printer.p('-').p(n.getNode(0));
@@ -1756,7 +1756,7 @@ public class CPrinter extends Visitor {
 		int prec = startExpression(150);
 		GNode e = n.getGeneric(0);
 		if (e.hasName("UnaryPlusExpression") || e.hasName(
-		    "PreincrementExpression")) {
+				"PreincrementExpression")) {
 			printer.p("+(").p(n.getNode(0)).p(')');
 		} else {
 			printer.p('+').p(n.getNode(0));

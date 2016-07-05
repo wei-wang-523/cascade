@@ -18,7 +18,7 @@ public final class MultiStateExpression extends AbstractStateExpression {
 	}
 
 	static MultiStateExpression create(
-	    Map<String, SingleStateExpression> stateMap) {
+			Map<String, SingleStateExpression> stateMap) {
 		return new MultiStateExpression(stateMap);
 	}
 
@@ -42,7 +42,7 @@ public final class MultiStateExpression extends AbstractStateExpression {
 		StringBuilder sb = new StringBuilder();
 		for (Entry<String, SingleStateExpression> entry : stateMap.entrySet()) {
 			sb.append(entry.getKey()).append(":").append(entry.getValue()
-			    .toStringShort()).append("\n");
+					.toStringShort()).append("\n");
 		}
 		return sb.toString();
 	}

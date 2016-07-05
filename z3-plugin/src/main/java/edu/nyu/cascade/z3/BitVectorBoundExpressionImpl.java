@@ -10,25 +10,25 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 
 final class BitVectorBoundExpressionImpl extends BoundExpressionImpl implements
-    BitVectorExpression {
+		BitVectorExpression {
 
 	private BitVectorBoundExpressionImpl(ExpressionManagerImpl em, String name,
-	    BitVectorTypeImpl type, boolean fresh) {
+			BitVectorTypeImpl type, boolean fresh) {
 		super(em, name, type, fresh);
 	}
 
 	private BitVectorBoundExpressionImpl(ExpressionManagerImpl em, String name,
-	    int index, BitVectorTypeImpl type, boolean fresh) {
+			int index, BitVectorTypeImpl type, boolean fresh) {
 		super(em, name, index, type, fresh);
 	}
 
 	static BitVectorBoundExpressionImpl create(ExpressionManagerImpl em,
-	    String name, BitVectorTypeImpl type, boolean fresh) {
+			String name, BitVectorTypeImpl type, boolean fresh) {
 		return new BitVectorBoundExpressionImpl(em, name, type, fresh);
 	}
 
 	static BitVectorBoundExpressionImpl create(ExpressionManagerImpl em,
-	    String name, int index, BitVectorTypeImpl type, boolean fresh) {
+			String name, int index, BitVectorTypeImpl type, boolean fresh) {
 		return new BitVectorBoundExpressionImpl(em, name, index, type, fresh);
 	}
 
@@ -52,7 +52,7 @@ final class BitVectorBoundExpressionImpl extends BoundExpressionImpl implements
 	@Override
 	public BitVectorExpressionImpl extract(int i, int j) {
 		return BitVectorExpressionImpl.mkExtract(getExpressionManager(), this, i,
-		    j);
+				j);
 
 	}
 
@@ -106,7 +106,7 @@ final class BitVectorBoundExpressionImpl extends BoundExpressionImpl implements
 	@Override
 	public BitVectorExpressionImpl plus(Iterable<? extends Expression> args) {
 		return BitVectorExpressionImpl.mkPlus(getExpressionManager(), Iterables
-		    .concat(Collections.singleton(this), args));
+				.concat(Collections.singleton(this), args));
 	}
 
 	@Override
@@ -122,7 +122,7 @@ final class BitVectorBoundExpressionImpl extends BoundExpressionImpl implements
 	@Override
 	public BitVectorExpressionImpl times(Iterable<? extends Expression> args) {
 		return BitVectorExpressionImpl.mkMult(getExpressionManager(), Iterables
-		    .concat(Collections.singleton(this), args));
+				.concat(Collections.singleton(this), args));
 	}
 
 	@Override
@@ -199,13 +199,13 @@ final class BitVectorBoundExpressionImpl extends BoundExpressionImpl implements
 	@Override
 	public BitVectorExpression zeroExtend(int size) {
 		return BitVectorExpressionImpl.mkZeroExtend(getExpressionManager(), size,
-		    this);
+				this);
 	}
 
 	@Override
 	public BitVectorExpression signExtend(int size) {
 		return BitVectorExpressionImpl.mkSignExtend(getExpressionManager(), size,
-		    this);
+				this);
 	}
 
 	@Override

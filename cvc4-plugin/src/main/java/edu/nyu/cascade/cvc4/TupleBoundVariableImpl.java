@@ -4,15 +4,15 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TupleExpression;
 
 final class TupleBoundVariableImpl extends BoundVariableExpressionImpl
-    implements TupleExpression {
+		implements TupleExpression {
 
 	static TupleBoundVariableImpl create(ExpressionManagerImpl exprManager,
-	    String name, TupleTypeImpl type, boolean fresh) {
+			String name, TupleTypeImpl type, boolean fresh) {
 		return new TupleBoundVariableImpl(exprManager, name, type, fresh);
 	}
 
 	private TupleBoundVariableImpl(ExpressionManagerImpl exprManager, String name,
-	    TupleTypeImpl type, boolean fresh) {
+			TupleTypeImpl type, boolean fresh) {
 		super(exprManager, name, type, fresh);
 	}
 
@@ -34,6 +34,6 @@ final class TupleBoundVariableImpl extends BoundVariableExpressionImpl
 	@Override
 	public TupleExpression update(int index, Expression val) {
 		return TupleExpressionImpl.mkUpdate(getExpressionManager(), this, index,
-		    val);
+				val);
 	}
 }

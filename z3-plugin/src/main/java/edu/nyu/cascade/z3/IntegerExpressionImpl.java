@@ -33,24 +33,24 @@ import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
 
 final class IntegerExpressionImpl extends ExpressionImpl implements
-    IntegerExpression {
+		IntegerExpression {
 
 	static final LoadingCache<ExpressionManagerImpl, LoadingCache<BigInteger, IntegerExpressionImpl>> constantCache = CacheBuilder
-	    .newBuilder().build(
-	        new CacheLoader<ExpressionManagerImpl, LoadingCache<BigInteger, IntegerExpressionImpl>>() {
-		        public LoadingCache<BigInteger, IntegerExpressionImpl> load(
-	              final ExpressionManagerImpl exprManager) {
-			        return CacheBuilder.newBuilder().build(
-	                new CacheLoader<BigInteger, IntegerExpressionImpl>() {
-		                public IntegerExpressionImpl load(BigInteger value) {
-			                return new IntegerExpressionImpl(exprManager, value);
-		                }
-	                });
-		        }
-	        });
+			.newBuilder().build(
+					new CacheLoader<ExpressionManagerImpl, LoadingCache<BigInteger, IntegerExpressionImpl>>() {
+						public LoadingCache<BigInteger, IntegerExpressionImpl> load(
+								final ExpressionManagerImpl exprManager) {
+							return CacheBuilder.newBuilder().build(
+									new CacheLoader<BigInteger, IntegerExpressionImpl>() {
+										public IntegerExpressionImpl load(BigInteger value) {
+											return new IntegerExpressionImpl(exprManager, value);
+										}
+									});
+						}
+					});
 
 	static IntegerExpressionImpl mkConstant(ExpressionManagerImpl em,
-	    long value) {
+			long value) {
 		try {
 			return constantCache.get(em).get(BigInteger.valueOf(value));
 		} catch (ExecutionException e) {
@@ -67,7 +67,7 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 	}
 
 	static IntegerExpressionImpl mkConstant(ExpressionManagerImpl em,
-	    BigInteger value) {
+			BigInteger value) {
 		try {
 			return constantCache.get(em).get(value);
 		} catch (ExecutionException e) {
@@ -76,152 +76,152 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 	}
 
 	static IntegerExpressionImpl mkMinus(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new IntegerExpressionImpl(exprManager, MINUS,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right) {
-				    try {
-					    return ctx.mkSub(new ArithExpr[] { (ArithExpr) left,
-		              (ArithExpr) right });
-				    } catch (Z3Exception e) {
-					    throw new TheoremProverException(e);
-				    }
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right) {
+						try {
+							return ctx.mkSub(new ArithExpr[] { (ArithExpr) left,
+									(ArithExpr) right });
+						} catch (Z3Exception e) {
+							throw new TheoremProverException(e);
+						}
+					}
+				}, a, b);
 	}
 
 	static IntegerExpressionImpl mkMult(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new IntegerExpressionImpl(exprManager, MULT,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right) {
-				    try {
-					    return ctx.mkMul(new ArithExpr[] { (ArithExpr) left,
-		              (ArithExpr) right });
-				    } catch (Z3Exception e) {
-					    throw new TheoremProverException(e);
-				    }
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right) {
+						try {
+							return ctx.mkMul(new ArithExpr[] { (ArithExpr) left,
+									(ArithExpr) right });
+						} catch (Z3Exception e) {
+							throw new TheoremProverException(e);
+						}
+					}
+				}, a, b);
 	}
 
 	static IntegerExpressionImpl mkDivide(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new IntegerExpressionImpl(exprManager, DIVIDE,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right) {
-				    try {
-					    return ctx.mkDiv((ArithExpr) left, (ArithExpr) right);
-				    } catch (Z3Exception e) {
-					    throw new TheoremProverException(e);
-				    }
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right) {
+						try {
+							return ctx.mkDiv((ArithExpr) left, (ArithExpr) right);
+						} catch (Z3Exception e) {
+							throw new TheoremProverException(e);
+						}
+					}
+				}, a, b);
 	}
 
 	static IntegerExpressionImpl mkModulous(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new IntegerExpressionImpl(exprManager, MOD,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right) {
-				    try {
-					    return ctx.mkMod((IntExpr) left, (IntExpr) right);
-				    } catch (Z3Exception e) {
-					    throw new TheoremProverException(e);
-				    }
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right) {
+						try {
+							return ctx.mkMod((IntExpr) left, (IntExpr) right);
+						} catch (Z3Exception e) {
+							throw new TheoremProverException(e);
+						}
+					}
+				}, a, b);
 	}
 
 	static IntegerExpressionImpl mkMult(ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> terms) {
+			Iterable<? extends Expression> terms) {
 		Preconditions.checkArgument(!Iterables.isEmpty(terms));
 		return new IntegerExpressionImpl(exprManager, MULT,
-		    new NaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr[] args) {
-				    try {
-					    return ctx.mkMul((IntExpr[]) args);
-				    } catch (Z3Exception e) {
-					    throw new TheoremProverException(e);
-				    }
-			    }
-		    }, terms);
+				new NaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr[] args) {
+						try {
+							return ctx.mkMul((IntExpr[]) args);
+						} catch (Z3Exception e) {
+							throw new TheoremProverException(e);
+						}
+					}
+				}, terms);
 	}
 
 	static IntegerExpressionImpl mkPlus(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new IntegerExpressionImpl(exprManager, PLUS,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right) {
-				    try {
-					    return ctx.mkAdd(new ArithExpr[] { (ArithExpr) left,
-		              (ArithExpr) right });
-				    } catch (Z3Exception e) {
-					    throw new TheoremProverException(e);
-				    }
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right) {
+						try {
+							return ctx.mkAdd(new ArithExpr[] { (ArithExpr) left,
+									(ArithExpr) right });
+						} catch (Z3Exception e) {
+							throw new TheoremProverException(e);
+						}
+					}
+				}, a, b);
 	}
 
 	static IntegerExpressionImpl mkPlus(ExpressionManagerImpl exprManager,
-	    Expression first, Expression... rest) {
+			Expression first, Expression... rest) {
 		return mkPlus(exprManager, Lists.asList(first, rest));
 	}
 
 	static IntegerExpressionImpl mkPlus(ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> args) {
+			Iterable<? extends Expression> args) {
 		Preconditions.checkArgument(!Iterables.isEmpty(args));
 		return new IntegerExpressionImpl(exprManager, PLUS,
-		    new NaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr[] args) {
-				    try {
-					    return ctx.mkAdd((ArithExpr[]) args);
-				    } catch (Z3Exception e) {
-					    throw new TheoremProverException(e);
-				    }
-			    }
-		    }, args);
+				new NaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr[] args) {
+						try {
+							return ctx.mkAdd((ArithExpr[]) args);
+						} catch (Z3Exception e) {
+							throw new TheoremProverException(e);
+						}
+					}
+				}, args);
 	}
 
 	static IntegerExpressionImpl mkPow(ExpressionManagerImpl exprManager,
-	    Expression base, Expression exp) {
+			Expression base, Expression exp) {
 		return new IntegerExpressionImpl(exprManager, POW,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right) {
-				    try {
-					    return ctx.mkPower((ArithExpr) left, (ArithExpr) right);
-				    } catch (Z3Exception e) {
-					    throw new TheoremProverException(e);
-				    }
-			    }
-		    }, base, exp);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right) {
+						try {
+							return ctx.mkPower((ArithExpr) left, (ArithExpr) right);
+						} catch (Z3Exception e) {
+							throw new TheoremProverException(e);
+						}
+					}
+				}, base, exp);
 	}
 
 	static IntegerExpressionImpl mkUminus(ExpressionManagerImpl exprManager,
-	    Expression a) {
+			Expression a) {
 		return new IntegerExpressionImpl(exprManager, UNARY_MINUS,
-		    new UnaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left) {
-				    try {
-					    return ctx.mkUnaryMinus((ArithExpr) left);
-				    } catch (Z3Exception e) {
-					    throw new TheoremProverException(e);
-				    }
-			    }
-		    }, a);
+				new UnaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left) {
+						try {
+							return ctx.mkUnaryMinus((ArithExpr) left);
+						} catch (Z3Exception e) {
+							throw new TheoremProverException(e);
+						}
+					}
+				}, a);
 	}
 
 	static IntegerExpressionImpl valueOf(ExpressionManagerImpl exprManager,
-	    ExpressionImpl e) {
+			ExpressionImpl e) {
 		if (exprManager.equals(e.getExpressionManager())) {
 			if (e instanceof IntegerExpressionImpl) {
 				return (IntegerExpressionImpl) e;
@@ -233,7 +233,7 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 		switch (e.getKind()) {
 		default:
 			throw new UnsupportedOperationException("Unexpected kind: " + e + " {" + e
-			    .getKind() + "}");
+					.getKind() + "}");
 		}
 	}
 
@@ -246,40 +246,40 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 		super(em, CONSTANT, em.integerType());
 		try {
 			setZ3Expression(em.getTheoremProver().getZ3Context().mkInt(value
-			    .toString()));
+					.toString()));
 		} catch (Z3Exception e) {
 			throw new TheoremProverException(e);
 		}
 	}
 
 	private IntegerExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    BinaryConstructionStrategy strategy, Expression a, Expression b) {
+			BinaryConstructionStrategy strategy, Expression a, Expression b) {
 		super(exprManager, kind, strategy, a, b);
 		setType(getExpressionManager().integerType());
 	}
 
 	private IntegerExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    NaryConstructionStrategy strategy, Iterable<? extends Expression> args) {
+			NaryConstructionStrategy strategy, Iterable<? extends Expression> args) {
 		super(exprManager, kind, strategy, args);
 		setType(getExpressionManager().integerType());
 	}
 
 	private IntegerExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    UnaryConstructionStrategy strategy, Expression a) {
+			UnaryConstructionStrategy strategy, Expression a) {
 		super(exprManager, kind, strategy, a);
 		setType(getExpressionManager().integerType());
 	}
 
 	private IntegerExpressionImpl(ExpressionManagerImpl em, Kind kind, Expr expr,
-	    IntegerType type, Iterable<? extends ExpressionImpl> children) {
+			IntegerType type, Iterable<? extends ExpressionImpl> children) {
 		super(em, kind, expr, type, children);
 	}
 
 	static IntegerExpressionImpl create(ExpressionManagerImpl em, Kind kind,
-	    Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
+			Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
 		Preconditions.checkArgument(type.isInteger());
 		return new IntegerExpressionImpl(em, kind, expr, type.asInteger(),
-		    children);
+				children);
 	}
 
 	@Override
@@ -331,7 +331,7 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 	@Override
 	public IntegerExpression plus(Iterable<? extends IntegerExpression> rest) {
 		return mkPlus(getExpressionManager(), Iterables.concat(Collections
-		    .singletonList(this), rest));
+				.singletonList(this), rest));
 	}
 
 	@Override

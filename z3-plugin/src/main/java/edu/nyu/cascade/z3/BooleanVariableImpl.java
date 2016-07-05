@@ -6,15 +6,15 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 
 final class BooleanVariableImpl extends VariableExpressionImpl implements
-    BooleanExpression {
+		BooleanExpression {
 
 	private BooleanVariableImpl(ExpressionManagerImpl em, String name,
-	    boolean fresh) {
+			boolean fresh) {
 		super(em, name, em.booleanType(), fresh);
 	}
 
 	static BooleanVariableImpl create(ExpressionManagerImpl em, String name,
-	    boolean fresh) {
+			boolean fresh) {
 		return new BooleanVariableImpl(em, name, fresh);
 	}
 
@@ -50,7 +50,7 @@ final class BooleanVariableImpl extends VariableExpressionImpl implements
 
 	@Override
 	public BooleanExpression exists(Expression firstVar,
-	    Expression... otherVars) {
+			Expression... otherVars) {
 		return this.exists(firstVar, otherVars);
 	}
 
@@ -61,7 +61,7 @@ final class BooleanVariableImpl extends VariableExpressionImpl implements
 
 	@Override
 	public BooleanExpression forall(Expression firstVar,
-	    Expression... otherVars) {
+			Expression... otherVars) {
 		return this.forall(firstVar, otherVars);
 	}
 
@@ -102,7 +102,7 @@ final class BooleanVariableImpl extends VariableExpressionImpl implements
 
 	@Override
 	public void setMultiTriggers(
-	    Iterable<? extends Iterable<? extends Expression>> multiTriggers) {
+			Iterable<? extends Iterable<? extends Expression>> multiTriggers) {
 		this.setMultiTriggers(multiTriggers);
 	}
 
@@ -114,7 +114,7 @@ final class BooleanVariableImpl extends VariableExpressionImpl implements
 	@Override
 	public BooleanExpression or(Iterable<? extends Expression> disjuncts) {
 		ImmutableList<Expression> args = new ImmutableList.Builder<Expression>()
-		    .add(this).addAll(disjuncts).build();
+				.add(this).addAll(disjuncts).build();
 		return BooleanExpressionImpl.mkOr(getExpressionManager(), args);
 	}
 

@@ -24,39 +24,39 @@ import edu.nyu.cascade.prover.type.ComparableType;
 import edu.nyu.cascade.prover.type.Type;
 
 final class BooleanExpressionImpl extends ExpressionImpl implements
-    BooleanExpression {
+		BooleanExpression {
 
 	static BooleanExpressionImpl mkAnd(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		Preconditions.checkArgument(a.isBoolean());
 		Preconditions.checkArgument(b.isBoolean());
 		return new BooleanExpressionImpl(exprManager, Kind.AND,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkAnd(new BoolExpr[] { (BoolExpr) left,
-		            (BoolExpr) right });
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkAnd(new BoolExpr[] { (BoolExpr) left,
+								(BoolExpr) right });
+					}
+				}, a, b);
 	}
 
 	static BooleanExpressionImpl mkAnd(ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> args) {
+			Iterable<? extends Expression> args) {
 		return new BooleanExpressionImpl(exprManager, Kind.AND,
-		    new NaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr[] args) throws Z3Exception {
-				    BoolExpr[] bool_args = Arrays.copyOf(args, args.length,
-		            BoolExpr[].class);
-				    return ctx.mkAnd(bool_args);
-			    }
-		    }, args);
+				new NaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr[] args) throws Z3Exception {
+						BoolExpr[] bool_args = Arrays.copyOf(args, args.length,
+								BoolExpr[].class);
+						return ctx.mkAnd(bool_args);
+					}
+				}, args);
 	}
 
 	// TODO: Give this method package scope (requires move of bv classes)
 	static BooleanExpressionImpl mkBvGeq(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		Preconditions.checkArgument(a.isBitVector());
 		Preconditions.checkArgument(b.isBitVector());
 		if (a.asBitVector().getSize() > b.asBitVector().getSize()) {
@@ -65,17 +65,17 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 			a = a.asBitVector().signExtend(b.asBitVector().getSize());
 		}
 		return new BooleanExpressionImpl(exprManager, Kind.GEQ,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkBVUGE((BitVecExpr) left, (BitVecExpr) right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkBVUGE((BitVecExpr) left, (BitVecExpr) right);
+					}
+				}, a, b);
 	}
 
 	static BooleanExpressionImpl mkBvSGeq(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		Preconditions.checkArgument(a.isBitVector());
 		Preconditions.checkArgument(b.isBitVector());
 		if (a.asBitVector().getSize() > b.asBitVector().getSize()) {
@@ -84,18 +84,18 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 			a = a.asBitVector().signExtend(b.asBitVector().getSize());
 		}
 		return new BooleanExpressionImpl(exprManager, Kind.GEQ,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkBVSGE((BitVecExpr) left, (BitVecExpr) right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkBVSGE((BitVecExpr) left, (BitVecExpr) right);
+					}
+				}, a, b);
 	}
 
 	// TODO: Give this method package scope (requires move of bv classes)
 	static BooleanExpressionImpl mkBvGt(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		Preconditions.checkArgument(a.isBitVector());
 		Preconditions.checkArgument(b.isBitVector());
 		if (a.asBitVector().getSize() > b.asBitVector().getSize()) {
@@ -104,17 +104,17 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 			a = a.asBitVector().signExtend(b.asBitVector().getSize());
 		}
 		return new BooleanExpressionImpl(exprManager, Kind.GT,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkBVUGT((BitVecExpr) left, (BitVecExpr) right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkBVUGT((BitVecExpr) left, (BitVecExpr) right);
+					}
+				}, a, b);
 	}
 
 	static BooleanExpressionImpl mkBvSGt(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		Preconditions.checkArgument(a.isBitVector());
 		Preconditions.checkArgument(b.isBitVector());
 		if (a.asBitVector().getSize() > b.asBitVector().getSize()) {
@@ -123,17 +123,17 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 			a = a.asBitVector().signExtend(b.asBitVector().getSize());
 		}
 		return new BooleanExpressionImpl(exprManager, Kind.GT,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkBVSGT((BitVecExpr) left, (BitVecExpr) right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkBVSGT((BitVecExpr) left, (BitVecExpr) right);
+					}
+				}, a, b);
 	}
 
 	static BooleanExpressionImpl mkBvLeq(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		Preconditions.checkArgument(a.isBitVector());
 		Preconditions.checkArgument(b.isBitVector());
 		if (a.asBitVector().getSize() > b.asBitVector().getSize()) {
@@ -142,17 +142,17 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 			a = a.asBitVector().signExtend(b.asBitVector().getSize());
 		}
 		return new BooleanExpressionImpl(exprManager, Kind.LEQ,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkBVULE((BitVecExpr) left, (BitVecExpr) right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkBVULE((BitVecExpr) left, (BitVecExpr) right);
+					}
+				}, a, b);
 	}
 
 	static BooleanExpressionImpl mkBvSLeq(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		Preconditions.checkArgument(a.isBitVector());
 		Preconditions.checkArgument(b.isBitVector());
 		if (a.asBitVector().getSize() > b.asBitVector().getSize()) {
@@ -161,17 +161,17 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 			a = a.asBitVector().signExtend(b.asBitVector().getSize());
 		}
 		return new BooleanExpressionImpl(exprManager, Kind.LEQ,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkBVSLE((BitVecExpr) left, (BitVecExpr) right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkBVSLE((BitVecExpr) left, (BitVecExpr) right);
+					}
+				}, a, b);
 	}
 
 	static BooleanExpressionImpl mkBvLt(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		Preconditions.checkArgument(a.isBitVector());
 		Preconditions.checkArgument(b.isBitVector());
 		if (a.asBitVector().getSize() > b.asBitVector().getSize()) {
@@ -180,17 +180,17 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 			a = a.asBitVector().signExtend(b.asBitVector().getSize());
 		}
 		return new BooleanExpressionImpl(exprManager, Kind.LT,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkBVULT((BitVecExpr) left, (BitVecExpr) right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkBVULT((BitVecExpr) left, (BitVecExpr) right);
+					}
+				}, a, b);
 	}
 
 	static BooleanExpressionImpl mkBvSLt(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		Preconditions.checkArgument(a.isBitVector());
 		Preconditions.checkArgument(b.isBitVector());
 		if (a.asBitVector().getSize() > b.asBitVector().getSize()) {
@@ -199,60 +199,60 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 			a = a.asBitVector().signExtend(b.asBitVector().getSize());
 		}
 		return new BooleanExpressionImpl(exprManager, Kind.LT,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkBVSLT((BitVecExpr) left, (BitVecExpr) right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkBVSLT((BitVecExpr) left, (BitVecExpr) right);
+					}
+				}, a, b);
 	}
 
 	static BooleanExpressionImpl mkDistinct(ExpressionManagerImpl exprManager,
-	    Expression first, Expression second, Expression... rest) {
+			Expression first, Expression second, Expression... rest) {
 		return mkDistinct(exprManager, Lists.asList(first, second, rest));
 	}
 
 	static BooleanExpressionImpl mkDistinct(ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> subExpressions) {
+			Iterable<? extends Expression> subExpressions) {
 		Preconditions.checkArgument(Iterables.size(subExpressions) > 1);
 		return new BooleanExpressionImpl(exprManager, Kind.DISTINCT,
-		    new NaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr[] args) throws Z3Exception {
-				    return ctx.mkDistinct(args);
-			    }
-		    }, subExpressions);
+				new NaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr[] args) throws Z3Exception {
+						return ctx.mkDistinct(args);
+					}
+				}, subExpressions);
 	}
 
 	static BooleanExpressionImpl mkEq(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new BooleanExpressionImpl(exprManager, Kind.EQUAL,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkEq(left, right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkEq(left, right);
+					}
+				}, a, b);
 	}
 
 	static BooleanExpressionImpl mkExistsConst(ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> vars, Expression body,
-	    Iterable<? extends Expression> triggers,
-	    Iterable<? extends Expression> noTriggers) {
+			Iterable<? extends Expression> vars, Expression body,
+			Iterable<? extends Expression> triggers,
+			Iterable<? extends Expression> noTriggers) {
 		BooleanExpressionImpl e = new BooleanExpressionImpl(exprManager,
-		    Kind.EXISTS, new BinderTriggersConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr[] vars, Expr body, Expr[] pattern,
-		          Expr[] noPattern, Symbol quantifierID, Symbol skolemID)
-		          throws Z3Exception {
-				    Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(
-		            pattern) } : null;
-				    return ctx.mkExists(vars, body, 1, ptns, noPattern, quantifierID,
-		            skolemID);
-			    }
-		    }, vars, body, triggers, noTriggers);
+				Kind.EXISTS, new BinderTriggersConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr[] vars, Expr body, Expr[] pattern,
+							Expr[] noPattern, Symbol quantifierID, Symbol skolemID)
+							throws Z3Exception {
+						Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(
+								pattern) } : null;
+						return ctx.mkExists(vars, body, 1, ptns, noPattern, quantifierID,
+								skolemID);
+					}
+				}, vars, body, triggers, noTriggers);
 		if (triggers != null)
 			e.setTriggers(triggers);
 		if (noTriggers != null)
@@ -264,21 +264,21 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BooleanExpressionImpl mkExists(ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> vars, Expression body,
-	    Iterable<? extends Expression> triggers,
-	    Iterable<? extends Expression> noTriggers) {
+			Iterable<? extends Expression> vars, Expression body,
+			Iterable<? extends Expression> triggers,
+			Iterable<? extends Expression> noTriggers) {
 		BooleanExpressionImpl e = new BooleanExpressionImpl(exprManager,
-		    Kind.EXISTS, new BinderTriggersDeBruijnConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Sort[] sorts, Symbol[] names,
-		          Expr body, Expr[] pattern, Expr[] noPatter, Symbol quantifierID,
-		          Symbol skolemID) throws Z3Exception {
-				    Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(
-		            pattern) } : null;
-				    return ctx.mkExists(sorts, names, body, 1, ptns, noPatter,
-		            quantifierID, skolemID);
-			    }
-		    }, vars, body, triggers, noTriggers);
+				Kind.EXISTS, new BinderTriggersDeBruijnConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Sort[] sorts, Symbol[] names,
+							Expr body, Expr[] pattern, Expr[] noPatter, Symbol quantifierID,
+							Symbol skolemID) throws Z3Exception {
+						Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(
+								pattern) } : null;
+						return ctx.mkExists(sorts, names, body, 1, ptns, noPatter,
+								quantifierID, skolemID);
+					}
+				}, vars, body, triggers, noTriggers);
 		if (triggers != null)
 			e.setTriggers(triggers);
 		if (noTriggers != null)
@@ -291,31 +291,31 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 
 	static BooleanExpressionImpl mkFalse(ExpressionManagerImpl exprManager) {
 		return new BooleanExpressionImpl(exprManager, Kind.CONSTANT,
-		    new NullaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx) throws Z3Exception {
-				    return ctx.mkFalse();
-			    }
-		    });
+				new NullaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx) throws Z3Exception {
+						return ctx.mkFalse();
+					}
+				});
 	}
 
 	static BooleanExpressionImpl mkForallConst(ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> vars, Expression body,
-	    Iterable<? extends Expression> triggers,
-	    Iterable<? extends Expression> noTriggers) {
+			Iterable<? extends Expression> vars, Expression body,
+			Iterable<? extends Expression> triggers,
+			Iterable<? extends Expression> noTriggers) {
 
 		BooleanExpressionImpl e = new BooleanExpressionImpl(exprManager,
-		    Kind.FORALL, new BinderTriggersConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr[] vars, Expr body, Expr[] pattern,
-		          Expr[] noPatter, Symbol quantifierID, Symbol skolemID)
-		          throws Z3Exception {
-				    Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(
-		            pattern) } : null;
-				    return ctx.mkForall(vars, body, 1, ptns, noPatter, quantifierID,
-		            skolemID);
-			    }
-		    }, vars, body, triggers, noTriggers);
+				Kind.FORALL, new BinderTriggersConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr[] vars, Expr body, Expr[] pattern,
+							Expr[] noPatter, Symbol quantifierID, Symbol skolemID)
+							throws Z3Exception {
+						Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(
+								pattern) } : null;
+						return ctx.mkForall(vars, body, 1, ptns, noPatter, quantifierID,
+								skolemID);
+					}
+				}, vars, body, triggers, noTriggers);
 		if (triggers != null)
 			e.setTriggers(triggers);
 		if (noTriggers != null)
@@ -327,21 +327,21 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 	}
 
 	static BooleanExpressionImpl mkForall(ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> vars, Expression body,
-	    Iterable<? extends Expression> triggers,
-	    Iterable<? extends Expression> noTriggers) {
+			Iterable<? extends Expression> vars, Expression body,
+			Iterable<? extends Expression> triggers,
+			Iterable<? extends Expression> noTriggers) {
 		BooleanExpressionImpl e = new BooleanExpressionImpl(exprManager,
-		    Kind.FORALL, new BinderTriggersDeBruijnConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Sort[] sorts, Symbol[] names,
-		          Expr body, Expr[] pattern, Expr[] noPatter, Symbol quantifierID,
-		          Symbol skolemID) throws Z3Exception {
-				    Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(
-		            pattern) } : null;
-				    return ctx.mkForall(sorts, names, body, 1, ptns, noPatter,
-		            quantifierID, skolemID);
-			    }
-		    }, vars, body, triggers, noTriggers);
+				Kind.FORALL, new BinderTriggersDeBruijnConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Sort[] sorts, Symbol[] names,
+							Expr body, Expr[] pattern, Expr[] noPatter, Symbol quantifierID,
+							Symbol skolemID) throws Z3Exception {
+						Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(
+								pattern) } : null;
+						return ctx.mkForall(sorts, names, body, 1, ptns, noPatter,
+								quantifierID, skolemID);
+					}
+				}, vars, body, triggers, noTriggers);
 		if (triggers != null)
 			e.setTriggers(triggers);
 		if (noTriggers != null)
@@ -353,157 +353,157 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 	}
 
 	static <T extends ComparableType> BooleanExpressionImpl mkGeq(
-	    ExpressionManagerImpl exprManager, Expression a, Expression b) {
+			ExpressionManagerImpl exprManager, Expression a, Expression b) {
 		return new BooleanExpressionImpl(exprManager, Kind.GEQ,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkGe((ArithExpr) left, (ArithExpr) right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkGe((ArithExpr) left, (ArithExpr) right);
+					}
+				}, a, b);
 	}
 
 	static <T extends ComparableType> BooleanExpressionImpl mkGt(
-	    ExpressionManagerImpl exprManager, Expression a, Expression b) {
+			ExpressionManagerImpl exprManager, Expression a, Expression b) {
 		return new BooleanExpressionImpl(exprManager, Kind.GT,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkGt((ArithExpr) left, (ArithExpr) right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkGt((ArithExpr) left, (ArithExpr) right);
+					}
+				}, a, b);
 	}
 
 	static BooleanExpressionImpl mkIff(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		Preconditions.checkArgument(a.isBoolean());
 		Preconditions.checkArgument(b.isBoolean());
 		return new BooleanExpressionImpl(exprManager, Kind.IFF,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkIff((BoolExpr) left, (BoolExpr) right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkIff((BoolExpr) left, (BoolExpr) right);
+					}
+				}, a, b);
 	}
 
 	static BooleanExpressionImpl mkImplies(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		Preconditions.checkArgument(a.isBoolean());
 		Preconditions.checkArgument(b.isBoolean());
 		return new BooleanExpressionImpl(exprManager, Kind.IMPLIES,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkImplies((BoolExpr) left, (BoolExpr) right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkImplies((BoolExpr) left, (BoolExpr) right);
+					}
+				}, a, b);
 	}
 
 	static <T extends ComparableType> BooleanExpressionImpl mkLeq(
-	    ExpressionManagerImpl exprManager, Expression a, Expression b) {
+			ExpressionManagerImpl exprManager, Expression a, Expression b) {
 		return new BooleanExpressionImpl(exprManager, Kind.LEQ,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkLe((ArithExpr) left, (ArithExpr) right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkLe((ArithExpr) left, (ArithExpr) right);
+					}
+				}, a, b);
 	}
 
 	static <T extends ComparableType> BooleanExpressionImpl mkLt(
-	    ExpressionManagerImpl exprManager, Expression a, Expression b) {
+			ExpressionManagerImpl exprManager, Expression a, Expression b) {
 		return new BooleanExpressionImpl(exprManager, Kind.LT,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkLt((ArithExpr) left, (ArithExpr) right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkLt((ArithExpr) left, (ArithExpr) right);
+					}
+				}, a, b);
 	}
 
 	static BooleanExpressionImpl mkNot(ExpressionManagerImpl exprManager,
-	    Expression arg) {
+			Expression arg) {
 		Preconditions.checkArgument(arg.isBoolean());
 		return new BooleanExpressionImpl(exprManager, Kind.NOT,
-		    new UnaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr arg) throws Z3Exception {
-				    return ctx.mkNot((BoolExpr) arg);
-			    }
-		    }, arg);
+				new UnaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr arg) throws Z3Exception {
+						return ctx.mkNot((BoolExpr) arg);
+					}
+				}, arg);
 	}
 
 	static BooleanExpressionImpl mkOr(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		Preconditions.checkArgument(a.isBoolean());
 		Preconditions.checkArgument(b.isBoolean());
 		return new BooleanExpressionImpl(exprManager, Kind.OR,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkOr(new BoolExpr[] { (BoolExpr) left,
-		            (BoolExpr) right });
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkOr(new BoolExpr[] { (BoolExpr) left,
+								(BoolExpr) right });
+					}
+				}, a, b);
 	}
 
 	static BooleanExpressionImpl mkOr(ExpressionManagerImpl exprManager,
-	    Iterable<? extends Expression> args) {
+			Iterable<? extends Expression> args) {
 		for (Expression arg : args)
 			Preconditions.checkArgument(arg.isBoolean());
 		return new BooleanExpressionImpl(exprManager, Kind.OR,
-		    new NaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr[] args) throws Z3Exception {
-				    BoolExpr[] boolArgs = Arrays.copyOf(args, args.length,
-		            BoolExpr[].class);
-				    return ctx.mkOr(boolArgs);
-			    }
-		    }, args);
+				new NaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr[] args) throws Z3Exception {
+						BoolExpr[] boolArgs = Arrays.copyOf(args, args.length,
+								BoolExpr[].class);
+						return ctx.mkOr(boolArgs);
+					}
+				}, args);
 	}
 
 	static BooleanExpressionImpl mkOr(ExpressionManagerImpl exprManager,
-	    Expression first, Expression... rest) {
+			Expression first, Expression... rest) {
 		Preconditions.checkArgument(first.isBoolean());
 		for (Expression restElem : rest)
 			Preconditions.checkArgument(restElem.isBoolean());
 		ImmutableList<Expression> args = new ImmutableList.Builder<Expression>()
-		    .add(first).add(rest).build();
+				.add(first).add(rest).build();
 		return mkOr(exprManager, args);
 	}
 
 	static BooleanExpressionImpl mkTrue(ExpressionManagerImpl exprManager) {
 		return new BooleanExpressionImpl(exprManager, Kind.CONSTANT,
-		    new NullaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx) throws Z3Exception {
-				    return ctx.mkTrue();
-			    }
-		    });
+				new NullaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx) throws Z3Exception {
+						return ctx.mkTrue();
+					}
+				});
 	}
 
 	static BooleanExpressionImpl mkXor(ExpressionManagerImpl exprManager,
-	    Expression a, Expression b) {
+			Expression a, Expression b) {
 		return new BooleanExpressionImpl(exprManager, Kind.XOR,
-		    new BinaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(Context ctx, Expr left, Expr right)
-		          throws Z3Exception {
-				    return ctx.mkXor((BoolExpr) left, (BoolExpr) right);
-			    }
-		    }, a, b);
+				new BinaryConstructionStrategy() {
+					@Override
+					public Expr apply(Context ctx, Expr left, Expr right)
+							throws Z3Exception {
+						return ctx.mkXor((BoolExpr) left, (BoolExpr) right);
+					}
+				}, a, b);
 	}
 
 	static BooleanExpressionImpl valueOf(ExpressionManagerImpl exprManager,
-	    Expression e) {
+			Expression e) {
 		if (exprManager.equals(e.getExpressionManager())) {
 			if (e instanceof BooleanExpressionImpl) {
 				return (BooleanExpressionImpl) e;
@@ -519,7 +519,7 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 	}
 
 	private List<ImmutableList<? extends Expression>> triggers = Lists
-	    .newArrayList();
+			.newArrayList();
 	private ImmutableList<? extends Expression> boundVars = null;
 	private BooleanExpression body = null;
 
@@ -528,63 +528,63 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 	}
 
 	private BooleanExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    BinaryConstructionStrategy strategy, Expression left, Expression right) {
+			BinaryConstructionStrategy strategy, Expression left, Expression right) {
 		super(exprManager, kind, strategy, left, right);
 		setType(exprManager.booleanType());
 	}
 
 	private BooleanExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    TernaryConstructionStrategy strategy, Expression a, Expression b,
-	    Expression c) {
+			TernaryConstructionStrategy strategy, Expression a, Expression b,
+			Expression c) {
 		super(exprManager, kind, strategy, a, b, c);
 		setType(exprManager.booleanType());
 	}
 
 	private BooleanExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    BinderTriggersConstructionStrategy strategy,
-	    Iterable<? extends Expression> vars, Expression body,
-	    Iterable<? extends Expression> triggers,
-	    Iterable<? extends Expression> noTriggers) {
+			BinderTriggersConstructionStrategy strategy,
+			Iterable<? extends Expression> vars, Expression body,
+			Iterable<? extends Expression> triggers,
+			Iterable<? extends Expression> noTriggers) {
 		super(exprManager, kind, strategy, vars, body, triggers, noTriggers);
 		setType(exprManager.booleanType());
 	}
 
 	private BooleanExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    BinderTriggersDeBruijnConstructionStrategy strategy,
-	    Iterable<? extends Expression> vars, Expression body,
-	    Iterable<? extends Expression> triggers,
-	    Iterable<? extends Expression> noTriggers) {
+			BinderTriggersDeBruijnConstructionStrategy strategy,
+			Iterable<? extends Expression> vars, Expression body,
+			Iterable<? extends Expression> triggers,
+			Iterable<? extends Expression> noTriggers) {
 		super(exprManager, kind, strategy, vars, body, triggers, noTriggers);
 		setType(exprManager.booleanType());
 	}
 
 	private BooleanExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    NaryConstructionStrategy construct,
-	    Iterable<? extends Expression> subExpressions) {
+			NaryConstructionStrategy construct,
+			Iterable<? extends Expression> subExpressions) {
 		super(exprManager, kind, construct, subExpressions);
 		setType(exprManager.booleanType());
 	}
 
 	private BooleanExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    NaryConstructionStrategy strategy, Expression first, Expression[] rest)
-	    throws Z3Exception {
+			NaryConstructionStrategy strategy, Expression first, Expression[] rest)
+			throws Z3Exception {
 		super(exprManager, kind, strategy, first, rest);
 	}
 
 	private BooleanExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    NullaryConstructionStrategy strategy) {
+			NullaryConstructionStrategy strategy) {
 		super(exprManager, kind, strategy);
 		setType(exprManager.booleanType());
 	}
 
 	private BooleanExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    UnaryConstructionStrategy strategy, Expression arg) {
+			UnaryConstructionStrategy strategy, Expression arg) {
 		super(exprManager, kind, strategy, arg);
 		setType(exprManager.booleanType());
 	}
 
 	private BooleanExpressionImpl(ExpressionManagerImpl exprManager,
-	    final boolean value) {
+			final boolean value) {
 		super(exprManager, Kind.CONSTANT, new NullaryConstructionStrategy() {
 			@Override
 			public Expr apply(Context ctx) throws Z3Exception {
@@ -595,15 +595,15 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 	}
 
 	private BooleanExpressionImpl(ExpressionManagerImpl em, Kind kind, Expr expr,
-	    BooleanType type, Iterable<? extends ExpressionImpl> children) {
+			BooleanType type, Iterable<? extends ExpressionImpl> children) {
 		super(em, kind, expr, type, children);
 	}
 
 	static BooleanExpressionImpl create(ExpressionManagerImpl em, Kind kind,
-	    Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
+			Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
 		Preconditions.checkArgument(type.isBoolean());
 		return new BooleanExpressionImpl(em, kind, expr, type.asBooleanType(),
-		    children);
+				children);
 	}
 
 	@Override
@@ -663,7 +663,7 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 	@Override
 	public void setTriggers(Iterable<? extends Expression> triggers) {
 		List<ImmutableList<? extends Expression>> multiTriggers = Lists
-		    .newArrayList();
+				.newArrayList();
 		for (Expression trigger : triggers) {
 			multiTriggers.add(ImmutableList.<Expression> of(trigger));
 		}
@@ -672,7 +672,7 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 
 	private void setNoTriggers(Iterable<? extends Expression> noTriggers) {
 		List<ImmutableList<? extends Expression>> multiTriggers = Lists
-		    .newArrayList();
+				.newArrayList();
 		for (Expression trigger : noTriggers) {
 			multiTriggers.add(ImmutableList.<Expression> of(trigger));
 		}
@@ -686,7 +686,7 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 	@Override
 	public Expression ifThenElse(Expression thenPart, Expression elsePart) {
 		return ExpressionImpl.mkIte(getExpressionManager(), this, thenPart,
-		    elsePart);
+				elsePart);
 	}
 
 	@Override
@@ -697,9 +697,9 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 
 	@Override
 	public void setMultiTriggers(
-	    Iterable<? extends Iterable<? extends Expression>> multiTriggers) {
+			Iterable<? extends Iterable<? extends Expression>> multiTriggers) {
 		List<ImmutableList<? extends Expression>> multiTriggerList = Lists
-		    .newArrayList();
+				.newArrayList();
 		for (Iterable<? extends Expression> multiTrigger : multiTriggers) {
 			ImmutableList.Builder<Expression> triggerList = ImmutableList.builder();
 			for (Expression trigger : multiTrigger) {
@@ -722,13 +722,13 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 
 	@Override
 	public BooleanExpression exists(Expression firstVar,
-	    Expression... otherVars) {
+			Expression... otherVars) {
 		return exists(Lists.asList(firstVar, otherVars));
 	}
 
 	@Override
 	public BooleanExpression forall(Expression firstVar,
-	    Expression... otherVars) {
+			Expression... otherVars) {
 		return forall(Lists.asList(firstVar, otherVars));
 	}
 

@@ -6,25 +6,25 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 
 final class BooleanBoundExpressionImpl extends BoundExpressionImpl implements
-    BooleanExpression {
+		BooleanExpression {
 
 	private BooleanBoundExpressionImpl(ExpressionManagerImpl em, String name,
-	    boolean fresh) {
+			boolean fresh) {
 		super(em, name, em.booleanType(), fresh);
 	}
 
 	private BooleanBoundExpressionImpl(ExpressionManagerImpl em, String name,
-	    int index, boolean fresh) {
+			int index, boolean fresh) {
 		super(em, name, index, em.booleanType(), fresh);
 	}
 
 	static BooleanBoundExpressionImpl create(ExpressionManagerImpl em,
-	    String name, boolean fresh) {
+			String name, boolean fresh) {
 		return new BooleanBoundExpressionImpl(em, name, fresh);
 	}
 
 	static BooleanBoundExpressionImpl create(ExpressionManagerImpl em,
-	    String name, int index, boolean fresh) {
+			String name, int index, boolean fresh) {
 		return new BooleanBoundExpressionImpl(em, name, index, fresh);
 	}
 
@@ -60,7 +60,7 @@ final class BooleanBoundExpressionImpl extends BoundExpressionImpl implements
 
 	@Override
 	public BooleanExpression exists(Expression firstVar,
-	    Expression... otherVars) {
+			Expression... otherVars) {
 		return this.exists(firstVar, otherVars);
 	}
 
@@ -71,7 +71,7 @@ final class BooleanBoundExpressionImpl extends BoundExpressionImpl implements
 
 	@Override
 	public BooleanExpression forall(Expression firstVar,
-	    Expression... otherVars) {
+			Expression... otherVars) {
 		return this.forall(firstVar, otherVars);
 	}
 
@@ -112,7 +112,7 @@ final class BooleanBoundExpressionImpl extends BoundExpressionImpl implements
 
 	@Override
 	public void setMultiTriggers(
-	    Iterable<? extends Iterable<? extends Expression>> multiTriggers) {
+			Iterable<? extends Iterable<? extends Expression>> multiTriggers) {
 		this.setMultiTriggers(multiTriggers);
 	}
 
@@ -124,7 +124,7 @@ final class BooleanBoundExpressionImpl extends BoundExpressionImpl implements
 	@Override
 	public BooleanExpression or(Iterable<? extends Expression> disjuncts) {
 		ImmutableList<Expression> args = new ImmutableList.Builder<Expression>()
-		    .add(this).addAll(disjuncts).build();
+				.add(this).addAll(disjuncts).build();
 		return BooleanExpressionImpl.mkOr(getExpressionManager(), args);
 	}
 

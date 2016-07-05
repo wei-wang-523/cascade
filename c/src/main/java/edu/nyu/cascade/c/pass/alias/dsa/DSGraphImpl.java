@@ -17,11 +17,13 @@ import xtc.type.Type;
 
 final class DSGraphImpl extends DSGraph {
 
-	DSGraphImpl(EquivalenceClasses<GlobalValue> ECs, SuperSet<Type> tss, DSGraph GG) {
+	DSGraphImpl(EquivalenceClasses<GlobalValue> ECs, SuperSet<Type> tss,
+			DSGraph GG) {
 		super(ECs, tss, GG);
 	}
-	
-	DSGraphImpl(DSGraph DSG, EquivalenceClasses<GlobalValue> ECs, SuperSet<Type> tss, int CloneFlags) {
+
+	DSGraphImpl(DSGraph DSG, EquivalenceClasses<GlobalValue> ECs,
+			SuperSet<Type> tss, int CloneFlags) {
 		super(DSG, ECs, tss, CloneFlags);
 	}
 
@@ -43,12 +45,13 @@ final class DSGraphImpl extends DSGraph {
 	}
 
 	@Override
-	void buildCallGraph(DSCallGraph DCG, Collection<Function> GlobalFunctionList, boolean filter) {
+	void buildCallGraph(DSCallGraph DCG, Collection<Function> GlobalFunctionList,
+			boolean filter) {
 
 		// Get the list of unresolved call sites.
 		for (DSCallSite Call : getFunctionCalls()) {
-			
-			// Direct calls are easy.  We know to where they go.
+
+			// Direct calls are easy. We know to where they go.
 			Node CallSite = Call.getCallSite();
 			if (Call.isDirectCall()) {
 				DCG.insert(CallSite, Call.getCalleeF());
@@ -56,12 +59,14 @@ final class DSGraphImpl extends DSGraph {
 
 				Collection<Function> MaybeTargets = Sets.newTreeSet();
 
-				if(Call.getCalleeN().isIncompleteNode()) continue;
-				 	
+				if (Call.getCalleeN().isIncompleteNode())
+					continue;
+
 				// Get the list of known targets of this function.
 				Call.getCalleeN().addFullFunctionList(MaybeTargets);
 
-				// Ensure that the call graph at least knows about (has a record of) this
+				// Ensure that the call graph at least knows about (has a record of)
+				// this
 				// call site.
 				DCG.insert(CallSite, null);
 
@@ -73,22 +78,22 @@ final class DSGraphImpl extends DSGraph {
 						DCG.insert(CallSite, Func);
 					}
 				}
-				  
+
 				for (Node MCS : Call.getMappedSites()) {
 					for (Function Func : MaybeTargets) {
 						if (!filter || functionIsCallable(MCS, Func)) {
 							DCG.insert(MCS, Func);
-						}					  
+						}
 					}
 				}
 			}
 		}
 	}
 
-	/** Description:
-	 * Determine whether the specified function can be a target of the specified
-	 * call site.  We allow the user to configure what we consider to be
-	 *   uncallable at an indirect function call site.
+	/**
+	 * Description: Determine whether the specified function can be a target of
+	 * the specified call site. We allow the user to configure what we consider to
+	 * be uncallable at an indirect function call site.
 	 */
 	private boolean functionIsCallable(Node CS, Function func) {
 		// TODO Auto-generated method stub
@@ -143,8 +148,8 @@ final class DSGraphImpl extends DSGraph {
 	}
 
 	@Override
-	void computeCalleeCallerMapping(DSCallSite CS, Function Callee, DSGraph CalleeGraph,
-			Map<DSNode, DSNodeHandle> NodeMap) {
+	void computeCalleeCallerMapping(DSCallSite CS, Function Callee,
+			DSGraph CalleeGraph, Map<DSNode, DSNodeHandle> NodeMap) {
 		// TODO Auto-generated method stub
 
 	}
@@ -168,7 +173,7 @@ final class DSGraphImpl extends DSGraph {
 
 		// Same for the VA nodes
 		splice(VANodes, RHS.VANodes);
-		
+
 		// Same for the NodeMap
 		NodeMap.spliceFrom(RHS.NodeMap);
 
@@ -177,51 +182,52 @@ final class DSGraphImpl extends DSGraph {
 	}
 
 	private <T> void splice(Collection<T> LHS, Collection<T> RHS) {
-		LHS.addAll(RHS); RHS.clear();
+		LHS.addAll(RHS);
+		RHS.clear();
 	}
-	
 
 	private <T, S> void splice(Map<T, S> LHS, Map<T, S> RHS) {
-		LHS.putAll(RHS); RHS.clear();
+		LHS.putAll(RHS);
+		RHS.clear();
 	}
 
 	@Override
 	void cloneInto(DSGraph G, int CloneFlags) {
 		Preconditions.checkArgument(G != this);
-		
+
 		// Remove alloca or mod/ref bits as specified...
-		int BitsToClear =
-				((CloneFlags & DSSupport.CloneFlags.StripAllocaBit.value()) != 0 ? 
-						DSSupport.NodeTy.AllocaNode.value() : 0) | 
-				((CloneFlags & DSSupport.CloneFlags.StripModRefBits.value()) != 0 ? 
-						(DSSupport.NodeTy.ModifiedNode.value() | DSSupport.NodeTy.ReadNode.value()) : 0) |
-			    ((CloneFlags & DSSupport.CloneFlags.StripIncompleteBit.value()) != 0 ? 
-			    		DSSupport.NodeTy.IncompleteNode.value() : 0);
-		BitsToClear |= DSSupport.NodeTy.DeadNode.value();  // Clear dead flag...
-		
+		int BitsToClear = ((CloneFlags & DSSupport.CloneFlags.StripAllocaBit
+				.value()) != 0 ? DSSupport.NodeTy.AllocaNode.value() : 0) | ((CloneFlags
+						& DSSupport.CloneFlags.StripModRefBits.value()) != 0
+								? (DSSupport.NodeTy.ModifiedNode.value()
+										| DSSupport.NodeTy.ReadNode.value()) : 0) | ((CloneFlags
+												& DSSupport.CloneFlags.StripIncompleteBit.value()) != 0
+														? DSSupport.NodeTy.IncompleteNode.value() : 0);
+		BitsToClear |= DSSupport.NodeTy.DeadNode.value(); // Clear dead flag...
+
 		Map<DSNode, DSNodeHandle> OldNodeMap = Maps.newHashMap();
-		for(DSNode Old : G.getNodes()) {
+		for (DSNode Old : G.getNodes()) {
 			assert !(Old.isForwarding()) : "Forward nodes shouldn't be in node list!";
 			DSNode New = new DSNodeImpl(Old, this, false);
-		    New.maskNodeTypes(~BitsToClear);
-		    OldNodeMap.put(Old, new DSNodeHandle(New, 0));
+			New.maskNodeTypes(~BitsToClear);
+			OldNodeMap.put(Old, new DSNodeHandle(New, 0));
 		}
-		
+
 		// Rewrite the links in the new nodes to point into the current graph now.
-		// Note that we don't loop over the node's list to do this.  The problem is
+		// Note that we don't loop over the node's list to do this. The problem is
 		// that re-mapping links can cause recursive merging to happen, which means
-		// that node_iterator's can get easily invalidated!  Because of this, we
+		// that node_iterator's can get easily invalidated! Because of this, we
 		// loop over the OldNodeMap, which contains all of the new nodes as the
-		// .second element of the map elements.  Also note that if we re-map a node
+		// .second element of the map elements. Also note that if we re-map a node
 		// more than once, we won't break anything.
-		for(Entry<DSNode, DSNodeHandle> entry : OldNodeMap.entrySet()) {
+		for (Entry<DSNode, DSNodeHandle> entry : OldNodeMap.entrySet()) {
 			entry.getValue().getNode().remapLinks(OldNodeMap);
 		}
-		
+
 		// Copy the scalar map... merging all of the global nodes...
-		for (Entry<Value, DSNodeHandle> entry :
-			G.getScalarMap().getValueMap().entrySet()) {
-		    DSNodeHandle H = ScalarMap.getRawEntryRef(entry.getKey());
+		for (Entry<Value, DSNodeHandle> entry : G.getScalarMap().getValueMap()
+				.entrySet()) {
+			DSNodeHandle H = ScalarMap.getRawEntryRef(entry.getKey());
 			DSNodeHandle OldNH = entry.getValue();
 			DSNode OldN = OldNH.getNode();
 			if (Nodes.contains(OldN)) {
@@ -229,15 +235,15 @@ final class DSGraphImpl extends DSGraph {
 			} else {
 				assert OldNodeMap.containsKey(OldN) : "Unmapped node";
 				DSNodeHandle MappedNH = OldNodeMap.get(OldN);
-			    DSNode MappedN = MappedNH.getNode();
-			    H.mergeWith(new DSNodeHandle(MappedN,
-			    		OldNH.getOffset() + MappedNH.getOffset()));
+				DSNode MappedN = MappedNH.getNode();
+				H.mergeWith(new DSNodeHandle(MappedN, OldNH.getOffset() + MappedNH
+						.getOffset()));
 			}
 		}
-		
+
 		// Copy the node map... merging all of the global nodes...
-		for (Entry<Pair<Node, String>, DSNodeHandle> entry :
-			G.getNodeMap().getNodeMap().entrySet()) {
+		for (Entry<Pair<Node, String>, DSNodeHandle> entry : G.getNodeMap()
+				.getNodeMap().entrySet()) {
 			DSNodeHandle H = NodeMap.getRawEntryRef(entry.getKey().fst());
 			DSNodeHandle OldNH = entry.getValue();
 			DSNode OldN = OldNH.getNode();
@@ -247,36 +253,36 @@ final class DSGraphImpl extends DSGraph {
 				assert OldNodeMap.containsKey(OldN) : "Unmapped node";
 				DSNodeHandle MappedNH = OldNodeMap.get(OldN);
 				DSNode MappedN = MappedNH.getNode();
-				H.mergeWith(new DSNodeHandle(MappedN,
-						OldNH.getOffset() + MappedNH.getOffset()));
+				H.mergeWith(new DSNodeHandle(MappedN, OldNH.getOffset() + MappedNH
+						.getOffset()));
 			}
 		}
-		
+
 		if ((CloneFlags & DSSupport.CloneFlags.DontCloneCallNodes.value()) == 0) {
-		    // Copy the function calls list.
-		    for (DSCallSite CS : G.getFunctionCalls()) {
-		      FunctionCalls.add(DSCallSite.createWithDSNodeMap(CS, OldNodeMap));
-		    }
+			// Copy the function calls list.
+			for (DSCallSite CS : G.getFunctionCalls()) {
+				FunctionCalls.add(DSCallSite.createWithDSNodeMap(CS, OldNodeMap));
+			}
 		}
-		
+
 		// Map the return node pointers over...
 		for (Entry<Function, DSNodeHandle> entry : G.ReturnNodes.entrySet()) {
 			DSNodeHandle Ret = entry.getValue();
 			assert OldNodeMap.containsKey(Ret.getNode()) : "Unmapped node";
 			DSNodeHandle MappedRet = OldNodeMap.get(Ret.getNode());
 			DSNode MappedRetN = MappedRet.getNode();
-			ReturnNodes.put(entry.getKey(), new DSNodeHandle(MappedRetN,
-					MappedRet.getOffset() + Ret.getOffset()));
+			ReturnNodes.put(entry.getKey(), new DSNodeHandle(MappedRetN, MappedRet
+					.getOffset() + Ret.getOffset()));
 		}
-		
+
 		// Map the VA node pointers over...
 		for (Entry<Function, DSNodeHandle> entry : G.getVANodes().entrySet()) {
 			DSNodeHandle VarArg = entry.getValue();
 			assert OldNodeMap.containsKey(VarArg.getNode()) : "Unmapped node";
-		    DSNodeHandle MappedVarArg = OldNodeMap.get(VarArg.getNode());
-		    DSNode MappedVarArgN = MappedVarArg.getNode();
-		    VANodes.put(entry.getKey(), new DSNodeHandle(MappedVarArgN,
-		    		MappedVarArg.getOffset()+VarArg.getOffset()));
+			DSNodeHandle MappedVarArg = OldNodeMap.get(VarArg.getNode());
+			DSNode MappedVarArgN = MappedVarArg.getNode();
+			VANodes.put(entry.getKey(), new DSNodeHandle(MappedVarArgN, MappedVarArg
+					.getOffset() + VarArg.getOffset()));
 		}
 	}
 
@@ -287,7 +293,8 @@ final class DSGraphImpl extends DSGraph {
 	}
 
 	@Override
-	void mergeInGraph(DSCallSite CS, Collection<DSNodeHandle> Args, DSGraph G2, int CloneFlags) {
+	void mergeInGraph(DSCallSite CS, Collection<DSNodeHandle> Args, DSGraph G2,
+			int CloneFlags) {
 		// TODO Auto-generated method stub
 
 	}

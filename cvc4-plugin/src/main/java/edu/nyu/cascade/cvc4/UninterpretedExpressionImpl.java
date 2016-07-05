@@ -9,17 +9,17 @@ import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.prover.type.Type;
 
 final class UninterpretedExpressionImpl extends ExpressionImpl implements
-    UninterpretedExpression {
+		UninterpretedExpression {
 
 	static UninterpretedExpressionImpl create(ExpressionManagerImpl exprManager,
-	    Kind kind, Expr expr, UninterpretedType type,
-	    Iterable<? extends ExpressionImpl> children) {
+			Kind kind, Expr expr, UninterpretedType type,
+			Iterable<? extends ExpressionImpl> children) {
 		return new UninterpretedExpressionImpl(exprManager, kind, expr, type,
-		    children);
+				children);
 	}
 
 	static UninterpretedExpressionImpl valueOf(ExpressionManagerImpl exprManager,
-	    ExpressionImpl expr) {
+			ExpressionImpl expr) {
 		Preconditions.checkArgument(expr.isTuple());
 		if (exprManager.equals(expr.getExpressionManager())) {
 			if (expr instanceof UninterpretedExpressionImpl) {
@@ -36,8 +36,8 @@ final class UninterpretedExpressionImpl extends ExpressionImpl implements
 	}
 
 	private UninterpretedExpressionImpl(ExpressionManagerImpl exprManager,
-	    Kind kind, BinaryConstructionStrategy strategy, Expression left,
-	    Expression right, Type t) {
+			Kind kind, BinaryConstructionStrategy strategy, Expression left,
+			Expression right, Type t) {
 		super(exprManager, kind, strategy, left, right);
 		setType(TupleTypeImpl.valueOf(exprManager, t));
 	}
@@ -62,8 +62,8 @@ final class UninterpretedExpressionImpl extends ExpressionImpl implements
 	}
 
 	private UninterpretedExpressionImpl(ExpressionManagerImpl exprManager,
-	    Kind kind, Expr expr, UninterpretedType type,
-	    Iterable<? extends ExpressionImpl> children) {
+			Kind kind, Expr expr, UninterpretedType type,
+			Iterable<? extends ExpressionImpl> children) {
 		super(exprManager, kind, expr, type);
 	}
 

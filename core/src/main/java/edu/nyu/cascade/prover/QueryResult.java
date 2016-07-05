@@ -14,12 +14,12 @@ public abstract class QueryResult<R> {
 	}
 
 	protected QueryResult(R result, Expression query,
-	    Iterable<? extends BooleanExpression> assumptions) {
+			Iterable<? extends BooleanExpression> assumptions) {
 		this(result, query, assumptions, null);
 	}
 
 	protected QueryResult(R result, Expression query,
-	    Iterable<? extends BooleanExpression> assumptions, String unknownReason) {
+			Iterable<? extends BooleanExpression> assumptions, String unknownReason) {
 		Preconditions.checkNotNull(result);
 		Preconditions.checkNotNull(query);
 		Preconditions.checkNotNull(assumptions);

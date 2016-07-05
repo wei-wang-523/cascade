@@ -5,7 +5,7 @@ import java.util.Collection;
 public final class IRFunctionType<T extends IRType> extends IRType {
 
 	public static <T extends IRType> IRFunctionType<T> getInstance(
-	    Collection<IRType> parameterTypes, T returnType) {
+			Collection<IRType> parameterTypes, T returnType) {
 		return new IRFunctionType<T>(parameterTypes, returnType);
 	}
 

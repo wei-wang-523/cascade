@@ -26,35 +26,35 @@ import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.Selector;
 
 final class InductiveExpressionImpl extends ExpressionImpl implements
-    InductiveExpression {
+		InductiveExpression {
 
 	static InductiveExpressionImpl create(Constructor constructor,
-	    Expression... args) {
+			Expression... args) {
 		checkArgument(constructor.getSelectors().size() == args.length);
 		return new InductiveExpressionImpl(ConstructorImpl.valueOf(constructor),
-		    ImmutableList.copyOf(Arrays.asList(args)));
+				ImmutableList.copyOf(Arrays.asList(args)));
 	}
 
 	static InductiveExpressionImpl create(Constructor constructor,
-	    Iterable<? extends Expression> args) {
+			Iterable<? extends Expression> args) {
 		Preconditions.checkArgument(constructor.getSelectors().size() == Iterables
-		    .size(args));
+				.size(args));
 		if (Iterables.isEmpty(args)) {
 			return new InductiveExpressionImpl(ConstructorImpl.valueOf(constructor));
 		} else {
 			return new InductiveExpressionImpl(ConstructorImpl.valueOf(constructor),
-			    args);
+					args);
 		}
 	}
 
 	static InductiveExpressionImpl create(ExpressionManagerImpl exprManager,
-	    Kind kind, Expr expr, InductiveType type,
-	    Iterable<? extends ExpressionImpl> children) {
+			Kind kind, Expr expr, InductiveType type,
+			Iterable<? extends ExpressionImpl> children) {
 		return new InductiveExpressionImpl(exprManager, kind, expr, type, children);
 	}
 
 	static InductiveExpressionImpl valueOf(ExpressionManagerImpl exprManager,
-	    ExpressionImpl expr) {
+			ExpressionImpl expr) {
 		Preconditions.checkArgument(expr.isInductive());
 		if (exprManager.equals(expr.getExpressionManager())) {
 			if (expr instanceof InductiveExpressionImpl) {
@@ -72,18 +72,18 @@ final class InductiveExpressionImpl extends ExpressionImpl implements
 
 	private InductiveExpressionImpl(final ConstructorImpl constructor) {
 		super(constructor.getExpressionManager(), Kind.DATATYPE_CONSTRUCT,
-		    new NullaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em) throws Exception {
-				    ExpressionManagerImpl exprManager = constructor
-		            .getExpressionManager();
-				    Type type = exprManager.toCvc4Type(constructor.getType());
-				    DatatypeType dtt = new DatatypeType(type);
-				    Datatype dt = dtt.getDatatype();
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.APPLY_CONSTRUCTOR, dt
-		            .getConstructor(constructor.getName()));
-			    }
-		    });
+				new NullaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em) throws Exception {
+						ExpressionManagerImpl exprManager = constructor
+								.getExpressionManager();
+						Type type = exprManager.toCvc4Type(constructor.getType());
+						DatatypeType dtt = new DatatypeType(type);
+						Datatype dt = dtt.getDatatype();
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.APPLY_CONSTRUCTOR, dt
+								.getConstructor(constructor.getName()));
+					}
+				});
 
 		// this.constructor = constructor;
 
@@ -110,31 +110,31 @@ final class InductiveExpressionImpl extends ExpressionImpl implements
 	 * this.constructor = constructor; }
 	 */
 	private InductiveExpressionImpl(final ConstructorImpl constructor,
-	    Iterable<? extends Expression> args) {
+			Iterable<? extends Expression> args) {
 		super(constructor.getExpressionManager(), DATATYPE_CONSTRUCT,
-		    new NaryConstructionStrategy() {
-			    @Override
-			    public Expr apply(ExprManager em, List<Expr> children)
-		          throws Exception {
-				    ExpressionManagerImpl exprManager = constructor
-		            .getExpressionManager();
-				    Type type = exprManager.toCvc4Type(constructor.getType());
-				    DatatypeType dtt = new DatatypeType(type);
-				    Datatype dt = dtt.getDatatype();
-				    vectorExpr argsExpr = new vectorExpr();
-				    for (Expr child : children)
-					    argsExpr.add(child);
-				    return em.mkExpr(edu.nyu.acsys.CVC4.Kind.APPLY_CONSTRUCTOR, dt
-		            .getConstructor(constructor.getName()), argsExpr);
-			    }
-		    }, args);
+				new NaryConstructionStrategy() {
+					@Override
+					public Expr apply(ExprManager em, List<Expr> children)
+							throws Exception {
+						ExpressionManagerImpl exprManager = constructor
+								.getExpressionManager();
+						Type type = exprManager.toCvc4Type(constructor.getType());
+						DatatypeType dtt = new DatatypeType(type);
+						Datatype dt = dtt.getDatatype();
+						vectorExpr argsExpr = new vectorExpr();
+						for (Expr child : children)
+							argsExpr.add(child);
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.APPLY_CONSTRUCTOR, dt
+								.getConstructor(constructor.getName()), argsExpr);
+					}
+				}, args);
 
 		setType(constructor.getType());
 	}
 
 	private InductiveExpressionImpl(ExpressionManagerImpl exprManager, Kind kind,
-	    Expr expr, InductiveType type,
-	    Iterable<? extends ExpressionImpl> children) {
+			Expr expr, InductiveType type,
+			Iterable<? extends ExpressionImpl> children) {
 		super(exprManager, kind, expr, type);
 	}
 

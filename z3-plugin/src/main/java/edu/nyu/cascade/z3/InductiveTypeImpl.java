@@ -37,13 +37,13 @@ import edu.nyu.cascade.util.IOUtils;
 final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 
 	static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, ConstructorImpl>> constructorCache = CacheBuilder
-	    .newBuilder().build(
-	        new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, ConstructorImpl>>() {
-		        public ConcurrentMap<String, ConstructorImpl> load(
-	              ExpressionManagerImpl expressionManager) {
-			        return new MapMaker().makeMap();
-		        }
-	        });
+			.newBuilder().build(
+					new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, ConstructorImpl>>() {
+						public ConcurrentMap<String, ConstructorImpl> load(
+								ExpressionManagerImpl expressionManager) {
+							return new MapMaker().makeMap();
+						}
+					});
 
 	static class Builder {
 		private final List<String> typeNames;
@@ -86,13 +86,13 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 			currentConstructorNames.add(c.getName());
 			List<SelectorImpl> selectors = c.getSelectors();
 			List<String> selectorNames = Lists.newArrayListWithExpectedSize(selectors
-			    .size());
+					.size());
 			List<Sort> selectorTypes = Lists.newArrayListWithExpectedSize(selectors
-			    .size());
+					.size());
 			List<Sort> selectorUninters = Lists.newArrayListWithExpectedSize(selectors
-			    .size());
+					.size());
 			List<Integer> selectorTypeRefs = Lists.newArrayListWithExpectedSize(
-			    selectors.size());
+					selectors.size());
 			for (SelectorImpl selector : selectors) {
 				selectorNames.add(selector.getName());
 				Type type = selector.getType();
@@ -100,7 +100,7 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 				selectorTypes.add(sort);
 				if (sort == null) {
 					Sort uninterpretedSort = ((InductiveTypeImpl) type)
-					    .getZ3UnresolvedDatatype();
+							.getZ3UnresolvedDatatype();
 					selectorUninters.add(uninterpretedSort);
 				} else {
 					selectorUninters.add(null);
@@ -115,7 +115,7 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 		}
 
 		public ImmutableList<InductiveTypeImpl> build(
-		    ExpressionManagerImpl exprManager) {
+				ExpressionManagerImpl exprManager) {
 			flushState();
 
 			if (IOUtils.debugEnabled() || IOUtils.tpFileEnabled()) {
@@ -142,7 +142,7 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 										sb.append(sType);
 									else {
 										Sort uninterSort = selectorUninterTypeListLists.get(i).get(
-										    j).get(k);
+												j).get(k);
 										sb.append(uninterSort.toString());
 									}
 								} catch (Exception e) {
@@ -161,7 +161,7 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 				sb.append(")");
 
 				TheoremProverImpl.z3FileCommand("(declare-datatypes " + sb.toString()
-				    + ")");
+						+ ")");
 			}
 
 			Sort[] sorts = null;
@@ -170,13 +170,13 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 
 			try {
 				assert typeNames.size() == constructorNameLists
-				    .size() : "expected names and constructors vectors to be of equal length";
+						.size() : "expected names and constructors vectors to be of equal length";
 				assert typeNames.size() == selectorNameListLists
-				    .size() : "expected names and selectors vectors to be of equal length";
+						.size() : "expected names and selectors vectors to be of equal length";
 				assert typeNames.size() == selectorTypeListLists
-				    .size() : "expected names and types vectors to be of equal length";
+						.size() : "expected names and types vectors to be of equal length";
 				assert typeNames.size() == selectorTypeRefListLists
-				    .size() : "expected names and type refs vectors to be of equal length";
+						.size() : "expected names and type refs vectors to be of equal length";
 
 				Context ctx = exprManager.getTheoremProver().getZ3Context();
 
@@ -185,14 +185,14 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 
 				for (int i = 0; i < typeNames.size(); i++) {
 					assert constructorNameLists.get(i).size() == selectorNameListLists
-					    .get(i)
-					    .size() : "expected sub-vectors in constructors and selectors vectors to match in size";
+							.get(i)
+							.size() : "expected sub-vectors in constructors and selectors vectors to match in size";
 					assert constructorNameLists.get(i).size() == selectorTypeListLists
-					    .get(i)
-					    .size() : "expected sub-vectors in constructors and types vectors to match in size";
+							.get(i)
+							.size() : "expected sub-vectors in constructors and types vectors to match in size";
 					assert constructorNameLists.get(i).size() == selectorTypeRefListLists
-					    .get(i)
-					    .size() : "expected sub-vectors in constructors and types ref vectors to match in size";
+							.get(i)
+							.size() : "expected sub-vectors in constructors and types ref vectors to match in size";
 
 					int cons_size = constructorNameLists.get(i).size();
 					com.microsoft.z3.Constructor[] constructors = new com.microsoft.z3.Constructor[cons_size];
@@ -203,15 +203,15 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 						Sort[] selectorTypes = new Sort[arity];
 						int[] selectorTypeRefs = new int[arity];
 						for (int k = 0; k < selectorNameListLists.get(i).get(j)
-						    .size(); k++) {
+								.size(); k++) {
 							selectorNames[k] = selectorNameListLists.get(i).get(j).get(k);
 							selectorTypes[k] = selectorTypeListLists.get(i).get(j).get(k);
 							selectorTypeRefs[k] = selectorTypeRefListLists.get(i).get(j).get(
-							    k);
+									k);
 						}
 						com.microsoft.z3.Constructor cons = ctx.mkConstructor(cons_name,
-						    "is-" + cons_name, selectorNames, selectorTypes,
-						    selectorTypeRefs);
+								"is-" + cons_name, selectorNames, selectorTypes,
+								selectorTypeRefs);
 						constructors[j] = cons;
 					}
 					clists[i] = constructors;
@@ -231,7 +231,7 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 				Sort z3type = sorts[i];
 				List<ConstructorImpl> constructors = constructorLists.get(i);
 				InductiveTypeImpl t = new InductiveTypeImpl(exprManager, z3type,
-				    typeNames.get(i), constructors);
+						typeNames.get(i), constructors);
 				int j = 0;
 				for (ConstructorImpl c : constructors) {
 					c.setType(t);
@@ -251,16 +251,16 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 							final InductiveType selType = (InductiveType) sel.getType();
 							try {
 								InductiveTypeImpl t = Iterables.find(types,
-								    new Predicate<InductiveTypeImpl>() {
-									    @Override
-									    public boolean apply(InductiveTypeImpl t) {
-										    return t.getName().equals(selType.getName());
-									    }
-								    });
+										new Predicate<InductiveTypeImpl>() {
+											@Override
+											public boolean apply(InductiveTypeImpl t) {
+												return t.getName().equals(selType.getName());
+											}
+										});
 								sel0.setType(t);
 							} catch (NoSuchElementException e) {
 								throw new TheoremProverException("Stub type not found: "
-								    + selType.toString());
+										+ selType.toString());
 							}
 						}
 					}
@@ -313,13 +313,13 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 		private com.microsoft.z3.Constructor z3Constructor;
 
 		ConstructorImpl(ExpressionManagerImpl exprManager, String name,
-		    Selector... selectors) {
+				Selector... selectors) {
 			this(exprManager, name, new ImmutableList.Builder<Selector>().add(
-			    selectors).build());
+					selectors).build());
 		}
 
 		ConstructorImpl(ExpressionManagerImpl exprManager, String name,
-		    List<? extends Selector> selectors) {
+				List<? extends Selector> selectors) {
 			this.exprManager = exprManager;
 			this.name = name;
 			ImmutableList.Builder<SelectorImpl> listBuilder = new ImmutableList.Builder<SelectorImpl>();
@@ -403,7 +403,7 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 		private Constructor constructor;
 
 		SelectorImpl(ExpressionManagerImpl exprManager, String name, Type type,
-		    Integer ref) {
+				Integer ref) {
 			// Preconditions.checkArgument(type.isKind());
 			this.exprManager = exprManager;
 			this.name = name;
@@ -418,21 +418,21 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 		public Expression apply(Expression x) {
 			try {
 				com.microsoft.z3.Constructor cons = ((ConstructorImpl) constructor)
-				    .getZ3Constructor();
+						.getZ3Constructor();
 				FuncDecl[] fieldAccess = cons.getAccessorDecls();
 				int index = constructor.getSelectors().indexOf(this);
 				final FuncDecl func = fieldAccess[index];
 				Expression result = new ExpressionImpl(exprManager,
-				    new ExpressionImpl.FuncApplyConstructionStrategy() {
-					    @Override
-					    public Expr apply(Context ctx, FuncDecl func, Expr[] exprs) {
-						    try {
-							    return ctx.mkApp(func, exprs);
-						    } catch (Z3Exception e) {
-							    throw new TheoremProverException(e);
-						    }
-					    }
-				    }, FunctionDeclarator.create(exprManager, func), x);
+						new ExpressionImpl.FuncApplyConstructionStrategy() {
+							@Override
+							public Expr apply(Context ctx, FuncDecl func, Expr[] exprs) {
+								try {
+									return ctx.mkApp(func, exprs);
+								} catch (Z3Exception e) {
+									throw new TheoremProverException(e);
+								}
+							}
+						}, FunctionDeclarator.create(exprManager, func), x);
 				return result;
 			} catch (Z3Exception e) {
 				throw new TheoremProverException(e);
@@ -477,9 +477,9 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 			Type type = (Type) getType();
 			/* Need to make sure we don't infinitely recurse on inductive types */
 			if (type instanceof InductiveType /*
-			                                   * && !typeExpr.getType().isKind() ||
-			                                   * !typeExpr.getType().asKind().isStub()
-			                                   */) {
+																				 * && !typeExpr.getType().isKind() ||
+																				 * !typeExpr.getType().asKind().isStub()
+																				 */) {
 				return getName() + ":" + ((InductiveType) type).getName() + "[...]";
 			} else {
 				return getName() + ":" + type;
@@ -488,7 +488,7 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 	}
 
 	static ConstructorImpl constructor(ExpressionManagerImpl exprManager,
-	    String name, Selector... selectors) {
+			String name, Selector... selectors) {
 		ConstructorImpl constr = new ConstructorImpl(exprManager, name, selectors);
 		try {
 			constructorCache.get(exprManager).put(name, constr);
@@ -499,7 +499,7 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 	}
 
 	static ConstructorImpl lookupConstructor(ExpressionManagerImpl exprManager,
-	    String name) {
+			String name) {
 		try {
 			return constructorCache.get(exprManager).get(name);
 		} catch (ExecutionException e) {
@@ -508,19 +508,19 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 	}
 
 	static InductiveTypeImpl create(ExpressionManagerImpl expressionManager,
-	    String name, Constructor... constructors) {
+			String name, Constructor... constructors) {
 		@SuppressWarnings("unchecked")
 		List<InductiveTypeImpl> types = recursiveTypes(expressionManager,
-		    ImmutableList.of(name), Arrays.asList(constructors));
+				ImmutableList.of(name), Arrays.asList(constructors));
 		assert (types.size() == 1);
 		return types.get(0);
 	}
 
 	static ImmutableList<InductiveTypeImpl> recursiveTypes(
-	    ExpressionManagerImpl expressionManager, List<String> names,
-	    List<? extends Constructor>... constructorLists) {
+			ExpressionManagerImpl expressionManager, List<String> names,
+			List<? extends Constructor>... constructorLists) {
 		checkArgument(names.size() == constructorLists.length,
-		    "Inconsistent list sizes");
+				"Inconsistent list sizes");
 
 		Builder builder = new Builder(expressionManager);
 		int i = 0;
@@ -535,17 +535,17 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 	}
 
 	static SelectorImpl selector(ExpressionManagerImpl exprManager, String name,
-	    Type type, int ref) {
+			Type type, int ref) {
 		return new SelectorImpl(exprManager, name, type, ref);
 	}
 
 	static SelectorImpl selector(ExpressionManagerImpl exprManager, String name,
-	    Type type) {
+			Type type) {
 		return new SelectorImpl(exprManager, name, type, null);
 	}
 
 	static InductiveTypeImpl stub(ExpressionManagerImpl exprManager,
-	    String name) {
+			String name) {
 		return new InductiveTypeImpl(exprManager, name);
 	}
 
@@ -553,7 +553,7 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 	private final ImmutableList<Constructor> constructors;
 
 	private InductiveTypeImpl(ExpressionManagerImpl expressionManager,
-	    Sort z3Type, String name, List<? extends Constructor> constructors) {
+			Sort z3Type, String name, List<? extends Constructor> constructors) {
 		super(expressionManager);
 		setZ3Type(z3Type);
 		this.name = name;
@@ -563,14 +563,14 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 
 	/** Private constructor for stubs only. */
 	private InductiveTypeImpl(ExpressionManagerImpl expressionManager,
-	    String name) {
+			String name) {
 		super(expressionManager);
 		this.name = name;
 		this.constructors = ImmutableList.of();
 		UninterpretedSort type;
 		try {
 			type = expressionManager.getTheoremProver().getZ3Context()
-			    .mkUninterpretedSort(name);
+					.mkUninterpretedSort(name);
 		} catch (Z3Exception e) {
 			throw new TheoremProverException(e);
 		}
@@ -580,13 +580,13 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 
 	@Override
 	public InductiveExpression construct(Constructor constructor,
-	    Expression... args) {
+			Expression... args) {
 		return InductiveExpressionImpl.create(constructor, args);
 	}
 
 	@Override
 	public InductiveExpression construct(Constructor constructor,
-	    Iterable<? extends Expression> args) {
+			Iterable<? extends Expression> args) {
 		return InductiveExpressionImpl.create(constructor, args);
 	}
 
@@ -615,19 +615,19 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 		try {
 			ExpressionManagerImpl exprManager = getExpressionManager();
 			com.microsoft.z3.Constructor cons = ((ConstructorImpl) c)
-			    .getZ3Constructor();
+					.getZ3Constructor();
 			final FuncDecl func = cons.getTesterDecl();
 			Expression result = new ExpressionImpl(exprManager,
-			    new ExpressionImpl.FuncApplyConstructionStrategy() {
-				    @Override
-				    public Expr apply(Context ctx, FuncDecl func, Expr[] exprs) {
-					    try {
-						    return ctx.mkApp(func, exprs);
-					    } catch (Z3Exception e) {
-						    throw new TheoremProverException(e);
-					    }
-				    }
-			    }, FunctionDeclarator.create(exprManager, func), x);
+					new ExpressionImpl.FuncApplyConstructionStrategy() {
+						@Override
+						public Expr apply(Context ctx, FuncDecl func, Expr[] exprs) {
+							try {
+								return ctx.mkApp(func, exprs);
+							} catch (Z3Exception e) {
+								throw new TheoremProverException(e);
+							}
+						}
+					}, FunctionDeclarator.create(exprManager, func), x);
 			return result.asBooleanExpression();
 		} catch (Z3Exception e) {
 			throw new TheoremProverException(e);
@@ -642,21 +642,21 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 	@Override
 	public InductiveVariableImpl variable(final String name, boolean fresh) {
 		return InductiveVariableImpl.create(getExpressionManager(), name, this,
-		    fresh);
+				fresh);
 	}
 
 	@Override
 	public InductiveBoundExpressionImpl boundVar(final String name,
-	    boolean fresh) {
+			boolean fresh) {
 		return InductiveBoundExpressionImpl.create(getExpressionManager(), name,
-		    this, fresh);
+				this, fresh);
 	}
 
 	@Override
 	public InductiveBoundExpressionImpl boundExpression(final String name,
-	    int index, boolean fresh) {
+			int index, boolean fresh) {
 		return InductiveBoundExpressionImpl.create(getExpressionManager(), name,
-		    index, this, fresh);
+				index, this, fresh);
 	}
 
 	@Override
@@ -666,8 +666,8 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 
 	@Override
 	InductiveExpressionImpl createExpression(Expr res, Expression oldExpr,
-	    Iterable<? extends ExpressionImpl> children) {
+			Iterable<? extends ExpressionImpl> children) {
 		return InductiveExpressionImpl.create(getExpressionManager(), oldExpr
-		    .getKind(), res, oldExpr.getType(), children);
+				.getKind(), res, oldExpr.getType(), children);
 	}
 }

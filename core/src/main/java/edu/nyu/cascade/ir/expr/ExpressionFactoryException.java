@@ -11,8 +11,8 @@ public class ExpressionFactoryException extends RuntimeException {
 	}
 
 	public static <F, T> Iterable<T> wrapIterableTransformation(Iterable<F> args,
-	    final ThrowingFunction<? super F, ? extends T> f)
-	    throws ExpressionFactoryException {
+			final ThrowingFunction<? super F, ? extends T> f)
+			throws ExpressionFactoryException {
 		try {
 			return Iterables.transform(args, new Function<F, T>() {
 				@Override

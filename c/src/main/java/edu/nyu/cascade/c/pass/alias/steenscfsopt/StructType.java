@@ -11,28 +11,31 @@ class StructType extends ValueType {
 	private final Size size;
 	private Parent parent;
 	private boolean op;
-	
+
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder().append("STRUCT (")
-				.append(size).append(", ");
-		for(Entry<Range<Long>, ECR> entry : fieldMap.asMapOfRanges().entrySet() ) {
-				sb.append(entry.getKey()).append(":").append(
-						(ECR) ((ECR) entry.getValue().findRoot()).getType().asSimple().getLoc().findRoot())
-						.append(", ");
+		StringBuilder sb = new StringBuilder().append("STRUCT (").append(size)
+				.append(", ");
+		for (Entry<Range<Long>, ECR> entry : fieldMap.asMapOfRanges().entrySet()) {
+			sb.append(entry.getKey()).append(":").append((ECR) ((ECR) entry.getValue()
+					.findRoot()).getType().asSimple().getLoc().findRoot()).append(", ");
 		}
 		sb.append(parent).append(')');
-		
+
 		return sb.toString();
 	}
-	
+
 	@Override
 	public boolean equals(Object o) {
-		if(!(o instanceof StructType)) return false;
+		if (!(o instanceof StructType))
+			return false;
 		StructType that = (StructType) o;
-		if(!parent.equals(that.parent)) return false;
-		if(!size.equals(that.size)) return false;
-		if(!fieldMap.equals(that.fieldMap)) return false;
+		if (!parent.equals(that.parent))
+			return false;
+		if (!size.equals(that.size))
+			return false;
+		if (!fieldMap.equals(that.fieldMap))
+			return false;
 		return true;
 	}
 
@@ -45,7 +48,7 @@ class StructType extends ValueType {
 
 	@Override
 	ValueTypeKind getKind() {
-	  return ValueTypeKind.STRUCT;
+		return ValueTypeKind.STRUCT;
 	}
 
 	@Override
@@ -57,12 +60,12 @@ class StructType extends ValueType {
 	Parent getParent() {
 		return parent;
 	}
-	
+
 	@Override
 	void setParent(Parent parent) {
 		this.parent = parent;
 	}
-	
+
 	@Override
 	boolean hasOpTag() {
 		return op;
@@ -72,9 +75,9 @@ class StructType extends ValueType {
 	void enableOpTag() {
 		op = true;
 	}
-	
+
 	RangeMap<Long, ECR> getFieldMap() {
 		return fieldMap;
 	}
-	
+
 }

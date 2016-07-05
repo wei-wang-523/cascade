@@ -8,66 +8,69 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 
 public class FileUtils {
-  private static final String[] C_FILES_SUFFIXES = { ".c", ".C" };
-  private static final String[] I_FILES_SUFFIXES = { ".i", ".I" };
-  private static final String[] CONTROL_FILE_SUFFIXES = { ".ctrl" };
-  
-  protected static final String RESOURCES_DIRECTORY = "META-INF";
-  protected static final String DUMP_DIRECTORY = "out";
+	private static final String[] C_FILES_SUFFIXES = { ".c", ".C" };
+	private static final String[] I_FILES_SUFFIXES = { ".i", ".I" };
+	private static final String[] CONTROL_FILE_SUFFIXES = { ".ctrl" };
 
-  private static final Joiner PATH_JOINER = Joiner.on(File.separator);
-  
-  public static boolean suffixIn(File file, String[] suffixes) {
-    String path = file.getAbsolutePath();
-    for (String suffix : suffixes) {
-      if (path.endsWith(suffix)) {
-        return true;
-      }
-    }
-    return false;
-  }
-  
-  public static boolean isCSourceFile(File file) {
-    return suffixIn(file, C_FILES_SUFFIXES);
-  }
-  
-  public static boolean isISourceFile(File file) {
-  	return suffixIn(file, I_FILES_SUFFIXES);
-  }
+	protected static final String RESOURCES_DIRECTORY = "META-INF";
+	protected static final String DUMP_DIRECTORY = "out";
 
-  public static boolean isControlFile(File file) {
-    return suffixIn(file, CONTROL_FILE_SUFFIXES);
-  }
-  
-  public static File filePath(File dir, String first, String... rest) {
-    return new File(dir, path(first, rest));
-  }
+	private static final Joiner PATH_JOINER = Joiner.on(File.separator);
 
-  public static String path(String dir, String... rest) {
-    return PATH_JOINER.join(Lists.asList(dir,rest));
-  }
+	public static boolean suffixIn(File file, String[] suffixes) {
+		String path = file.getAbsolutePath();
+		for (String suffix : suffixes) {
+			if (path.endsWith(suffix)) {
+				return true;
+			}
+		}
+		return false;
+	}
 
-  public static URL resourceURL(String... pathComponents) {
-    return ClassLoader.getSystemResource(resourcePath(pathComponents).toString());
-  }
-  
-  public static String resourcePath(String... pathComponents) {
-    return path(RESOURCES_DIRECTORY, pathComponents);
-  }
-  
-  public static File createDumpDir(String dir) {
-  	File outDir = new File(path(System.getProperty("user.dir"), DUMP_DIRECTORY, dir));
-		if(!outDir.exists()) outDir.mkdirs();
+	public static boolean isCSourceFile(File file) {
+		return suffixIn(file, C_FILES_SUFFIXES);
+	}
+
+	public static boolean isISourceFile(File file) {
+		return suffixIn(file, I_FILES_SUFFIXES);
+	}
+
+	public static boolean isControlFile(File file) {
+		return suffixIn(file, CONTROL_FILE_SUFFIXES);
+	}
+
+	public static File filePath(File dir, String first, String... rest) {
+		return new File(dir, path(first, rest));
+	}
+
+	public static String path(String dir, String... rest) {
+		return PATH_JOINER.join(Lists.asList(dir, rest));
+	}
+
+	public static URL resourceURL(String... pathComponents) {
+		return ClassLoader.getSystemResource(resourcePath(pathComponents)
+				.toString());
+	}
+
+	public static String resourcePath(String... pathComponents) {
+		return path(RESOURCES_DIRECTORY, pathComponents);
+	}
+
+	public static File createDumpDir(String dir) {
+		File outDir = new File(path(System.getProperty("user.dir"), DUMP_DIRECTORY,
+				dir));
+		if (!outDir.exists())
+			outDir.mkdirs();
 		return outDir;
-  }
+	}
 
-  public static File absoluteResourcePath(String... pathComponents) {
-    try {
-      URL url = resourceURL(pathComponents);
-      return new File(url.toURI());
-    } catch (URISyntaxException e) {
-      throw new AssertionError("Unexpected URISyntaxException:" + e);
-    }
-  }
-  
+	public static File absoluteResourcePath(String... pathComponents) {
+		try {
+			URL url = resourceURL(pathComponents);
+			return new File(url.toURI());
+		} catch (URISyntaxException e) {
+			throw new AssertionError("Unexpected URISyntaxException:" + e);
+		}
+	}
+
 }

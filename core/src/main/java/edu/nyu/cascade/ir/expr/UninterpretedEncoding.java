@@ -5,7 +5,7 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.VariableExpression;
 
 public interface UninterpretedEncoding<T extends Expression> extends
-    TypeEncoding<T> {
+		TypeEncoding<T> {
 
 	BooleanExpression distinct(Iterable<? extends T> exprs);
 

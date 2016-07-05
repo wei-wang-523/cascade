@@ -34,72 +34,72 @@ public interface PathEncoding {
 	StateExpression assume(StateExpression pre, Expression bool, boolean isGuard);
 
 	StateExpression assume(StateExpression pre, IRExpression expr,
-	    boolean isGuard) throws PathFactoryException;
+			boolean isGuard) throws PathFactoryException;
 
 	StateExpression assign(StateExpression pre, Expression lval, Node lNode,
-	    Expression rval, Node rNode);
+			Expression rval, Node rNode);
 
 	StateExpression assign(StateExpression pre, IRExpression lval,
-	    IRExpression rval) throws PathFactoryException;
+			IRExpression rval) throws PathFactoryException;
 
 	StateExpression malloc(StateExpression pre, Expression ptr, Node pNode,
-	    Expression size);
+			Expression size);
 
 	StateExpression malloc(StateExpression pre, IRExpression ptr,
-	    IRExpression size) throws PathFactoryException;
+			IRExpression size) throws PathFactoryException;
 
 	StateExpression calloc(StateExpression pre, Expression ptr, Node pNode,
-	    Expression nitem, Expression size);
+			Expression nitem, Expression size);
 
 	StateExpression calloc(StateExpression pre, IRExpression ptr,
-	    IRExpression nitem, IRExpression size) throws PathFactoryException;
+			IRExpression nitem, IRExpression size) throws PathFactoryException;
 
 	StateExpression alloca(StateExpression pre, Expression ptr, Node pNode,
-	    Expression size);
+			Expression size);
 
 	StateExpression alloca(StateExpression pre, IRExpression ptr,
-	    IRExpression size) throws PathFactoryException;
+			IRExpression size) throws PathFactoryException;
 
 	StateExpression free(StateExpression pre, Expression ptr, Node pNode);
 
 	StateExpression free(StateExpression pre, IRExpression ptr)
-	    throws PathFactoryException;
+			throws PathFactoryException;
 
 	StateExpression havoc(StateExpression pre, Expression lval, Node lNode);
 
 	StateExpression havoc(StateExpression pre, IRExpression lval)
-	    throws PathFactoryException;
+			throws PathFactoryException;
 
 	StateExpression declare(StateExpression pre, IRExpression lval)
-	    throws PathFactoryException;
+			throws PathFactoryException;
 
 	StateExpression declare(StateExpression pre, Expression lval, Node lNode);
 
 	StateExpression declareArray(StateExpression pre, IRExpression ptr,
-	    IRExpression size) throws PathFactoryException;
+			IRExpression size) throws PathFactoryException;
 
 	StateExpression declareVarArray(StateExpression pre, Expression ptr,
-	    Node pNode, Expression size);
+			Node pNode, Expression size);
 
 	StateExpression ret(StateExpression pre, IRExpression lval)
-	    throws PathFactoryException;
+			throws PathFactoryException;
 
 	StateExpression init(StateExpression pre, IRExpression lval,
-	    IRExpression rval) throws PathFactoryException;
+			IRExpression rval) throws PathFactoryException;
 
 	StateExpression init(StateExpression pre, Expression lval, Node lNode,
-	    Expression rval, Node rNode);
+			Expression rval, Node rNode);
 
 	StateExpression call(StateExpression pre, IRExpression func,
-	    IRExpression... args) throws PathFactoryException;
+			IRExpression... args) throws PathFactoryException;
 
 	StateExpression call(StateExpression pre, String funcName, Node funcNode,
-	    List<Expression> args, List<Node> argNodes);
+			List<Expression> args, List<Node> argNodes);
 
 	StateExpression emptyState();
 
 	ValidityResult<?> checkAssertion(Expression assertion)
-	    throws PathFactoryException;
+			throws PathFactoryException;
 
 	SatResult<?> checkPath(StateExpression prefix) throws PathFactoryException;
 

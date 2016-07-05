@@ -59,8 +59,8 @@ public abstract class AbstractDataFormatter implements IRDataFormatter {
 
 	@Override
 	public ArrayExpression updateMemoryArray(ArrayExpression memory,
-	    Expression index, xtc.type.Type idxType, Expression value,
-	    xtc.type.Type valType) {
+			Expression index, xtc.type.Type idxType, Expression value,
+			xtc.type.Type valType) {
 		boolean isUnsigned = valType != null && CType.isUnsigned(valType);
 		value = castValue(value, idxType, !isUnsigned);
 
@@ -75,11 +75,11 @@ public abstract class AbstractDataFormatter implements IRDataFormatter {
 
 	@Override
 	public ArrayExpression updateStructInMemoryArray(ArrayExpression memory,
-	    Expression index, Expression value, long size) {
+			Expression index, Expression value, long size) {
 
 		for (long i = 0; i < size; i++) {
 			Expression offsetExpr = ptrEncoding.ofExpression(encoding.integerConstant(
-			    i));
+					i));
 			Expression fromIndex = encoding.pointerPlus(index, offsetExpr);
 			Expression toIndex = encoding.pointerPlus(value, offsetExpr);
 			memory = memory.update(fromIndex, memory.index(toIndex));
@@ -90,7 +90,7 @@ public abstract class AbstractDataFormatter implements IRDataFormatter {
 
 	@Override
 	public ArrayExpression updateSizeArray(ArrayExpression sizeArr,
-	    Expression index, Expression value) {
+			Expression index, Expression value) {
 		value = castToSize(value);
 		return sizeArr.update(index, value);
 	}
@@ -111,7 +111,7 @@ public abstract class AbstractDataFormatter implements IRDataFormatter {
 	}
 
 	abstract protected ArrayExpression updateScalarInMem(ArrayExpression memory,
-	    xtc.type.Type idxType, Expression index, Expression value);
+			xtc.type.Type idxType, Expression index, Expression value);
 
 	/**
 	 * Cast <code>value</code> to <code>targetType</code>
@@ -122,7 +122,7 @@ public abstract class AbstractDataFormatter implements IRDataFormatter {
 	 * @return
 	 */
 	Expression castValue(Expression value, xtc.type.Type targetType,
-	    boolean isSigned) {
+			boolean isSigned) {
 		if (value.isBoolean())
 			value = encoding.castToInteger(value);
 
@@ -134,7 +134,7 @@ public abstract class AbstractDataFormatter implements IRDataFormatter {
 
 		CType cTypeAnalyzer = encoding.getCTypeAnalyzer();
 		int lhsSize = (int) cTypeAnalyzer.getWidth(CType.isScalar(targetType)
-		    ? targetType : PointerT.TO_VOID);
+				? targetType : PointerT.TO_VOID);
 		value = encoding.castToInteger(value, lhsSize, isSigned);
 
 		return value;

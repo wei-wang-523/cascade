@@ -24,20 +24,20 @@ import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.IOUtils;
 
 final class FunctionDeclarator extends ExpressionImpl implements
-    FunctionExpression {
+		FunctionExpression {
 
 	static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, FunctionDeclarator>> funcCache = CacheBuilder
-	    .newBuilder().build(
-	        new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, FunctionDeclarator>>() {
-		        public ConcurrentMap<String, FunctionDeclarator> load(
-	              ExpressionManagerImpl expressionManager) {
-			        return new MapMaker().makeMap();
-		        }
-	        });
+			.newBuilder().build(
+					new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, FunctionDeclarator>>() {
+						public ConcurrentMap<String, FunctionDeclarator> load(
+								ExpressionManagerImpl expressionManager) {
+							return new MapMaker().makeMap();
+						}
+					});
 
 	static FunctionDeclarator create(ExpressionManagerImpl exprManager,
-	    String name, Iterable<? extends Type> argTypes, Type range,
-	    boolean fresh) {
+			String name, Iterable<? extends Type> argTypes, Type range,
+			boolean fresh) {
 
 		try {
 
@@ -46,9 +46,9 @@ final class FunctionDeclarator extends ExpressionImpl implements
 			}
 
 			FunctionTypeImpl type = FunctionTypeImpl.create(exprManager, argTypes,
-			    range);
+					range);
 			FunctionDeclarator res = new FunctionDeclarator(exprManager, name, type,
-			    fresh);
+					fresh);
 			funcCache.get(exprManager).put(res.getName(), res);
 			return res;
 		} catch (ExecutionException e) {
@@ -57,7 +57,7 @@ final class FunctionDeclarator extends ExpressionImpl implements
 	}
 
 	static FunctionDeclarator create(ExpressionManagerImpl exprManager,
-	    String name, FunctionType type, boolean fresh) {
+			String name, FunctionType type, boolean fresh) {
 		try {
 
 			if (!fresh && funcCache.get(exprManager).containsKey(name)) {
@@ -65,7 +65,7 @@ final class FunctionDeclarator extends ExpressionImpl implements
 			}
 
 			FunctionDeclarator res = new FunctionDeclarator(exprManager, name, type,
-			    fresh);
+					fresh);
 			funcCache.get(exprManager).put(res.getName(), res);
 			return res;
 		} catch (ExecutionException e) {
@@ -74,11 +74,11 @@ final class FunctionDeclarator extends ExpressionImpl implements
 	}
 
 	private FunctionDeclarator(ExpressionManagerImpl exprManager, String name,
-	    final FunctionType ftype, boolean fresh) {
+			final FunctionType ftype, boolean fresh) {
 		super(exprManager, new VariableConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, String name,
-		      edu.nyu.acsys.CVC4.Type type) throws Exception {
+					edu.nyu.acsys.CVC4.Type type) throws Exception {
 				PrintStream debugStream = IOUtils.debugStream();
 				PrintStream tpFileStream = IOUtils.tpFileStream();
 

@@ -36,16 +36,16 @@ public interface IRDataFormatter {
 	ArrayType getMarkArrayType();
 
 	ArrayExpression updateMemoryArray(ArrayExpression memory, Expression index,
-	    xtc.type.Type idxType, Expression value, @Nullable xtc.type.Type valType);
+			xtc.type.Type idxType, Expression value, @Nullable xtc.type.Type valType);
 
 	ArrayExpression updateStructInMemoryArray(ArrayExpression memory,
-	    Expression index, Expression value, long range);
+			Expression index, Expression value, long range);
 
 	Expression indexMemoryArray(ArrayExpression memory, Expression index,
-	    xtc.type.Type idxType);
+			xtc.type.Type idxType);
 
 	ArrayExpression updateSizeArray(ArrayExpression sizeArr, Expression index,
-	    Expression value);
+			Expression value);
 
 	Expression indexSizeArray(ArrayExpression sizeArr, Expression index);
 
@@ -56,12 +56,12 @@ public interface IRDataFormatter {
 	Expression castToSize(Expression value);
 
 	BooleanExpression memorySet(ArrayExpression memory, Expression region,
-	    Expression size, Expression value);
+			Expression size, Expression value);
 
 	BooleanExpression memorySet(ArrayExpression memory, Expression region,
-	    Expression size, int value);
+			Expression size, int value);
 
 	BooleanExpression memoryCopy(ArrayExpression destMemory,
-	    ArrayExpression srcMemory, Expression destRegion, Expression srcRegion,
-	    Expression size);
+			ArrayExpression srcMemory, Expression destRegion, Expression srcRegion,
+			Expression size);
 }

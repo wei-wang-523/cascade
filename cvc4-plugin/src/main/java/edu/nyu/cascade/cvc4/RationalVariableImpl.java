@@ -7,23 +7,23 @@ import edu.nyu.cascade.prover.RationalExpression;
 import edu.nyu.cascade.prover.type.Type;
 
 class RationalVariableImpl extends VariableExpressionImpl implements
-    RationalExpression {
+		RationalExpression {
 
 	static RationalVariableImpl create(ExpressionManagerImpl em, String name,
-	    Type type, boolean fresh) {
+			Type type, boolean fresh) {
 		Preconditions.checkArgument(type.isRational());
 		return new RationalVariableImpl(em, name, type, fresh);
 	}
 
 	/** Create a new rational variable. */
 	private RationalVariableImpl(ExpressionManagerImpl em, String name,
-	    boolean fresh) {
+			boolean fresh) {
 		super(em, name, em.rationalType(), fresh);
 	}
 
 	/** Create a new variable of a rational sub-type (e.g., a range type). */
 	private RationalVariableImpl(ExpressionManagerImpl em, String name, Type type,
-	    boolean fresh) {
+			boolean fresh) {
 		super(em, name, type, fresh);
 	}
 

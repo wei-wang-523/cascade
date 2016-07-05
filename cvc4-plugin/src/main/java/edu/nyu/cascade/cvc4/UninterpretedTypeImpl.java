@@ -18,26 +18,26 @@ import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.util.CacheException;
 
 final class UninterpretedTypeImpl extends TypeImpl implements
-    UninterpretedType {
+		UninterpretedType {
 	private final String name;
 
 	static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, UninterpretedTypeImpl>> typeCache = CacheBuilder
-	    .newBuilder().build(
-	        new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, UninterpretedTypeImpl>>() {
-		        public ConcurrentMap<String, UninterpretedTypeImpl> load(
-	              ExpressionManagerImpl expressionManager) {
-			        return new MapMaker().makeMap();
-		        }
-	        });
+			.newBuilder().build(
+					new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, UninterpretedTypeImpl>>() {
+						public ConcurrentMap<String, UninterpretedTypeImpl> load(
+								ExpressionManagerImpl expressionManager) {
+							return new MapMaker().makeMap();
+						}
+					});
 
 	static UninterpretedTypeImpl create(ExpressionManagerImpl exprManager,
-	    String name) {
+			String name) {
 		try {
 			if (typeCache.get(exprManager).containsKey(name))
 				return typeCache.get(exprManager).get(name);
 			else {
 				UninterpretedTypeImpl res = new UninterpretedTypeImpl(exprManager,
-				    name);
+						name);
 				typeCache.get(exprManager).put(name, res);
 				return res;
 			}
@@ -48,14 +48,14 @@ final class UninterpretedTypeImpl extends TypeImpl implements
 
 	@Override
 	UninterpretedExpressionImpl createExpression(Expr res, Expression e,
-	    Kind kind, Iterable<ExpressionImpl> children) {
+			Kind kind, Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isUninterpreted());
 		return UninterpretedExpressionImpl.create(getExpressionManager(), kind, res,
-		    e.getType().asUninterpreted(), children);
+				e.getType().asUninterpreted(), children);
 	}
 
 	static UninterpretedTypeImpl valueOf(ExpressionManagerImpl exprManager,
-	    Type type) {
+			Type type) {
 		Preconditions.checkArgument(type.isUninterpreted());
 		if (type instanceof UninterpretedTypeImpl) {
 			return (UninterpretedTypeImpl) type;
@@ -66,12 +66,12 @@ final class UninterpretedTypeImpl extends TypeImpl implements
 	}
 
 	private UninterpretedTypeImpl(ExpressionManagerImpl exprManager,
-	    String name) {
+			String name) {
 		super(exprManager);
 		this.name = name;
 		try {
 			setCVC4Type(exprManager.getTheoremProver().getCvc4ExprManager().mkSort(
-			    name));
+					name));
 			TheoremProverImpl.cvc4FileCommand("(declare-sort " + name + " 0)");
 		} catch (Exception e) {
 			throw new TheoremProverException(e);
@@ -81,18 +81,18 @@ final class UninterpretedTypeImpl extends TypeImpl implements
 	@Override
 	public UninterpretedVariableImpl variable(String name, boolean fresh) {
 		return UninterpretedVariableImpl.create(getExpressionManager(), name, this,
-		    fresh);
+				fresh);
 	}
 
 	@Override
 	public UninterpretedBoundVariableImpl boundVar(String name, boolean fresh) {
 		return UninterpretedBoundVariableImpl.create(getExpressionManager(), name,
-		    this, fresh);
+				this, fresh);
 	}
 
 	@Override
 	public UninterpretedBoundVariableImpl boundExpression(String name, int index,
-	    boolean fresh) {
+			boolean fresh) {
 		return boundVar(name, fresh);
 	}
 

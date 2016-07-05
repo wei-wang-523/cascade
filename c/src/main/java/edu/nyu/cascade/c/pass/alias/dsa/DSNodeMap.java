@@ -17,24 +17,27 @@ import xtc.tree.Node;
 
 class DSNodeMap {
 	Map<Pair<Node, String>, DSNodeHandle> NodeMap = Maps.newHashMap();
-	
-	Map<Pair<Node, String>, DSNodeHandle> getNodeMap() { return NodeMap; }
-	
+
+	Map<Pair<Node, String>, DSNodeHandle> getNodeMap() {
+		return NodeMap;
+	}
+
 	DSNodeHandle get(Node N) {
 		Pair<Node, String> NKey = getKey(N);
 		assert NodeMap.containsKey(NKey) : "No key is stored: " + NKey;
 		return NodeMap.get(NKey);
 	}
-	
+
 	/**
 	 * getRawEntryRef - This method can be used by clients that are aware of the
 	 * global value equivalence class in effect.
 	 */
 	DSNodeHandle getRawEntryRef(Node N) {
 		Pair<Node, String> NKey = getKey(N);
-		
-		if(NodeMap.containsKey(NKey)) return NodeMap.get(NKey);
-		
+
+		if (NodeMap.containsKey(NKey))
+			return NodeMap.get(NKey);
+
 		DSNodeHandle NH = new DSNodeHandle();
 		NodeMap.put(NKey, NH);
 		return NH;
@@ -49,7 +52,7 @@ class DSNodeMap {
 	boolean contains(Node node) {
 		return NodeMap.containsKey(getKey(node));
 	}
-	
+
 	Pair<Node, String> getKey(Node N) {
 		return Pair.of(N, CType.getScopeName(N));
 	}

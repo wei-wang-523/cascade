@@ -31,7 +31,7 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 		static Kind parse(Expression key) {
 			Preconditions.checkArgument(key.isFunction() || key.isBoolean());
 			String name = key.isFunction() ? key.asFunctionExpression().getName()
-			    : key.asVariable().getName();
+					: key.asVariable().getName();
 
 			if (name.equals(Kind.VALID_ACCESS_RANGE.name()))
 				return Kind.VALID_ACCESS_RANGE;
@@ -60,14 +60,14 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 	private final Collection<BooleanExpression> assumptions;
 
 	protected AbstractMemSafetyEncoding(ExpressionEncoding encoding,
-	    IRDataFormatter formatter) {
+			IRDataFormatter formatter) {
 		this.formatter = formatter;
 		this.encoding = encoding;
 		this.assumptions = initAssumptions();
 	}
 
 	public static IRMemSafetyEncoding getInstance(ExpressionEncoding encoding,
-	    IRDataFormatter formatter, Strategy strategy) {
+			IRDataFormatter formatter, Strategy strategy) {
 		switch (strategy) {
 		case ORDER:
 			return OrderLinearMemSafetyEncoding.create(encoding, formatter);
@@ -78,13 +78,13 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 
 	@Override
 	public PredicateClosure suspend(final Expression func, final Expression expr,
-	    final Expression... vars) {
+			final Expression... vars) {
 		return new PredicateClosure() {
 
 			@Override
 			public String toString() {
 				return new StringBuilder().append("\n\tfunc: ").append(func).append(
-		        "\n\texpr: ").append(expr).toString();
+						"\n\texpr: ").append(expr).toString();
 			}
 
 			@Override
@@ -111,10 +111,10 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 
 	@Override
 	public Expression applyUpdatedPredicate(SingleLambdaStateExpression state,
-	    FunctionExpression func, Collection<Expression> args) {
+			FunctionExpression func, Collection<Expression> args) {
 		String funcName = func.getName();
 		PredicateClosure predicateClosure = state.getSafetyPredicateClosure(
-		    funcName);
+				funcName);
 		Expression[] argsArray = new Expression[args.size()];
 		argsArray = args.toArray(argsArray);
 		state.registerPredicate(predicateClosure.getUninterpretedFunc(), argsArray);
@@ -128,7 +128,7 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 
 	@Override
 	public PredicateClosure getValidAccessRange(
-	    SingleLambdaStateExpression state) {
+			SingleLambdaStateExpression state) {
 		return state.getSafetyPredicateClosure(Kind.VALID_ACCESS_RANGE.name());
 	}
 
@@ -143,29 +143,29 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 	}
 
 	protected abstract void propagatePreDisjoint(
-	    SingleLambdaStateExpression fromState,
-	    SingleLambdaStateExpression toState);
+			SingleLambdaStateExpression fromState,
+			SingleLambdaStateExpression toState);
 
 	protected abstract Collection<BooleanExpression> initAssumptions();
 
 	final void updatePredicateMap(SingleLambdaStateExpression fromState,
-	    SingleLambdaStateExpression toState) {
+			SingleLambdaStateExpression toState) {
 		Multimap<Expression, Collection<Expression>> toPredMapPrime = HashMultimap
-		    .create(fromState.getPredicateMap());
+				.create(fromState.getPredicateMap());
 
 		Multimap<Expression, Collection<Expression>> toPredMap = toState
-		    .getPredicateMap();
+				.getPredicateMap();
 		for (Expression toFunc : toPredMap.keySet()) {
 			Kind kind = SafetyPredicate.parse(toFunc);
 			updatePredicateMapWithSafetyPredicate(kind, toState, toFunc,
-			    toPredMapPrime);
+					toPredMapPrime);
 		}
 
 		toState.setPredicateMap(toPredMapPrime);
 	}
 
 	final void initSafetyPredicate(Kind kind, SingleLambdaStateExpression state,
-	    Expression ptrVar, Expression sizeVar) {
+			Expression ptrVar, Expression sizeVar) {
 		ExpressionManager exprManager = encoding.getExpressionManager();
 		String fname = kind.name();
 
@@ -177,15 +177,15 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 			List<Type> argTypes = Lists.newArrayList(addrType, sizeType);
 
 			FunctionExpression func = exprManager.functionDeclarator(fname,
-			    exprManager.functionType(argTypes, exprManager.booleanType()), false);
+					exprManager.functionType(argTypes, exprManager.booleanType()), false);
 			PredicateClosure closure = suspend(func, func.apply(ptrVar, sizeVar),
-			    ptrVar, sizeVar);
+					ptrVar, sizeVar);
 			state.putSafetyPredicateClosure(fname, closure);
 			break;
 		}
 		case HEAP_ORDERED: {
 			FunctionExpression func = exprManager.functionDeclarator(fname,
-			    exprManager.functionType(addrType, exprManager.booleanType()), false);
+					exprManager.functionType(addrType, exprManager.booleanType()), false);
 			PredicateClosure closure = suspend(func, func.apply(ptrVar), ptrVar);
 			state.putSafetyPredicateClosure(fname, closure);
 			break;
@@ -197,14 +197,14 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 		}
 		case STACK_ORDERED: {
 			FunctionExpression func = exprManager.functionDeclarator(fname,
-			    exprManager.functionType(addrType, exprManager.booleanType()), false);
+					exprManager.functionType(addrType, exprManager.booleanType()), false);
 			PredicateClosure closure = suspend(func, func.apply(ptrVar), ptrVar);
 			state.putSafetyPredicateClosure(fname, closure);
 			break;
 		}
 		case VALID_ACCESS: {
 			FunctionExpression func = exprManager.functionDeclarator(fname,
-			    exprManager.functionType(addrType, exprManager.booleanType()), false);
+					exprManager.functionType(addrType, exprManager.booleanType()), false);
 			PredicateClosure closure = suspend(func, func.apply(ptrVar), ptrVar);
 			state.putSafetyPredicateClosure(fname, closure);
 			break;
@@ -213,9 +213,9 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 			List<Type> argTypes = Lists.newArrayList(addrType, sizeType);
 
 			FunctionExpression func = exprManager.functionDeclarator(fname,
-			    exprManager.functionType(argTypes, exprManager.booleanType()), false);
+					exprManager.functionType(argTypes, exprManager.booleanType()), false);
 			PredicateClosure closure = suspend(func, func.apply(ptrVar, sizeVar),
-			    ptrVar, sizeVar);
+					ptrVar, sizeVar);
 
 			state.putSafetyPredicateClosure(fname, closure);
 			break;
@@ -248,8 +248,8 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 	// }
 
 	final void propagateSafetyPredicate(Kind kind,
-	    SingleLambdaStateExpression fromState,
-	    SingleLambdaStateExpression toState) {
+			SingleLambdaStateExpression fromState,
+			SingleLambdaStateExpression toState) {
 
 		switch (kind) {
 		case PRE_DISJOINT: {
@@ -268,8 +268,8 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 	}
 
 	final void updatePredicateMapWithSafetyPredicate(Kind kind,
-	    SingleLambdaStateExpression state, Expression func,
-	    Multimap<Expression, Collection<Expression>> predMap) {
+			SingleLambdaStateExpression state, Expression func,
+			Multimap<Expression, Collection<Expression>> predMap) {
 
 		switch (kind) {
 		case PRE_DISJOINT: {
@@ -286,14 +286,14 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 	}
 
 	private PredicateClosure updatePredicateClosure(PredicateClosure from,
-	    PredicateClosure to) {
+			PredicateClosure to) {
 		Expression[] toVars = to.getVars();
 		BooleanExpression fromEvalBody = from.eval(toVars).asBooleanExpression();
 		BooleanExpression toBody = to.getBodyExpr().asBooleanExpression();
 		Expression toFunApp = to.getUninterpretedFunc().asFunctionExpression()
-		    .apply(Lists.newArrayList(toVars));
+				.apply(Lists.newArrayList(toVars));
 		BooleanExpression toBodyPrime = toBody.subst(toFunApp, fromEvalBody)
-		    .asBooleanExpression();
+				.asBooleanExpression();
 		Expression toFunPrime = from.getUninterpretedFunc();
 		return suspend(toFunPrime, toBodyPrime, toVars);
 	}

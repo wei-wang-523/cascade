@@ -16,9 +16,9 @@ public interface IRStatement {
 	 */
 	public enum StatementType {
 
-	  // Basic statements
+		// Basic statements
 
-	  /** Declare a symbol */
+		/** Declare a symbol */
 		DECLARE,
 		/** Declare a variable array symbol */
 		DECLARE_ARRAY,

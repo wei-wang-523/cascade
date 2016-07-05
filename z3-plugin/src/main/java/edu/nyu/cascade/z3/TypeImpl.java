@@ -42,27 +42,27 @@ abstract class TypeImpl implements Type {
 	private ExpressionManagerImpl em = null;
 
 	protected TypeImpl(ExpressionManagerImpl em,
-	    BinaryConstructionStrategy strategy, Expression expr1, Expression expr2) {
+			BinaryConstructionStrategy strategy, Expression expr1, Expression expr2) {
 		this.em = em;
 		Expr z3Expr1 = em.importExpression(expr1).getZ3Expression();
 		Expr z3Expr2 = em.importExpression(expr2).getZ3Expression();
 
 		try {
 			this.z3_type = strategy.apply(em.getTheoremProver().getZ3Context(),
-			    z3Expr1, z3Expr2);
+					z3Expr1, z3Expr2);
 		} catch (Z3Exception e) {
 			throw new TheoremProverException(e);
 		}
 	}
 
 	protected TypeImpl(ExpressionManagerImpl em,
-	    UnaryConstructionStrategy strategy, Expression expr) {
+			UnaryConstructionStrategy strategy, Expression expr) {
 		this.em = em;
 		Expr z3Expr = em.importExpression(expr).getZ3Expression();
 
 		try {
 			this.z3_type = strategy.apply(em.getTheoremProver().getZ3Context(),
-			    z3Expr);
+					z3Expr);
 		} catch (Z3Exception e) {
 			throw new TheoremProverException(e);
 		}
@@ -91,7 +91,7 @@ abstract class TypeImpl implements Type {
 	abstract String getName();
 
 	abstract ExpressionImpl createExpression(Expr res, Expression oldExpr,
-	    Iterable<? extends ExpressionImpl> children);
+			Iterable<? extends ExpressionImpl> children);
 
 	@Override
 	public boolean equals(Object obj) {
@@ -108,8 +108,8 @@ abstract class TypeImpl implements Type {
 			FunctionType thatF = (FunctionType) obj;
 
 			if (thisF.getName().equals(thatF.getName()) && EqualsUtil.areEqual(thisF
-			    .getArgTypes(), thatF.getArgTypes()) && thisF.getRangeType().equals(
-			        thatF.getRangeType()))
+					.getArgTypes(), thatF.getArgTypes()) && thisF.getRangeType().equals(
+							thatF.getRangeType()))
 				return true;
 			else
 				return false;
@@ -120,7 +120,7 @@ abstract class TypeImpl implements Type {
 				return getZ3Type().equals(((TypeImpl) obj).getZ3Type());
 			else
 				return getZ3UnresolvedDatatype().equals(((TypeImpl) obj)
-				    .getZ3UnresolvedDatatype());
+						.getZ3UnresolvedDatatype());
 		}
 		return super.equals(obj);
 	}
@@ -150,18 +150,18 @@ abstract class TypeImpl implements Type {
 			assert (arity % 2 == 1);
 			Expression orig = (Expression) expression.getChild(0);
 			List<? extends Expression> oldVars = expression.getChildren().subList(1,
-			    arity / 2 + 1);
+					arity / 2 + 1);
 			List<? extends Expression> newVars = expression.getChildren().subList(
-			    arity / 2 + 1, arity);
+					arity / 2 + 1, arity);
 			return ExpressionImpl.mkSubst(getExpressionManager(), orig, oldVars,
-			    newVars);
+					newVars);
 
 		case VARIABLE:
 			assert (arity == 0);
 			return VariableExpressionImpl.valueOf(getExpressionManager(), expression);
 		default:
 			throw new IllegalArgumentException("Unexpected kind: " + expression + "{ "
-			    + expression.getKind() + "}");
+					+ expression.getKind() + "}");
 		}
 	}
 

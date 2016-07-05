@@ -8,10 +8,10 @@ import com.google.common.collect.Maps;
 public final class IRStructType extends IRType {
 
 	private static final Map<String, IRStructType> singletonMap = Maps
-	    .newHashMap();
+			.newHashMap();
 
 	public static IRStructType create(String name, Iterable<String> elemNames,
-	    Iterable<IRType> memTypes) {
+			Iterable<IRType> memTypes) {
 		if (singletonMap.containsKey(name))
 			return singletonMap.get(name);
 
@@ -25,7 +25,7 @@ public final class IRStructType extends IRType {
 	private final Iterable<? extends IRType> elemTypes;
 
 	private IRStructType(String name, Iterable<String> elemNames,
-	    Iterable<? extends IRType> elemTypes) {
+			Iterable<? extends IRType> elemTypes) {
 		this.name = name;
 		this.elemTypes = elemTypes;
 		this.elemNames = elemNames;
@@ -51,14 +51,14 @@ public final class IRStructType extends IRType {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder().append("Struct ").append(name)
-		    .append("(\n");
+				.append("(\n");
 
 		Iterator<String> elemNameItr = elemNames.iterator();
 		Iterator<? extends IRType> elemTypeItr = elemTypes.iterator();
 
 		while (elemNameItr.hasNext() && elemTypeItr.hasNext()) {
 			sb.append(elemNameItr.next()).append(" : ").append(elemTypeItr.next())
-			    .append('\n');
+					.append('\n');
 		}
 		sb.append(')');
 

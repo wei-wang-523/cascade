@@ -23,9 +23,9 @@ import edu.nyu.cascade.util.Preferences;
 
 public class MainTest {
 	private static final File syntax_location = FileUtils.absoluteResourcePath(
-	    "syntax");
+			"syntax");
 	private static final File bad_programs_location = new File(syntax_location,
-	    "bad");
+			"bad");
 
 	private static final FilenameFilter cFileFilter = new FilenameFilter() {
 		public boolean accept(File dir, String name) {
@@ -86,30 +86,30 @@ public class MainTest {
 	@Test
 	public void testPrograms() {
 		TestUtils.checkDirectory(syntax_location, cFileFilter, parserTest(
-		    "--parsec"), false);
+				"--parsec"), false);
 	}
 
 	@Test
 	public void testProgramsNoThreads() {
 		TestUtils.checkDirectory(syntax_location, cFileFilter, parserTest(
-		    "--parsec", "--no-threads"), false);
+				"--parsec", "--no-threads"), false);
 	}
 
 	@Test
 	public void testBadPrograms() {
 		TestUtils.checkDirectory(bad_programs_location, cFileFilter, parserTest(
-		    "--parsec"), true);
+				"--parsec"), true);
 	}
 
 	@Test
 	public void testBadProgramsNoThreads() {
 		TestUtils.checkDirectory(bad_programs_location, cFileFilter, parserTest(
-		    "--parsec", "--no-threads"), true);
+				"--parsec", "--no-threads"), true);
 	}
 
 	@Test
 	public void testProperties() {
 		TestUtils.checkDirectory(bad_programs_location, propFileFilter, parserTest(
-		    "--prop"), true);
+				"--prop"), true);
 	}
 }

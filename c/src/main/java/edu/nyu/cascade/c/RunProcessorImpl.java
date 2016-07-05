@@ -38,17 +38,17 @@ import edu.nyu.cascade.util.ReservedFunction;
  */
 class RunProcessorImpl implements RunProcessor {
 	private RunProcessorImpl(Mode mode, SymbolTable symbolTable,
-	    Map<Node, IRControlFlowGraph> cfgMap, FunctionCallGraph callGraph) {
+			Map<Node, IRControlFlowGraph> cfgMap, FunctionCallGraph callGraph) {
 		this.mode = mode;
 		this.traceFactory = new TraceFactory();
 
 		this.globalCFG = Iterables.find(cfgMap.values(),
-		    new Predicate<IRControlFlowGraph>() {
-			    @Override
-			    public boolean apply(IRControlFlowGraph cfg) {
-				    return Identifiers.GLOBAL_CFG.equals(cfg.getName());
-			    }
-		    });
+				new Predicate<IRControlFlowGraph>() {
+					@Override
+					public boolean apply(IRControlFlowGraph cfg) {
+						return Identifiers.GLOBAL_CFG.equals(cfg.getName());
+					}
+				});
 
 		this.cfgs = Lists.newArrayList(cfgMap.values());
 		cfgs.remove(globalCFG);
@@ -59,18 +59,18 @@ class RunProcessorImpl implements RunProcessor {
 		preprocessor = mode.buildPreprocessor(symbolTable);
 
 		formulaEncoder = Preferences.isSet(Preferences.OPTION_SBE)
-		    ? BlockBasedFormulaEncoder.create(SimplePathEncoding.create(encoder),
-		        traceFactory)
-		    : StmtBasedFormulaEncoder.create(SimplePathEncoding.create(encoder),
-		        traceFactory);
+				? BlockBasedFormulaEncoder.create(SimplePathEncoding.create(encoder),
+						traceFactory)
+				: StmtBasedFormulaEncoder.create(SimplePathEncoding.create(encoder),
+						traceFactory);
 		funcProcessor = FuncInlineProcessor.create(cfgMap, symbolTable,
-		    preprocessor);
+				preprocessor);
 		withNoMemAlloc = callGraph.getCallers(ReservedFunction.MALLOC).isEmpty()
-		    && callGraph.getCallers(ReservedFunction.CALLOC).isEmpty();
+				&& callGraph.getCallers(ReservedFunction.CALLOC).isEmpty();
 	}
 
 	static RunProcessorImpl create(Mode mode, SymbolTable symbolTable,
-	    Map<Node, IRControlFlowGraph> cfgs, FunctionCallGraph callGraph) {
+			Map<Node, IRControlFlowGraph> cfgs, FunctionCallGraph callGraph) {
 		return new RunProcessorImpl(mode, symbolTable, cfgs, callGraph);
 	}
 
@@ -110,7 +110,7 @@ class RunProcessorImpl implements RunProcessor {
 
 	@Override
 	public SafeResult processAssertion(IRControlFlowGraph mainCFG,
-	    LoopInfo loopInfo, int iterTime) throws RunProcessorException {
+			LoopInfo loopInfo, int iterTime) throws RunProcessorException {
 		try {
 			/* Set the iteration time */
 			formulaEncoder.setIterTimes(iterTime);
@@ -140,8 +140,8 @@ class RunProcessorImpl implements RunProcessor {
 
 	@Override
 	public SafeResult processReachability(IRControlFlowGraph mainCFG,
-	    LoopInfo loopInfo, String label, int iterTime)
-	    throws RunProcessorException {
+			LoopInfo loopInfo, String label, int iterTime)
+			throws RunProcessorException {
 		try {
 			/* Set the iteration time */
 			formulaEncoder.setIterTimes(iterTime);

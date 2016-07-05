@@ -11,14 +11,14 @@ public class TypeCastModule {
 	 * (target, source), then there is cast from source to target.
 	 */
 	private Map<Cell, Cell> typeCastEdges = Maps.newHashMap();
-	
+
 	void put(Cell oldCell, Cell newCell) {
 		Preconditions.checkArgument(!typeCastEdges.containsKey(newCell));
-	  typeCastEdges.put(newCell, oldCell);
-  }
+		typeCastEdges.put(newCell, oldCell);
+	}
 
 	Cell get(Cell cell) {
 		Preconditions.checkArgument(typeCastEdges.containsKey(cell));
-	  return typeCastEdges.get(cell);
-  }
+		return typeCastEdges.get(cell);
+	}
 }

@@ -20,7 +20,7 @@ public interface StateFactory<T> {
 	 * <code>ptr</code>
 	 */
 	BooleanExpression applyValidMalloc(StateExpression state, Expression region,
-	    Expression size, Node ptrNode);
+			Expression size, Node ptrNode);
 
 	BooleanExpression applyMemoryTrack(StateExpression state);
 
@@ -29,31 +29,31 @@ public interface StateFactory<T> {
 	 * <code>value</code>
 	 */
 	BooleanExpression applyMemset(StateExpression state, Expression region,
-	    Expression size, Expression value, Node ptrNode);
+			Expression size, Expression value, Node ptrNode);
 
 	/**
 	 * Initialize the <code>region</code> of memory with <code>size</code> to be
 	 * <code>value</code>
 	 */
 	BooleanExpression applyMemset(StateExpression state, Expression region,
-	    Expression size, int value, Node ptrNode);
+			Expression size, int value, Node ptrNode);
 
 	/**
 	 * Initialize the <code>region</code> of memory with <code>size</code> to be
 	 * <code>value</code>
 	 */
 	BooleanExpression applyMemcpy(StateExpression state, Expression destRegion,
-	    Expression srcRegion, Expression size, Node destNode, Node srcNode);
+			Expression srcRegion, Expression size, Node destNode, Node srcNode);
 
 	/**
 	 * <code>free(region)</code>, <code>ptrNode</code> is the source node of
 	 * <code>ptr</code>
 	 */
 	BooleanExpression applyValidFree(StateExpression state, Expression region,
-	    Node ptrNode);
+			Node ptrNode);
 
 	BooleanExpression validAccess(StateExpression state, Expression ptr,
-	    Node ptrNode);
+			Node ptrNode);
 
 	/**
 	 * This function is used for memset function call (for now). <code>ptr</code>
@@ -66,7 +66,7 @@ public interface StateFactory<T> {
 	 * @return
 	 */
 	BooleanExpression validAccessRange(StateExpression state, Expression ptr,
-	    Expression size, Node ptrNode);
+			Expression size, Node ptrNode);
 
 	IRDataFormatter getDataFormatter();
 
@@ -91,7 +91,7 @@ public interface StateFactory<T> {
 	 * @param ptrNode
 	 */
 	void malloc(StateExpression state, Expression ptr, Expression size,
-	    Node ptrNode);
+			Node ptrNode);
 
 	/**
 	 * Allocate a region at <code>ptr</code> with <code>size</code> and initialize
@@ -103,7 +103,7 @@ public interface StateFactory<T> {
 	 * @param ptrNode
 	 */
 	void calloc(StateExpression state, Expression ptr, Expression nitem,
-	    Expression size, Node ptrNode);
+			Expression size, Node ptrNode);
 
 	/**
 	 * Allocate a region in stack at <code>ptr</code> with <code>size</code>
@@ -114,7 +114,7 @@ public interface StateFactory<T> {
 	 * @param ptrNode
 	 */
 	void alloca(StateExpression state, Expression ptr, Expression size,
-	    Node ptrNode);
+			Node ptrNode);
 
 	/**
 	 * Update the memory element of <code>state</code>
@@ -126,7 +126,7 @@ public interface StateFactory<T> {
 	 * @param valNode
 	 */
 	void assign(StateExpression state, Expression memIdx, Node idxNode,
-	    Expression memVal, Node valNode);
+			Expression memVal, Node valNode);
 
 	/**
 	 * Update the size element of <code>state</code>
@@ -181,7 +181,7 @@ public interface StateFactory<T> {
 	 * @param sourceNode
 	 */
 	void addStackArray(StateExpression state, Expression lval, Expression rval,
-	    IRVarInfo info, Node sourceNode);
+			IRVarInfo info, Node sourceNode);
 
 	<X> void setLabelAnalyzer(IRAliasAnalyzer<X> preprocessor);
 
@@ -207,7 +207,7 @@ public interface StateFactory<T> {
 	 * @return
 	 */
 	void substitute(StateExpression state, Collection<? extends Expression> vars,
-	    Collection<? extends Expression> freshVars);
+			Collection<? extends Expression> freshVars);
 
 	void reset();
 
@@ -225,10 +225,10 @@ public interface StateFactory<T> {
 	void setValidAccess(StateExpression preState, Expression lhsExpr, Node lNode);
 
 	void setValidAccessRange(StateExpression preState, Expression lhsExpr,
-	    Expression sizeExpr, Node lNode);
+			Expression sizeExpr, Node lNode);
 
 	void setValidFree(StateExpression preState, Expression regionExpr,
-	    Node ptrNode);
+			Node ptrNode);
 
 	BooleanExpression stateToBoolean(StateExpression state);
 

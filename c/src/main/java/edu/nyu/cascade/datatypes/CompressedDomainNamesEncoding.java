@@ -92,73 +92,75 @@ import edu.nyu.cascade.prover.type.Constructor;
 }
 */
 
-public abstract class CompressedDomainNamesEncoding extends AbstractExpressionEncoding {
+public abstract class CompressedDomainNamesEncoding extends
+		AbstractExpressionEncoding {
 
-  protected static final String MEM_ARRAY_NAME = "m";
-  protected static final String DATATYPE_NAME = "Dn";
-  protected static final String LABEL_CONSTR_NAME = "clabel";
-  
-  protected static final String LENGTH_SELECTOR_NAME = "len";
-  protected static final String LABEL_SELECTOR_NAME = "slabel";
-  protected static final String REST_SELECTOR_NAME = "rest";
+	protected static final String MEM_ARRAY_NAME = "m";
+	protected static final String DATATYPE_NAME = "Dn";
+	protected static final String LABEL_CONSTR_NAME = "clabel";
 
-  protected static final String INDIRECT_CONSTR_NAME = "indirect";  
-  protected static final String OFFSET_SELECTOR_NAME = "offset";
-  protected static final String NULL_CONSTR_NAME = "nullt";
+	protected static final String LENGTH_SELECTOR_NAME = "len";
+	protected static final String LABEL_SELECTOR_NAME = "slabel";
+	protected static final String REST_SELECTOR_NAME = "rest";
 
-  protected static final String FUN_DN = DATATYPE_NAME;
-  protected static final String FUN_REST = REST_SELECTOR_NAME;
-  protected static final String FUN_LEN = LENGTH_SELECTOR_NAME;
+	protected static final String INDIRECT_CONSTR_NAME = "indirect";
+	protected static final String OFFSET_SELECTOR_NAME = "offset";
+	protected static final String NULL_CONSTR_NAME = "nullt";
 
-  protected static final String FUN_INTERNAL_DN = "toDn";
-  protected static final String FUN_SIZE_DN = "sizeDn";
+	protected static final String FUN_DN = DATATYPE_NAME;
+	protected static final String FUN_REST = REST_SELECTOR_NAME;
+	protected static final String FUN_LEN = LENGTH_SELECTOR_NAME;
 
-  protected static final String FUN_IS_LABEL = "is_label";
-  protected static final String FUN_IS_INDIRECT = "is_indirect";
-  protected static final String FUN_IS_NULLT = "is_nullt";
-  
-  protected static final String UNDEF_CONSTR_NAME = "undefined";
-  
-  public static final String DATATYPES_EXPLICIT_UNDEFINED = "dt_explicit_undef";
-  public static final String OPTION_EXPLICIT_UNDEFINED = "explicit-undef";
-  public static final String OPTION_FRAME_AXIOM = "frame-axiom";
-  
-  protected CompressedDomainNamesEncoding(
-      IntegerEncoding<BitVectorExpression> integerEncoding,
-      BooleanEncoding<BooleanExpression> booleanEncoding,
-      ArrayEncoding<ArrayExpression> arrayEncoding,
-      PointerEncoding<? extends Expression> pointerEncoding) {
-    super(integerEncoding,booleanEncoding,arrayEncoding,pointerEncoding);
-  }
+	protected static final String FUN_INTERNAL_DN = "toDn";
+	protected static final String FUN_SIZE_DN = "sizeDn";
 
-  protected abstract ArrayExpression doToBvString(ArrayExpression arr,
-      Expression base, Expression len) ;
+	protected static final String FUN_IS_LABEL = "is_label";
+	protected static final String FUN_IS_INDIRECT = "is_indirect";
+	protected static final String FUN_IS_NULLT = "is_nullt";
 
-  /* If we're using an explicit undefined, then the data constraints define
-   * the datatype constructor. Otherwise, the constraints only imply the constructor.
-   */
-  protected abstract BooleanExpression toDnCase(Expression dataConstraints,
-      Expression constructorAssertion) ;
+	protected static final String UNDEF_CONSTR_NAME = "undefined";
 
-  protected abstract BitVectorExpression applySizeDn(Expression x) ;
+	public static final String DATATYPES_EXPLICIT_UNDEFINED = "dt_explicit_undef";
+	public static final String OPTION_EXPLICIT_UNDEFINED = "explicit-undef";
+	public static final String OPTION_FRAME_AXIOM = "frame-axiom";
 
-  protected BitVectorExpression stringDeref(
-      Expression bits1,
-      BitVectorExpression p) {
-    return bits1.asArray().index(p).asBitVector();
-  }
+	protected CompressedDomainNamesEncoding(
+			IntegerEncoding<BitVectorExpression> integerEncoding,
+			BooleanEncoding<BooleanExpression> booleanEncoding,
+			ArrayEncoding<ArrayExpression> arrayEncoding,
+			PointerEncoding<? extends Expression> pointerEncoding) {
+		super(integerEncoding, booleanEncoding, arrayEncoding, pointerEncoding);
+	}
 
-  protected abstract BooleanExpression testDn(Constructor constr,
-      Expression bits1,
-      BitVectorExpression p) ;
+	protected abstract ArrayExpression doToBvString(ArrayExpression arr,
+			Expression base, Expression len);
 
-  protected abstract Expression bvValToDn(Expression expr) ;
+	/*
+	 * If we're using an explicit undefined, then the data constraints define the
+	 * datatype constructor. Otherwise, the constraints only imply the
+	 * constructor.
+	 */
+	protected abstract BooleanExpression toDnCase(Expression dataConstraints,
+			Expression constructorAssertion);
 
-  public abstract Set<String> getFunctions() ;
+	protected abstract BitVectorExpression applySizeDn(Expression x);
 
-  public abstract Set<String> getPredicates() ;
+	protected BitVectorExpression stringDeref(Expression bits1,
+			BitVectorExpression p) {
+		return bits1.asArray().index(p).asBitVector();
+	}
 
-  abstract int getAddressSize() ;
-  abstract int getValueSize() ;
+	protected abstract BooleanExpression testDn(Constructor constr,
+			Expression bits1, BitVectorExpression p);
+
+	protected abstract Expression bvValToDn(Expression expr);
+
+	public abstract Set<String> getFunctions();
+
+	public abstract Set<String> getPredicates();
+
+	abstract int getAddressSize();
+
+	abstract int getValueSize();
 
 }

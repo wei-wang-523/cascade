@@ -10,13 +10,13 @@ import edu.nyu.cascade.util.Pair;
 
 public final class IRArrayType<T extends IRType> extends IRType {
 	private static final Map<Pair<IRType, ? extends IRType>, IRArrayType<? extends IRType>> singletonMap = Maps
-	    .newHashMap();
+			.newHashMap();
 
 	@SuppressWarnings("unchecked")
 	public static <T extends IRType> IRArrayType<T> getInstance(IRType range,
-	    T type) {
+			T type) {
 		IRArrayType<T> arrayType = (IRArrayType<T>) singletonMap.get(Pair.of(range,
-		    type));
+				type));
 		if (arrayType != null)
 			return arrayType;
 
@@ -30,7 +30,7 @@ public final class IRArrayType<T extends IRType> extends IRType {
 		Preconditions.checkArgument(Kind.ARRAY.equals(t.getKind()));
 		IRArrayType<? extends IRType> arrayType = (IRArrayType<? extends IRType>) t;
 		ImmutableList<IRType> args = ImmutableList.of(arrayType.indexType,
-		    arrayType.elementType);
+				arrayType.elementType);
 		return getInstance(args.get(0), args.get(1));
 	}
 

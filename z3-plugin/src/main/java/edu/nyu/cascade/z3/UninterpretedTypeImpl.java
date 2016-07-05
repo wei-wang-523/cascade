@@ -17,17 +17,17 @@ import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.util.CacheException;
 
 final class UninterpretedTypeImpl extends TypeImpl implements
-    UninterpretedType {
+		UninterpretedType {
 	private final String name;
 
 	static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, UninterpretedTypeImpl>> typeCache = CacheBuilder
-	    .newBuilder().build(
-	        new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, UninterpretedTypeImpl>>() {
-		        public ConcurrentMap<String, UninterpretedTypeImpl> load(
-	              ExpressionManagerImpl expressionManager) {
-			        return new MapMaker().makeMap();
-		        }
-	        });
+			.newBuilder().build(
+					new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, UninterpretedTypeImpl>>() {
+						public ConcurrentMap<String, UninterpretedTypeImpl> load(
+								ExpressionManagerImpl expressionManager) {
+							return new MapMaker().makeMap();
+						}
+					});
 
 	static UninterpretedTypeImpl create(ExpressionManagerImpl em, String name) {
 		try {
@@ -44,7 +44,7 @@ final class UninterpretedTypeImpl extends TypeImpl implements
 	}
 
 	static UninterpretedTypeImpl valueOf(ExpressionManagerImpl exprManager,
-	    Type type) {
+			Type type) {
 		Preconditions.checkArgument(type.isUninterpreted());
 		if (type instanceof UninterpretedTypeImpl) {
 			return (UninterpretedTypeImpl) type;
@@ -55,13 +55,13 @@ final class UninterpretedTypeImpl extends TypeImpl implements
 	}
 
 	private UninterpretedTypeImpl(ExpressionManagerImpl exprManager,
-	    String name) {
+			String name) {
 		super(exprManager);
 		this.name = name;
 
 		try {
 			setZ3Type(exprManager.getTheoremProver().getZ3Context()
-			    .mkUninterpretedSort(name));
+					.mkUninterpretedSort(name));
 			exprManager.addToTypeCache(this);
 
 			TheoremProverImpl.z3FileCommand("(declare-sort " + name + " 0)");
@@ -73,20 +73,20 @@ final class UninterpretedTypeImpl extends TypeImpl implements
 	@Override
 	public UninterpretedVariableImpl variable(String name, boolean fresh) {
 		return UninterpretedVariableImpl.create(getExpressionManager(), name, this,
-		    fresh);
+				fresh);
 	}
 
 	@Override
 	public UninterpretedBoundExpressionImpl boundVar(String name, boolean fresh) {
 		return UninterpretedBoundExpressionImpl.create(getExpressionManager(), name,
-		    this, fresh);
+				this, fresh);
 	}
 
 	@Override
 	public UninterpretedBoundExpressionImpl boundExpression(String name,
-	    int index, boolean fresh) {
+			int index, boolean fresh) {
 		return UninterpretedBoundExpressionImpl.create(getExpressionManager(), name,
-		    index, this, fresh);
+				index, this, fresh);
 	}
 
 	@Override
@@ -106,8 +106,8 @@ final class UninterpretedTypeImpl extends TypeImpl implements
 
 	@Override
 	protected UninterpretedExpressionImpl createExpression(Expr res,
-	    Expression oldExpr, Iterable<? extends ExpressionImpl> children) {
+			Expression oldExpr, Iterable<? extends ExpressionImpl> children) {
 		return UninterpretedExpressionImpl.create(getExpressionManager(), oldExpr
-		    .getKind(), res, oldExpr.getType(), children);
+				.getKind(), res, oldExpr.getType(), children);
 	}
 }

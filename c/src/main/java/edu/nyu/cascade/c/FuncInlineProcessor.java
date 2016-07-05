@@ -55,8 +55,8 @@ public class FuncInlineProcessor<T> {
 	private final xtc.type.C cop = CType.getInstance().c();
 
 	private FuncInlineProcessor(Map<Node, IRControlFlowGraph> cfgs,
-	    SymbolTable symbolTable, IRAliasAnalyzer<T> preprocessor,
-	    int effortLevel) {
+			SymbolTable symbolTable, IRAliasAnalyzer<T> preprocessor,
+			int effortLevel) {
 		this.symbolTable = symbolTable;
 		this.effortLevel = effortLevel;
 		this.preprocessor = preprocessor;
@@ -76,12 +76,12 @@ public class FuncInlineProcessor<T> {
 	}
 
 	static <T> FuncInlineProcessor<T> create(Map<Node, IRControlFlowGraph> cfgs,
-	    SymbolTable symbolTable, IRAliasAnalyzer<T> preprocessor) {
+			SymbolTable symbolTable, IRAliasAnalyzer<T> preprocessor) {
 		int effortLevel = Integer.MAX_VALUE;
 		if (Preferences.isSet(Preferences.OPTION_FUNC_INLINE))
 			effortLevel = Preferences.getInt(Preferences.OPTION_FUNC_INLINE);
 		return new FuncInlineProcessor<T>(cfgs, symbolTable, preprocessor,
-		    effortLevel);
+				effortLevel);
 	}
 
 	static <T> FuncInlineProcessor<T> create(SymbolTable symbolTable) {
@@ -113,7 +113,7 @@ public class FuncInlineProcessor<T> {
 						return false;
 				} else {
 					Collection<IRControlFlowGraph> foundCFGs = lookupFuncCFG(funNode,
-					    stmt);
+							stmt);
 					if (!foundCFGs.isEmpty())
 						return false;
 				}
@@ -130,7 +130,7 @@ public class FuncInlineProcessor<T> {
 	 * @param callGraph
 	 */
 	void inlineMalloc(Map<Node, IRControlFlowGraph> cfgs,
-	    FunctionCallGraph callGraph) {
+			FunctionCallGraph callGraph) {
 		if (!Preferences.isSet(Preferences.OPTION_INLINE_MALLOC))
 			return;
 		Collection<String> currCfgNames = getFuncNames(cfgs.values());
@@ -138,7 +138,7 @@ public class FuncInlineProcessor<T> {
 		while (!worklist.isEmpty()) {
 			final String callee = worklist.remove(0);
 			Collection<String> callers = Sets.newHashSet(callGraph.getCallers(
-			    callee));
+					callee));
 			callers.retainAll(currCfgNames);
 			if (callers.isEmpty())
 				continue;
@@ -163,7 +163,7 @@ public class FuncInlineProcessor<T> {
 	}
 
 	private boolean functionInlineCFGWithLevel(IRControlFlowGraph cfg,
-	    int level) {
+			int level) {
 		if (level >= effortLevel)
 			return false;
 
@@ -183,21 +183,21 @@ public class FuncInlineProcessor<T> {
 	}
 
 	private IRControlFlowGraph getCfg(Map<Node, IRControlFlowGraph> currCfgs,
-	    final String name) {
+			final String name) {
 		return Iterables.find(currCfgs.values(),
-		    new Predicate<IRControlFlowGraph>() {
-			    @Override
-			    public boolean apply(IRControlFlowGraph cfg) {
-				    return cfg.getName().equals(name);
-			    }
-		    });
+				new Predicate<IRControlFlowGraph>() {
+					@Override
+					public boolean apply(IRControlFlowGraph cfg) {
+						return cfg.getName().equals(name);
+					}
+				});
 	}
 
 	private void functionInlineCFG(IRControlFlowGraph callerCfg,
-	    IRControlFlowGraph calleeCfg) {
+			IRControlFlowGraph calleeCfg) {
 		String funcName = calleeCfg.getName();
 		Iterable<? extends IRBasicBlock> funcCallBlocks = pickFuncCallBlocks(
-		    callerCfg, funcName);
+				callerCfg, funcName);
 		Scope preScope = symbolTable.getCurrentScope();
 		symbolTable.enterScope(callerCfg);
 		/* Function in-line for each path with function call */
@@ -210,39 +210,39 @@ public class FuncInlineProcessor<T> {
 
 	/** Pick function paths from <code>graph</code> */
 	private Iterable<? extends IRBasicBlock> pickFuncCallBlocks(
-	    IRControlFlowGraph cfg) {
+			IRControlFlowGraph cfg) {
 		return Iterables.filter(cfg.getBlocks(), new Predicate<IRBasicBlock>() {
 			@Override
 			public boolean apply(IRBasicBlock block) {
 				return Iterables.any(block.getStatements(),
-		        new Predicate<IRStatement>() {
-			        @Override
-			        public boolean apply(IRStatement stmt) {
-				        return CALL.equals(stmt.getType());
-			        }
-		        });
+						new Predicate<IRStatement>() {
+							@Override
+							public boolean apply(IRStatement stmt) {
+								return CALL.equals(stmt.getType());
+							}
+						});
 			}
 		});
 	}
 
 	/** Pick function paths from <code>graph</code> */
 	private Iterable<? extends IRBasicBlock> pickFuncCallBlocks(
-	    IRControlFlowGraph cfg, final String funcName) {
+			IRControlFlowGraph cfg, final String funcName) {
 		return Iterables.filter(cfg.getBlocks(), new Predicate<IRBasicBlock>() {
 			@Override
 			public boolean apply(IRBasicBlock block) {
 				return Iterables.any(block.getStatements(),
-		        new Predicate<IRStatement>() {
-			        @Override
-			        public boolean apply(IRStatement stmt) {
-				        if (!CALL.equals(stmt.getType()))
-					        return false;
-				        IRExpression funExpr = stmt.getOperand(0);
-				        Node funNode = funExpr.getSourceNode();
-				        String funName = CAnalyzer.toFunctionName(funNode);
-				        return funName.equals(funcName);
-			        }
-		        });
+						new Predicate<IRStatement>() {
+							@Override
+							public boolean apply(IRStatement stmt) {
+								if (!CALL.equals(stmt.getType()))
+									return false;
+								IRExpression funExpr = stmt.getOperand(0);
+								Node funNode = funExpr.getSourceNode();
+								String funName = CAnalyzer.toFunctionName(funNode);
+								return funName.equals(funcName);
+							}
+						});
 			}
 		});
 	}
@@ -283,7 +283,7 @@ public class FuncInlineProcessor<T> {
 	 * @return empty list if the function is not defined or without parameters
 	 */
 	private Collection<IRStatement> assignArgToParam(IRStatement stmt,
-	    IRControlFlowGraph funcCFG, FunctionT funcType) {
+			IRControlFlowGraph funcCFG, FunctionT funcType) {
 		Preconditions.checkArgument(CALL.equals(stmt.getType()));
 
 		Node defNode = funcCFG.getSourceNode();
@@ -291,7 +291,7 @@ public class FuncInlineProcessor<T> {
 		/* Find the parameter declare node */
 		GNode declarator = defNode.getGeneric(2);
 		GNode paramDeclare = CAnalyzer.getFunctionDeclarator(declarator).getGeneric(
-		    1);
+				1);
 		if (paramDeclare != null) {
 			paramDeclare = paramDeclare.getGeneric(0);
 		}
@@ -313,7 +313,7 @@ public class FuncInlineProcessor<T> {
 		int paramSize = funcType.getParameters().size();
 
 		Collection<IRStatement> assignments = Lists.newArrayListWithExpectedSize(
-		    paramSize);
+				paramSize);
 
 		for (int i = 0; i < paramSize; i++) {
 			Node paramNode = paramDeclare.getNode(i).getNode(1);
@@ -324,11 +324,11 @@ public class FuncInlineProcessor<T> {
 			symbolTable.mark(primaryId);
 
 			IRExpressionImpl param = CExpression.create(primaryId, symbolTable
-			    .getCurrentScope());
+					.getCurrentScope());
 			IRExpressionImpl arg = (IRExpressionImpl) args.get(i);
 			Node argNode = arg.getSourceNode();
 			Node assignNode = GNode.create("AssignmentExpression", paramNode, "=",
-			    argNode);
+					argNode);
 			assignNode.setLocation(paramNode.getLocation());
 			Statement assignStmt = Statement.assign(assignNode, param, arg);
 			assignments.add(assignStmt);
@@ -340,27 +340,27 @@ public class FuncInlineProcessor<T> {
 
 			for (int i = argSize; i < paramSize; i++) {
 				GNode offsetNode = GNode.create("IntegerConstant", String.valueOf(
-				    argSize - i));
+						argSize - i));
 				cop.typeInteger(String.valueOf(i)).mark(offsetNode);
 				symbolTable.mark(offsetNode);
 
 				Node varArgN = getVarArgNode(funcCFG.getName(), declarator
-				    .getLocation());
+						.getLocation());
 				Type varArgTy = CType.getType(varArgN).resolve().toArray().getType();
 				GNode varArgElem = GNode.create("SubscriptExpression", varArgN,
-				    offsetNode);
+						offsetNode);
 				varArgElem.setLocation(declarator.getLocation());
 				varArgTy.mark(varArgElem);
 				symbolTable.mark(varArgElem);
 				preprocessor.analyzeVarArg(funcCFG.getName(), funcType, varArgElem);
 
 				IRExpressionImpl param = CExpression.create(varArgElem, symbolTable
-				    .getCurrentScope());
+						.getCurrentScope());
 				IRExpressionImpl arg = (IRExpressionImpl) args.get(i);
 				Node argNode = arg.getSourceNode();
 
 				Node assignNode = GNode.create("AssignmentExpression", varArgElem, "=",
-				    argNode);
+						argNode);
 				assignNode.setLocation(varArgElem.getLocation());
 				Statement assignStmt = Statement.assign(assignNode, param, arg);
 
@@ -377,7 +377,7 @@ public class FuncInlineProcessor<T> {
 	 * function body 3) function return statement
 	 */
 	private void inlineFuncCallGraph(IRControlFlowGraph funcCFG,
-	    IRStatement stmt) {
+			IRStatement stmt) {
 		Preconditions.checkArgument(CALL.equals(stmt.getType()));
 		Scope preScope = symbolTable.getCurrentScope();
 		symbolTable.enterScope(funcCFG);
@@ -385,12 +385,12 @@ public class FuncInlineProcessor<T> {
 		GNode declarator = funcCFG.getSourceNode().getGeneric(2);
 		GNode identifier = CAnalyzer.getDeclaredId(declarator);
 		FunctionT funcType = symbolTable.lookupType(identifier.getString(0))
-		    .resolve().toFunction();
+				.resolve().toFunction();
 
 		if (!funcType.getParameters().isEmpty()) {
 			/* Insert parameter-argument pass statements */
 			Collection<IRStatement> paramPassStmts = assignArgToParam(stmt, funcCFG,
-			    funcType);
+					funcType);
 			CfgProcessor.insertParamArgAssignStmts(funcCFG, paramPassStmts);
 		}
 
@@ -414,19 +414,19 @@ public class FuncInlineProcessor<T> {
 	 * @return if the CFG has been inlined any function CFG
 	 */
 	private boolean functionInlineBlock(IRControlFlowGraph CFG,
-	    IRBasicBlock funcCallBlock, int level) {
+			IRBasicBlock funcCallBlock, int level) {
 		boolean changed = false;
 
 		IRBasicBlock currBlock = funcCallBlock;
 
 		do {
 			int index = Iterables.indexOf(currBlock.getStatements(),
-			    new Predicate<IRStatement>() {
-				    @Override
-				    public boolean apply(IRStatement stmt) {
-					    return CALL.equals(stmt.getType());
-				    }
-			    });
+					new Predicate<IRStatement>() {
+						@Override
+						public boolean apply(IRStatement stmt) {
+							return CALL.equals(stmt.getType());
+						}
+					});
 			if (index == -1)
 				break; // no such element;
 
@@ -465,16 +465,16 @@ public class FuncInlineProcessor<T> {
 						CFG.addEdge(funcCFGCopy.getExit(), restBlock);
 				} else {
 					IOUtils.debug().pln("Function " + funcName
-					    + " is only declared but not yet implemented.");
+							+ " is only declared but not yet implemented.");
 					newSuccCurrBlock = nextBlock;
 					CFG.addEdge(nextBlock, restBlock);
 				}
 			} else { // function pointers call
 				newSuccCurrBlock = BasicBlock.switchBlock(funcCallStmt.getSourceNode()
-				    .getLocation());
+						.getLocation());
 				Collection<IRControlFlowGraph> funcCFGs = Lists.newArrayList();
 				Collection<IRControlFlowGraph> foundCFGs = lookupFuncCFG(funNode,
-				    funcCallStmt);
+						funcCallStmt);
 				if (!foundCFGs.isEmpty()) {
 					changed = true;
 
@@ -487,7 +487,7 @@ public class FuncInlineProcessor<T> {
 
 					Collection<CaseGuard> caseGuards = Lists.newArrayList();
 					CExpression valExpr = CExpression.create(funNode, currBlock
-					    .getScope());
+							.getScope());
 					for (IRControlFlowGraph funcCFGCopy : funcCFGs) {
 						CaseGuard caseBranch = getCaseGuard(funcCFGCopy, valExpr);
 						caseGuards.add(caseBranch);
@@ -502,11 +502,11 @@ public class FuncInlineProcessor<T> {
 					}
 
 					IRBooleanExpression defaultCase = new DefaultCaseGuard(funNode,
-					    caseGuards);
+							caseGuards);
 					CFG.addEdge(newSuccCurrBlock, defaultCase, restBlock);
 				} else {
 					IOUtils.errPrinter().pln("Function " + funcCallStmt
-					    + " cannot find any functions to inlined.");
+							+ " cannot find any functions to inlined.");
 					newSuccCurrBlock = nextBlock;
 					CFG.addEdge(nextBlock, restBlock);
 				}
@@ -514,7 +514,7 @@ public class FuncInlineProcessor<T> {
 
 			/* Replace all use with currBlock with restBlock */
 			Collection<? extends IREdge<? extends IRBasicBlock>> outgoings = ImmutableList
-			    .copyOf(CFG.getOutgoingEdges(currBlock));
+					.copyOf(CFG.getOutgoingEdges(currBlock));
 
 			for (IREdge<? extends IRBasicBlock> outgoing : outgoings) {
 				IRBasicBlock dest = outgoing.getTarget();
@@ -545,24 +545,24 @@ public class FuncInlineProcessor<T> {
 	 * @param funcName
 	 */
 	private void functionInlineBlockWithFuncCFG(IRControlFlowGraph CFG,
-	    IRBasicBlock funcCallBlock, IRControlFlowGraph funcCFG) {
+			IRBasicBlock funcCallBlock, IRControlFlowGraph funcCFG) {
 		final String functionName = funcCFG.getName();
 		IRBasicBlock currBlock = funcCallBlock;
 
 		do {
 			int index = Iterables.indexOf(currBlock.getStatements(),
-			    new Predicate<IRStatement>() {
-				    @Override
-				    public boolean apply(IRStatement stmt) {
-					    if (!CALL.equals(stmt.getType()))
-						    return false;
-					    Node funNode = stmt.getOperand(0).getSourceNode();
-					    if (!isFunctionCall(funNode))
-						    return false;
-					    String funName = CAnalyzer.toFunctionName(funNode);
-					    return funName.equals(functionName);
-				    }
-			    });
+					new Predicate<IRStatement>() {
+						@Override
+						public boolean apply(IRStatement stmt) {
+							if (!CALL.equals(stmt.getType()))
+								return false;
+							Node funNode = stmt.getOperand(0).getSourceNode();
+							if (!isFunctionCall(funNode))
+								return false;
+							String funName = CAnalyzer.toFunctionName(funNode);
+							return funName.equals(functionName);
+						}
+					});
 			if (index == -1)
 				break; // no such element;
 
@@ -595,7 +595,7 @@ public class FuncInlineProcessor<T> {
 
 			/* Replace all use with currBlock with restBlock */
 			Collection<? extends IREdge<? extends IRBasicBlock>> outgoings = ImmutableList
-			    .copyOf(CFG.getOutgoingEdges(currBlock));
+					.copyOf(CFG.getOutgoingEdges(currBlock));
 
 			for (IREdge<? extends IRBasicBlock> outgoing : outgoings) {
 				IRBasicBlock dest = outgoing.getTarget();
@@ -616,18 +616,18 @@ public class FuncInlineProcessor<T> {
 	}
 
 	private void refreshScope(IRControlFlowGraph callerCFG,
-	    IRControlFlowGraph calleeCFG) {
+			IRControlFlowGraph calleeCFG) {
 		String freshCalleeName = callerCFG.getName() + Constants.QUALIFIER
-		    + Identifiers.uniquify(calleeCFG.getName());
+				+ Identifiers.uniquify(calleeCFG.getName());
 
 		for (IRBasicBlock block : calleeCFG.getBlocks()) {
 			for (IRStatement stmt : block.getStatements()) {
 				if (stmt.hasProperty(Identifiers.SCOPE)) {
 					assert (StatementType.FUNC_ENT.equals(stmt.getType())
-					    || StatementType.FUNC_EXIT.equals(stmt.getType()));
+							|| StatementType.FUNC_EXIT.equals(stmt.getType()));
 					String funcScopeName = (String) stmt.getProperty(Identifiers.SCOPE);
 					String freshFuncScopeName = funcScopeName.replace(calleeCFG.getName(),
-					    freshCalleeName);
+							freshCalleeName);
 					stmt.setProperty(Identifiers.SCOPE, freshFuncScopeName);
 				}
 			}
@@ -650,7 +650,7 @@ public class FuncInlineProcessor<T> {
 	}
 
 	private Collection<IRControlFlowGraph> lookupFuncCFG(Node funcNode,
-	    IRStatement funcCallStmt) {
+			IRStatement funcCallStmt) {
 		Preconditions.checkArgument(CALL.equals(funcCallStmt.getType()));
 		if (funcCallStmt.hasProperty(Identifiers.SCOPE)) {
 			String scopeName = (String) funcCallStmt.getProperty(Identifiers.SCOPE);
@@ -664,7 +664,7 @@ public class FuncInlineProcessor<T> {
 		}
 
 		Collection<IRControlFlowGraph> funcCFGs = Lists.newArrayListWithCapacity(
-		    funcVars.size());
+				funcVars.size());
 
 		Type funcType = CType.getType(funcNode);
 		if (Tag.POINTER.equals(funcType.tag()))
@@ -686,18 +686,18 @@ public class FuncInlineProcessor<T> {
 	}
 
 	private Collection<String> getFuncNames(
-	    final Collection<IRControlFlowGraph> currCfgs) {
+			final Collection<IRControlFlowGraph> currCfgs) {
 		return ImmutableList.copyOf(Iterables.transform(currCfgs,
-		    new Function<IRControlFlowGraph, String>() {
-			    @Override
-			    public String apply(IRControlFlowGraph cfg) {
-				    return cfg.getName();
-			    }
-		    }));
+				new Function<IRControlFlowGraph, String>() {
+					@Override
+					public String apply(IRControlFlowGraph cfg) {
+						return cfg.getName();
+					}
+				}));
 	}
 
 	private CaseGuard getCaseGuard(IRControlFlowGraph funcCFG,
-	    IRExpression valExpr) {
+			IRExpression valExpr) {
 		GNode declarator = funcCFG.getSourceNode().getGeneric(2);
 		GNode identifier = CAnalyzer.getDeclaredId(declarator);
 		CExpression funcExpr = CExpression.create(identifier, funcCFG.getScope());
@@ -705,7 +705,7 @@ public class FuncInlineProcessor<T> {
 		Node funNode = valExpr.getSourceNode();
 		xtc.type.Type funType = CType.getType(funNode).resolve();
 		if (funType.isPointer()) { // For syntax sugar of function pointers funcPtr
-		                           // == f : *funcPtr == f
+																// == f : *funcPtr == f
 			GNode ptrToNode = GNode.create("IndirectionExpression", funNode);
 			ptrToNode.setLocation(funNode.getLocation());
 			funType.toPointer().getType().mark(ptrToNode);
@@ -725,7 +725,7 @@ public class FuncInlineProcessor<T> {
 	 * Clean up the CFGs not referenced (directly or indirectly of the main CFG)
 	 */
 	void cleanup(Map<Node, IRControlFlowGraph> cfgs,
-	    FunctionCallGraph callGraph) {
+			FunctionCallGraph callGraph) {
 		// Function names referenced by the main function.
 		Collection<String> callees = callGraph.getAllCallees(Identifiers.MAIN);
 		// Cleanup callGraph with the call edges between functions within callees.
@@ -734,7 +734,7 @@ public class FuncInlineProcessor<T> {
 		callees.add(Identifiers.GLOBAL_CFG);
 		// Cleanup CFGs with names contained within callees.
 		for (Iterator<Map.Entry<Node, IRControlFlowGraph>> it = cfgs.entrySet()
-		    .iterator(); it.hasNext();) {
+				.iterator(); it.hasNext();) {
 			String funcName = it.next().getValue().getName();
 			if (!callees.contains(funcName)) {
 				it.remove();

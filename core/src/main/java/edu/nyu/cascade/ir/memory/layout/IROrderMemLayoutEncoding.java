@@ -10,16 +10,16 @@ import edu.nyu.cascade.prover.Expression;
 public interface IROrderMemLayoutEncoding {
 
 	ImmutableSet<BooleanExpression> disjointMemLayout(MemoryVarSets multiSets,
-	    ArrayExpression sizeArr, Expression lastRegion);
+			ArrayExpression sizeArr, Expression lastRegion);
 
 	BooleanExpression validMalloc(ArrayExpression sizeArr, Expression lastRegion,
-	    Expression ptr, Expression size);
+			Expression ptr, Expression size);
 
 	BooleanExpression validFree(ArrayExpression sizeArr, Expression ptr);
 
 	ImmutableSet<BooleanExpression> validMemAccess(MemoryVarSets varSets,
-	    ArrayExpression sizeArr, Expression ptr);
+			ArrayExpression sizeArr, Expression ptr);
 
 	ImmutableSet<BooleanExpression> validMemAccess(MemoryVarSets varSets,
-	    ArrayExpression sizeArr, Expression ptr, Expression size);
+			ArrayExpression sizeArr, Expression ptr, Expression size);
 }
