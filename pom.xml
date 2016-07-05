@@ -167,6 +167,7 @@
           </execution>
         </executions>
         <configuration>
+	  <argLine>-Djava.library.path=${cvc4.libdir}:${cvc4.jni.libdir}:${z3.libdir}</argLine>
           <environmentVariables>
             <DYLD_LIBRARY_PATH>${cvc4.libdir}:${cvc4.jni.libdir}:${z3.libdir}</DYLD_LIBRARY_PATH>
             <LD_LIBRARY_PATH>${z3.libdir}:${cvc4.libdir}:${cvc4.jni.libdir}</LD_LIBRARY_PATH>
