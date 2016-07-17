@@ -462,29 +462,6 @@ public class SteensgaardFS implements IRAliasAnalyzer<ECR> {
 		return reps;
 	}
 
-	@Override
-	public boolean isAccessTypeSafe(ECR rep) {
-		switch (rep.getType().getKind()) {
-		// structure's cell type is pointer (not the size of structure)
-		case STRUCT:
-			return true;
-		case BOTTOM:
-		case OBJECT:
-			return false;
-		default: {
-			Size size = rep.getType().getSize();
-			if (!size.isNumber())
-				return false;
-
-			long value = size.getValue();
-			if (value == 0)
-				return false; // array type without length (stdlib.h)
-
-			return true;
-		}
-		}
-	}
-
 	private void collectFieldReps(Collection<ECR> reps, ECR rep) {
 		if (reps.contains(rep))
 			return;

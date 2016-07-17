@@ -98,12 +98,6 @@ public class CFSProcessor implements IRAliasAnalyzer<Cell> {
 	}
 
 	@Override
-	public boolean isAccessTypeSafe(Cell rep) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
 	public Cell getStackRep(Node node) {
 		// TODO Auto-generated method stub
 		return null;

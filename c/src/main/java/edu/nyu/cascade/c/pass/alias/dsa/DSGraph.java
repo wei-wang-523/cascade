@@ -140,8 +140,7 @@ abstract class DSGraph {
 	}
 
 	/// getNodeMap - Get a map that describes what the nodes the DSNodeHandle in
-	/// this
-	/// function point to...
+	/// this function point to...
 	///
 	DSNodeMap getNodeMap() {
 		return NodeMap;

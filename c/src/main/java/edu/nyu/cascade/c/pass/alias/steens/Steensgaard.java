@@ -389,11 +389,6 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 		return Collections.singleton(rep);
 	}
 
-	@Override
-	public boolean isAccessTypeSafe(ECR rep) {
-		return false;
-	}
-
 	private void heapAssign(ECR lhs) {
 		ECR lhsLoc = uf.getLoc(lhs);
 

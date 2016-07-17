@@ -205,12 +205,6 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 	}
 
 	@Override
-	public boolean isAccessTypeSafe(DSNodeHandle rep) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
 	public void analyzeVarArg(String func, Type funcTy, Node varArgElem) {
 		Function FB = (Function) steens.getValueManager().get(func, funcTy);
 		DSNodeHandle VArgNH = steens.getResultGraph().getVANodeFor(FB);

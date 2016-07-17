@@ -76,7 +76,5 @@ public interface IRAliasAnalyzer<T> extends IRPass {
 
 	Collection<IRVar> getEquivFuncVars(Node funcNode);
 
-	boolean isAccessTypeSafe(T rep);
-
 	void analyzeVarArg(String func, Type funcTy, Node varArgN);
 }

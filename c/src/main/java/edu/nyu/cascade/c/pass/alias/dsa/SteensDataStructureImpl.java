@@ -91,8 +91,7 @@ public class SteensDataStructureImpl extends DataStructuresImpl {
 		ResultGraph = new DSGraphImpl(LocalDS.getGlobalECs(), TypeSS, GlobalsGraph);
 
 		// Loop over the rest of the module, merging graphs for non-external
-		// functions
-		// into this graph.
+		// functions into this graph.
 		for (IRControlFlowGraph CFG : CFGs) {
 			String FuncID = CFG.getName();
 			Type FuncTy = SymbolTable.lookupType(FuncID);

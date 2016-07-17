@@ -447,31 +447,6 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		return reps;
 	}
 
-	@Override
-	public boolean isAccessTypeSafe(ECR rep) {
-		ValueType type = uf.getType(rep);
-		if (type.hasOpTag())
-			return false;
-
-		switch (type.getKind()) {
-		case BOTTOM:
-			return false;
-		case STRUCT:
-			return true;
-		default: {
-			Size size = type.getSize();
-			if (!size.isNumber())
-				return false;
-
-			long value = size.getValue();
-			if (value == 0)
-				return false; // array type without length (stdlib.h)
-
-			return true;
-		}
-		}
-	}
-
 	private void collectFieldReps(Collection<ECR> reps, ECR rep) {
 		if (reps.contains(rep))
 			return;

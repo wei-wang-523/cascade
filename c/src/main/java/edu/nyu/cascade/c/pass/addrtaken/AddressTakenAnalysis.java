@@ -254,9 +254,4 @@ public class AddressTakenAnalysis implements IRPass {
 	public ValueManager getValueManager() {
 		return ValueManager;
 	}
-
-	public Set<Function> getAddressTakenFunctions() {
-		return addressTakenFunctions;
-	}
-
 }
