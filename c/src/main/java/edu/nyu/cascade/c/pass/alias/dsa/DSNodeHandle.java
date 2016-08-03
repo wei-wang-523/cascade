@@ -6,6 +6,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
 import edu.nyu.cascade.c.pass.alias.dsa.DSSupport.NodeTy;
+import edu.nyu.cascade.util.HashCodeUtil;
 import edu.nyu.cascade.util.IOUtils;
 
 /***
@@ -185,6 +186,11 @@ class DSNodeHandle implements Comparable<DSNodeHandle> {
 		if (ONH.getNode() != this.getNode())
 			return false;
 		return ONH.getOffset() == this.getOffset();
+	}
+
+	@Override
+	public int hashCode() {
+		return HashCodeUtil.hash(HashCodeUtil.hash(HashCodeUtil.SEED, N), Offset);
 	}
 
 	@Override

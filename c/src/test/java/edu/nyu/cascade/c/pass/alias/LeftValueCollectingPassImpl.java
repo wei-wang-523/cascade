@@ -22,7 +22,7 @@ import xtc.tree.Visitor;
 import xtc.type.Type;
 
 /**
- * This pass is to collect pointers from the given program (represented as a
+ * This pass is to collect left values from the given program (represented as a
  * global CFG and multiple function CFGs).
  * 
  * @author weiwang
@@ -42,11 +42,11 @@ public final class LeftValueCollectingPassImpl implements IRPass {
 	public void reset() {
 		leftValues.clear();
 	}
-	
-	protected Collection<Pair<Node, String>> getLeftValues() {
+
+	public Collection<Pair<Node, String>> getLeftValues() {
 		return leftValues;
 	}
-	
+
 	private boolean runOnModule(IRControlFlowGraph globalCFG,
 			Collection<IRControlFlowGraph> CFGs) {
 
@@ -66,7 +66,7 @@ public final class LeftValueCollectingPassImpl implements IRPass {
 	class PointerVisitor {
 		private LvalVisitor lvalVisitor = new LvalVisitor();
 		private RvalVisitor rvalVisitor = new RvalVisitor();
-		
+
 		private void init(Node N) {
 			String NScope = CType.getScopeName(N);
 			leftValues.add(Pair.of(N, NScope));
@@ -75,7 +75,12 @@ public final class LeftValueCollectingPassImpl implements IRPass {
 		private class LvalVisitor extends Visitor {
 			void encode(Node node) {
 				dispatch(node);
-				 init(node);
+				if (node.hasName("PrimaryIdentifier")) {
+					return;
+				}
+				if (CType.isScalar(CType.getType(node))) {
+					init(node);
+				}
 			}
 
 			@Override
@@ -290,7 +295,7 @@ public final class LeftValueCollectingPassImpl implements IRPass {
 				encode(node.getNode(2));
 			}
 		}
-		
+
 		private void visit(IRStatement stmt) {
 			switch (stmt.getType()) {
 			case DECLARE:

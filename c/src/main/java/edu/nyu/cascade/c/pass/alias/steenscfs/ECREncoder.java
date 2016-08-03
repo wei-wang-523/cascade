@@ -499,7 +499,7 @@ public class ECREncoder extends Visitor {
 			paramECRs = Collections.<ECR> emptyList();
 		}
 
-		ECR retECR = ECR.createBottom();
+		ECR retECR = deref(createECR(funcType.getResult()), funcType.getResult());
 		ValueType lambdaType = ValueType.lam(retECR, paramECRs, Parent.getBottom());
 		return lambdaType;
 	}
@@ -541,11 +541,9 @@ public class ECREncoder extends Visitor {
 
 		locType = uf.unify(locType, structType); // Ensure locType is struct type
 		// The type set to loc might not be locType. Since loc could be with bottom
-		// type
-		// and associated with ccjoin or cjoin pending, the type change could
-		// trigger the
-		// pending resolving process and would change the type set to loc (could be
-		// ref)
+		// type and associated with ccjoin or cjoin pending, the type change could
+		// trigger the pending resolving process and would change the type set to
+		// loc (could be ref)
 		uf.setType(loc, locType);
 
 		if (uf.getType(loc).isSimple()) {
@@ -668,8 +666,9 @@ public class ECREncoder extends Visitor {
 	private void normalize(ECR srcECR, Type fieldType, Range<Long> range,
 			RangeMap<Long, ECR> fieldMap) {
 
-		if (fieldMap.asMapOfRanges().containsKey(range))
+		if (fieldMap.asMapOfRanges().containsKey(range)) {
 			return;
+		}
 
 		RangeMap<Long, ECR> subMap = fieldMap.subRangeMap(range);
 		Map<Range<Long>, ECR> subMapRanges = subMap.asMapOfRanges();
@@ -687,10 +686,10 @@ public class ECREncoder extends Visitor {
 
 		Iterator<ECR> elemECRItr = subMapRanges.values().iterator();
 		ECR joinECR = elemECRItr.next();
-		while (elemECRItr.hasNext())
+		while (elemECRItr.hasNext()) {
 			joinECR = uf.cjoin(elemECRItr.next(), joinECR);
-		// uf.collapse(joinECR);
-
+			// uf.collapse(joinECR);
+		}
 		fieldMap.put(newRange, joinECR);
 		return;
 	}

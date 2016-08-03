@@ -1,34 +1,38 @@
-package edu.nyu.cascade.c.pass.alias.dsa;
+package edu.nyu.cascade.c.pass.alias.steenscfsopt;
 
 import static edu.nyu.cascade.c.util.TestUtils.getInjector;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Collection;
-import org.junit.After;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import com.google.common.base.Predicate;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 
+import edu.nyu.cascade.c.CPrinter;
 import edu.nyu.cascade.c.Main;
-import edu.nyu.cascade.c.pass.ValueManager;
-import edu.nyu.cascade.c.pass.addrtaken.AddressTakenAnalysis;
+import edu.nyu.cascade.c.pass.alias.LeftValueCollectingPassImpl;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.util.FileUtils;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
+import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.Preferences;
 import xtc.parser.ParseException;
 import xtc.tree.Node;
 import xtc.tree.Printer;
 
 @RunWith(Parameterized.class)
-public class SteensDataStructureTest {
+public class SteenscfsoptStatsTest {
 	private static final File programs_syntax = FileUtils.absoluteResourcePath(
 			"syntax");
 	private static final File programs_c = FileUtils.absoluteResourcePath("c");
@@ -38,6 +42,8 @@ public class SteensDataStructureTest {
 			"mini_bnc", "valid");
 	private static final File nec_programs = FileUtils.filePath(programs_c,
 			"nec_bnc");
+	private static final File alias_programs = FileUtils.filePath(programs_c,
+			"alias");
 
 	private Main main;
 	private File cfile;
@@ -70,20 +76,14 @@ public class SteensDataStructureTest {
 		return fileList;
 	}
 
-	public SteensDataStructureTest(File file) {
+	public SteenscfsoptStatsTest(File file) {
 		main = getInjector().getInstance(Main.class);
 		main.init();
 		main.prepare();
+		cfile = file;
+
 		IOUtils.enableOut();
 		Preferences.set(Preferences.OPTION_BYTE_BASED);
-
-		cfile = file;
-	}
-
-	@After
-	public void tearDown() {
-		ValueManager.reset();
-		DSNodeImpl.reset();
 	}
 
 	@Test
@@ -102,20 +102,38 @@ public class SteensDataStructureTest {
 		CFGs.remove(globalCFG);
 
 		SymbolTable symbolTable = main.getSymbolTable();
-		AddressTakenAnalysis addrTakenPass = AddressTakenAnalysis.create(
-				symbolTable);
-		addrTakenPass.analysis(globalCFG, CFGs);
+		SteensgaardCFSOpt cfs = SteensgaardCFSOpt.create(symbolTable);
+		cfs.analysis(globalCFG, CFGs);
 
-		DataStructures localds = LocalDataStructureImpl.create(addrTakenPass).init(
-				symbolTable);
-		localds.analysis(globalCFG, CFGs);
+		LeftValueCollectingPassImpl lvalCollector = new LeftValueCollectingPassImpl();
+		lvalCollector.analysis(globalCFG, CFGs);
+		Collection<Pair<Node, String>> lvals = lvalCollector.getLeftValues();
+		Multimap<ECR, Pair<Node, String>> aliasMap = ArrayListMultimap.create();
+		for (Pair<Node, String> lval : lvals) {
+			ECR NH = cfs.getRep(lval.fst());
+			aliasMap.put(NH, lval);
+		}
 
-		DataStructures steensds = SteensDataStructureImpl.create(localds).init(
-				symbolTable);
-		steensds.analysis(globalCFG, CFGs);
+		Printer printer = IOUtils.outPrinter();
+		Printer debugPrinter = IOUtils.debug();
+		CPrinter cprinter = new CPrinter(debugPrinter);
 
-		Printer out = IOUtils.debug();
-		out.pln(cfile.getName());
-		((SteensDataStructureImpl) steensds).getResultGraph().dump(out);
+		printer.p(cfile.getName()).p(',').p(lvals.size()).p(',').p(aliasMap.keySet()
+				.size()).pln();
+
+		debugPrinter.incr();
+		for (ECR ecr : aliasMap.keySet()) {
+			Collection<Pair<Node, String>> aliasGroup = aliasMap.get(ecr);
+			if (aliasGroup.size() <= 1)
+				continue;
+			debugPrinter.p(ecr.getId());
+			for (Pair<Node, String> lval : aliasGroup) {
+				debugPrinter.pln().p('\t');
+				cprinter.dispatch(lval.fst());
+				debugPrinter.p(lval.snd());
+			}
+			debugPrinter.pln();
+		}
+		debugPrinter.decr().pln();
 	}
 }

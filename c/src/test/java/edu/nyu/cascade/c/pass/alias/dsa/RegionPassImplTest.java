@@ -40,7 +40,8 @@ public class RegionPassImplTest {
 			"mini_bnc", "invalid");
 	private static final File mini_valids = FileUtils.filePath(programs_c,
 			"mini_bnc", "valid");
-	private static final File nec_programs = new File(programs_c, "nec_bnc");
+	private static final File nec_programs = FileUtils.filePath(programs_c,
+			"nec_bnc");
 
 	private Main main;
 	private File cfile;
