@@ -31,50 +31,32 @@ abstract class ValueType {
 
 	abstract Parent getParent();
 
-	abstract boolean hasOpTag();
-
-	abstract void enableOpTag();
-
 	static BottomType bottom() {
 		return new BottomType();
 	}
 
 	static BlankType blank(Size size, Parent parent) {
-		return new BlankType(size, parent, false);
-	}
-
-	static BlankType blank(Size size, Parent parent, boolean op) {
-		return new BlankType(size, parent, op);
+		return new BlankType(size, parent);
 	}
 
 	static StructType struct(Size size, Parent parent) {
 		Preconditions.checkNotNull(size);
 		RangeMap<Long, ECR> fieldMap = FieldRangeMap.create();
-		return struct(fieldMap, size, parent, false);
+		return new StructType(fieldMap, size, parent);
 	}
 
 	static StructType struct(RangeMap<Long, ECR> fieldMap, Size size,
-			Parent parent, boolean op) {
+			Parent parent) {
 		Preconditions.checkNotNull(size);
-		return new StructType(fieldMap, size, parent, op);
+		return new StructType(fieldMap, size, parent);
 	}
 
 	static SimpleType simple(ECR loc, ECR func, Size size, Parent parent) {
-		return new SimpleType(loc, func, size, parent, false);
-	}
-
-	static SimpleType simple(ECR loc, ECR func, Size size, Parent parent,
-			boolean op) {
-		return new SimpleType(loc, func, size, parent, op);
+		return new SimpleType(loc, func, size, parent);
 	}
 
 	static SimpleType simple(Pair<ECR, ECR> pair, Size size, Parent parent) {
 		return simple(pair.fst(), pair.snd(), size, parent);
-	}
-
-	static SimpleType simple(Pair<ECR, ECR> pair, Size size, Parent parent,
-			boolean op) {
-		return simple(pair.fst(), pair.snd(), size, parent, op);
 	}
 
 	static ValueType lam(ECR ret, List<ECR> args, Parent parent) {

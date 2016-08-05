@@ -647,7 +647,6 @@ public class ECREncoder extends Visitor {
 				uf.collapseStruct(ecr, ecrType.asStruct());
 		}
 
-		uf.enableOp(uf.getLoc(resECR));
 		return resECR;
 	}
 

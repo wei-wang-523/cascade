@@ -8,9 +8,6 @@ class BottomType extends ValueType {
 	public boolean equals(Object o) {
 		if (!(o instanceof BottomType))
 			return false;
-		BottomType that = (BottomType) o;
-		if (op != that.op)
-			return false;
 		return true;
 	}
 
@@ -38,15 +35,5 @@ class BottomType extends ValueType {
 	@Override
 	void setParent(Parent parent) {
 		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	boolean hasOpTag() {
-		return op;
-	}
-
-	@Override
-	void enableOpTag() {
-		op = true;
 	}
 }

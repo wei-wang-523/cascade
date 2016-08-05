@@ -7,14 +7,13 @@ class SimpleType extends ValueType {
 	private final Size size;
 
 	private Parent parent;
-	private boolean op;
 
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder().append("SIMPLE (").append(((ECR) loc
 				.findRoot()).getId()).append(", ").append(((ECR) func.findRoot())
 						.getId()).append(", ").append(size).append(", ").append(parent)
-				.append(", ").append(op).append(')');
+				.append(')');
 
 		return sb.toString();
 	}
@@ -32,17 +31,14 @@ class SimpleType extends ValueType {
 			return false;
 		if (!parent.equals(that.parent))
 			return false;
-		if (op != that.op)
-			return false;
 		return true;
 	}
 
-	SimpleType(ECR loc, ECR func, Size size, Parent parent, boolean op) {
+	SimpleType(ECR loc, ECR func, Size size, Parent parent) {
 		this.loc = loc;
 		this.func = func;
 		this.size = size;
 		this.parent = parent;
-		this.op = op;
 	}
 
 	@Override
@@ -63,16 +59,6 @@ class SimpleType extends ValueType {
 	@Override
 	void setParent(Parent parent) {
 		this.parent = parent;
-	}
-
-	@Override
-	boolean hasOpTag() {
-		return op;
-	}
-
-	@Override
-	void enableOpTag() {
-		op = true;
 	}
 
 	ECR getLoc() {

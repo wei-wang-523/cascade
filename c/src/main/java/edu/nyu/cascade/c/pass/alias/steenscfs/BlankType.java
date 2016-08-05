@@ -4,18 +4,16 @@ class BlankType extends ValueType {
 
 	private Parent parent;
 	private final Size size;
-	private boolean op;
 
-	BlankType(Size size, Parent parent, boolean op) {
+	BlankType(Size size, Parent parent) {
 		this.size = size;
 		this.parent = parent;
-		this.op = op;
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder().append("BLANK (").append(size)
-				.append(", ").append(parent).append(", ").append(op).append(')');
+				.append(", ").append(parent).append(')');
 		return sb.toString();
 	}
 
@@ -28,8 +26,6 @@ class BlankType extends ValueType {
 			return false;
 		if (!parent.equals(that.parent))
 			return false;
-		if (op != that.op)
-			return false;
 		return true;
 	}
 
@@ -39,7 +35,7 @@ class BlankType extends ValueType {
 	 * @return
 	 */
 	static BlankType getTop() {
-		return new BlankType(Size.getTop(), Parent.getBottom(), false);
+		return new BlankType(Size.getTop(), Parent.getBottom());
 	}
 
 	@Override
@@ -60,15 +56,5 @@ class BlankType extends ValueType {
 	@Override
 	Parent getParent() {
 		return parent;
-	}
-
-	@Override
-	boolean hasOpTag() {
-		return op;
-	}
-
-	@Override
-	void enableOpTag() {
-		op = true;
 	}
 }

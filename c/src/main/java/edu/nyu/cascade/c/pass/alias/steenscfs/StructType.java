@@ -7,7 +7,6 @@ class StructType extends ValueType {
 	private final RangeMap<Long, ECR> fieldMap;
 	private final Size size;
 	private Parent parent;
-	private boolean op;
 
 	@Override
 	public String toString() {
@@ -31,11 +30,10 @@ class StructType extends ValueType {
 		return true;
 	}
 
-	StructType(RangeMap<Long, ECR> map, Size size, Parent parent, boolean op) {
+	StructType(RangeMap<Long, ECR> map, Size size, Parent parent) {
 		this.size = size;
 		this.parent = parent;
 		this.fieldMap = map;
-		this.op = op;
 	}
 
 	@Override
@@ -56,16 +54,6 @@ class StructType extends ValueType {
 	@Override
 	void setParent(Parent parent) {
 		this.parent = parent;
-	}
-
-	@Override
-	boolean hasOpTag() {
-		return op;
-	}
-
-	@Override
-	void enableOpTag() {
-		op = true;
 	}
 
 	RangeMap<Long, ECR> getFieldMap() {

@@ -475,8 +475,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		ECR lhsLoc = uf.getLoc(lhs);
 		ValueType lhsLocType = uf.getType(lhsLoc);
 		if (lhsLocType.isBottom()) {
-			ValueType blankType = ValueType.blank(Size.getBot(), Parent.getBottom(),
-					lhsLocType.hasOpTag());
+			ValueType blankType = ValueType.blank(Size.getBot(), Parent.getBottom());
 			uf.setType(lhsLoc, blankType);
 		}
 	}

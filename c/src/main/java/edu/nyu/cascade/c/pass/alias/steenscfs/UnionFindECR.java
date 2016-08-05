@@ -235,11 +235,11 @@ public class UnionFindECR {
 			switch (type2.getKind()) {
 			case BOTTOM:
 				setType(e2, ValueType.simple(type1.asSimple().getLoc(), type1.asSimple()
-						.getFunc(), rangeSize, Parent.getBottom(), type2.hasOpTag()));
+						.getFunc(), rangeSize, Parent.getBottom()));
 				return;
 			case BLANK: {
 				setType(e2, ValueType.simple(type1.asSimple().getLoc(), type1.asSimple()
-						.getFunc(), type2.getSize(), type2.getParent(), type2.hasOpTag()));
+						.getFunc(), type2.getSize(), type2.getParent()));
 				Size size2 = type2.getSize();
 				if (!Size.isLessThan(rangeSize, size2))
 					expand(e2, rangeSize);
@@ -269,15 +269,14 @@ public class UnionFindECR {
 				RangeMap<Long, ECR> fieldMapCopy = FieldRangeMap.create();
 				fieldMapCopy.putAll(type1.asStruct().getFieldMap());
 				setType(e2, ValueType.struct(fieldMapCopy, rangeSize, Parent
-						.getBottom(), type2.hasOpTag()));
+						.getBottom()));
 				return;
 			}
 			case BLANK: {
 				RangeMap<Long, ECR> fieldMapCopy = FieldRangeMap.create();
 				fieldMapCopy.putAll(type1.asStruct().getFieldMap());
 				Size size2 = type2.getSize();
-				setType(e2, ValueType.struct(fieldMapCopy, size2, type2.getParent(),
-						type2.hasOpTag()));
+				setType(e2, ValueType.struct(fieldMapCopy, size2, type2.getParent()));
 				if (!Size.isLessThan(rangeSize, size2))
 					expand(e2, rangeSize);
 				return;
@@ -332,27 +331,23 @@ public class UnionFindECR {
 		if (t1.equals(t2))
 			return t1;
 		if (t1.isBottom()) {
-			if (t1.hasOpTag())
-				t2.enableOpTag();
 			return t2;
 		}
 
 		Parent parent = Parent.getLUB(t1.getParent(), t2.getParent());
 		Size size = Size.getLUB(t1.getSize(), t2.getSize());
-		boolean hasOpTag = t1.hasOpTag() || t2.hasOpTag();
 
 		switch (t1.getKind()) {
 		case BLANK: {
 			switch (t2.getKind()) {
 			case BLANK:
-				return ValueType.blank(size, parent, hasOpTag);
+				return ValueType.blank(size, parent);
 			case SIMPLE: {
 				return ValueType.simple(t2.asSimple().getLoc(), t2.asSimple().getFunc(),
-						size, parent, hasOpTag);
+						size, parent);
 			}
 			default: { // case STRUCT:
-				return ValueType.struct(t2.asStruct().getFieldMap(), size, parent,
-						hasOpTag);
+				return ValueType.struct(t2.asStruct().getFieldMap(), size, parent);
 			}
 			}
 		}
@@ -367,7 +362,7 @@ public class UnionFindECR {
 				ECR loc = join(loc1, loc2);
 				ECR func = join(func1, func2);
 
-				return ValueType.simple(loc, func, size, parent, hasOpTag);
+				return ValueType.simple(loc, func, size, parent);
 			}
 			default: // case STRUCT:
 				throw new IllegalArgumentException();
@@ -377,7 +372,7 @@ public class UnionFindECR {
 			if (ValueTypeKind.STRUCT.equals(t2.getKind())) {
 				RangeMap<Long, ECR> map = getCompatibleMap(t1.asStruct(), t2
 						.asStruct());
-				return ValueType.struct(map, size, parent, hasOpTag);
+				return ValueType.struct(map, size, parent);
 			} else {
 				throw new IllegalArgumentException();
 			}
@@ -460,10 +455,6 @@ public class UnionFindECR {
 		ensureSimple(srcECR);
 		ValueType type = getType(srcECR);
 		return type.asSimple().getFunc();
-	}
-
-	void enableOp(ECR loc) {
-		getType(loc).enableOpTag();
 	}
 
 	/**
@@ -851,8 +842,6 @@ public class UnionFindECR {
 			if (ecrType.isStruct())
 				collapseStruct(ecr, ecrType.asStruct());
 		}
-
-		enableOp(root);
 	}
 
 	boolean containsPtrAritJoin(ECR locECR, long size) {

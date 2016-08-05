@@ -52,16 +52,6 @@ class LambdaType extends ValueType {
 		return ValueTypeKind.LAMBDA;
 	}
 
-	@Override
-	boolean hasOpTag() {
-		return false;
-	}
-
-	@Override
-	void enableOpTag() {
-		throw new IllegalArgumentException();
-	}
-
 	List<ECR> getParams() {
 		return params;
 	}
