@@ -8,7 +8,9 @@ import xtc.type.Type;
 
 import com.google.common.collect.Range;
 
+import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.util.Pair;
 
 /**
  * Pre-analysis statement
@@ -77,4 +79,6 @@ public interface IRAliasAnalyzer<T> extends IRPass {
 	Collection<IRVar> getEquivFuncVars(Node funcNode);
 
 	void analyzeVarArg(String func, Type funcTy, Node varArgN);
+
+	Pair<Integer, Integer> getAliasAnalysisStats(IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs);
 }

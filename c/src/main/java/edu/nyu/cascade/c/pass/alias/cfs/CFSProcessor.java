@@ -9,6 +9,7 @@ import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.pass.IRAliasAnalyzer;
 import edu.nyu.cascade.ir.pass.IRVar;
 import edu.nyu.cascade.prover.Expression;
+import edu.nyu.cascade.util.Pair;
 
 /**
  * A class which implements Bjarne Steensgaard's alias analysis algorithm.
@@ -113,6 +114,13 @@ public class CFSProcessor implements IRAliasAnalyzer<Cell> {
 	public void analyzeVarArg(String func, Type funcTy, Node varArgN) {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public Pair<Integer, Integer> getAliasAnalysisStats(
+			IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

@@ -7,8 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
 
@@ -20,6 +22,7 @@ import xtc.type.Type;
 import edu.nyu.cascade.c.CAnalyzer;
 import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.pass.alias.LeftValueCollectingPassImpl;
 import edu.nyu.cascade.ir.IRBasicBlock;
 import edu.nyu.cascade.ir.IRBooleanExpression;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
@@ -32,6 +35,7 @@ import edu.nyu.cascade.ir.pass.IRVar;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
+import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.ReservedFunction;
 
@@ -598,5 +602,20 @@ public class SteensgaardCFSCS implements IRAliasAnalyzer<ECR> {
 	public void analyzeVarArg(String func, Type funcTy, Node varArgN) {
 		// TODO Auto-generated method stub
 
+	}
+	
+	@Override
+	public Pair<Integer, Integer> getAliasAnalysisStats(
+			IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs) {
+		LeftValueCollectingPassImpl lvalCollector = new LeftValueCollectingPassImpl();
+		lvalCollector.analysis(globalCFG, CFGs);
+		Collection<Pair<Node, String>> lvals = lvalCollector.getLeftValues();
+		Multimap<ECR, Pair<Node, String>> aliasMap = ArrayListMultimap.create();
+		for (Pair<Node, String> lval : lvals) {
+			ECR NH = getRep(lval.fst());
+			aliasMap.put(NH, lval);
+		}
+
+		return Pair.of(lvals.size(), aliasMap.keySet().size());
 	}
 }

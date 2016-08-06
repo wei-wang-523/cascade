@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -16,6 +17,7 @@ import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.pass.Function;
 import edu.nyu.cascade.c.pass.GlobalValue;
 import edu.nyu.cascade.c.pass.addrtaken.AddressTakenAnalysis;
+import edu.nyu.cascade.c.pass.alias.LeftValueCollectingPassImpl;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.ir.pass.IRAliasAnalyzer;
@@ -214,6 +216,21 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 		regPass.getRegionMap().put(Pair.of(varArgElem, CType.getScopeName(
 				varArgElem)), region);
 		regPass.getRegions().add(region);
+	}
+
+	@Override
+	public Pair<Integer, Integer> getAliasAnalysisStats(
+			IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs) {
+		LeftValueCollectingPassImpl lvalCollector = new LeftValueCollectingPassImpl();
+		lvalCollector.analysis(globalCFG, CFGs);
+		Collection<Pair<Node, String>> lvals = lvalCollector.getLeftValues();
+		Multimap<DSNodeHandle, Pair<Node, String>> aliasMap = ArrayListMultimap
+				.create();
+		for (Pair<Node, String> lval : lvals) {
+			DSNodeHandle NH = getRep(lval.fst());
+			aliasMap.put(NH, lval);
+		}
+		return Pair.of(lvals.size(), aliasMap.keySet().size());
 	}
 
 }

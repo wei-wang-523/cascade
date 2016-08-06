@@ -82,6 +82,7 @@ public class SteenscfsStatsTest {
 		cfile = file;
 
 		IOUtils.enableOut();
+		IOUtils.enableErr();
 		Preferences.set(Preferences.OPTION_BYTE_BASED);
 	}
 
@@ -113,8 +114,8 @@ public class SteenscfsStatsTest {
 			aliasMap.put(NH, lval);
 		}
 
-		Printer printer = IOUtils.outPrinter();
-		Printer debugPrinter = IOUtils.outPrinter();
+		Printer printer = IOUtils.debug();
+		Printer debugPrinter = IOUtils.debug();
 		CPrinter cprinter = new CPrinter(debugPrinter);
 
 		printer.p(cfile.getName()).p(',').p(lvals.size()).p(',').p(aliasMap.keySet()

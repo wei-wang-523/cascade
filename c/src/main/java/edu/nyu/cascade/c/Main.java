@@ -63,6 +63,7 @@ import edu.nyu.cascade.util.CommandTokenizer.ArgList;
 import edu.nyu.cascade.util.FileUtils;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
+import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.PipedInputProcess;
 import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.StatsTimer;
@@ -769,7 +770,11 @@ public class Main {
 		double aliastime = StatsTimer.cascadeElapseTime() - preTime;
 		IOUtils.err().println("Points-to-analysis took " + aliastime / 1000.0
 				+ "s");
-
+		
+		Pair<Integer, Integer> aliasStats = runProcessor.getAliasAnalysisStats();
+		IOUtils.err().println("Total-lvals " + aliasStats.fst());
+		IOUtils.err().println("Total-alias-groups " + aliasStats.snd());
+		
 		/* Merge graph and function inline */
 		runProcessor.prepare(mainCfg);
 

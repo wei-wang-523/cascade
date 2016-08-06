@@ -1,5 +1,6 @@
 package edu.nyu.cascade.c;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -8,14 +9,17 @@ import javax.xml.bind.JAXBElement;
 import xtc.tree.Node;
 
 import com.google.common.base.Predicate;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 
 import edu.nyu.cascade.c.encoder.BlockBasedFormulaEncoder;
 import edu.nyu.cascade.c.encoder.FormulaEncoder;
 import edu.nyu.cascade.c.encoder.StmtBasedFormulaEncoder;
 import edu.nyu.cascade.c.graphml.TraceGraphMLBuilder;
 import edu.nyu.cascade.c.mode.Mode;
+import edu.nyu.cascade.c.pass.alias.LeftValueCollectingPassImpl;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.IRTraceNode;
 import edu.nyu.cascade.ir.SymbolTable;
@@ -27,6 +31,7 @@ import edu.nyu.cascade.ir.path.PathFactoryException;
 import edu.nyu.cascade.ir.path.SimplePathEncoding;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Identifiers;
+import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.ReservedFunction;
 
@@ -214,6 +219,11 @@ class RunProcessorImpl implements RunProcessor {
 		if (!mode.hasPreprocessor())
 			return;
 		preprocessor.analysis(globalCFG, cfgs);
+	}
+	
+	@Override
+	public Pair<Integer, Integer> getAliasAnalysisStats() {
+		return preprocessor.getAliasAnalysisStats(globalCFG, cfgs);
 	}
 
 	@Override

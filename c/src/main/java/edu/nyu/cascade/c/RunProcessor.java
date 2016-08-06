@@ -2,6 +2,7 @@ package edu.nyu.cascade.c;
 
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.impl.LoopInfo;
+import edu.nyu.cascade.util.Pair;
 
 public interface RunProcessor {
 
@@ -17,6 +18,8 @@ public interface RunProcessor {
 	void init(String label);
 
 	void preprocess();
+	
+	Pair<Integer, Integer> getAliasAnalysisStats();
 
 	/**
 	 * Process reachability checking in CFG to visit block with <code>label</code>
