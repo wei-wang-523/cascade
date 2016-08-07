@@ -772,8 +772,8 @@ public class Main {
 				+ "s");
 		
 		Pair<Integer, Integer> aliasStats = runProcessor.getAliasAnalysisStats();
-		IOUtils.err().println("Total-lvals " + aliasStats.fst());
-		IOUtils.err().println("Total-alias-groups " + aliasStats.snd());
+		IOUtils.err().println("Total " + aliasStats.fst() + " lvals");
+		IOUtils.err().println("Total " + aliasStats.snd() + " alias groups");
 		
 		/* Merge graph and function inline */
 		runProcessor.prepare(mainCfg);
