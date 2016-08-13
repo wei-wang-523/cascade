@@ -299,6 +299,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 
 	private void initChecker() {
 		uf.clearPointerArithmetic();
+		uf.normalizeStructECRs();
 		ecrChecker = ECRChecker.create(uf, symbolTable, ecrEncoder);
 	}
 
@@ -325,7 +326,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		if (!structType.isStruct())
 			return Collections.emptyMap();
 
-		return structType.asStruct().getFieldMap().asMapOfRanges();
+		return structType.asStruct().getFieldMap();
 	}
 
 	/**
@@ -459,8 +460,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		ValueType repType = uf.getType(rep);
 
 		if (repType.isStruct()) {
-			for (ECR elem : repType.asStruct().getFieldMap().asMapOfRanges()
-					.values()) {
+			for (ECR elem : repType.asStruct().getFieldMap().values()) {
 				ECR elemRep = uf.findRoot(uf.getLoc(elem));
 				collectFieldReps(reps, elemRep);
 			}

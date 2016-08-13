@@ -5,7 +5,6 @@ package edu.nyu.cascade.c.pass.alias.steenscfs;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -27,8 +26,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
-import com.google.common.collect.RangeMap;
-
 import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.ir.IRVarInfo;
@@ -251,7 +248,7 @@ public class ECREncoder extends Visitor {
 
 			Size size = Size.createForType(returnType);
 			BlankType type = ValueType.blank(size, Parent.getBottom());
-			return ECR.create(type);
+			return uf.createECR(type);
 		}
 
 		public ECR visitAddressExpression(GNode node) {
@@ -551,11 +548,10 @@ public class ECREncoder extends Visitor {
 			return srcECR;
 		}
 
-		RangeMap<Long, ECR> fieldMap = locType.asStruct().getFieldMap();
 		long size = CType.getInstance().getSize(fieldType);
 		Range<Long> range = Range.closedOpen(offset, offset + size);
-		normalize(loc, fieldType, range, fieldMap);
-		return fieldMap.get(offset);
+		ECR ecr = createFieldECR(range, fieldType, loc);
+		return locType.asStruct().addFieldECR(range, ecr);
 	}
 
 	private ECR getConstant() {
@@ -567,10 +563,10 @@ public class ECREncoder extends Visitor {
 		Type ptr2Type = type.resolve().toPointer().getType();
 		BlankType blankType = ValueType.blank(Size.createForType(ptr2Type), Parent
 				.getBottom());
-		ECR blankECR = ECR.create(blankType);
+		ECR blankECR = uf.createECR(blankType);
 		SimpleType refType = ValueType.simple(blankECR, ECR.createBottom(), Size
 				.createForType(type), Parent.getBottom());
-		ECR ptrECR = ECR.create(refType);
+		ECR ptrECR = uf.createECR(refType);
 		return ptrECR;
 	}
 
@@ -590,14 +586,14 @@ public class ECREncoder extends Visitor {
 		}
 
 		ValueType varType = ValueType.blank(size, Parent.getBottom());
-		ECR varECR = ECR.create(varType);
+		ECR varECR = uf.createECR(varType);
 		if (type.isInternal())
 			return varECR;
 
 		SimpleType addrType = ValueType.simple(varECR, ECR.createBottom(), Size
 				.createForType(new PointerT(type)), Parent.getBottom());
 
-		return ECR.create(addrType);
+		return uf.createECR(addrType);
 	}
 
 	/**
@@ -605,17 +601,17 @@ public class ECREncoder extends Visitor {
 	 */
 	private ECR createForFunction(Type type) {
 		ValueType lambdaType = getLamdaType(type);
-		ECR func = ECR.create(lambdaType);
+		ECR func = uf.createECR(lambdaType);
 
 		Size size = Size.createForType(new PointerT(type));
 
 		ValueType varType = ValueType.simple(ECR.createBottom(), func, size, Parent
 				.getBottom());
-		ECR varECR = ECR.create(varType);
+		ECR varECR = uf.createECR(varType);
 
 		SimpleType addrType = ValueType.simple(varECR, ECR.createBottom(), size,
 				Parent.getBottom());
-		return ECR.create(addrType);
+		return uf.createECR(addrType);
 	}
 
 	/**
@@ -651,49 +647,6 @@ public class ECREncoder extends Visitor {
 	}
 
 	/**
-	 * Side-effecting predicate that modifies mapping <code>m</code> to be
-	 * compatible with access of structure element with <code>fieldType</code>
-	 * <code>range</code>, where <code>parent</code> is the parent for the newly
-	 * created ECR
-	 * 
-	 * @param srcECR
-	 * @param fieldType
-	 * @param range
-	 * @param fieldMap
-	 * @return
-	 */
-	private void normalize(ECR srcECR, Type fieldType, Range<Long> range,
-			RangeMap<Long, ECR> fieldMap) {
-
-		if (fieldMap.asMapOfRanges().containsKey(range)) {
-			return;
-		}
-
-		RangeMap<Long, ECR> subMap = fieldMap.subRangeMap(range);
-		Map<Range<Long>, ECR> subMapRanges = subMap.asMapOfRanges();
-
-		if (subMapRanges.isEmpty()) {
-			ECR ecr = createFieldECR(range, fieldType, srcECR);
-			fieldMap.put(range, ecr);
-			return;
-		}
-
-		Range<Long> span = subMap.span();
-		fieldMap.remove(span);
-
-		Range<Long> newRange = subMap.span().span(range);
-
-		Iterator<ECR> elemECRItr = subMapRanges.values().iterator();
-		ECR joinECR = elemECRItr.next();
-		while (elemECRItr.hasNext()) {
-			joinECR = uf.cjoin(elemECRItr.next(), joinECR);
-			// uf.collapse(joinECR);
-		}
-		fieldMap.put(newRange, joinECR);
-		return;
-	}
-
-	/**
 	 * Create a field ECR with <code>xtcType</code>, <code>scopeName</code>, and
 	 * <code>parent</code>. If <code>xtcType</code> is scalar, this method creates
 	 * a single field ECR, otherwise, two ECRs will be created, one for the field
@@ -710,16 +663,12 @@ public class ECREncoder extends Visitor {
 		type = type.resolve();
 		Parent parent = Parent.create(uf.findRoot(srcECR));
 		Size size = CType.isScalar(type) ? Size.createForType(type) : Size.getBot();
-		ECR fieldECR = ECR.create(ValueType.blank(size, parent));
+		ECR fieldECR = uf.createECR(ValueType.blank(size, parent));
 
 		SimpleType addrType = ValueType.simple(fieldECR, ECR.createBottom(), Size
 				.createForType(new PointerT(type)), Parent.getBottom());
 
-		ECR addrECR = ECR.create(addrType);
-
-		StructType srcType = uf.getType(srcECR).asStruct();
-		srcType.getFieldMap().put(range, addrECR);
-		return addrECR;
+		return uf.createECR(addrType);
 	}
 
 	private ECR pointerCast(ECR e, Type srcType, Type targetType) {
@@ -755,9 +704,8 @@ public class ECREncoder extends Visitor {
 			if (!parentType.isStruct())
 				continue;
 
-			RangeMap<Long, ECR> fieldRangeMap = parentType.asStruct().getFieldMap();
-			Entry<Range<Long>, ECR> entry = Iterables.find(fieldRangeMap
-					.asMapOfRanges().entrySet(),
+			Map<Range<Long>, ECR> fieldMap = parentType.asStruct().getFieldMap();
+			Entry<Range<Long>, ECR> entry = Iterables.find(fieldMap.entrySet(),
 					new Predicate<Entry<Range<Long>, ECR>>() {
 						@Override
 						public boolean apply(Entry<Range<Long>, ECR> entry) {
@@ -768,7 +716,10 @@ public class ECREncoder extends Visitor {
 			Range<Long> range = entry.getKey();
 			long offset = range.lowerEndpoint();
 			Range<Long> newRange = Range.closedOpen(offset, offset + freshPtr2Size);
-			normalize(parent, ptr2Type, newRange, fieldRangeMap);
+			if (!fieldMap.containsKey(newRange)) {
+				ECR ecr = createFieldECR(range, ptr2Type, parent);
+				fieldMap.put(newRange, ecr);
+			}
 		}
 		return e;
 	}

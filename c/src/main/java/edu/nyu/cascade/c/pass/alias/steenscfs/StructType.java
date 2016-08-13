@@ -1,17 +1,19 @@
 package edu.nyu.cascade.c.pass.alias.steenscfs;
 
-import com.google.common.collect.RangeMap;
+import java.util.Map;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Range;
 
 class StructType extends ValueType {
 
-	private final RangeMap<Long, ECR> fieldMap;
+	private final Map<Range<Long>, ECR> fieldMap_;
 	private final Size size;
 	private Parent parent;
 
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder().append("STRUCT (").append(size)
-				.append(", ").append(fieldMap).append(", ").append(parent).append(')');
+				.append(", ").append(fieldMap_).append(", ").append(parent).append(')');
 
 		return sb.toString();
 	}
@@ -25,15 +27,30 @@ class StructType extends ValueType {
 			return false;
 		if (!size.equals(that.size))
 			return false;
-		if (!fieldMap.equals(that.fieldMap))
+		if (!fieldMap_.equals(that.fieldMap_))
 			return false;
 		return true;
 	}
 
-	StructType(RangeMap<Long, ECR> map, Size size, Parent parent) {
+	StructType(Map<Range<Long>, ECR> fieldMap, Size size, Parent parent) {
 		this.size = size;
 		this.parent = parent;
-		this.fieldMap = map;
+		fieldMap_ = Maps.newHashMap(fieldMap);
+	}
+
+	ECR addFieldECR(Range<Long> range, ECR ecr) {
+		if (fieldMap_.containsKey(range)) {
+			return fieldMap_.get(range);
+		} else {
+			fieldMap_.put(range, ecr);
+			return ecr;
+		}
+	}
+
+	StructType(Size size, Parent parent) {
+		this.size = size;
+		this.parent = parent;
+		fieldMap_ = Maps.newHashMap();
 	}
 
 	@Override
@@ -56,8 +73,7 @@ class StructType extends ValueType {
 		this.parent = parent;
 	}
 
-	RangeMap<Long, ECR> getFieldMap() {
-		return fieldMap;
+	Map<Range<Long>, ECR> getFieldMap() {
+		return fieldMap_;
 	}
-
 }

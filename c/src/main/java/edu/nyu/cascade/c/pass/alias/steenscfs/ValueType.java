@@ -1,10 +1,10 @@
 package edu.nyu.cascade.c.pass.alias.steenscfs;
 
 import java.util.List;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.RangeMap;
+import java.util.Map;
 
-import edu.nyu.cascade.util.FieldRangeMap;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Range;
 import edu.nyu.cascade.util.Pair;
 
 abstract class ValueType {
@@ -41,11 +41,10 @@ abstract class ValueType {
 
 	static StructType struct(Size size, Parent parent) {
 		Preconditions.checkNotNull(size);
-		RangeMap<Long, ECR> fieldMap = FieldRangeMap.create();
-		return new StructType(fieldMap, size, parent);
+		return new StructType(size, parent);
 	}
 
-	static StructType struct(RangeMap<Long, ECR> fieldMap, Size size,
+	static StructType struct(Map<Range<Long>, ECR> fieldMap, Size size,
 			Parent parent) {
 		Preconditions.checkNotNull(size);
 		return new StructType(fieldMap, size, parent);

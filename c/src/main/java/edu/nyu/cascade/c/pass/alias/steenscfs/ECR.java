@@ -27,10 +27,6 @@ final class ECR extends Partition {
 		nextId = nextId.add(BigInteger.ONE);
 	}
 
-	static ECR create(ValueType type) {
-		return new ECR(type);
-	}
-
 	static ECR createBottom() {
 		return new ECR(ValueType.bottom());
 	}

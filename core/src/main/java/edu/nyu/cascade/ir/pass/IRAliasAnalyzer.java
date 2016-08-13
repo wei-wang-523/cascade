@@ -80,5 +80,6 @@ public interface IRAliasAnalyzer<T> extends IRPass {
 
 	void analyzeVarArg(String func, Type funcTy, Node varArgN);
 
-	Pair<Integer, Integer> getAliasAnalysisStats(IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs);
+	Pair<Integer, Integer> getAliasAnalysisStats(IRControlFlowGraph globalCFG,
+			Collection<IRControlFlowGraph> CFGs);
 }
