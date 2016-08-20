@@ -261,34 +261,6 @@ public class UnionFindECR {
 			}
 			break;
 		}
-		// case LAMBDA: {
-		// switch (t2.getKind()) {
-		// case BOTTOM: {
-		// root.setType(t1);
-		//
-		// root.clearCCjoins(ccjoins2);
-		// for (Pair<Size, ECR> pair : ccjoins2)
-		// ccjoin(pair.fst(), root, pair.snd());
-		//
-		// root.clearCjoins(cjoins2);
-		// for (ECR cjoin : cjoins2)
-		// cjoin(root, cjoin);
-		//
-		// break;
-		// }
-		// default: {
-		// assert t2.isLambda();
-		// root.setType(t1);
-		//
-		// root.clearCCjoins(ccjoins2);
-		// for (Pair<Size, ECR> pair : ccjoins2)
-		// ccjoin(pair.fst(), root, pair.snd());
-		//
-		// break;
-		// }
-		// }
-		// break;
-		// }
 		default: {
 			switch (t2.getKind()) {
 			case BOTTOM: {
@@ -525,7 +497,9 @@ public class UnionFindECR {
 			while (paramItr1.hasNext() && paramItr2.hasNext()) {
 				ECR param1 = paramItr1.next();
 				ECR param2 = paramItr2.next();
-				ECR param = join(param1, param2);
+				ECR param = ECR.createBottom();
+				ccjoin(Size.getBot(), param1, param);
+				ccjoin(Size.getBot(), param2, param);
 				params.add(param);
 			}
 
@@ -536,8 +510,9 @@ public class UnionFindECR {
 
 			ECR ret1 = t1.asLambda().getRet();
 			ECR ret2 = t2.asLambda().getRet();
-			ECR ret = join(ret1, ret2);
-
+			ECR ret = ECR.createBottom();
+			ccjoin(Size.getBot(), ret1, ret);
+			ccjoin(Size.getBot(), ret2, ret);
 			return ValueType.lam(ret, params, parent);
 		}
 		}
