@@ -770,11 +770,11 @@ public class Main {
 		double aliastime = StatsTimer.cascadeElapseTime() - preTime;
 		IOUtils.err().println("Points-to-analysis took " + aliastime / 1000.0
 				+ "s");
-		
+
 		Pair<Integer, Integer> aliasStats = runProcessor.getAliasAnalysisStats();
 		IOUtils.err().println("Total " + aliasStats.fst() + " lvals");
 		IOUtils.err().println("Total " + aliasStats.snd() + " alias groups");
-		
+
 		/* Merge graph and function inline */
 		runProcessor.prepare(mainCfg);
 

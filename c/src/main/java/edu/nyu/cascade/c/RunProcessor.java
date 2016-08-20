@@ -18,7 +18,7 @@ public interface RunProcessor {
 	void init(String label);
 
 	void preprocess();
-	
+
 	Pair<Integer, Integer> getAliasAnalysisStats();
 
 	/**

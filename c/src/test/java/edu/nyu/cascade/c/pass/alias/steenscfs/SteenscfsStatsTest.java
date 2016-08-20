@@ -57,7 +57,7 @@ public class SteenscfsStatsTest {
 			// Make the C files filter
 			FilenameFilter filter = new FilenameFilter() {
 				public boolean accept(File dir, String name) {
-					return name.endsWith(".c");
+					return name.endsWith(".i");
 				}
 			};
 
@@ -114,8 +114,8 @@ public class SteenscfsStatsTest {
 			aliasMap.put(NH, lval);
 		}
 
-		Printer printer = IOUtils.debug();
-		Printer debugPrinter = IOUtils.debug();
+		Printer printer = IOUtils.outPrinter();
+		Printer debugPrinter = IOUtils.outPrinter();
 		CPrinter cprinter = new CPrinter(debugPrinter);
 
 		printer.p(cfile.getName()).p(',').p(lvals.size()).p(',').p(aliasMap.keySet()

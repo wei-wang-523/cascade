@@ -220,7 +220,7 @@ class RunProcessorImpl implements RunProcessor {
 			return;
 		preprocessor.analysis(globalCFG, cfgs);
 	}
-	
+
 	@Override
 	public Pair<Integer, Integer> getAliasAnalysisStats() {
 		return preprocessor.getAliasAnalysisStats(globalCFG, cfgs);
