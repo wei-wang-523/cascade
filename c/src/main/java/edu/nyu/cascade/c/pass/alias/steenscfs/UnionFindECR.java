@@ -497,9 +497,7 @@ public class UnionFindECR {
 			while (paramItr1.hasNext() && paramItr2.hasNext()) {
 				ECR param1 = paramItr1.next();
 				ECR param2 = paramItr2.next();
-				ECR param = ECR.createBottom();
-				ccjoin(Size.getBot(), param1, param);
-				ccjoin(Size.getBot(), param2, param);
+				ECR param = join(param1, param2);
 				params.add(param);
 			}
 
@@ -510,9 +508,7 @@ public class UnionFindECR {
 
 			ECR ret1 = t1.asLambda().getRet();
 			ECR ret2 = t2.asLambda().getRet();
-			ECR ret = ECR.createBottom();
-			ccjoin(Size.getBot(), ret1, ret);
-			ccjoin(Size.getBot(), ret2, ret);
+			ECR ret = join(ret1, ret2);
 			return ValueType.lam(ret, params, parent);
 		}
 		}
