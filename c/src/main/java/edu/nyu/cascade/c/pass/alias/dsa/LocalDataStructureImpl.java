@@ -1065,15 +1065,16 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			return;
 		}
 
-		private void visitCallStmt(IRStatement stmt) {
-			Node funcNode = stmt.getOperand(0).getSourceNode();
-			String funcName = CAnalyzer.toFunctionName(funcNode);
+		private void visitReservedCallStmt(String funcName, IRStatement stmt) {
 			if (ReservedFunction.MEMCOPY.equals(funcName)
 					|| ReservedFunction.MEMMOVE.equals(funcName)) {
 				Node lhs = stmt.getOperand(2).getSourceNode();
 				Node rhs = stmt.getOperand(3).getSourceNode();
 				Type lhsTy = CType.getType(lhs);
 				Type rhsTy = CType.getType(rhs);
+				// Record the left value's ECR for following region analysis.
+				lvalVisitor.encode(lhs);
+				lvalVisitor.encode(rhs);
 				DSNodeHandle lhsNH = getValueDest(rvalVisitor.encode(lhs), lhsTy);
 				DSNodeHandle rhsNH = getValueDest(rvalVisitor.encode(rhs), rhsTy);
 				lhsNH.mergeWith(rhsNH);
@@ -1083,8 +1084,18 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			if (ReservedFunction.MEMSET.equals(funcName)) {
 				Node lhs = stmt.getOperand(2).getSourceNode();
 				Type lhsTy = CType.getType(lhs);
+				 // Record the left value's ECR for following region analysis.
 				lvalVisitor.encode(lhs);
 				getValueDest(rvalVisitor.encode(lhs), lhsTy);
+				return;
+			}
+		}
+		
+		private void visitCallStmt(IRStatement stmt) {
+			Node funcNode = stmt.getOperand(0).getSourceNode();
+			String funcName = CAnalyzer.toFunctionName(funcNode);
+			if (ReservedFunction.isReserved(funcName)) {
+				visitReservedCallStmt(funcName, stmt);
 				return;
 			}
 
