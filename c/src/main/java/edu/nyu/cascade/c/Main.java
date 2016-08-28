@@ -724,9 +724,7 @@ public class Main {
 				}
 			}
 		}
-		
-		if (Preferences.isSet(OPTION_DRY_RUN)) return;
-		
+
 		IOUtils.out().println(safeResult);
 		StatsTimer.cascadeStop();
 		printTimeInfo(IOUtils.err());
@@ -861,7 +859,8 @@ public class Main {
 
 	private void printResult(int iterTime, Printer printer) {
 		// Skip printing result for dry-run only
-		if (Preferences.isSet(OPTION_DRY_RUN)) return;
+		if (Preferences.isSet(OPTION_DRY_RUN))
+			return;
 		String funcInline = Preferences.isSet(Preferences.OPTION_FUNC_INLINE)
 				? Preferences.getString(Preferences.OPTION_FUNC_INLINE) : "all-inline";
 		IOUtils.outPrinter().p('{').p(iterTime).p(':').p(funcInline).p("}..")

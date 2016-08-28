@@ -36,8 +36,8 @@ public class UnionFindECR {
 	 */
 	private final Map<Pair<ECR, Long>, Pair<ECR, Long>> ptrAriJoins = Maps
 			.newHashMap();
-	private final Set<ECR> structECRs = Sets.newHashSet();
-	private final Set<ECR> collapseECRs = Sets.newHashSet();
+	private final Set<ECR> structECRs = Sets.newLinkedHashSet();
+	private final Set<ECR> collapseECRs = Sets.newLinkedHashSet();
 
 	private UnionFindECR() {
 		uf = UnionFind.create();
@@ -82,22 +82,26 @@ public class UnionFindECR {
 
 		Map<ECR, TreeMap<Range<Long>, ECR>> structFlattenMap = Maps.newHashMap();
 		for (ECR ecr : top_structECRs) {
+			assert getType(ecr).isStruct();
 			TreeMap<Range<Long>, ECR> flattenMap = flattenStructECRs(ecr);
+			if (!getType(ecr).isStruct()) {
+				IOUtils.err().println(
+						"Top struct ECR has been collapsed when flattening.");
+			}
 			structFlattenMap.put(ecr, flattenMap);
 		}
 
 		boolean changed = false;
-		for (Entry<ECR, TreeMap<Range<Long>, ECR>> entry : structFlattenMap
-				.entrySet()) {
-			changed |= mergeOverlapFields(entry.getKey(), entry.getValue());
+		for (TreeMap<Range<Long>, ECR> flattenFieldMap : structFlattenMap
+				.values()) {
+			changed |= mergeOverlapFields(flattenFieldMap);
 		}
 
 		return changed;
 	}
 
-	private boolean mergeOverlapFields(ECR ecr,
+	private boolean mergeOverlapFields(
 			TreeMap<Range<Long>, ECR> flattenFieldMap) {
-		Preconditions.checkArgument(getType(ecr).isStruct());
 		Iterator<Range<Long>> fieldItr = flattenFieldMap.keySet().iterator();
 
 		boolean changed = false;
@@ -181,7 +185,8 @@ public class UnionFindECR {
 
 	boolean normalizeCollapseECRs() {
 		List<ECR> worklist = Lists.newArrayList();
-		// Initialize work list with ECR has parents (optimize arrays).
+		// Initialize work list with ECR has parents (optimization for arrays, no
+		// need for collapsing).
 		for (ECR ecr : collapseECRs) {
 			ValueType type = getType(ecr);
 			if (type.getParent().getECRs().isEmpty()) {
@@ -192,11 +197,19 @@ public class UnionFindECR {
 		}
 
 		// Collect the top level parents
-		Collection<ECR> topECRs = Sets.newHashSet();
+		Collection<ECR> topECRs = Sets.newLinkedHashSet();
+		Collection<ECR> visitedParent = Sets.newHashSet();
 		while (!worklist.isEmpty()) {
 			ECR ecr = worklist.remove(0);
+			if (visitedParent.contains(ecr)) {
+				continue;
+			}
+			
+			visitedParent.add(ecr);
 			ValueType type = getType(ecr);
+			
 			if (type.getParent().getECRs().isEmpty()) {
+				// Got top-level parent.
 				topECRs.add(findRoot(ecr));
 			} else {
 				worklist.addAll(type.getParent().getECRs());

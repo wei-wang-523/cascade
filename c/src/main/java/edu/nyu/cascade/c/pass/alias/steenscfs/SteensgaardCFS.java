@@ -167,17 +167,6 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 			ecrEncoder.toLval(lhs);
 			break;
 		}
-		case INIT: {
-			Node lhsNode = stmt.getOperand(0).getSourceNode();
-			Node rhsNode = stmt.getOperand(1).getSourceNode();
-
-			ECR lhsECR = ecrEncoder.toRval(lhsNode);
-			ECR rhsECR = ecrEncoder.toRval(rhsNode);
-
-			Type lhsType = CType.getType(lhsNode);
-			simpleAssign(lhsType, lhsECR, rhsECR);
-			break;
-		}
 		case RETURN: {
 			String functionName = currentCFG.getName();
 			ECR funcECR = ecrEncoder.getFunctionECR(functionName);
@@ -193,6 +182,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 			simpleAssign(resType, retECR, srcECR);
 			break;
 		}
+		case INIT:
 		case ASSIGN: {
 			Node lhsNode = stmt.getOperand(0).getSourceNode();
 			Node rhsNode = stmt.getOperand(1).getSourceNode();

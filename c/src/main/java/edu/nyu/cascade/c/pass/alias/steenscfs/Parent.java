@@ -6,8 +6,6 @@ import java.util.Set;
 
 import com.google.common.collect.Sets;
 
-import edu.nyu.cascade.util.IOUtils;
-
 class Parent {
 
 	enum Kind {
@@ -19,10 +17,6 @@ class Parent {
 
 	private Parent(Kind kind, Set<ECR> parents) {
 		this.kind = kind;
-		for (ECR parent : parents) {
-			if (!((ECR) parent.findRoot()).getType().isStruct())
-				IOUtils.err().println("Invalid parent type");
-		}
 		this.parents = parents;
 	}
 
@@ -134,8 +128,6 @@ class Parent {
 		Set<ECR> ecrs = Sets.newHashSet();
 		for (ECR ecr : parents) {
 			ecr = (ECR) ecr.findRoot();
-			if (!ecr.getType().isStruct())
-				IOUtils.err().println("Invalid parent type");
 			ecrs.add(ecr);
 		}
 		return ecrs;
