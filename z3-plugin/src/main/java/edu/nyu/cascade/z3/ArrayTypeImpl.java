@@ -32,8 +32,8 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 			return (ArrayTypeImpl) type;
 		} else {
 			ArrayType arrayType = type.asArrayType();
-			return create(exprManager, arrayType.getIndexType(), arrayType
-					.getElementType());
+			return create(exprManager, arrayType.getIndexType(),
+					arrayType.getElementType());
 		}
 	}
 
@@ -45,8 +45,8 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 		try {
 			Sort indexZ3Type = exprManager.toZ3Type(indexType);
 			Sort elementZ3Type = exprManager.toZ3Type(elementType);
-			setZ3Type(exprManager.getTheoremProver().getZ3Context().mkArraySort(
-					indexZ3Type, elementZ3Type));
+			setZ3Type(exprManager.getTheoremProver().getZ3Context()
+					.mkArraySort(indexZ3Type, elementZ3Type));
 		} catch (Exception e) {
 			throw new TheoremProverException(e);
 		}
@@ -107,8 +107,9 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 		case ARRAY_UPDATE:
 			assert (expression.getArity() == 3);
 			return ArrayExpressionImpl.mkUpdate(getExpressionManager(),
-					(Expression) expression.getChild(0), (Expression) expression.getChild(
-							1), (Expression) expression.getChild(2));
+					(Expression) expression.getChild(0),
+					(Expression) expression.getChild(1),
+					(Expression) expression.getChild(2));
 
 		default:
 			return super.importExpression(expression);
@@ -118,8 +119,8 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 	@Override
 	public Expression index(Expression array, Expression index) {
 		Preconditions.checkArgument(array.isArray());
-		Preconditions.checkArgument(index.getType().equals(array.asArray()
-				.getIndexType()));
+		Preconditions
+				.checkArgument(index.getType().equals(array.asArray().getIndexType()));
 		return ArrayExpressionImpl.mkArrayIndex(getExpressionManager(), array,
 				index);
 	}
@@ -128,10 +129,10 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 	public ArrayExpression update(Expression array, Expression index,
 			Expression value) {
 		Preconditions.checkArgument(array.isArray());
-		Preconditions.checkArgument(index.getType().equals(array.asArray()
-				.getIndexType()));
-		Preconditions.checkArgument(value.getType().equals(array.asArray()
-				.getElementType()));
+		Preconditions
+				.checkArgument(index.getType().equals(array.asArray().getIndexType()));
+		Preconditions.checkArgument(
+				value.getType().equals(array.asArray().getElementType()));
 		return ArrayExpressionImpl.mkUpdate(getExpressionManager(), array, index,
 				value);
 	}

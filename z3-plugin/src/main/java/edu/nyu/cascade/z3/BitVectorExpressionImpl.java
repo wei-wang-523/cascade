@@ -48,8 +48,8 @@ import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.Pair;
 
-final class BitVectorExpressionImpl extends ExpressionImpl implements
-		BitVectorExpression {
+final class BitVectorExpressionImpl extends ExpressionImpl
+		implements BitVectorExpression {
 	static final LoadingCache<ExpressionManagerImpl, LoadingCache<Pair<String, Integer>, BitVectorExpressionImpl>> cache = CacheBuilder
 			.newBuilder().build(
 					new CacheLoader<ExpressionManagerImpl, LoadingCache<Pair<String, Integer>, BitVectorExpressionImpl>>() {
@@ -59,8 +59,8 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 									new CacheLoader<Pair<String, Integer>, BitVectorExpressionImpl>() {
 										public BitVectorExpressionImpl load(
 												Pair<String, Integer> pair) {
-											return new BitVectorExpressionImpl(exprManager, pair
-													.fst(), pair.snd());
+											return new BitVectorExpressionImpl(exprManager,
+													pair.fst(), pair.snd());
 										}
 									});
 						}
@@ -739,8 +739,8 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 
 	@Override
 	public BitVectorExpressionImpl plus(Iterable<? extends Expression> args) {
-		return mkPlus(getExpressionManager(), Iterables.concat(Collections
-				.singletonList(this), args));
+		return mkPlus(getExpressionManager(),
+				Iterables.concat(Collections.singletonList(this), args));
 	}
 
 	@Override
@@ -755,8 +755,8 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 
 	@Override
 	public BitVectorExpression times(Iterable<? extends Expression> args) {
-		return mkMult(getExpressionManager(), Iterables.concat(Collections
-				.singletonList(this), args));
+		return mkMult(getExpressionManager(),
+				Iterables.concat(Collections.singletonList(this), args));
 	}
 
 	@Override

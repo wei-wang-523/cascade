@@ -16,8 +16,8 @@ import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.util.CacheException;
 
-final class UninterpretedTypeImpl extends TypeImpl implements
-		UninterpretedType {
+final class UninterpretedTypeImpl extends TypeImpl
+		implements UninterpretedType {
 	private final String name;
 
 	static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, UninterpretedTypeImpl>> typeCache = CacheBuilder
@@ -107,7 +107,7 @@ final class UninterpretedTypeImpl extends TypeImpl implements
 	@Override
 	protected UninterpretedExpressionImpl createExpression(Expr res,
 			Expression oldExpr, Iterable<? extends ExpressionImpl> children) {
-		return UninterpretedExpressionImpl.create(getExpressionManager(), oldExpr
-				.getKind(), res, oldExpr.getType(), children);
+		return UninterpretedExpressionImpl.create(getExpressionManager(),
+				oldExpr.getKind(), res, oldExpr.getType(), children);
 	}
 }

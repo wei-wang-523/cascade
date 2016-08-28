@@ -43,8 +43,8 @@ public class PipedInputProcess implements Runnable, Future<Integer> {
 			@Override
 			public Integer call() throws ExecutionException {
 				try {
-					Writer outputWriter = new OutputStreamWriter(process
-							.getOutputStream());
+					Writer outputWriter = new OutputStreamWriter(
+							process.getOutputStream());
 					IOUtils.pipeReader(inputReader, outputWriter);
 					outputWriter.close();
 					int returnCode = process.waitFor();
@@ -96,8 +96,8 @@ public class PipedInputProcess implements Runnable, Future<Integer> {
 	}
 
 	@Override
-	public Integer get(long timeout, TimeUnit unit) throws InterruptedException,
-			ExecutionException, TimeoutException {
+	public Integer get(long timeout, TimeUnit unit)
+			throws InterruptedException, ExecutionException, TimeoutException {
 		return task.get(timeout, unit);
 	}
 

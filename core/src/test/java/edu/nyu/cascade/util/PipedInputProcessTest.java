@@ -17,8 +17,8 @@ public class PipedInputProcessTest {
 
 	@Test
 	public void testCancel() throws IOException {
-		PipedInputProcess p = new PipedInputProcess(echoFoo, new StringReader(
-				"bar"));
+		PipedInputProcess p = new PipedInputProcess(echoFoo,
+				new StringReader("bar"));
 		assertTrue(p.cancel(true));
 		assertTrue(p.isDone());
 		assertTrue(p.isCancelled());
@@ -26,8 +26,8 @@ public class PipedInputProcessTest {
 
 	@Test
 	public void testCancelFalse() throws IOException {
-		PipedInputProcess p = new PipedInputProcess(echoFoo, new StringReader(
-				"bar"));
+		PipedInputProcess p = new PipedInputProcess(echoFoo,
+				new StringReader("bar"));
 		assertTrue(p.cancel(false));
 		assertTrue(p.isDone());
 		assertTrue(p.isCancelled());
@@ -35,10 +35,10 @@ public class PipedInputProcessTest {
 
 	@Test
 	// @Ignore
-	public void testCancelFailure() throws IOException, InterruptedException,
-			ExecutionException {
-		PipedInputProcess p = new PipedInputProcess(echoFoo, new StringReader(
-				"bar"));
+	public void testCancelFailure()
+			throws IOException, InterruptedException, ExecutionException {
+		PipedInputProcess p = new PipedInputProcess(echoFoo,
+				new StringReader("bar"));
 		p.run();
 		p.get();
 		assertFalse(p.cancel(true));

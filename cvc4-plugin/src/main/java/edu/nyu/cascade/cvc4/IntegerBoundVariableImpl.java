@@ -98,7 +98,7 @@ final class IntegerBoundVariableImpl extends BoundVariableExpressionImpl
 
 	@Override
 	public IntegerExpression plus(Iterable<? extends IntegerExpression> rest) {
-		return getType().add(Iterables.concat(Collections.singletonList(this),
-				rest));
+		return getType()
+				.add(Iterables.concat(Collections.singletonList(this), rest));
 	}
 }

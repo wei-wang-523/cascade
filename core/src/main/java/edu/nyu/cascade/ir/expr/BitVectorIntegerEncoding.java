@@ -16,9 +16,9 @@ import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.prover.type.Type;
 
-public class BitVectorIntegerEncoding extends
-		AbstractTypeEncoding<BitVectorExpression> implements
-		IntegerEncoding<BitVectorExpression> {
+public class BitVectorIntegerEncoding
+		extends AbstractTypeEncoding<BitVectorExpression>
+		implements IntegerEncoding<BitVectorExpression> {
 	private static final String UNKNOWN_VARIABLE_NAME = "bv_encoding_unknown";
 
 	public static BitVectorIntegerEncoding create(ExpressionManager exprManager) {
@@ -57,20 +57,20 @@ public class BitVectorIntegerEncoding extends
 
 	@Override
 	public BitVectorExpression characterConstant(int c) {
-		return getExpressionManager().bitVectorConstant(c, (int) getCTypeAnalyzer()
-				.getWidth(NumberT.CHAR));
+		return getExpressionManager().bitVectorConstant(c,
+				(int) getCTypeAnalyzer().getWidth(NumberT.CHAR));
 	}
 
 	@Override
 	public BitVectorExpression constant(int c) {
-		return getExpressionManager().bitVectorConstant(c, (int) getCTypeAnalyzer()
-				.getWidth(NumberT.INT));
+		return getExpressionManager().bitVectorConstant(c,
+				(int) getCTypeAnalyzer().getWidth(NumberT.INT));
 	}
 
 	@Override
 	public BitVectorExpression constant(long c) {
-		return getExpressionManager().bitVectorConstant(c, (int) getCTypeAnalyzer()
-				.getWidth(NumberT.LONG));
+		return getExpressionManager().bitVectorConstant(c,
+				(int) getCTypeAnalyzer().getWidth(NumberT.LONG));
 	}
 
 	@Override
@@ -334,8 +334,8 @@ public class BitVectorIntegerEncoding extends
 	public BitVectorExpression variable(String name, IRType iType,
 			boolean fresh) {
 		Preconditions.checkArgument(iType.getKind().equals(IRType.Kind.INTEGER));
-		int size = (int) getCTypeAnalyzer().getWidth(((IRIntegerType) iType)
-				.getSrcType());
+		int size = (int) getCTypeAnalyzer()
+				.getWidth(((IRIntegerType) iType).getSrcType());
 		Type intType = getExpressionManager().bitVectorType(size);
 		return variable(name, intType, fresh);
 	}

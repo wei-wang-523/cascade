@@ -12,8 +12,8 @@ import edu.nyu.cascade.prover.UninterpretedExpression;
 import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.prover.type.Type;
 
-final class UninterpretedExpressionImpl extends ExpressionImpl implements
-		UninterpretedExpression {
+final class UninterpretedExpressionImpl extends ExpressionImpl
+		implements UninterpretedExpression {
 
 	static UninterpretedExpressionImpl create(ExpressionManagerImpl exprManager,
 			Type type, String name) {
@@ -45,8 +45,8 @@ final class UninterpretedExpressionImpl extends ExpressionImpl implements
 	static UninterpretedExpressionImpl create(ExpressionManagerImpl em, Kind kind,
 			Expr expr, Type type, Iterable<? extends ExpressionImpl> children) {
 		Preconditions.checkArgument(type.isUninterpreted());
-		return new UninterpretedExpressionImpl(em, kind, expr, type
-				.asUninterpreted(), children);
+		return new UninterpretedExpressionImpl(em, kind, expr,
+				type.asUninterpreted(), children);
 	}
 
 	static UninterpretedExpressionImpl valueOf(ExpressionManagerImpl exprManager,

@@ -16,12 +16,12 @@ import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Type;
 
-final class RecordExpressionImpl extends ExpressionImpl implements
-		RecordExpression {
+final class RecordExpressionImpl extends ExpressionImpl
+		implements RecordExpression {
 	static RecordExpressionImpl create(ExpressionManagerImpl exprManager,
 			Type type, Expression first, Expression... rest) {
-		return new RecordExpressionImpl(exprManager, type, Lists.asList(first,
-				rest));
+		return new RecordExpressionImpl(exprManager, type,
+				Lists.asList(first, rest));
 	}
 
 	static RecordExpressionImpl create(ExpressionManagerImpl exprManager,
@@ -48,8 +48,8 @@ final class RecordExpressionImpl extends ExpressionImpl implements
 	static RecordExpressionImpl mkUpdate(ExpressionManagerImpl exprManager,
 			Expression record, String name, Expression val) {
 		Preconditions.checkArgument(record.isRecord());
-		final int index = record.getType().asRecord().getElementNames().indexOf(
-				name);
+		final int index = record.getType().asRecord().getElementNames()
+				.indexOf(name);
 		return new RecordExpressionImpl(exprManager, RECORD_UPDATE,
 				new BinaryConstructionStrategy() {
 					@Override
@@ -57,8 +57,8 @@ final class RecordExpressionImpl extends ExpressionImpl implements
 							throws Z3Exception {
 						Expr[] args = record.getArgs();
 						args[index] = val;
-						return ctx.mkApp(((DatatypeSort) record.getSort())
-								.getConstructors()[0], args);
+						return ctx.mkApp(
+								((DatatypeSort) record.getSort()).getConstructors()[0], args);
 					}
 				}, record, val);
 	}
@@ -67,8 +67,8 @@ final class RecordExpressionImpl extends ExpressionImpl implements
 			Expression record, String name) {
 		Preconditions.checkArgument(record.isRecord());
 		ExpressionImpl result;
-		final int index = record.getType().asRecord().getElementNames().indexOf(
-				name);
+		final int index = record.getType().asRecord().getElementNames()
+				.indexOf(name);
 		result = new ExpressionImpl(exprManager, RECORD_SELECT,
 				new UnaryConstructionStrategy() {
 					@Override

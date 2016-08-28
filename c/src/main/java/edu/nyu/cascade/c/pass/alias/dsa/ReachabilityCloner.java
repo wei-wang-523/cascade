@@ -165,8 +165,8 @@ class ReachabilityCloner {
 		final DSNodeHandle SCNH = getOrCreate(NodeMap, SN); // SourceClonedNodeHandle
 		if (!SCNH.isNull()) { // Node already cloned?
 			DSNode SCNHN = SCNH.getNode();
-			NH.mergeWith(new DSNodeHandle(SCNHN, SCNH.getOffset() + SrcNH
-					.getOffset()));
+			NH.mergeWith(
+					new DSNodeHandle(SCNHN, SCNH.getOffset() + SrcNH.getOffset()));
 			return; // Nothing to do!
 		}
 
@@ -275,8 +275,8 @@ class ReachabilityCloner {
 					assert DestGNH.getNode() == NH
 							.getNode() : "Global mapping inconsistent";
 					DSNodeHandle DestGNHPrime = Dest.getNodeForValue(GV);
-					DestGNHPrime.mergeWith(new DSNodeHandle(DestGNH.getNode(), DestGNH
-							.getOffset() + SrcGNH.getOffset()));
+					DestGNHPrime.mergeWith(new DSNodeHandle(DestGNH.getNode(),
+							DestGNH.getOffset() + SrcGNH.getOffset()));
 				}
 
 				NH.getNode().mergeGlobals(SN);
@@ -337,8 +337,8 @@ class ReachabilityCloner {
 					// culminating in the current node being eliminated. Since this is
 					// possible, make sure to re-acquire the link from CN.
 					CN = SCNH.getNode();
-					long TmpMergeOffset = (entry.getKey() + SCNH.getOffset()) % CN
-							.getSize();
+					long TmpMergeOffset = (entry.getKey() + SCNH.getOffset())
+							% CN.getSize();
 					CN.getLink(TmpMergeOffset).mergeWith(Tmp);
 				}
 			}

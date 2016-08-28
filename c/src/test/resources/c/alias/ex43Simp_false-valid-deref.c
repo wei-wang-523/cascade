@@ -12,10 +12,12 @@ typedef struct {
 buf_t *bufAlloc(size_t n) {
   int i;
   buf_t *b = (buf_t *)malloc(sizeof(buf_t));
-//  b->data = (data_t *)malloc(sizeof(data_t) * n);
-//  b->maxNumData = n;
-//  b->numData = 0;
-  b->dataWriteEvidence[0] = 0; // for (i=0; i<n; i++)
+  // steens-cfs treats unallocated 'b->dataWriteEvidence[0]' and 
+  // 'b->dataWriteEvidence[1]' as Bottom ECR and thus won't merge
+  // them; if have 
+  //  'b->dataWriteEvidence = (idx_t *)malloc(sizeof(idx_t) * n)'
+  // then they will be merged.
+  b->dataWriteEvidence[0] = 0;
   b->dataWriteEvidence[1] = 0;
   return b;
 }

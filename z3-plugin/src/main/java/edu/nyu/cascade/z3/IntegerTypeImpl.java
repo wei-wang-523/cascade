@@ -14,8 +14,8 @@ final class IntegerTypeImpl extends TypeImpl implements IntegerType {
 	IntegerTypeImpl(ExpressionManagerImpl expressionManager) {
 		super(expressionManager);
 		try {
-			setZ3Type(expressionManager.getTheoremProver().getZ3Context()
-					.getIntSort());
+			setZ3Type(
+					expressionManager.getTheoremProver().getZ3Context().getIntSort());
 		} catch (Z3Exception e) {
 			throw new TheoremProverException(e);
 		}
@@ -24,8 +24,8 @@ final class IntegerTypeImpl extends TypeImpl implements IntegerType {
 	@Override
 	IntegerExpressionImpl createExpression(Expr res, Expression oldExpr,
 			Iterable<? extends ExpressionImpl> children) {
-		return IntegerExpressionImpl.create(getExpressionManager(), oldExpr
-				.getKind(), res, oldExpr.getType(), children);
+		return IntegerExpressionImpl.create(getExpressionManager(),
+				oldExpr.getKind(), res, oldExpr.getType(), children);
 	}
 
 	@Override
@@ -35,8 +35,8 @@ final class IntegerTypeImpl extends TypeImpl implements IntegerType {
 
 	@Override
 	public IntegerExpressionImpl add(Expression first, Expression... rest) {
-		return IntegerExpressionImpl.mkPlus(getExpressionManager(), Lists.asList(
-				first, rest));
+		return IntegerExpressionImpl.mkPlus(getExpressionManager(),
+				Lists.asList(first, rest));
 	}
 
 	@Override

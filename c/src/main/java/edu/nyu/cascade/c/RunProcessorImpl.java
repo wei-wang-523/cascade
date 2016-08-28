@@ -1,27 +1,18 @@
 package edu.nyu.cascade.c;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-
-import javax.xml.bind.JAXBElement;
 
 import xtc.tree.Node;
 
 import com.google.common.base.Predicate;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
-
 import edu.nyu.cascade.c.encoder.BlockBasedFormulaEncoder;
 import edu.nyu.cascade.c.encoder.FormulaEncoder;
 import edu.nyu.cascade.c.encoder.StmtBasedFormulaEncoder;
-import edu.nyu.cascade.c.graphml.TraceGraphMLBuilder;
 import edu.nyu.cascade.c.mode.Mode;
-import edu.nyu.cascade.c.pass.alias.LeftValueCollectingPassImpl;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
-import edu.nyu.cascade.ir.IRTraceNode;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.ir.expr.ExpressionEncoder;
 import edu.nyu.cascade.ir.impl.LoopInfo;
@@ -161,15 +152,7 @@ class RunProcessorImpl implements RunProcessor {
 
 	@Override
 	public void dumpErrorTrace(IRControlFlowGraph cfg) {
-		if (!Preferences.isSet(Preferences.OPTION_TRACE))
-			return;
-
-		IRTraceNode traceEntry = formulaEncoder.getErrorTrace(cfg);
-		traceFactory.dumpTrace(traceEntry, IOUtils.traceFile());
-		String file = cfg.getSourceNode().getLocation().file;
-		TraceGraphMLBuilder gmlBuilder = new TraceGraphMLBuilder(file);
-		JAXBElement<?> gml = gmlBuilder.analyzeTrace(traceEntry);
-		gmlBuilder.dumpXmlTrace(gml, IOUtils.traceXmlFileStream());
+		return;
 	}
 
 	@Override

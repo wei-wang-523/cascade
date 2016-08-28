@@ -17,8 +17,8 @@ import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.util.CacheException;
 
-final class UninterpretedTypeImpl extends TypeImpl implements
-		UninterpretedType {
+final class UninterpretedTypeImpl extends TypeImpl
+		implements UninterpretedType {
 	private final String name;
 
 	static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, UninterpretedTypeImpl>> typeCache = CacheBuilder
@@ -70,8 +70,8 @@ final class UninterpretedTypeImpl extends TypeImpl implements
 		super(exprManager);
 		this.name = name;
 		try {
-			setCVC4Type(exprManager.getTheoremProver().getCvc4ExprManager().mkSort(
-					name));
+			setCVC4Type(
+					exprManager.getTheoremProver().getCvc4ExprManager().mkSort(name));
 			TheoremProverImpl.cvc4FileCommand("(declare-sort " + name + " 0)");
 		} catch (Exception e) {
 			throw new TheoremProverException(e);

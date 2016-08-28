@@ -41,8 +41,8 @@ public final class MultiLambdaStateExpression extends AbstractStateExpression {
 		StringBuilder sb = new StringBuilder();
 		for (Entry<String, SingleLambdaStateExpression> entry : stateMap
 				.entrySet()) {
-			sb.append(entry.getKey()).append(":").append(entry.getValue()
-					.toStringShort()).append("\n");
+			sb.append(entry.getKey()).append(":")
+					.append(entry.getValue().toStringShort()).append("\n");
 		}
 		return sb.toString();
 	}

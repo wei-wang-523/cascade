@@ -29,6 +29,8 @@ abstract class ValueType {
 	 */
 	abstract void setParent(Parent parent);
 
+	abstract void setSize(Size size);
+
 	abstract Parent getParent();
 
 	static BottomType bottom() {

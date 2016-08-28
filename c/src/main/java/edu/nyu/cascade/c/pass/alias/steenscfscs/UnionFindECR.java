@@ -94,8 +94,8 @@ public class UnionFindECR {
 		ECR root = findRoot(e);
 		root.setType(type);
 
-		Collection<Pair<Size, ECR>> ccjoins = ImmutableList.copyOf(root
-				.getCCjoins());
+		Collection<Pair<Size, ECR>> ccjoins = ImmutableList
+				.copyOf(root.getCCjoins());
 		root.clearCCjoins(ccjoins);
 		for (Pair<Size, ECR> cjoinPair : ccjoins)
 			ccjoin(cjoinPair.fst(), root, cjoinPair.snd());
@@ -261,12 +261,16 @@ public class UnionFindECR {
 			ValueType type2 = getType(e2);
 			switch (type2.getKind()) {
 			case BOTTOM:
-				setType(e2, ValueType.simple(type1.asSimple().getLoc(), type1.asSimple()
-						.getFunc(), rangeSize, Parent.getBottom(), type2.hasOpTag()));
+				setType(e2,
+						ValueType.simple(type1.asSimple().getLoc(),
+								type1.asSimple().getFunc(), rangeSize, Parent.getBottom(),
+								type2.hasOpTag()));
 				return;
 			case BLANK: {
-				setType(e2, ValueType.simple(type1.asSimple().getLoc(), type1.asSimple()
-						.getFunc(), type2.getSize(), type2.getParent(), type2.hasOpTag()));
+				setType(e2,
+						ValueType.simple(type1.asSimple().getLoc(),
+								type1.asSimple().getFunc(), type2.getSize(), type2.getParent(),
+								type2.hasOpTag()));
 				Size size2 = type2.getSize();
 				if (!Size.isLessThan(rangeSize, size2))
 					expand(e2, rangeSize);
@@ -295,8 +299,8 @@ public class UnionFindECR {
 			case BOTTOM: {
 				RangeMap<Long, ECR> fieldMapCopy = FieldRangeMap.create();
 				fieldMapCopy.putAll(type1.asStruct().getFieldMap());
-				setType(e2, ValueType.struct(fieldMapCopy, rangeSize, Parent
-						.getBottom(), type2.hasOpTag()));
+				setType(e2, ValueType.struct(fieldMapCopy, rangeSize,
+						Parent.getBottom(), type2.hasOpTag()));
 				return;
 			}
 			case BLANK: {
@@ -402,8 +406,8 @@ public class UnionFindECR {
 		}
 		case STRUCT: {
 			if (ValueTypeKind.STRUCT.equals(t2.getKind())) {
-				RangeMap<Long, ECR> map = getCompatibleMap(t1.asStruct(), t2
-						.asStruct());
+				RangeMap<Long, ECR> map = getCompatibleMap(t1.asStruct(),
+						t2.asStruct());
 				return ValueType.struct(map, size, parent, hasOpTag);
 			} else {
 				throw new IllegalArgumentException();
@@ -467,8 +471,8 @@ public class UnionFindECR {
 		ImmutableMap.Builder<ECR, Collection<IRVar>> builder = ImmutableMap
 				.builder();
 		for (Partition ecr : map.asMap().keySet()) {
-			builder.put(findRoot((ECR) ecr), ImmutableSet.copyOf(map.asMap().get(
-					ecr)));
+			builder.put(findRoot((ECR) ecr),
+					ImmutableSet.copyOf(map.asMap().get(ecr)));
 		}
 		return builder.build();
 	}
@@ -551,8 +555,8 @@ public class UnionFindECR {
 		}
 		case BLANK: {
 			BlankType blankType = type.asBlank();
-			ValueType simType = ValueType.simple(createBottomLocFunc(), blankType
-					.getSize(), blankType.getParent());
+			ValueType simType = ValueType.simple(createBottomLocFunc(),
+					blankType.getSize(), blankType.getParent());
 			setType(e, simType);
 			return;
 		}
@@ -694,8 +698,8 @@ public class UnionFindECR {
 		Size size = CType.isScalar(type) ? Size.createForType(type) : Size.getBot();
 		ECR fieldECR = ECR.create(ValueType.blank(size, parent));
 
-		SimpleType addrType = ValueType.simple(fieldECR, ECR.createBottom(), Size
-				.createForType(new PointerT(type)), Parent.getBottom());
+		SimpleType addrType = ValueType.simple(fieldECR, ECR.createBottom(),
+				Size.createForType(new PointerT(type)), Parent.getBottom());
 
 		ECR addrECR = ECR.create(addrType);
 
@@ -726,8 +730,8 @@ public class UnionFindECR {
 
 			Multimap<Pair<ECR, ECR>, Range<Long>> missingMatch = HashMultimap
 					.create();
-			boolean success = processCast(targetECR, srcLocECR, Range.closedOpen(
-					shift, shift + targetSize), missingMatch);
+			boolean success = processCast(targetECR, srcLocECR,
+					Range.closedOpen(shift, shift + targetSize), missingMatch);
 			if (!success) {
 				ptrAriJoins.put(targetPair, srcPair, shift);
 				missingMatch.clear();
@@ -740,8 +744,8 @@ public class UnionFindECR {
 
 	private boolean clearPtrCast() {
 		int origSize = ptrCastJoins.size();
-		List<Entry<Pair<ECR, Long>, Pair<ECR, Long>>> worklist = Lists.newArrayList(
-				ptrCastJoins.entrySet());
+		List<Entry<Pair<ECR, Long>, Pair<ECR, Long>>> worklist = Lists
+				.newArrayList(ptrCastJoins.entrySet());
 		ptrCastJoins.clear();
 
 		while (!worklist.isEmpty()) {
@@ -762,8 +766,8 @@ public class UnionFindECR {
 
 			Multimap<Pair<ECR, ECR>, Range<Long>> missingMatch = HashMultimap
 					.create();
-			boolean success = processCast(targetECR, srcLocECR, Range.closedOpen(
-					(long) 0, targetSize), missingMatch);
+			boolean success = processCast(targetECR, srcLocECR,
+					Range.closedOpen((long) 0, targetSize), missingMatch);
 			if (!success) {
 				ptrCastJoins.put(targetPair, srcPair);
 			} else {
@@ -804,8 +808,8 @@ public class UnionFindECR {
 				long low = fieldInterval.lowerEndpoint();
 				long targetLower = targetRange.lowerEndpoint();
 				long targetUpper = targetRange.upperEndpoint();
-				Range<Long> fieldTargetRange = Range.closedOpen(low + targetLower, low
-						+ targetUpper);
+				Range<Long> fieldTargetRange = Range.closedOpen(low + targetLower,
+						low + targetUpper);
 				boolean matchInterval = mathincWithinSrcECR(targetECR, parent,
 						fieldTargetRange);
 				if (!matchInterval)
@@ -869,8 +873,8 @@ public class UnionFindECR {
 			Size srcLocSize = srcLocType.getSize();
 			assert (!srcLocSize.isBottom());
 			if (srcLocSize.isTop()) {
-				boolean targetLocWithinSrcLoc = Iterables.any(srcLocType.asStruct()
-						.getFieldMap().asMapOfRanges().keySet(),
+				boolean targetLocWithinSrcLoc = Iterables.any(
+						srcLocType.asStruct().getFieldMap().asMapOfRanges().keySet(),
 						new Predicate<Range<Long>>() {
 							@Override
 							public boolean apply(Range<Long> range) {
@@ -918,10 +922,10 @@ public class UnionFindECR {
 			if (spanFieldInterval.equals(fieldInterval)) {
 				join(spanFieldECR, fieldECR);
 			} else if (spanFieldInterval.encloses(fieldInterval)) {
-				long low = fieldInterval.lowerEndpoint() - spanFieldInterval
-						.lowerEndpoint();
-				long high = fieldInterval.upperEndpoint() - spanFieldInterval
-						.lowerEndpoint();
+				long low = fieldInterval.lowerEndpoint()
+						- spanFieldInterval.lowerEndpoint();
+				long high = fieldInterval.upperEndpoint()
+						- spanFieldInterval.lowerEndpoint();
 				Range<Long> subFieldInterval = Range.closedOpen(low, high);
 
 				if (spanFieldType.isBlank()) {
@@ -936,10 +940,10 @@ public class UnionFindECR {
 					missingAlign.put(spanFieldECR, fieldECR);
 				}
 			} else if (fieldInterval.encloses(spanFieldInterval)) {
-				long low = spanFieldInterval.lowerEndpoint() - fieldInterval
-						.lowerEndpoint();
-				long high = spanFieldInterval.upperEndpoint() - fieldInterval
-						.lowerEndpoint();
+				long low = spanFieldInterval.lowerEndpoint()
+						- fieldInterval.lowerEndpoint();
+				long high = spanFieldInterval.upperEndpoint()
+						- fieldInterval.lowerEndpoint();
 				Range<Long> subFieldRange = Range.closedOpen(low, high);
 
 				if (fieldType.isBlank()) {
@@ -978,10 +982,10 @@ public class UnionFindECR {
 			ECR spanFieldECR = getLoc(spanFieldAddrECR);
 			ValueType spanFieldType = getType(spanFieldECR);
 			if (spanFieldInterval.encloses(fieldInterval)) {
-				long low = fieldInterval.lowerEndpoint() - spanFieldInterval
-						.lowerEndpoint();
-				long high = fieldInterval.upperEndpoint() - spanFieldInterval
-						.lowerEndpoint();
+				long low = fieldInterval.lowerEndpoint()
+						- spanFieldInterval.lowerEndpoint();
+				long high = fieldInterval.upperEndpoint()
+						- spanFieldInterval.lowerEndpoint();
 				Range<Long> subFieldInterval = Range.closedOpen(low, high);
 
 				if (spanFieldType.isBlank()) {
@@ -995,10 +999,10 @@ public class UnionFindECR {
 					join(spanFieldECR, fieldECR);
 				}
 			} else if (fieldInterval.encloses(spanFieldInterval)) {
-				long low = spanFieldInterval.lowerEndpoint() - fieldInterval
-						.lowerEndpoint();
-				long high = spanFieldInterval.upperEndpoint() - fieldInterval
-						.lowerEndpoint();
+				long low = spanFieldInterval.lowerEndpoint()
+						- fieldInterval.lowerEndpoint();
+				long high = spanFieldInterval.upperEndpoint()
+						- fieldInterval.lowerEndpoint();
 				Range<Long> subFieldRange = Range.closedOpen(low, high);
 
 				if (fieldType.isBlank()) {
@@ -1020,8 +1024,9 @@ public class UnionFindECR {
 	private Iterable<Range<Long>> getFieldInterval(ValueType parentType,
 			final ECR fieldECR) {
 		RangeMap<Long, ECR> fieldRangeMap = parentType.asStruct().getFieldMap();
-		Iterable<Entry<Range<Long>, ECR>> entries = Iterables.filter(fieldRangeMap
-				.asMapOfRanges().entrySet(), new Predicate<Entry<Range<Long>, ECR>>() {
+		Iterable<Entry<Range<Long>, ECR>> entries = Iterables.filter(
+				fieldRangeMap.asMapOfRanges().entrySet(),
+				new Predicate<Entry<Range<Long>, ECR>>() {
 					@Override
 					public boolean apply(Entry<Range<Long>, ECR> entry) {
 						return getLoc(entry.getValue()).equals(fieldECR);

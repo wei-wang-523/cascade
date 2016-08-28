@@ -50,8 +50,8 @@ public final class IRUnionType extends IRType {
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder().append("Union ").append(name).append(
-				"(\n");
+		StringBuilder sb = new StringBuilder().append("Union ").append(name)
+				.append("(\n");
 
 		Iterator<String> elemNameItr = elemNames.iterator();
 		Iterator<? extends IRType> elemTypeItr = elemTypes.iterator();

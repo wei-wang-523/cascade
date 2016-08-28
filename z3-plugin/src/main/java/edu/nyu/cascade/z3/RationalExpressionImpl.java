@@ -21,8 +21,8 @@ import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.RationalType;
 import edu.nyu.cascade.prover.type.Type;
 
-final class RationalExpressionImpl extends ExpressionImpl implements
-		RationalExpression {
+final class RationalExpressionImpl extends ExpressionImpl
+		implements RationalExpression {
 
 	static RationalExpressionImpl mkConstant(ExpressionManagerImpl em,
 			final int numerator, final int denominator) {
@@ -56,8 +56,8 @@ final class RationalExpressionImpl extends ExpressionImpl implements
 					@Override
 					public Expr apply(Context ctx, Expr left, Expr right)
 							throws Z3Exception {
-						return ctx.mkSub(new ArithExpr[] { (ArithExpr) left,
-								(ArithExpr) right });
+						return ctx
+								.mkSub(new ArithExpr[] { (ArithExpr) left, (ArithExpr) right });
 					}
 				}, a, b);
 	}
@@ -69,8 +69,8 @@ final class RationalExpressionImpl extends ExpressionImpl implements
 					@Override
 					public Expr apply(Context ctx, Expr left, Expr right)
 							throws Z3Exception {
-						return ctx.mkMul(new ArithExpr[] { (ArithExpr) left,
-								(ArithExpr) right });
+						return ctx
+								.mkMul(new ArithExpr[] { (ArithExpr) left, (ArithExpr) right });
 					}
 				}, a, b);
 	}
@@ -94,8 +94,8 @@ final class RationalExpressionImpl extends ExpressionImpl implements
 					@Override
 					public Expr apply(Context ctx, Expr left, Expr right)
 							throws Z3Exception {
-						return ctx.mkAdd(new ArithExpr[] { (ArithExpr) left,
-								(ArithExpr) right });
+						return ctx
+								.mkAdd(new ArithExpr[] { (ArithExpr) left, (ArithExpr) right });
 					}
 				}, a, b);
 	}

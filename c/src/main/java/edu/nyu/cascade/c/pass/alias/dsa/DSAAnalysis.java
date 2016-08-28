@@ -213,8 +213,8 @@ public class DSAAnalysis implements IRAliasAnalyzer<DSNodeHandle> {
 		Type Ty = CType.getType(varArgElem);
 		long length = CType.getInstance().getSize(Ty);
 		Region region = new Region(VArgNH.getNode(), Ty, 0, length);
-		regPass.getRegionMap().put(Pair.of(varArgElem, CType.getScopeName(
-				varArgElem)), region);
+		regPass.getRegionMap()
+				.put(Pair.of(varArgElem, CType.getScopeName(varArgElem)), region);
 		regPass.getRegions().add(region);
 	}
 

@@ -6,8 +6,8 @@ import edu.nyu.cascade.prover.InductiveExpression;
 import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.Selector;
 
-final class InductiveBoundExpressionImpl extends BoundExpressionImpl implements
-		InductiveExpression {
+final class InductiveBoundExpressionImpl extends BoundExpressionImpl
+		implements InductiveExpression {
 
 	static InductiveBoundExpressionImpl create(ExpressionManagerImpl em,
 			String name, InductiveTypeImpl type, boolean fresh) {

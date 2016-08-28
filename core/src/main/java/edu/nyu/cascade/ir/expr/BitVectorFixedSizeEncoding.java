@@ -18,9 +18,9 @@ import edu.nyu.cascade.prover.type.Type;
  * @author Wei
  *
  */
-public class BitVectorFixedSizeEncoding extends
-		AbstractTypeEncoding<BitVectorExpression> implements
-		IntegerEncoding<BitVectorExpression> {
+public class BitVectorFixedSizeEncoding
+		extends AbstractTypeEncoding<BitVectorExpression>
+		implements IntegerEncoding<BitVectorExpression> {
 
 	private final BitVectorIntegerEncoding intEncoding;
 
@@ -110,15 +110,15 @@ public class BitVectorFixedSizeEncoding extends
 	@Override
 	public BooleanExpression signedGreaterThan(BitVectorExpression lhs,
 			BitVectorExpression rhs) {
-		return intEncoding.signedGreaterThan(typeConversion(lhs), typeConversion(
-				rhs));
+		return intEncoding.signedGreaterThan(typeConversion(lhs),
+				typeConversion(rhs));
 	}
 
 	@Override
 	public BooleanExpression greaterThanOrEqual(BitVectorExpression lhs,
 			BitVectorExpression rhs) {
-		return intEncoding.greaterThanOrEqual(typeConversion(lhs), typeConversion(
-				rhs));
+		return intEncoding.greaterThanOrEqual(typeConversion(lhs),
+				typeConversion(rhs));
 	}
 
 	@Override
@@ -133,8 +133,8 @@ public class BitVectorFixedSizeEncoding extends
 			BitVectorExpression thenExpr, BitVectorExpression elseExpr) {
 		Preconditions.checkArgument(thenExpr.getType().equals(getType()));
 		Preconditions.checkArgument(elseExpr.getType().equals(getType()));
-		return intEncoding.ifThenElse(b, typeConversion(thenExpr), typeConversion(
-				elseExpr));
+		return intEncoding.ifThenElse(b, typeConversion(thenExpr),
+				typeConversion(elseExpr));
 	}
 
 	@Override
@@ -158,8 +158,8 @@ public class BitVectorFixedSizeEncoding extends
 	@Override
 	public BooleanExpression lessThanOrEqual(BitVectorExpression lhs,
 			BitVectorExpression rhs) {
-		return intEncoding.lessThanOrEqual(typeConversion(lhs), typeConversion(
-				rhs));
+		return intEncoding.lessThanOrEqual(typeConversion(lhs),
+				typeConversion(rhs));
 	}
 
 	@Override

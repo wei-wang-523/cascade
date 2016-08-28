@@ -22,8 +22,8 @@ import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Preferences;
 
 public class MainTest {
-	private static final File syntax_location = FileUtils.absoluteResourcePath(
-			"syntax");
+	private static final File syntax_location = FileUtils
+			.absoluteResourcePath("syntax");
 	private static final File bad_programs_location = new File(syntax_location,
 			"bad");
 
@@ -85,31 +85,31 @@ public class MainTest {
 
 	@Test
 	public void testPrograms() {
-		TestUtils.checkDirectory(syntax_location, cFileFilter, parserTest(
-				"--parsec"), false);
+		TestUtils.checkDirectory(syntax_location, cFileFilter,
+				parserTest("--parsec"), false);
 	}
 
 	@Test
 	public void testProgramsNoThreads() {
-		TestUtils.checkDirectory(syntax_location, cFileFilter, parserTest(
-				"--parsec", "--no-threads"), false);
+		TestUtils.checkDirectory(syntax_location, cFileFilter,
+				parserTest("--parsec", "--no-threads"), false);
 	}
 
 	@Test
 	public void testBadPrograms() {
-		TestUtils.checkDirectory(bad_programs_location, cFileFilter, parserTest(
-				"--parsec"), true);
+		TestUtils.checkDirectory(bad_programs_location, cFileFilter,
+				parserTest("--parsec"), true);
 	}
 
 	@Test
 	public void testBadProgramsNoThreads() {
-		TestUtils.checkDirectory(bad_programs_location, cFileFilter, parserTest(
-				"--parsec", "--no-threads"), true);
+		TestUtils.checkDirectory(bad_programs_location, cFileFilter,
+				parserTest("--parsec", "--no-threads"), true);
 	}
 
 	@Test
 	public void testProperties() {
-		TestUtils.checkDirectory(bad_programs_location, propFileFilter, parserTest(
-				"--prop"), true);
+		TestUtils.checkDirectory(bad_programs_location, propFileFilter,
+				parserTest("--prop"), true);
 	}
 }

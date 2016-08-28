@@ -63,13 +63,13 @@ public final class SingleLambdaStateExpression extends AbstractStateExpression {
 		if (!safetyPredicateClosures.isEmpty()) {
 			for (Entry<String, PredicateClosure> entry : safetyPredicateClosures
 					.entrySet())
-				sb.append('\n').append(entry.getKey()).append(": ").append(entry
-						.getValue());
+				sb.append('\n').append(entry.getKey()).append(": ")
+						.append(entry.getValue());
 		}
 		if (!safetyPredicates.isEmpty()) {
 			for (Entry<String, BooleanExpression> entry : safetyPredicates.entrySet())
-				sb.append('\n').append(entry.getKey()).append(": ").append(entry
-						.getValue());
+				sb.append('\n').append(entry.getKey()).append(": ")
+						.append(entry.getValue());
 		}
 		return sb.toString();
 	}

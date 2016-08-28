@@ -42,9 +42,10 @@ public class PartitionMode extends AbstractMode {
 		IRDataFormatter formatter = getFormatter(encoding);
 
 		if (Preferences.isSet(Preferences.OPTION_LAMBDA)) {
-			IRMemSafetyEncoding memSafetyEncoding = Preferences.isSet(
-					Preferences.OPTION_STMT) ? AbstractStmtMemSafetyEncoding.getInstance(
-							encoding, formatter, strategy)
+			IRMemSafetyEncoding memSafetyEncoding = Preferences
+					.isSet(Preferences.OPTION_STMT)
+							? AbstractStmtMemSafetyEncoding.getInstance(encoding, formatter,
+									strategy)
 							: AbstractMemSafetyEncoding.getInstance(encoding, formatter,
 									strategy);
 
@@ -60,8 +61,8 @@ public class PartitionMode extends AbstractMode {
 		}
 
 		if (Preferences.isSet(Preferences.OPTION_HOARE)) {
-			stateFactory = HoareStateFactory.create(
-					(AbstractStateFactory<?>) stateFactory);
+			stateFactory = HoareStateFactory
+					.create((AbstractStateFactory<?>) stateFactory);
 		}
 	}
 
@@ -86,8 +87,8 @@ public class PartitionMode extends AbstractMode {
 
 		if (Preferences.isSet(Preferences.OPTION_FIELD_SENSITIVE)) {
 			preProcessor = SteensgaardFS.create(symbolTable);
-		} else if (Preferences.isSet(
-				Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE)) {
+		} else if (Preferences
+				.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE)) {
 			preProcessor = SteensgaardCFS.create(symbolTable);
 		} else if (Preferences.isSet(
 				Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE)) {

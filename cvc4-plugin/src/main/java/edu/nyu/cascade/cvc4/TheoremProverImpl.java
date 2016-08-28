@@ -82,9 +82,10 @@ public class TheoremProverImpl implements TheoremProver {
 
 		@Override
 		public ImmutableList<Option> getOptions() {
-			return ImmutableList.of(Option.builder().longOpt(OPTION_CVC4_STATS) //
-					.desc("Enable CVC4 stats") //
-					.build(), //
+			return ImmutableList.of(
+					Option.builder().longOpt(OPTION_CVC4_STATS) //
+							.desc("Enable CVC4 stats") //
+							.build(), //
 					Option.builder().longOpt(OPTION_CVC4_DECISION) //
 							.desc("Set CVC4 decision") //
 							.hasArg().argName("S").type(String.class) //
@@ -225,8 +226,8 @@ public class TheoremProverImpl implements TheoremProver {
 			} else if (SatResult.Type.SAT.equals(resultType)) {
 				res = SatResult.valueOf(resultType, expr, assumptions);
 			} else { // resultType = UNKNOWN
-				res = SatResult.valueOf(resultType, expr, assumptions, cvc4SatResult
-						.whyUnknown().toString());
+				res = SatResult.valueOf(resultType, expr, assumptions,
+						cvc4SatResult.whyUnknown().toString());
 			}
 
 			if (Preferences.isSet(OPTION_CVC4_STATS)) {

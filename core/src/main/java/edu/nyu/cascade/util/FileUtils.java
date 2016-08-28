@@ -48,8 +48,8 @@ public class FileUtils {
 	}
 
 	public static URL resourceURL(String... pathComponents) {
-		return ClassLoader.getSystemResource(resourcePath(pathComponents)
-				.toString());
+		return ClassLoader
+				.getSystemResource(resourcePath(pathComponents).toString());
 	}
 
 	public static String resourcePath(String... pathComponents) {
@@ -57,8 +57,8 @@ public class FileUtils {
 	}
 
 	public static File createDumpDir(String dir) {
-		File outDir = new File(path(System.getProperty("user.dir"), DUMP_DIRECTORY,
-				dir));
+		File outDir = new File(
+				path(System.getProperty("user.dir"), DUMP_DIRECTORY, dir));
 		if (!outDir.exists())
 			outDir.mkdirs();
 		return outDir;

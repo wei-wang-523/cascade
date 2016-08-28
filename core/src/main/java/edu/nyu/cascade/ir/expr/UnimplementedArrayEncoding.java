@@ -8,10 +8,10 @@ import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
 
-public class UnimplementedArrayEncoding<T extends Expression> implements
-		ArrayEncoding<T> {
-	private static class Instance<T extends Expression> implements
-			ArrayEncoding.Instance<T> {
+public class UnimplementedArrayEncoding<T extends Expression>
+		implements ArrayEncoding<T> {
+	private static class Instance<T extends Expression>
+			implements ArrayEncoding.Instance<T> {
 
 		@Override
 		public T symbolicConstant(String name, boolean fresh) {

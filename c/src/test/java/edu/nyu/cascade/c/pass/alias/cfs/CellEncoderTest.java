@@ -62,18 +62,18 @@ public class CellEncoderTest {
 
 		createSimpleDeclarator(xVarName, NumberT.INT);
 		createSimpleDeclarator(yVarName, new PointerT(NumberT.INT));
-		createSimpleDeclarator(zVarName, createStruct("S", NumberT.INT, NumberT.INT,
-				NumberT.LONG));
+		createSimpleDeclarator(zVarName,
+				createStruct("S", NumberT.INT, NumberT.INT, NumberT.LONG));
 		createSimpleDeclarator(uVarName, createUnion());
 		createSimpleDeclarator(arrIn1DimName, new ArrayT(NumberT.INT, 5));
-		createSimpleDeclarator(arrIn2DimName, new ArrayT(new ArrayT(NumberT.INT, 5),
-				5));
-		createSimpleDeclarator(arrInStructName, createStruct("SA", NumberT.INT,
-				new ArrayT(NumberT.INT, 5)));
+		createSimpleDeclarator(arrIn2DimName,
+				new ArrayT(new ArrayT(NumberT.INT, 5), 5));
+		createSimpleDeclarator(arrInStructName,
+				createStruct("SA", NumberT.INT, new ArrayT(NumberT.INT, 5)));
 
-		createSimpleDeclarator(structArrInStructName, createStruct("SAS",
-				NumberT.INT, new ArrayT(createStruct("S", NumberT.INT, NumberT.INT),
-						5)));
+		createSimpleDeclarator(structArrInStructName,
+				createStruct("SAS", NumberT.INT,
+						new ArrayT(createStruct("S", NumberT.INT, NumberT.INT), 5)));
 	}
 
 	private StructT createStruct(String name, Type... t) {
@@ -86,10 +86,10 @@ public class CellEncoderTest {
 	}
 
 	private UnionT createUnion() {
-		VariableT field1 = VariableT.newField(createStruct("S1", NumberT.INT,
-				NumberT.INT, NumberT.INT), "g1");
-		VariableT field2 = VariableT.newField(createStruct("S2", NumberT.INT,
-				NumberT.INT), "g2");
+		VariableT field1 = VariableT.newField(
+				createStruct("S1", NumberT.INT, NumberT.INT, NumberT.INT), "g1");
+		VariableT field2 = VariableT
+				.newField(createStruct("S2", NumberT.INT, NumberT.INT), "g2");
 		return new UnionT("U", Lists.newArrayList(field1, field2));
 	}
 
@@ -207,8 +207,8 @@ public class CellEncoderTest {
 		symbolTable.mark(indexNode);
 		symbolTable.mark(subscriptNode);
 
-		long offset = typeAnalyzer.getOffset(CType.getType(varNode).resolve()
-				.toStruct(), field2);
+		long offset = typeAnalyzer
+				.getOffset(CType.getType(varNode).resolve().toStruct(), field2);
 		long size = typeAnalyzer.getSize(CType.getType(f2Node));
 
 		// Cell(as)
@@ -220,8 +220,8 @@ public class CellEncoderTest {
 		// Cell(as.f2) -> Cell(as.f2[2])
 		assertEquals(subscriptCell, graphManager.getPointsCell(f2Cell));
 		// Cell(as) -- (offset, offset + size) --> Cell(as.f2[2])
-		assertEquals(subscriptCell, graphManager.getContainsCell(graphManager
-				.getPointsCell(varCell), offset, offset + size));
+		assertEquals(subscriptCell, graphManager.getContainsCell(
+				graphManager.getPointsCell(varCell), offset, offset + size));
 	}
 
 	@Ignore("array field is not yet supported")
@@ -239,16 +239,16 @@ public class CellEncoderTest {
 		// sas.f2[2].f1
 		Node f2f1Node = GNode.create("DirectComponentSelection", subscriptNode,
 				field1);
-		CType.getType(subscriptNode).resolve().toStruct().lookup(field1).mark(
-				f2f1Node);
+		CType.getType(subscriptNode).resolve().toStruct().lookup(field1)
+				.mark(f2f1Node);
 
 		symbolTable.mark(f2Node);
 		symbolTable.mark(indexNode);
 		symbolTable.mark(subscriptNode);
 		symbolTable.mark(f2f1Node);
 
-		long offset = typeAnalyzer.getOffset(CType.getType(varNode).resolve()
-				.toStruct(), field2);
+		long offset = typeAnalyzer
+				.getOffset(CType.getType(varNode).resolve().toStruct(), field2);
 		long size = typeAnalyzer.getSize(CType.getType(f2Node));
 
 		// Cell(as)
@@ -260,8 +260,8 @@ public class CellEncoderTest {
 		// Cell(as.f2) -> Cell(as.f2[2])
 		assertEquals(subscriptCell, graphManager.getPointsCell(f2Cell));
 		// Cell(as) -- (offset, offset + size) --> Cell(as.f2[2])
-		assertEquals(subscriptCell, graphManager.getContainsCell(graphManager
-				.getPointsCell(varCell), offset, offset + size));
+		assertEquals(subscriptCell, graphManager.getContainsCell(
+				graphManager.getPointsCell(varCell), offset, offset + size));
 	}
 
 	@Ignore
@@ -367,11 +367,11 @@ public class CellEncoderTest {
 		Cell varCell = graphManager.getPointsCell(addrVarCell);
 
 		// cell(z) -- (f1Offset, f1Offset + f1Size) --> cell(z.f1)
-		assertEquals(f1Cell, graphManager.getContainsCell(varCell, f1Offset,
-				f1Offset + f1Size));
+		assertEquals(f1Cell,
+				graphManager.getContainsCell(varCell, f1Offset, f1Offset + f1Size));
 		// cell(z) -- (f2Offset, f2Offset + f2Size) --> cell(z.f2)
-		assertEquals(f2Cell, graphManager.getContainsCell(varCell, f2Offset,
-				f2Offset + f2Size));
+		assertEquals(f2Cell,
+				graphManager.getContainsCell(varCell, f2Offset, f2Offset + f2Size));
 	}
 
 	@Ignore
@@ -418,10 +418,10 @@ public class CellEncoderTest {
 		// z (with type S{int, int, long}
 		Node zVarNode = createPrimaryIdentifier(zVarName);
 		Node zAddrNode = createAddressExpression(zVarNode); // &z
-		Node specifier = GNode.create("SpecifierQualifierList", GNode.create(
-				"Int"));
-		Node abstractDecl = GNode.create("AbstractDeclarator", GNode.create(
-				"Pointer", GNode.create("TypeQualifierList"), null), null);
+		Node specifier = GNode.create("SpecifierQualifierList",
+				GNode.create("Int"));
+		Node abstractDecl = GNode.create("AbstractDeclarator",
+				GNode.create("Pointer", GNode.create("TypeQualifierList"), null), null);
 		Node typeNode = GNode.create("TypeName", specifier, abstractDecl);
 		// (int *) &z
 		Node castNode = GNode.create("CastExpression", typeNode, zAddrNode);
@@ -432,8 +432,8 @@ public class CellEncoderTest {
 		Cell addrCell = cellEncoder.toRval(zAddrNode);
 		assertEquals(varCell, addrCell);
 		Cell castCell = cellEncoder.toRval(castNode);
-		assertEquals(graphManager.getPointsCell(varCell), graphManager
-				.getCastSourceCell(graphManager.getPointsCell(castCell)));
+		assertEquals(graphManager.getPointsCell(varCell),
+				graphManager.getCastSourceCell(graphManager.getPointsCell(castCell)));
 	}
 
 	@Ignore
@@ -458,26 +458,26 @@ public class CellEncoderTest {
 
 		// Casting from a pointer to integer to a pointer to long.
 		Node f1AddrNode = createAddressExpression(f1Node);
-		Node specifier = GNode.create("SpecifierQualifierList", GNode.create(
-				"Long"));
-		Node abstractDecl = GNode.create("AbstractDeclarator", GNode.create(
-				"Pointer", GNode.create("TypeQualifierList"), null), null);
+		Node specifier = GNode.create("SpecifierQualifierList",
+				GNode.create("Long"));
+		Node abstractDecl = GNode.create("AbstractDeclarator",
+				GNode.create("Pointer", GNode.create("TypeQualifierList"), null), null);
 		Node typeNode = GNode.create("TypeName", specifier, abstractDecl);
 		Node castNode = GNode.create("CastExpression", typeNode, f1AddrNode);
 		new PointerT(NumberT.LONG).mark(castNode);
 		symbolTable.mark(castNode);
 
 		Cell f1Cell = cellEncoder.toRval(f1Node);
-		Cell castPointsToCell = graphManager.getPointsCell(cellEncoder.toRval(
-				castNode));
+		Cell castPointsToCell = graphManager
+				.getPointsCell(cellEncoder.toRval(castNode));
 		assertEquals(f1Cell, graphManager.getCastSourceCell(castPointsToCell));
 
 		// Casting from a pointer to integer to a pointer to integer.
 		Node f2AddrNode = createAddressExpression(f2Node);
-		Node specifier2 = GNode.create("SpecifierQualifierList", GNode.create(
-				"INT"));
-		Node abstractDecl2 = GNode.create("AbstractDeclarator", GNode.create(
-				"Pointer", GNode.create("TypeQualifierList"), null), null);
+		Node specifier2 = GNode.create("SpecifierQualifierList",
+				GNode.create("INT"));
+		Node abstractDecl2 = GNode.create("AbstractDeclarator",
+				GNode.create("Pointer", GNode.create("TypeQualifierList"), null), null);
 		Node typeNode2 = GNode.create("TypeName", specifier2, abstractDecl2);
 		Node castNode2 = GNode.create("CastExpression", typeNode2, f2AddrNode);
 		new PointerT(NumberT.INT).mark(castNode2);

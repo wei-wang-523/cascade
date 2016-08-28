@@ -18,8 +18,8 @@ final class TestExpressionImpl extends BooleanExpressionImpl {
 	static TestExpressionImpl create(ExpressionManagerImpl exprManager,
 			Constructor constructor, Expression val) {
 		checkArgument(val.isInductive());
-		checkArgument(val.asInductive().getType().getConstructors().contains(
-				constructor));
+		checkArgument(
+				val.asInductive().getType().getConstructors().contains(constructor));
 		return new TestExpressionImpl(exprManager, constructor, val);
 	}
 
@@ -31,8 +31,8 @@ final class TestExpressionImpl extends BooleanExpressionImpl {
 				Type type = exprManager.toCvc4Type(constructor.getType());
 				DatatypeType dtt = new DatatypeType(type);
 				Datatype dt = dtt.getDatatype();
-				long constructorIndex = Datatype.indexOf(dt.getConstructor(constructor
-						.getName()));
+				long constructorIndex = Datatype
+						.indexOf(dt.getConstructor(constructor.getName()));
 				DatatypeConstructor dtc = dt.get(constructorIndex);
 				return em.mkExpr(edu.nyu.acsys.CVC4.Kind.APPLY_TESTER, dtc.getTester(),
 						arg);

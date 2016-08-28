@@ -62,8 +62,8 @@ class ECREncoder extends Visitor {
 
 		@Override
 		public ECR unableToVisit(Node node) throws VisitingException {
-			IOUtils.err().println("APPROX: Treating unexpected node type as NULL: "
-					+ node.getName());
+			IOUtils.err().println(
+					"APPROX: Treating unexpected node type as NULL: " + node.getName());
 			return ECR.createBottom();
 		}
 
@@ -160,8 +160,8 @@ class ECREncoder extends Visitor {
 
 		@Override
 		public ECR unableToVisit(Node node) throws VisitingException {
-			IOUtils.err().println("APPROX: Treating unexpected node type as NULL: "
-					+ node.getName());
+			IOUtils.err().println(
+					"APPROX: Treating unexpected node type as NULL: " + node.getName());
 			return ECR.createBottom();
 		}
 

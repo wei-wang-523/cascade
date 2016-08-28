@@ -4,8 +4,8 @@ import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.Type;
 
-final class ArrayVariableImpl extends VariableExpressionImpl implements
-		ArrayExpression {
+final class ArrayVariableImpl extends VariableExpressionImpl
+		implements ArrayExpression {
 
 	static ArrayVariableImpl create(ExpressionManagerImpl exprManager,
 			String name, ArrayTypeImpl type, boolean fresh) {

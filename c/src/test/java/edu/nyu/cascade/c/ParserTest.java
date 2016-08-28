@@ -18,8 +18,8 @@ import edu.nyu.cascade.util.FileUtils;
 
 public class ParserTest {
 	private static final String programs_path = "c";
-	private static final File programs_dir = FileUtils.absoluteResourcePath(
-			programs_path);
+	private static final File programs_dir = FileUtils
+			.absoluteResourcePath(programs_path);
 
 	/**
 	 * Try to parse the program, given a filename

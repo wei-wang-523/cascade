@@ -74,8 +74,8 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 		}
 
 		Collection<Expression> keySet = hoareGuardTable.keySet();
-		Map<Expression, Expression> joinHoareMap = Maps.newHashMapWithExpectedSize(
-				keySet.size());
+		Map<Expression, Expression> joinHoareMap = Maps
+				.newHashMapWithExpectedSize(keySet.size());
 		ExpressionEncoding encoding = getExpressionEncoding();
 		for (Expression key : keySet) {
 			Multimap<Expression, BooleanExpression> guardHoareMap = hoareGuardTable
@@ -392,8 +392,8 @@ public class HoareStateFactory<T> implements StateFactory<T> {
 		if (idxType.resolve().isBoolean()) {
 			value = encoding.castToBoolean(value);
 		} else {
-			boolean isUnsigned = valNode != null && CType.isUnsigned(CType.getType(
-					valNode));
+			boolean isUnsigned = valNode != null
+					&& CType.isUnsigned(CType.getType(valNode));
 			int size = (int) stateFactory.getCTypeAnalyzer().getWidth(idxType);
 			value = encoding.castToInteger(value, size, !isUnsigned);
 		}

@@ -70,8 +70,8 @@ public final class RegionPassImpl implements IRPass {
 
 			@Override
 			public Object unableToVisit(Node node) {
-				IOUtils.err().println("APPROX: Treating unexpected node type as NULL: "
-						+ node.getName());
+				IOUtils.err().println(
+						"APPROX: Treating unexpected node type as NULL: " + node.getName());
 				return null;
 			}
 
@@ -122,8 +122,8 @@ public final class RegionPassImpl implements IRPass {
 
 			@Override
 			public Object unableToVisit(Node node) {
-				IOUtils.err().println("APPROX: Treating unexpected node type as NULL: "
-						+ node.getName());
+				IOUtils.err().println(
+						"APPROX: Treating unexpected node type as NULL: " + node.getName());
 				return null;
 			}
 
@@ -314,7 +314,7 @@ public final class RegionPassImpl implements IRPass {
 			case RETURN: {
 				if (stmt.getOperands() != null && !stmt.getOperands().isEmpty()) {
 					Node ret = stmt.getOperand(0).getSourceNode();
-					lvalVisitor.encode(ret);
+					rvalVisitor.encode(ret);
 				}
 				break;
 			}
@@ -328,21 +328,20 @@ public final class RegionPassImpl implements IRPass {
 				break;
 			}
 			case CALL: {
-				// Set up the return value...
-				Type retTy = CType.getType(stmt.getSourceNode());
-
-				if (!retTy.resolve().isVoid()) {
-					Node retNode = stmt.getOperand(1).getSourceNode();
-					lvalVisitor.encode(retNode);
-				}
-
 				Node funcNode = stmt.getOperand(0).getSourceNode();
 				String funcName = CAnalyzer.toFunctionName(funcNode);
-				if (ReservedFunction.MEMCOPY.equals(funcName)) {
+				if (ReservedFunction.MEMCOPY.equals(funcName)
+						|| ReservedFunction.MEMMOVE.equals(funcName)) {
 					Node lhs = stmt.getOperand(2).getSourceNode();
 					Node rhs = stmt.getOperand(3).getSourceNode();
 					lvalVisitor.encode(lhs);
 					lvalVisitor.encode(rhs);
+					return;
+				}
+
+				if (ReservedFunction.MEMSET.equals(funcName)) {
+					Node lhs = stmt.getOperand(2).getSourceNode();
+					lvalVisitor.encode(lhs);
 					return;
 				}
 
@@ -369,6 +368,13 @@ public final class RegionPassImpl implements IRPass {
 					rvalVisitor.encode(ArgNode);
 				}
 
+				// Set up the return value...
+				Type retTy = CType.getType(stmt.getSourceNode());
+				if (!retTy.resolve().isVoid()) {
+					Node retNode = stmt.getOperand(1).getSourceNode();
+					lvalVisitor.encode(retNode);
+				}
+
 				break;
 			}
 			default:
@@ -377,8 +383,8 @@ public final class RegionPassImpl implements IRPass {
 		}
 
 		private void visit(IRControlFlowGraph CFG) {
-			Collection<IRBasicBlock> BBs = Lists.reverse(CFG.topologicalSeq(CFG
-					.getEntry()));
+			Collection<IRBasicBlock> BBs = Lists
+					.reverse(CFG.topologicalSeq(CFG.getEntry()));
 			for (IRBasicBlock BB : BBs) {
 				for (IRStatement stmt : BB.getStatements())
 					visit(stmt);
@@ -486,10 +492,10 @@ public final class RegionPassImpl implements IRPass {
 
 			Region R1 = Regions.lower(NR);
 			Region R2 = Regions.higher(NR);
-			Region R = R1.overlaps(NR) ? R1 : R2;
+			Region R = R1 != null && R1.overlaps(NR) ? R1 : R2;
 
-			assert (R.getOffset() <= NR.getOffset() && R.getOffset() + R
-					.getLength() >= NR.getOffset() + NR.getLength());
+			assert (R.getOffset() <= NR.getOffset()
+					&& R.getOffset() + R.getLength() >= NR.getOffset() + NR.getLength());
 			RegionMap.put(NPair, R);
 		}
 	}

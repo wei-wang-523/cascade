@@ -7,9 +7,9 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.BoundExpression;
 import edu.nyu.cascade.prover.ExpressionManager;
 
-public class DefaultBooleanEncoding extends
-		AbstractTypeEncoding<BooleanExpression> implements
-		BooleanEncoding<BooleanExpression> {
+public class DefaultBooleanEncoding
+		extends AbstractTypeEncoding<BooleanExpression>
+		implements BooleanEncoding<BooleanExpression> {
 	private static final String UNKNOWN_VARIABLE_NAME = "bool_encoding_unknown";
 
 	public DefaultBooleanEncoding(ExpressionManager exprManager) {

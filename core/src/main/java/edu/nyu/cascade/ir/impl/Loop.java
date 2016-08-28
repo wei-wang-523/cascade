@@ -98,8 +98,8 @@ public class Loop {
 		if (exitEdges == null) {
 			exitEdges = Lists.newArrayList();
 			for (IRBasicBlock block : blocks) {
-				for (IREdge<? extends IRBasicBlock> outgoing : cfg.getOutgoingEdges(
-						block)) {
+				for (IREdge<? extends IRBasicBlock> outgoing : cfg
+						.getOutgoingEdges(block)) {
 					IRBasicBlock dest = outgoing.getTarget();
 					if (blocks.contains(dest))
 						continue;
@@ -114,8 +114,8 @@ public class Loop {
 		if (loopEdges == null) {
 			loopEdges = Lists.newArrayList();
 			for (IRBasicBlock block : blocks) {
-				for (IREdge<? extends IRBasicBlock> outgoing : cfg.getOutgoingEdges(
-						block)) {
+				for (IREdge<? extends IRBasicBlock> outgoing : cfg
+						.getOutgoingEdges(block)) {
 					IRBasicBlock dest = outgoing.getTarget();
 					if (blocks.contains(dest))
 						loopEdges.add(outgoing);

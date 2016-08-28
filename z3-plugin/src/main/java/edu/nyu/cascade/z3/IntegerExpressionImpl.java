@@ -32,16 +32,16 @@ import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
 
-final class IntegerExpressionImpl extends ExpressionImpl implements
-		IntegerExpression {
+final class IntegerExpressionImpl extends ExpressionImpl
+		implements IntegerExpression {
 
 	static final LoadingCache<ExpressionManagerImpl, LoadingCache<BigInteger, IntegerExpressionImpl>> constantCache = CacheBuilder
 			.newBuilder().build(
 					new CacheLoader<ExpressionManagerImpl, LoadingCache<BigInteger, IntegerExpressionImpl>>() {
 						public LoadingCache<BigInteger, IntegerExpressionImpl> load(
 								final ExpressionManagerImpl exprManager) {
-							return CacheBuilder.newBuilder().build(
-									new CacheLoader<BigInteger, IntegerExpressionImpl>() {
+							return CacheBuilder.newBuilder()
+									.build(new CacheLoader<BigInteger, IntegerExpressionImpl>() {
 										public IntegerExpressionImpl load(BigInteger value) {
 											return new IntegerExpressionImpl(exprManager, value);
 										}
@@ -82,8 +82,8 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 					@Override
 					public Expr apply(Context ctx, Expr left, Expr right) {
 						try {
-							return ctx.mkSub(new ArithExpr[] { (ArithExpr) left,
-									(ArithExpr) right });
+							return ctx.mkSub(
+									new ArithExpr[] { (ArithExpr) left, (ArithExpr) right });
 						} catch (Z3Exception e) {
 							throw new TheoremProverException(e);
 						}
@@ -98,8 +98,8 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 					@Override
 					public Expr apply(Context ctx, Expr left, Expr right) {
 						try {
-							return ctx.mkMul(new ArithExpr[] { (ArithExpr) left,
-									(ArithExpr) right });
+							return ctx.mkMul(
+									new ArithExpr[] { (ArithExpr) left, (ArithExpr) right });
 						} catch (Z3Exception e) {
 							throw new TheoremProverException(e);
 						}
@@ -160,8 +160,8 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 					@Override
 					public Expr apply(Context ctx, Expr left, Expr right) {
 						try {
-							return ctx.mkAdd(new ArithExpr[] { (ArithExpr) left,
-									(ArithExpr) right });
+							return ctx.mkAdd(
+									new ArithExpr[] { (ArithExpr) left, (ArithExpr) right });
 						} catch (Z3Exception e) {
 							throw new TheoremProverException(e);
 						}
@@ -232,8 +232,8 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 
 		switch (e.getKind()) {
 		default:
-			throw new UnsupportedOperationException("Unexpected kind: " + e + " {" + e
-					.getKind() + "}");
+			throw new UnsupportedOperationException(
+					"Unexpected kind: " + e + " {" + e.getKind() + "}");
 		}
 	}
 
@@ -245,8 +245,8 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 	private IntegerExpressionImpl(ExpressionManagerImpl em, BigInteger value) {
 		super(em, CONSTANT, em.integerType());
 		try {
-			setZ3Expression(em.getTheoremProver().getZ3Context().mkInt(value
-					.toString()));
+			setZ3Expression(
+					em.getTheoremProver().getZ3Context().mkInt(value.toString()));
 		} catch (Z3Exception e) {
 			throw new TheoremProverException(e);
 		}
@@ -330,8 +330,8 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 
 	@Override
 	public IntegerExpression plus(Iterable<? extends IntegerExpression> rest) {
-		return mkPlus(getExpressionManager(), Iterables.concat(Collections
-				.singletonList(this), rest));
+		return mkPlus(getExpressionManager(),
+				Iterables.concat(Collections.singletonList(this), rest));
 	}
 
 	@Override

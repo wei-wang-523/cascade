@@ -1023,8 +1023,8 @@ final class DryRunTheoremProver implements TheoremProver {
 
 	DryRunTheoremProver(TheoremProver theoremProver) {
 		this.theoremProver = theoremProver;
-		this.exprManager = new DryRunExpressionManager(this, theoremProver
-				.getExpressionManager());
+		this.exprManager = new DryRunExpressionManager(this,
+				theoremProver.getExpressionManager());
 	}
 
 	@Override

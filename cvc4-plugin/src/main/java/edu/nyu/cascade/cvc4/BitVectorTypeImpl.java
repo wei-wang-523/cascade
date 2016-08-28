@@ -25,8 +25,8 @@ final class BitVectorTypeImpl extends TypeImpl implements BitVectorType {
 					new CacheLoader<ExpressionManagerImpl, LoadingCache<Integer, BitVectorTypeImpl>>() {
 						public LoadingCache<Integer, BitVectorTypeImpl> load(
 								final ExpressionManagerImpl exprManager) {
-							return CacheBuilder.newBuilder().build(
-									new CacheLoader<Integer, BitVectorTypeImpl>() {
+							return CacheBuilder.newBuilder()
+									.build(new CacheLoader<Integer, BitVectorTypeImpl>() {
 										public BitVectorTypeImpl load(Integer size) {
 											try {
 												return new BitVectorTypeImpl(exprManager, size);
@@ -322,8 +322,8 @@ final class BitVectorTypeImpl extends TypeImpl implements BitVectorType {
 	BitVectorExpressionImpl createExpression(Expr res, Expression e, Kind kind,
 			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isBitVector());
-		return BitVectorExpressionImpl.create(getExpressionManager(), kind, res, e
-				.getType().asBitVectorType(), children);
+		return BitVectorExpressionImpl.create(getExpressionManager(), kind, res,
+				e.getType().asBitVectorType(), children);
 	}
 
 	@Override

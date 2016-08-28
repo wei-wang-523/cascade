@@ -53,15 +53,15 @@ import edu.nyu.cascade.prover.TheoremProverException;
 import edu.nyu.cascade.prover.type.BitVectorType;
 import edu.nyu.cascade.util.CacheException;
 
-final class BitVectorExpressionImpl extends ExpressionImpl implements
-		BitVectorExpression {
+final class BitVectorExpressionImpl extends ExpressionImpl
+		implements BitVectorExpression {
 	static final LoadingCache<ExpressionManagerImpl, LoadingCache<String, BitVectorExpressionImpl>> constantCache = CacheBuilder
 			.newBuilder().build(
 					new CacheLoader<ExpressionManagerImpl, LoadingCache<String, BitVectorExpressionImpl>>() {
 						public LoadingCache<String, BitVectorExpressionImpl> load(
 								final ExpressionManagerImpl exprManager) {
-							return CacheBuilder.newBuilder().build(
-									new CacheLoader<String, BitVectorExpressionImpl>() {
+							return CacheBuilder.newBuilder()
+									.build(new CacheLoader<String, BitVectorExpressionImpl>() {
 										public BitVectorExpressionImpl load(String binaryRep) {
 											try {
 												return new BitVectorExpressionImpl(exprManager,
@@ -242,8 +242,8 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 		return mkUnary(exprManager, BV_EXTRACT, new UnaryConstructionStrategy() {
 			@Override
 			public Expr apply(ExprManager em, Expr arg) throws Exception {
-				return em.mkExpr(edu.nyu.acsys.CVC4.Kind.BITVECTOR_EXTRACT, em.mkConst(
-						new BitVectorExtract(high, low)), arg);
+				return em.mkExpr(edu.nyu.acsys.CVC4.Kind.BITVECTOR_EXTRACT,
+						em.mkConst(new BitVectorExtract(high, low)), arg);
 			}
 		}, arg, size);
 	}
@@ -401,8 +401,8 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 				new UnaryConstructionStrategy() {
 					@Override
 					public Expr apply(ExprManager em, Expr arg) {
-						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.BITVECTOR_SIGN_EXTEND, em
-								.mkConst(new BitVectorSignExtend(extend_size)), arg);
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.BITVECTOR_SIGN_EXTEND,
+								em.mkConst(new BitVectorSignExtend(extend_size)), arg);
 					}
 				}, arg, size);
 	}
@@ -422,8 +422,8 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 				new UnaryConstructionStrategy() {
 					@Override
 					public Expr apply(ExprManager em, Expr arg) {
-						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.BITVECTOR_ZERO_EXTEND, em
-								.mkConst(new BitVectorZeroExtend(extend_size)), arg);
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.BITVECTOR_ZERO_EXTEND,
+								em.mkConst(new BitVectorZeroExtend(extend_size)), arg);
 					}
 				}, arg, size);
 	}
@@ -803,8 +803,8 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 
 	@Override
 	public BitVectorExpressionImpl plus(Iterable<? extends Expression> args) {
-		return mkPlus(getExpressionManager(), Iterables.concat(Collections
-				.singletonList(this), args));
+		return mkPlus(getExpressionManager(),
+				Iterables.concat(Collections.singletonList(this), args));
 	}
 
 	@Override
@@ -819,8 +819,8 @@ final class BitVectorExpressionImpl extends ExpressionImpl implements
 
 	@Override
 	public BitVectorExpression times(Iterable<? extends Expression> args) {
-		return mkMult(getExpressionManager(), Iterables.concat(Collections
-				.singletonList(this), args));
+		return mkMult(getExpressionManager(),
+				Iterables.concat(Collections.singletonList(this), args));
 	}
 
 	@Override

@@ -16,8 +16,8 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
 
-class BoundVariableExpressionImpl extends ExpressionImpl implements
-		BoundExpression {
+class BoundVariableExpressionImpl extends ExpressionImpl
+		implements BoundExpression {
 	static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, Expr>> boundCache = CacheBuilder
 			.newBuilder().build(
 					new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, Expr>>() {
@@ -49,8 +49,8 @@ class BoundVariableExpressionImpl extends ExpressionImpl implements
 					if (type.isDatatype()) {
 						DatatypeType dtt = new DatatypeType(type);
 						String dtName = dtt.getDatatype().getName();
-						TheoremProverImpl.cvc4FileCommand("(declare-const ", bound, " "
-								+ dtName + ")");
+						TheoremProverImpl.cvc4FileCommand("(declare-const ", bound,
+								" " + dtName + ")");
 					} else {
 						TheoremProverImpl.cvc4FileCommand("(declare-const ", bound, type,
 								")");
@@ -69,8 +69,8 @@ class BoundVariableExpressionImpl extends ExpressionImpl implements
 			return (BoundVariableExpressionImpl) e;
 		} else if (e instanceof BoundExpression) {
 			BoundExpression e2 = (BoundExpression) e;
-			return new BoundVariableExpressionImpl(exprManager, e2.getName(), e2
-					.getType(), false);
+			return new BoundVariableExpressionImpl(exprManager, e2.getName(),
+					e2.getType(), false);
 		} else if (e instanceof ExpressionImpl && e.isBound()) {
 			ExpressionImpl ei = (ExpressionImpl) e;
 			assert (exprManager.equals(ei.getExpressionManager()));

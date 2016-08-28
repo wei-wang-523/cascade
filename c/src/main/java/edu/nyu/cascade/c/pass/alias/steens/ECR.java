@@ -62,8 +62,8 @@ public final class ECR extends UnionFind.Partition {
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder().append("(ECR ").append(id).append(
-				" : ").append(type).append(')');
+		StringBuilder sb = new StringBuilder().append("(ECR ").append(id)
+				.append(" : ").append(type).append(')');
 
 		return sb.toString();
 	}

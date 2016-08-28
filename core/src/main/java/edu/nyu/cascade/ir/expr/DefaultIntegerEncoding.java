@@ -10,9 +10,9 @@ import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.IntegerExpression;
 import edu.nyu.cascade.prover.type.Type;
 
-public class DefaultIntegerEncoding extends
-		AbstractTypeEncoding<IntegerExpression> implements
-		IntegerEncoding<IntegerExpression> {
+public class DefaultIntegerEncoding
+		extends AbstractTypeEncoding<IntegerExpression>
+		implements IntegerEncoding<IntegerExpression> {
 	private static final String UNKNOWN_VARIABLE_NAME = "int_encoding_unknown";
 
 	public DefaultIntegerEncoding(ExpressionManager exprManager) {
@@ -253,8 +253,9 @@ public class DefaultIntegerEncoding extends
 	@Override
 	public IntegerExpression rshift(IntegerExpression lhs,
 			IntegerExpression rhs) {
-		return ifThenElse(lhs.greaterThanOrEqual(zero()), lhs.divides(constant(2)
-				.pow(rhs)), uminus(lhs).divides(constant(2).pow(rhs)));
+		return ifThenElse(lhs.greaterThanOrEqual(zero()),
+				lhs.divides(constant(2).pow(rhs)),
+				uminus(lhs).divides(constant(2).pow(rhs)));
 	}
 
 	@Override

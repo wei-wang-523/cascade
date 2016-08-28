@@ -19,8 +19,8 @@ import edu.nyu.cascade.c.pass.alias.cfs.FunctionParamGraph;
 import edu.nyu.cascade.util.UnionFind;
 
 public class FunctionParamGraphTest {
-	private static final long PtrSize = CType.getInstance().getSize(new PointerT(
-			VoidT.TYPE));
+	private static final long PtrSize = CType.getInstance()
+			.getSize(new PointerT(VoidT.TYPE));
 
 	private FunctionParamGraph funcGraph;
 	private CellManager cellManager;

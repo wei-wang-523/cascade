@@ -13,8 +13,8 @@ typedef struct {
   idx_t *dataWriteEvidence;
 } buf_t;
 
-// steens-cfs treats unallocated b->dataWriteEvidence[j] and 
-// bufs[0]->dataWriteEvidence[1] as Bottom ECR and thus won't 
+// steens-cfs treats unallocated 'b->dataWriteEvidence[j]' and 
+// 'bufs[0]->dataWriteEvidence[1]' as Bottom ECR and thus won't 
 // merge them
 int main() {
 

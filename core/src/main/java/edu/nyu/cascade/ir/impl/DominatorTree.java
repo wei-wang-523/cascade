@@ -35,11 +35,11 @@ public class DominatorTree {
 		Collection<IRBasicBlock> seq = cfg.topologicalSeq(cfg.getEntry());
 		int size = seq.size();
 		List<IRBasicBlock> blocks = Lists.newArrayListWithExpectedSize(size);
-		Map<IRBasicBlock, Integer> blocksToIndex = Maps.newHashMapWithExpectedSize(
-				size);
+		Map<IRBasicBlock, Integer> blocksToIndex = Maps
+				.newHashMapWithExpectedSize(size);
 		int[] i_dom = new int[size];
-		List<Collection<Integer>> dominated = Lists.newArrayListWithExpectedSize(
-				size);
+		List<Collection<Integer>> dominated = Lists
+				.newArrayListWithExpectedSize(size);
 		for (IRBasicBlock block : seq) { // reverse order
 			blocks.add(0, block);
 			blocksToIndex.put(block, blocks.size() - 1);
@@ -55,11 +55,11 @@ public class DominatorTree {
 		Collection<IRBasicBlock> seq = cfg.topologicalSeq(startBlock);
 		int size = seq.size();
 		List<IRBasicBlock> blocks = Lists.newArrayListWithExpectedSize(size);
-		Map<IRBasicBlock, Integer> blocksToIndex = Maps.newHashMapWithExpectedSize(
-				size);
+		Map<IRBasicBlock, Integer> blocksToIndex = Maps
+				.newHashMapWithExpectedSize(size);
 		int[] i_dom = new int[size];
-		List<Collection<Integer>> dominated = Lists.newArrayListWithExpectedSize(
-				size);
+		List<Collection<Integer>> dominated = Lists
+				.newArrayListWithExpectedSize(size);
 		for (IRBasicBlock block : seq) { // reverse order
 			blocks.add(0, block);
 			blocksToIndex.put(block, blocks.size() - 1);
@@ -116,8 +116,8 @@ public class DominatorTree {
 	/** Get the set of blocks immediately dominated by the specified block */
 	public Collection<IRBasicBlock> getDominatedBlocks(IRBasicBlock block) {
 		int idx = blocksToIndex.get(block);
-		Collection<IRBasicBlock> resBlocks = Lists.newArrayListWithCapacity(
-				dominated.get(idx).size());
+		Collection<IRBasicBlock> resBlocks = Lists
+				.newArrayListWithCapacity(dominated.get(idx).size());
 		for (int domIdx : dominated.get(idx))
 			resBlocks.add(blocks.get(domIdx));
 		return resBlocks;

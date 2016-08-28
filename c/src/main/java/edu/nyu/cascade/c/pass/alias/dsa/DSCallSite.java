@@ -115,8 +115,8 @@ class DSCallSite {
 		Function CalleeF = FromCall.CalleeF;
 
 		int FromCallArgsSize = FromCall.CallArgs.size();
-		List<DSNodeHandle> CallArgs = Lists.newArrayListWithCapacity(
-				FromCallArgsSize);
+		List<DSNodeHandle> CallArgs = Lists
+				.newArrayListWithCapacity(FromCallArgsSize);
 		for (int i = 0; i < FromCallArgsSize; ++i) {
 			DSNodeHandle CallArg = new DSNodeHandle();
 			InitNHDSNodeHandle(CallArg, FromCall.CallArgs.get(i), NodeMap);
@@ -141,8 +141,8 @@ class DSCallSite {
 		Function CalleeF = FromCall.CalleeF;
 
 		int FromCallArgsSize = FromCall.CallArgs.size();
-		List<DSNodeHandle> CallArgs = Lists.newArrayListWithCapacity(
-				FromCallArgsSize);
+		List<DSNodeHandle> CallArgs = Lists
+				.newArrayListWithCapacity(FromCallArgsSize);
 		for (int i = 0; i < FromCallArgsSize; ++i) {
 			DSNodeHandle CallArg = new DSNodeHandle();
 			InitNHDSNodeHandle(CallArg, FromCall.CallArgs.get(i), NodeMap);

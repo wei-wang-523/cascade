@@ -96,8 +96,8 @@ class DSSupport {
 		StripAllocaBit(1 << 0), KeepAllocaBit(0), DontCloneCallNodes(
 				1 << 1), CloneCallNodes(0), DontCloneAuxCallNodes(
 						1 << 2), CloneAuxCallNodes(0), StripModRefBits(
-								1 << 3), KeepModRefBits(0), StripIncompleteBit(
-										1 << 4), KeepIncompleteBit(0);
+								1 << 3), KeepModRefBits(
+										0), StripIncompleteBit(1 << 4), KeepIncompleteBit(0);
 
 		private short value;
 
@@ -133,8 +133,8 @@ class DSSupport {
 		// This should have been enforced in the caller.
 		Preconditions.checkArgument(CurNodeH.getOffset() >= NH.getOffset());
 		// Cannot merge two nodes that are not in the same graph!
-		Preconditions.checkArgument(CurNodeH.getNode().getParentGraph() == NH
-				.getNode().getParentGraph());
+		Preconditions.checkArgument(
+				CurNodeH.getNode().getParentGraph() == NH.getNode().getParentGraph());
 
 		// Now we know that Offset >= NH.Offset, so convert it so our "Offset" (with
 		// respect to NH.Offset) is now zero. NOffset is the distance from the base
@@ -164,16 +164,16 @@ class DSSupport {
 		if (CurNodeH.getNode().isNodeCompletelyFolded()) {
 			if (!NH.getNode().isNodeCompletelyFolded()) {
 				NH.getNode().foldNodeCompletely();
-				assert NH.getNode() != null && NH
-						.getOffset() == 0 : "folding did not make offset 0?";
+				assert NH.getNode() != null
+						&& NH.getOffset() == 0 : "folding did not make offset 0?";
 				NOffset = NH.getOffset();
 				NSize = NH.getNode().getSize();
 				assert (NOffset == 0 && NSize == 1);
 			}
 		} else if (NH.getNode().isNodeCompletelyFolded()) {
 			CurNodeH.getNode().foldNodeCompletely();
-			assert CurNodeH.getNode() != null && CurNodeH
-					.getOffset() == 0 : "folding did not make offset 0?";
+			assert CurNodeH.getNode() != null
+					&& CurNodeH.getOffset() == 0 : "folding did not make offset 0?";
 			NSize = NH.getNode().getSize();
 			NOffset = NH.getOffset();
 			assert (NOffset == 0 && NSize == 1);
@@ -182,9 +182,9 @@ class DSSupport {
 		// FIXME:Add comments.
 		if (NH.getNode().isArrayNode() && !CurNodeH.getNode().isArrayNode()) {
 			if (NH.getNode().getSize() != 0 && CurNodeH.getNode().getSize() != 0) {
-				if ((NH.getNode().getSize() != CurNodeH.getNode().getSize() && (NH
-						.getOffset() != 0 || CurNodeH.getOffset() != 0) && NH.getNode()
-								.getSize() < CurNodeH.getNode().getSize())) {
+				if ((NH.getNode().getSize() != CurNodeH.getNode().getSize()
+						&& (NH.getOffset() != 0 || CurNodeH.getOffset() != 0)
+						&& NH.getNode().getSize() < CurNodeH.getNode().getSize())) {
 					CurNodeH.getNode().foldNodeCompletely();
 					NH.getNode().foldNodeCompletely();
 					NSize = NH.getNode().getSize();
@@ -195,9 +195,9 @@ class DSSupport {
 
 		if (!NH.getNode().isArrayNode() && CurNodeH.getNode().isArrayNode()) {
 			if (NH.getNode().getSize() != 0 && CurNodeH.getNode().getSize() != 0) {
-				if ((NH.getNode().getSize() != CurNodeH.getNode().getSize() && (NH
-						.getOffset() != 0 || CurNodeH.getOffset() != 0) && NH.getNode()
-								.getSize() > CurNodeH.getNode().getSize())) {
+				if ((NH.getNode().getSize() != CurNodeH.getNode().getSize()
+						&& (NH.getOffset() != 0 || CurNodeH.getOffset() != 0)
+						&& NH.getNode().getSize() > CurNodeH.getNode().getSize())) {
 					CurNodeH.getNode().foldNodeCompletely();
 					NH.getNode().foldNodeCompletely();
 					NSize = NH.getNode().getSize();

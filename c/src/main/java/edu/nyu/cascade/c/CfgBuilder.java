@@ -286,9 +286,9 @@ public class CfgBuilder extends Visitor {
 					Type rightType = CType.getType(node);
 
 					// Take care of braced string literals here.
-					if ((cop.isString(base) || cop.isWideString(base)) && (cop.isString(
-							rightType) || cop.isString(rightType)) && rightType
-									.hasConstant()) {
+					if ((cop.isString(base) || cop.isWideString(base))
+							&& (cop.isString(rightType) || cop.isString(rightType))
+							&& rightType.hasConstant()) {
 
 						long length = rightType.resolve().toArray().getLength();
 						String stringVal = ((StringReference) rightType.getShape())
@@ -348,13 +348,13 @@ public class CfgBuilder extends Visitor {
 						}
 							break;
 						case ARRAY: {
-							new Initializer(srcNode, id, initializer, element, element
-									.resolve().toArray().getType()).process(isStatic);
+							new Initializer(srcNode, id, initializer, element,
+									element.resolve().toArray().getType()).process(isStatic);
 						}
 							break;
 						default:
-							new Initializer(srcNode, id, initializer, element, null).process(
-									isStatic);
+							new Initializer(srcNode, id, initializer, element, null)
+									.process(isStatic);
 						}
 
 					} else {
@@ -426,17 +426,17 @@ public class CfgBuilder extends Visitor {
 				case INTEGER:
 				case FLOAT:
 				case POINTER: {
-					GNode initializer = GNode.create("IntegerConstant", String.valueOf(
-							0));
+					GNode initializer = GNode.create("IntegerConstant",
+							String.valueOf(0));
 					cop.typeInteger(String.valueOf(0)).mark(initializer);
 					symbolTable.mark(initializer);
-					new Initializer(srcNode, id, initializer, element, element).process(
-							isStatic);
+					new Initializer(srcNode, id, initializer, element, element)
+							.process(isStatic);
 				}
 					break;
 				case ARRAY: {
-					new Initializer(srcNode, id, null, element, element.resolve()
-							.toArray().getType()).process(isStatic);
+					new Initializer(srcNode, id, null, element,
+							element.resolve().toArray().getType()).process(isStatic);
 				}
 					break;
 				default:
@@ -519,8 +519,8 @@ public class CfgBuilder extends Visitor {
 				while (iter.hasNext()) {
 					final GNode designator = GNode.cast(iter.next());
 
-					if (designator.hasName("ObsoleteFieldDesignation") || ".".equals(
-							designator.getString(0))) {
+					if (designator.hasName("ObsoleteFieldDesignation")
+							|| ".".equals(designator.getString(0))) {
 						// A struct/union field.
 						if (!base.hasStructOrUnion()) {
 							return false;
@@ -544,16 +544,16 @@ public class CfgBuilder extends Visitor {
 
 						// Determine the index types.
 						final Type t1 = CType.getType(designator.getNode(1));
-						final Type t2 = (3 == designator.size()) ? CType.getType(designator
-								.getNode(2)) : null;
+						final Type t2 = (3 == designator.size())
+								? CType.getType(designator.getNode(2)) : null;
 
 						// Make sure that the indices are constant integers.
-						if ((!cop.isIntegral(t1)) || ((null != t2) && (!cop.isIntegral(
-								t2)))) {
+						if ((!cop.isIntegral(t1))
+								|| ((null != t2) && (!cop.isIntegral(t2)))) {
 							return false;
 
-						} else if ((!t1.hasConstant()) || ((null != t2) && (!t2
-								.hasConstant()))) {
+						} else if ((!t1.hasConstant())
+								|| ((null != t2) && (!t2.hasConstant()))) {
 							return false;
 
 						}
@@ -565,13 +565,13 @@ public class CfgBuilder extends Visitor {
 								: t2.getConstant().bigIntValue();
 
 						// Test: i1 < 0, i2 < 0
-						if ((i1.compareTo(BigInteger.ZERO) < 0) || ((null != i2) && (i2
-								.compareTo(BigInteger.ZERO) < 0))) {
+						if ((i1.compareTo(BigInteger.ZERO) < 0)
+								|| ((null != i2) && (i2.compareTo(BigInteger.ZERO) < 0))) {
 							return false;
 
 							// Test: i1 > ARRAY_MAX, i2 > ARRAY_MAX
-						} else if ((i1.compareTo(Limits.ARRAY_MAX) > 0) || ((null != i2)
-								&& (i2.compareTo(Limits.ARRAY_MAX) > 0))) {
+						} else if ((i1.compareTo(Limits.ARRAY_MAX) > 0)
+								|| ((null != i2) && (i2.compareTo(Limits.ARRAY_MAX) > 0))) {
 							return false;
 
 							// Test: i2 < i1
@@ -624,8 +624,8 @@ public class CfgBuilder extends Visitor {
 			}
 			case STRUCT:
 			case UNION: {
-				GNode id = GNode.create("DirectComponentSelection", identifier, element
-						.getName());
+				GNode id = GNode.create("DirectComponentSelection", identifier,
+						element.getName());
 				element.mark(id);
 				id.setLocation(srcNode.getLocation());
 				symbolTable.mark(id);
@@ -730,8 +730,8 @@ public class CfgBuilder extends Visitor {
 						buf.append(']');
 
 					} else if (state.base.hasStructOrUnion()) {
-						final VariableT m = state.base.toTagged().getMember(
-								(int) state.index).toVariable();
+						final VariableT m = state.base.toTagged()
+								.getMember((int) state.index).toVariable();
 						if (m.hasName()) {
 							buf.append('.');
 							buf.append(m.getName());
@@ -859,8 +859,8 @@ public class CfgBuilder extends Visitor {
 					final Type ptr1 = pt1.resolve();
 					final Type ptr2 = pt2.resolve();
 
-					if (cop.hasQualifiers(pt1, pt2) && (cop.equal(ptr1, ptr2) || ptr1
-							.isVoid() || ptr2.isVoid())) {
+					if (cop.hasQualifiers(pt1, pt2)
+							&& (cop.equal(ptr1, ptr2) || ptr1.isVoid() || ptr2.isVoid())) {
 						return true;
 					} else {
 						return true;
@@ -878,8 +878,8 @@ public class CfgBuilder extends Visitor {
 			}
 
 			default:
-				return (r1.isInternal() && r2.isInternal() && r1.toInternal().getName()
-						.equals(r2.toInternal().getName()));
+				return (r1.isInternal() && r2.isInternal()
+						&& r1.toInternal().getName().equals(r2.toInternal().getName()));
 			}
 		}
 	}
@@ -994,10 +994,10 @@ public class CfgBuilder extends Visitor {
 			currentCfg.addEdge(src, ifBranch, ifBlock);
 			currentCfg.addEdge(src, elseBranch, elseBlock);
 		} else {
-			BasicBlock sideEffectIfBlock = currentCfg.newBlock(symbolTable
-					.getCurrentScope());
-			BasicBlock sideEffectElseBlock = currentCfg.newBlock(symbolTable
-					.getCurrentScope());
+			BasicBlock sideEffectIfBlock = currentCfg
+					.newBlock(symbolTable.getCurrentScope());
+			BasicBlock sideEffectElseBlock = currentCfg
+					.newBlock(symbolTable.getCurrentScope());
 			sideEffectIfBlock.addStatements(appendStatements);
 			sideEffectElseBlock.addStatements(appendStatements);
 			currentCfg.addEdge(src, ifBranch, sideEffectIfBlock);
@@ -1014,8 +1014,8 @@ public class CfgBuilder extends Visitor {
 		if (sideEffectStmts.isEmpty()) {
 			currentCfg.addEdge(src, guard, labelStmt);
 		} else {
-			BasicBlock sideEffectBlock = currentCfg.newBlock(symbolTable
-					.getCurrentScope());
+			BasicBlock sideEffectBlock = currentCfg
+					.newBlock(symbolTable.getCurrentScope());
 			sideEffectBlock.addStatements(sideEffectStmts);
 			currentCfg.addEdge(src, guard, sideEffectBlock);
 			currentCfg.addEdge(sideEffectBlock, labelStmt);
@@ -1033,8 +1033,8 @@ public class CfgBuilder extends Visitor {
 		if (postStatements.isEmpty())
 			return;
 
-		debug().pln("flushing expression statement effects (size=" + postStatements
-				.size() + ") to block #" + first.getId()).flush();
+		debug().pln("flushing expression statement effects (size="
+				+ postStatements.size() + ") to block #" + first.getId()).flush();
 		first.addStatements(postStatements);
 		for (BasicBlock b : rest) {
 			debug().pln("flushing expression statement effects (size="
@@ -1243,8 +1243,8 @@ public class CfgBuilder extends Visitor {
 
 	private Node defineReturnVarNode(String funcName, Type retType,
 			Location loc) {
-		String varName = null == funcName ? Identifiers.uniquify(
-				Identifiers.RETURN_VAR_PREFIX)
+		String varName = null == funcName
+				? Identifiers.uniquify(Identifiers.RETURN_VAR_PREFIX)
 				: Identifiers.uniquify(Identifiers.RETURN_VAR_PREFIX + '_' + funcName);
 		Type varType = retType.annotate().shape(false, varName);
 		String scopeName = symbolTable.getCurrentScope().getQualifiedName();
@@ -1265,8 +1265,8 @@ public class CfgBuilder extends Visitor {
 	}
 
 	private Node defineVarArgNode(String funcName, Location loc, Type ty) {
-		String varName = null == funcName ? Identifiers.uniquify(
-				Identifiers.VAR_ARG_PREFIX)
+		String varName = null == funcName
+				? Identifiers.uniquify(Identifiers.VAR_ARG_PREFIX)
 				: Identifiers.uniquify(Identifiers.VAR_ARG_PREFIX + '_' + funcName);
 		Type varType = new ArrayT(ty).annotate().shape(false, varName);
 		String scopeName = symbolTable.getCurrentScope().getQualifiedName();
@@ -1295,8 +1295,8 @@ public class CfgBuilder extends Visitor {
 		stringVar.setLocation(stringConst.getLocation());
 		Type right = CType.getType(stringConst);
 		final ArrayT left = right.resolve().toArray().copy();
-		left.resolve().toArray().setLength(right.resolve().toArray().getLength()
-				+ 1);
+		left.resolve().toArray()
+				.setLength(right.resolve().toArray().getLength() + 1);
 		left.annotate().shape(false, varName).mark(stringVar);
 		String scopeName = symbolTable.getCurrentScope().getQualifiedName();
 		left.scope(scopeName);
@@ -1695,8 +1695,8 @@ public class CfgBuilder extends Visitor {
 		debug().pln("Looking up binding for variable: " + name + " in symbol table "
 				+ symbolTable);
 		assert (symbolTable.isDefined(name));
-		assert (symbolTable.getCurrentScope().equals(symbolTable.lookupScope(
-				name)));
+		assert (symbolTable.getCurrentScope()
+				.equals(symbolTable.lookupScope(name)));
 
 		IRVarInfo varInfo = symbolTable.lookup(name);
 		varInfo.setDeclarationNode(node);
@@ -1867,8 +1867,8 @@ public class CfgBuilder extends Visitor {
 			Type retType = ReservedFunction.getSignature(funcName).getReturnType();
 			Node returnNode = defineReturnVarNode(funcName, retType, loc);
 			CExpression returnExpr = recurseOnExpression(returnNode);
-			addStatement(Statement.calloc(node, returnExpr, argExprs.get(0), argExprs
-					.get(1)));
+			addStatement(
+					Statement.calloc(node, returnExpr, argExprs.get(0), argExprs.get(1)));
 			return returnExpr;
 		}
 
@@ -1886,8 +1886,8 @@ public class CfgBuilder extends Visitor {
 			return expressionOf(node);
 		}
 
-		if (ReservedFunction.EXIT.equals(funcName) || ReservedFunction.ABORT.equals(
-				funcName)) {
+		if (ReservedFunction.EXIT.equals(funcName)
+				|| ReservedFunction.ABORT.equals(funcName)) {
 			currentCfg.addEdge(currentBlock, globalCfg.getExit());
 			return expressionOf(node);
 		}
@@ -1919,11 +1919,11 @@ public class CfgBuilder extends Visitor {
 			return expressionOf(node);
 		}
 
-		if (ReservedFunction.MEMSET.equals(funcName) || ReservedFunction.MEMCOPY
-				.equals(funcName)) {
+		if (ReservedFunction.MEMSET.equals(funcName)
+				|| ReservedFunction.MEMCOPY.equals(funcName)) {
 			CExpression funExpr = expressionOf(funNode);
-			addStatement(Statement.functionCall(node, funExpr, argExprs.get(0),
-					argExprs));
+			addStatement(
+					Statement.functionCall(node, funExpr, argExprs.get(0), argExprs));
 			return argExprs.get(0);
 		}
 
@@ -1958,8 +1958,8 @@ public class CfgBuilder extends Visitor {
 		BasicBlock entryBlock = currentCfg.newLoopBlock(node.getLocation(),
 				symbolTable.getCurrentScope());
 		BasicBlock bodyBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
-		BasicBlock exitBlock = currentCfg.newLoopExitBlock(symbolTable
-				.getCurrentScope());
+		BasicBlock exitBlock = currentCfg
+				.newLoopExitBlock(symbolTable.getCurrentScope());
 
 		currentCfg.addEdge(currentBlock, entryBlock);
 
@@ -2021,8 +2021,8 @@ public class CfgBuilder extends Visitor {
 
 		recurseOnExpression(identifier);
 
-		currentCfg = new ControlFlowGraph(node, functionName, symbolTable
-				.getCurrentScope());
+		currentCfg = new ControlFlowGraph(node, functionName,
+				symbolTable.getCurrentScope());
 		updateCurrentBlock(currentCfg.getEntry());
 		addStatement(Statement.scopeEnt(node, currentCfg.getName()));
 
@@ -2044,8 +2044,8 @@ public class CfgBuilder extends Visitor {
 		appendStatements = Lists.newArrayList();
 		expressionDepth = 0;
 
-		GNode parameters = CAnalyzer.getFunctionDeclarator(declarator).getGeneric(
-				1);
+		GNode parameters = CAnalyzer.getFunctionDeclarator(declarator)
+				.getGeneric(1);
 		if (parameters != null) {
 			parameters = parameters.getGeneric(0);
 		}
@@ -2072,8 +2072,8 @@ public class CfgBuilder extends Visitor {
 		Type retType = symbolTable.lookupType(functionName).deannotate()
 				.toFunction().getResult();
 		if (!retType.isVoid()) {
-			Node retNode = defineReturnVarNode(functionName, retType, node
-					.getLocation());
+			Node retNode = defineReturnVarNode(functionName, retType,
+					node.getLocation());
 			returnExpr = expressionOf(retNode);
 		}
 
@@ -2118,8 +2118,8 @@ public class CfgBuilder extends Visitor {
 		String labelName = labelNode.getString(0);
 		Pair<String, ControlFlowGraph> key = Pair.of(labelName, currentCfg);
 		if (!labeledBlocks.containsKey(key)) {
-			BasicBlock labelStmt = currentCfg.newLabelBlock(symbolTable
-					.getCurrentScope());
+			BasicBlock labelStmt = currentCfg
+					.newLabelBlock(symbolTable.getCurrentScope());
 			labelStmt.addPreLabel(labelName);
 			labeledBlocks.put(key, labelStmt);
 		}
@@ -2253,8 +2253,8 @@ public class CfgBuilder extends Visitor {
 		boolean oldStaticEnv = staticEnv;
 		staticEnv = isStatic;
 
-		new Initializer(node, GNode.cast(varExpr.getSourceNode()), node.getGeneric(
-				4), varType).process(isStatic);
+		new Initializer(node, GNode.cast(varExpr.getSourceNode()),
+				node.getGeneric(4), varType).process(isStatic);
 
 		staticEnv = oldStaticEnv;
 	}
@@ -2280,8 +2280,8 @@ public class CfgBuilder extends Visitor {
 				labelStmt = labeledBlocks.get(key);
 				labelStmt.addLocation(IRLocations.ofLocation(node.getLocation()));
 			} else {
-				labelStmt = currentCfg.newLabelBlock(node.getLocation(), symbolTable
-						.getCurrentScope());
+				labelStmt = currentCfg.newLabelBlock(node.getLocation(),
+						symbolTable.getCurrentScope());
 				labelStmt.addPreLabel(labelName);
 				labeledBlocks.put(key, labelStmt);
 			}
@@ -2291,8 +2291,8 @@ public class CfgBuilder extends Visitor {
 			CExpression caseLabel = recurseOnExpression(label.getNode(0));
 			CaseGuard caseBranch = new CaseGuard(testExpr, caseLabel);
 			setCaseGuard(caseBranch);
-			labelStmt = currentCfg.newLabelBlock(node.getLocation(), symbolTable
-					.getCurrentScope());
+			labelStmt = currentCfg.newLabelBlock(node.getLocation(),
+					symbolTable.getCurrentScope());
 			buildCaseEdgeWithGuardSideEffect(currentBlock, caseBranch, labelStmt);
 
 			// register label stmt for close previous unclosed case
@@ -2300,15 +2300,15 @@ public class CfgBuilder extends Visitor {
 		} else if (label.hasName("DefaultLabel")) {
 			setHasDefault();
 			IRBooleanExpression guard = new DefaultCaseGuard(node, getCaseGuards());
-			labelStmt = currentCfg.newLabelBlock(node.getLocation(), symbolTable
-					.getCurrentScope());
+			labelStmt = currentCfg.newLabelBlock(node.getLocation(),
+					symbolTable.getCurrentScope());
 			buildCaseEdgeWithGuardSideEffect(currentBlock, guard, labelStmt);
 
 			// register label stmt for close previous unclosed case
 			registerLabelStmt(node, labelStmt);
 		} else {
-			labelStmt = currentCfg.newLabelBlock(node.getLocation(), symbolTable
-					.getCurrentScope());
+			labelStmt = currentCfg.newLabelBlock(node.getLocation(),
+					symbolTable.getCurrentScope());
 		}
 
 		updateCurrentBlock(labelStmt);
@@ -2438,8 +2438,8 @@ public class CfgBuilder extends Visitor {
 		CExpression opExpr = recurseOnExpression(opNode);
 		Node oneNode = GNode.create("IntegerConstant", "1");
 		Node decNode = GNode.create("AdditiveExpression", opNode, "-", oneNode);
-		Node assignNode = GNode.create("AssignmentExpression", opExpr
-				.getSourceNode(), "=", decNode);
+		Node assignNode = GNode.create("AssignmentExpression",
+				opExpr.getSourceNode(), "=", decNode);
 		oneNode.setLocation(loc);
 		cop.typeInteger("1").mark(oneNode);
 		symbolTable.mark(oneNode);
@@ -2450,8 +2450,8 @@ public class CfgBuilder extends Visitor {
 		type.mark(assignNode);
 		symbolTable.mark(assignNode);
 
-		Statement stmt = Statement.assign(assignNode, opExpr, CExpression.create(
-				decNode, opExpr.getScope()));
+		Statement stmt = Statement.assign(assignNode, opExpr,
+				CExpression.create(decNode, opExpr.getScope()));
 		if (expressionDepth == 0)
 			addStatement(stmt);
 		else
@@ -2475,8 +2475,8 @@ public class CfgBuilder extends Visitor {
 		CExpression opExpr = recurseOnExpression(opNode);
 		Node oneNode = GNode.create("IntegerConstant", "1");
 		Node incNode = GNode.create("AdditiveExpression", opNode, "+", oneNode);
-		Node assignNode = GNode.create("AssignmentExpression", opExpr
-				.getSourceNode(), "=", incNode);
+		Node assignNode = GNode.create("AssignmentExpression",
+				opExpr.getSourceNode(), "=", incNode);
 		oneNode.setLocation(loc);
 		cop.typeInteger("1").mark(oneNode);
 		symbolTable.mark(oneNode);
@@ -2487,8 +2487,8 @@ public class CfgBuilder extends Visitor {
 		type.mark(assignNode);
 		symbolTable.mark(assignNode);
 
-		Statement stmt = Statement.assign(assignNode, opExpr, CExpression.create(
-				incNode, opExpr.getScope()));
+		Statement stmt = Statement.assign(assignNode, opExpr,
+				CExpression.create(incNode, opExpr.getScope()));
 		if (expressionDepth == 0)
 			addStatement(stmt);
 		else
@@ -2512,8 +2512,8 @@ public class CfgBuilder extends Visitor {
 		CExpression opExpr = recurseOnExpression(opNode);
 		Node oneNode = GNode.create("IntegerConstant", "1");
 		Node decNode = GNode.create("AdditiveExpression", opNode, "-", oneNode);
-		Node assignNode = GNode.create("AssignmentExpression", opExpr
-				.getSourceNode(), "=", decNode);
+		Node assignNode = GNode.create("AssignmentExpression",
+				opExpr.getSourceNode(), "=", decNode);
 		oneNode.setLocation(loc);
 		cop.typeInteger("1").mark(oneNode);
 		symbolTable.mark(oneNode);
@@ -2524,8 +2524,8 @@ public class CfgBuilder extends Visitor {
 		type.mark(assignNode);
 		symbolTable.mark(assignNode);
 
-		addStatement(Statement.assign(assignNode, opExpr, CExpression.create(
-				decNode, opExpr.getScope())));
+		addStatement(Statement.assign(assignNode, opExpr,
+				CExpression.create(decNode, opExpr.getScope())));
 
 		return opExpr; // return the *prior value* of the operand
 	}
@@ -2545,8 +2545,8 @@ public class CfgBuilder extends Visitor {
 		CExpression opExpr = recurseOnExpression(opNode);
 		Node oneNode = GNode.create("IntegerConstant", "1");
 		Node incNode = GNode.create("AdditiveExpression", opNode, "+", oneNode);
-		Node assignNode = GNode.create("AssignmentExpression", opExpr
-				.getSourceNode(), "=", incNode);
+		Node assignNode = GNode.create("AssignmentExpression",
+				opExpr.getSourceNode(), "=", incNode);
 		oneNode.setLocation(loc);
 		cop.typeInteger("1").mark(oneNode);
 		symbolTable.mark(oneNode);
@@ -2557,8 +2557,8 @@ public class CfgBuilder extends Visitor {
 		type.mark(assignNode);
 		symbolTable.mark(assignNode);
 
-		addStatement(Statement.assign(assignNode, opExpr, CExpression.create(
-				incNode, opExpr.getScope())));
+		addStatement(Statement.assign(assignNode, opExpr,
+				CExpression.create(incNode, opExpr.getScope())));
 
 		return opExpr; // return the *prior value* of the operand
 	}
@@ -2744,8 +2744,8 @@ public class CfgBuilder extends Visitor {
 		cfgs.clear();
 
 		/* build global cfg for global statements */
-		currentCfg = new ControlFlowGraph(n, Identifiers.GLOBAL_CFG, symbolTable
-				.rootScope());
+		currentCfg = new ControlFlowGraph(n, Identifiers.GLOBAL_CFG,
+				symbolTable.rootScope());
 		globalCfg = currentCfg;
 
 		if (debugEnabled()) {
@@ -2800,11 +2800,11 @@ public class CfgBuilder extends Visitor {
 
 		BasicBlock entryBlock = currentCfg.newLoopBlock(node.getLocation(),
 				symbolTable.getCurrentScope());
-		BasicBlock bodyBlock = symbolTable.hasScope(body) ? currentCfg.newBlock(
-				symbolTable.getScope(body))
+		BasicBlock bodyBlock = symbolTable.hasScope(body)
+				? currentCfg.newBlock(symbolTable.getScope(body))
 				: currentCfg.newBlock(symbolTable.getCurrentScope());
-		BasicBlock exitBlock = currentCfg.newLoopExitBlock(symbolTable
-				.getCurrentScope());
+		BasicBlock exitBlock = currentCfg
+				.newLoopExitBlock(symbolTable.getCurrentScope());
 
 		pushScope(entryBlock, exitBlock);
 		currentCfg.addEdge(currentBlock, entryBlock);
@@ -2854,14 +2854,14 @@ public class CfgBuilder extends Visitor {
 		 */
 		enterScope(node);
 
-		BasicBlock initBlock = currentCfg.newLoopInitBlock(symbolTable
-				.getCurrentScope());
+		BasicBlock initBlock = currentCfg
+				.newLoopInitBlock(symbolTable.getCurrentScope());
 		BasicBlock entryBlock = currentCfg.newLoopBlock(node.getLocation(),
 				symbolTable.getCurrentScope());
 		BasicBlock bodyBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
 		BasicBlock incrBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
-		BasicBlock loopExitBlock = currentCfg.newLoopExitBlock(symbolTable
-				.getCurrentScope());
+		BasicBlock loopExitBlock = currentCfg
+				.newLoopExitBlock(symbolTable.getCurrentScope());
 		BasicBlock exitBlock = currentCfg.newBlock(symbolTable.getCurrentScope());
 
 		pushScope(initBlock, loopExitBlock);

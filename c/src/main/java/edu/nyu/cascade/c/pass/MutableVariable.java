@@ -31,8 +31,8 @@ public class MutableVariable extends MutableValue {
 	}
 
 	static MutableVariable get(String varName, String varScope) {
-		Preconditions.checkArgument(mutableCache.containsKey(Pair.of(varName,
-				varScope)));
+		Preconditions
+				.checkArgument(mutableCache.containsKey(Pair.of(varName, varScope)));
 		return mutableCache.get(Pair.of(varName, varScope));
 	}
 }

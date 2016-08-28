@@ -230,8 +230,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 					return;
 				IRBasicBlock srcBlock = edge.getSource();
 				IRTraceNode srcNode = traceFactory.getTraceNode(srcBlock);
-				IRTraceNode edgeNode = traceFactory.hasEncodeEdge(edge) ? traceFactory
-						.getTraceNode(edge) : traceFactory.create(edge);
+				IRTraceNode edgeNode = traceFactory.hasEncodeEdge(edge)
+						? traceFactory.getTraceNode(edge) : traceFactory.create(edge);
 				srcNode.addSuccessor(edgeNode);
 			}
 
@@ -266,17 +266,17 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 							.simplify().asBooleanExpression();
 					Expression sizeZero = stateFactory.getDataFormatter().getSizeZero();
 
-					BooleanExpression queryIsZero = assumption.implies(memTracker.eq(
-							sizeZero));
+					BooleanExpression queryIsZero = assumption
+							.implies(memTracker.eq(sizeZero));
 					ValidityResult<?> isZero = pathEncoding.checkAssertion(queryIsZero);
 					if (isZero.isValid())
 						return; // No memory leak
 
 					runIsValid = SafeResult.valueOf(isZero);
-					BooleanExpression queryIsPositive = assumption.implies(exprManager
-							.signedGreaterThanOrEqual(memTracker, sizeZero));
-					ValidityResult<?> isPositive = pathEncoding.checkAssertion(
-							queryIsPositive);
+					BooleanExpression queryIsPositive = assumption.implies(
+							exprManager.signedGreaterThanOrEqual(memTracker, sizeZero));
+					ValidityResult<?> isPositive = pathEncoding
+							.checkAssertion(queryIsPositive);
 
 					if (isPositive.isValid()) { // Memory Leak
 						runIsValid.setFailReason(Identifiers.VALID_MEMORY_TRACE);
@@ -290,8 +290,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 				if (memory_no_leak.equals(exprManager.tt()))
 					return;
 
-				BooleanExpression query = stateFactory.stateToBoolean(state).implies(
-						memory_no_leak);
+				BooleanExpression query = stateFactory.stateToBoolean(state)
+						.implies(memory_no_leak);
 				boolean succeed = checkAssertion(query, Identifiers.VALID_MEMORY_TRACE);
 
 				if (succeed)
@@ -353,8 +353,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 				IOUtils.debugStream().println("Encoding: " + edge);
 				IRBasicBlock srcBlock = edge.getSource();
 				IRTraceNode srcNode = traceFactory.getTraceNode(srcBlock);
-				IRTraceNode edgeNode = traceFactory.hasEncodeEdge(edge) ? traceFactory
-						.getTraceNode(edge) : traceFactory.create(edge);
+				IRTraceNode edgeNode = traceFactory.hasEncodeEdge(edge)
+						? traceFactory.getTraceNode(edge) : traceFactory.create(edge);
 				srcNode.addSuccessor(edgeNode);
 			}
 
@@ -406,16 +406,16 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 	@Override
 	public Pair<Boolean, StateExpression> encodeEdge(TraceFactory factory,
 			IREdge<?> edge, StateExpression preState) throws PathFactoryException {
-		StateExpression preStateClone = pathEncoding.getStateFactory().copy(
-				preState);
+		StateExpression preStateClone = pathEncoding.getStateFactory()
+				.copy(preState);
 		if (edge.getGuard() == null)
 			return Pair.of(true, preStateClone);
 
-		IRStatement assumeStmt = Statement.assumeStmt(edge.getSourceNode(), edge
-				.getGuard(), true);
+		IRStatement assumeStmt = Statement.assumeStmt(edge.getSourceNode(),
+				edge.getGuard(), true);
 		StateExpression currState = encodeStatement(assumeStmt, preStateClone);
-		attachTraceExprToEdge(factory, edge, assumeStmt, pathEncoding
-				.getTraceExpression(), pathEncoding.isEdgeNegated());
+		attachTraceExprToEdge(factory, edge, assumeStmt,
+				pathEncoding.getTraceExpression(), pathEncoding.isEdgeNegated());
 
 		if (!runIsValid.isSafe())
 			return Pair.of(false, currState);
@@ -440,8 +440,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 		StateExpression currState = preState;
 		for (IRStatement stmt : block.getStatements()) {
 			currState = encodeStatement(stmt, currState);
-			attachTraceExprToBlock(factory, block, stmt, pathEncoding
-					.getTraceExpression());
+			attachTraceExprToBlock(factory, block, stmt,
+					pathEncoding.getTraceExpression());
 		}
 		return Pair.of(true, currState);
 	}
@@ -456,8 +456,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 		StateExpression currState = preState;
 		for (IRStatement stmt : block.getStatements()) {
 			currState = encodeStatement(stmt, currState);
-			attachTraceExprToBlock(factory, block, stmt, pathEncoding
-					.getTraceExpression());
+			attachTraceExprToBlock(factory, block, stmt,
+					pathEncoding.getTraceExpression());
 
 			if (!runIsValid.isSafe())
 				return Pair.of(false, currState);
@@ -465,8 +465,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 			if (stmt.getType().equals(StatementType.ASSERT)) {
 				ExpressionEncoder encoder = pathEncoding.getExpressionEncoder();
 				Expression pre = stmt.getPreCondition(currState, encoder);
-				BooleanExpression query = pathEncoding.getStateFactory().stateToBoolean(
-						currState).implies(pre);
+				BooleanExpression query = pathEncoding.getStateFactory()
+						.stateToBoolean(currState).implies(pre);
 
 				boolean succeed = checkAssertion(query, stmt.toString());
 				if (succeed)
@@ -490,8 +490,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 			for (Expression assump : ImmutableSet.copyOf(keepUnrollMap.keySet())) {
 				Collection<? extends IREdge<? extends IRBasicBlock>> edges = keepUnrollMap
 						.remove(assump);
-				IOUtils.err().println("Checking keep unrolling at exit edges: "
-						+ edges);
+				IOUtils.err()
+						.println("Checking keep unrolling at exit edges: " + edges);
 				SatResult<?> sat = tp.checkSat(assump);
 				if (!sat.isUnsatisfiable())
 					return true;
@@ -512,8 +512,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 			for (Expression assump : ImmutableSet.copyOf(exitUnrollMap.keySet())) {
 				Collection<? extends IREdge<? extends IRBasicBlock>> edges = exitUnrollMap
 						.remove(assump);
-				IOUtils.err().println("Checking exit unrolling at loop exit edges: "
-						+ edges);
+				IOUtils.err()
+						.println("Checking exit unrolling at loop exit edges: " + edges);
 				ValidityResult<?> valid = tp.checkValidity(assump);
 				if (!valid.isValid())
 					return true;
@@ -558,8 +558,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 				}
 
 				/* Resolve the phi-node to get the pre-state of current block */
-				Pair<Boolean, T> preStatePair = getMergedPreState(cfg.getIncomingEdges(
-						block), edgeSrcStateMap, mergeStrategy);
+				Pair<Boolean, T> preStatePair = getMergedPreState(
+						cfg.getIncomingEdges(block), edgeSrcStateMap, mergeStrategy);
 				if (!preStatePair.fst())
 					return false;
 				preState = preStatePair.snd();
@@ -567,8 +567,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 
 			Collection<? extends IREdge<? extends IRBasicBlock>> succEdges;
 
-			boolean isNestLoopHeader = block != loop.getHeader() && block == loopInfo
-					.getInnerLoopMap().get(block).getHeader();
+			boolean isNestLoopHeader = block != loop.getHeader()
+					&& block == loopInfo.getInnerLoopMap().get(block).getHeader();
 
 			if (isNestLoopHeader) { // nested loop header, recursive call
 				Loop nestLoop = loopInfo.getInnerLoopMap().get(block);
@@ -605,8 +605,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 				succEdges = cfg.getOutgoingEdges(block);
 				for (IREdge<?> succEdge : succEdges) {
 					traceEncodeStrategy.encode(succEdge);
-					Pair<Boolean, T> edgeStateAndQueryResult = edgeStrategy.apply(
-							succEdge, state);
+					Pair<Boolean, T> edgeStateAndQueryResult = edgeStrategy
+							.apply(succEdge, state);
 					boolean edgeFuncQueryResult = edgeStateAndQueryResult.fst();
 					if (!edgeFuncQueryResult)
 						return edgeFuncQueryResult;
@@ -707,8 +707,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 		}
 
 		// To merge exit-states of every round of loop unrolling
-		Map<IREdge<?>, T> exitEdgeSrcStateMap = merger.getExitEdgeStateMap(
-				mergeStrategy);
+		Map<IREdge<?>, T> exitEdgeSrcStateMap = merger
+				.getExitEdgeStateMap(mergeStrategy);
 		edgeSrcStateMap.putAll(exitEdgeSrcStateMap);
 
 		countDownLatch.reset();
@@ -739,8 +739,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 				preState = initState;
 			} else {
 				/* Resolve the phi-node to get the pre-state of current block */
-				Pair<Boolean, T> preStatePair = getMergedPreState(cfg.getIncomingEdges(
-						block), edgeSrcStateMap, mergeStrategy);
+				Pair<Boolean, T> preStatePair = getMergedPreState(
+						cfg.getIncomingEdges(block), edgeSrcStateMap, mergeStrategy);
 				if (!preStatePair.fst())
 					return;
 				preState = preStatePair.snd();
@@ -781,8 +781,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 
 				for (IREdge<?> succEdge : succEdges) {
 					traceEncodeStrategy.encode(succEdge);
-					Pair<Boolean, T> edgeStateAndQueryResult = edgeStrategy.apply(
-							succEdge, state);
+					Pair<Boolean, T> edgeStateAndQueryResult = edgeStrategy
+							.apply(succEdge, state);
 					boolean edgeFuncQueryResult = edgeStateAndQueryResult.fst();
 					if (!edgeFuncQueryResult)
 						return;
@@ -866,25 +866,25 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 		case DECLARE:
 			return pathEncoding.declare(prefix, stmt.getOperand(0));
 		case DECLARE_ARRAY:
-			return pathEncoding.declareArray(prefix, stmt.getOperand(0), stmt
-					.getOperand(1));
+			return pathEncoding.declareArray(prefix, stmt.getOperand(0),
+					stmt.getOperand(1));
 		case INIT:
 			return pathEncoding.init(prefix, stmt.getOperand(0), stmt.getOperand(1));
 		case ASSIGN:
-			return pathEncoding.assign(prefix, stmt.getOperand(0), stmt.getOperand(
-					1));
+			return pathEncoding.assign(prefix, stmt.getOperand(0),
+					stmt.getOperand(1));
 		case ASSUME:
-			return pathEncoding.assume(prefix, stmt.getOperand(0), (Boolean) stmt
-					.getProperty(Identifiers.GUARD));
+			return pathEncoding.assume(prefix, stmt.getOperand(0),
+					(Boolean) stmt.getProperty(Identifiers.GUARD));
 		case MALLOC:
-			return pathEncoding.malloc(prefix, stmt.getOperand(0), stmt.getOperand(
-					1));
+			return pathEncoding.malloc(prefix, stmt.getOperand(0),
+					stmt.getOperand(1));
 		case CALLOC:
 			return pathEncoding.calloc(prefix, stmt.getOperand(0), stmt.getOperand(1),
 					stmt.getOperand(2));
 		case ALLOCA:
-			return pathEncoding.alloca(prefix, stmt.getOperand(0), stmt.getOperand(
-					1));
+			return pathEncoding.alloca(prefix, stmt.getOperand(0),
+					stmt.getOperand(1));
 		case FREE:
 			return pathEncoding.free(prefix, stmt.getOperand(0));
 		case HAVOC:
@@ -908,9 +908,9 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 		}
 		case SKIP:
 		default:
-			IOUtils.debug().pln(
-					"Statement.getPostCondition: Ignoring statement type: " + stmt
-							.getType());
+			IOUtils.debug()
+					.pln("Statement.getPostCondition: Ignoring statement type: "
+							+ stmt.getType());
 		}
 
 		return pathEncoding.noop(prefix);
@@ -1002,8 +1002,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 			final Map<IREdge<?>, T> edgeSrcStateMap,
 			PhiNodeResolveStrategy<T> mergeStrategy) {
 
-		Collection<T> preStates = Lists.newArrayListWithExpectedSize(Iterables.size(
-				incomingEdges));
+		Collection<T> preStates = Lists
+				.newArrayListWithExpectedSize(Iterables.size(incomingEdges));
 
 		for (IREdge<? extends IRBasicBlock> incoming : incomingEdges) {
 			if (!edgeSrcStateMap.containsKey(incoming))
@@ -1029,16 +1029,16 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 		StateFactory<?> stateFactory = pathEncoding.getStateFactory();
 		for (IREdge<? extends IRBasicBlock> exitEdge : exitEdges) {
 			assert (edgeSrcStateMap.containsKey(exitEdge));
-			StateExpression srcState = (StateExpression) edgeSrcStateMap.get(
-					exitEdge);
+			StateExpression srcState = (StateExpression) edgeSrcStateMap
+					.get(exitEdge);
 			Expression loopExitGuard = exitEdge.getGuard().toBoolean(srcState,
 					encoder);
 			BooleanExpression exitUnrollAssump = stateFactory.stateToBoolean(srcState)
 					.implies(loopExitGuard);
 			builder.add(exitUnrollAssump);
 		}
-		Expression exitUnroll = pathEncoding.getExpressionEncoding().or(builder
-				.build());
+		Expression exitUnroll = pathEncoding.getExpressionEncoding()
+				.or(builder.build());
 		exitUnrollMap.put(exitUnroll, exitEdges);
 	}
 
@@ -1050,8 +1050,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 		StateFactory<?> stateFactory = pathEncoding.getStateFactory();
 		for (IREdge<?> exitEdge : exitEdges) {
 			assert (edgeSrcStateMap.containsKey(exitEdge));
-			StateExpression srcState = (StateExpression) edgeSrcStateMap.get(
-					exitEdge);
+			StateExpression srcState = (StateExpression) edgeSrcStateMap
+					.get(exitEdge);
 			Expression loopExitGuard = exitEdge.getGuard().toBoolean(srcState,
 					encoder);
 			BooleanExpression unrollAssump = stateFactory.stateToBoolean(srcState)
@@ -1059,8 +1059,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 			builder.add(unrollAssump.not());
 		}
 
-		Expression keepUnroll = pathEncoding.getExpressionEncoding().or(builder
-				.build());
+		Expression keepUnroll = pathEncoding.getExpressionEncoding()
+				.or(builder.build());
 		keepUnrollMap.put(keepUnroll, exitEdges);
 	}
 
@@ -1166,8 +1166,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 				preState = initState;
 			} else {
 				/* Resolve the phi-node to get the pre-state of current block */
-				Pair<Boolean, T> preStatePair = getMergedPreState(cfg.getIncomingEdges(
-						block), edgeSrcStateMap, mergeStrategy);
+				Pair<Boolean, T> preStatePair = getMergedPreState(
+						cfg.getIncomingEdges(block), edgeSrcStateMap, mergeStrategy);
 				if (!preStatePair.fst())
 					return;
 				preState = preStatePair.snd();
@@ -1211,8 +1211,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 
 				for (IREdge<?> succEdge : succEdges) {
 					traceEncodeStrategy.encode(succEdge);
-					Pair<Boolean, T> edgeStateAndQueryResult = edgeStrategy.apply(
-							succEdge, state);
+					Pair<Boolean, T> edgeStateAndQueryResult = edgeStrategy
+							.apply(succEdge, state);
 					boolean edgeFuncQueryResult = edgeStateAndQueryResult.fst();
 					if (!edgeFuncQueryResult)
 						return;
@@ -1254,8 +1254,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 										edgeSrcStateMap.remove(edge);
 										return true;
 									} else {
-										return edgeSrcStateMap.containsKey(edge) || filteredEdges
-												.contains(edge);
+										return edgeSrcStateMap.containsKey(edge)
+												|| filteredEdges.contains(edge);
 									}
 								}
 							});
@@ -1271,8 +1271,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 							new Predicate<IREdge<?>>() {
 								@Override
 								public boolean apply(IREdge<?> edge) {
-									return edgeSrcStateMap.containsKey(edge) || filteredEdges
-											.contains(edge);
+									return edgeSrcStateMap.containsKey(edge)
+											|| filteredEdges.contains(edge);
 								}
 							});
 
@@ -1324,8 +1324,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 				}
 
 				/* Resolve the phi-node to get the pre-state of current block */
-				Pair<Boolean, T> preStatePair = getMergedPreState(cfg.getIncomingEdges(
-						block), edgeSrcStateMap, mergeStrategy);
+				Pair<Boolean, T> preStatePair = getMergedPreState(
+						cfg.getIncomingEdges(block), edgeSrcStateMap, mergeStrategy);
 				if (!preStatePair.fst())
 					return false;
 				preState = preStatePair.snd();
@@ -1333,8 +1333,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 
 			Collection<IREdge<?>> succEdges = Lists.newArrayList();
 
-			boolean isNestLoopHeader = block != loop.getHeader() && block == loopInfo
-					.getInnerLoopMap().get(block).getHeader();
+			boolean isNestLoopHeader = block != loop.getHeader()
+					&& block == loopInfo.getInnerLoopMap().get(block).getHeader();
 
 			if (isNestLoopHeader) { // nested loop header, recursive call
 				Loop nestLoop = loopInfo.getInnerLoopMap().get(block);
@@ -1377,15 +1377,15 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 					traceEncodeStrategy.encode(succEdge);
 
 					if (loop.getExitEdges().contains(succEdge)) {
-						Pair<Boolean, T> edgeStateAndQueryResult = edgeStrategy.apply(
-								succEdge, state);
+						Pair<Boolean, T> edgeStateAndQueryResult = edgeStrategy
+								.apply(succEdge, state);
 						boolean edgeFuncQueryResult = edgeStateAndQueryResult.fst();
 						if (!edgeFuncQueryResult)
 							return edgeFuncQueryResult;
 						merger.saveExitEdgeState(succEdge, edgeStateAndQueryResult.snd());
 					} else {
-						Pair<Boolean, T> edgeStateAndQueryResult = edgeStrategy.apply(
-								succEdge, state);
+						Pair<Boolean, T> edgeStateAndQueryResult = edgeStrategy
+								.apply(succEdge, state);
 						boolean edgeFuncQueryResult = edgeStateAndQueryResult.fst();
 						if (!edgeFuncQueryResult)
 							return edgeFuncQueryResult;
@@ -1477,8 +1477,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 								new Predicate<IREdge<?>>() {
 									@Override
 									public boolean apply(IREdge<?> edge) {
-										return edgeSrcStateMap.containsKey(edge) || loopFilterEdges
-												.contains(edge);
+										return edgeSrcStateMap.containsKey(edge)
+												|| loopFilterEdges.contains(edge);
 									}
 								});
 
@@ -1490,8 +1490,8 @@ public class StmtBasedFormulaEncoder implements FormulaEncoder {
 		}
 
 		// To merge exit-states of every round of loop unrolling
-		Map<IREdge<?>, T> exitEdgeSrcStateMap = merger.getExitEdgeStateMap(
-				mergeStrategy);
+		Map<IREdge<?>, T> exitEdgeSrcStateMap = merger
+				.getExitEdgeStateMap(mergeStrategy);
 		edgeSrcStateMap.putAll(exitEdgeSrcStateMap);
 
 		for (IREdge<?> exitEdge : loop.getExitEdges()) {

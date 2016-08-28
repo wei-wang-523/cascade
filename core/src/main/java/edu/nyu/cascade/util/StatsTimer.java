@@ -88,8 +88,8 @@ public class StatsTimer {
 		StringBuilder sb = new StringBuilder();
 
 		for (Entry<String, StopWatch> entry : statsMap.entrySet()) {
-			sb.append(entry.getKey()).append(' ').append(entry.getValue().getTime()
-					/ 1000.0).append('s').append('\n');
+			sb.append(entry.getKey()).append(' ')
+					.append(entry.getValue().getTime() / 1000.0).append('s').append('\n');
 		}
 		return sb.toString();
 	}

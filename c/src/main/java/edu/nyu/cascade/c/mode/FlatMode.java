@@ -39,9 +39,10 @@ public class FlatMode extends AbstractMode {
 		IRDataFormatter formatter = getFormatter(encoding);
 
 		if (Preferences.isSet(Preferences.OPTION_LAMBDA)) {
-			IRMemSafetyEncoding memSafetyEncoding = Preferences.isSet(
-					Preferences.OPTION_STMT) ? AbstractStmtMemSafetyEncoding.getInstance(
-							encoding, formatter, strategy)
+			IRMemSafetyEncoding memSafetyEncoding = Preferences
+					.isSet(Preferences.OPTION_STMT)
+							? AbstractStmtMemSafetyEncoding.getInstance(encoding, formatter,
+									strategy)
 							: AbstractMemSafetyEncoding.getInstance(encoding, formatter,
 									strategy);
 
@@ -55,8 +56,8 @@ public class FlatMode extends AbstractMode {
 		}
 
 		if (Preferences.isSet(Preferences.OPTION_HOARE)) {
-			stateFactory = HoareStateFactory.create(
-					(AbstractStateFactory<?>) stateFactory);
+			stateFactory = HoareStateFactory
+					.create((AbstractStateFactory<?>) stateFactory);
 		}
 	}
 

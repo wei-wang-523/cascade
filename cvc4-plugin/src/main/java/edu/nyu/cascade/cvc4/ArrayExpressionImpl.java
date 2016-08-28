@@ -14,13 +14,13 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.ArrayType;
 import edu.nyu.cascade.prover.type.Type;
 
-final class ArrayExpressionImpl extends ExpressionImpl implements
-		ArrayExpression {
+final class ArrayExpressionImpl extends ExpressionImpl
+		implements ArrayExpression {
 
 	static ArrayExpressionImpl mkStoreAll(ExpressionManagerImpl exprManager,
 			Expression expr, Type arrayType) {
-		Preconditions.checkArgument(expr.getType().equals(arrayType.asArrayType()
-				.getElementType()));
+		Preconditions.checkArgument(
+				expr.getType().equals(arrayType.asArrayType().getElementType()));
 		return new ArrayExpressionImpl(exprManager, ARRAY_STORE_ALL,
 				new ArrayStoreAllConstructionStrategy() {
 					@Override
@@ -34,10 +34,10 @@ final class ArrayExpressionImpl extends ExpressionImpl implements
 	static ArrayExpressionImpl mkUpdate(ExpressionManagerImpl exprManager,
 			Expression array, Expression index, Expression value) {
 		Preconditions.checkArgument(array.isArray());
-		Preconditions.checkArgument(array.asArray().getIndexType().equals(index
-				.getType()));
-		Preconditions.checkArgument(array.asArray().getElementType().equals(value
-				.getType()));
+		Preconditions
+				.checkArgument(array.asArray().getIndexType().equals(index.getType()));
+		Preconditions.checkArgument(
+				array.asArray().getElementType().equals(value.getType()));
 		return new ArrayExpressionImpl(exprManager, ARRAY_UPDATE,
 				new TernaryConstructionStrategy() {
 					@Override

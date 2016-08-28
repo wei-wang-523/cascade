@@ -10,8 +10,8 @@ char *fb_realpath(char *resolved)
   else
     rootd = 0;
 
-  // steens-cfs treats resolved as Bottom ECR and won't merge 
-  // *dest and resolved[0], resolved[1]
+  // steens-cfs treats 'resolved' as Bottom ECR and won't merge 
+  // '*dest', 'resolved[0]', 'resolved[1]'
   char *dest = resolved;
   char *src = wbuf;
   char *ret;

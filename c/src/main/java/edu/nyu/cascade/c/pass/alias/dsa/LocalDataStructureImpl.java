@@ -32,6 +32,7 @@ import xtc.Constants;
 import xtc.tree.GNode;
 import xtc.tree.Node;
 import xtc.tree.Visitor;
+import xtc.type.FunctionT;
 import xtc.type.PointerT;
 import xtc.type.StaticReference;
 import xtc.type.Type;
@@ -110,9 +111,10 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			G.maskIncompleteMarkers();
 			G.markIncompleteNodes(DSSupport.MarkIncompleteFlags.MarkFormalArgs.value()
 					| DSSupport.MarkIncompleteFlags.IgnoreGlobals.value());
-			cloneIntoGlobals(G, DSSupport.CloneFlags.DontCloneCallNodes.value()
-					| DSSupport.CloneFlags.DontCloneAuxCallNodes.value()
-					| DSSupport.CloneFlags.StripAllocaBit.value());
+			cloneIntoGlobals(G,
+					DSSupport.CloneFlags.DontCloneCallNodes.value()
+							| DSSupport.CloneFlags.DontCloneAuxCallNodes.value()
+							| DSSupport.CloneFlags.StripAllocaBit.value());
 
 			formGlobalECs();
 		}
@@ -124,11 +126,9 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				DSSupport.ComputeExternalFlags.ProcessCallSites.value());
 
 		// Now that we've computed all of the graphs, and merged all of the info
-		// into
-		// the globals graph, see if we have further constrained the globals in the
-		// program if so, update GlobalECs and remove the extraneous globals from
-		// the
-		// program.
+		// into the globals graph, see if we have further constrained the globals
+		// in the program if so, update GlobalECs and remove the extraneous globals
+		// from the program.
 		formGlobalECs();
 
 		propagateUnknownFlag(GlobalsGraph);
@@ -140,8 +140,9 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			Graph.maskIncompleteMarkers();
 			cloneGlobalsInto(Graph, DSSupport.CloneFlags.DontCloneCallNodes.value()
 					| DSSupport.CloneFlags.DontCloneAuxCallNodes.value());
-			Graph.markIncompleteNodes(DSSupport.MarkIncompleteFlags.MarkFormalArgs
-					.value() | DSSupport.MarkIncompleteFlags.IgnoreGlobals.value());
+			Graph.markIncompleteNodes(
+					DSSupport.MarkIncompleteFlags.MarkFormalArgs.value()
+							| DSSupport.MarkIncompleteFlags.IgnoreGlobals.value());
 		}
 		return false;
 	}
@@ -221,8 +222,8 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 
 			// Determine the offset (in bytes) between the result of the GEP and the
 			// GEP's pointer operand.
-			long requiredSize = CType.getInstance().getSize(StructTy) + NodeH
-					.getOffset();
+			long requiredSize = CType.getInstance().getSize(StructTy)
+					+ NodeH.getOffset();
 
 			// Grow the DSNode size as needed.
 			if (!NodeH.getNode().isArrayNode() || NodeH.getNode().getSize() <= 0) {
@@ -234,8 +235,8 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			long offset = CType.getInstance().getOffset(StructTy, FieldName);
 
 			// Add in the offset calculated...
-			DSNodeHandle FieldNodeH = new DSNodeHandle(NodeH.getNode(), NodeH
-					.getOffset() + offset);
+			DSNodeHandle FieldNodeH = new DSNodeHandle(NodeH.getNode(),
+					NodeH.getOffset() + offset);
 
 			// Check the offset
 			DSNode N = FieldNodeH.getNode();
@@ -278,8 +279,8 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			DSNodeHandle NodeH = new DSNodeHandle();
 			NodeH.mergeWith(ptrNH);
 
-			if (idxTy.hasConstant() && ptrNH.getOffset() == 0 && !ptrNH.getNode()
-					.isArrayNode()) {
+			if (idxTy.hasConstant() && ptrNH.getOffset() == 0
+					&& !ptrNH.getNode().isArrayNode()) {
 				long offset = isPlus ? idxTy.getConstant().longValue()
 						: -idxTy.getConstant().longValue();
 				// Grow the DSNode size as needed.
@@ -419,8 +420,8 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 
 			@Override
 			public Object unableToVisit(Node node) {
-				IOUtils.err().println("APPROX: Treating unexpected node type as NULL: "
-						+ node.getName());
+				IOUtils.err().println(
+						"APPROX: Treating unexpected node type as NULL: " + node.getName());
 				return null;
 			}
 
@@ -501,8 +502,7 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 
 				// There are a few quick and easy cases to handle. If the DSNode of the
 				// indexed pointer is already folded, then we know that the result of
-				// the
-				// GEP will have the same offset into the same DSNode
+				// the GEP will have the same offset into the same DSNode
 				// as the indexed pointer.
 				if (!NodeH.isNull() && NodeH.getNode().isNodeCompletelyFolded()) {
 					return NodeH;
@@ -531,12 +531,12 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				rhsTy = CType.getInstance().pointerize(rhsTy);
 
 				if (lhsTy.isPointer()) {
-					return getElemPtr(node.getNode(0), node.getNode(2), node.getString(
-							1));
+					return getElemPtr(node.getNode(0), node.getNode(2),
+							node.getString(1));
 				} else {
 					assert rhsTy.isPointer();
-					return getElemPtr(node.getNode(2), node.getNode(0), node.getString(
-							1));
+					return getElemPtr(node.getNode(2), node.getNode(0),
+							node.getString(1));
 				}
 			}
 		}
@@ -548,8 +548,8 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 
 			@Override
 			public Object unableToVisit(Node node) {
-				IOUtils.err().println("APPROX: Treating unexpected node type as NULL: "
-						+ node.getName());
+				IOUtils.err().println(
+						"APPROX: Treating unexpected node type as NULL: " + node.getName());
 				return null;
 			}
 
@@ -874,16 +874,16 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			String FuncID = CFG.getName();
 			IRVarInfo FuncVarInfo = SymbolTable.lookup(FuncID);
 			FB = (Function) ValueManager.get(FuncID, FuncVarInfo.getXtcType());
-			VAArray = null;
 
-			IOUtils.debug().pln("[local] Building graph for function: " + FB
-					.getName());
+			IOUtils.debug()
+					.pln("[local] Building graph for function: " + FB.getName());
 
-			// Create scalar nodes for all pointer arguments ...
+			// Create scalar nodes for all pointer arguments and struct arguments...
 			if (FB.getArguments() != null) {
 				for (Value arg : FB.getArguments()) {
-					if (arg.getType().resolve().isPointer()) {
-						getValueDest(arg).getNode();
+					Type argType = CType.getInstance().pointerize(arg.getType());
+					if (argType.isPointer() || CType.isStructOrUnion(argType)) {
+						getValueDest(arg);
 					}
 				}
 			}
@@ -911,39 +911,37 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 					if (GV instanceof GlobalVariable) {
 						if (GV.isConstant()) {
 							IOUtils.debug().pln("Merging global " + GV);
-							RC.merge(g.getNodeForValue(GV), g.getGlobalsGraph()
-									.getNodeForValue(GV));
+							RC.merge(g.getNodeForValue(GV),
+									g.getGlobalsGraph().getNodeForValue(GV));
 						}
 					}
 				}
 			}
 
-			g.markIncompleteNodes(DSSupport.MarkIncompleteFlags.MarkFormalArgs
-					.value());
+			g.markIncompleteNodes(
+					DSSupport.MarkIncompleteFlags.MarkFormalArgs.value());
 
 			// Compute sources of external
-			int EFlags = 0 | DSSupport.ComputeExternalFlags.DontMarkFormalsExternal
-					.value() | DSSupport.ComputeExternalFlags.ProcessCallSites.value();
+			int EFlags = 0
+					| DSSupport.ComputeExternalFlags.DontMarkFormalsExternal.value()
+					| DSSupport.ComputeExternalFlags.ProcessCallSites.value();
 
 			g.computeExternalFlags(EFlags);
 			g.computeIntPtrFlags();
 
 			// Remove any nodes made dead due to merging...
-			g.removeDeadNodes(DSSupport.RemoveDeadNodesFlags.KeepUnreachableGlobals
-					.value());
+			g.removeDeadNodes(
+					DSSupport.RemoveDeadNodesFlags.KeepUnreachableGlobals.value());
 		}
 
 		// GraphBuilder ctor for working on the globals graph
 		GraphBuilder(DSGraph g) {
 			G = g;
 			FB = null;
-			VAArray = null;
 		}
 
 		private DSGraph G;
 		private Function FB; // FB is null indicates global CFG
-
-		private DSNode VAArray;
 
 		private LvalVisitor lvalVisitor = new LvalVisitor();
 		private RvalVisitor rvalVisitor = new RvalVisitor();
@@ -951,8 +949,8 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 		private void visit(IRControlFlowGraph CFG) {
 			SymbolTable.enterScope(CFG);
 
-			Collection<IRBasicBlock> BBs = Lists.reverse(CFG.topologicalSeq(CFG
-					.getEntry()));
+			Collection<IRBasicBlock> BBs = Lists
+					.reverse(CFG.topologicalSeq(CFG.getEntry()));
 			for (IRBasicBlock BB : BBs) {
 				for (IRStatement stmt : BB.getStatements())
 					visit(stmt);
@@ -1006,11 +1004,14 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			case RETURN: {
 				if (stmt.getOperands() != null && !stmt.getOperands().isEmpty()) {
 					Node ret = stmt.getOperand(0).getSourceNode();
-					DSNodeHandle retNH = lvalVisitor.encode(ret);
-					Type retTy = CType.getType(ret);
-					if (retTy.resolve().isPointer()) {
-						G.getOrCreateReturnNodeFor(FB).mergeWith(getValueDest(retNH,
-								retTy));
+					DSNodeHandle retNH = rvalVisitor.encode(ret);
+					Type retTy = CType.getInstance().pointerize(CType.getType(ret));
+					if (retTy.isPointer() || CType.isStructOrUnion(retTy)) {
+						// Create scalar node for return value if it is a pointer or
+						// a struct. For struct return value, it is stored as a pointer
+						// to the struct.
+						G.getOrCreateReturnNodeFor(FB)
+								.mergeWith(getValueDest(retNH, retTy));
 					}
 				}
 				break;
@@ -1038,82 +1039,80 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				rhsNH = cast(rhsTy, lhsTy, rhsNH);
 			}
 
-			DSNodeHandle Dest = getValueDest(lhsNH, lhsTy);
+			lhsNH = getValueDest(lhsNH, lhsTy);
 
-			if (Dest.isNull())
+			if (lhsNH.isNull())
 				return;
 
 			// Mark that the node is written to ...
-			Dest.getNode().setModifiedMarker();
+			lhsNH.getNode().setModifiedMarker();
 
 			// Ensure a type-record exists
-			Dest.getNode().growSizeForType(lhsTy, Dest.getOffset());
+			lhsNH.getNode().growSizeForType(lhsTy, lhsNH.getOffset());
 
 			// Avoid adding edges from null, or processing non-"pointer" stores
 			if (lhsTy.resolve().isPointer()) {
-				Dest.addEdgeTo(0, getValueDest(rhsNH, lhsTy));
+				lhsNH.addEdgeTo(0, getValueDest(rhsNH, lhsTy));
 			}
 
 			if (CType.isStructOrUnion(lhsTy)) {
-				Dest.mergeWith(rhsNH);
+				lhsNH.mergeWith(rhsNH);
 			}
 
 			// TODO: TypeInferenceOptimize
 
-			Dest.getNode().mergeTypeInfo(lhsTy, Dest.getOffset());
+			lhsNH.getNode().mergeTypeInfo(lhsTy, lhsNH.getOffset());
 			return;
 		}
 
 		private void visitCallStmt(IRStatement stmt) {
-			// Set up the return value...
-			DSNodeHandle RetVal = new DSNodeHandle();
-			Node srcNode = stmt.getSourceNode();
-			Type retTy = CType.getType(srcNode);
-
-			if (!retTy.resolve().isVoid()) {
-				Node retNode = stmt.getOperand(1).getSourceNode();
-				DSNodeHandle retNH = lvalVisitor.encode(retNode);
-				if (retTy.resolve().isPointer()) {
-					RetVal = getValueDest(retNH, retTy);
-				}
-			}
-
 			Node funcNode = stmt.getOperand(0).getSourceNode();
 			String funcName = CAnalyzer.toFunctionName(funcNode);
-			if (ReservedFunction.MEMCOPY.equals(funcName)) {
+			if (ReservedFunction.MEMCOPY.equals(funcName)
+					|| ReservedFunction.MEMMOVE.equals(funcName)) {
 				Node lhs = stmt.getOperand(2).getSourceNode();
 				Node rhs = stmt.getOperand(3).getSourceNode();
-				DSNodeHandle lhsNH = lvalVisitor.encode(lhs);
-				DSNodeHandle rhsNH = lvalVisitor.encode(rhs);
+				Type lhsTy = CType.getType(lhs);
+				Type rhsTy = CType.getType(rhs);
+				DSNodeHandle lhsNH = getValueDest(rvalVisitor.encode(lhs), lhsTy);
+				DSNodeHandle rhsNH = getValueDest(rvalVisitor.encode(rhs), rhsTy);
 				lhsNH.mergeWith(rhsNH);
 				return;
 			}
 
-			Type funcTy = CType.getType(funcNode);
+			if (ReservedFunction.MEMSET.equals(funcName)) {
+				Node lhs = stmt.getOperand(2).getSourceNode();
+				Type lhsTy = CType.getType(lhs);
+				lvalVisitor.encode(lhs);
+				getValueDest(rvalVisitor.encode(lhs), lhsTy);
+				return;
+			}
+
 			Node funcId = CAnalyzer.getIdentifier((GNode) funcNode);
 			DSNode CalleeNode = null;
 			if (funcId == null || !CType.getType(funcId).resolve().isFunction()) {
 				DSNodeHandle funcNH = rvalVisitor.encode(funcNode);
 				CalleeNode = funcNH.getNode();
 				if (CalleeNode == null) {
-					IOUtils.err().println(
-							"WARNING: Program is calling through a null pointer");
+					IOUtils.err()
+							.println("WARNING: Program is calling through a null pointer");
 					return;
 				}
 			}
 
 			// Get the type of function. Normalize the function to call
 			// as a function pointer via pointerizing the function type
-			funcTy = CType.getInstance().pointerize(funcTy);
-			funcTy = funcTy.toPointer().getType();
+			Type funcPtrTy = CType.getInstance().pointerize(CType.getType(funcNode));
+			FunctionT funcTy = funcPtrTy.toPointer().getType().resolve().toFunction();
 
 			// Get the FunctionType for the called function
-			int NumFixedArgs = funcTy.resolve().toFunction().getParameters().size();
+			int NumFixedArgs = funcTy.getParameters().size();
 
 			// Sanity check--this really, really shouldn't happen
 			int StmtArgSize = stmt.getOperands().size() - 1;
-			if (!funcTy.resolve().toFunction().getResult().isVoid())
+			if (!funcTy.getResult().isVoid()) {
 				StmtArgSize -= 1;
+			}
 
 			// FIXME: function __bswap_32 with no var args but has too many arguments
 			// if (!funcTy.resolve().toFunction().isVarArgs()) {
@@ -1127,33 +1126,51 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			DSNodeHandle VarArgNH = new DSNodeHandle();
 			Iterator<IRExpression> ArgItr = stmt.getOperands().iterator();
 			ArgItr.next();
-			if (!funcTy.resolve().toFunction().getResult().isVoid())
+			if (!funcTy.getResult().isVoid()) {
 				ArgItr.next();
+			}
 
+			int NumPassedArgs = 0;
 			while (ArgItr.hasNext()) {
 				Node ArgNode = ArgItr.next().getSourceNode();
-				Type ArgTy = CType.getType(ArgNode);
 				DSNodeHandle ArgNH = rvalVisitor.encode(ArgNode);
-				if (ArgTy.resolve().isPointer()) {
-					ArgNH = getValueDest(ArgNH, ArgTy);
-				}
-				if (NumFixedArgs > 0) {
-					Args.add(ArgNH);
-					--NumFixedArgs;
-				} else {
-					if (ArgNH == null)
+				Type ArgTy = CType.getInstance().pointerize(CType.getType(ArgNode));
+
+				if (ArgTy.isPointer() || CType.isStructOrUnion(ArgTy)) {
+					if (ArgNH == null) // skip nullptr
 						continue;
-					VarArgNH.mergeWith(ArgNH);
+					ArgNH = getValueDest(ArgNH, ArgTy);
+
+					if (NumPassedArgs < NumFixedArgs) {
+						Args.add(ArgNH);
+					} else {
+						VarArgNH.mergeWith(ArgNH);
+					}
 				}
+
+				++NumPassedArgs;
+			}
+
+			// Set up the return value if it is a pointer or struct ...
+			DSNodeHandle RetVal;
+			if (funcTy.getResult().isVoid()) {
+				RetVal = new DSNodeHandle();
+			} else {
+				// The struct return value is stored as a pointer to it...
+				Node retNode = stmt.getOperand(1).getSourceNode();
+				RetVal = rvalVisitor.encode(retNode);
 			}
 
 			// Add a new function call entry...
 			DSCallSite CS;
+			Node srcNode = stmt.getSourceNode();
 			if (CalleeNode != null) {
+				// Indirect function call
 				CS = new DSCallSite(srcNode, CalleeNode, RetVal, VarArgNH, Args);
 			} else {
-				Function FB = (Function) ValueManager.getOrCreate(SymbolTable.lookup(
-						funcId.getString(0)));
+				// Direct function call
+				Function FB = (Function) ValueManager
+						.getOrCreate(SymbolTable.lookup(funcId.getString(0)));
 				CS = new DSCallSite(srcNode, FB, RetVal, VarArgNH, Args);
 			}
 			G.getFunctionCalls().add(CS);

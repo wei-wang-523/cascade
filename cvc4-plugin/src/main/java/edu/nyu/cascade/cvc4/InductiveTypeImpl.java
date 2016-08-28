@@ -87,8 +87,8 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
 			currentConstructors.add(c);
 			currentConstructorNames.add(c.getName());
 			List<SelectorImpl> selectors = c.getSelectors();
-			List<String> selectorNames = Lists.newArrayListWithExpectedSize(selectors
-					.size());
+			List<String> selectorNames = Lists
+					.newArrayListWithExpectedSize(selectors.size());
 			List<edu.nyu.acsys.CVC4.Type> selectorTypes = Lists
 					.newArrayListWithExpectedSize(selectors.size());
 			List<DatatypeUnresolvedType> selectorUnresolvedTypes = Lists
@@ -214,8 +214,8 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
 							if (selectorTypeListLists.get(i).get(j).get(k) != null)
 								cons.addArg(name, selectorTypeListLists.get(i).get(j).get(k));
 							else
-								cons.addArg(name, selectorUnresolvedTypeListLists.get(i).get(j)
-										.get(k));
+								cons.addArg(name,
+										selectorUnresolvedTypeListLists.get(i).get(j).get(k));
 						}
 						dt.addConstructor(cons);
 					}
@@ -258,8 +258,8 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
 										});
 								sel0.setType(t);
 							} catch (NoSuchElementException e) {
-								throw new TheoremProverException("Stub type not found: "
-										+ selType.toString());
+								throw new TheoremProverException(
+										"Stub type not found: " + selType.toString());
 							}
 						}
 					}
@@ -581,8 +581,8 @@ public class InductiveTypeImpl extends TypeImpl implements InductiveType {
 	InductiveExpressionImpl createExpression(Expr res, Expression e, Kind kind,
 			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isInductive());
-		return InductiveExpressionImpl.create(getExpressionManager(), kind, res, e
-				.getType().asInductive(), children);
+		return InductiveExpressionImpl.create(getExpressionManager(), kind, res,
+				e.getType().asInductive(), children);
 	}
 
 	private final String name;

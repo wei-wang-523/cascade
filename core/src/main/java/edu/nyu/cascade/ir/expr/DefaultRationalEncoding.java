@@ -7,9 +7,9 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.RationalExpression;
 
-public class DefaultRationalEncoding extends
-		AbstractTypeEncoding<RationalExpression> implements
-		RationalEncoding<RationalExpression> {
+public class DefaultRationalEncoding
+		extends AbstractTypeEncoding<RationalExpression>
+		implements RationalEncoding<RationalExpression> {
 
 	public DefaultRationalEncoding(ExpressionManager exprManager) {
 		super(exprManager, exprManager.rationalType());

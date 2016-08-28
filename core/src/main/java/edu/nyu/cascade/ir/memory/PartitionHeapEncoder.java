@@ -39,13 +39,13 @@ public final class PartitionHeapEncoder implements IRPartitionHeapEncoder {
 
 		switch (strategy) {
 		case ORDER: {
-			IROrderMemLayoutEncoding memLayout = OrderLinearMemLayoutEncoding.create(
-					encoding, dataFormatter);
+			IROrderMemLayoutEncoding memLayout = OrderLinearMemLayoutEncoding
+					.create(encoding, dataFormatter);
 			return new PartitionHeapEncoder(encoding, dataFormatter, null, memLayout);
 		}
 		case SOUND: {
-			IRSoundMemLayoutEncoding memLayout = SoundLinearMemLayoutEncoding.create(
-					encoding, dataFormatter);
+			IRSoundMemLayoutEncoding memLayout = SoundLinearMemLayoutEncoding
+					.create(encoding, dataFormatter);
 			return new PartitionHeapEncoder(encoding, dataFormatter, memLayout, null);
 		}
 		default:

@@ -66,8 +66,8 @@ public class SteensgaardFS implements IRAliasAnalyzer<ECR> {
 			symbolTable.enterScope(globalCFG);
 			currentCFG = globalCFG;
 
-			final Collection<IRBasicBlock> topologicSeq = Lists.reverse(globalCFG
-					.topologicalSeq(globalCFG.getEntry()));
+			final Collection<IRBasicBlock> topologicSeq = Lists
+					.reverse(globalCFG.topologicalSeq(globalCFG.getEntry()));
 
 			for (IRBasicBlock block : topologicSeq) {
 				for (IRStatement stmt : block.getStatements())
@@ -116,8 +116,8 @@ public class SteensgaardFS implements IRAliasAnalyzer<ECR> {
 				}
 			}
 
-			final Collection<IRBasicBlock> topologicSeq = Lists.reverse(CFG
-					.topologicalSeq(CFG.getEntry()));
+			final Collection<IRBasicBlock> topologicSeq = Lists
+					.reverse(CFG.topologicalSeq(CFG.getEntry()));
 
 			for (IRBasicBlock block : topologicSeq) {
 				for (IRStatement stmt : block.getStatements())
@@ -230,8 +230,8 @@ public class SteensgaardFS implements IRAliasAnalyzer<ECR> {
 			/* For the function pointer parameters declared but not yet assigned */
 			if (uf.getType(funcECR).isBottom()) {
 				IOUtils.err().println("WARNING: get Loc of " + funcECR);
-				Size size = Size.createForType(CType.getInstance().pointerize(
-						funcXtcType));
+				Size size = Size
+						.createForType(CType.getInstance().pointerize(funcXtcType));
 				uf.promote(funcECR, size);
 			}
 
@@ -429,8 +429,8 @@ public class SteensgaardFS implements IRAliasAnalyzer<ECR> {
 	public String displaySnapShot() {
 		buildSnapShot();
 
-		StringBuilder sb = new StringBuilder().append('\n').append(
-				"The result of field-sensitive Steensgaard analysis:\n");
+		StringBuilder sb = new StringBuilder().append('\n')
+				.append("The result of field-sensitive Steensgaard analysis:\n");
 
 		for (Entry<ECR, Collection<IRVar>> entry : snapShot.entrySet()) {
 			ECR ecr = entry.getKey();
@@ -533,7 +533,7 @@ public class SteensgaardFS implements IRAliasAnalyzer<ECR> {
 		// TODO Auto-generated method stub
 
 	}
-	
+
 	@Override
 	public Pair<Integer, Integer> getAliasAnalysisStats(
 			IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs) {

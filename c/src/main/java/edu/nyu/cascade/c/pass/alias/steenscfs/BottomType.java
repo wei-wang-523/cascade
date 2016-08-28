@@ -36,4 +36,9 @@ class BottomType extends ValueType {
 	void setParent(Parent parent) {
 		throw new UnsupportedOperationException();
 	}
+
+	@Override
+	void setSize(Size size) {
+		throw new UnsupportedOperationException();
+	}
 }

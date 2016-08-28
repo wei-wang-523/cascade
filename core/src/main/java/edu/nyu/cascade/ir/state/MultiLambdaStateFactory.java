@@ -188,10 +188,10 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 
 		String destLabel = labelAnalyzer.getRepId(destRep);
 		String srcLabel = labelAnalyzer.getRepId(srcRep);
-		SingleLambdaStateExpression destState = multiState.getStateMap().get(
-				destLabel);
-		SingleLambdaStateExpression srcState = multiState.getStateMap().get(
-				srcLabel);
+		SingleLambdaStateExpression destState = multiState.getStateMap()
+				.get(destLabel);
+		SingleLambdaStateExpression srcState = multiState.getStateMap()
+				.get(srcLabel);
 
 		ArrayExpression destMem = destState.getSingleState().getMemory();
 		ArrayExpression srcMem = srcState.getSingleState().getMemory();
@@ -233,8 +233,8 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		updateStateWithRep(multiState, srcRep);
 
 		String label = labelAnalyzer.getRepId(srcRep);
-		SingleLambdaStateExpression singleState = multiState.getStateMap().get(
-				label);
+		SingleLambdaStateExpression singleState = multiState.getStateMap()
+				.get(label);
 		BooleanExpression predicate = singleStateFactory.validAccess(singleState,
 				ptr, ptrNode);
 
@@ -249,8 +249,8 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		String label = labelAnalyzer.getRepId(srcRep);
 		SingleLambdaStateExpression singleState = state.asMultiLambda()
 				.getStateMap().get(label);
-		BooleanExpression predicate = singleStateFactory.validAccessRange(
-				singleState, ptr, size, ptrNode);
+		BooleanExpression predicate = singleStateFactory
+				.validAccessRange(singleState, ptr, size, ptrNode);
 		return predicate;
 	}
 
@@ -258,8 +258,8 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	protected BooleanExpression getDisjointAssumption(StateExpression state) {
 		Map<String, SingleLambdaStateExpression> stateMap = state.asMultiLambda()
 				.getStateMap();
-		Collection<BooleanExpression> preDisjoints = Lists.newArrayListWithCapacity(
-				stateMap.size());
+		Collection<BooleanExpression> preDisjoints = Lists
+				.newArrayListWithCapacity(stateMap.size());
 
 		for (SingleLambdaStateExpression subState : stateMap.values()) {
 			preDisjoints.add(singleStateFactory.getDisjointAssumption(subState));
@@ -345,12 +345,12 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 
 		for (Entry<String, SingleLambdaStateExpression> entry : multiLambdaState
 				.getStateMap().entrySet()) {
-			stateMapCopy.put(entry.getKey(), singleStateFactory.copy(entry
-					.getValue()));
+			stateMapCopy.put(entry.getKey(),
+					singleStateFactory.copy(entry.getValue()));
 		}
 
-		MultiLambdaStateExpression newState = MultiLambdaStateExpression.create(
-				stateMapCopy);
+		MultiLambdaStateExpression newState = MultiLambdaStateExpression
+				.create(stateMapCopy);
 
 		newState.setProperties(state.getProperties());
 		newState.setConstraint(state.getConstraint());
@@ -439,10 +439,10 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		 */
 		T rep = labelAnalyzer.getStackRep(idxNode);
 
-		if (!(Preferences.isSet(Preferences.OPTION_FIELD_SENSITIVE) || Preferences
-				.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE) || Preferences
-						.isSet(
-								Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE)
+		if (!(Preferences.isSet(Preferences.OPTION_FIELD_SENSITIVE)
+				|| Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE)
+				|| Preferences.isSet(
+						Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE)
 				|| Preferences.isSet(Preferences.OPTION_DSA))) {
 			updateStateWithRep(multiLambdaState, rep);
 			String label = labelAnalyzer.getRepId(rep);
@@ -562,8 +562,8 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 				.getStateMap();
 		Map<String, SingleLambdaStateExpression> toMap = toState.asMultiLambda()
 				.getStateMap();
-		Collection<String> commonNames = Sets.intersection(toMap.keySet(), fromMap
-				.keySet());
+		Collection<String> commonNames = Sets.intersection(toMap.keySet(),
+				fromMap.keySet());
 
 		if (commonNames.isEmpty())
 			return;
@@ -639,10 +639,10 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 				Collection<Pair<StateExpression, BooleanExpression>> preElemWithGuards = resStateGuardMap
 						.get(elemName);
 
-				List<StateExpression> preElemStates = Lists.newArrayListWithCapacity(
-						preStateSize);
-				List<BooleanExpression> preElemGuards = Lists.newArrayListWithCapacity(
-						preStateSize);
+				List<StateExpression> preElemStates = Lists
+						.newArrayListWithCapacity(preStateSize);
+				List<BooleanExpression> preElemGuards = Lists
+						.newArrayListWithCapacity(preStateSize);
 
 				for (Pair<StateExpression, BooleanExpression> pair : preElemWithGuards) {
 					preElemStates.add(pair.fst());
@@ -652,8 +652,8 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 				if (preElemWithGuards.size() < preStateSize) { // set default case
 					ArrayType[] elemTypes = preElemStates.get(0).asSingleLambda()
 							.getSingleState().getElemTypes();
-					preElemStates.add(0, singleStateFactory.freshSingleLambdaState(
-							elemName, elemTypes));
+					preElemStates.add(0,
+							singleStateFactory.freshSingleLambdaState(elemName, elemTypes));
 					preElemGuards.add(0, null); // this guard will be ignored in join
 																			// pre-states
 				}
@@ -678,8 +678,8 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		SingleLambdaStateExpression singleLambdaState = multiLambdaState
 				.getStateMap().get(idxLabel);
 		ArrayExpression memArr = singleLambdaState.getSingleState().getMemory();
-		return getDataFormatter().indexMemoryArray(memArr, index, CType.getType(
-				indexNode));
+		return getDataFormatter().indexMemoryArray(memArr, index,
+				CType.getType(indexNode));
 	}
 
 	@Override

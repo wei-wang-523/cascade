@@ -6,8 +6,8 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.Type;
 
-final class TupleVariableImpl extends VariableExpressionImpl implements
-		TupleExpression {
+final class TupleVariableImpl extends VariableExpressionImpl
+		implements TupleExpression {
 
 	static TupleVariableImpl create(ExpressionManagerImpl exprManager,
 			String name, TupleTypeImpl type, boolean fresh) {

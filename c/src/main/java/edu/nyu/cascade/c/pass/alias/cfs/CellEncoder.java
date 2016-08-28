@@ -60,8 +60,8 @@ class CellEncoder extends Visitor {
 
 		@Override
 		public Cell unableToVisit(Node node) throws VisitingException {
-			IOUtils.err().println("APPROX: Treating unexpected node type as NULL: "
-					+ node.getName());
+			IOUtils.err().println(
+					"APPROX: Treating unexpected node type as NULL: " + node.getName());
 			return cellManager.bottom();
 		}
 
@@ -245,8 +245,8 @@ class CellEncoder extends Visitor {
 
 		@Override
 		public Cell unableToVisit(Node node) throws VisitingException {
-			IOUtils.err().println("APPROX: Treating unexpected node type as NULL: "
-					+ node.getName());
+			IOUtils.err().println(
+					"APPROX: Treating unexpected node type as NULL: " + node.getName());
 			return cellManager.bottom();
 		}
 
@@ -546,8 +546,8 @@ class CellEncoder extends Visitor {
 	 * @return
 	 */
 	Cell getFunctionCell(String functionName) {
-		return leftCellMap.get(Pair.of(functionName, CScopeAnalyzer
-				.getRootScopeName()));
+		return leftCellMap
+				.get(Pair.of(functionName, CScopeAnalyzer.getRootScopeName()));
 	}
 
 	Cell getLamdaType(Type type) {

@@ -141,8 +141,8 @@ public class TraceNode implements IRTraceNode {
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder().append(id).append(" ").append(
-				labels);
+		StringBuilder sb = new StringBuilder().append(id).append(" ")
+				.append(labels);
 		return sb.toString();
 	}
 
@@ -181,8 +181,8 @@ public class TraceNode implements IRTraceNode {
 			return;
 
 		final TheoremProver theoremProver = exprManager.getTheoremProver();
-		Collection<IRStatement> statements = Collections.unmodifiableSet(
-				stmtTraceExprMap.keySet());
+		Collection<IRStatement> statements = Collections
+				.unmodifiableSet(stmtTraceExprMap.keySet());
 		for (IRStatement stmt : statements) {
 			Expression traceExpr = stmtTraceExprMap.get(stmt);
 			Expression traceExprPrime = theoremProver.evaluate(traceExpr);

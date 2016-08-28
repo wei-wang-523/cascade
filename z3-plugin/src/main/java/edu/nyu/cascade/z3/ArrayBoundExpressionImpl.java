@@ -4,8 +4,8 @@ import edu.nyu.cascade.prover.ArrayExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.Type;
 
-final class ArrayBoundExpressionImpl extends BoundExpressionImpl implements
-		ArrayExpression {
+final class ArrayBoundExpressionImpl extends BoundExpressionImpl
+		implements ArrayExpression {
 
 	static ArrayBoundExpressionImpl create(ExpressionManagerImpl em, String name,
 			ArrayTypeImpl type, boolean fresh) {

@@ -8,8 +8,8 @@ import edu.nyu.cascade.prover.UninterpretedExpression;
 import edu.nyu.cascade.prover.type.UninterpretedType;
 import edu.nyu.cascade.prover.type.Type;
 
-final class UninterpretedExpressionImpl extends ExpressionImpl implements
-		UninterpretedExpression {
+final class UninterpretedExpressionImpl extends ExpressionImpl
+		implements UninterpretedExpression {
 
 	static UninterpretedExpressionImpl create(ExpressionManagerImpl exprManager,
 			Kind kind, Expr expr, UninterpretedType type,

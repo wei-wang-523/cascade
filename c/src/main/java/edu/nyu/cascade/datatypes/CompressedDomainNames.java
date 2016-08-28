@@ -18,8 +18,8 @@ public class CompressedDomainNames implements Theory {
 		else if (Preferences.PROVER_CVC4.equals(tpProviderName))
 			encoding = CompressedDomainNamesEncoding_CVC4.create(exprManager);
 		else
-			throw new IllegalArgumentException("Unknown theorem prover "
-					+ tpProviderName);
+			throw new IllegalArgumentException(
+					"Unknown theorem prover " + tpProviderName);
 	}
 
 	@Override

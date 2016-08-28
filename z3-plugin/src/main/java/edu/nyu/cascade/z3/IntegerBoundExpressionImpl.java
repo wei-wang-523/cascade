@@ -8,8 +8,8 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.IntegerExpression;
 
-final class IntegerBoundExpressionImpl extends BoundExpressionImpl implements
-		IntegerExpression {
+final class IntegerBoundExpressionImpl extends BoundExpressionImpl
+		implements IntegerExpression {
 
 	static IntegerBoundExpressionImpl create(ExpressionManagerImpl em,
 			String name, IntegerTypeImpl type, boolean fresh) {
@@ -78,8 +78,8 @@ final class IntegerBoundExpressionImpl extends BoundExpressionImpl implements
 
 	@Override
 	public IntegerExpression plus(Iterable<? extends IntegerExpression> rest) {
-		return getType().add(Iterables.concat(Collections.singletonList(this),
-				rest));
+		return getType()
+				.add(Iterables.concat(Collections.singletonList(this), rest));
 	}
 
 	@Override

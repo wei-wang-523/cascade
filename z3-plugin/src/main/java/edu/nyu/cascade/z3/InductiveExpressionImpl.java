@@ -21,8 +21,8 @@ import edu.nyu.cascade.prover.type.Selector;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.z3.InductiveTypeImpl.ConstructorImpl;
 
-final class InductiveExpressionImpl extends ExpressionImpl implements
-		InductiveExpression {
+final class InductiveExpressionImpl extends ExpressionImpl
+		implements InductiveExpression {
 
 	static InductiveExpressionImpl create(Constructor constructor,
 			Expression... args) {
@@ -33,8 +33,8 @@ final class InductiveExpressionImpl extends ExpressionImpl implements
 
 	static InductiveExpressionImpl create(Constructor constructor,
 			Iterable<? extends Expression> args) {
-		Preconditions.checkArgument(constructor.getSelectors().size() == Iterables
-				.size(args));
+		Preconditions.checkArgument(
+				constructor.getSelectors().size() == Iterables.size(args));
 		if (Iterables.isEmpty(args)) {
 			return new InductiveExpressionImpl(ConstructorImpl.valueOf(constructor));
 		} else {
@@ -64,8 +64,8 @@ final class InductiveExpressionImpl extends ExpressionImpl implements
 				new NullaryConstructionStrategy() {
 					@Override
 					public Expr apply(Context ctx) throws Z3Exception {
-						return ctx.mkConst(constructor.getZ3Constructor()
-								.ConstructorDecl());
+						return ctx
+								.mkConst(constructor.getZ3Constructor().ConstructorDecl());
 					}
 				});
 

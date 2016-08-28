@@ -33,6 +33,7 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.Preferences;
+import edu.nyu.cascade.util.ReservedFunction;
 
 /**
  * A class which implements Bjarne Steensgaard's alias analysis algorithm.
@@ -66,8 +67,8 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 			symbolTable.enterScope(globalCFG);
 			currentCFG = globalCFG;
 
-			final Collection<IRBasicBlock> topologicSeq = Lists.reverse(globalCFG
-					.topologicalSeq(globalCFG.getEntry()));
+			final Collection<IRBasicBlock> topologicSeq = Lists
+					.reverse(globalCFG.topologicalSeq(globalCFG.getEntry()));
 
 			for (IRBasicBlock block : topologicSeq) {
 				for (IRStatement stmt : block.getStatements())
@@ -116,8 +117,8 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 				}
 			}
 
-			final Collection<IRBasicBlock> topologicSeq = Lists.reverse(CFG
-					.topologicalSeq(CFG.getEntry()));
+			final Collection<IRBasicBlock> topologicSeq = Lists
+					.reverse(CFG.topologicalSeq(CFG.getEntry()));
 
 			for (IRBasicBlock block : topologicSeq) {
 				for (IRStatement stmt : block.getStatements())
@@ -132,6 +133,29 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		}
 
 		initChecker();
+	}
+
+	private void processReservedFunctionCall(String funcName, IRStatement stmt) {
+		if (ReservedFunction.MEMCOPY.equals(funcName)
+				|| ReservedFunction.MEMMOVE.equals(funcName)) {
+			Node lhs = stmt.getOperand(2).getSourceNode();
+			Node rhs = stmt.getOperand(3).getSourceNode();
+			ECR lhsECR = ecrEncoder.toRval(lhs);
+			ECR rhsECR = ecrEncoder.toRval(rhs);
+			uf.ensureSimple(lhsECR);
+			uf.ensureSimple(rhsECR);
+			uf.join(uf.getLoc(lhsECR), uf.getLoc(rhsECR));
+			uf.join(uf.getFunc(lhsECR), uf.getFunc(rhsECR));
+			return;
+		}
+
+		if (ReservedFunction.MEMSET.equals(funcName)) {
+			Node lhs = stmt.getOperand(2).getSourceNode();
+			Node rhs = stmt.getOperand(3).getSourceNode();
+			ecrEncoder.toRval(lhs);
+			ecrEncoder.toRval(rhs);
+			return;
+		}
 	}
 
 	private void analysis(IRStatement stmt) {
@@ -198,92 +222,25 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		}
 		case CALL: {
 			Node funcNode = stmt.getOperand(0).getSourceNode();
-			ECR funcECR = ecrEncoder.toRval(funcNode);
-			assert (null != funcECR);
+			String funcName = CAnalyzer.toFunctionName(funcNode);
 
-			Type funcXtcType = CType.getType(funcNode).resolve();
-			if (funcXtcType.isPointer()) {
-				funcECR = uf.getLoc(funcECR);
-				funcXtcType = funcXtcType.toPointer().getType();
-			}
+			if (funcName != null) { // Function call
+				if (ReservedFunction.isReserved(funcName)) {
+					processReservedFunctionCall(funcName, stmt);
+					IOUtils.debug().pln("Reserved function call: " + funcName);
+					break;
+				}
 
-			/* For the function pointer parameters declared but not yet assigned */
-			if (uf.getType(funcECR).isBottom()) {
-				IOUtils.err().println("WARNING: get Loc of " + funcECR);
-				Size size = Size.createForType(CType.getInstance().pointerize(
-						funcXtcType));
-				uf.expand(funcECR, size);
-			}
-
-			ECR lamECR = uf.getFunc(funcECR);
-
-			if (uf.getType(lamECR).isBottom()) {
-				ValueType lamType = ecrEncoder.getLamdaType(funcXtcType);
-				uf.setType(lamECR, lamType);
-			}
-
-			LambdaType lamType = uf.getType(lamECR).asLambda();
-
-			if (funcXtcType.toFunction().getResult().isVoid()) {
-				Iterator<ECR> paramECRItr = lamType.getParams().iterator();
-				for (int i = 1; i < stmt.getOperands().size(); i++) {
-					Node srcNode = stmt.getOperand(i).getSourceNode();
-
-					/*
-					 * Resolve the syntax sugar of assign function to a function pointer
-					 */
-					boolean isFuncType = CType.getType(srcNode).resolve().isFunction();
-					ECR argECR = isFuncType ? ecrEncoder.toLval(srcNode)
-							: ecrEncoder.toRval(srcNode);
-
-					if (paramECRItr.hasNext()) {
-						ECR paramECR = paramECRItr.next();
-						ValueType argType = uf.getType(argECR);
-						paramRetAssign(argType.getSize(), paramECR, argECR);
-					} else {
-						lamType.addParamECR(argECR);
+				Type funcType = symbolTable.lookupType(funcName).resolve();
+				if (funcType.isFunction()) { // Otherwise, function pointer
+					if (!symbolTable.rootScope().isDefined(funcName)) {
+						IOUtils.debug().pln("Undefined function call: " + funcName);
+						break;
 					}
 				}
 			}
 
-			else {
-				Node retNode = stmt.getOperand(1).getSourceNode();
-				ECR retECR = ecrEncoder.toRval(retNode);
-				ECR lamRetECR = lamType.getRet();
-				ValueType lamRetType = uf.getType(lamRetECR);
-				paramRetAssign(lamRetType.getSize(), retECR, lamRetECR);
-
-				Iterator<ECR> paramECRItr = lamType.getParams().iterator();
-
-				int i;
-				for (i = 2; i < stmt.getOperands().size(); i++) {
-					Node srcNode = stmt.getOperand(i).getSourceNode();
-
-					/*
-					 * Resolve the syntax sugar of assign function to a function pointer
-					 */
-					boolean isFuncType = CType.getType(srcNode).resolve().isFunction();
-					ECR argECR = isFuncType ? ecrEncoder.toLval(srcNode)
-							: ecrEncoder.toRval(srcNode);
-
-					if (!paramECRItr.hasNext())
-						break;
-
-					ECR paramECR = paramECRItr.next();
-					ValueType argType = uf.getType(argECR);
-					paramRetAssign(argType.getSize(), paramECR, argECR);
-				}
-
-				for (; i < stmt.getOperands().size(); i++) {
-					Node srcNode = stmt.getOperand(i).getSourceNode();
-					/*
-					 * Resolve the syntax sugar of assign function to a function pointer
-					 */
-					ECR argECR = CType.getType(srcNode).resolve().isFunction()
-							? ecrEncoder.toLval(srcNode) : ecrEncoder.toRval(srcNode);
-					lamType.addParamECR(argECR);
-				}
-			}
+			processCallSite(stmt);
 			break;
 		}
 		case FREE:
@@ -297,9 +254,71 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		}
 	}
 
+	private void processCallSite(IRStatement stmt) {
+		Node funcNode = stmt.getOperand(0).getSourceNode();
+		ECR funcECR = ecrEncoder.toRval(funcNode);
+		assert (null != funcECR);
+		Type funcType = CType.getType(funcNode).resolve();
+
+		if (funcType.isPointer()) {
+			funcECR = uf.getLoc(funcECR);
+			funcType = funcType.toPointer().getType();
+		}
+
+		/* For the function pointer declared but not yet assigned */
+		if (uf.getType(funcECR).isBottom()) {
+			IOUtils.err().println("WARNING: get Func of " + funcECR);
+			Size size = Size.createForType(PointerT.TO_VOID);
+			uf.expand(funcECR, size);
+		}
+
+		ECR lamECR = uf.getFunc(funcECR);
+
+		if (uf.getType(lamECR).isBottom()) {
+			ValueType lamType = ecrEncoder.getLamdaType(funcType);
+			uf.setType(lamECR, lamType);
+		}
+
+		LambdaType lamType = uf.getType(lamECR).asLambda();
+		int paramIndex = 1;
+
+		// Process the return value first.
+		if (!funcType.toFunction().getResult().isVoid()) {
+			Node retNode = stmt.getOperand(1).getSourceNode();
+			ECR retECR = ecrEncoder.toRval(retNode);
+			ECR lamRetECR = lamType.getRet();
+			ValueType lamRetType = uf.getType(lamRetECR);
+			paramRetAssign(lamRetType.getSize(), retECR, lamRetECR);
+
+			++paramIndex; // Shift by one to skip return value.
+		}
+
+		// Process the parameters.
+		Iterator<ECR> paramECRItr = lamType.getParams().iterator();
+		while (paramIndex < stmt.getOperands().size()) {
+			Node srcNode = stmt.getOperand(paramIndex).getSourceNode();
+			Type paramType = CType.getType(srcNode).resolve();
+
+			// Resolve the syntax sugar of assign function to a function pointer
+			ECR argECR = paramType.isFunction() ? ecrEncoder.toLval(srcNode)
+					: ecrEncoder.toRval(srcNode);
+
+			if (paramECRItr.hasNext()) {
+				ECR paramECR = paramECRItr.next();
+				ValueType argType = uf.getType(argECR);
+				paramRetAssign(argType.getSize(), paramECR, argECR);
+			} else {
+				lamType.addParamECR(argECR); // varg
+			}
+
+			++paramIndex;
+		}
+	}
+
 	private void initChecker() {
 		uf.clearPointerArithmetic();
 		uf.normalizeStructECRs();
+		uf.normalizeCollapseECRs();
 		ecrChecker = ECRChecker.create(uf, symbolTable, ecrEncoder);
 	}
 

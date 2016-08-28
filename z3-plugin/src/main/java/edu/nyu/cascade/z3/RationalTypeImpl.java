@@ -12,8 +12,8 @@ final class RationalTypeImpl extends TypeImpl implements RationalType {
 	RationalTypeImpl(ExpressionManagerImpl expressionManager) {
 		super(expressionManager);
 		try {
-			setZ3Type(expressionManager.getTheoremProver().getZ3Context()
-					.getRealSort());
+			setZ3Type(
+					expressionManager.getTheoremProver().getZ3Context().getRealSort());
 		} catch (Z3Exception e) {
 			throw new TheoremProverException(e);
 		}
@@ -172,7 +172,7 @@ final class RationalTypeImpl extends TypeImpl implements RationalType {
 	@Override
 	protected InductiveExpressionImpl createExpression(Expr res,
 			Expression oldExpr, Iterable<? extends ExpressionImpl> children) {
-		return InductiveExpressionImpl.create(getExpressionManager(), oldExpr
-				.getKind(), res, oldExpr.getType(), children);
+		return InductiveExpressionImpl.create(getExpressionManager(),
+				oldExpr.getKind(), res, oldExpr.getType(), children);
 	}
 }

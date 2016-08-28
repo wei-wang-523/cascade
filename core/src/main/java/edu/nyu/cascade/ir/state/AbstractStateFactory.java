@@ -352,8 +352,8 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 			if (resExpr == null) {
 				resExpr = currCase;
 			} else {
-				BooleanExpression guard = getExpressionManager().or(guardHoareMap.get(
-						currCase));
+				BooleanExpression guard = getExpressionManager()
+						.or(guardHoareMap.get(currCase));
 				resExpr = guard.ifThenElse(currCase, resExpr);
 			}
 		}
@@ -372,8 +372,8 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 
 		Expression resExpr = defaultCase;
 		for (Expression currCase : caseSet) {
-			BooleanExpression guard = getExpressionManager().or(guardHoareMap.get(
-					currCase));
+			BooleanExpression guard = getExpressionManager()
+					.or(guardHoareMap.get(currCase));
 			assert (currCase.getType().equals(resExpr.getType()));
 			resExpr = guard.ifThenElse(currCase, resExpr);
 		}
@@ -397,8 +397,8 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 		if (Preferences.isSet(Preferences.OPTION_TWOROUND_MEMCHECK)) {
 			if (Preferences.isSet(Preferences.OPTION_MEMORY_CHECK)) {
 				Expression size = getSizeOfRegion(state, region, ptrNode);
-				state.addConstraint(encoding.neq(size, formatter.getSizeZero())
-						.asBooleanExpression());
+				state.addConstraint(
+						encoding.neq(size, formatter.getSizeZero()).asBooleanExpression());
 			}
 		}
 
@@ -446,8 +446,8 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 			return;
 
 		Multimap<String, BooleanExpression> assertions = state.getAssertions();
-		for (Entry<String, BooleanExpression> entry : ImmutableList.copyOf(
-				assertions.entries())) {
+		for (Entry<String, BooleanExpression> entry : ImmutableList
+				.copyOf(assertions.entries())) {
 			BooleanExpression assertion = entry.getValue();
 			BooleanExpression assertionPrime = assertion.subst(fromElems, toElems)
 					.asBooleanExpression();
@@ -526,8 +526,8 @@ public abstract class AbstractStateFactory<T> implements StateFactory<T> {
 		BooleanExpression assumption = stateToBoolean(stateArg);
 
 		Multimap<String, BooleanExpression> assertions = cleanState.getAssertions();
-		for (Entry<String, BooleanExpression> entry : ImmutableList.copyOf(
-				assertions.entries())) {
+		for (Entry<String, BooleanExpression> entry : ImmutableList
+				.copyOf(assertions.entries())) {
 			BooleanExpression assertion = entry.getValue();
 			BooleanExpression assertionPrime = assumption.implies(assertion);
 			assertions.remove(entry.getKey(), assertion);

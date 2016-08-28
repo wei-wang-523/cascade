@@ -310,8 +310,8 @@ final class DSNodeImpl extends DSNode {
 		Preconditions.checkArgument(ForwardNH.isNull());
 		if (To.Size <= 1)
 			Offset = 0;
-		assert (Offset < To.Size || (Offset == To.Size
-				&& Offset == 0)) : "Forwarded offset is wrong!";
+		assert (Offset < To.Size
+				|| (Offset == To.Size && Offset == 0)) : "Forwarded offset is wrong!";
 		ForwardNH.setTo(To, Offset);
 		NodeType = DSSupport.NodeTy.DeadNode.value();
 		Size = 0;
@@ -490,8 +490,8 @@ final class DSNodeImpl extends DSNode {
 		for (Entry<Function, DSNodeHandle> Entry : G.getVANodes().entrySet()) {
 			DSNodeHandle VANode = Entry.getValue();
 			if (this == VANode.getNode()) {
-				OS.append("(VANode for ").append(Entry.getKey().getName()).append(
-						")\n");
+				OS.append("(VANode for ").append(Entry.getKey().getName())
+						.append(")\n");
 			}
 		}
 

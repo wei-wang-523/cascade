@@ -7,8 +7,8 @@ import com.google.common.collect.Lists;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 
-public class LinearPointerEncoding<T extends Expression> extends
-		AbstractTypeEncoding<T> implements PointerEncoding<T> {
+public class LinearPointerEncoding<T extends Expression>
+		extends AbstractTypeEncoding<T> implements PointerEncoding<T> {
 
 	private static final String UNKNOWN_VARIABLE_NAME = "ptr_encoding_unknown";
 

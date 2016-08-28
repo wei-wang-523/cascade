@@ -127,8 +127,8 @@ public final class CType {
 	}
 
 	public Type convert(Type lhsType, Type rhsType) {
-		if (lhsType.resolve().isPointer() || !cops.isScalar(lhsType) || rhsType
-				.resolve().isPointer() || !cops.isScalar(rhsType))
+		if (lhsType.resolve().isPointer() || !cops.isScalar(lhsType)
+				|| rhsType.resolve().isPointer() || !cops.isScalar(rhsType))
 			return PointerT.TO_VOID;
 
 		return cops.convert(lhsType, rhsType);
@@ -233,8 +233,8 @@ public final class CType {
 	}
 
 	public long getOffset(Type type, String name) {
-		Preconditions.checkArgument(type.resolve().isStruct() || type.resolve()
-				.isUnion());
+		Preconditions
+				.checkArgument(type.resolve().isStruct() || type.resolve().isUnion());
 
 		if (Preferences.isSet(Preferences.OPTION_BYTE_BASED))
 			return cops.getOffset(type.resolve().toStructOrUnion(), name);

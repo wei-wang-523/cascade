@@ -97,8 +97,8 @@ class BoundExpressionImpl extends ExpressionImpl implements BoundExpression {
 
 	static BoundExpressionImpl valueOf(ExpressionManagerImpl exprManager,
 			Expression e) {
-		Preconditions.checkArgument(e instanceof BoundExpressionImpl
-				|| e instanceof BoundExpression);
+		Preconditions.checkArgument(
+				e instanceof BoundExpressionImpl || e instanceof BoundExpression);
 		if (e instanceof BoundExpressionImpl) {
 			return (BoundExpressionImpl) e;
 		}
@@ -116,8 +116,8 @@ class BoundExpressionImpl extends ExpressionImpl implements BoundExpression {
 
 	private void setSymbol(ExpressionManagerImpl exprManager) {
 		try {
-			symbol = exprManager.getTheoremProver().getZ3Context().mkSymbol(
-					getName());
+			symbol = exprManager.getTheoremProver().getZ3Context()
+					.mkSymbol(getName());
 		} catch (Z3Exception e) {
 			throw new TheoremProverException(e);
 		}

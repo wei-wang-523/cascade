@@ -85,14 +85,14 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 			currentConstructors.add(c);
 			currentConstructorNames.add(c.getName());
 			List<SelectorImpl> selectors = c.getSelectors();
-			List<String> selectorNames = Lists.newArrayListWithExpectedSize(selectors
-					.size());
-			List<Sort> selectorTypes = Lists.newArrayListWithExpectedSize(selectors
-					.size());
-			List<Sort> selectorUninters = Lists.newArrayListWithExpectedSize(selectors
-					.size());
-			List<Integer> selectorTypeRefs = Lists.newArrayListWithExpectedSize(
-					selectors.size());
+			List<String> selectorNames = Lists
+					.newArrayListWithExpectedSize(selectors.size());
+			List<Sort> selectorTypes = Lists
+					.newArrayListWithExpectedSize(selectors.size());
+			List<Sort> selectorUninters = Lists
+					.newArrayListWithExpectedSize(selectors.size());
+			List<Integer> selectorTypeRefs = Lists
+					.newArrayListWithExpectedSize(selectors.size());
 			for (SelectorImpl selector : selectors) {
 				selectorNames.add(selector.getName());
 				Type type = selector.getType();
@@ -141,8 +141,8 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 									if (sType != null)
 										sb.append(sType);
 									else {
-										Sort uninterSort = selectorUninterTypeListLists.get(i).get(
-												j).get(k);
+										Sort uninterSort = selectorUninterTypeListLists.get(i)
+												.get(j).get(k);
 										sb.append(uninterSort.toString());
 									}
 								} catch (Exception e) {
@@ -160,8 +160,8 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 				}
 				sb.append(")");
 
-				TheoremProverImpl.z3FileCommand("(declare-datatypes " + sb.toString()
-						+ ")");
+				TheoremProverImpl
+						.z3FileCommand("(declare-datatypes " + sb.toString() + ")");
 			}
 
 			Sort[] sorts = null;
@@ -206,8 +206,8 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 								.size(); k++) {
 							selectorNames[k] = selectorNameListLists.get(i).get(j).get(k);
 							selectorTypes[k] = selectorTypeListLists.get(i).get(j).get(k);
-							selectorTypeRefs[k] = selectorTypeRefListLists.get(i).get(j).get(
-									k);
+							selectorTypeRefs[k] = selectorTypeRefListLists.get(i).get(j)
+									.get(k);
 						}
 						com.microsoft.z3.Constructor cons = ctx.mkConstructor(cons_name,
 								"is-" + cons_name, selectorNames, selectorTypes,
@@ -259,8 +259,8 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 										});
 								sel0.setType(t);
 							} catch (NoSuchElementException e) {
-								throw new TheoremProverException("Stub type not found: "
-										+ selType.toString());
+								throw new TheoremProverException(
+										"Stub type not found: " + selType.toString());
 							}
 						}
 					}
@@ -314,8 +314,8 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 
 		ConstructorImpl(ExpressionManagerImpl exprManager, String name,
 				Selector... selectors) {
-			this(exprManager, name, new ImmutableList.Builder<Selector>().add(
-					selectors).build());
+			this(exprManager, name,
+					new ImmutableList.Builder<Selector>().add(selectors).build());
 		}
 
 		ConstructorImpl(ExpressionManagerImpl exprManager, String name,
@@ -667,7 +667,7 @@ final class InductiveTypeImpl extends TypeImpl implements InductiveType {
 	@Override
 	InductiveExpressionImpl createExpression(Expr res, Expression oldExpr,
 			Iterable<? extends ExpressionImpl> children) {
-		return InductiveExpressionImpl.create(getExpressionManager(), oldExpr
-				.getKind(), res, oldExpr.getType(), children);
+		return InductiveExpressionImpl.create(getExpressionManager(),
+				oldExpr.getKind(), res, oldExpr.getType(), children);
 	}
 }

@@ -196,13 +196,15 @@ final class DSGraphImpl extends DSGraph {
 		Preconditions.checkArgument(G != this);
 
 		// Remove alloca or mod/ref bits as specified...
-		int BitsToClear = ((CloneFlags & DSSupport.CloneFlags.StripAllocaBit
-				.value()) != 0 ? DSSupport.NodeTy.AllocaNode.value() : 0) | ((CloneFlags
-						& DSSupport.CloneFlags.StripModRefBits.value()) != 0
-								? (DSSupport.NodeTy.ModifiedNode.value()
-										| DSSupport.NodeTy.ReadNode.value()) : 0) | ((CloneFlags
-												& DSSupport.CloneFlags.StripIncompleteBit.value()) != 0
-														? DSSupport.NodeTy.IncompleteNode.value() : 0);
+		int BitsToClear = ((CloneFlags
+				& DSSupport.CloneFlags.StripAllocaBit.value()) != 0
+						? DSSupport.NodeTy.AllocaNode.value() : 0)
+				| ((CloneFlags & DSSupport.CloneFlags.StripModRefBits.value()) != 0
+						? (DSSupport.NodeTy.ModifiedNode.value()
+								| DSSupport.NodeTy.ReadNode.value())
+						: 0)
+				| ((CloneFlags & DSSupport.CloneFlags.StripIncompleteBit.value()) != 0
+						? DSSupport.NodeTy.IncompleteNode.value() : 0);
 		BitsToClear |= DSSupport.NodeTy.DeadNode.value(); // Clear dead flag...
 
 		Map<DSNode, DSNodeHandle> OldNodeMap = Maps.newHashMap();
@@ -236,8 +238,8 @@ final class DSGraphImpl extends DSGraph {
 				assert OldNodeMap.containsKey(OldN) : "Unmapped node";
 				DSNodeHandle MappedNH = OldNodeMap.get(OldN);
 				DSNode MappedN = MappedNH.getNode();
-				H.mergeWith(new DSNodeHandle(MappedN, OldNH.getOffset() + MappedNH
-						.getOffset()));
+				H.mergeWith(new DSNodeHandle(MappedN,
+						OldNH.getOffset() + MappedNH.getOffset()));
 			}
 		}
 
@@ -253,8 +255,8 @@ final class DSGraphImpl extends DSGraph {
 				assert OldNodeMap.containsKey(OldN) : "Unmapped node";
 				DSNodeHandle MappedNH = OldNodeMap.get(OldN);
 				DSNode MappedN = MappedNH.getNode();
-				H.mergeWith(new DSNodeHandle(MappedN, OldNH.getOffset() + MappedNH
-						.getOffset()));
+				H.mergeWith(new DSNodeHandle(MappedN,
+						OldNH.getOffset() + MappedNH.getOffset()));
 			}
 		}
 
@@ -271,8 +273,8 @@ final class DSGraphImpl extends DSGraph {
 			assert OldNodeMap.containsKey(Ret.getNode()) : "Unmapped node";
 			DSNodeHandle MappedRet = OldNodeMap.get(Ret.getNode());
 			DSNode MappedRetN = MappedRet.getNode();
-			ReturnNodes.put(entry.getKey(), new DSNodeHandle(MappedRetN, MappedRet
-					.getOffset() + Ret.getOffset()));
+			ReturnNodes.put(entry.getKey(), new DSNodeHandle(MappedRetN,
+					MappedRet.getOffset() + Ret.getOffset()));
 		}
 
 		// Map the VA node pointers over...
@@ -281,8 +283,8 @@ final class DSGraphImpl extends DSGraph {
 			assert OldNodeMap.containsKey(VarArg.getNode()) : "Unmapped node";
 			DSNodeHandle MappedVarArg = OldNodeMap.get(VarArg.getNode());
 			DSNode MappedVarArgN = MappedVarArg.getNode();
-			VANodes.put(entry.getKey(), new DSNodeHandle(MappedVarArgN, MappedVarArg
-					.getOffset() + VarArg.getOffset()));
+			VANodes.put(entry.getKey(), new DSNodeHandle(MappedVarArgN,
+					MappedVarArg.getOffset() + VarArg.getOffset()));
 		}
 	}
 

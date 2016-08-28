@@ -25,14 +25,14 @@ public final class SingleCellLinearFormatter extends AbstractDataFormatter {
 
 	@Override
 	public Type getValueType() {
-		return encoding.getExpressionManager().bitVectorType(encoding
-				.getCTypeAnalyzer().getWordSize());
+		return encoding.getExpressionManager()
+				.bitVectorType(encoding.getCTypeAnalyzer().getWordSize());
 	}
 
 	@Override
 	public Expression castToSize(Expression size) {
-		return encoding.castToInteger(size, getSizeType().asBitVectorType()
-				.getSize());
+		return encoding.castToInteger(size,
+				getSizeType().asBitVectorType().getSize());
 	}
 
 	@Override

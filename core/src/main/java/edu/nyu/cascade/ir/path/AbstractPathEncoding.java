@@ -94,8 +94,8 @@ public abstract class AbstractPathEncoding implements PathEncoding {
 		}
 
 		xtc.type.Type funcType = CType.getType(func.getSourceNode()).resolve();
-		if (funcType.isFunction() && !funcType.toFunction().getResult().resolve()
-				.isVoid()) {
+		if (funcType.isFunction()
+				&& !funcType.toFunction().getResult().resolve().isVoid()) {
 			updateTraceExpression(argNodes.get(0), argExprs.get(0));
 		}
 
@@ -111,8 +111,8 @@ public abstract class AbstractPathEncoding implements PathEncoding {
 		stateFactory.setValidAccess(pre, lhsExpr, lhs.getSourceNode());
 
 		updateTraceExpression(lhs.getSourceNode(), rhsExpr, rhs.getSourceNode());
-		return assign(pre, lhsExpr, lhs.getSourceNode(), rhsExpr, rhs
-				.getSourceNode());
+		return assign(pre, lhsExpr, lhs.getSourceNode(), rhsExpr,
+				rhs.getSourceNode());
 	}
 
 	@Override
@@ -301,8 +301,8 @@ public abstract class AbstractPathEncoding implements PathEncoding {
 			return;
 		ExpressionEncoding encoding = encoder.getEncoding();
 		xtc.type.Type idxType = CType.getType(lNode);
-		boolean isUnsigned = rNode != null && CType.isUnsigned(CType.getType(
-				rNode));
+		boolean isUnsigned = rNode != null
+				&& CType.isUnsigned(CType.getType(rNode));
 
 		int size = (int) encoding.getCTypeAnalyzer().getWidth(idxType);
 		traceExpression = encoding.castToInteger(rvalExpr, size, !isUnsigned);

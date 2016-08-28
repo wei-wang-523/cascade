@@ -76,8 +76,8 @@ class FunctionDeclarator extends ExpressionImpl implements FunctionExpression {
 			if (funcCache.get(exprManager).containsKey(funcName))
 				return funcCache.get(exprManager).get(funcName);
 
-			Iterable<TypeImpl> argTypes1 = Iterables.transform(functionType
-					.getArgTypes(), new Function<Type, TypeImpl>() {
+			Iterable<TypeImpl> argTypes1 = Iterables.transform(
+					functionType.getArgTypes(), new Function<Type, TypeImpl>() {
 						@Override
 						public TypeImpl apply(Type t) {
 							return exprManager.importType(t);
@@ -145,14 +145,15 @@ class FunctionDeclarator extends ExpressionImpl implements FunctionExpression {
 		this.fname = fname;
 		try {
 			this.func = exprManager.getTheoremProver().getZ3Context().mkFuncDecl(
-					fname, Iterables.toArray(Iterables.transform(functionType
-							.getArgTypes(), new Function<Type, Sort>() {
+					fname,
+					Iterables.toArray(Iterables.transform(functionType.getArgTypes(),
+							new Function<Type, Sort>() {
 								@Override
 								public Sort apply(Type type) {
 									return exprManager.importType(type).getZ3Type();
 								}
-							}), Sort.class), exprManager.importType(functionType
-									.getRangeType()).getZ3Type());
+							}), Sort.class),
+					exprManager.importType(functionType.getRangeType()).getZ3Type());
 
 			TheoremProverImpl.z3FileCommand(func.toString().trim());
 		} catch (Z3Exception e) {
@@ -182,8 +183,8 @@ class FunctionDeclarator extends ExpressionImpl implements FunctionExpression {
 	@Override
 	public ExpressionImpl apply(Expression arg1, Expression... otherArgs) {
 		Preconditions.checkArgument(getArity() == otherArgs.length + 1);
-		return ExpressionImpl.mkFunApply(getExpressionManager(), this, Lists.asList(
-				arg1, otherArgs));
+		return ExpressionImpl.mkFunApply(getExpressionManager(), this,
+				Lists.asList(arg1, otherArgs));
 	}
 
 	@Override

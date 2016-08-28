@@ -26,8 +26,8 @@ final class FunctionTypeImpl extends TypeImpl implements FunctionType {
 						return exprManager.importType(t);
 					}
 				});
-		return new FunctionTypeImpl(exprManager, argTypes1, exprManager.importType(
-				range));
+		return new FunctionTypeImpl(exprManager, argTypes1,
+				exprManager.importType(range));
 	}
 
 	static FunctionTypeImpl valueOf(ExpressionManagerImpl exprManager, Type t) {
@@ -94,7 +94,7 @@ final class FunctionTypeImpl extends TypeImpl implements FunctionType {
 	FunctionExpressionImpl createExpression(Expr res, Expression e, Kind kind,
 			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isFunction());
-		return FunctionExpressionImpl.create(getExpressionManager(), kind, res, e
-				.getType().asFunction(), children);
+		return FunctionExpressionImpl.create(getExpressionManager(), kind, res,
+				e.getType().asFunction(), children);
 	}
 }

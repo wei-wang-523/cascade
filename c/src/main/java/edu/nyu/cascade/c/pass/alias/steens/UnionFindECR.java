@@ -162,8 +162,8 @@ class UnionFindECR {
 		ImmutableMap.Builder<ECR, Collection<IRVar>> builder = ImmutableMap
 				.builder();
 		for (Partition ecr : map.asMap().keySet()) {
-			builder.put((ECR) ecr.findRoot(), ImmutableSet.copyOf(map.asMap().get(
-					ecr)));
+			builder.put((ECR) ecr.findRoot(),
+					ImmutableSet.copyOf(map.asMap().get(ecr)));
 		}
 		return builder.build();
 	}
@@ -176,8 +176,8 @@ class UnionFindECR {
 		ValueType ecrType = getType(ecr);
 		switch (ecrType.getKind()) {
 		case BOTTOM:
-			ValueType newRefType = ValueType.ref(ECR.createBottom(), ECR
-					.createBottom());
+			ValueType newRefType = ValueType.ref(ECR.createBottom(),
+					ECR.createBottom());
 			setType(ecr, newRefType);
 			return newRefType.asRef().getLocation();
 		case REF:
@@ -191,8 +191,8 @@ class UnionFindECR {
 		ValueType ecrType = getType(ecr);
 		switch (ecrType.getKind()) {
 		case BOTTOM:
-			ValueType newRefType = ValueType.ref(ECR.createBottom(), ECR
-					.createBottom());
+			ValueType newRefType = ValueType.ref(ECR.createBottom(),
+					ECR.createBottom());
 			setType(ecr, newRefType);
 			return newRefType.asRef().getFunction();
 		case REF:

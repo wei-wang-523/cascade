@@ -58,8 +58,8 @@ class UnionFindECR {
 		ECR root = findRoot(e);
 		root.setType(type);
 
-		Collection<Pair<Size, ECR>> ccjoins = ImmutableList.copyOf(root
-				.getCCjoins());
+		Collection<Pair<Size, ECR>> ccjoins = ImmutableList
+				.copyOf(root.getCCjoins());
 		root.clearCCjoins(ccjoins);
 		for (Pair<Size, ECR> cjoinPair : ccjoins)
 			ccjoin(cjoinPair.fst(), root, cjoinPair.snd());
@@ -246,12 +246,12 @@ class UnionFindECR {
 			ValueType type2 = getType(e2);
 			switch (type2.getKind()) {
 			case BOTTOM:
-				setType(e2, ValueType.simple(type1.asSimple().getLoc(), type1.asSimple()
-						.getFunc(), rangeSize, Parent.getBottom()));
+				setType(e2, ValueType.simple(type1.asSimple().getLoc(),
+						type1.asSimple().getFunc(), rangeSize, Parent.getBottom()));
 				return;
 			case BLANK: {
-				setType(e2, ValueType.simple(type1.asSimple().getLoc(), type1.asSimple()
-						.getFunc(), type2.getSize(), type2.getParent()));
+				setType(e2, ValueType.simple(type1.asSimple().getLoc(),
+						type1.asSimple().getFunc(), type2.getSize(), type2.getParent()));
 				Size size2 = type2.getSize();
 				if (!Size.isLessThan(rangeSize, size2))
 					expand(e2);
@@ -288,8 +288,8 @@ class UnionFindECR {
 			case BOTTOM: {
 				RangeMap<Long, ECR> fieldMapCopy = FieldRangeMap.create();
 				fieldMapCopy.putAll(type1.asStruct().getFieldMap());
-				setType(e2, ValueType.struct(fieldMapCopy, rangeSize, Parent
-						.getBottom()));
+				setType(e2,
+						ValueType.struct(fieldMapCopy, rangeSize, Parent.getBottom()));
 				return;
 			}
 			case BLANK: {
@@ -424,8 +424,8 @@ class UnionFindECR {
 		if (type.isStruct())
 			type = collapseStruct(e, type.asStruct());
 
-		ValueType objType = ValueType.object(createBottomLocFunc(), size, Parent
-				.getBottom());
+		ValueType objType = ValueType.object(createBottomLocFunc(), size,
+				Parent.getBottom());
 
 		ValueType unifyType = unify(type, objType);
 		setType(e, unifyType);
@@ -529,8 +529,8 @@ class UnionFindECR {
 		}
 		case STRUCT: {
 			if (ValueTypeKind.STRUCT.equals(t2.getKind())) {
-				RangeMap<Long, ECR> map = getCompatibleMap(t1.asStruct(), t2
-						.asStruct());
+				RangeMap<Long, ECR> map = getCompatibleMap(t1.asStruct(),
+						t2.asStruct());
 				return ValueType.struct(map, size, parent);
 			} else {
 				throw new IllegalArgumentException();
@@ -582,8 +582,8 @@ class UnionFindECR {
 		ImmutableMap.Builder<ECR, Collection<IRVar>> builder = ImmutableMap
 				.builder();
 		for (Partition ecr : map.asMap().keySet()) {
-			builder.put(findRoot((ECR) ecr), ImmutableSet.copyOf(map.asMap().get(
-					ecr)));
+			builder.put(findRoot((ECR) ecr),
+					ImmutableSet.copyOf(map.asMap().get(ecr)));
 		}
 		return builder.build();
 	}
@@ -793,8 +793,8 @@ class UnionFindECR {
 		}
 		case BLANK: {
 			BlankType blankType = type.asBlank();
-			ValueType simType = ValueType.simple(createBottomLocFunc(), blankType
-					.getSize(), blankType.getParent());
+			ValueType simType = ValueType.simple(createBottomLocFunc(),
+					blankType.getSize(), blankType.getParent());
 			setType(e, simType);
 
 			if (!(Size.isLessThan(rangeSize, blankType.getSize())))

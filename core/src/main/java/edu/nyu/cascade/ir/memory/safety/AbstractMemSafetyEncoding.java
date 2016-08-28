@@ -83,8 +83,8 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 
 			@Override
 			public String toString() {
-				return new StringBuilder().append("\n\tfunc: ").append(func).append(
-						"\n\texpr: ").append(expr).toString();
+				return new StringBuilder().append("\n\tfunc: ").append(func)
+						.append("\n\texpr: ").append(expr).toString();
 			}
 
 			@Override
@@ -113,8 +113,8 @@ public abstract class AbstractMemSafetyEncoding implements IRMemSafetyEncoding {
 	public Expression applyUpdatedPredicate(SingleLambdaStateExpression state,
 			FunctionExpression func, Collection<Expression> args) {
 		String funcName = func.getName();
-		PredicateClosure predicateClosure = state.getSafetyPredicateClosure(
-				funcName);
+		PredicateClosure predicateClosure = state
+				.getSafetyPredicateClosure(funcName);
 		Expression[] argsArray = new Expression[args.size()];
 		argsArray = args.toArray(argsArray);
 		state.registerPredicate(predicateClosure.getUninterpretedFunc(), argsArray);

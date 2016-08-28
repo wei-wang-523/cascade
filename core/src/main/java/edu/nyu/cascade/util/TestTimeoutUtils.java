@@ -41,8 +41,8 @@ public class TestTimeoutUtils {
 		public Task<T> createTask(final T in) {
 			return new Task<T>() {
 				@Override
-				public Void call() throws IOException, ParseException,
-						TheoremProverException {
+				public Void call()
+						throws IOException, ParseException, TheoremProverException {
 					return function.apply(in);
 				}
 			};
@@ -70,8 +70,8 @@ public class TestTimeoutUtils {
 		String[] tests = dir.list(filter);
 
 		if (tests == null) {
-			throw new AssertionError("No test cases found in directory: " + dir
-					.getAbsolutePath());
+			throw new AssertionError(
+					"No test cases found in directory: " + dir.getAbsolutePath());
 		} else {
 			for (String test : tests) {
 				// Try to parse the file

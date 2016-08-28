@@ -33,8 +33,8 @@ public class Preferences {
 		}
 	}
 
-	public static final File DEFAULT_CONFIG_DIRECTORY = new File(System
-			.getProperty("user.home"), ".cascade");
+	public static final File DEFAULT_CONFIG_DIRECTORY = new File(
+			System.getProperty("user.home"), ".cascade");
 	private static final String DEFAULT_PROPERTIES_FILE_NAME = "cascade.properties";
 	private static final File DEFAULT_PROPERTIES_FILE = new File(
 			DEFAULT_CONFIG_DIRECTORY, DEFAULT_PROPERTIES_FILE_NAME);
@@ -169,8 +169,8 @@ public class Preferences {
 	/** ------------ The magic iteration times ---------------- */
 	public static final List<Integer> MEM_MAGIC_ITER_TIMES = Lists.newArrayList(0,
 			1, 6, 12, 17, 21, 40, 80, 100, 200);
-	public static final List<Integer> REACH_MAGIC_ITER_TIMES = Lists.newArrayList(
-			1, 6, 12, 17, 21, 40, 80, 100, 200, 400, 1024);
+	public static final List<Integer> REACH_MAGIC_ITER_TIMES = Lists
+			.newArrayList(1, 6, 12, 17, 21, 40, 80, 100, 200, 400, 1024);
 
 	public static void clearAll() {
 		getProperties().clear();
@@ -207,8 +207,8 @@ public class Preferences {
 		} else if (val instanceof String) {
 			return Integer.parseInt((String) val);
 		} else {
-			throw new ClassCastException("Could not cast " + val.getClass()
-					+ "to int.");
+			throw new ClassCastException(
+					"Could not cast " + val.getClass() + "to int.");
 		}
 	}
 

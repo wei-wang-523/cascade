@@ -60,8 +60,8 @@ public class ECREncoder extends Visitor {
 
 		@Override
 		public ECR unableToVisit(Node node) throws VisitingException {
-			IOUtils.err().println("APPROX: Treating unexpected node type as NULL: "
-					+ node.getName());
+			IOUtils.err().println(
+					"APPROX: Treating unexpected node type as NULL: " + node.getName());
 			return ECR.createBottom();
 		}
 
@@ -164,8 +164,8 @@ public class ECREncoder extends Visitor {
 
 		@Override
 		public ECR unableToVisit(Node node) throws VisitingException {
-			IOUtils.err().println("APPROX: Treating unexpected node type as NULL: "
-					+ node.getName());
+			IOUtils.err().println(
+					"APPROX: Treating unexpected node type as NULL: " + node.getName());
 			return ECR.createBottom();
 		}
 
@@ -198,10 +198,10 @@ public class ECREncoder extends Visitor {
 						ECR resECR = createPointerECR(type);
 						opECRMap.put(Pair.of(node, CType.getScopeName(node)), resECR);
 
-						long targetSize = cTypeAnalyzer.getSize(type.resolve().toPointer()
-								.getType());
-						long srcSize = cTypeAnalyzer.getSize(lhsType.resolve().toPointer()
-								.getType());
+						long targetSize = cTypeAnalyzer
+								.getSize(type.resolve().toPointer().getType());
+						long srcSize = cTypeAnalyzer
+								.getSize(lhsType.resolve().toPointer().getType());
 
 						long val = rhsType.getConstant().longValue();
 						boolean positive = "+".equals(node.getString(1));
@@ -516,8 +516,8 @@ public class ECREncoder extends Visitor {
 	}
 
 	private ECR getComponent(ECR srcECR, Type baseType, String fieldName) {
-		Preconditions.checkArgument(baseType.hasTag(Tag.STRUCT) || baseType.hasTag(
-				Tag.UNION));
+		Preconditions.checkArgument(
+				baseType.hasTag(Tag.STRUCT) || baseType.hasTag(Tag.UNION));
 		long offset = cTypeAnalyzer.getOffset(baseType, fieldName);
 		Type fieldType = baseType.toStructOrUnion().lookup(fieldName);
 
@@ -568,11 +568,11 @@ public class ECREncoder extends Visitor {
 	private ECR createPointerECR(Type type) {
 		Preconditions.checkArgument(type.resolve().isPointer());
 		Type ptr2Type = type.resolve().toPointer().getType();
-		BlankType blankType = ValueType.blank(Size.createForType(ptr2Type), Parent
-				.getBottom());
+		BlankType blankType = ValueType.blank(Size.createForType(ptr2Type),
+				Parent.getBottom());
 		ECR blankECR = ECR.create(blankType);
-		SimpleType refType = ValueType.simple(blankECR, ECR.createBottom(), Size
-				.createForType(type), Parent.getBottom());
+		SimpleType refType = ValueType.simple(blankECR, ECR.createBottom(),
+				Size.createForType(type), Parent.getBottom());
 		ECR ptrECR = ECR.create(refType);
 		return ptrECR;
 	}
@@ -597,8 +597,8 @@ public class ECREncoder extends Visitor {
 		if (type.isInternal())
 			return varECR;
 
-		SimpleType addrType = ValueType.simple(varECR, ECR.createBottom(), Size
-				.createForType(new PointerT(type)), Parent.getBottom());
+		SimpleType addrType = ValueType.simple(varECR, ECR.createBottom(),
+				Size.createForType(new PointerT(type)), Parent.getBottom());
 
 		return ECR.create(addrType);
 	}
@@ -612,8 +612,8 @@ public class ECREncoder extends Visitor {
 
 		Size size = Size.createForType(new PointerT(type));
 
-		ValueType varType = ValueType.simple(ECR.createBottom(), func, size, Parent
-				.getBottom());
+		ValueType varType = ValueType.simple(ECR.createBottom(), func, size,
+				Parent.getBottom());
 		ECR varECR = ECR.create(varType);
 
 		SimpleType addrType = ValueType.simple(varECR, ECR.createBottom(), size,
@@ -661,8 +661,8 @@ public class ECREncoder extends Visitor {
 			return srcECR;
 
 		ECR targetECR = createPointerECR(targetType);
-		long targetPtr2Size = cTypeAnalyzer.getSize(targetType.resolve().toPointer()
-				.getType());
+		long targetPtr2Size = cTypeAnalyzer
+				.getSize(targetType.resolve().toPointer().getType());
 
 		if (!Preferences.isSet(Preferences.OPTION_CFS_POINTER_ARITH)) {
 			uf.smash(srcECR, targetECR, targetPtr2Size);

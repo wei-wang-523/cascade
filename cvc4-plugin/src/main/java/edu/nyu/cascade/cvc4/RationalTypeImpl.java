@@ -9,8 +9,8 @@ import edu.nyu.cascade.prover.type.RationalType;
 class RationalTypeImpl extends TypeImpl implements RationalType {
 	RationalTypeImpl(ExpressionManagerImpl expressionManager) {
 		super(expressionManager);
-		setCVC4Type(expressionManager.getTheoremProver().getCvc4ExprManager()
-				.realType());
+		setCVC4Type(
+				expressionManager.getTheoremProver().getCvc4ExprManager().realType());
 	}
 
 	protected RationalTypeImpl(ExpressionManagerImpl em,
@@ -168,7 +168,7 @@ class RationalTypeImpl extends TypeImpl implements RationalType {
 	RationalExpressionImpl createExpression(Expr res, Expression e, Kind kind,
 			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isRational());
-		return RationalExpressionImpl.create(getExpressionManager(), kind, res, e
-				.getType().asRational(), children);
+		return RationalExpressionImpl.create(getExpressionManager(), kind, res,
+				e.getType().asRational(), children);
 	}
 }

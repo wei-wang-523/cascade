@@ -13,8 +13,8 @@ import com.google.common.base.Stopwatch;
 
 public class TestUtils {
 	public static final String TEST_RESOURCES_DIRECTORY = FileUtils.RESOURCES_DIRECTORY;
-	public static final String TEST_DATA_DIRECTORY = FileUtils.path(
-			TEST_RESOURCES_DIRECTORY, "data");
+	public static final String TEST_DATA_DIRECTORY = FileUtils
+			.path(TEST_RESOURCES_DIRECTORY, "data");
 
 	/** A function object for a JUnit tester. */
 	public interface Tester<T> {

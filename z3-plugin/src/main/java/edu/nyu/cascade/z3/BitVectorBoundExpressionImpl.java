@@ -9,8 +9,8 @@ import edu.nyu.cascade.prover.BitVectorExpression;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 
-final class BitVectorBoundExpressionImpl extends BoundExpressionImpl implements
-		BitVectorExpression {
+final class BitVectorBoundExpressionImpl extends BoundExpressionImpl
+		implements BitVectorExpression {
 
 	private BitVectorBoundExpressionImpl(ExpressionManagerImpl em, String name,
 			BitVectorTypeImpl type, boolean fresh) {
@@ -105,8 +105,8 @@ final class BitVectorBoundExpressionImpl extends BoundExpressionImpl implements
 
 	@Override
 	public BitVectorExpressionImpl plus(Iterable<? extends Expression> args) {
-		return BitVectorExpressionImpl.mkPlus(getExpressionManager(), Iterables
-				.concat(Collections.singleton(this), args));
+		return BitVectorExpressionImpl.mkPlus(getExpressionManager(),
+				Iterables.concat(Collections.singleton(this), args));
 	}
 
 	@Override
@@ -121,8 +121,8 @@ final class BitVectorBoundExpressionImpl extends BoundExpressionImpl implements
 
 	@Override
 	public BitVectorExpressionImpl times(Iterable<? extends Expression> args) {
-		return BitVectorExpressionImpl.mkMult(getExpressionManager(), Iterables
-				.concat(Collections.singleton(this), args));
+		return BitVectorExpressionImpl.mkMult(getExpressionManager(),
+				Iterables.concat(Collections.singleton(this), args));
 	}
 
 	@Override

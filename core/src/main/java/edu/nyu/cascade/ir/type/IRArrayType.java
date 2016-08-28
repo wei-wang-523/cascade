@@ -15,8 +15,8 @@ public final class IRArrayType<T extends IRType> extends IRType {
 	@SuppressWarnings("unchecked")
 	public static <T extends IRType> IRArrayType<T> getInstance(IRType range,
 			T type) {
-		IRArrayType<T> arrayType = (IRArrayType<T>) singletonMap.get(Pair.of(range,
-				type));
+		IRArrayType<T> arrayType = (IRArrayType<T>) singletonMap
+				.get(Pair.of(range, type));
 		if (arrayType != null)
 			return arrayType;
 

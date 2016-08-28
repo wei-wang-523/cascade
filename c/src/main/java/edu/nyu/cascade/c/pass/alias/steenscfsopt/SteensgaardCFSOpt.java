@@ -68,8 +68,8 @@ public class SteensgaardCFSOpt implements IRAliasAnalyzer<ECR> {
 			symbolTable.enterScope(globalCFG);
 			currentCFG = globalCFG;
 
-			final Collection<IRBasicBlock> topologicSeq = Lists.reverse(globalCFG
-					.topologicalSeq(globalCFG.getEntry()));
+			final Collection<IRBasicBlock> topologicSeq = Lists
+					.reverse(globalCFG.topologicalSeq(globalCFG.getEntry()));
 
 			for (IRBasicBlock block : topologicSeq) {
 				for (IRStatement stmt : block.getStatements())
@@ -79,8 +79,8 @@ public class SteensgaardCFSOpt implements IRAliasAnalyzer<ECR> {
 					if (null != outgoing.getGuard()) {
 						IRBooleanExpression guard = outgoing.getGuard();
 						Node guardNode = guard.getSourceNode();
-						IOUtils.debug().pln("Preprocess: " + guardNode.getLocation() + ": "
-								+ guard);
+						IOUtils.debug()
+								.pln("Preprocess: " + guardNode.getLocation() + ": " + guard);
 						ecrEncoder.toRval(guardNode);
 					}
 				}
@@ -122,8 +122,8 @@ public class SteensgaardCFSOpt implements IRAliasAnalyzer<ECR> {
 				}
 			}
 
-			final Collection<IRBasicBlock> topologicSeq = Lists.reverse(CFG
-					.topologicalSeq(CFG.getEntry()));
+			final Collection<IRBasicBlock> topologicSeq = Lists
+					.reverse(CFG.topologicalSeq(CFG.getEntry()));
 
 			for (IRBasicBlock block : topologicSeq) {
 				for (IRStatement stmt : block.getStatements())
@@ -133,8 +133,8 @@ public class SteensgaardCFSOpt implements IRAliasAnalyzer<ECR> {
 					if (null != outgoing.getGuard()) {
 						IRBooleanExpression guard = outgoing.getGuard();
 						Node guardNode = guard.getSourceNode();
-						IOUtils.debug().pln("Preprocess: " + guardNode.getLocation() + ": "
-								+ guard);
+						IOUtils.debug()
+								.pln("Preprocess: " + guardNode.getLocation() + ": " + guard);
 						ecrEncoder.toRval(guardNode);
 					}
 				}
@@ -220,8 +220,8 @@ public class SteensgaardCFSOpt implements IRAliasAnalyzer<ECR> {
 			/* For the function pointer parameters declared but not yet assigned */
 			if (uf.getType(funcECR).isBottom()) {
 				IOUtils.err().println("WARNING: get Loc of " + funcECR);
-				Size size = Size.createForType(CType.getInstance().pointerize(
-						funcXtcType));
+				Size size = Size
+						.createForType(CType.getInstance().pointerize(funcXtcType));
 				uf.expand(funcECR, size);
 			}
 
@@ -424,8 +424,8 @@ public class SteensgaardCFSOpt implements IRAliasAnalyzer<ECR> {
 	public String displaySnapShot() {
 		buildSnapShot();
 
-		StringBuilder sb = new StringBuilder().append('\n').append(
-				"The result of field-sensitive Steensgaard analysis:\n");
+		StringBuilder sb = new StringBuilder().append('\n')
+				.append("The result of field-sensitive Steensgaard analysis:\n");
 
 		for (Entry<ECR, Collection<IRVar>> entry : snapShot.entrySet()) {
 			ECR ecr = entry.getKey();
@@ -530,7 +530,7 @@ public class SteensgaardCFSOpt implements IRAliasAnalyzer<ECR> {
 		// TODO Auto-generated method stub
 
 	}
-	
+
 	@Override
 	public Pair<Integer, Integer> getAliasAnalysisStats(
 			IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs) {

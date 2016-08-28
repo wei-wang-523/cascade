@@ -92,8 +92,8 @@ import edu.nyu.cascade.prover.type.Constructor;
 }
 */
 
-public abstract class CompressedDomainNamesEncoding extends
-		AbstractExpressionEncoding {
+public abstract class CompressedDomainNamesEncoding
+		extends AbstractExpressionEncoding {
 
 	protected static final String MEM_ARRAY_NAME = "m";
 	protected static final String DATATYPE_NAME = "Dn";

@@ -57,8 +57,8 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 			if (typeCache.get(em).containsKey(name))
 				return typeCache.get(em).get(name);
 			else {
-				RecordTypeImpl res = new RecordTypeImpl(em, name, Lists.newArrayList(
-						elemName), Lists.newArrayList(elemType));
+				RecordTypeImpl res = new RecordTypeImpl(em, name,
+						Lists.newArrayList(elemName), Lists.newArrayList(elemType));
 				typeCache.get(em).put(name, res);
 				return res;
 			}
@@ -77,8 +77,9 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 		if (t instanceof RecordTypeImpl) {
 			return (RecordTypeImpl) t;
 		} else {
-			return create(em, ((RecordType) t).getName(), ((RecordType) t)
-					.getElementNames(), ((RecordType) t).getElementTypes());
+			return create(em, ((RecordType) t).getName(),
+					((RecordType) t).getElementNames(),
+					((RecordType) t).getElementTypes());
 		}
 	}
 
@@ -94,14 +95,15 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 		this.elementNames = ImmutableList.copyOf(elemNames);
 
 		StringBuilder sb = new StringBuilder();
-		sb.append("() ( (" + typeName + "\n                          (mk-"
-				+ typeName); // Type parameter
+		sb.append(
+				"() ( (" + typeName + "\n                          (mk-" + typeName); // Type
+																																							// parameter
 
 		try {
 			Context z3_context = em.getTheoremProver().getZ3Context();
 			Sort[] z3Types = new Sort[Iterables.size(elemTypes)];
-			String[] symbols = Iterables.toArray(Iterables.transform(elemNames,
-					new Function<String, String>() {
+			String[] symbols = Iterables.toArray(
+					Iterables.transform(elemNames, new Function<String, String>() {
 						@Override
 						public String apply(String arg) {
 							return arg;
@@ -111,17 +113,17 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 			for (int i = 0; i < Iterables.size(elemTypes); i++) {
 				z3Types[i] = em.toZ3Type(Iterables.get(elemTypes, i));
 				refs[i] = 0;
-				sb.append(" \n                             (" + Iterables.get(elemNames,
-						i) + " " + z3Types[i] + ")");
+				sb.append(" \n                             ("
+						+ Iterables.get(elemNames, i) + " " + z3Types[i] + ")");
 			}
-			Constructor[] cons = new Constructor[] { z3_context.mkConstructor("mk-"
-					+ typeName, "is-" + typeName, symbols, z3Types, refs) };
+			Constructor[] cons = new Constructor[] { z3_context.mkConstructor(
+					"mk-" + typeName, "is-" + typeName, symbols, z3Types, refs) };
 			setZ3Type(z3_context.mkDatatypeSort(typeName, cons));
 			sb.append(")))");
 			em.addToTypeCache(this);
 
-			TheoremProverImpl.z3FileCommand("(declare-datatypes " + sb.toString()
-					+ ")");
+			TheoremProverImpl
+					.z3FileCommand("(declare-datatypes " + sb.toString() + ")");
 		} catch (Z3Exception e) {
 			throw new TheoremProverException(e);
 		}
@@ -197,7 +199,7 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 	@Override
 	protected RecordExpressionImpl createExpression(Expr res, Expression oldExpr,
 			Iterable<? extends ExpressionImpl> children) {
-		return RecordExpressionImpl.create(getExpressionManager(), oldExpr
-				.getKind(), res, oldExpr.getType(), children);
+		return RecordExpressionImpl.create(getExpressionManager(),
+				oldExpr.getKind(), res, oldExpr.getType(), children);
 	}
 }

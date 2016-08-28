@@ -78,9 +78,9 @@ class DefaultArrayInstance implements ArrayEncoding.Instance<ArrayExpression> {
 			return false;
 		}
 		DefaultArrayInstance instance = (DefaultArrayInstance) obj;
-		return EqualsUtil.areEqual(exprManager, instance.exprManager) && EqualsUtil
-				.areEqual(indexEncoding, instance.indexEncoding) && EqualsUtil.areEqual(
-						elementEncoding, instance.elementEncoding);
+		return EqualsUtil.areEqual(exprManager, instance.exprManager)
+				&& EqualsUtil.areEqual(indexEncoding, instance.indexEncoding)
+				&& EqualsUtil.areEqual(elementEncoding, instance.elementEncoding);
 	}
 
 	@Override
@@ -123,8 +123,8 @@ class DefaultArrayInstance implements ArrayEncoding.Instance<ArrayExpression> {
 			return false;
 		}
 		ArrayExpression ax = x.asArray();
-		return ax.getIndexType().equals(indexEncoding.getType()) && ax
-				.getElementType().equals(elementEncoding.getType());
+		return ax.getIndexType().equals(indexEncoding.getType())
+				&& ax.getElementType().equals(elementEncoding.getType());
 	}
 
 	@Override
@@ -135,8 +135,9 @@ class DefaultArrayInstance implements ArrayEncoding.Instance<ArrayExpression> {
 
 	@Override
 	public ArrayExpression symbolicConstant(String name, boolean fresh) {
-		return exprManager.arrayType(getIndexEncoding().getType(),
-				getElementEncoding().getType()).variable(name, fresh);
+		return exprManager
+				.arrayType(getIndexEncoding().getType(), getElementEncoding().getType())
+				.variable(name, fresh);
 	}
 
 	@Override
@@ -158,21 +159,24 @@ class DefaultArrayInstance implements ArrayEncoding.Instance<ArrayExpression> {
 
 	@Override
 	public ArrayExpression variable(String name, boolean fresh) {
-		return exprManager.arrayType(getIndexEncoding().getType(),
-				getElementEncoding().getType()).variable(name, fresh);
+		return exprManager
+				.arrayType(getIndexEncoding().getType(), getElementEncoding().getType())
+				.variable(name, fresh);
 	}
 
 	@Override
 	public ArrayExpression boundVar(String name, boolean fresh) {
-		return exprManager.arrayType(getIndexEncoding().getType(),
-				getElementEncoding().getType()).boundVar(name, fresh);
+		return exprManager
+				.arrayType(getIndexEncoding().getType(), getElementEncoding().getType())
+				.boundVar(name, fresh);
 	}
 
 	@Override
 	public ArrayExpression boundExpression(String name, int index,
 			boolean fresh) {
-		return exprManager.arrayType(getIndexEncoding().getType(),
-				getElementEncoding().getType()).boundExpression(name, index, fresh);
+		return exprManager
+				.arrayType(getIndexEncoding().getType(), getElementEncoding().getType())
+				.boundExpression(name, index, fresh);
 	}
 
 	@Override

@@ -6,8 +6,8 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.type.Type;
 
-final class RecordVariableImpl extends VariableExpressionImpl implements
-		RecordExpression {
+final class RecordVariableImpl extends VariableExpressionImpl
+		implements RecordExpression {
 
 	static RecordVariableImpl create(ExpressionManagerImpl exprManager,
 			String name, RecordTypeImpl type, boolean fresh) {

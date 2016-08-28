@@ -253,7 +253,7 @@ public class TypeAnalyzer implements IRAliasAnalyzer<FSType> {
 		// TODO Auto-generated method stub
 
 	}
-	
+
 	@Override
 	public Pair<Integer, Integer> getAliasAnalysisStats(
 			IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs) {

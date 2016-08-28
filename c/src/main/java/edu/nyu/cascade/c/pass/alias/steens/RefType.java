@@ -11,9 +11,9 @@ class RefType extends ValueType {
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder().append("REF ( ").append(((ECR) loc
-				.findRoot()).getId()).append(" * ").append(((ECR) func.findRoot())
-						.getId()).append(" )");
+		StringBuilder sb = new StringBuilder().append("REF ( ")
+				.append(((ECR) loc.findRoot()).getId()).append(" * ")
+				.append(((ECR) func.findRoot()).getId()).append(" )");
 		return sb.toString();
 	}
 

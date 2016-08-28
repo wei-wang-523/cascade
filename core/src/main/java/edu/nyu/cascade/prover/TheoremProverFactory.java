@@ -167,8 +167,8 @@ public class TheoremProverFactory {
 		// classLoader);
 		// }
 
-		ServiceLoader<TheoremProver.Provider> tpServiceLoader = ServiceLoader.load(
-				TheoremProver.Provider.class, classLoader);
+		ServiceLoader<TheoremProver.Provider> tpServiceLoader = ServiceLoader
+				.load(TheoremProver.Provider.class, classLoader);
 
 		if (Iterables.isEmpty(tpServiceLoader)) {
 			IOUtils.err().println("No theorem prover providers found.");
@@ -307,8 +307,8 @@ public class TheoremProverFactory {
 		}
 		TheoremProver.Provider tp = chooseProvider(candidates);
 		if (tp == null) {
-			throw new TheoremProverFactoryException("Unsatisfiable capabilities: "
-					+ capabilities);
+			throw new TheoremProverFactoryException(
+					"Unsatisfiable capabilities: " + capabilities);
 		} else {
 			return tp.create();
 		}

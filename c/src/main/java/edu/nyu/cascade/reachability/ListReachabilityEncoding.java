@@ -20,8 +20,8 @@ import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.IntegerExpression;
 
-public abstract class ListReachabilityEncoding extends
-		AbstractExpressionEncoding {
+public abstract class ListReachabilityEncoding
+		extends AbstractExpressionEncoding {
 
 	protected static final String DATATYPE_NAME = "list";
 	protected static final String CONS_CONSTR_NAME = "cons";

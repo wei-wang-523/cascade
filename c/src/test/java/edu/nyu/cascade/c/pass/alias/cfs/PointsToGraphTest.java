@@ -15,8 +15,8 @@ import edu.nyu.cascade.c.pass.alias.cfs.PointsToGraph;
 import edu.nyu.cascade.util.UnionFind;
 
 public class PointsToGraphTest {
-	private static final long PtrSize = CType.getInstance().getSize(new PointerT(
-			VoidT.TYPE));
+	private static final long PtrSize = CType.getInstance()
+			.getSize(new PointerT(VoidT.TYPE));
 
 	private CellManager cellManager;
 	private PointsToGraph pointsToGraph;

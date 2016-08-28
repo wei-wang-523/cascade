@@ -116,8 +116,8 @@ public class ExpressionImpl implements Expression {
 			Expression fun, Iterable<? extends Expression> args) {
 		Preconditions.checkArgument(fun.isFunction());
 		int numArgs = Iterables.size(args);
-		Preconditions.checkArgument(fun.getType().asFunction()
-				.getArity() == numArgs);
+		Preconditions
+				.checkArgument(fun.getType().asFunction().getArity() == numArgs);
 		List<Expression> args1 = Lists.newArrayListWithCapacity(numArgs + 1);
 		args1.add(fun);
 		Iterables.addAll(args1, args);
@@ -159,8 +159,8 @@ public class ExpressionImpl implements Expression {
 	static ExpressionImpl mkSubst(final ExpressionManagerImpl exprManager,
 			Expression e, Iterable<? extends Expression> oldExprs,
 			Iterable<? extends Expression> newExprs) {
-		Preconditions.checkArgument(Iterables.size(oldExprs) == Iterables.size(
-				newExprs));
+		Preconditions
+				.checkArgument(Iterables.size(oldExprs) == Iterables.size(newExprs));
 
 		/* Don't bother to SUBST a constant */
 		if (CONSTANT.equals(e.getKind())) {
@@ -200,8 +200,8 @@ public class ExpressionImpl implements Expression {
 			newArgVec.add(arg);
 
 		Expr res = exprManager.toCvc4Expr(e).substitute(oldArgVec, newArgVec);
-		return exprManager.importType(e.getType()).createExpression(res, e, e
-				.getKind(), exprManager.importExpressions(newExprs));
+		return exprManager.importType(e.getType()).createExpression(res, e,
+				e.getKind(), exprManager.importExpressions(newExprs));
 	}
 
 	static ExpressionImpl mkTypeStub(ExpressionManagerImpl exprManager,
@@ -309,8 +309,8 @@ public class ExpressionImpl implements Expression {
 		ExprManager cvc4_em = exprManager.getTheoremProver().getCvc4ExprManager();
 
 		// Create the new expression
-		edu.nyu.acsys.CVC4.ArrayType atype = new edu.nyu.acsys.CVC4.ArrayType(type
-				.getCVC4Type());
+		edu.nyu.acsys.CVC4.ArrayType atype = new edu.nyu.acsys.CVC4.ArrayType(
+				type.getCVC4Type());
 		setCvc4Expression(strategy.apply(cvc4_em, atype, body_expr));
 	}
 
@@ -345,8 +345,8 @@ public class ExpressionImpl implements Expression {
 
 		Expr cvc4_body = exprs.get(0);
 
-		List<Expr> cvc4_vars = ImmutableList.copyOf(getExpressionManager()
-				.toCvc4Exprs(vars));
+		List<Expr> cvc4_vars = ImmutableList
+				.copyOf(getExpressionManager().toCvc4Exprs(vars));
 
 		ExprManager cvc4_em = getExpressionManager().getTheoremProver()
 				.getCvc4ExprManager();
@@ -366,8 +366,8 @@ public class ExpressionImpl implements Expression {
 		Expr cvc4_body = exprs.get(1);
 
 		// New list for the cvc4 variables
-		List<Expr> cvc4_vars = ImmutableList.copyOf(getExpressionManager()
-				.toCvc4Exprs(vars));
+		List<Expr> cvc4_vars = ImmutableList
+				.copyOf(getExpressionManager().toCvc4Exprs(vars));
 
 		/*
 		 * List<Expr> cvc4_triggers = ImmutableList.copyOf(ExpressionManager
@@ -376,8 +376,8 @@ public class ExpressionImpl implements Expression {
 		// Call the construct method for quantification
 		ExprManager cvc4_em = getExpressionManager().getTheoremProver()
 				.getCvc4ExprManager();
-		setCvc4Expression(strategy.apply(cvc4_em, cvc4_vars, cvc4_guard,
-				cvc4_body));
+		setCvc4Expression(
+				strategy.apply(cvc4_em, cvc4_vars, cvc4_guard, cvc4_body));
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
@@ -393,17 +393,17 @@ public class ExpressionImpl implements Expression {
 		Expr cvc4_body = exprs.get(0);
 
 		// New list for the cvc4 variables
-		List<Expr> cvc4_vars = ImmutableList.copyOf(getExpressionManager()
-				.toCvc4Exprs(vars));
+		List<Expr> cvc4_vars = ImmutableList
+				.copyOf(getExpressionManager().toCvc4Exprs(vars));
 
-		List<Expr> cvc4_triggers = ImmutableList.copyOf(getExpressionManager()
-				.toCvc4Exprs(triggers));
+		List<Expr> cvc4_triggers = ImmutableList
+				.copyOf(getExpressionManager().toCvc4Exprs(triggers));
 
 		// Call the construct method for quantification
 		ExprManager cvc4_em = getExpressionManager().getTheoremProver()
 				.getCvc4ExprManager();
-		setCvc4Expression(strategy.apply(cvc4_em, cvc4_vars, cvc4_body,
-				cvc4_triggers));
+		setCvc4Expression(
+				strategy.apply(cvc4_em, cvc4_vars, cvc4_body, cvc4_triggers));
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind,
@@ -420,14 +420,14 @@ public class ExpressionImpl implements Expression {
 		Expr cvc4_body = exprs.get(1);
 
 		// New list for the cvc4 triggers
-		List<Expr> cvc4_triggers = ImmutableList.copyOf(getExpressionManager()
-				.toCvc4Exprs(triggers));
+		List<Expr> cvc4_triggers = ImmutableList
+				.copyOf(getExpressionManager().toCvc4Exprs(triggers));
 
 		// Call the construct method for quantification
 		ExprManager cvc4_em = getExpressionManager().getTheoremProver()
 				.getCvc4ExprManager();
-		setCvc4Expression(strategy.apply(cvc4_em, cvc4_head, cvc4_body,
-				cvc4_triggers));
+		setCvc4Expression(
+				strategy.apply(cvc4_em, cvc4_head, cvc4_body, cvc4_triggers));
 	}
 
 	protected ExpressionImpl(ExpressionManagerImpl em, Kind kind, Expr e,
@@ -639,8 +639,9 @@ public class ExpressionImpl implements Expression {
 	@Override
 	public boolean equals(Object obj) {
 		if (obj instanceof Expression) {
-			return getCvc4Expression().equals((getExpressionManager()
-					.importExpression((Expression) obj)).getCvc4Expression());
+			return getCvc4Expression()
+					.equals((getExpressionManager().importExpression((Expression) obj))
+							.getCvc4Expression());
 
 		}
 		return super.equals(obj);
@@ -730,8 +731,8 @@ public class ExpressionImpl implements Expression {
 		 * ExpressionManager in the constructors.
 		 */
 		// checkArgument(!Iterables.isEmpty(subExpressions));
-		children = ImmutableList.copyOf(getExpressionManager().importExpressions(
-				subExpressions));
+		children = ImmutableList
+				.copyOf(getExpressionManager().importExpressions(subExpressions));
 	}
 
 	@Override
@@ -796,8 +797,8 @@ public class ExpressionImpl implements Expression {
 	@Override
 	public Expression simplify() {
 		ExpressionManagerImpl em = getExpressionManager();
-		Expr cvc4_expr_simp = em.getTheoremProver().getSmtEngine().simplify(
-				cvc4_expr);
+		Expr cvc4_expr_simp = em.getTheoremProver().getSmtEngine()
+				.simplify(cvc4_expr);
 		return new ExpressionImpl(em, this.kind, cvc4_expr_simp, type);
 	}
 

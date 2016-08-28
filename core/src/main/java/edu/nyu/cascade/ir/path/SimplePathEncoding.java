@@ -163,8 +163,8 @@ public class SimplePathEncoding extends AbstractPathEncoding {
 		StateFactory<?> stateFactory = getStateFactory();
 		StateExpression currState = preState;
 
-		Expression rval = stateFactory.getDataFormatter().getUnknownValue(CType
-				.getType(lNode));
+		Expression rval = stateFactory.getDataFormatter()
+				.getUnknownValue(CType.getType(lNode));
 
 		stateFactory.assign(currState, lval, lNode, rval, null);
 		return currState;

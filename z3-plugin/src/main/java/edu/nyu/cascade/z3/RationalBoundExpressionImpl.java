@@ -6,8 +6,8 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.RationalExpression;
 import edu.nyu.cascade.prover.type.Type;
 
-final class RationalBoundExpressionImpl extends BoundExpressionImpl implements
-		RationalExpression {
+final class RationalBoundExpressionImpl extends BoundExpressionImpl
+		implements RationalExpression {
 
 	static RationalBoundExpressionImpl create(ExpressionManagerImpl em,
 			String name, Type type, boolean fresh) {

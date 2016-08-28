@@ -191,8 +191,8 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 				if (memory_no_leak.equals(exprManager.tt()))
 					return;
 
-				BooleanExpression query = stateFactory.stateToBoolean(state).implies(
-						memory_no_leak);
+				BooleanExpression query = stateFactory.stateToBoolean(state)
+						.implies(memory_no_leak);
 				checkAssertion(query, Identifiers.VALID_MEMORY_TRACE);
 			}
 		};
@@ -387,8 +387,8 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 
 		cleanBlockStateClosureMap.put(block, postState);
 		StateExpression stateCopy = stateFactory.copy(postState);
-		stateFactory.substitute(stateCopy, varsFreshMap.keySet(), varsFreshMap
-				.values());
+		stateFactory.substitute(stateCopy, varsFreshMap.keySet(),
+				varsFreshMap.values());
 		return stateCopy;
 	}
 
@@ -406,22 +406,22 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 		if (cleanEdgeStateMap.containsKey(edge)) {
 			StateExpression state = cleanEdgeStateMap.get(edge);
 			StateExpression stateCopy = stateFactory.copy(state);
-			stateFactory.substitute(stateCopy, varsFreshMap.keySet(), varsFreshMap
-					.values());
+			stateFactory.substitute(stateCopy, varsFreshMap.keySet(),
+					varsFreshMap.values());
 			return stateCopy;
 		}
 
 		StateExpression emptyState = pathEncoding.emptyState();
-		IRStatement assumeStmt = Statement.assumeStmt(edge.getSourceNode(), edge
-				.getGuard(), true);
+		IRStatement assumeStmt = Statement.assumeStmt(edge.getSourceNode(),
+				edge.getGuard(), true);
 		IOUtils.debug().pln("Encoding: " + assumeStmt);
 
 		StateExpression state = stmtFormulaEncoder.getPostCondition(emptyState,
 				assumeStmt);
 		cleanEdgeStateMap.put(edge, state);
 		StateExpression stateCopy = stateFactory.copy(state);
-		stateFactory.substitute(stateCopy, varsFreshMap.keySet(), varsFreshMap
-				.values());
+		stateFactory.substitute(stateCopy, varsFreshMap.keySet(),
+				varsFreshMap.values());
 		return stateCopy;
 	}
 
@@ -450,8 +450,8 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 		}
 
 		if (checkFeasibility)
-			IOUtils.out().println("Cannot checking path feasibility with "
-					+ "block based encoding");
+			IOUtils.out().println(
+					"Cannot checking path feasibility with " + "block based encoding");
 
 		return true;
 	}
@@ -465,15 +465,15 @@ public class BlockBasedFormulaEncoder implements FormulaEncoder {
 		ExpressionManager exprManager = pathEncoding.getExpressionManager();
 		ExpressionEncoding encoding = pathEncoding.getExpressionEncoding();
 		for (VariableExpression var : state.getVars()) {
-			VariableExpression freshVar = exprManager.variable(var.getName(), var
-					.getType(), true);
+			VariableExpression freshVar = exprManager.variable(var.getName(),
+					var.getType(), true);
 			freshVar.setHoareLogic(var.isHoareLogic());
 			varsFreshMap.put(var, freshVar);
 
 			if (var.isHoareLogic()) {
 				VariableExpression rvalBindingVar = encoding.getRvalBinding(var);
-				VariableExpression rvalBidningFreshVar = encoding.getRvalBinding(
-						freshVar);
+				VariableExpression rvalBidningFreshVar = encoding
+						.getRvalBinding(freshVar);
 				varsFreshMap.put(rvalBindingVar, rvalBidningFreshVar);
 			}
 		}

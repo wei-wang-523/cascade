@@ -115,8 +115,8 @@ abstract class DataStructuresImpl extends DataStructures {
 			}
 
 			// Next, get the leader element.
-			assert First == GlobalECs.getLeaderValue(
-					First) : "First did not end up being the leader?";
+			assert First == GlobalECs
+					.getLeaderValue(First) : "First did not end up being the leader?";
 
 			// Finally, change the global node to only contain the leader.
 			N.clearGlobals();

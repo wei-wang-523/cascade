@@ -3,8 +3,8 @@ package edu.nyu.cascade.prover.type;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.IntegerExpression;
 
-public interface IntegerType extends Type, AddableType, ComparableType,
-		MultiplicativeType, ScalarType {
+public interface IntegerType
+		extends Type, AddableType, ComparableType, MultiplicativeType, ScalarType {
 	Expression mod(Expression left, Expression right);
 
 	@Override

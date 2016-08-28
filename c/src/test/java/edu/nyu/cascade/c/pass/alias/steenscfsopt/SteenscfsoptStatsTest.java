@@ -33,8 +33,8 @@ import xtc.tree.Printer;
 
 @RunWith(Parameterized.class)
 public class SteenscfsoptStatsTest {
-	private static final File programs_syntax = FileUtils.absoluteResourcePath(
-			"syntax");
+	private static final File programs_syntax = FileUtils
+			.absoluteResourcePath("syntax");
 	private static final File programs_c = FileUtils.absoluteResourcePath("c");
 	private static final File mini_invalids = FileUtils.filePath(programs_c,
 			"mini_bnc", "invalid");
@@ -51,14 +51,14 @@ public class SteenscfsoptStatsTest {
 	@Parameterized.Parameters
 	public static Collection<File> cFiles() {
 		File[] programs_dirs = { programs_syntax, mini_invalids, mini_valids,
-				nec_programs };
+				nec_programs, alias_programs };
 		Collection<File> fileList = Lists.newArrayList();
 
 		for (File programs_dir : programs_dirs) {
 			// Make the C files filter
 			FilenameFilter filter = new FilenameFilter() {
 				public boolean accept(File dir, String name) {
-					return name.endsWith(".c");
+					return name.endsWith("i") || name.endsWith("c");
 				}
 			};
 
@@ -82,7 +82,6 @@ public class SteenscfsoptStatsTest {
 		main.prepare();
 		cfile = file;
 
-		IOUtils.enableOut();
 		Preferences.set(Preferences.OPTION_BYTE_BASED);
 	}
 
@@ -118,8 +117,8 @@ public class SteenscfsoptStatsTest {
 		Printer debugPrinter = IOUtils.debug();
 		CPrinter cprinter = new CPrinter(debugPrinter);
 
-		printer.p(cfile.getName()).p(',').p(lvals.size()).p(',').p(aliasMap.keySet()
-				.size()).pln();
+		printer.p(cfile.getName()).p(',').p(lvals.size()).p(',')
+				.p(aliasMap.keySet().size()).pln();
 
 		debugPrinter.incr();
 		for (ECR ecr : aliasMap.keySet()) {

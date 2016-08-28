@@ -157,4 +157,8 @@ class Parent {
 
 		return this;
 	}
+
+	void clear() {
+		parents.clear();
+	}
 }

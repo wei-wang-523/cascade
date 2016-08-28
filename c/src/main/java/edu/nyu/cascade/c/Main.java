@@ -154,13 +154,13 @@ public class Main {
 					.hasArg() //
 					.argName("FILE") //
 					.type(File.class) //
-					.build()).addOption(Option.builder().longOpt(
-							Preferences.OPTION_MEM_CELL_SIZE) //
-							.hasArg() //
-							.argName("N") //
-							.type(Integer.class) //
-							.desc("Set the size of memory model cell to N.") //
-							.build()) //
+					.build())
+			.addOption(Option.builder().longOpt(Preferences.OPTION_MEM_CELL_SIZE) //
+					.hasArg() //
+					.argName("N") //
+					.type(Integer.class) //
+					.desc("Set the size of memory model cell to N.") //
+					.build()) //
 			.addOption(Option.builder().longOpt(Preferences.OPTION_FUNC_INLINE) //
 					.hasArg() //
 					.argName("N") //
@@ -176,12 +176,12 @@ public class Main {
 			.addOption(Option.builder().longOpt(OPTION_FEASIBILITY) //
 					.desc("Check path feasibility for runs.") //
 					.build()) //
-			.addOption(Option.builder().longOpt(
-					CompressedDomainNamesEncoding.OPTION_EXPLICIT_UNDEFINED) //
+			.addOption(Option.builder()
+					.longOpt(CompressedDomainNamesEncoding.OPTION_EXPLICIT_UNDEFINED) //
 					.desc("Use explicit unknowns in datatype theories.") //
 					.build()) //
-			.addOption(Option.builder().longOpt(
-					CompressedDomainNamesEncoding.OPTION_FRAME_AXIOM) //
+			.addOption(Option.builder()
+					.longOpt(CompressedDomainNamesEncoding.OPTION_FRAME_AXIOM) //
 					.desc("Omit the frame axiom in datatype theories.") //
 					.build()) //
 			.addOption(Option.builder().longOpt(Preferences.OPTION_SOUND_ALLOC) //
@@ -237,16 +237,17 @@ public class Main {
 					.desc("Enable hoare encoding (treate stack variables without" //
 							+ " & op as pure logic variable .") //
 					.build()) //
-			.addOption(Option.builder("fs").longOpt(
-					Preferences.OPTION_FIELD_SENSITIVE) //
-					.desc("Enable field sensitive pointer analysis.") //
-					.build()) //
-			.addOption(Option.builder("cfs").longOpt(
-					Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE) //
+			.addOption(
+					Option.builder("fs").longOpt(Preferences.OPTION_FIELD_SENSITIVE) //
+							.desc("Enable field sensitive pointer analysis.") //
+							.build()) //
+			.addOption(Option.builder("cfs")
+					.longOpt(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE) //
 					.desc("Enable cell based field sensitive pointer analysis.") //
 					.build()) //
-			.addOption(Option.builder("cfscs").longOpt(
-					Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE) //
+			.addOption(Option.builder("cfscs")
+					.longOpt(
+							Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE) //
 					.desc("Enable cell based field sensitive and context sensitive " //
 							+ "pointer analysis.") //
 					.build()) //
@@ -264,8 +265,8 @@ public class Main {
 					.desc("Two round memory check") //
 					.build());
 
-	public static void main(String[] args) throws IOException, ParseException,
-			TheoremProverException {
+	public static void main(String[] args)
+			throws IOException, ParseException, TheoremProverException {
 		IOUtils.enableOut();
 		IOUtils.enableErr();
 
@@ -405,8 +406,8 @@ public class Main {
 				 */
 				int returnCode = cppProcess.get();
 				if (returnCode != 0) {
-					throw new ParseException("Preprocessor failed (retcode=" + returnCode
-							+ ")");
+					throw new ParseException(
+							"Preprocessor failed (retcode=" + returnCode + ")");
 				}
 			} catch (InterruptedException e) {
 				throw new AssertionError("Unexpected interrupt");
@@ -428,8 +429,8 @@ public class Main {
 		// Preconditions.checkArgument(cAnalyzer == null);
 		Preconditions.checkArgument(symbolTable == null);
 		runtime.initDefaultValues();
-		runtime.setValue(OPTION_INTERNAL_PEDANTIC, Preferences.isSet(
-				OPTION_PEDANTIC));
+		runtime.setValue(OPTION_INTERNAL_PEDANTIC,
+				Preferences.isSet(OPTION_PEDANTIC));
 		cAnalyzer = new CAnalyzer(CType.getInstance().c(), runtime);
 
 		if (Preferences.isSet(OPTION_DEBUG)) {
@@ -445,16 +446,16 @@ public class Main {
 		try {
 			if (Preferences.isSet(OPTION_SMT2_FILE)) {
 				IOUtils.enableTpFile();
-				IOUtils.setTpFileStream(new PrintStream(Preferences.getFile(
-						OPTION_SMT2_FILE)));
+				IOUtils.setTpFileStream(
+						new PrintStream(Preferences.getFile(OPTION_SMT2_FILE)));
 			}
 		} catch (FileNotFoundException e) {
 			failOnException(e);
 		}
 
 		/* Set the byte-based or value-based encoding */
-		if (Preferences.isSet(Preferences.OPTION_MULTI_CELL) || Preferences.isSet(
-				Preferences.OPTION_VARI_CELL)) {
+		if (Preferences.isSet(Preferences.OPTION_MULTI_CELL)
+				|| Preferences.isSet(Preferences.OPTION_VARI_CELL)) {
 			Preferences.set(Preferences.OPTION_BYTE_BASED);
 		}
 
@@ -491,8 +492,8 @@ public class Main {
 			int returnCode = preprocessor.waitFor();
 			if (returnCode != 0) {
 				preprocessedSource.delete();
-				throw new ParseException("Preprocessor failed (retcode=" + returnCode
-						+ ")");
+				throw new ParseException(
+						"Preprocessor failed (retcode=" + returnCode + ")");
 			}
 			return preprocessedSource;
 		} catch (InterruptedException e) {
@@ -502,8 +503,8 @@ public class Main {
 	}
 
 	private void printUsage() {
-		IOUtils.err().print(getName() + ", v. " + getVersion() + ", " + getCopy()
-				+ "\n\n");
+		IOUtils.err()
+				.print(getName() + ", v. " + getVersion() + ", " + getCopy() + "\n\n");
 		String name = System.getenv("_");
 		if (null != name) {
 			name = new File(name).getName();
@@ -511,8 +512,9 @@ public class Main {
 			name = getClass().getName();
 		}
 		PrintWriter writer = new PrintWriter(IOUtils.err());
-		new HelpFormatter().printHelp(writer, 78, name
-				+ " [OPTIONS...] FILE [FILES...]\n", "Options:", options, 2, 4, "");
+		new HelpFormatter().printHelp(writer, 78,
+				name + " [OPTIONS...] FILE [FILES...]\n", "Options:", options, 2, 4,
+				"");
 		writer.flush();
 	}
 
@@ -540,10 +542,10 @@ public class Main {
 		double encoding = (runTime - solverTime) / 1000.0;
 		out.append("Encoding took ").append(String.valueOf(encoding)).append('s')
 				.append('\n');
-		out.append(theoremProver.getProviderName()).append(" took ").append(String
-				.valueOf(solverTime / 1000.0)).append('s').append('\n');
-		out.append(getName()).append(" took ").append(String.valueOf(runTime
-				/ 1000.0)).append('s').append('\n');
+		out.append(theoremProver.getProviderName()).append(" took ")
+				.append(String.valueOf(solverTime / 1000.0)).append('s').append('\n');
+		out.append(getName()).append(" took ")
+				.append(String.valueOf(runTime / 1000.0)).append('s').append('\n');
 		out.flush();
 	}
 
@@ -582,8 +584,8 @@ public class Main {
 		symbolTable = CSymbolTable.create(file, symbolTableFactory, xtcSymbolTable);
 		Map<Node, IRControlFlowGraph> currCfgs = CfgBuilder.getCfgs(symbolTable,
 				ast, callGraph);
-		FuncInlineProcessor<?> funcInliner = FuncInlineProcessor.create(
-				symbolTable);
+		FuncInlineProcessor<?> funcInliner = FuncInlineProcessor
+				.create(symbolTable);
 		funcInliner.inlineMalloc(currCfgs, callGraph);
 		cfgs.putAll(currCfgs);
 	}
@@ -673,8 +675,8 @@ public class Main {
 						IOUtils.enableTrace(file);
 
 					if (Preferences.isSet(Preferences.OPTION_REACHABILITY)) {
-						final String label = Preferences.getString(
-								Preferences.OPTION_REACHABILITY);
+						final String label = Preferences
+								.getString(Preferences.OPTION_REACHABILITY);
 						runProcessor.init(label);
 						if (!preprocess(runProcessor, mainCfg))
 							return;
@@ -722,6 +724,9 @@ public class Main {
 				}
 			}
 		}
+		
+		if (Preferences.isSet(OPTION_DRY_RUN)) return;
+		
 		IOUtils.out().println(safeResult);
 		StatsTimer.cascadeStop();
 		printTimeInfo(IOUtils.err());
@@ -768,8 +773,8 @@ public class Main {
 		runProcessor.preprocess();
 
 		double aliastime = StatsTimer.cascadeElapseTime() - preTime;
-		IOUtils.err().println("Points-to-analysis took " + aliastime / 1000.0
-				+ "s");
+		IOUtils.err()
+				.println("Points-to-analysis took " + aliastime / 1000.0 + "s");
 
 		Pair<Integer, Integer> aliasStats = runProcessor.getAliasAnalysisStats();
 		IOUtils.err().println("Total " + aliasStats.fst() + " lvals");
@@ -778,8 +783,8 @@ public class Main {
 		/* Merge graph and function inline */
 		runProcessor.prepare(mainCfg);
 
-		if (Preferences.isSet(OPTION_CHECK_FUNC_INLINE) && !runProcessor
-				.isFullyFuncInlined(mainCfg)) {
+		if (Preferences.isSet(OPTION_CHECK_FUNC_INLINE)
+				&& !runProcessor.isFullyFuncInlined(mainCfg)) {
 			safeResult = SafeResult.unknown("Insufficient_function_inline");
 			printResult(0, IOUtils.outPrinter());
 			return false;
@@ -813,12 +818,12 @@ public class Main {
 			if (safeResult.isUnsafe())
 				runProcessor.dumpErrorTrace(mainCfg);
 		} else {
-			Collection<Integer> iterTimesSet = Sets.newTreeSet(
-					Preferences.REACH_MAGIC_ITER_TIMES);
-			boolean checkKeepUnroll = Preferences.isSet(
-					Preferences.OPTION_CHECK_KEEP_UNROLL);
-			boolean checkExitUnroll = Preferences.isSet(
-					Preferences.OPTION_CHECK_EXIT_UNROLL);
+			Collection<Integer> iterTimesSet = Sets
+					.newTreeSet(Preferences.REACH_MAGIC_ITER_TIMES);
+			boolean checkKeepUnroll = Preferences
+					.isSet(Preferences.OPTION_CHECK_KEEP_UNROLL);
+			boolean checkExitUnroll = Preferences
+					.isSet(Preferences.OPTION_CHECK_EXIT_UNROLL);
 
 			for (int currIterTime : iterTimesSet) {
 				if (checkKeepUnroll)
@@ -855,10 +860,12 @@ public class Main {
 	}
 
 	private void printResult(int iterTime, Printer printer) {
+		// Skip printing result for dry-run only
+		if (Preferences.isSet(OPTION_DRY_RUN)) return;
 		String funcInline = Preferences.isSet(Preferences.OPTION_FUNC_INLINE)
 				? Preferences.getString(Preferences.OPTION_FUNC_INLINE) : "all-inline";
-		IOUtils.outPrinter().p('{').p(iterTime).p(':').p(funcInline).p("}..").p(
-				safeResult.toString()).pln();
+		IOUtils.outPrinter().p('{').p(iterTime).p(':').p(funcInline).p("}..")
+				.p(safeResult.toString()).pln();
 	}
 
 	/**

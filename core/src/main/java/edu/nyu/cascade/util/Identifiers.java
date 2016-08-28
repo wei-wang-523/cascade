@@ -61,11 +61,11 @@ public class Identifiers {
 	private static final Set<String> identifiers = Sets.newHashSet();;
 	private static final Set<String> internalLabels = Sets.newHashSet();
 
-	private static final Pattern DEFAULT_VALID_ID = Pattern.compile(
-			"[A-Za-z_][A-Za-z0-9_']*");
+	private static final Pattern DEFAULT_VALID_ID = Pattern
+			.compile("[A-Za-z_][A-Za-z0-9_']*");
 
-	private static final Pattern C_VALID_ID = Pattern.compile(
-			"[A-Za-z_][A-Za-z0-9_]*");
+	private static final Pattern C_VALID_ID = Pattern
+			.compile("[A-Za-z_][A-Za-z0-9_]*");
 
 	private static final char DEFAULT_REPLACEMENT_CHAR = '_';
 
@@ -190,8 +190,8 @@ public class Identifiers {
 				result = replacementChar + result;
 			} else {
 				int i = matcher.end();
-				result = result.substring(0, i) + "_" + result.substring(i + 1, result
-						.length());
+				result = result.substring(0, i) + "_"
+						+ result.substring(i + 1, result.length());
 			}
 			matcher = pattern.matcher(result);
 		}

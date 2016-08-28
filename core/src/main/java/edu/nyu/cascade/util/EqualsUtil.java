@@ -40,11 +40,11 @@ package edu.nyu.cascade.util;
  * 	if (!(aThat instanceof Car))
  * 		return false;
  * 	Car that = (Car) aThat;
- * 	return EqualsUtil.areEqual(this.fName, that.fName) && EqualsUtil.areEqual(
- * 			this.fNumDoors, that.fNumDoors) && EqualsUtil.areEqual(
- * 					this.fGasMileage, that.fGasMileage) && EqualsUtil.areEqual(
- * 							this.fColor, that.fColor) && Arrays.equals(
- * 									this.fMaintenanceChecks, that.fMaintenanceChecks); // array!
+ * 	return EqualsUtil.areEqual(this.fName, that.fName)
+ * 			&& EqualsUtil.areEqual(this.fNumDoors, that.fNumDoors)
+ * 			&& EqualsUtil.areEqual(this.fGasMileage, that.fGasMileage)
+ * 			&& EqualsUtil.areEqual(this.fColor, that.fColor)
+ * 			&& Arrays.equals(this.fMaintenanceChecks, that.fMaintenanceChecks); // array!
  * }
  * </pre>
  *

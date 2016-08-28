@@ -17,12 +17,12 @@ import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 
-final class TupleExpressionImpl extends ExpressionImpl implements
-		TupleExpression {
+final class TupleExpressionImpl extends ExpressionImpl
+		implements TupleExpression {
 	static TupleExpressionImpl create(ExpressionManagerImpl exprManager,
 			Type type, Expression first, Expression... rest) {
-		return new TupleExpressionImpl(exprManager, type, Lists.asList(first,
-				rest));
+		return new TupleExpressionImpl(exprManager, type,
+				Lists.asList(first, rest));
 	}
 
 	static TupleExpressionImpl create(ExpressionManagerImpl exprManager,
@@ -51,8 +51,8 @@ final class TupleExpressionImpl extends ExpressionImpl implements
 			Expression tuple, final int index, Expression val) {
 		Preconditions.checkArgument(tuple.isTuple());
 		Preconditions.checkArgument(0 <= index && index < tuple.asTuple().size());
-		Preconditions.checkArgument(val.getType().equals(tuple.asTuple().getType()
-				.getElementTypes().get(index)));
+		Preconditions.checkArgument(val.getType()
+				.equals(tuple.asTuple().getType().getElementTypes().get(index)));
 
 		return new TupleExpressionImpl(exprManager, TUPLE_UPDATE,
 				new BinaryConstructionStrategy() {
@@ -68,8 +68,8 @@ final class TupleExpressionImpl extends ExpressionImpl implements
 	static ExpressionImpl mkTupleIndex(ExpressionManagerImpl exprManager,
 			Expression tuple, final int index) {
 		Preconditions.checkArgument(tuple.isTuple());
-		final TupleSort tupleSort = (TupleSort) exprManager.toZ3Type(tuple
-				.getType());
+		final TupleSort tupleSort = (TupleSort) exprManager
+				.toZ3Type(tuple.getType());
 		ExpressionImpl result = new ExpressionImpl(exprManager, TUPLE_INDEX,
 				new UnaryConstructionStrategy() {
 					@Override
@@ -77,8 +77,8 @@ final class TupleExpressionImpl extends ExpressionImpl implements
 						return tupleSort.getFieldDecls()[index].apply(expr);
 					}
 				}, tuple);
-		result.setType((Type) tuple.asTuple().getType().getElementTypes()
-				.toArray()[index]);
+		result.setType(
+				(Type) tuple.asTuple().getType().getElementTypes().toArray()[index]);
 		return result;
 	}
 

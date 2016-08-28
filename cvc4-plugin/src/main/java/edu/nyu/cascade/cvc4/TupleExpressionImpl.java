@@ -21,12 +21,12 @@ import edu.nyu.cascade.prover.TupleExpression;
 import edu.nyu.cascade.prover.type.TupleType;
 import edu.nyu.cascade.prover.type.Type;
 
-final class TupleExpressionImpl extends ExpressionImpl implements
-		TupleExpression {
+final class TupleExpressionImpl extends ExpressionImpl
+		implements TupleExpression {
 	static TupleExpressionImpl create(ExpressionManagerImpl exprManager,
 			Type type, Expression first, Expression... rest) {
-		return new TupleExpressionImpl(exprManager, type, Lists.asList(first,
-				rest));
+		return new TupleExpressionImpl(exprManager, type,
+				Lists.asList(first, rest));
 	}
 
 	static TupleExpressionImpl create(ExpressionManagerImpl exprManager,
@@ -77,8 +77,8 @@ final class TupleExpressionImpl extends ExpressionImpl implements
 			Expression tuple, final int index, Expression val) {
 		Preconditions.checkArgument(tuple.isTuple());
 		Preconditions.checkArgument(0 <= index && index < tuple.asTuple().size());
-		Preconditions.checkArgument(val.getType().equals(tuple.asTuple().getType()
-				.getElementTypes().get(index)));
+		Preconditions.checkArgument(val.getType()
+				.equals(tuple.asTuple().getType().getElementTypes().get(index)));
 
 		return new TupleExpressionImpl(exprManager, TUPLE_UPDATE,
 				new BinaryConstructionStrategy() {

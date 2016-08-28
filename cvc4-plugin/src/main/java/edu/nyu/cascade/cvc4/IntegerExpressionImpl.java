@@ -30,16 +30,16 @@ import edu.nyu.cascade.prover.IntegerExpression;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.util.CacheException;
 
-final class IntegerExpressionImpl extends ExpressionImpl implements
-		IntegerExpression {
+final class IntegerExpressionImpl extends ExpressionImpl
+		implements IntegerExpression {
 
 	static final LoadingCache<ExpressionManagerImpl, LoadingCache<BigInteger, IntegerExpressionImpl>> constantCache = CacheBuilder
 			.newBuilder().build(
 					new CacheLoader<ExpressionManagerImpl, LoadingCache<BigInteger, IntegerExpressionImpl>>() {
 						public LoadingCache<BigInteger, IntegerExpressionImpl> load(
 								final ExpressionManagerImpl exprManager) {
-							return CacheBuilder.newBuilder().build(
-									new CacheLoader<BigInteger, IntegerExpressionImpl>() {
+							return CacheBuilder.newBuilder()
+									.build(new CacheLoader<BigInteger, IntegerExpressionImpl>() {
 										public IntegerExpressionImpl load(BigInteger value) {
 											return new IntegerExpressionImpl(exprManager, value);
 										}
@@ -215,8 +215,8 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 
 		switch (e.getKind()) {
 		default:
-			throw new UnsupportedOperationException("Unexpected kind: " + e + " {" + e
-					.getKind() + "}");
+			throw new UnsupportedOperationException(
+					"Unexpected kind: " + e + " {" + e.getKind() + "}");
 		}
 	}
 
@@ -308,8 +308,8 @@ final class IntegerExpressionImpl extends ExpressionImpl implements
 
 	@Override
 	public IntegerExpression plus(Iterable<? extends IntegerExpression> rest) {
-		return mkPlus(getExpressionManager(), Iterables.concat(Collections
-				.singletonList(this), rest));
+		return mkPlus(getExpressionManager(),
+				Iterables.concat(Collections.singletonList(this), rest));
 	}
 
 	@Override

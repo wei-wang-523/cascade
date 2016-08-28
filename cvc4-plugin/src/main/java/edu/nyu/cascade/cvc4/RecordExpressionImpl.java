@@ -18,12 +18,12 @@ import edu.nyu.cascade.prover.RecordExpression;
 import edu.nyu.cascade.prover.type.RecordType;
 import edu.nyu.cascade.prover.type.Type;
 
-final class RecordExpressionImpl extends ExpressionImpl implements
-		RecordExpression {
+final class RecordExpressionImpl extends ExpressionImpl
+		implements RecordExpression {
 	static RecordExpressionImpl create(ExpressionManagerImpl exprManager,
 			Type type, Expression first, Expression... rest) {
-		return new RecordExpressionImpl(exprManager, type, Lists.asList(first,
-				rest));
+		return new RecordExpressionImpl(exprManager, type,
+				Lists.asList(first, rest));
 	}
 
 	static RecordExpressionImpl create(ExpressionManagerImpl exprManager,
@@ -88,8 +88,9 @@ final class RecordExpressionImpl extends ExpressionImpl implements
 			@Override
 			public Expr apply(ExprManager em, List<Expr> args) throws Exception {
 				vectorExpr argsExpr = new vectorExpr();
-				argsExpr.add(em.mkConst(new edu.nyu.acsys.CVC4.RecordType(
-						((TypeImpl) type).getCVC4Type()).getRecord()));
+				argsExpr.add(em.mkConst(
+						new edu.nyu.acsys.CVC4.RecordType(((TypeImpl) type).getCVC4Type())
+								.getRecord()));
 				for (Expr arg : args)
 					argsExpr.add(arg);
 				return em.mkExpr(edu.nyu.acsys.CVC4.Kind.RECORD, argsExpr);

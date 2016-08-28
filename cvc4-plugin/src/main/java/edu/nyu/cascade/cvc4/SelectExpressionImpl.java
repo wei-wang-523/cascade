@@ -18,8 +18,8 @@ final class SelectExpressionImpl extends ExpressionImpl {
 	static SelectExpressionImpl create(ExpressionManagerImpl exprManager,
 			Selector selector, Expression val) {
 		checkArgument(val.isInductive());
-		checkArgument(val.asInductive().getType().getConstructors().contains(
-				selector.getConstructor()));
+		checkArgument(val.asInductive().getType().getConstructors()
+				.contains(selector.getConstructor()));
 		return new SelectExpressionImpl(exprManager, selector, val);
 	}
 
@@ -31,11 +31,11 @@ final class SelectExpressionImpl extends ExpressionImpl {
 				Type type = exprManager.toCvc4Type(selector.getConstructor().getType());
 				DatatypeType dtt = new DatatypeType(type);
 				Datatype dt = dtt.getDatatype();
-				long constructorIndex = Datatype.indexOf(dt.getConstructor(selector
-						.getConstructor().getName()));
+				long constructorIndex = Datatype
+						.indexOf(dt.getConstructor(selector.getConstructor().getName()));
 				DatatypeConstructor dtc = dt.get(constructorIndex);
-				return em.mkExpr(edu.nyu.acsys.CVC4.Kind.APPLY_SELECTOR, dtc
-						.getSelector(selector.getName()), arg);
+				return em.mkExpr(edu.nyu.acsys.CVC4.Kind.APPLY_SELECTOR,
+						dtc.getSelector(selector.getName()), arg);
 				/* return em.datatypeSelExpr(selector.getName(), arg); */
 			}
 		}, val);

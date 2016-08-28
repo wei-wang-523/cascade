@@ -17,8 +17,8 @@ import edu.nyu.cascade.prover.FunctionExpression;
 import edu.nyu.cascade.prover.type.FunctionType;
 import edu.nyu.cascade.prover.type.Type;
 
-final class FunctionExpressionImpl extends ExpressionImpl implements
-		FunctionExpression {
+final class FunctionExpressionImpl extends ExpressionImpl
+		implements FunctionExpression {
 
 	static FunctionExpressionImpl create(ExpressionManagerImpl exprManager,
 			Iterable<Expression> vars, Expression body) {
@@ -86,15 +86,15 @@ final class FunctionExpressionImpl extends ExpressionImpl implements
 
 	@Override
 	public Expression apply(Expression arg1, Expression... otherArgs) {
-		Preconditions.checkArgument(getType().getArgTypes()
-				.size() == otherArgs.length + 1);
+		Preconditions
+				.checkArgument(getType().getArgTypes().size() == otherArgs.length + 1);
 		return apply(Lists.asList(arg1, otherArgs));
 	}
 
 	@Override
 	public Expression apply(Iterable<? extends Expression> args) {
-		Preconditions.checkArgument(Iterables.size(args) == getType().getArgTypes()
-				.size());
+		Preconditions
+				.checkArgument(Iterables.size(args) == getType().getArgTypes().size());
 		return ExpressionImpl.mkFunApply(getExpressionManager(), this, args);
 	}
 

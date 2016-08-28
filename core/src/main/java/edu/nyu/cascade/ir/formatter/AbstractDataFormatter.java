@@ -78,8 +78,8 @@ public abstract class AbstractDataFormatter implements IRDataFormatter {
 			Expression index, Expression value, long size) {
 
 		for (long i = 0; i < size; i++) {
-			Expression offsetExpr = ptrEncoding.ofExpression(encoding.integerConstant(
-					i));
+			Expression offsetExpr = ptrEncoding
+					.ofExpression(encoding.integerConstant(i));
 			Expression fromIndex = encoding.pointerPlus(index, offsetExpr);
 			Expression toIndex = encoding.pointerPlus(value, offsetExpr);
 			memory = memory.update(fromIndex, memory.index(toIndex));
@@ -133,8 +133,8 @@ public abstract class AbstractDataFormatter implements IRDataFormatter {
 		assert (!targetType.isVoid());
 
 		CType cTypeAnalyzer = encoding.getCTypeAnalyzer();
-		int lhsSize = (int) cTypeAnalyzer.getWidth(CType.isScalar(targetType)
-				? targetType : PointerT.TO_VOID);
+		int lhsSize = (int) cTypeAnalyzer
+				.getWidth(CType.isScalar(targetType) ? targetType : PointerT.TO_VOID);
 		value = encoding.castToInteger(value, lhsSize, isSigned);
 
 		return value;

@@ -61,8 +61,8 @@ class ECREncoder extends Visitor {
 
 		@Override
 		public ECR unableToVisit(Node node) throws VisitingException {
-			IOUtils.err().println("APPROX: Treating unexpected node type as NULL: "
-					+ node.getName());
+			IOUtils.err().println(
+					"APPROX: Treating unexpected node type as NULL: " + node.getName());
 			return ECR.createBottom();
 		}
 
@@ -169,8 +169,8 @@ class ECREncoder extends Visitor {
 
 		@Override
 		public ECR unableToVisit(Node node) throws VisitingException {
-			IOUtils.err().println("APPROX: Treating unexpected node type as NULL: "
-					+ node.getName());
+			IOUtils.err().println(
+					"APPROX: Treating unexpected node type as NULL: " + node.getName());
 			return ECR.createBottom();
 		}
 
@@ -525,8 +525,8 @@ class ECREncoder extends Visitor {
 		}
 
 		ECR retECR = ECR.createBottom();
-		ValueType lambdaType = ValueType.lam(retECR, paramECRs, Size.createForType(
-				funcType), Parent.getBottom());
+		ValueType lambdaType = ValueType.lam(retECR, paramECRs,
+				Size.createForType(funcType), Parent.getBottom());
 		return lambdaType;
 	}
 
@@ -574,8 +574,8 @@ class ECREncoder extends Visitor {
 		if (type.isInternal())
 			return varECR;
 
-		ValueType addrType = ValueType.simple(varECR, ECR.createBottom(), Size
-				.createForType(new PointerT(type)), Parent.getBottom());
+		ValueType addrType = ValueType.simple(varECR, ECR.createBottom(),
+				Size.createForType(new PointerT(type)), Parent.getBottom());
 
 		return ECR.create(addrType);
 	}
@@ -614,8 +614,8 @@ class ECREncoder extends Visitor {
 	private ECR getOpECR(ECR leftECR, ECR rightECR) {
 		ECR resLoc = ECR.createBottom();
 		resLoc.setOffset(Offset.createUnknown());
-		ValueType resType = ValueType.simple(resLoc, ECR.createBottom(), Size
-				.getBot(), Parent.getBottom());
+		ValueType resType = ValueType.simple(resLoc, ECR.createBottom(),
+				Size.getBot(), Parent.getBottom());
 		ECR resECR = ECR.create(resType);
 
 		uf.ccjoin(Size.getBot(), leftECR, resECR);
@@ -683,14 +683,14 @@ class ECREncoder extends Visitor {
 		type = type.resolve();
 
 		Size size = type.isArray() ? Size.getTop() : Size.createForType(type);
-		BlankType fieldType = ValueType.blank(size, Parent.create(uf.findRoot(
-				srcECR)));
+		BlankType fieldType = ValueType.blank(size,
+				Parent.create(uf.findRoot(srcECR)));
 
 		ECR fieldECR = ECR.create(fieldType);
 		fieldECR.setOffset(Offset.createZero());
 
-		SimpleType addrType = ValueType.simple(fieldECR, ECR.createBottom(), Size
-				.createForType(new PointerT(type)), Parent.getBottom());
+		SimpleType addrType = ValueType.simple(fieldECR, ECR.createBottom(),
+				Size.createForType(new PointerT(type)), Parent.getBottom());
 
 		ECR addrECR = ECR.create(addrType);
 
@@ -718,8 +718,8 @@ class ECREncoder extends Visitor {
 				continue;
 
 			RangeMap<Long, ECR> fieldRangeMap = parentType.asStruct().getFieldMap();
-			Entry<Range<Long>, ECR> entry = Iterables.find(fieldRangeMap
-					.asMapOfRanges().entrySet(),
+			Entry<Range<Long>, ECR> entry = Iterables.find(
+					fieldRangeMap.asMapOfRanges().entrySet(),
 					new Predicate<Entry<Range<Long>, ECR>>() {
 						@Override
 						public boolean apply(Entry<Range<Long>, ECR> entry) {

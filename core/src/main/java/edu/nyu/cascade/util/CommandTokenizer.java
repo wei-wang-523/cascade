@@ -8,12 +8,12 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 
 public final class CommandTokenizer {
-	private static final Pattern WORD = Pattern.compile(
-			"(?:[^\\s'\"\\\\]|\\\\[\\s'\"\\\\])+");
-	private static final Pattern SINGLE_QUOTED_STRING = Pattern.compile(
-			"'[^']*'");
-	private static final Pattern DOUBLE_QUOTED_STRING = Pattern.compile(
-			"\"(?:[^\"]|\\\")*\"");
+	private static final Pattern WORD = Pattern
+			.compile("(?:[^\\s'\"\\\\]|\\\\[\\s'\"\\\\])+");
+	private static final Pattern SINGLE_QUOTED_STRING = Pattern
+			.compile("'[^']*'");
+	private static final Pattern DOUBLE_QUOTED_STRING = Pattern
+			.compile("\"(?:[^\"]|\\\")*\"");
 
 	/**
 	 * Regex to match a command line token: a "word" or a quoted string. Matches

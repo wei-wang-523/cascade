@@ -30,8 +30,8 @@ public class CSymbolTable implements SymbolTable {
 	public static CSymbolTable create(File file, SymbolTableFactory factory,
 			xtc.util.SymbolTable xtcSymbolTable) {
 		Scope rootScope = xtcSymbolTable.root();
-		xtc.util.SymbolTable newXtcSymbolTable = new xtc.util.SymbolTable(rootScope
-				.getName());
+		xtc.util.SymbolTable newXtcSymbolTable = new xtc.util.SymbolTable(
+				rootScope.getName());
 		xtcSymbolTable.setScope(rootScope);
 
 		if (rootScope.hasNested(CAnalyzer.EXTERN_SCOPE)) {
@@ -50,8 +50,8 @@ public class CSymbolTable implements SymbolTable {
 			xtc.util.SymbolTable newXtcSymbolTable) {
 		Scope scope = xtcSymbolTable.current();
 		String scopeName = scope.getQualifiedName();
-		Preconditions.checkArgument(scopeName.equals(newXtcSymbolTable.current()
-				.getQualifiedName()));
+		Preconditions.checkArgument(
+				scopeName.equals(newXtcSymbolTable.current().getQualifiedName()));
 
 		IOUtils.debug().pln("Visiting scope: '" + scopeName + "'");
 

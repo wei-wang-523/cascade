@@ -4,16 +4,16 @@ class SimpleType extends ValueType {
 
 	private final ECR loc;
 	private final ECR func;
-	private final Size size;
+	private Size size;
 
 	private Parent parent;
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder().append("SIMPLE (").append(((ECR) loc
-				.findRoot()).getId()).append(", ").append(((ECR) func.findRoot())
-						.getId()).append(", ").append(size).append(", ").append(parent)
-				.append(')');
+		StringBuilder sb = new StringBuilder().append("SIMPLE (")
+				.append(((ECR) loc.findRoot()).getId()).append(", ")
+				.append(((ECR) func.findRoot()).getId()).append(", ").append(size)
+				.append(", ").append(parent).append(')');
 
 		return sb.toString();
 	}
@@ -49,6 +49,11 @@ class SimpleType extends ValueType {
 	@Override
 	Size getSize() {
 		return size;
+	}
+
+	@Override
+	void setSize(Size size) {
+		this.size = size;
 	}
 
 	@Override

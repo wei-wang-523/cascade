@@ -132,8 +132,9 @@ public class VarInfo implements IRVarInfo {
 
 	@Override
 	public int hashCode() {
-		return HashCodeUtil.hash(HashCodeUtil.hash(HashCodeUtil.hash(
-				HashCodeUtil.SEED, name), scope), sourceType.resolve());
+		return HashCodeUtil.hash(
+				HashCodeUtil.hash(HashCodeUtil.hash(HashCodeUtil.SEED, name), scope),
+				sourceType.resolve());
 	}
 
 	@Override

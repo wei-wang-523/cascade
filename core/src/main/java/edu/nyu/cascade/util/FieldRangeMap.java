@@ -8,8 +8,8 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.TreeRangeMap;
 
-public class FieldRangeMap<K extends Comparable<?>, V> implements
-		RangeMap<K, V> {
+public class FieldRangeMap<K extends Comparable<?>, V>
+		implements RangeMap<K, V> {
 	private TreeRangeMap<K, V> treeRangeMap;
 
 	private FieldRangeMap() {

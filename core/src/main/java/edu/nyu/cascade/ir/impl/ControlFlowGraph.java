@@ -86,9 +86,9 @@ public class ControlFlowGraph implements IRControlFlowGraph {
 		if (exitBlock != null)
 			nodes.add((BasicBlock) exitBlock);
 		return new ControlFlowGraph(sourceNode, name, scope, nodes, edges,
-				(BasicBlock) entryBlock, (BasicBlock) exitBlock, LinkedListMultimap
-						.<BasicBlock, Edge> create(), LinkedListMultimap
-								.<BasicBlock, Edge> create());
+				(BasicBlock) entryBlock, (BasicBlock) exitBlock,
+				LinkedListMultimap.<BasicBlock, Edge> create(),
+				LinkedListMultimap.<BasicBlock, Edge> create());
 	}
 
 	@Override
@@ -98,8 +98,8 @@ public class ControlFlowGraph implements IRControlFlowGraph {
 
 	@Override
 	public ControlFlowGraph clone() {
-		Map<BasicBlock, BasicBlock> cloneMap = Maps.newHashMapWithExpectedSize(nodes
-				.size());
+		Map<BasicBlock, BasicBlock> cloneMap = Maps
+				.newHashMapWithExpectedSize(nodes.size());
 		for (BasicBlock node : nodes) {
 			cloneMap.put(node, node.clone());
 		}

@@ -77,9 +77,10 @@ public class TheoremProverImpl implements TheoremProver {
 
 		@Override
 		public ImmutableList<Option> getOptions() {
-			return ImmutableList.of(Option.builder().longOpt(OPTION_PBQI) //
-					.desc("Enable Z3 pattern based quantifier instantiation") //
-					.build(), //
+			return ImmutableList.of(
+					Option.builder().longOpt(OPTION_PBQI) //
+							.desc("Enable Z3 pattern based quantifier instantiation") //
+							.build(), //
 					Option.builder().longOpt(OPTION_MBQI) //
 							.desc("Enable Z3 model based quantifier instantiation") //
 							.build(), //
@@ -166,8 +167,8 @@ public class TheoremProverImpl implements TheoremProver {
 	 * 
 	 * @throws Z3Exception
 	 */
-	TheoremProverImpl(HashMap<String, String> cfg) throws TheoremProverException,
-			Z3Exception {
+	TheoremProverImpl(HashMap<String, String> cfg)
+			throws TheoremProverException, Z3Exception {
 		settings = cfg;
 		initializePreferences(settings);
 		z3Context = new Context();
@@ -231,11 +232,11 @@ public class TheoremProverImpl implements TheoremProver {
 				 * so we catch any Exception in the model generation phase and revert to
 				 * using a counter-example.
 				 */
-				res = SatResult.valueOf(resultType, expr, assumptions, getSolver()
-						.getModel().toString());
+				res = SatResult.valueOf(resultType, expr, assumptions,
+						getSolver().getModel().toString());
 			} else { // resultType = UNKNOWN
-				res = SatResult.valueOf(resultType, expr, assumptions, getSolver()
-						.getReasonUnknown());
+				res = SatResult.valueOf(resultType, expr, assumptions,
+						getSolver().getReasonUnknown());
 			}
 
 			if (Preferences.isSet(OPTION_Z3_STATS)) {
@@ -300,8 +301,8 @@ public class TheoremProverImpl implements TheoremProver {
 				 */
 				res = ValidityResult.valueOf(resultType, expr, assumptions);
 			} else { // resultType = UNKNOWN
-				res = ValidityResult.valueOf(resultType, expr, assumptions, getSolver()
-						.getReasonUnknown());
+				res = ValidityResult.valueOf(resultType, expr, assumptions,
+						getSolver().getReasonUnknown());
 			}
 
 			if (Preferences.isSet(OPTION_Z3_STATS)) {

@@ -319,8 +319,8 @@ public class Statement implements IRStatement {
 		case MALLOC:
 			return getOperand(0) + " := malloc(" + getOperand(1) + ")";
 		case CALLOC:
-			return getOperand(0) + " := calloc(" + getOperand(1) + ", " + getOperand(
-					2) + ")";
+			return getOperand(0) + " := calloc(" + getOperand(1) + ", "
+					+ getOperand(2) + ")";
 		case ALLOCA:
 			return getOperand(0) + " := alloca(" + getOperand(1) + ")";
 		case ASSERT:

@@ -2,8 +2,8 @@ package edu.nyu.cascade.cvc4;
 
 import edu.nyu.cascade.prover.UninterpretedExpression;
 
-final class UninterpretedVariableImpl extends VariableExpressionImpl implements
-		UninterpretedExpression {
+final class UninterpretedVariableImpl extends VariableExpressionImpl
+		implements UninterpretedExpression {
 
 	static UninterpretedVariableImpl create(ExpressionManagerImpl exprManager,
 			String name, UninterpretedTypeImpl type, boolean fresh) {

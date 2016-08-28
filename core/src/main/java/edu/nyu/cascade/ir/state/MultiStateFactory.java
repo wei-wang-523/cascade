@@ -97,8 +97,8 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 		for (T rep : labelAnalyzer.getFieldReps(ptrRep, ty)) {
 			updateStateWithRep(state.asMultiple(), rep);
 			String label = labelAnalyzer.getRepId(rep);
-			SingleStateExpression singleState = state.asMultiple().getStateMap().get(
-					label);
+			SingleStateExpression singleState = state.asMultiple().getStateMap()
+					.get(label);
 			singleStateFactory.updateSizeStateWithAlloc(singleState, lval, rval,
 					sourceNode);
 			heapEncoder.addFreshRegion(label, lval);
@@ -147,8 +147,8 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 		for (T fillInRep : labelAnalyzer.getFieldReps(rep, ty)) {
 			updateStateWithRep(state.asMultiple(), fillInRep);
 			String label = labelAnalyzer.getRepId(fillInRep);
-			SingleStateExpression singleState = state.asMultiple().getStateMap().get(
-					label);
+			SingleStateExpression singleState = state.asMultiple().getStateMap()
+					.get(label);
 			predicates.add(singleStateFactory.applyMemset(singleState, region, size,
 					value, ptrNode));
 		}
@@ -166,8 +166,8 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 		for (T fillInRep : labelAnalyzer.getFieldReps(rep, ty)) {
 			updateStateWithRep(state.asMultiple(), fillInRep);
 			String label = labelAnalyzer.getRepId(fillInRep);
-			SingleStateExpression singleState = state.asMultiple().getStateMap().get(
-					label);
+			SingleStateExpression singleState = state.asMultiple().getStateMap()
+					.get(label);
 			predicates.add(singleStateFactory.applyMemset(singleState, region, size,
 					value, ptrNode));
 		}
@@ -186,10 +186,10 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 
 		String destLabel = labelAnalyzer.getRepId(destRep);
 		String srcLabel = labelAnalyzer.getRepId(srcRep);
-		SingleStateExpression destState = state.asMultiple().getStateMap().get(
-				destLabel);
-		SingleStateExpression srcState = state.asMultiple().getStateMap().get(
-				srcLabel);
+		SingleStateExpression destState = state.asMultiple().getStateMap()
+				.get(destLabel);
+		SingleStateExpression srcState = state.asMultiple().getStateMap()
+				.get(srcLabel);
 
 		ArrayExpression destMem = destState.getMemory();
 		ArrayExpression srcMem = srcState.getMemory();
@@ -222,8 +222,8 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 
 		/* Get the related size array */
 		String srcRepId = labelAnalyzer.getRepId(srcRep);
-		SingleStateExpression singleState = state.asMultiple().getStateMap().get(
-				srcRepId);
+		SingleStateExpression singleState = state.asMultiple().getStateMap()
+				.get(srcRepId);
 		ArrayExpression markArr = singleState.getMark();
 
 		return heapEncoder.validFree(markArr, region);
@@ -237,12 +237,12 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 
 		/* Get the related size array */
 		String srcRepId = labelAnalyzer.getRepId(srcRep);
-		SingleStateExpression singleState = state.asMultiple().getStateMap().get(
-				srcRepId);
+		SingleStateExpression singleState = state.asMultiple().getStateMap()
+				.get(srcRepId);
 		ArrayExpression sizeArr = singleState.getSize();
 
-		return getExpressionManager().or(heapEncoder.validMemAccess(srcRepId,
-				sizeArr, ptr));
+		return getExpressionManager()
+				.or(heapEncoder.validMemAccess(srcRepId, sizeArr, ptr));
 	}
 
 	@Override
@@ -254,12 +254,12 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 
 		/* Get the related size array */
 		String srcRepId = labelAnalyzer.getRepId(srcRep);
-		SingleStateExpression singleState = state.asMultiple().getStateMap().get(
-				srcRepId);
+		SingleStateExpression singleState = state.asMultiple().getStateMap()
+				.get(srcRepId);
 		ArrayExpression sizeArr = singleState.getSize();
 
-		return getExpressionManager().or(heapEncoder.validMemAccess(srcRepId,
-				sizeArr, ptr, size));
+		return getExpressionManager()
+				.or(heapEncoder.validMemAccess(srcRepId, sizeArr, ptr, size));
 	}
 
 	@Override
@@ -326,8 +326,8 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 
 		for (Entry<String, SingleStateExpression> entry : multiState.getStateMap()
 				.entrySet()) {
-			stateMapCopy.put(entry.getKey(), singleStateFactory.copy(entry
-					.getValue()));
+			stateMapCopy.put(entry.getKey(),
+					singleStateFactory.copy(entry.getValue()));
 		}
 
 		MultiStateExpression newState = MultiStateExpression.create(stateMapCopy);
@@ -378,8 +378,8 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 	protected BooleanExpression getDisjointAssumption(StateExpression state) {
 		Map<String, SingleStateExpression> stateMap = state.asMultiple()
 				.getStateMap();
-		Collection<Expression> preDisjoints = Lists.newArrayListWithCapacity(
-				stateMap.size());
+		Collection<Expression> preDisjoints = Lists
+				.newArrayListWithCapacity(stateMap.size());
 
 		for (Entry<String, SingleStateExpression> entry : stateMap.entrySet()) {
 			String label = entry.getKey();
@@ -433,10 +433,10 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 		 */
 		T rep = labelAnalyzer.getStackRep(idxNode);
 
-		if (!(Preferences.isSet(Preferences.OPTION_FIELD_SENSITIVE) || Preferences
-				.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE) || Preferences
-						.isSet(
-								Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE)
+		if (!(Preferences.isSet(Preferences.OPTION_FIELD_SENSITIVE)
+				|| Preferences.isSet(Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE)
+				|| Preferences.isSet(
+						Preferences.OPTION_CELL_BASED_FIELD_SENSITIVE_CONTEXT_SENSITIVE)
 				|| Preferences.isSet(Preferences.OPTION_DSA))) {
 			updateStateWithRep(multiState, rep);
 			String label = labelAnalyzer.getRepId(rep);
@@ -540,8 +540,8 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 				.getStateMap();
 		Map<String, SingleStateExpression> toMap = toState.asMultiple()
 				.getStateMap();
-		Collection<String> commonNames = Sets.intersection(toMap.keySet(), fromMap
-				.keySet());
+		Collection<String> commonNames = Sets.intersection(toMap.keySet(),
+				fromMap.keySet());
 
 		if (commonNames.isEmpty())
 			return;
@@ -610,10 +610,10 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 				Collection<Pair<StateExpression, BooleanExpression>> preElemWithGuards = resStateGuardMap
 						.get(elemName);
 
-				List<StateExpression> preElemStates = Lists.newArrayListWithCapacity(
-						preStateSize);
-				List<BooleanExpression> preElemGuards = Lists.newArrayListWithCapacity(
-						preStateSize);
+				List<StateExpression> preElemStates = Lists
+						.newArrayListWithCapacity(preStateSize);
+				List<BooleanExpression> preElemGuards = Lists
+						.newArrayListWithCapacity(preStateSize);
 
 				for (Pair<StateExpression, BooleanExpression> pair : preElemWithGuards) {
 					preElemStates.add(pair.fst());
@@ -623,14 +623,14 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 				if (preElemWithGuards.size() < preStateSize) { // set default case
 					ArrayType[] elemTypes = preElemStates.get(0).asSingle()
 							.getElemTypes();
-					preElemStates.add(0, singleStateFactory.freshSingleState(elemName,
-							elemTypes));
+					preElemStates.add(0,
+							singleStateFactory.freshSingleState(elemName, elemTypes));
 					preElemGuards.add(0, null); // this guard will be ignored in join
 																			// pre-states
 				}
 
-				SingleStateExpression singleState = singleStateFactory.joinPreStates(
-						preElemStates, preElemGuards);
+				SingleStateExpression singleState = singleStateFactory
+						.joinPreStates(preElemStates, preElemGuards);
 				resStateMap.put(elemName, singleState);
 			}
 		}
@@ -679,8 +679,8 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 			return false;
 
 		long width = labelAnalyzer.getRepWidth(rep);
-		SingleStateExpression singleState = singleStateFactory.freshSingleState(
-				label, width);
+		SingleStateExpression singleState = singleStateFactory
+				.freshSingleState(label, width);
 		stateMap.put(label, singleState);
 		return false;
 	}

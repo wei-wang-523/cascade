@@ -90,17 +90,17 @@ public class ListReachabilityEncoding_CVC4 extends ListReachabilityEncoding {
 
 			/* Create datatype constructors */
 			// labelTagSel = exprManager.selector(LABEL_TAG_SELECTOR_NAME, tagType);
-			headSel = exprManager.selector(HEAD_SELECTOR_NAME, exprManager
-					.integerType());
-			tailSel = exprManager.selector(TAIL_SELECTOR_NAME, exprManager
-					.inductiveType(DATATYPE_NAME));
+			headSel = exprManager.selector(HEAD_SELECTOR_NAME,
+					exprManager.integerType());
+			tailSel = exprManager.selector(TAIL_SELECTOR_NAME,
+					exprManager.inductiveType(DATATYPE_NAME));
 			consConstr = exprManager.constructor(CONS_CONSTR_NAME, headSel, tailSel);
 			nilConstr = exprManager.constructor(NIL_CONSTR_NAME);
 
 			/* Create datatype */
 			list = exprManager.dataType(DATATYPE_NAME, consConstr, nilConstr);
-			lengthList = exprManager.functionDeclarator(FUN_LENGTH_LIST, exprManager
-					.functionType(list, lenType), false);
+			lengthList = exprManager.functionDeclarator(FUN_LENGTH_LIST,
+					exprManager.functionType(list, lenType), false);
 
 			/* Create data constraints */
 			ImmutableSet.Builder<BooleanExpression> rewrite_rulesetBuilder = ImmutableSet
@@ -123,8 +123,8 @@ public class ListReachabilityEncoding_CVC4 extends ListReachabilityEncoding {
 			guard = exprManager.tt();
 
 			head = applyLengthList(exprManager.construct(consConstr, e, l));
-			body = exprManager.plus(exprManager.one(), exprManager.applyExpr(
-					lengthList, Lists.newArrayList(l)));
+			body = exprManager.plus(exprManager.one(),
+					exprManager.applyExpr(lengthList, Lists.newArrayList(l)));
 			rrRewrite = exprManager.rrRewrite(head, body);
 			BooleanExpression rewrite_rule2 = exprManager.rewriteRule(vars, guard,
 					rrRewrite);
@@ -154,8 +154,8 @@ public class ListReachabilityEncoding_CVC4 extends ListReachabilityEncoding {
 			}
 
 			/* Otherwise, pass through to the underlying bit-vector encoding */
-			List<BitVectorExpression> newArgs = Lists.newArrayListWithCapacity(args
-					.size());
+			List<BitVectorExpression> newArgs = Lists
+					.newArrayListWithCapacity(args.size());
 			for (Expression e : args) {
 				checkArgument(e.isBitVector());
 				newArgs.add(e.asBitVector());
@@ -176,8 +176,8 @@ public class ListReachabilityEncoding_CVC4 extends ListReachabilityEncoding {
 
 	@Override
 	public Expression applyConsConstr(Expression... args) {
-		ImmutableList<Expression> newArgs = ImmutableList.copyOf(Arrays.asList(
-				args));
+		ImmutableList<Expression> newArgs = ImmutableList
+				.copyOf(Arrays.asList(args));
 		Preconditions.checkArgument(newArgs.size() == 2);
 		return getExpressionManager().construct(consConstr, newArgs);
 	}
@@ -199,7 +199,7 @@ public class ListReachabilityEncoding_CVC4 extends ListReachabilityEncoding {
 
 	@Override
 	public ImmutableSet<BooleanExpression> getAssumptions() {
-		return ImmutableSet.copyOf(Sets.union(rewrite_rules,
-				super.getAssumptions()));
+		return ImmutableSet
+				.copyOf(Sets.union(rewrite_rules, super.getAssumptions()));
 	}
 }

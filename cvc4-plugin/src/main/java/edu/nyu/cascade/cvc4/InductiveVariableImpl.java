@@ -5,8 +5,8 @@ import edu.nyu.cascade.prover.InductiveExpression;
 import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.Selector;
 
-final class InductiveVariableImpl extends VariableExpressionImpl implements
-		InductiveExpression {
+final class InductiveVariableImpl extends VariableExpressionImpl
+		implements InductiveExpression {
 
 	static InductiveVariableImpl create(ExpressionManagerImpl exprManager,
 			String name, InductiveTypeImpl type, boolean fresh) {

@@ -33,17 +33,17 @@ class VarImpl implements IRVar {
 	 */
 	static VarImpl[] createForStructOrUnionSymbol(String name, Type xtcType,
 			String scopeName) {
-		Preconditions.checkArgument(xtcType.resolve().isStruct() || xtcType
-				.resolve().isUnion());
+		Preconditions.checkArgument(
+				xtcType.resolve().isStruct() || xtcType.resolve().isUnion());
 
-		BlankType regionType = ValueType.blank(Size.createForType(xtcType), Parent
-				.getBottom());
+		BlankType regionType = ValueType.blank(Size.createForType(xtcType),
+				Parent.getBottom());
 
 		ECR regECR = ECR.create(regionType);
 		VarImpl regVar = new VarImpl(name, xtcType, scopeName, regECR);
 
-		SimpleType varType = ValueType.simple(regECR, ECR.createBottom(), Size
-				.createForType(xtcType), Parent.getBottom());
+		SimpleType varType = ValueType.simple(regECR, ECR.createBottom(),
+				Size.createForType(xtcType), Parent.getBottom());
 
 		ECR varECR = ECR.create(varType);
 
@@ -64,14 +64,14 @@ class VarImpl implements IRVar {
 			String scopeName) {
 		Preconditions.checkArgument(xtcType.resolve().isArray());
 
-		BlankType blankType = ValueType.blank(Size.createForType(xtcType), Parent
-				.getBottom());
+		BlankType blankType = ValueType.blank(Size.createForType(xtcType),
+				Parent.getBottom());
 
 		ECR regECR = ECR.create(blankType);
 		VarImpl regVar = new VarImpl(name, xtcType, scopeName, regECR);
 
-		SimpleType varType = ValueType.simple(regECR, ECR.createBottom(), Size
-				.createForType(xtcType), Parent.getBottom());
+		SimpleType varType = ValueType.simple(regECR, ECR.createBottom(),
+				Size.createForType(xtcType), Parent.getBottom());
 
 		ECR varECR = ECR.create(varType);
 

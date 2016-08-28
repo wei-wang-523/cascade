@@ -297,8 +297,8 @@ class Limits64 {
 	 * @return <code>true</code> if the value fits into a char.
 	 */
 	public static boolean fitsChar(BigInteger value) {
-		return ((CHAR_MIN.compareTo(value) <= 0) && (CHAR_MAX.compareTo(
-				value) >= 0));
+		return ((CHAR_MIN.compareTo(value) <= 0)
+				&& (CHAR_MAX.compareTo(value) >= 0));
 	}
 
 	/**
@@ -309,8 +309,8 @@ class Limits64 {
 	 * @return <code>true</code> if the value fits into an unsigned char.
 	 */
 	public static boolean fitsUnsignedChar(BigInteger value) {
-		return ((BigInteger.ZERO.compareTo(value) <= 0) && (UCHAR_MAX.compareTo(
-				value) >= 0));
+		return ((BigInteger.ZERO.compareTo(value) <= 0)
+				&& (UCHAR_MAX.compareTo(value) >= 0));
 	}
 
 	/**
@@ -321,8 +321,8 @@ class Limits64 {
 	 * @return <code>true</code> if the value fits into a short.
 	 */
 	public static boolean fitsShort(BigInteger value) {
-		return ((SHORT_MIN.compareTo(value) <= 0) && (SHORT_MAX.compareTo(
-				value) >= 0));
+		return ((SHORT_MIN.compareTo(value) <= 0)
+				&& (SHORT_MAX.compareTo(value) >= 0));
 	}
 
 	/**
@@ -333,8 +333,8 @@ class Limits64 {
 	 * @return <code>true</code> if the value fits into an unsigned short.
 	 */
 	public static boolean fitsUnsignedShort(BigInteger value) {
-		return ((BigInteger.ZERO.compareTo(value) <= 0) && (USHORT_MAX.compareTo(
-				value) >= 0));
+		return ((BigInteger.ZERO.compareTo(value) <= 0)
+				&& (USHORT_MAX.compareTo(value) >= 0));
 	}
 
 	/**
@@ -356,8 +356,8 @@ class Limits64 {
 	 * @return <code>true</code> if the value fits into an unsigned int.
 	 */
 	public static boolean fitsUnsignedInt(BigInteger value) {
-		return ((BigInteger.ZERO.compareTo(value) <= 0) && (UINT_MAX.compareTo(
-				value) >= 0));
+		return ((BigInteger.ZERO.compareTo(value) <= 0)
+				&& (UINT_MAX.compareTo(value) >= 0));
 	}
 
 	/**
@@ -368,8 +368,8 @@ class Limits64 {
 	 * @return <code>true</code> if the value fits into a long.
 	 */
 	public static boolean fitsLong(BigInteger value) {
-		return ((LONG_MIN.compareTo(value) <= 0) && (LONG_MAX.compareTo(
-				value) >= 0));
+		return ((LONG_MIN.compareTo(value) <= 0)
+				&& (LONG_MAX.compareTo(value) >= 0));
 	}
 
 	/**
@@ -380,8 +380,8 @@ class Limits64 {
 	 * @return <code>true</code> if the value fits into an unsigned long.
 	 */
 	public static boolean fitsUnsignedLong(BigInteger value) {
-		return ((BigInteger.ZERO.compareTo(value) <= 0) && (ULONG_MAX.compareTo(
-				value) >= 0));
+		return ((BigInteger.ZERO.compareTo(value) <= 0)
+				&& (ULONG_MAX.compareTo(value) >= 0));
 	}
 
 	/**
@@ -392,8 +392,8 @@ class Limits64 {
 	 * @return <code>true</code> if the value fits into a long long.
 	 */
 	public static boolean fitsLongLong(BigInteger value) {
-		return ((LONG_LONG_MIN.compareTo(value) <= 0) && (LONG_LONG_MAX.compareTo(
-				value) >= 0));
+		return ((LONG_LONG_MIN.compareTo(value) <= 0)
+				&& (LONG_LONG_MAX.compareTo(value) >= 0));
 	}
 
 	/**
@@ -404,8 +404,8 @@ class Limits64 {
 	 * @return <code>true</code> if the value fits into an unsigned long long.
 	 */
 	public static boolean fitsUnsignedLongLong(BigInteger value) {
-		return ((BigInteger.ZERO.compareTo(value) <= 0) && (ULONG_LONG_MAX
-				.compareTo(value) >= 0));
+		return ((BigInteger.ZERO.compareTo(value) <= 0)
+				&& (ULONG_LONG_MAX.compareTo(value) >= 0));
 	}
 
 	// --------------------------------------------------------------------------
@@ -535,12 +535,12 @@ class Limits64 {
 	// --------------------------------------------------------------------------
 
 	/** The modulo of signed long long types. */
-	private static final BigInteger LONG_LONG_MOD = LONG_LONG_MAX.add(
-			BigInteger.ONE);
+	private static final BigInteger LONG_LONG_MOD = LONG_LONG_MAX
+			.add(BigInteger.ONE);
 
 	/** The modulo of unsigned long long types. */
-	private static final BigInteger ULONG_LONG_MOD = ULONG_LONG_MAX.add(
-			BigInteger.ONE);
+	private static final BigInteger ULONG_LONG_MOD = ULONG_LONG_MAX
+			.add(BigInteger.ONE);
 
 	/**
 	 * Mask the specified value as a signed long long.

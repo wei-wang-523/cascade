@@ -25,8 +25,8 @@ import edu.nyu.cascade.prover.type.Constructor;
 import edu.nyu.cascade.prover.type.InductiveType;
 import edu.nyu.cascade.prover.type.Selector;
 
-final class InductiveExpressionImpl extends ExpressionImpl implements
-		InductiveExpression {
+final class InductiveExpressionImpl extends ExpressionImpl
+		implements InductiveExpression {
 
 	static InductiveExpressionImpl create(Constructor constructor,
 			Expression... args) {
@@ -37,8 +37,8 @@ final class InductiveExpressionImpl extends ExpressionImpl implements
 
 	static InductiveExpressionImpl create(Constructor constructor,
 			Iterable<? extends Expression> args) {
-		Preconditions.checkArgument(constructor.getSelectors().size() == Iterables
-				.size(args));
+		Preconditions.checkArgument(
+				constructor.getSelectors().size() == Iterables.size(args));
 		if (Iterables.isEmpty(args)) {
 			return new InductiveExpressionImpl(ConstructorImpl.valueOf(constructor));
 		} else {
@@ -80,8 +80,8 @@ final class InductiveExpressionImpl extends ExpressionImpl implements
 						Type type = exprManager.toCvc4Type(constructor.getType());
 						DatatypeType dtt = new DatatypeType(type);
 						Datatype dt = dtt.getDatatype();
-						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.APPLY_CONSTRUCTOR, dt
-								.getConstructor(constructor.getName()));
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.APPLY_CONSTRUCTOR,
+								dt.getConstructor(constructor.getName()));
 					}
 				});
 
@@ -124,8 +124,8 @@ final class InductiveExpressionImpl extends ExpressionImpl implements
 						vectorExpr argsExpr = new vectorExpr();
 						for (Expr child : children)
 							argsExpr.add(child);
-						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.APPLY_CONSTRUCTOR, dt
-								.getConstructor(constructor.getName()), argsExpr);
+						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.APPLY_CONSTRUCTOR,
+								dt.getConstructor(constructor.getName()), argsExpr);
 					}
 				}, args);
 

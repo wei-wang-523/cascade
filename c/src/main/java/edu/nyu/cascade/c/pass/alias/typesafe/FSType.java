@@ -46,8 +46,8 @@ public final class FSType {
 	}
 
 	static FSType of(Type type, String typeName, FSType parent) {
-		String id = parent != null ? parent.getTypeName() + Identifiers.UNDERLINE
-				+ typeName : typeName;
+		String id = parent != null
+				? parent.getTypeName() + Identifiers.UNDERLINE + typeName : typeName;
 
 		if (fsTypeMap.containsKey(id))
 			return fsTypeMap.get(id);

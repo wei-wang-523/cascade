@@ -73,8 +73,8 @@ public class SteensgaardCFSCS implements IRAliasAnalyzer<ECR> {
 			symbolTable.enterScope(globalCFG);
 			currentCFG = globalCFG;
 
-			final Collection<IRBasicBlock> topologicSeq = Lists.reverse(globalCFG
-					.topologicalSeq(globalCFG.getEntry()));
+			final Collection<IRBasicBlock> topologicSeq = Lists
+					.reverse(globalCFG.topologicalSeq(globalCFG.getEntry()));
 
 			for (IRBasicBlock block : topologicSeq) {
 				for (IRStatement stmt : block.getStatements())
@@ -84,8 +84,8 @@ public class SteensgaardCFSCS implements IRAliasAnalyzer<ECR> {
 					if (null != outgoing.getGuard()) {
 						IRBooleanExpression guard = outgoing.getGuard();
 						Node srcNode = guard.getSourceNode();
-						IOUtils.debug().pln("Preprocess: " + srcNode.getLocation() + ": "
-								+ guard);
+						IOUtils.debug()
+								.pln("Preprocess: " + srcNode.getLocation() + ": " + guard);
 						ecrEncoder.toRval(outgoing.getGuard().getSourceNode());
 					}
 				}
@@ -130,8 +130,8 @@ public class SteensgaardCFSCS implements IRAliasAnalyzer<ECR> {
 				}
 			}
 
-			final Collection<IRBasicBlock> topologicSeq = Lists.reverse(CFG
-					.topologicalSeq(CFG.getEntry()));
+			final Collection<IRBasicBlock> topologicSeq = Lists
+					.reverse(CFG.topologicalSeq(CFG.getEntry()));
 
 			for (IRBasicBlock block : topologicSeq) {
 				for (IRStatement stmt : block.getStatements())
@@ -141,8 +141,8 @@ public class SteensgaardCFSCS implements IRAliasAnalyzer<ECR> {
 					if (null != outgoing.getGuard()) {
 						IRBooleanExpression guard = outgoing.getGuard();
 						Node srcNode = guard.getSourceNode();
-						IOUtils.debug().pln("Preprocess: " + srcNode.getLocation() + ": "
-								+ guard);
+						IOUtils.debug()
+								.pln("Preprocess: " + srcNode.getLocation() + ": " + guard);
 						ecrEncoder.toRval(srcNode);
 					}
 				}
@@ -526,8 +526,8 @@ public class SteensgaardCFSCS implements IRAliasAnalyzer<ECR> {
 		/* For the function pointer parameters declared but not yet assigned */
 		if (uf.getType(funcECR).isBottom()) {
 			IOUtils.err().println("WARNING: get Loc of " + funcECR);
-			Size size = Size.createForType(CType.getInstance().pointerize(
-					funcXtcType));
+			Size size = Size
+					.createForType(CType.getInstance().pointerize(funcXtcType));
 			uf.expand(funcECR, size);
 		}
 
@@ -562,8 +562,8 @@ public class SteensgaardCFSCS implements IRAliasAnalyzer<ECR> {
 			ECR paramECR = lamType.getParams().get(j);
 
 			/* Resolve the syntax sugar of assign function to a function pointer */
-			ECR argECR = CType.getType(srcNode).resolve().isFunction() ? ecrEncoder
-					.toLval(srcNode) : ecrEncoder.toRval(srcNode);
+			ECR argECR = CType.getType(srcNode).resolve().isFunction()
+					? ecrEncoder.toLval(srcNode) : ecrEncoder.toRval(srcNode);
 			ValueType argType = uf.getType(argECR);
 			paramRetAssign(argType.getSize(), paramECR, argECR);
 		}
@@ -571,8 +571,8 @@ public class SteensgaardCFSCS implements IRAliasAnalyzer<ECR> {
 		while (i < stmt.getOperands().size()) {
 			Node srcNode = stmt.getOperand(i).getSourceNode();
 			/* Resolve the syntax sugar of assign function to a function pointer */
-			ECR argECR = CType.getType(srcNode).resolve().isFunction() ? ecrEncoder
-					.toLval(srcNode) : ecrEncoder.toRval(srcNode);
+			ECR argECR = CType.getType(srcNode).resolve().isFunction()
+					? ecrEncoder.toLval(srcNode) : ecrEncoder.toRval(srcNode);
 			lamType.addParamECR(argECR);
 			++i;
 		}
@@ -603,7 +603,7 @@ public class SteensgaardCFSCS implements IRAliasAnalyzer<ECR> {
 		// TODO Auto-generated method stub
 
 	}
-	
+
 	@Override
 	public Pair<Integer, Integer> getAliasAnalysisStats(
 			IRControlFlowGraph globalCFG, Collection<IRControlFlowGraph> CFGs) {

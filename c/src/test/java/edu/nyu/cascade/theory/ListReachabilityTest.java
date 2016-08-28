@@ -30,8 +30,8 @@ public class ListReachabilityTest {
 	private ExpressionManager exprManager;
 
 	@Before
-	public void setUp() throws ExpressionFactoryException,
-			TheoremProverFactoryException {
+	public void setUp()
+			throws ExpressionFactoryException, TheoremProverFactoryException {
 		theoremProver = TheoremProverFactory.getInstance();
 		exprManager = theoremProver.getExpressionManager();
 		listEncoding = new ListReachability(exprManager).getEncoding();
@@ -43,23 +43,23 @@ public class ListReachabilityTest {
 	}
 
 	@Test
-	public void testAssumptions() throws TheoremProverException,
-			ExpressionFactoryException {
+	public void testAssumptions()
+			throws TheoremProverException, ExpressionFactoryException {
 		theoremProver.assume(listEncoding.getAssumptions());
 		assertTrue(theoremProver.checkValidity(listEncoding.tt()).isValid());
 	}
 
 	@Test
 	@Ignore
-	public void testAssumptions2() throws TheoremProverException,
-			ExpressionFactoryException {
+	public void testAssumptions2()
+			throws TheoremProverException, ExpressionFactoryException {
 		theoremProver.assume(listEncoding.getAssumptions());
 		assertTrue(!theoremProver.checkValidity(listEncoding.ff()).isValid());
 	}
 
 	@Test
-	public void testAssumptions3() throws TheoremProverException,
-			ExpressionFactoryException {
+	public void testAssumptions3()
+			throws TheoremProverException, ExpressionFactoryException {
 		theoremProver.assume(listEncoding.getAssumptions());
 		ExpressionManager exprManager = listEncoding.getExpressionManager();
 		Expression listNil = listEncoding.applyNilConstr();

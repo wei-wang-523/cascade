@@ -20,8 +20,8 @@ final class BooleanTypeImpl extends TypeImpl implements BooleanType {
 		case EQUAL:
 			assert (expression.getArity() == 2);
 			return BooleanExpressionImpl.mkEq(getExpressionManager(),
-					(Expression) expression.getChild(0), (Expression) expression.getChild(
-							1));
+					(Expression) expression.getChild(0),
+					(Expression) expression.getChild(1));
 
 		default:
 			return super.importExpression(expression).asBooleanExpression();
@@ -67,16 +67,16 @@ final class BooleanTypeImpl extends TypeImpl implements BooleanType {
 
 	@Override
 	public BooleanExpressionImpl and(Expression first, Expression... rest) {
-		return BooleanExpressionImpl.mkAnd(getExpressionManager(), Lists.asList(
-				first, rest));
+		return BooleanExpressionImpl.mkAnd(getExpressionManager(),
+				Lists.asList(first, rest));
 	}
 
 	@Override
 	public BooleanExpressionImpl and(
 			Iterable<? extends Expression> subExpressions) {
 		// TODO: Check for proper typing
-		ImmutableList<? extends Expression> subList = ImmutableList.copyOf(
-				subExpressions);
+		ImmutableList<? extends Expression> subList = ImmutableList
+				.copyOf(subExpressions);
 		if (!subList.isEmpty()) {
 			return BooleanExpressionImpl.mkAnd(getExpressionManager(), subList);
 		}
@@ -201,24 +201,24 @@ final class BooleanTypeImpl extends TypeImpl implements BooleanType {
 
 	@Override
 	public void addTrigger(Expression e, Expression p) {
-		BooleanExpressionImpl e2 = BooleanExpressionImpl.valueOf(
-				getExpressionManager(), e);
+		BooleanExpressionImpl e2 = BooleanExpressionImpl
+				.valueOf(getExpressionManager(), e);
 		e2.addTrigger(p);
 	}
 
 	@Override
 	public void setTriggers(Expression e,
 			Iterable<? extends Expression> triggers) {
-		BooleanExpressionImpl e2 = BooleanExpressionImpl.valueOf(
-				getExpressionManager(), e);
+		BooleanExpressionImpl e2 = BooleanExpressionImpl
+				.valueOf(getExpressionManager(), e);
 		e2.setTriggers(triggers);
 	}
 
 	@Override
 	public ImmutableList<ImmutableList<? extends Expression>> getTriggers(
 			Expression e) {
-		BooleanExpressionImpl e2 = BooleanExpressionImpl.valueOf(
-				getExpressionManager(), e);
+		BooleanExpressionImpl e2 = BooleanExpressionImpl
+				.valueOf(getExpressionManager(), e);
 		return e2.getTriggers();
 	}
 
@@ -277,7 +277,7 @@ final class BooleanTypeImpl extends TypeImpl implements BooleanType {
 	BooleanExpressionImpl createExpression(Expr res, Expression e, Kind kind,
 			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isBoolean());
-		return BooleanExpressionImpl.create(getExpressionManager(), kind, res, e
-				.getType().asBooleanType(), children);
+		return BooleanExpressionImpl.create(getExpressionManager(), kind, res,
+				e.getType().asBooleanType(), children);
 	}
 }

@@ -29,8 +29,8 @@ import xtc.tree.Node;
 
 @RunWith(Parameterized.class)
 public class AddressTakenAnalysisTest {
-	private static final File programs_syntax = FileUtils.absoluteResourcePath(
-			"syntax");
+	private static final File programs_syntax = FileUtils
+			.absoluteResourcePath("syntax");
 	private static final File programs_c = FileUtils.absoluteResourcePath("c");
 	private static final File mini_invalids = FileUtils.filePath(programs_c,
 			"mini_bnc", "invalid");
@@ -101,8 +101,8 @@ public class AddressTakenAnalysisTest {
 		CFGs.remove(globalCFG);
 
 		SymbolTable symbolTable = main.getSymbolTable();
-		AddressTakenAnalysis AddrTakenAnalyzer = AddressTakenAnalysis.create(
-				symbolTable);
+		AddressTakenAnalysis AddrTakenAnalyzer = AddressTakenAnalysis
+				.create(symbolTable);
 		AddrTakenAnalyzer.analysis(globalCFG, CFGs);
 	}
 }

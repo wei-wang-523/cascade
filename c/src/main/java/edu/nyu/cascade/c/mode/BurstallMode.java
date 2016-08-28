@@ -40,9 +40,10 @@ public class BurstallMode extends AbstractMode {
 		IRDataFormatter formatter = getFormatter(encoding);
 
 		if (Preferences.isSet(Preferences.OPTION_LAMBDA)) {
-			IRMemSafetyEncoding memSafetyEncoding = Preferences.isSet(
-					Preferences.OPTION_STMT) ? AbstractStmtMemSafetyEncoding.getInstance(
-							encoding, formatter, strategy)
+			IRMemSafetyEncoding memSafetyEncoding = Preferences
+					.isSet(Preferences.OPTION_STMT)
+							? AbstractStmtMemSafetyEncoding.getInstance(encoding, formatter,
+									strategy)
 							: AbstractMemSafetyEncoding.getInstance(encoding, formatter,
 									strategy);
 
@@ -57,8 +58,8 @@ public class BurstallMode extends AbstractMode {
 		}
 
 		if (Preferences.isSet(Preferences.OPTION_HOARE)) {
-			stateFactory = HoareStateFactory.create(
-					(AbstractStateFactory<FSType>) stateFactory);
+			stateFactory = HoareStateFactory
+					.create((AbstractStateFactory<FSType>) stateFactory);
 		}
 	}
 

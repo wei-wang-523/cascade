@@ -9,8 +9,8 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.IntegerExpression;
 import edu.nyu.cascade.prover.type.Type;
 
-final class IntegerVariableImpl extends VariableExpressionImpl implements
-		IntegerExpression {
+final class IntegerVariableImpl extends VariableExpressionImpl
+		implements IntegerExpression {
 
 	/** Create a new variable of an integer subtype (e.g., a range type). */
 	IntegerVariableImpl(ExpressionManagerImpl em, String name, Type type,
@@ -65,8 +65,8 @@ final class IntegerVariableImpl extends VariableExpressionImpl implements
 
 	@Override
 	public IntegerExpression plus(Iterable<? extends IntegerExpression> rest) {
-		return getType().add(Iterables.concat(Collections.singletonList(this),
-				rest));
+		return getType()
+				.add(Iterables.concat(Collections.singletonList(this), rest));
 	}
 
 	@Override

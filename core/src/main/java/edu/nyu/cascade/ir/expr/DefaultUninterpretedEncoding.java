@@ -7,9 +7,9 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.ExpressionManager;
 import edu.nyu.cascade.prover.UninterpretedExpression;
 
-public class DefaultUninterpretedEncoding extends
-		AbstractTypeEncoding<UninterpretedExpression> implements
-		UninterpretedEncoding<UninterpretedExpression> {
+public class DefaultUninterpretedEncoding
+		extends AbstractTypeEncoding<UninterpretedExpression>
+		implements UninterpretedEncoding<UninterpretedExpression> {
 	private static final String UNKNOWN_VARIABLE_NAME = "uninterpreted_encoding_unknown";
 
 	public DefaultUninterpretedEncoding(ExpressionManager exprManager,
@@ -49,7 +49,7 @@ public class DefaultUninterpretedEncoding extends
 
 	@Override
 	public UninterpretedExpression unknown() {
-		return getExpressionManager().variable(UNKNOWN_VARIABLE_NAME, getType(),
-				true).asUninterpreted();
+		return getExpressionManager()
+				.variable(UNKNOWN_VARIABLE_NAME, getType(), true).asUninterpreted();
 	}
 }

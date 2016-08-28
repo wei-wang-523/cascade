@@ -43,8 +43,8 @@ public final class SingleStateExpression extends AbstractStateExpression {
 	@Override
 	public String toStringShort() {
 		StringBuilder sb = new StringBuilder();
-		sb.append(mem).append("\n").append(size).append("\n").append(mark).append(
-				"\n");
+		sb.append(mem).append("\n").append(size).append("\n").append(mark)
+				.append("\n");
 		return sb.toString();
 	}
 

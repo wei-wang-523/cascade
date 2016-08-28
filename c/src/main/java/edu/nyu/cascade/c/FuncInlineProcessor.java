@@ -137,8 +137,8 @@ public class FuncInlineProcessor<T> {
 		List<String> worklist = Lists.newArrayList(ReservedFunction.MALLOC);
 		while (!worklist.isEmpty()) {
 			final String callee = worklist.remove(0);
-			Collection<String> callers = Sets.newHashSet(callGraph.getCallers(
-					callee));
+			Collection<String> callers = Sets
+					.newHashSet(callGraph.getCallers(callee));
 			callers.retainAll(currCfgNames);
 			if (callers.isEmpty())
 				continue;
@@ -290,8 +290,8 @@ public class FuncInlineProcessor<T> {
 
 		/* Find the parameter declare node */
 		GNode declarator = defNode.getGeneric(2);
-		GNode paramDeclare = CAnalyzer.getFunctionDeclarator(declarator).getGeneric(
-				1);
+		GNode paramDeclare = CAnalyzer.getFunctionDeclarator(declarator)
+				.getGeneric(1);
 		if (paramDeclare != null) {
 			paramDeclare = paramDeclare.getGeneric(0);
 		}
@@ -312,8 +312,8 @@ public class FuncInlineProcessor<T> {
 		/* Generate assign statement one by one */
 		int paramSize = funcType.getParameters().size();
 
-		Collection<IRStatement> assignments = Lists.newArrayListWithExpectedSize(
-				paramSize);
+		Collection<IRStatement> assignments = Lists
+				.newArrayListWithExpectedSize(paramSize);
 
 		for (int i = 0; i < paramSize; i++) {
 			Node paramNode = paramDeclare.getNode(i).getNode(1);
@@ -323,8 +323,8 @@ public class FuncInlineProcessor<T> {
 			paramType.mark(primaryId);
 			symbolTable.mark(primaryId);
 
-			IRExpressionImpl param = CExpression.create(primaryId, symbolTable
-					.getCurrentScope());
+			IRExpressionImpl param = CExpression.create(primaryId,
+					symbolTable.getCurrentScope());
 			IRExpressionImpl arg = (IRExpressionImpl) args.get(i);
 			Node argNode = arg.getSourceNode();
 			Node assignNode = GNode.create("AssignmentExpression", paramNode, "=",
@@ -339,13 +339,13 @@ public class FuncInlineProcessor<T> {
 			assert (argSize >= paramSize);
 
 			for (int i = argSize; i < paramSize; i++) {
-				GNode offsetNode = GNode.create("IntegerConstant", String.valueOf(
-						argSize - i));
+				GNode offsetNode = GNode.create("IntegerConstant",
+						String.valueOf(argSize - i));
 				cop.typeInteger(String.valueOf(i)).mark(offsetNode);
 				symbolTable.mark(offsetNode);
 
-				Node varArgN = getVarArgNode(funcCFG.getName(), declarator
-						.getLocation());
+				Node varArgN = getVarArgNode(funcCFG.getName(),
+						declarator.getLocation());
 				Type varArgTy = CType.getType(varArgN).resolve().toArray().getType();
 				GNode varArgElem = GNode.create("SubscriptExpression", varArgN,
 						offsetNode);
@@ -354,8 +354,8 @@ public class FuncInlineProcessor<T> {
 				symbolTable.mark(varArgElem);
 				preprocessor.analyzeVarArg(funcCFG.getName(), funcType, varArgElem);
 
-				IRExpressionImpl param = CExpression.create(varArgElem, symbolTable
-						.getCurrentScope());
+				IRExpressionImpl param = CExpression.create(varArgElem,
+						symbolTable.getCurrentScope());
 				IRExpressionImpl arg = (IRExpressionImpl) args.get(i);
 				Node argNode = arg.getSourceNode();
 
@@ -470,8 +470,8 @@ public class FuncInlineProcessor<T> {
 					CFG.addEdge(nextBlock, restBlock);
 				}
 			} else { // function pointers call
-				newSuccCurrBlock = BasicBlock.switchBlock(funcCallStmt.getSourceNode()
-						.getLocation());
+				newSuccCurrBlock = BasicBlock
+						.switchBlock(funcCallStmt.getSourceNode().getLocation());
 				Collection<IRControlFlowGraph> funcCFGs = Lists.newArrayList();
 				Collection<IRControlFlowGraph> foundCFGs = lookupFuncCFG(funNode,
 						funcCallStmt);
@@ -486,8 +486,8 @@ public class FuncInlineProcessor<T> {
 					}
 
 					Collection<CaseGuard> caseGuards = Lists.newArrayList();
-					CExpression valExpr = CExpression.create(funNode, currBlock
-							.getScope());
+					CExpression valExpr = CExpression.create(funNode,
+							currBlock.getScope());
 					for (IRControlFlowGraph funcCFGCopy : funcCFGs) {
 						CaseGuard caseBranch = getCaseGuard(funcCFGCopy, valExpr);
 						caseGuards.add(caseBranch);
@@ -663,8 +663,8 @@ public class FuncInlineProcessor<T> {
 			CScopeAnalyzer.popScope();
 		}
 
-		Collection<IRControlFlowGraph> funcCFGs = Lists.newArrayListWithCapacity(
-				funcVars.size());
+		Collection<IRControlFlowGraph> funcCFGs = Lists
+				.newArrayListWithCapacity(funcVars.size());
 
 		Type funcType = CType.getType(funcNode);
 		if (Tag.POINTER.equals(funcType.tag()))

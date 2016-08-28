@@ -23,8 +23,8 @@ import edu.nyu.cascade.prover.type.Type;
 final class RecordTypeImpl extends TypeImpl implements RecordType {
 	static RecordTypeImpl create(ExpressionManagerImpl em, String tname,
 			String elemName, Type elemType) {
-		return new RecordTypeImpl(em, tname, Lists.newArrayList(elemName), Lists
-				.newArrayList(elemType));
+		return new RecordTypeImpl(em, tname, Lists.newArrayList(elemName),
+				Lists.newArrayList(elemType));
 	}
 
 	static RecordTypeImpl create(ExpressionManagerImpl em, String tname,
@@ -42,16 +42,17 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 	RecordExpressionImpl createExpression(Expr res, Expression e, Kind kind,
 			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isRecord());
-		return RecordExpressionImpl.create(getExpressionManager(), kind, res, e
-				.getType().asRecord(), children);
+		return RecordExpressionImpl.create(getExpressionManager(), kind, res,
+				e.getType().asRecord(), children);
 	}
 
 	static RecordTypeImpl valueOf(ExpressionManagerImpl em, Type t) {
 		if (t instanceof RecordTypeImpl) {
 			return (RecordTypeImpl) t;
 		} else {
-			return create(em, ((RecordType) t).getName(), ((RecordType) t)
-					.getElementNames(), ((RecordType) t).getElementTypes());
+			return create(em, ((RecordType) t).getName(),
+					((RecordType) t).getElementNames(),
+					((RecordType) t).getElementTypes());
 		}
 	}
 
@@ -62,8 +63,8 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 	private RecordTypeImpl(ExpressionManagerImpl em, String tname,
 			Iterable<String> fields, Iterable<? extends Type> types) {
 		super(em);
-		Preconditions.checkArgument(Iterables.size(fields) == Iterables.size(
-				types));
+		Preconditions
+				.checkArgument(Iterables.size(fields) == Iterables.size(types));
 		this.elementTypes = ImmutableList.copyOf(types);
 		this.elementNames = ImmutableList.copyOf(fields);
 		this.typeName = tname;
@@ -82,8 +83,8 @@ final class RecordTypeImpl extends TypeImpl implements RecordType {
 				vectorPair.add(pair);
 			}
 			Record record = new Record(vectorPair);
-			setCVC4Type(em.getTheoremProver().getCvc4ExprManager().mkRecordType(
-					record));
+			setCVC4Type(
+					em.getTheoremProver().getCvc4ExprManager().mkRecordType(record));
 		} catch (Exception e) {
 			throw new TheoremProverException(e);
 		}

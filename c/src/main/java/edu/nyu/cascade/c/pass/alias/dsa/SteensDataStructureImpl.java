@@ -3,10 +3,14 @@ package edu.nyu.cascade.c.pass.alias.dsa;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
 
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.pass.Function;
@@ -110,46 +114,58 @@ public class SteensDataStructureImpl extends DataStructuresImpl {
 
 		// Start with a copy of the original call sites.
 		List<DSCallSite> Calls = Lists.newArrayList(ResultGraph.getFunctionCalls());
-		while (!Calls.isEmpty()) {
-			boolean changed = false;
+
+		{
+			// Loop over and eliminate direct calls
 			Iterator<DSCallSite> CallItr = Calls.iterator();
 			while (CallItr.hasNext()) {
 				DSCallSite Call = CallItr.next();
-
-				// Loop over the called functions, eliminating as many as possible...
-				List<Function> CallTargets = Lists.newArrayList();
-
 				if (Call.isDirectCall()) {
-					CallTargets.add(Call.getCalleeF());
-				} else {
-					Call.getCalleeN().addFullFunctionList(CallTargets);
-				}
-
-				if (CallTargets.isEmpty())
-					continue;
-
-				ListIterator<Function> itr = CallTargets.listIterator();
-				while (itr.hasNext()) {
-					Function F = itr.next();
+					Function F = Call.getCalleeF();
 					if (!F.isDeclaration()) {
 						ResolveFunctionCall(F, Call, ResultGraph.getReturnNodeFor(F));
-						itr.remove();
+					}
+					CallItr.remove();
+				}
+			}
+		}
+
+		if (!Calls.isEmpty()) {
+			// Loop over indirect calls
+			boolean changed;
+			Map<DSNode, Set<Function>> IndirectCallFuncs = Maps.newHashMap();
+			do {
+				changed = false;
+				for (DSCallSite Call : Calls) {
+					Set<Function> CallFuncs = Sets.newHashSet();
+					DSNode CallN = Call.getCalleeN();
+					CallN.addFullFunctionList(CallFuncs);
+					Set<Function> PreCallFuns = IndirectCallFuncs.put(CallN, CallFuncs);
+					SetView<Function> DiffCallFuns;
+					if (PreCallFuns == null) {
+						DiffCallFuns = Sets.difference(CallFuncs, Sets.newHashSet());
+					} else {
+						DiffCallFuns = Sets.difference(CallFuncs, PreCallFuns);
+					}
+
+					if (!DiffCallFuns.isEmpty()) {
+						changed = true;
+						for (Function F : DiffCallFuns) {
+							if (!F.isDeclaration()) {
+								ResolveFunctionCall(F, Call, ResultGraph.getReturnNodeFor(F));
+							}
+						}
 					}
 				}
-
-				CallItr.remove();
-				changed |= true;
-			}
-
-			if (!changed)
-				break;
+			} while (changed);
 		}
 
 		// Update the "incomplete" markers on the nodes, ignoring unknownness due to
 		// incoming arguments...
 		ResultGraph.maskIncompleteMarkers();
-		ResultGraph.markIncompleteNodes(DSSupport.MarkIncompleteFlags.MarkFormalArgs
-				.value() | DSSupport.MarkIncompleteFlags.IgnoreGlobals.value());
+		ResultGraph.markIncompleteNodes(
+				DSSupport.MarkIncompleteFlags.MarkFormalArgs.value()
+						| DSSupport.MarkIncompleteFlags.IgnoreGlobals.value());
 
 		// Remove any nodes that are dead after all of the merging we have done...
 		ResultGraph.removeDeadNodes(
@@ -159,8 +175,8 @@ public class SteensDataStructureImpl extends DataStructuresImpl {
 		GlobalsGraph.maskIncompleteMarkers();
 
 		// Mark external globals incomplete.
-		GlobalsGraph.markIncompleteNodes(DSSupport.MarkIncompleteFlags.IgnoreGlobals
-				.value());
+		GlobalsGraph.markIncompleteNodes(
+				DSSupport.MarkIncompleteFlags.IgnoreGlobals.value());
 
 		// Copy GlobalsGraph into ResultGraph
 		ResultGraph.spliceFrom(GlobalsGraph);
@@ -204,40 +220,51 @@ public class SteensDataStructureImpl extends DataStructuresImpl {
 			Value Arg = AI.next();
 			if (!ValMap.contains(Arg))
 				continue;
-
-			// If its a pointer argument...
-			DSNodeHandle ValNH = ValMap.find(Arg);
+			Type ArgTy = Arg.getType().resolve();
+			if (!(ArgTy.isPointer() || CType.isStructOrUnion(ArgTy)))
+				continue;
+			DSNodeHandle ParamNH = ValMap.find(Arg);
 			DSNodeHandle ArgNH = Call.getPtrArg(PtrArgIdx++);
+			ResolveParamAndArg(ParamNH, ArgNH, ArgTy);
+		}
 
-			if (ValNH.isNull()) {
-				DSNode ValN = new DSNodeImpl(ResultGraph);
-				ValNH.setTo(ValN, 0);
+		if (AI.hasNext()) {
+			DSNodeHandle VAArgNH = Call.getVAVal();
+			while (AI.hasNext()) {
+				Value Arg = AI.next();
+				if (!ValMap.contains(Arg))
+					continue;
+				Type ArgTy = Arg.getType().resolve();
+				if (!(ArgTy.isPointer() || CType.isStructOrUnion(ArgTy)))
+					continue;
+				DSNodeHandle ParamNH = ValMap.find(Arg);
+				ResolveParamAndArg(ParamNH, VAArgNH, ArgTy);
 			}
+		}
+	}
 
+	private void ResolveParamAndArg(DSNodeHandle ParamNH, DSNodeHandle ArgNH,
+			Type ArgTy) {
+		Preconditions
+				.checkArgument(ArgTy.isPointer() || CType.isStructOrUnion(ArgTy));
+
+		if (ArgNH == null) { // Pass nullptr as argument, skip
+			return;
+		}
+
+		if (ArgTy.isPointer()) {
+			if (ParamNH.isNull()) {
+				DSNode N = new DSNodeImpl(ResultGraph);
+				ParamNH.setTo(N, 0);
+			}
+			DSNode N = ParamNH.getNode();
 			// Mark that the node is written to ...
-			ValNH.getNode().setModifiedMarker();
-
+			N.setModifiedMarker();
 			// Ensure a type-record exists
-			ValNH.getNode().growSizeForType(Arg.getType(), ValNH.getOffset());
-
-			// Avoid adding edges from null, or processing non-"pointer" stores
-			Type ArgTy = Arg.getType();
-			ArgTy = CType.getInstance().pointerize(ArgTy);
-			if (CType.isStructOrUnion(ArgTy)) { // Pass composite type
-				ValNH.mergeWith(ArgNH);
-			} else {
-				if (ArgNH != null) {
-					if (ArgTy.isPointer() && ArgNH.isNull()) {
-						DSNode ArgN = new DSNodeImpl(ResultGraph);
-						ArgNH.setTo(ArgN, 0);
-					}
-					ValNH.addEdgeTo(0, ArgNH);
-				}
-			}
-
-			// TODO: TypeInferenceOptimize
-
-			ValNH.getNode().mergeTypeInfo(Arg.getType(), ValNH.getOffset());
+			N.growSizeForType(ArgTy, ParamNH.getOffset());
+			ParamNH.addEdgeTo(0, ArgNH);
+		} else {
+			ParamNH.mergeWith(ArgNH);
 		}
 	}
 }

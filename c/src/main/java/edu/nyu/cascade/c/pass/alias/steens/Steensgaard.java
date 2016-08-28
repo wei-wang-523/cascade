@@ -65,8 +65,8 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 			symbolTable.enterScope(globalCFG);
 			currentCFG = globalCFG;
 
-			final Collection<IRBasicBlock> topologicSeq = Lists.reverse(globalCFG
-					.topologicalSeq(globalCFG.getEntry()));
+			final Collection<IRBasicBlock> topologicSeq = Lists
+					.reverse(globalCFG.topologicalSeq(globalCFG.getEntry()));
 
 			for (IRBasicBlock block : topologicSeq) {
 				for (IRStatement stmt : block.getStatements())
@@ -113,8 +113,8 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 				}
 			}
 
-			final Collection<IRBasicBlock> topologicSeq = Lists.reverse(CFG
-					.topologicalSeq(CFG.getEntry()));
+			final Collection<IRBasicBlock> topologicSeq = Lists
+					.reverse(CFG.topologicalSeq(CFG.getEntry()));
 
 			for (IRBasicBlock block : topologicSeq) {
 				for (IRStatement stmt : block.getStatements())
@@ -197,8 +197,8 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 			/* For the function pointer parameters declared but not yet assigned */
 			if (uf.getType(funcECR).isBot()) {
 				IOUtils.err().println("WARNING: get Loc of " + funcECR);
-				ValueType refType = ValueType.ref(ECR.createBottom(), ECR
-						.createBottom());
+				ValueType refType = ValueType.ref(ECR.createBottom(),
+						ECR.createBottom());
 				uf.setType(funcECR, refType);
 			}
 
@@ -294,9 +294,9 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 				sb.append("Partition ").append(ecr.getId());
 				if (ecr.getType().isRef()) {
 					RefType refType = ecr.getType().asRef();
-					sb.append(" : Ref(").append(uf.findRoot(refType.getLocation())
-							.getId()).append(",").append(uf.findRoot(refType.getFunction())
-									.getId()).append(")");
+					sb.append(" : Ref(")
+							.append(uf.findRoot(refType.getLocation()).getId()).append(",")
+							.append(uf.findRoot(refType.getFunction()).getId()).append(")");
 				}
 
 				sb.append("\n{ ");
@@ -399,8 +399,8 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 		// Attach the fresh region directly the first operand of target var of
 		// malloc
 		if (uf.getType(lhsLoc).isBot()) {
-			ValueType region_type = ValueType.ref(ECR.createBottom(), ECR
-					.createBottom());
+			ValueType region_type = ValueType.ref(ECR.createBottom(),
+					ECR.createBottom());
 			uf.setType(lhsLoc, region_type);
 		}
 	}

@@ -3,8 +3,8 @@ package edu.nyu.cascade.z3;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.RecordExpression;
 
-final class RecordBoundExpressionImpl extends BoundExpressionImpl implements
-		RecordExpression {
+final class RecordBoundExpressionImpl extends BoundExpressionImpl
+		implements RecordExpression {
 
 	static RecordBoundExpressionImpl create(ExpressionManagerImpl exprManager,
 			String name, RecordTypeImpl type, boolean fresh) {

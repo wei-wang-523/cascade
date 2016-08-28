@@ -107,9 +107,9 @@ abstract class TypeImpl implements Type {
 			FunctionType thisF = (FunctionType) this;
 			FunctionType thatF = (FunctionType) obj;
 
-			if (thisF.getName().equals(thatF.getName()) && EqualsUtil.areEqual(thisF
-					.getArgTypes(), thatF.getArgTypes()) && thisF.getRangeType().equals(
-							thatF.getRangeType()))
+			if (thisF.getName().equals(thatF.getName())
+					&& EqualsUtil.areEqual(thisF.getArgTypes(), thatF.getArgTypes())
+					&& thisF.getRangeType().equals(thatF.getRangeType()))
 				return true;
 			else
 				return false;
@@ -119,8 +119,8 @@ abstract class TypeImpl implements Type {
 			if (getZ3Type() != null)
 				return getZ3Type().equals(((TypeImpl) obj).getZ3Type());
 			else
-				return getZ3UnresolvedDatatype().equals(((TypeImpl) obj)
-						.getZ3UnresolvedDatatype());
+				return getZ3UnresolvedDatatype()
+						.equals(((TypeImpl) obj).getZ3UnresolvedDatatype());
 		}
 		return super.equals(obj);
 	}
@@ -151,8 +151,8 @@ abstract class TypeImpl implements Type {
 			Expression orig = (Expression) expression.getChild(0);
 			List<? extends Expression> oldVars = expression.getChildren().subList(1,
 					arity / 2 + 1);
-			List<? extends Expression> newVars = expression.getChildren().subList(
-					arity / 2 + 1, arity);
+			List<? extends Expression> newVars = expression.getChildren()
+					.subList(arity / 2 + 1, arity);
 			return ExpressionImpl.mkSubst(getExpressionManager(), orig, oldVars,
 					newVars);
 
@@ -160,8 +160,8 @@ abstract class TypeImpl implements Type {
 			assert (arity == 0);
 			return VariableExpressionImpl.valueOf(getExpressionManager(), expression);
 		default:
-			throw new IllegalArgumentException("Unexpected kind: " + expression + "{ "
-					+ expression.getKind() + "}");
+			throw new IllegalArgumentException(
+					"Unexpected kind: " + expression + "{ " + expression.getKind() + "}");
 		}
 	}
 

@@ -130,23 +130,24 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	@Override
 	public BooleanExpression applyMemset(StateExpression state, Expression region,
 			Expression size, Expression value, Node ptrNode) {
-		return singleStateFactory.applyMemset(state.asSingleLambda()
-				.getSingleState(), region, size, value, ptrNode);
+		return singleStateFactory.applyMemset(
+				state.asSingleLambda().getSingleState(), region, size, value, ptrNode);
 	}
 
 	@Override
 	public BooleanExpression applyMemset(StateExpression state, Expression region,
 			Expression size, int value, Node ptrNode) {
-		return singleStateFactory.applyMemset(state.asSingleLambda()
-				.getSingleState(), region, size, value, ptrNode);
+		return singleStateFactory.applyMemset(
+				state.asSingleLambda().getSingleState(), region, size, value, ptrNode);
 	}
 
 	@Override
 	public BooleanExpression applyMemcpy(StateExpression state,
 			Expression destRegion, Expression srcRegion, Expression size,
 			Node destNode, Node srcNode) {
-		return singleStateFactory.applyMemcpy(state.asSingleLambda()
-				.getSingleState(), destRegion, srcRegion, size, destNode, srcNode);
+		return singleStateFactory.applyMemcpy(
+				state.asSingleLambda().getSingleState(), destRegion, srcRegion, size,
+				destNode, srcNode);
 	}
 
 	@Override
@@ -240,16 +241,16 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	public SingleLambdaStateExpression copy(StateExpression state) {
 		SingleLambdaStateExpression singleLambdaState = state.asSingleLambda();
 		SingleStateExpression singleState = singleLambdaState.getSingleState();
-		SingleStateExpression singleStateCopy = singleStateFactory.copy(
-				singleState);
-		SingleLambdaStateExpression newState = SingleLambdaStateExpression.create(
-				singleStateCopy);
+		SingleStateExpression singleStateCopy = singleStateFactory
+				.copy(singleState);
+		SingleLambdaStateExpression newState = SingleLambdaStateExpression
+				.create(singleStateCopy);
 
 		newState.setConstraint(state.getConstraint());
 		newState.setGuard(state.getGuard());
 		newState.putAllPredicateMap(singleLambdaState.getPredicateMap());
-		newState.putAllSafetyPredicateClosures(singleLambdaState
-				.getSafetyPredicateClosures());
+		newState.putAllSafetyPredicateClosures(
+				singleLambdaState.getSafetyPredicateClosures());
 		newState.putAllSafetyPredicates(singleLambdaState.getSafetyPredicates());
 		newState.addVars(state.getVars());
 		newState.addRegions(state.getRegions());
@@ -356,8 +357,8 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 			FunctionExpression predicate = entry.getKey().asFunctionExpression();
 			Collection<Expression> args = entry.getValue();
 			Expression fromExpr = predicate.apply(args);
-			Expression toExpr = memSafetyEncoding.applyUpdatedPredicate(
-					preLambdaState, predicate, args);
+			Expression toExpr = memSafetyEncoding
+					.applyUpdatedPredicate(preLambdaState, predicate, args);
 
 			if (!fromExpr.equals(toExpr)) {
 				fromPredicates.add(fromExpr);
@@ -370,9 +371,9 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	protected void getSubstElemsPair(StateExpression fromState,
 			StateExpression toState, Collection<Expression> fromElems,
 			Collection<Expression> toElems) {
-		singleStateFactory.getSubstElemsPair(fromState.asSingleLambda()
-				.getSingleState(), toState.asSingleLambda().getSingleState(), fromElems,
-				toElems);
+		singleStateFactory.getSubstElemsPair(
+				fromState.asSingleLambda().getSingleState(),
+				toState.asSingleLambda().getSingleState(), fromElems, toElems);
 	}
 
 	@Override
@@ -387,8 +388,8 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 			preSingleStates.add(preState.asSingleLambda().getSingleState());
 		}
 
-		SingleStateExpression joinState = singleStateFactory.joinPreStates(
-				preSingleStates, preGuards);
+		SingleStateExpression joinState = singleStateFactory
+				.joinPreStates(preSingleStates, preGuards);
 		SingleLambdaStateExpression joinLambdaState = SingleLambdaStateExpression
 				.create(joinState);
 
@@ -417,15 +418,15 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 
 		Multimap<Expression, Collection<Expression>> predicateMap = singleLambdaState
 				.getPredicateMap();
-		for (Entry<Expression, Collection<Expression>> entry : ImmutableList.copyOf(
-				predicateMap.entries())) {
+		for (Entry<Expression, Collection<Expression>> entry : ImmutableList
+				.copyOf(predicateMap.entries())) {
 			Collection<Expression> values = entry.getValue();
 			if (values.isEmpty())
 				continue;
 
 			predicateMap.remove(entry.getKey(), values);
-			Collection<Expression> valuesPrime = Lists.newArrayListWithCapacity(values
-					.size());
+			Collection<Expression> valuesPrime = Lists
+					.newArrayListWithCapacity(values.size());
 			for (Expression value : values)
 				valuesPrime.add(value.subst(fromElems, toElems));
 			predicateMap.put(entry.getKey(), valuesPrime);
@@ -435,16 +436,16 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 				.getSafetyPredicates();
 		for (String label : ImmutableSet.copyOf(safetyPredicates.keySet())) {
 			BooleanExpression safetyPredicate = safetyPredicates.get(label);
-			BooleanExpression safetyPredicatePrime = safetyPredicate.subst(fromElems,
-					toElems).asBooleanExpression();
+			BooleanExpression safetyPredicatePrime = safetyPredicate
+					.subst(fromElems, toElems).asBooleanExpression();
 			safetyPredicates.put(label, safetyPredicatePrime);
 		}
 
 		Map<String, PredicateClosure> safetyPredicateClosures = singleLambdaState
 				.getSafetyPredicateClosures();
 		for (String label : ImmutableSet.copyOf(safetyPredicateClosures.keySet())) {
-			PredicateClosure safetyPredicateClosure = safetyPredicateClosures.get(
-					label);
+			PredicateClosure safetyPredicateClosure = safetyPredicateClosures
+					.get(label);
 			Expression body = safetyPredicateClosure.getBodyExpr();
 			Expression bodyPrime = body.subst(fromElems, toElems);
 			PredicateClosure safetyPredicateClosurePrime = memSafetyEncoding.suspend(
@@ -488,16 +489,16 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	 * @return
 	 */
 	SingleLambdaStateExpression freshSingleLambdaState(String name, long width) {
-		SingleLambdaStateExpression fresh = SingleLambdaStateExpression.create(
-				singleStateFactory.freshSingleState(name, width));
+		SingleLambdaStateExpression fresh = SingleLambdaStateExpression
+				.create(singleStateFactory.freshSingleState(name, width));
 		memSafetyEncoding.initMemSafetyPredicates(fresh);
 		return fresh;
 	}
 
 	SingleLambdaStateExpression freshSingleLambdaState(String elemName,
 			ArrayType[] elemTypes) {
-		SingleLambdaStateExpression fresh = SingleLambdaStateExpression.create(
-				singleStateFactory.freshSingleState(elemName, elemTypes));
+		SingleLambdaStateExpression fresh = SingleLambdaStateExpression
+				.create(singleStateFactory.freshSingleState(elemName, elemTypes));
 		memSafetyEncoding.initMemSafetyPredicates(fresh);
 		return fresh;
 	}
@@ -513,9 +514,9 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	 */
 	SingleLambdaStateExpression createSingleLambdaState(String name,
 			Expression mem, Expression size, Expression mark) {
-		SingleLambdaStateExpression fresh = SingleLambdaStateExpression.create(
-				SingleStateExpression.create(name, mem.asArray(), size.asArray(), mark
-						.asArray()));
+		SingleLambdaStateExpression fresh = SingleLambdaStateExpression
+				.create(SingleStateExpression.create(name, mem.asArray(),
+						size.asArray(), mark.asArray()));
 		return fresh;
 	}
 
@@ -563,8 +564,8 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	private BooleanExpression getITEPredicate(ExpressionEncoding encoding,
 			Iterable<? extends Expression> exprs,
 			Iterable<? extends Expression> guards) {
-		Preconditions.checkArgument(Iterables.size(exprs) == Iterables.size(
-				guards));
+		Preconditions
+				.checkArgument(Iterables.size(exprs) == Iterables.size(guards));
 
 		Iterator<? extends Expression> itr = exprs.iterator();
 		Iterator<? extends Expression> guardItr = guards.iterator();
@@ -588,16 +589,16 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 	private PredicateClosure getITEPredClosure(ExpressionEncoding encoding,
 			Iterable<? extends PredicateClosure> preClosures,
 			Iterable<? extends Expression> guards) {
-		Preconditions.checkArgument(Iterables.size(preClosures) == Iterables.size(
-				guards));
+		Preconditions
+				.checkArgument(Iterables.size(preClosures) == Iterables.size(guards));
 
 		Iterator<? extends PredicateClosure> itr = preClosures.iterator();
 		Iterator<? extends Expression> guardItr = guards.iterator();
 
 		Expression resBodyExpr = null;
 		Expression[] resVarExprs = null;
-		List<Expression> unInterFunc = Lists.newArrayListWithCapacity(Iterables
-				.size(preClosures));
+		List<Expression> unInterFunc = Lists
+				.newArrayListWithCapacity(Iterables.size(preClosures));
 
 		if (itr.hasNext()) {
 			PredicateClosure preClosure = itr.next();

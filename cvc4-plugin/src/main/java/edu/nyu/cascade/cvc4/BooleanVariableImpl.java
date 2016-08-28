@@ -5,8 +5,8 @@ import com.google.common.collect.ImmutableList;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 
-final class BooleanVariableImpl extends VariableExpressionImpl implements
-		BooleanExpression {
+final class BooleanVariableImpl extends VariableExpressionImpl
+		implements BooleanExpression {
 
 	BooleanVariableImpl(ExpressionManagerImpl em, String name, boolean fresh) {
 		super(em, name, em.booleanType(), fresh);

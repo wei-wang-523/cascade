@@ -151,8 +151,8 @@ class ExpressionImpl implements Expression {
 	static ExpressionImpl mkSubst(final ExpressionManagerImpl exprManager,
 			final Expression expr, Iterable<? extends Expression> oldExprs,
 			Iterable<? extends Expression> newExprs) {
-		Preconditions.checkArgument(Iterables.size(oldExprs) == Iterables.size(
-				newExprs));
+		Preconditions
+				.checkArgument(Iterables.size(oldExprs) == Iterables.size(newExprs));
 
 		/* Don't bother to SUBST a constant */
 		if (CONSTANT.equals(expr.getKind())) {
@@ -165,16 +165,16 @@ class ExpressionImpl implements Expression {
 			}
 		}
 
-		Expr[] oldArgs = Iterables.toArray(Iterables.transform(oldExprs,
-				new Function<Expression, Expr>() {
+		Expr[] oldArgs = Iterables.toArray(
+				Iterables.transform(oldExprs, new Function<Expression, Expr>() {
 					@Override
 					public Expr apply(Expression expr) {
 						return exprManager.importExpression(expr).getZ3Expression();
 					}
 				}), Expr.class);
 
-		Expr[] newArgs = Iterables.toArray(Iterables.transform(newExprs,
-				new Function<Expression, Expr>() {
+		Expr[] newArgs = Iterables.toArray(
+				Iterables.transform(newExprs, new Function<Expression, Expr>() {
 					@Override
 					public Expr apply(Expression expr) {
 						return exprManager.importExpression(expr).getZ3Expression();
@@ -394,8 +394,8 @@ class ExpressionImpl implements Expression {
 
 			Expr[] z3_no_pattern = null;
 			if (noPatterns != null)
-				z3_no_pattern = Iterables.toArray(Iterables.transform(noPatterns,
-						toZ3Expr), Expr.class);
+				z3_no_pattern = Iterables
+						.toArray(Iterables.transform(noPatterns, toZ3Expr), Expr.class);
 
 			// String quantifierID = Identifiers.uniquify("Q").replace("_", "");
 			// String skolemID = Identifiers.uniquify("skid").replace("_", "");
@@ -431,16 +431,16 @@ class ExpressionImpl implements Expression {
 			Sort[] z3_sorts = null;
 
 			if (vars != null) {
-				z3_names = Iterables.toArray(Iterables.transform(vars,
-						new Function<Expression, Symbol>() {
+				z3_names = Iterables.toArray(
+						Iterables.transform(vars, new Function<Expression, Symbol>() {
 							@Override
 							public Symbol apply(Expression expr) {
 								return ((BoundExpressionImpl) expr.asBound()).getSymbol();
 							}
 						}), Symbol.class);
 
-				z3_sorts = Iterables.toArray(Iterables.transform(vars,
-						new Function<Expression, Sort>() {
+				z3_sorts = Iterables.toArray(
+						Iterables.transform(vars, new Function<Expression, Sort>() {
 							@Override
 							public Sort apply(Expression expr) {
 								return em.toZ3Type(expr.getType());
@@ -462,8 +462,8 @@ class ExpressionImpl implements Expression {
 
 			Expr[] z3_no_pattern = null;
 			if (noPatterns != null)
-				z3_no_pattern = Iterables.toArray(Iterables.transform(noPatterns,
-						toZ3Expr), Expr.class);
+				z3_no_pattern = Iterables
+						.toArray(Iterables.transform(noPatterns, toZ3Expr), Expr.class);
 
 			// String quantifierID = Identifiers.uniquify("Q").replace("_", "");
 			// String skolemID = Identifiers.uniquify("skid").replace("_", "");
@@ -726,8 +726,9 @@ class ExpressionImpl implements Expression {
 		 * ExpressionManager in the constructors.
 		 */
 		// checkArgument(!Iterables.isEmpty(subExpressions));
-		children = new ImmutableList.Builder<ExpressionImpl>().addAll(
-				getExpressionManager().importExpressions(subExpressions)).build();
+		children = new ImmutableList.Builder<ExpressionImpl>()
+				.addAll(getExpressionManager().importExpressions(subExpressions))
+				.build();
 	}
 
 	private Expr[] convertChildrenToExpr() {
@@ -791,8 +792,8 @@ class ExpressionImpl implements Expression {
 	public boolean equals(Object obj) {
 		Preconditions.checkNotNull(z3_expr);
 		if (obj instanceof Expression) {
-			Expr z3_expr_that = getExpressionManager().importExpression(
-					(Expression) obj).getZ3Expression();
+			Expr z3_expr_that = getExpressionManager()
+					.importExpression((Expression) obj).getZ3Expression();
 			if (z3_expr_that == null)
 				return false;
 			return z3_expr.equals(z3_expr_that);

@@ -38,8 +38,8 @@ public class Edge implements IREdge<BasicBlock> {
 			return false;
 		}
 		Edge edge = (Edge) o;
-		return (edge != null && source.equals(edge.source) && target.equals(
-				edge.target) && Objects.equal(guard, edge.guard));
+		return (edge != null && source.equals(edge.source)
+				&& target.equals(edge.target) && Objects.equal(guard, edge.guard));
 	}
 
 	@Override
@@ -79,8 +79,9 @@ public class Edge implements IREdge<BasicBlock> {
 
 	@Override
 	public String toString() {
-		return getSource().getId() + " --" + (guard == null ? ""
-				: "[" + guard + "]") + "--> " + getTarget().getId();
+		return getSource().getId() + " --"
+				+ (guard == null ? "" : "[" + guard + "]") + "--> "
+				+ getTarget().getId();
 	}
 
 	public static Set<BasicBlock> getSources(Iterable<Edge> edges) {

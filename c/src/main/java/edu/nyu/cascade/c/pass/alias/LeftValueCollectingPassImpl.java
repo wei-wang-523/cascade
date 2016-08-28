@@ -85,8 +85,8 @@ public final class LeftValueCollectingPassImpl implements IRPass {
 
 			@Override
 			public Object unableToVisit(Node node) {
-				IOUtils.err().println("APPROX: Treating unexpected node type as NULL: "
-						+ node.getName());
+				IOUtils.err().println(
+						"APPROX: Treating unexpected node type as NULL: " + node.getName());
 				return null;
 			}
 
@@ -137,8 +137,8 @@ public final class LeftValueCollectingPassImpl implements IRPass {
 
 			@Override
 			public Object unableToVisit(Node node) {
-				IOUtils.err().println("APPROX: Treating unexpected node type as NULL: "
-						+ node.getName());
+				IOUtils.err().println(
+						"APPROX: Treating unexpected node type as NULL: " + node.getName());
 				return null;
 			}
 
@@ -345,7 +345,7 @@ public final class LeftValueCollectingPassImpl implements IRPass {
 
 				if (!retTy.resolve().isVoid()) {
 					Node retNode = stmt.getOperand(1).getSourceNode();
-					lvalVisitor.encode(retNode);
+					rvalVisitor.encode(retNode);
 				}
 
 				Node funcNode = stmt.getOperand(0).getSourceNode();
@@ -389,8 +389,8 @@ public final class LeftValueCollectingPassImpl implements IRPass {
 		}
 
 		private void visit(IRControlFlowGraph CFG) {
-			Collection<IRBasicBlock> BBs = Lists.reverse(CFG.topologicalSeq(CFG
-					.getEntry()));
+			Collection<IRBasicBlock> BBs = Lists
+					.reverse(CFG.topologicalSeq(CFG.getEntry()));
 			for (IRBasicBlock BB : BBs) {
 				for (IRStatement stmt : BB.getStatements())
 					visit(stmt);

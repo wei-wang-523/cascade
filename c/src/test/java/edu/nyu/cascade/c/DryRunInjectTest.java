@@ -74,8 +74,8 @@ public class DryRunInjectTest {
 
 	@Test
 	public void testLambda() throws ParseException, IOException {
-		String[] args = { "--iter-times", "1", "--lambda", "--dry-run", cfile
-				.toString() };
+		String[] args = { "--iter-times", "1", "--lambda", "--dry-run",
+				cfile.toString() };
 		IOUtils.out().println("Dry-run lambda:" + cfile.toString());
 		List<String> cmds = main.processCommandLine(args);
 		main.run(cmds);
@@ -83,8 +83,8 @@ public class DryRunInjectTest {
 
 	@Test
 	public void testVariCell() throws ParseException, IOException {
-		String[] args = { "--iter-times", "1", "--dry-run", "--vari-cell", cfile
-				.toString() };
+		String[] args = { "--iter-times", "1", "--dry-run", "--vari-cell",
+				cfile.toString() };
 		IOUtils.out().println("Dry-run vari-cell:" + cfile.toString());
 		List<String> cmds = main.processCommandLine(args);
 		main.run(cmds);
@@ -92,8 +92,8 @@ public class DryRunInjectTest {
 
 	@Test
 	public void testMultiCell() throws ParseException, IOException {
-		String[] args = { "--iter-times", "1", "--dry-run", "--multi-cell", cfile
-				.toString() };
+		String[] args = { "--iter-times", "1", "--dry-run", "--multi-cell",
+				cfile.toString() };
 		IOUtils.out().println("Dry-run multi-cell:" + cfile.toString());
 		List<String> cmds = main.processCommandLine(args);
 		main.run(cmds);

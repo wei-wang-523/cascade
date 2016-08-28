@@ -93,8 +93,8 @@ public class BasicBlock implements IRBasicBlock, Comparable<BasicBlock> {
 
 	private BasicBlock(Type type, IRBasicBlock switchBlock) {
 		this(type, Collections.<IRStatement> emptyList());
-		Preconditions.checkArgument(switchBlock.getType().equals(
-				IRBasicBlock.Type.SWITCH));
+		Preconditions
+				.checkArgument(switchBlock.getType().equals(IRBasicBlock.Type.SWITCH));
 		this.swichBlock = switchBlock;
 	}
 

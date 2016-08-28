@@ -11,7 +11,8 @@ import edu.nyu.cascade.ir.impl.SymbolTableImpl;
 public class CModule extends AbstractModule {
 	@Override
 	public void configure() {
-		install(new FactoryModuleBuilder().implement(SymbolTable.class,
-				SymbolTableImpl.class).build(SymbolTableFactory.class));
+		install(new FactoryModuleBuilder()
+				.implement(SymbolTable.class, SymbolTableImpl.class)
+				.build(SymbolTableFactory.class));
 	}
 }

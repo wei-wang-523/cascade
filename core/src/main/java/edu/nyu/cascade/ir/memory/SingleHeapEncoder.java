@@ -36,13 +36,13 @@ public class SingleHeapEncoder implements IRSingleHeapEncoder {
 			IRDataFormatter dataFormatter, Strategy strategy) {
 		switch (strategy) {
 		case ORDER: {
-			IROrderMemLayoutEncoding memLayout = OrderLinearMemLayoutEncoding.create(
-					encoding, dataFormatter);
+			IROrderMemLayoutEncoding memLayout = OrderLinearMemLayoutEncoding
+					.create(encoding, dataFormatter);
 			return new SingleHeapEncoder(encoding, dataFormatter, null, memLayout);
 		}
 		case SOUND: {
-			IRSoundMemLayoutEncoding memLayout = SoundLinearMemLayoutEncoding.create(
-					encoding, dataFormatter);
+			IRSoundMemLayoutEncoding memLayout = SoundLinearMemLayoutEncoding
+					.create(encoding, dataFormatter);
 			return new SingleHeapEncoder(encoding, dataFormatter, memLayout, null);
 		}
 		default:

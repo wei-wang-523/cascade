@@ -34,8 +34,8 @@ class IntegerTypeImpl extends TypeImpl implements IntegerType {
 
 	@Override
 	public IntegerExpressionImpl add(Expression first, Expression... rest) {
-		return IntegerExpressionImpl.mkPlus(getExpressionManager(), Lists.asList(
-				first, rest));
+		return IntegerExpressionImpl.mkPlus(getExpressionManager(),
+				Lists.asList(first, rest));
 	}
 
 	@Override
@@ -159,7 +159,7 @@ class IntegerTypeImpl extends TypeImpl implements IntegerType {
 	IntegerExpressionImpl createExpression(Expr res, Expression e, Kind kind,
 			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isInteger());
-		return IntegerExpressionImpl.create(getExpressionManager(), kind, res, e
-				.getType().asInteger(), children);
+		return IntegerExpressionImpl.create(getExpressionManager(), kind, res,
+				e.getType().asInteger(), children);
 	}
 }

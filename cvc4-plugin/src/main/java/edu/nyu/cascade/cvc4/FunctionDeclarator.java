@@ -23,8 +23,8 @@ import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
 import edu.nyu.cascade.util.IOUtils;
 
-final class FunctionDeclarator extends ExpressionImpl implements
-		FunctionExpression {
+final class FunctionDeclarator extends ExpressionImpl
+		implements FunctionExpression {
 
 	static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, FunctionDeclarator>> funcCache = CacheBuilder
 			.newBuilder().build(

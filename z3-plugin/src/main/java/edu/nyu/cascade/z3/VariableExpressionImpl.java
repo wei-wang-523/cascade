@@ -20,8 +20,8 @@ import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
 
-class VariableExpressionImpl extends ExpressionImpl implements
-		VariableExpression {
+class VariableExpressionImpl extends ExpressionImpl
+		implements VariableExpression {
 	static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, Expr>> varCache = CacheBuilder
 			.newBuilder().build(
 					new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, Expr>>() {
@@ -52,8 +52,8 @@ class VariableExpressionImpl extends ExpressionImpl implements
 	static ExpressionImpl valueOfVariable(ExpressionManagerImpl exprManager,
 			final Expr expr, Type type) throws Z3Exception {
 		Preconditions.checkArgument(expr.isConst());
-		Preconditions.checkArgument(exprManager.toType(expr.getSort()).equals(
-				type));
+		Preconditions
+				.checkArgument(exprManager.toType(expr.getSort()).equals(type));
 
 		return new VariableExpressionImpl(exprManager, expr, expr.toString(), type);
 	}

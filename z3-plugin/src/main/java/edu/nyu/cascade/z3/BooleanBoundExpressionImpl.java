@@ -5,8 +5,8 @@ import com.google.common.collect.ImmutableList;
 import edu.nyu.cascade.prover.BooleanExpression;
 import edu.nyu.cascade.prover.Expression;
 
-final class BooleanBoundExpressionImpl extends BoundExpressionImpl implements
-		BooleanExpression {
+final class BooleanBoundExpressionImpl extends BoundExpressionImpl
+		implements BooleanExpression {
 
 	private BooleanBoundExpressionImpl(ExpressionManagerImpl em, String name,
 			boolean fresh) {

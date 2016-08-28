@@ -16,8 +16,8 @@ import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.type.BooleanType;
 import edu.nyu.cascade.prover.type.ComparableType;
 
-class BooleanExpressionImpl extends ExpressionImpl implements
-		BooleanExpression {
+class BooleanExpressionImpl extends ExpressionImpl
+		implements BooleanExpression {
 
 	static BooleanExpressionImpl mkAnd(ExpressionManagerImpl exprManager,
 			Expression a, Expression b) {
@@ -254,8 +254,8 @@ class BooleanExpressionImpl extends ExpressionImpl implements
 						vectorExpr varList = new vectorExpr();
 						for (Expr var : vars)
 							varList.add(var);
-						Expr boundVarList = em.mkExpr(
-								edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
+						Expr boundVarList = em
+								.mkExpr(edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
 						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.EXISTS, boundVarList,
 								body);
 					}
@@ -277,16 +277,16 @@ class BooleanExpressionImpl extends ExpressionImpl implements
 						vectorExpr varList = new vectorExpr();
 						for (Expr var : vars)
 							varList.add(var);
-						Expr boundVarList = em.mkExpr(
-								edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
+						Expr boundVarList = em
+								.mkExpr(edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
 						vectorExpr triggerList = new vectorExpr();
 						for (Expr trigger : triggers) {
 							Expr pat = em.mkExpr(edu.nyu.acsys.CVC4.Kind.INST_PATTERN,
 									trigger);
 							triggerList.add(pat);
 						}
-						Expr triggersPattern = em.mkExpr(
-								edu.nyu.acsys.CVC4.Kind.INST_PATTERN_LIST, triggerList);
+						Expr triggersPattern = em
+								.mkExpr(edu.nyu.acsys.CVC4.Kind.INST_PATTERN_LIST, triggerList);
 						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.EXISTS, boundVarList, body,
 								triggersPattern);
 					}
@@ -320,8 +320,8 @@ class BooleanExpressionImpl extends ExpressionImpl implements
 						vectorExpr varList = new vectorExpr();
 						for (Expr var : vars)
 							varList.add(var);
-						Expr boundVarList = em.mkExpr(
-								edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
+						Expr boundVarList = em
+								.mkExpr(edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
 						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.FORALL, boundVarList,
 								body);
 					}
@@ -343,16 +343,16 @@ class BooleanExpressionImpl extends ExpressionImpl implements
 						vectorExpr varList = new vectorExpr();
 						for (Expr var : vars)
 							varList.add(var);
-						Expr boundVarList = em.mkExpr(
-								edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
+						Expr boundVarList = em
+								.mkExpr(edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
 						vectorExpr triggerList = new vectorExpr();
 						for (Expr trigger : triggers) {
 							Expr pat = em.mkExpr(edu.nyu.acsys.CVC4.Kind.INST_PATTERN,
 									trigger);
 							triggerList.add(pat);
 						}
-						Expr triggersPattern = em.mkExpr(
-								edu.nyu.acsys.CVC4.Kind.INST_PATTERN_LIST, triggerList);
+						Expr triggersPattern = em
+								.mkExpr(edu.nyu.acsys.CVC4.Kind.INST_PATTERN_LIST, triggerList);
 						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.FORALL, boundVarList, body,
 								triggersPattern);
 					}
@@ -526,8 +526,8 @@ class BooleanExpressionImpl extends ExpressionImpl implements
 						vectorExpr varList = new vectorExpr();
 						for (Expr var : vars)
 							varList.add(var);
-						Expr boundVarList = em.mkExpr(
-								edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
+						Expr boundVarList = em
+								.mkExpr(edu.nyu.acsys.CVC4.Kind.BOUND_VAR_LIST, varList);
 						return em.mkExpr(edu.nyu.acsys.CVC4.Kind.REWRITE_RULE, boundVarList,
 								guard, rule);
 					}
@@ -559,8 +559,8 @@ class BooleanExpressionImpl extends ExpressionImpl implements
 									trigger);
 							triggerList.add(pat);
 						}
-						Expr triggersPattern = em.mkExpr(
-								edu.nyu.acsys.CVC4.Kind.INST_PATTERN_LIST, triggerList);
+						Expr triggersPattern = em
+								.mkExpr(edu.nyu.acsys.CVC4.Kind.INST_PATTERN_LIST, triggerList);
 						vectorExpr argList = new vectorExpr();
 						argList.add(head);
 						argList.add(body);
@@ -595,8 +595,8 @@ class BooleanExpressionImpl extends ExpressionImpl implements
 									trigger);
 							triggerList.add(pat);
 						}
-						Expr triggersPattern = em.mkExpr(
-								edu.nyu.acsys.CVC4.Kind.INST_PATTERN_LIST, triggerList);
+						Expr triggersPattern = em
+								.mkExpr(edu.nyu.acsys.CVC4.Kind.INST_PATTERN_LIST, triggerList);
 						vectorExpr argList = new vectorExpr();
 						argList.add(head);
 						argList.add(body);
@@ -631,8 +631,8 @@ class BooleanExpressionImpl extends ExpressionImpl implements
 									trigger);
 							triggerList.add(pat);
 						}
-						Expr triggersPattern = em.mkExpr(
-								edu.nyu.acsys.CVC4.Kind.INST_PATTERN_LIST, triggerList);
+						Expr triggersPattern = em
+								.mkExpr(edu.nyu.acsys.CVC4.Kind.INST_PATTERN_LIST, triggerList);
 						vectorExpr argList = new vectorExpr();
 						argList.add(head);
 						argList.add(body);

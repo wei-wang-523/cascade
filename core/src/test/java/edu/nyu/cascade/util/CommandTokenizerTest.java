@@ -9,8 +9,8 @@ import edu.nyu.cascade.util.CommandTokenizer.ArgList;
 
 public class CommandTokenizerTest extends TestCase {
 	public void doTestIsWord(String input, boolean expected) {
-		assertEquals("isWord('" + input + "')", expected, CommandTokenizer.isWord(
-				input));
+		assertEquals("isWord('" + input + "')", expected,
+				CommandTokenizer.isWord(input));
 	}
 
 	@Test

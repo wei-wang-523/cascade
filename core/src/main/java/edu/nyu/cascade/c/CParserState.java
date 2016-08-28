@@ -362,8 +362,8 @@ public class CParserState implements State {
 		// declaration list.
 		if (top.next.isSet(FLAG_PARAMS) || top.next.isSet(FLAG_STRUCTURE)) {
 			if (DEBUG) {
-				System.out.println("ignoring bind(" + id + ", " + top.isSet(
-						FLAG_TYPEDEF) + ")");
+				System.out.println(
+						"ignoring bind(" + id + ", " + top.isSet(FLAG_TYPEDEF) + ")");
 			}
 			return;
 		} else if (DEBUG) {
@@ -382,8 +382,8 @@ public class CParserState implements State {
 				System.out.println("ignoring rebinding of " + id);
 			}
 		} else {
-			c.bindings.put(id, top.isSet(FLAG_TYPEDEF) ? Boolean.TRUE
-					: Boolean.FALSE);
+			c.bindings.put(id,
+					top.isSet(FLAG_TYPEDEF) ? Boolean.TRUE : Boolean.FALSE);
 			c.set(FLAG_MODIFIED);
 		}
 	}

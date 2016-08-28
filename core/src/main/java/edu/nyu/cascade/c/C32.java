@@ -70,8 +70,8 @@ public class C32 extends C {
 	}
 
 	/** The integer kind of the sizeof type. */
-	protected static final NumberT.Kind KIND_SIZEOF = IntegerT.fromRank(
-			Limits32.SIZEOF_RANK, false);
+	protected static final NumberT.Kind KIND_SIZEOF = IntegerT
+			.fromRank(Limits32.SIZEOF_RANK, false);
 
 	/** The canonical sizeof type. */
 	public static final IntegerT SIZEOF = new IntegerT(KIND_SIZEOF);
@@ -81,8 +81,8 @@ public class C32 extends C {
 	}
 
 	/** The integer kind of the pointer difference type. */
-	protected static final NumberT.Kind KIND_PTR_DIFF = IntegerT.fromRank(
-			Limits32.PTRDIFF_RANK, true);
+	protected static final NumberT.Kind KIND_PTR_DIFF = IntegerT
+			.fromRank(Limits32.PTRDIFF_RANK, true);
 
 	/** The canonical pointer difference type. */
 	public static final IntegerT PTR_DIFF = new IntegerT(KIND_PTR_DIFF);
@@ -92,8 +92,8 @@ public class C32 extends C {
 	}
 
 	/** The number kind of the wchar_t type. */
-	protected static final NumberT.Kind KIND_WCHAR = IntegerT.fromRank(
-			Limits32.WCHAR_RANK, Limits32.IS_WCHAR_SIGNED);
+	protected static final NumberT.Kind KIND_WCHAR = IntegerT
+			.fromRank(Limits32.WCHAR_RANK, Limits32.IS_WCHAR_SIGNED);
 
 	/** The canonical wide char type. */
 	public static final IntegerT WCHAR = new IntegerT(KIND_WCHAR);
@@ -307,8 +307,8 @@ public class C32 extends C {
 			// lenght, (2) it has an incomplete member type, or (3) it has a
 			// trailing array.
 			ArrayT a = type.toArray();
-			return (((!a.isVarLength()) && (!a.hasLength())) || isIncomplete(a
-					.getType()) || hasTrailingArray(a.getType()));
+			return (((!a.isVarLength()) && (!a.hasLength()))
+					|| isIncomplete(a.getType()) || hasTrailingArray(a.getType()));
 		}
 		case STRUCT: {
 			// A struct is incomplete if (1) it has no members, (2) any
@@ -525,8 +525,8 @@ public class C32 extends C {
 			}
 			// Fall through.
 		default:
-			throw new IllegalArgumentException("Type without constant reference "
-					+ type);
+			throw new IllegalArgumentException(
+					"Type without constant reference " + type);
 		}
 	}
 
@@ -540,8 +540,9 @@ public class C32 extends C {
 	 * @return <code>true</code> if the type has any qualifiers.
 	 */
 	public boolean hasQualifiers(Type type) {
-		return (type.hasAttribute(Constants.ATT_CONSTANT) || type.hasAttribute(
-				Constants.ATT_RESTRICT) || type.hasAttribute(Constants.ATT_VOLATILE));
+		return (type.hasAttribute(Constants.ATT_CONSTANT)
+				|| type.hasAttribute(Constants.ATT_RESTRICT)
+				|| type.hasAttribute(Constants.ATT_VOLATILE));
 	}
 
 	/**
@@ -556,18 +557,18 @@ public class C32 extends C {
 	 *         qualifiers.
 	 */
 	public boolean hasQualifiers(Type type, Type template) {
-		if (template.hasAttribute(Constants.ATT_CONSTANT) && (!type.hasAttribute(
-				Constants.ATT_CONSTANT))) {
+		if (template.hasAttribute(Constants.ATT_CONSTANT)
+				&& (!type.hasAttribute(Constants.ATT_CONSTANT))) {
 			return false;
 		}
 
-		if (template.hasAttribute(Constants.ATT_RESTRICT) && (!type.hasAttribute(
-				Constants.ATT_RESTRICT))) {
+		if (template.hasAttribute(Constants.ATT_RESTRICT)
+				&& (!type.hasAttribute(Constants.ATT_RESTRICT))) {
 			return false;
 		}
 
-		if (template.hasAttribute(Constants.ATT_VOLATILE) && (!type.hasAttribute(
-				Constants.ATT_VOLATILE))) {
+		if (template.hasAttribute(Constants.ATT_VOLATILE)
+				&& (!type.hasAttribute(Constants.ATT_VOLATILE))) {
 			return false;
 		}
 
@@ -586,12 +587,12 @@ public class C32 extends C {
 	 *         template.
 	 */
 	public boolean hasSameQualifiers(Type type, Type template) {
-		return ((type.hasAttribute(Constants.ATT_CONSTANT) == template.hasAttribute(
-				Constants.ATT_CONSTANT)) && (type.hasAttribute(
-						Constants.ATT_RESTRICT) == template.hasAttribute(
-								Constants.ATT_RESTRICT)) && (type.hasAttribute(
-										Constants.ATT_VOLATILE) == template.hasAttribute(
-												Constants.ATT_VOLATILE)));
+		return ((type.hasAttribute(Constants.ATT_CONSTANT) == template
+				.hasAttribute(Constants.ATT_CONSTANT))
+				&& (type.hasAttribute(Constants.ATT_RESTRICT) == template
+						.hasAttribute(Constants.ATT_RESTRICT))
+				&& (type.hasAttribute(Constants.ATT_VOLATILE) == template
+						.hasAttribute(Constants.ATT_VOLATILE)));
 	}
 
 	/**
@@ -641,8 +642,8 @@ public class C32 extends C {
 			// If the template has any attributes, check them out.
 			if (template.hasAttributes()) {
 				for (Attribute att : template.attributes()) {
-					if (Constants.NAME_GCC.equals(att.getName()) && (!type.hasAttribute(
-							att))) {
+					if (Constants.NAME_GCC.equals(att.getName())
+							&& (!type.hasAttribute(att))) {
 						if (!annotated) {
 							type = type.annotate();
 							annotated = true;
@@ -798,8 +799,8 @@ public class C32 extends C {
 				return natural ? Limits32.LONG_DOUBLE_NAT_ALIGN
 						: Limits32.LONG_DOUBLE_ALIGN;
 			default:
-				throw new AssertionError("Invalid number kind " + type.toNumber()
-						.getKind());
+				throw new AssertionError(
+						"Invalid number kind " + type.toNumber().getKind());
 			}
 
 		case POINTER:
@@ -868,8 +869,8 @@ public class C32 extends C {
 			case LONG_DOUBLE_COMPLEX:
 				return 2 * Limits32.LONG_DOUBLE_SIZE;
 			default:
-				throw new AssertionError("Invalid number kind " + type.toNumber()
-						.getKind());
+				throw new AssertionError(
+						"Invalid number kind " + type.toNumber().getKind());
 			}
 
 		case POINTER:
@@ -970,8 +971,8 @@ public class C32 extends C {
 
 			// Determine whether this member is the last one affecting the
 			// structure's size.
-			final boolean isLastMember = i == memberCount - 1 || (hasTrailing
-					&& i == memberCount - 2);
+			final boolean isLastMember = i == memberCount - 1
+					|| (hasTrailing && i == memberCount - 2);
 
 			// Determine the member's alignment.
 			final long varAlign = getAlignment(var, false);
@@ -1342,8 +1343,8 @@ public class C32 extends C {
 	public Type promote(Type type) {
 		// Flag for whether the type represents a bit-field and int is not
 		// signed.
-		boolean flip = ((!Limits32.IS_INT_SIGNED) && type.hasVariable() && type
-				.toVariable().hasWidth());
+		boolean flip = ((!Limits32.IS_INT_SIGNED) && type.hasVariable()
+				&& type.toVariable().hasWidth());
 
 		type = type.resolve();
 
@@ -1627,8 +1628,9 @@ public class C32 extends C {
 					}
 					case VARIABLE: {
 						VariableT v = t1.toVariable();
-						return v.hasWidth() ? new VariableT(t1, c, v.getName(), v
-								.getWidth()) : new VariableT(t1, c, v.getKind(), v.getName());
+						return v.hasWidth()
+								? new VariableT(t1, c, v.getName(), v.getWidth())
+								: new VariableT(t1, c, v.getKind(), v.getName());
 					}
 					default:
 						throw new AssertionError("Invalid type " + t1);
@@ -1809,10 +1811,10 @@ public class C32 extends C {
 				// Both types are functions without a parameter type list.
 				// However, if type information from the function definition
 				// is available, we preserve (but not check) it.
-				if (f1.hasAttribute(Constants.ATT_DEFINED) || (!f2.hasAttribute(
-						Constants.ATT_DEFINED))) {
-					return differs ? new FunctionT(f1, res, f1.getParameters(), f1
-							.isVarArgs()) : f1;
+				if (f1.hasAttribute(Constants.ATT_DEFINED)
+						|| (!f2.hasAttribute(Constants.ATT_DEFINED))) {
+					return differs
+							? new FunctionT(f1, res, f1.getParameters(), f1.isVarArgs()) : f1;
 				} else {
 					return new FunctionT(f2, res, f2.getParameters(), f2.isVarArgs());
 				}
@@ -1835,8 +1837,8 @@ public class C32 extends C {
 			if (f1.isVarArgs() && (!f2.hasAttribute(Constants.ATT_DEFINED))) {
 				return ErrorT.TYPE;
 			} else {
-				return differs ? new FunctionT(f1, res, f1.getParameters(), f1
-						.isVarArgs()) : f1;
+				return differs
+						? new FunctionT(f1, res, f1.getParameters(), f1.isVarArgs()) : f1;
 			}
 		}
 
@@ -1899,12 +1901,12 @@ public class C32 extends C {
 	// =========================================================================
 
 	/** The factor for chars. */
-	protected final BigInteger FACTOR_CHAR = BigInteger.valueOf(2).pow(
-			Limits32.CHAR_BITS);
+	protected final BigInteger FACTOR_CHAR = BigInteger.valueOf(2)
+			.pow(Limits32.CHAR_BITS);
 
 	/** The factor for wide chars. */
-	protected final BigInteger FACTOR_WIDE = BigInteger.valueOf(2).pow(
-			Limits32.CHAR_BITS * Limits32.WCHAR_SIZE);
+	protected final BigInteger FACTOR_WIDE = BigInteger.valueOf(2)
+			.pow(Limits32.CHAR_BITS * Limits32.WCHAR_SIZE);
 
 	/**
 	 * Type the specified C character literal. This method determines the type for

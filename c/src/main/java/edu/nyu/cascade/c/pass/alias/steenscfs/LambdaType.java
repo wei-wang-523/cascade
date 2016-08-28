@@ -38,6 +38,11 @@ class LambdaType extends ValueType {
 	}
 
 	@Override
+	void setSize(Size size) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	Size getSize() {
 		return Size.getBot();
 	}

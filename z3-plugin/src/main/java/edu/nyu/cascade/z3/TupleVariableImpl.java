@@ -3,8 +3,8 @@ package edu.nyu.cascade.z3;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.TupleExpression;
 
-final class TupleVariableImpl extends VariableExpressionImpl implements
-		TupleExpression {
+final class TupleVariableImpl extends VariableExpressionImpl
+		implements TupleExpression {
 
 	static TupleVariableImpl create(ExpressionManagerImpl exprManager,
 			String name, TupleTypeImpl type, boolean fresh) {

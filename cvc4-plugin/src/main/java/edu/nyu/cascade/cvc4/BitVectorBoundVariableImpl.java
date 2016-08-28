@@ -90,8 +90,8 @@ final class BitVectorBoundVariableImpl extends BoundVariableExpressionImpl
 
 	@Override
 	public BitVectorExpressionImpl plus(Iterable<? extends Expression> args) {
-		return BitVectorExpressionImpl.mkPlus(getExpressionManager(), Iterables
-				.concat(Collections.singletonList(this), args));
+		return BitVectorExpressionImpl.mkPlus(getExpressionManager(),
+				Iterables.concat(Collections.singletonList(this), args));
 	}
 
 	@Override
@@ -196,7 +196,7 @@ final class BitVectorBoundVariableImpl extends BoundVariableExpressionImpl
 
 	@Override
 	public BitVectorExpression times(Iterable<? extends Expression> args) {
-		return BitVectorExpressionImpl.mkMult(getExpressionManager(), Iterables
-				.concat(Collections.singletonList(this), args));
+		return BitVectorExpressionImpl.mkMult(getExpressionManager(),
+				Iterables.concat(Collections.singletonList(this), args));
 	}
 }

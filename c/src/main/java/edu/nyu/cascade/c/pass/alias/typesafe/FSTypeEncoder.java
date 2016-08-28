@@ -20,8 +20,8 @@ public class FSTypeEncoder extends Visitor {
 	public FSType encodeFSType(Node node) {
 		FSType res = (FSType) dispatch(node);
 		if (res == null)
-			throw new IllegalArgumentException("Cannot encode FSType for node "
-					+ node);
+			throw new IllegalArgumentException(
+					"Cannot encode FSType for node " + node);
 		return res;
 	}
 
@@ -240,8 +240,9 @@ public class FSTypeEncoder extends Visitor {
 			sb.append(type.toLabel().getName());
 			break;
 		case POINTER:
-			sb.append("pointer(").append(parseTypeName(type.resolve().toPointer()
-					.getType())).append(')');
+			sb.append("pointer(")
+					.append(parseTypeName(type.resolve().toPointer().getType()))
+					.append(')');
 			break;
 		case STRUCT:
 		case UNION:

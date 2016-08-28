@@ -40,8 +40,8 @@ final class TupleTypeImpl extends TypeImpl implements TupleType {
 			if (typeCache.get(em).containsKey(name))
 				return typeCache.get(em).get(name);
 			else {
-				TupleTypeImpl res = new TupleTypeImpl(em, name, Lists.asList(firstType,
-						otherTypes));
+				TupleTypeImpl res = new TupleTypeImpl(em, name,
+						Lists.asList(firstType, otherTypes));
 				typeCache.get(em).put(name, res);
 				return res;
 			}
@@ -76,8 +76,8 @@ final class TupleTypeImpl extends TypeImpl implements TupleType {
 		if (t instanceof TupleTypeImpl) {
 			return (TupleTypeImpl) t;
 		} else {
-			return create(em, ((TupleType) t).getName(), ((TupleType) t)
-					.getElementTypes());
+			return create(em, ((TupleType) t).getName(),
+					((TupleType) t).getElementTypes());
 		}
 	}
 
@@ -109,8 +109,8 @@ final class TupleTypeImpl extends TypeImpl implements TupleType {
 			sb.append(")))");
 			em.addToTypeCache(this);
 
-			TheoremProverImpl.z3FileCommand("(declare-datatypes " + sb.toString()
-					+ ")");
+			TheoremProverImpl
+					.z3FileCommand("(declare-datatypes " + sb.toString() + ")");
 		} catch (Z3Exception e) {
 			throw new TheoremProverException(e);
 		}

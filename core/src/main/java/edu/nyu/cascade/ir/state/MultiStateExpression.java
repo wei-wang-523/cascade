@@ -41,8 +41,8 @@ public final class MultiStateExpression extends AbstractStateExpression {
 	public String toStringShort() {
 		StringBuilder sb = new StringBuilder();
 		for (Entry<String, SingleStateExpression> entry : stateMap.entrySet()) {
-			sb.append(entry.getKey()).append(":").append(entry.getValue()
-					.toStringShort()).append("\n");
+			sb.append(entry.getKey()).append(":")
+					.append(entry.getValue().toStringShort()).append("\n");
 		}
 		return sb.toString();
 	}

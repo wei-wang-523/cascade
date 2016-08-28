@@ -23,8 +23,8 @@ import edu.nyu.cascade.prover.type.BooleanType;
 import edu.nyu.cascade.prover.type.ComparableType;
 import edu.nyu.cascade.prover.type.Type;
 
-final class BooleanExpressionImpl extends ExpressionImpl implements
-		BooleanExpression {
+final class BooleanExpressionImpl extends ExpressionImpl
+		implements BooleanExpression {
 
 	static BooleanExpressionImpl mkAnd(ExpressionManagerImpl exprManager,
 			Expression a, Expression b) {
@@ -35,8 +35,8 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 					@Override
 					public Expr apply(Context ctx, Expr left, Expr right)
 							throws Z3Exception {
-						return ctx.mkAnd(new BoolExpr[] { (BoolExpr) left,
-								(BoolExpr) right });
+						return ctx
+								.mkAnd(new BoolExpr[] { (BoolExpr) left, (BoolExpr) right });
 					}
 				}, a, b);
 	}
@@ -247,8 +247,8 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 					public Expr apply(Context ctx, Expr[] vars, Expr body, Expr[] pattern,
 							Expr[] noPattern, Symbol quantifierID, Symbol skolemID)
 							throws Z3Exception {
-						Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(
-								pattern) } : null;
+						Pattern[] ptns = pattern != null
+								? new Pattern[] { ctx.mkPattern(pattern) } : null;
 						return ctx.mkExists(vars, body, 1, ptns, noPattern, quantifierID,
 								skolemID);
 					}
@@ -273,8 +273,8 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 					public Expr apply(Context ctx, Sort[] sorts, Symbol[] names,
 							Expr body, Expr[] pattern, Expr[] noPatter, Symbol quantifierID,
 							Symbol skolemID) throws Z3Exception {
-						Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(
-								pattern) } : null;
+						Pattern[] ptns = pattern != null
+								? new Pattern[] { ctx.mkPattern(pattern) } : null;
 						return ctx.mkExists(sorts, names, body, 1, ptns, noPatter,
 								quantifierID, skolemID);
 					}
@@ -310,8 +310,8 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 					public Expr apply(Context ctx, Expr[] vars, Expr body, Expr[] pattern,
 							Expr[] noPatter, Symbol quantifierID, Symbol skolemID)
 							throws Z3Exception {
-						Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(
-								pattern) } : null;
+						Pattern[] ptns = pattern != null
+								? new Pattern[] { ctx.mkPattern(pattern) } : null;
 						return ctx.mkForall(vars, body, 1, ptns, noPatter, quantifierID,
 								skolemID);
 					}
@@ -336,8 +336,8 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 					public Expr apply(Context ctx, Sort[] sorts, Symbol[] names,
 							Expr body, Expr[] pattern, Expr[] noPatter, Symbol quantifierID,
 							Symbol skolemID) throws Z3Exception {
-						Pattern[] ptns = pattern != null ? new Pattern[] { ctx.mkPattern(
-								pattern) } : null;
+						Pattern[] ptns = pattern != null
+								? new Pattern[] { ctx.mkPattern(pattern) } : null;
 						return ctx.mkForall(sorts, names, body, 1, ptns, noPatter,
 								quantifierID, skolemID);
 					}
@@ -449,8 +449,8 @@ final class BooleanExpressionImpl extends ExpressionImpl implements
 					@Override
 					public Expr apply(Context ctx, Expr left, Expr right)
 							throws Z3Exception {
-						return ctx.mkOr(new BoolExpr[] { (BoolExpr) left,
-								(BoolExpr) right });
+						return ctx
+								.mkOr(new BoolExpr[] { (BoolExpr) left, (BoolExpr) right });
 					}
 				}, a, b);
 	}

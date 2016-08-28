@@ -20,8 +20,8 @@ import edu.nyu.cascade.prover.VariableExpression;
 import edu.nyu.cascade.prover.type.Type;
 import edu.nyu.cascade.util.CacheException;
 
-class VariableExpressionImpl extends ExpressionImpl implements
-		VariableExpression {
+class VariableExpressionImpl extends ExpressionImpl
+		implements VariableExpression {
 	static final LoadingCache<ExpressionManagerImpl, ConcurrentMap<String, Expr>> varCache = CacheBuilder
 			.newBuilder().build(
 					new CacheLoader<ExpressionManagerImpl, ConcurrentMap<String, Expr>>() {
@@ -53,8 +53,8 @@ class VariableExpressionImpl extends ExpressionImpl implements
 
 	static ExpressionImpl valueOfSkolem(ExpressionManagerImpl exprManager,
 			final Expr sk, Type type) {
-		Preconditions.checkArgument(sk.getKind().equals(
-				edu.nyu.acsys.CVC4.Kind.SKOLEM));
+		Preconditions
+				.checkArgument(sk.getKind().equals(edu.nyu.acsys.CVC4.Kind.SKOLEM));
 		Preconditions.checkArgument(exprManager.toType(sk.getType()).equals(type));
 
 		VariableExpressionImpl result = new VariableExpressionImpl(exprManager,
@@ -64,11 +64,11 @@ class VariableExpressionImpl extends ExpressionImpl implements
 
 	static ExpressionImpl valueOfVariable(ExpressionManagerImpl exprManager,
 			final Expr expr, Type type) {
-		Preconditions.checkArgument(expr.getKind().equals(
-				edu.nyu.acsys.CVC4.Kind.VARIABLE)
+		Preconditions
+				.checkArgument(expr.getKind().equals(edu.nyu.acsys.CVC4.Kind.VARIABLE)
 		/* || expr.isSymbol() */);
-		Preconditions.checkArgument(exprManager.toType(expr.getType()).equals(
-				type));
+		Preconditions
+				.checkArgument(exprManager.toType(expr.getType()).equals(type));
 
 		VariableExpressionImpl result = new VariableExpressionImpl(exprManager,
 				VARIABLE, expr, expr.toString(), type);
@@ -102,8 +102,8 @@ class VariableExpressionImpl extends ExpressionImpl implements
 					if (type.isDatatype()) {
 						DatatypeType dtt = new DatatypeType(type);
 						String dtName = dtt.getDatatype().getName();
-						TheoremProverImpl.cvc4FileCommand("(declare-const ", res, " "
-								+ dtName + ")");
+						TheoremProverImpl.cvc4FileCommand("(declare-const ", res,
+								" " + dtName + ")");
 					} else {
 						TheoremProverImpl.cvc4FileCommand("(declare-const ", res, type,
 								")");

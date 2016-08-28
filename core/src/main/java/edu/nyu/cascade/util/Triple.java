@@ -76,7 +76,7 @@ public class Triple<T, U, V> {
 
 	@Override
 	public int hashCode() {
-		return HashCodeUtil.hash(HashCodeUtil.hash(HashCodeUtil.hash(
-				HashCodeUtil.SEED, fst), snd), thd);
+		return HashCodeUtil.hash(
+				HashCodeUtil.hash(HashCodeUtil.hash(HashCodeUtil.SEED, fst), snd), thd);
 	}
 }

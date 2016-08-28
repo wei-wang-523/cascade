@@ -104,8 +104,8 @@ abstract class TypeImpl implements Type {
 			if (getCVC4Type() != null)
 				return getCVC4Type().equals(((TypeImpl) obj).getCVC4Type());
 			else
-				return getCVC4UnresolvedDatatype().equals(((TypeImpl) obj)
-						.getCVC4UnresolvedDatatype());
+				return getCVC4UnresolvedDatatype()
+						.equals(((TypeImpl) obj).getCVC4UnresolvedDatatype());
 		}
 		return super.equals(obj);
 	}
@@ -143,8 +143,8 @@ abstract class TypeImpl implements Type {
 			Expression orig = (Expression) expression.getChild(0);
 			List<? extends Expression> oldVars = expression.getChildren().subList(1,
 					arity / 2 + 1);
-			List<? extends Expression> newVars = expression.getChildren().subList(
-					arity / 2 + 1, arity);
+			List<? extends Expression> newVars = expression.getChildren()
+					.subList(arity / 2 + 1, arity);
 			return ExpressionImpl.mkSubst(getExpressionManager(), orig, oldVars,
 					newVars);
 
@@ -152,8 +152,8 @@ abstract class TypeImpl implements Type {
 			assert (arity == 0);
 			return VariableExpressionImpl.valueOf(getExpressionManager(), expression);
 		default:
-			throw new IllegalArgumentException("Unexpected kind: " + expression + "{ "
-					+ expression.getKind() + "}");
+			throw new IllegalArgumentException(
+					"Unexpected kind: " + expression + "{ " + expression.getKind() + "}");
 		}
 	}
 

@@ -17,8 +17,10 @@ class StructType extends ValueType {
 		StringBuilder sb = new StringBuilder().append("STRUCT (").append(size)
 				.append(", ");
 		for (Entry<Range<Long>, ECR> entry : fieldMap.asMapOfRanges().entrySet()) {
-			sb.append(entry.getKey()).append(":").append((ECR) ((ECR) entry.getValue()
-					.findRoot()).getType().asSimple().getLoc().findRoot()).append(", ");
+			sb.append(entry.getKey()).append(":")
+					.append((ECR) ((ECR) entry.getValue().findRoot()).getType().asSimple()
+							.getLoc().findRoot())
+					.append(", ");
 		}
 		sb.append(parent).append(')');
 

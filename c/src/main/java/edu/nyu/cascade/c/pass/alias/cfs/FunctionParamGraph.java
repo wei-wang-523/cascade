@@ -26,8 +26,8 @@ class FunctionParamGraph {
 	 * @param paramCells
 	 */
 	void put(Cell lambdaCell, List<Cell> paramCells) {
-		Preconditions.checkArgument(lambdaCell.getKind().equals(
-				Cell.CellKind.FUNC));
+		Preconditions
+				.checkArgument(lambdaCell.getKind().equals(Cell.CellKind.FUNC));
 		Preconditions.checkArgument(!funcEdges.containsKey(lambdaCell));
 		funcEdges.put(lambdaCell, paramCells);
 	}

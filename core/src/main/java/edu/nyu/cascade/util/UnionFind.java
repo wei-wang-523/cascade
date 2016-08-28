@@ -151,16 +151,16 @@ public class UnionFind<E> implements Serializable {
 	}
 
 	public SetMultimap<Partition, E> snapshot() {
-		SetMultimap<Partition, E> parts = Multimaps.invertFrom(Multimaps.forMap(
-				map), LinkedHashMultimap.<Partition, E> create());
+		SetMultimap<Partition, E> parts = Multimaps.invertFrom(
+				Multimaps.forMap(map), LinkedHashMultimap.<Partition, E> create());
 		return parts;
 	}
 
 	public Set<E> getEquivClass(Partition key) {
 		if (!map.containsValue(key))
 			return Collections.emptySet();
-		SetMultimap<Partition, E> parts = Multimaps.invertFrom(Multimaps.forMap(
-				map), LinkedHashMultimap.<Partition, E> create());
+		SetMultimap<Partition, E> parts = Multimaps.invertFrom(
+				Multimaps.forMap(map), LinkedHashMultimap.<Partition, E> create());
 		return ImmutableSet.copyOf(parts.asMap().get(key));
 	}
 

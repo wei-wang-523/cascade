@@ -58,8 +58,9 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 	protected AbstractExpressionEncoding(ExpressionManager exprManager,
 			IntegerEncoding<? extends Expression> integerEncoding,
 			BooleanEncoding<? extends Expression> booleanEncoding) {
-		this(integerEncoding, booleanEncoding, UnimplementedArrayEncoding
-				.<Expression> create(), new UnimplementedPointerEncoding<Expression>());
+		this(integerEncoding, booleanEncoding,
+				UnimplementedArrayEncoding.<Expression> create(),
+				new UnimplementedPointerEncoding<Expression>());
 	}
 
 	protected AbstractExpressionEncoding(ExpressionManager exprManager,
@@ -75,12 +76,12 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 			BooleanEncoding<? extends Expression> booleanEncoding,
 			ArrayEncoding<? extends Expression> arrayEncoding,
 			PointerEncoding<? extends Expression> pointerEncoding) {
-		Preconditions.checkArgument(integerEncoding.getExpressionManager().equals(
-				booleanEncoding.getExpressionManager()));
-		Preconditions.checkArgument(
-				arrayEncoding instanceof UnimplementedArrayEncoding || integerEncoding
-						.getExpressionManager().equals(arrayEncoding
-								.getExpressionManager()));
+		Preconditions.checkArgument(integerEncoding.getExpressionManager()
+				.equals(booleanEncoding.getExpressionManager()));
+		Preconditions
+				.checkArgument(arrayEncoding instanceof UnimplementedArrayEncoding
+						|| integerEncoding.getExpressionManager()
+								.equals(arrayEncoding.getExpressionManager()));
 
 		this.exprManager = integerEncoding.getExpressionManager();
 		this.assumptions = Sets.newHashSet();
@@ -338,8 +339,9 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 	@Override
 	public Expression castToBoolean(Expression expr) {
 		return isBoolean(expr) ? expr
-				: isInteger(expr) ? ofBoolean(castToBoolean_(getIntegerEncoding(),
-						expr)) : ofBoolean(castToBoolean_(getPointerEncoding(), expr));
+				: isInteger(expr)
+						? ofBoolean(castToBoolean_(getIntegerEncoding(), expr))
+						: ofBoolean(castToBoolean_(getPointerEncoding(), expr));
 	}
 
 	private <T extends Expression> BooleanExpression castToBoolean_(
@@ -382,8 +384,10 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 	public Expression castToInteger(Expression expr, int size, boolean signed) {
 		Preconditions.checkArgument(isInteger(expr) || isBoolean(expr));
 		IntegerEncoding<? extends Expression> ie = getIntegerEncoding();
-		return toInteger_(ie, isInteger(expr) ? expr
-				: ie.ofBoolean(toBoolean(getBooleanEncoding(), expr)), size, signed);
+		return toInteger_(ie,
+				isInteger(expr) ? expr
+						: ie.ofBoolean(toBoolean(getBooleanEncoding(), expr)),
+				size, signed);
 	}
 
 	private <T extends Expression> Expression toInteger_(IntegerEncoding<T> ie,
@@ -455,17 +459,17 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 		}
 
 		if (isPointer(lhs) && !isPointer(rhs)) {
-			return getBooleanEncoding().ofBooleanExpression(lhs.eq(
-					getPointerEncoding().getNullPtr()));
+			return getBooleanEncoding()
+					.ofBooleanExpression(lhs.eq(getPointerEncoding().getNullPtr()));
 		}
 
 		if (!isPointer(lhs) && isPointer(rhs)) {
-			return getBooleanEncoding().ofBooleanExpression(rhs.eq(
-					getPointerEncoding().getNullPtr()));
+			return getBooleanEncoding()
+					.ofBooleanExpression(rhs.eq(getPointerEncoding().getNullPtr()));
 		}
 
-		throw new IllegalArgumentException("Inconsistent types: " + lhs.getType()
-				+ ", " + rhs.getType());
+		throw new IllegalArgumentException(
+				"Inconsistent types: " + lhs.getType() + ", " + rhs.getType());
 	}
 
 	@Override
@@ -503,8 +507,8 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 
 	@Override
 	public Expression exists(Iterable<? extends Expression> vars, Expression p) {
-		Preconditions.checkArgument(Iterables.all(vars,
-				new Predicate<Expression>() {
+		Preconditions
+				.checkArgument(Iterables.all(vars, new Predicate<Expression>() {
 					@Override
 					public boolean apply(Expression var) {
 						return var.isBound();
@@ -553,8 +557,8 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 
 	@Override
 	public Expression forall(Iterable<? extends Expression> vars, Expression p) {
-		Preconditions.checkArgument(Iterables.all(vars,
-				new Predicate<Expression>() {
+		Preconditions
+				.checkArgument(Iterables.all(vars, new Predicate<Expression>() {
 					@Override
 					public boolean apply(Expression var) {
 						return var.isBound();
@@ -673,8 +677,8 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 
 	@Override
 	public Expression pointerGreaterThanOrEqual(Expression lhs, Expression rhs) {
-		return ofBoolean(pointerGreaterThanOrEqual_(getPointerEncoding(), lhs,
-				rhs));
+		return ofBoolean(
+				pointerGreaterThanOrEqual_(getPointerEncoding(), lhs, rhs));
 	}
 
 	private <T extends Expression> BooleanExpression pointerGreaterThanOrEqual_(
@@ -695,8 +699,8 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 			IntegerEncoding<T> ie, Expression lhs, Expression rhs) {
 		Preconditions.checkArgument(isInteger(lhs));
 		Preconditions.checkArgument(isInteger(rhs));
-		return ie.signedGreaterThanOrEqual(ie.ofExpression(lhs), ie.ofExpression(
-				rhs));
+		return ie.signedGreaterThanOrEqual(ie.ofExpression(lhs),
+				ie.ofExpression(rhs));
 	}
 
 	@Override
@@ -775,35 +779,35 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 	public Expression ifThenElse(Expression bool, Expression thenExpr,
 			Expression elseExpr) {
 		Preconditions.checkArgument((isInteger(thenExpr) && isInteger(elseExpr))
-				|| (isBoolean(thenExpr) && isBoolean(elseExpr)) || (isPointer(thenExpr)
-						&& isPointer(elseExpr)));
+				|| (isBoolean(thenExpr) && isBoolean(elseExpr))
+				|| (isPointer(thenExpr) && isPointer(elseExpr)));
 		if (isBoolean(thenExpr))
-			return ifThenElse_(getBooleanEncoding(), toBoolean(getBooleanEncoding(),
-					bool), thenExpr, elseExpr);
+			return ifThenElse_(getBooleanEncoding(),
+					toBoolean(getBooleanEncoding(), bool), thenExpr, elseExpr);
 		else if (isInteger(thenExpr))
-			return ifThenElse_(getIntegerEncoding(), toBoolean(getBooleanEncoding(),
-					bool), thenExpr, elseExpr);
+			return ifThenElse_(getIntegerEncoding(),
+					toBoolean(getBooleanEncoding(), bool), thenExpr, elseExpr);
 		else
-			return ifThenElse_(getPointerEncoding(), toBoolean(getBooleanEncoding(),
-					bool), thenExpr, elseExpr);
+			return ifThenElse_(getPointerEncoding(),
+					toBoolean(getBooleanEncoding(), bool), thenExpr, elseExpr);
 	}
 
 	private <T extends Expression> T ifThenElse_(BooleanEncoding<T> be,
 			BooleanExpression b, Expression thenExpr, Expression elseExpr) {
-		return be.ifThenElse(b, be.ofExpression(thenExpr), be.ofExpression(
-				elseExpr));
+		return be.ifThenElse(b, be.ofExpression(thenExpr),
+				be.ofExpression(elseExpr));
 	}
 
 	private <T extends Expression> T ifThenElse_(IntegerEncoding<T> ie,
 			BooleanExpression b, Expression thenExpr, Expression elseExpr) {
-		return ie.ifThenElse(b, ie.ofExpression(thenExpr), ie.ofExpression(
-				elseExpr));
+		return ie.ifThenElse(b, ie.ofExpression(thenExpr),
+				ie.ofExpression(elseExpr));
 	}
 
 	private <T extends Expression> T ifThenElse_(PointerEncoding<T> pe,
 			BooleanExpression b, Expression thenExpr, Expression elseExpr) {
-		return pe.ifThenElse(b, pe.ofExpression(thenExpr), pe.ofExpression(
-				elseExpr));
+		return pe.ifThenElse(b, pe.ofExpression(thenExpr),
+				pe.ofExpression(elseExpr));
 	}
 
 	@Override
@@ -1122,8 +1126,8 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 			return encodingForType(type).variable(name, type, fresh);
 		} catch (ExpressionFactoryException e) {
 
-			IOUtils.err().println("APPROX: Treating unexpected type " + type
-					+ " variable as unknown");
+			IOUtils.err().println(
+					"APPROX: Treating unexpected type " + type + " variable as unknown");
 
 			if (type.getKind().equals(IRType.Kind.UNKNOWN)) {
 				Type xtcType = ((IRUnknownType) type).getXtcType();
@@ -1212,8 +1216,8 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 		if (isInteger(base1)) {
 			Expression baseBound1 = plus(base1, size1);
 			Expression baseBound2 = plus(base2, size2);
-			return and(lessThanOrEqual(base1, base2), lessThanOrEqual(baseBound2,
-					baseBound1));
+			return and(lessThanOrEqual(base1, base2),
+					lessThanOrEqual(baseBound2, baseBound1));
 		} else {
 			PointerEncoding<? extends Expression> pe = getPointerEncoding();
 			IntegerEncoding<? extends Expression> ie = getIntegerEncoding();
@@ -1236,8 +1240,8 @@ public abstract class AbstractExpressionEncoding implements ExpressionEncoding {
 			PointerEncoding<? extends Expression> pe = getPointerEncoding();
 			IntegerEncoding<? extends Expression> ie = getIntegerEncoding();
 			Expression baseBound1 = pointerPlus_(pe, ie, base1, size1);
-			return and(pointerLessThanOrEqual_(pe, base1, base2), pointerLessThan_(pe,
-					base2, baseBound1));
+			return and(pointerLessThanOrEqual_(pe, base1, base2),
+					pointerLessThan_(pe, base2, baseBound1));
 		}
 	}
 

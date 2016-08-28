@@ -36,8 +36,8 @@ import xtc.type.Type;
 
 @RunWith(Parameterized.class)
 public class LocalDataStructureTest {
-	private static final File programs_syntax = FileUtils.absoluteResourcePath(
-			"syntax");
+	private static final File programs_syntax = FileUtils
+			.absoluteResourcePath("syntax");
 	private static final File programs_c = FileUtils.absoluteResourcePath("c");
 	private static final File mini_invalids = FileUtils.filePath(programs_c,
 			"mini_bnc", "invalid");
@@ -116,12 +116,12 @@ public class LocalDataStructureTest {
 		CFGs.remove(globalCFG);
 
 		SymbolTable symbolTable = main.getSymbolTable();
-		AddressTakenAnalysis addrTakenPass = AddressTakenAnalysis.create(
-				symbolTable);
+		AddressTakenAnalysis addrTakenPass = AddressTakenAnalysis
+				.create(symbolTable);
 		addrTakenPass.analysis(globalCFG, CFGs);
 
-		DataStructures ds = LocalDataStructureImpl.create(addrTakenPass).init(
-				symbolTable);
+		DataStructures ds = LocalDataStructureImpl.create(addrTakenPass)
+				.init(symbolTable);
 		ds.analysis(globalCFG, CFGs);
 
 		Printer out = IOUtils.debug();

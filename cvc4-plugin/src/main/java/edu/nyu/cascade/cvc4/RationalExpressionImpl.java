@@ -23,8 +23,8 @@ import edu.nyu.cascade.prover.type.RationalType;
 import edu.nyu.cascade.prover.type.IntegerType;
 import edu.nyu.cascade.prover.type.Type;
 
-class RationalExpressionImpl extends ExpressionImpl implements
-		RationalExpression {
+class RationalExpressionImpl extends ExpressionImpl
+		implements RationalExpression {
 
 	static RationalExpressionImpl mkConstant(ExpressionManagerImpl em,
 			final int numerator, final int denominator) {

@@ -26,8 +26,8 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 			return (ArrayTypeImpl) type;
 		} else {
 			ArrayType arrayType = type.asArrayType();
-			return create(exprManager, arrayType.getIndexType(), arrayType
-					.getElementType());
+			return create(exprManager, arrayType.getIndexType(),
+					arrayType.getElementType());
 		}
 	}
 
@@ -38,8 +38,8 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 		this.elementType = elem;
 		try {
 			edu.nyu.acsys.CVC4.Type indexCvc4Type = exprManager.toCvc4Type(indexType);
-			edu.nyu.acsys.CVC4.Type elementCvc4Type = exprManager.toCvc4Type(
-					elementType);
+			edu.nyu.acsys.CVC4.Type elementCvc4Type = exprManager
+					.toCvc4Type(elementType);
 			setCVC4Type(exprManager.getTheoremProver().getCvc4ExprManager()
 					.mkArrayType(indexCvc4Type, elementCvc4Type));
 		} catch (Exception e) {
@@ -101,8 +101,9 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 		case ARRAY_UPDATE:
 			assert (expression.getArity() == 3);
 			return ArrayExpressionImpl.mkUpdate(getExpressionManager(),
-					(Expression) expression.getChild(0), (Expression) expression.getChild(
-							1), (Expression) expression.getChild(2));
+					(Expression) expression.getChild(0),
+					(Expression) expression.getChild(1),
+					(Expression) expression.getChild(2));
 
 		default:
 			return super.importExpression(expression);
@@ -132,7 +133,7 @@ final class ArrayTypeImpl extends TypeImpl implements ArrayType {
 	ArrayExpressionImpl createExpression(Expr res, Expression e, Kind kind,
 			Iterable<ExpressionImpl> children) {
 		Preconditions.checkArgument(e.isArray());
-		return ArrayExpressionImpl.create(getExpressionManager(), kind, res, e
-				.getType().asArrayType(), children);
+		return ArrayExpressionImpl.create(getExpressionManager(), kind, res,
+				e.getType().asArrayType(), children);
 	}
 }

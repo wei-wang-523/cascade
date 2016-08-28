@@ -130,8 +130,8 @@ class DSNodeHandle implements Comparable<DSNodeHandle> {
 			}
 		}
 		assert (N == null || ((N.NodeType & NodeTy.DeadNode.value()) == 0));
-		assert (N == null || Offset < N.Size || (N.Size == 0 && Offset == 0) || N
-				.isForwarding()) : "Node handle offset out of range!";
+		assert (N == null || Offset < N.Size || (N.Size == 0 && Offset == 0)
+				|| N.isForwarding()) : "Node handle offset out of range!";
 
 	}
 

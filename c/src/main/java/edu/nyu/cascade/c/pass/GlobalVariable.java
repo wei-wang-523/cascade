@@ -28,8 +28,8 @@ public class GlobalVariable extends GlobalObject {
 	}
 
 	static GlobalVariable get(String varName, String varScope) {
-		Preconditions.checkArgument(globalVarCache.containsKey(Pair.of(varName,
-				varScope)));
+		Preconditions
+				.checkArgument(globalVarCache.containsKey(Pair.of(varName, varScope)));
 		return globalVarCache.get(Pair.of(varName, varScope));
 	}
 }

@@ -3,8 +3,8 @@ package edu.nyu.cascade.ir.expr;
 import edu.nyu.cascade.prover.Expression;
 import edu.nyu.cascade.prover.BooleanExpression;
 
-public interface RationalEncoding<T extends Expression> extends
-		TypeEncoding<T> {
+public interface RationalEncoding<T extends Expression>
+		extends TypeEncoding<T> {
 
 	BooleanExpression gt(T lhs, T rhs);
 

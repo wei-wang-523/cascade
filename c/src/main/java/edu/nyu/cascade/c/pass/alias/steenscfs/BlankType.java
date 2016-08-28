@@ -3,7 +3,7 @@ package edu.nyu.cascade.c.pass.alias.steenscfs;
 class BlankType extends ValueType {
 
 	private Parent parent;
-	private final Size size;
+	private Size size;
 
 	BlankType(Size size, Parent parent) {
 		this.size = size;
@@ -46,6 +46,11 @@ class BlankType extends ValueType {
 	@Override
 	void setParent(Parent parent) {
 		this.parent = parent;
+	}
+
+	@Override
+	void setSize(Size size) {
+		this.size = size;
 	}
 
 	@Override

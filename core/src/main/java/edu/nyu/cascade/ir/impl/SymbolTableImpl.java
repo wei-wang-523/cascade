@@ -113,8 +113,8 @@ public class SymbolTableImpl implements SymbolTable {
 
 	@Override
 	public boolean isDefined(String name, String namespace) {
-		String qName = namespace != null ? xtc.util.SymbolTable.toNameSpace(name,
-				namespace) : name;
+		String qName = namespace != null
+				? xtc.util.SymbolTable.toNameSpace(name, namespace) : name;
 		return xtcSymbolTable.current().isDefined(qName);
 	}
 

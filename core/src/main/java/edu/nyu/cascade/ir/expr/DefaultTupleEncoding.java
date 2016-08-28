@@ -62,8 +62,8 @@ public class DefaultTupleEncoding implements TupleEncoding<TupleExpression> {
 		return expr.asTuple();
 	}
 
-	class DefaultTupleInstance implements
-			TupleEncoding.Instance<TupleExpression> {
+	class DefaultTupleInstance
+			implements TupleEncoding.Instance<TupleExpression> {
 		private final ExpressionManager exprManager;
 		private final Iterable<TypeEncoding<?>> elementEncodings;
 		private final String name;
@@ -206,8 +206,8 @@ public class DefaultTupleEncoding implements TupleEncoding<TupleExpression> {
 		@Override
 		public TupleExpression boundExpression(String name, int index, IRType iType,
 				boolean fresh) {
-			return getExpressionManager().boundExpression(name, index, getType(),
-					fresh).asTuple();
+			return getExpressionManager()
+					.boundExpression(name, index, getType(), fresh).asTuple();
 		}
 	}
 }

@@ -156,16 +156,16 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 	public BooleanExpression validAccess(StateExpression state, Expression ptr,
 			Node ptrNode) {
 		Preconditions.checkNotNull(heapEncoder);
-		return getExpressionManager().or(heapEncoder.validMemAccess(state.asSingle()
-				.getSize(), ptr));
+		return getExpressionManager()
+				.or(heapEncoder.validMemAccess(state.asSingle().getSize(), ptr));
 	}
 
 	@Override
 	public BooleanExpression validAccessRange(StateExpression state,
 			Expression ptr, Expression size, Node ptrNode) {
 		Preconditions.checkNotNull(heapEncoder);
-		return getExpressionManager().or(heapEncoder.validMemAccess(state.asSingle()
-				.getSize(), ptr, size));
+		return getExpressionManager()
+				.or(heapEncoder.validMemAccess(state.asSingle().getSize(), ptr, size));
 	}
 
 	@Override
@@ -197,9 +197,9 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 	@Override
 	public SingleStateExpression copy(StateExpression state) {
 		SingleStateExpression singleState = state.asSingle();
-		SingleStateExpression newState = SingleStateExpression.create(singleState
-				.getName(), singleState.getMemory(), singleState.getSize(), singleState
-						.getMark());
+		SingleStateExpression newState = SingleStateExpression.create(
+				singleState.getName(), singleState.getMemory(), singleState.getSize(),
+				singleState.getMark());
 		newState.setConstraint(state.getConstraint());
 		newState.setGuard(state.getGuard());
 		newState.setProperties(state.getProperties());
@@ -250,8 +250,8 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 	@Override
 	protected BooleanExpression getDisjointAssumption(StateExpression state) {
 		Preconditions.checkNotNull(heapEncoder);
-		return getExpressionManager().and(heapEncoder.disjointMemLayout(state
-				.asSingle().getSize()));
+		return getExpressionManager()
+				.and(heapEncoder.disjointMemLayout(state.asSingle().getSize()));
 	}
 
 	@Override
@@ -270,8 +270,8 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 		IRDataFormatter formatter = getDataFormatter();
 		xtc.type.Type idxType = CType.getType(idxNode);
 		xtc.type.Type valType = valNode != null ? CType.getType(valNode) : null;
-		ArrayExpression memoryPrime = formatter.updateMemoryArray(singleState
-				.getMemory(), index, idxType, value, valType);
+		ArrayExpression memoryPrime = formatter.updateMemoryArray(
+				singleState.getMemory(), index, idxType, value, valType);
 		singleState.setMemory(memoryPrime);
 	}
 
@@ -373,8 +373,8 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 	protected SingleStateExpression joinPreStates(
 			Iterable<StateExpression> preStates,
 			Iterable<BooleanExpression> preGuards) {
-		Preconditions.checkArgument(Iterables.size(preStates) == Iterables.size(
-				preGuards));
+		Preconditions
+				.checkArgument(Iterables.size(preStates) == Iterables.size(preGuards));
 
 		SingleStateExpression firstPreState = preStates.iterator().next()
 				.asSingle();
@@ -431,18 +431,18 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 
 	SingleStateExpression freshSingleState() {
 		IRDataFormatter formatter = getDataFormatter();
-		ArrayExpression memVar = formatter.getMemoryArrayType().variable(
-				DEFAULT_MEMORY_VARIABLE_NAME + DEFAULT_STATE_NAME, false);
-		ArrayExpression sizeVar = formatter.getSizeArrayType().variable(
-				DEFAULT_SIZE_VARIABLE_NAME + DEFAULT_STATE_NAME, false);
-		ArrayExpression markVar = formatter.getMarkArrayType().variable(
-				DEFAULT_MARK_VARIABLE_NAME + DEFAULT_STATE_NAME, false);
+		ArrayExpression memVar = formatter.getMemoryArrayType()
+				.variable(DEFAULT_MEMORY_VARIABLE_NAME + DEFAULT_STATE_NAME, false);
+		ArrayExpression sizeVar = formatter.getSizeArrayType()
+				.variable(DEFAULT_SIZE_VARIABLE_NAME + DEFAULT_STATE_NAME, false);
+		ArrayExpression markVar = formatter.getMarkArrayType()
+				.variable(DEFAULT_MARK_VARIABLE_NAME + DEFAULT_STATE_NAME, false);
 
 		ExpressionEncoding encoding = getExpressionEncoding();
-		encoding.addAssumption(sizeVar.index(formatter.getNullAddress()).eq(
-				formatter.getSizeZero()));
-		encoding.addAssumption(markVar.index(formatter.getNullAddress()).eq(encoding
-				.tt()));
+		encoding.addAssumption(
+				sizeVar.index(formatter.getNullAddress()).eq(formatter.getSizeZero()));
+		encoding.addAssumption(
+				markVar.index(formatter.getNullAddress()).eq(encoding.tt()));
 
 		return SingleStateExpression.create(DEFAULT_STATE_NAME, memVar, sizeVar,
 				markVar);
@@ -451,19 +451,20 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 	SingleStateExpression freshSingleState(String labelName, long width) {
 		ExpressionManager exprManager = getExpressionManager();
 		IRDataFormatter formatter = getDataFormatter();
-		ArrayExpression memVar = exprManager.arrayType(formatter.getAddressType(),
-				formatter.getArrayElemType(width)).variable(DEFAULT_MEMORY_VARIABLE_NAME
-						+ labelName, false);
-		ArrayExpression sizeVar = formatter.getSizeArrayType().variable(
-				DEFAULT_SIZE_VARIABLE_NAME + labelName, false);
-		ArrayExpression markVar = formatter.getMarkArrayType().variable(
-				DEFAULT_MARK_VARIABLE_NAME + labelName, false);
+		ArrayExpression memVar = exprManager
+				.arrayType(formatter.getAddressType(),
+						formatter.getArrayElemType(width))
+				.variable(DEFAULT_MEMORY_VARIABLE_NAME + labelName, false);
+		ArrayExpression sizeVar = formatter.getSizeArrayType()
+				.variable(DEFAULT_SIZE_VARIABLE_NAME + labelName, false);
+		ArrayExpression markVar = formatter.getMarkArrayType()
+				.variable(DEFAULT_MARK_VARIABLE_NAME + labelName, false);
 
 		ExpressionEncoding encoding = getExpressionEncoding();
-		encoding.addAssumption(sizeVar.index(formatter.getNullAddress()).eq(
-				formatter.getSizeZero()));
-		encoding.addAssumption(markVar.index(formatter.getNullAddress()).eq(encoding
-				.tt()));
+		encoding.addAssumption(
+				sizeVar.index(formatter.getNullAddress()).eq(formatter.getSizeZero()));
+		encoding.addAssumption(
+				markVar.index(formatter.getNullAddress()).eq(encoding.tt()));
 
 		return SingleStateExpression.create(labelName, memVar, sizeVar, markVar);
 	}
@@ -471,12 +472,12 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 	SingleStateExpression freshSingleState(String labelName,
 			ArrayType[] elemTypes) {
 		Preconditions.checkArgument(elemTypes.length == 3);
-		ArrayExpression memVar = elemTypes[0].variable(DEFAULT_MEMORY_VARIABLE_NAME
-				+ labelName, false);
-		ArrayExpression sizeVar = elemTypes[1].variable(DEFAULT_SIZE_VARIABLE_NAME
-				+ labelName, false);
-		ArrayExpression markVar = elemTypes[2].variable(DEFAULT_MARK_VARIABLE_NAME
-				+ labelName, false);
+		ArrayExpression memVar = elemTypes[0]
+				.variable(DEFAULT_MEMORY_VARIABLE_NAME + labelName, false);
+		ArrayExpression sizeVar = elemTypes[1]
+				.variable(DEFAULT_SIZE_VARIABLE_NAME + labelName, false);
+		ArrayExpression markVar = elemTypes[2]
+				.variable(DEFAULT_MARK_VARIABLE_NAME + labelName, false);
 		return SingleStateExpression.create(labelName, memVar, sizeVar, markVar);
 	}
 

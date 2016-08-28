@@ -25,6 +25,7 @@ public class ReservedFunction {
 	public static final String ALLOCA = "alloca";
 	public static final String MEMSET = "memset";
 	public static final String MEMCOPY = "memcpy";
+	public static final String MEMMOVE = "memmove";
 	public static final String BUILTIN_ALLOCA = "__builtin_alloca";
 
 	// public static final String AUX_HAVOC = "havoc";
@@ -76,28 +77,31 @@ public class ReservedFunction {
 	}
 
 	private final static ImmutableMap<String, Sig> FuncSignatures = new ImmutableMap.Builder<String, Sig>()
-			.put(MEMSET, Sig.of(PointerT.TO_VOID, PointerT.TO_VOID, IntegerT.CHAR,
-					NumberT.U_LONG)).put(MEMCOPY, Sig.of(PointerT.TO_VOID,
-							PointerT.TO_VOID, PointerT.TO_VOID, NumberT.U_LONG)).put(MALLOC,
-									Sig.of(PointerT.TO_VOID, NumberT.U_LONG)).put(CALLOC, Sig.of(
-											PointerT.TO_VOID, NumberT.LONG, NumberT.U_LONG)).put(
-													ALLOCA, Sig.of(PointerT.TO_VOID, NumberT.U_LONG)).put(
-															BUILTIN_ALLOCA, Sig.of(PointerT.TO_VOID,
-																	NumberT.U_LONG)).put(FREE, Sig.of(VoidT.TYPE,
-																			PointerT.TO_VOID)).put(EXIT, Sig.of(
-																					VoidT.TYPE)).put(ANNO_ASSERT, Sig.of(
-																							BooleanT.TYPE, BooleanT.TYPE))
-			.put(ANNO_ASSUME, Sig.of(BooleanT.TYPE, BooleanT.TYPE)).put(
-					ANNO_INVARIANT, Sig.of(VoidT.TYPE, BooleanT.TYPE)).put(
-							FUN_VALID_ACCESS, Sig.of(BooleanT.TYPE, PointerT.TO_VOID)).put(
-									FUN_VALID_MALLOC, Sig.of(BooleanT.TYPE, PointerT.TO_VOID,
-											NumberT.LONG)).put(FUN_VALID_FREE, Sig.of(BooleanT.TYPE,
-													PointerT.TO_VOID)).put(FUN_IMPLIES, Sig.of(
-															BooleanT.TYPE, BooleanT.TYPE, BooleanT.TYPE))
+			.put(MEMSET,
+					Sig.of(PointerT.TO_VOID, PointerT.TO_VOID, IntegerT.CHAR,
+							NumberT.U_LONG))
+			.put(MEMCOPY,
+					Sig.of(PointerT.TO_VOID, PointerT.TO_VOID, PointerT.TO_VOID,
+							NumberT.U_LONG))
+			.put(MALLOC, Sig.of(PointerT.TO_VOID, NumberT.U_LONG))
+			.put(CALLOC, Sig.of(PointerT.TO_VOID, NumberT.LONG, NumberT.U_LONG))
+			.put(ALLOCA, Sig.of(PointerT.TO_VOID, NumberT.U_LONG))
+			.put(BUILTIN_ALLOCA, Sig.of(PointerT.TO_VOID, NumberT.U_LONG))
+			.put(FREE, Sig.of(VoidT.TYPE, PointerT.TO_VOID))
+			.put(EXIT, Sig.of(VoidT.TYPE))
+			.put(ANNO_ASSERT, Sig.of(BooleanT.TYPE, BooleanT.TYPE))
+			.put(ANNO_ASSUME, Sig.of(BooleanT.TYPE, BooleanT.TYPE))
+			.put(ANNO_INVARIANT, Sig.of(VoidT.TYPE, BooleanT.TYPE))
+			.put(FUN_VALID_ACCESS, Sig.of(BooleanT.TYPE, PointerT.TO_VOID))
+			.put(FUN_VALID_MALLOC,
+					Sig.of(BooleanT.TYPE, PointerT.TO_VOID, NumberT.LONG))
+			.put(FUN_VALID_FREE, Sig.of(BooleanT.TYPE, PointerT.TO_VOID))
+			.put(FUN_IMPLIES, Sig.of(BooleanT.TYPE, BooleanT.TYPE, BooleanT.TYPE))
 			// FIXME: bound variables are arg types or not?
-			.put(FUN_FORALL, Sig.of(BooleanT.TYPE, BooleanT.TYPE)).put(FUN_EXISTS, Sig
-					.of(BooleanT.TYPE, BooleanT.TYPE)).put(VERIFIER_ASSUME, Sig.of(
-							BooleanT.TYPE, BooleanT.TYPE)).put(VERIFIER_nondet_int, Sig.of(
-									NumberT.INT, VoidT.TYPE)).put(VERIFIER_nondet_pointer, Sig.of(
-											PointerT.TO_VOID, VoidT.TYPE)).build();
+			.put(FUN_FORALL, Sig.of(BooleanT.TYPE, BooleanT.TYPE))
+			.put(FUN_EXISTS, Sig.of(BooleanT.TYPE, BooleanT.TYPE))
+			.put(VERIFIER_ASSUME, Sig.of(BooleanT.TYPE, BooleanT.TYPE))
+			.put(VERIFIER_nondet_int, Sig.of(NumberT.INT, VoidT.TYPE))
+			.put(VERIFIER_nondet_pointer, Sig.of(PointerT.TO_VOID, VoidT.TYPE))
+			.build();
 }

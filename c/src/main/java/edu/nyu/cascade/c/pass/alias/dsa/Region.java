@@ -39,8 +39,8 @@ public final class Region implements Comparable<Region> {
 	}
 
 	boolean isDisjoint(long offset, long length) {
-		return this.offset + this.length <= offset || offset
-				+ length <= this.offset;
+		return this.offset + this.length <= offset
+				|| offset + length <= this.offset;
 	}
 
 	void merge(Region R) {
@@ -66,8 +66,8 @@ public final class Region implements Comparable<Region> {
 	@Override
 	public String toString() {
 		// TODO: identify the representative
-		StringBuilder sb = new StringBuilder().append(N.getID() + "[").append(
-				offset).append(',').append(offset + length).append("]{");
+		StringBuilder sb = new StringBuilder().append(N.getID() + "[")
+				.append(offset).append(',').append(offset + length).append("]{");
 		if (singleton)
 			sb.append('S');
 		if (bytewise)
