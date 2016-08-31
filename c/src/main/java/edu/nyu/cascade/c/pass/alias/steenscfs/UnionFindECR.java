@@ -740,7 +740,7 @@ public class UnionFindECR {
 					: unify(unionType, elemLocType);
 		}
 		unionType = unionType == null ? ValueType.bottom() : unionType;
-
+		unionType.setParent(structT.getParent());
 		setType(structECR, unionType);
 		ECR root = findRoot(structECR);
 
