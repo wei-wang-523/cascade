@@ -1,16 +1,14 @@
 package edu.nyu.cascade.c.pass.alias.steenscfs;
 
-import java.util.List;
 import java.util.Map;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Range;
-import edu.nyu.cascade.util.Pair;
 
 abstract class ValueType {
 
 	enum ValueTypeKind {
-		BOTTOM, BLANK, SIMPLE, STRUCT, LAMBDA
+		BOTTOM, BLANK, SIMPLE, STRUCT
 	}
 
 	abstract ValueTypeKind getKind();
@@ -52,16 +50,8 @@ abstract class ValueType {
 		return new StructType(fieldMap, size, parent);
 	}
 
-	static SimpleType simple(ECR loc, ECR func, Size size, Parent parent) {
-		return new SimpleType(loc, func, size, parent);
-	}
-
-	static SimpleType simple(Pair<ECR, ECR> pair, Size size, Parent parent) {
-		return simple(pair.fst(), pair.snd(), size, parent);
-	}
-
-	static ValueType lam(ECR ret, List<ECR> args, Parent parent) {
-		return new LambdaType(ret, args, parent);
+	static SimpleType simple(ECR loc, Size size, Parent parent) {
+		return new SimpleType(loc, size, parent);
 	}
 
 	boolean isBottom() {
@@ -78,15 +68,6 @@ abstract class ValueType {
 
 	boolean isStruct() {
 		return getKind().equals(ValueTypeKind.STRUCT);
-	}
-
-	boolean isLambda() {
-		return getKind().equals(ValueTypeKind.LAMBDA);
-	}
-
-	LambdaType asLambda() {
-		Preconditions.checkArgument(isLambda());
-		return (LambdaType) this;
 	}
 
 	SimpleType asSimple() {

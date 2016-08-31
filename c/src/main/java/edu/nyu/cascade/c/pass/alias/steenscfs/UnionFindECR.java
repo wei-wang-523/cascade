@@ -9,7 +9,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -85,8 +84,8 @@ public class UnionFindECR {
 			assert getType(ecr).isStruct();
 			TreeMap<Range<Long>, ECR> flattenMap = flattenStructECRs(ecr);
 			if (!getType(ecr).isStruct()) {
-				IOUtils.err().println(
-						"Top struct ECR has been collapsed when flattening.");
+				IOUtils.err()
+						.println("Top struct ECR has been collapsed when flattening.");
 			}
 			structFlattenMap.put(ecr, flattenMap);
 		}
@@ -204,10 +203,10 @@ public class UnionFindECR {
 			if (visitedParent.contains(ecr)) {
 				continue;
 			}
-			
+
 			visitedParent.add(ecr);
 			ValueType type = getType(ecr);
-			
+
 			if (type.getParent().getECRs().isEmpty()) {
 				// Got top-level parent.
 				topECRs.add(findRoot(ecr));
@@ -467,12 +466,12 @@ public class UnionFindECR {
 			ValueType type2 = getType(e2);
 			switch (type2.getKind()) {
 			case BOTTOM:
-				setType(e2, ValueType.simple(type1.asSimple().getLoc(),
-						type1.asSimple().getFunc(), rangeSize, Parent.getBottom()));
+				setType(e2, ValueType.simple(type1.asSimple().getLoc(), rangeSize,
+						Parent.getBottom()));
 				return;
 			case BLANK: {
-				setType(e2, ValueType.simple(type1.asSimple().getLoc(),
-						type1.asSimple().getFunc(), type2.getSize(), type2.getParent()));
+				setType(e2, ValueType.simple(type1.asSimple().getLoc(), type2.getSize(),
+						type2.getParent()));
 				Size size2 = type2.getSize();
 				if (!Size.isLessThan(rangeSize, size2))
 					expand(e2, rangeSize);
@@ -480,7 +479,6 @@ public class UnionFindECR {
 			}
 			case SIMPLE: {
 				cjoin(type1.asSimple().getLoc(), type2.asSimple().getLoc());
-				cjoin(type1.asSimple().getFunc(), type2.asSimple().getFunc());
 				Size size2 = type2.getSize();
 				if (!Size.isLessThan(rangeSize, size2))
 					expand(e2, rangeSize);
@@ -561,8 +559,7 @@ public class UnionFindECR {
 			case BLANK:
 				return ValueType.blank(size, parent);
 			case SIMPLE: {
-				return ValueType.simple(t2.asSimple().getLoc(), t2.asSimple().getFunc(),
-						size, parent);
+				return ValueType.simple(t2.asSimple().getLoc(), size, parent);
 			}
 			default: { // case STRUCT:
 				return ValueType.struct(t2.asStruct().getFieldMap(), size, parent);
@@ -574,19 +571,14 @@ public class UnionFindECR {
 			case SIMPLE: {
 				ECR loc1 = t1.asSimple().getLoc();
 				ECR loc2 = t2.asSimple().getLoc();
-				ECR func1 = t1.asSimple().getFunc();
-				ECR func2 = t2.asSimple().getFunc();
-
 				ECR loc = join(loc1, loc2);
-				ECR func = join(func1, func2);
-
-				return ValueType.simple(loc, func, size, parent);
+				return ValueType.simple(loc, size, parent);
 			}
-			default: // case STRUCT:
+			default: // case STRUCT
 				throw new IllegalArgumentException();
 			}
 		}
-		case STRUCT: {
+		default: { // case STRUCT
 			if (ValueTypeKind.STRUCT.equals(t2.getKind())) {
 				Map<Range<Long>, ECR> map = getCompatibleMap(t1.asStruct(),
 						t2.asStruct());
@@ -594,35 +586,6 @@ public class UnionFindECR {
 			} else {
 				throw new IllegalArgumentException();
 			}
-		}
-		default: { // Lambda
-			assert (t2.isLambda());
-
-			List<ECR> params = Lists.newArrayList();
-			Iterator<ECR> paramItr1 = t1.asLambda().getParams().iterator();
-			Iterator<ECR> paramItr2 = t2.asLambda().getParams().iterator();
-			while (paramItr1.hasNext() && paramItr2.hasNext()) {
-				ECR param1 = paramItr1.next();
-				ECR param2 = paramItr2.next();
-				// ECR param = ECR.createBottom();
-				// ccjoin(Size.getBot(), param1, param);
-				// ccjoin(Size.getBot(), param2, param);
-				ECR param = cjoin(param1, param2);
-				params.add(param);
-			}
-
-			while (paramItr1.hasNext())
-				params.add(paramItr1.next());
-			while (paramItr2.hasNext())
-				params.add(paramItr2.next());
-
-			ECR ret1 = t1.asLambda().getRet();
-			ECR ret2 = t2.asLambda().getRet();
-			// ECR ret = ECR.createBottom();
-			// ccjoin(Size.getBot(), ret1, ret);
-			// ccjoin(Size.getBot(), ret2, ret);
-			ECR ret = cjoin(ret1, ret2);
-			return ValueType.lam(ret, params, parent);
 		}
 		}
 	}
@@ -675,9 +638,9 @@ public class UnionFindECR {
 	}
 
 	ECR getFunc(ECR srcECR) {
-		ensureSimple(srcECR);
-		ValueType type = getType(srcECR);
-		return type.asSimple().getFunc();
+		// ensureSimple(srcECR);
+		// ValueType type = getType(srcECR);
+		return ECR.createBottom();
 	}
 
 	/**
@@ -753,17 +716,6 @@ public class UnionFindECR {
 		return unionType;
 	}
 
-	/**
-	 * Create a pair of location ECR and function ECR, both with bottome type
-	 * 
-	 * @return
-	 */
-	private Pair<ECR, ECR> createBottomLocFunc() {
-		ECR loc = ECR.createBottom();
-		ECR func = ECR.createBottom();
-		return Pair.of(loc, func);
-	}
-
 	private Collection<ECR> getCjoins(ECR e) {
 		return findRoot(e).getCjoins();
 	}
@@ -835,28 +787,27 @@ public class UnionFindECR {
 
 		switch (type.getKind()) {
 		case BOTTOM: {
-			ValueType simType = ValueType.simple(createBottomLocFunc(), Size.getBot(),
+			ValueType simType = ValueType.simple(ECR.createBottom(), Size.getBot(),
 					Parent.getBottom());
 			setType(e, simType);
-			return;
+			break;
 		}
 		case BLANK: {
 			BlankType blankType = type.asBlank();
-			ValueType simType = ValueType.simple(createBottomLocFunc(),
+			ValueType simType = ValueType.simple(ECR.createBottom(),
 					blankType.getSize(), blankType.getParent());
 			setType(e, simType);
 			return;
 		}
-		case SIMPLE: {
-			return;
-		}
 		case STRUCT: {
 			collapseStruct(e, type.asStruct());
-			return;
+			break;
 		}
-		default: // lambda
-			throw new IllegalArgumentException("Invalid type " + type.getKind());
+		default: { // SIMPLE
+			break;
 		}
+		}
+		return;
 	}
 
 	/**
@@ -874,16 +825,6 @@ public class UnionFindECR {
 			return Pair.of(t1, t2);
 		if (t2.isBottom())
 			return Pair.of(t2, t1);
-
-		if (t1.isLambda()) {
-			assert t2.isLambda();
-			return Pair.of(t1, t2);
-		}
-
-		if (t2.isLambda()) {
-			assert t1.isLambda();
-			return Pair.of(t1, t2);
-		}
 
 		ValueTypeKind kind1 = t1.getKind();
 		ValueTypeKind kind2 = t2.getKind();
@@ -960,9 +901,6 @@ public class UnionFindECR {
 	 */
 	private ValueType resolveType(ECR root, ValueType unionType,
 			ValueType freshType) {
-		Preconditions.checkArgument(!unionType.isLambda());
-		Preconditions.checkArgument(!freshType.isLambda());
-
 		Pair<ValueType, ValueType> pair = swap(unionType, freshType);
 		ValueType t1 = pair.fst(), t2 = pair.snd();
 
@@ -1039,7 +977,7 @@ public class UnionFindECR {
 		}
 	}
 
-	void collapse(ECR e1, ECR e2) {
+	private void collapse(ECR e1, ECR e2) {
 		ECR root = join(e1, e2);
 
 		// Parent is stored at the points-to loc of

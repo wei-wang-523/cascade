@@ -5,14 +5,17 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
 
 import xtc.tree.GNode;
 import xtc.tree.Node;
@@ -25,6 +28,7 @@ import edu.nyu.cascade.c.pass.alias.LeftValueCollectingPassImpl;
 import edu.nyu.cascade.ir.IRBasicBlock;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
 import edu.nyu.cascade.ir.IREdge;
+import edu.nyu.cascade.ir.IRExpression;
 import edu.nyu.cascade.ir.IRStatement;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.ir.pass.IRAliasAnalyzer;
@@ -46,13 +50,16 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 	private final SymbolTable symbolTable;
 	private final ECREncoder ecrEncoder;
 	private ECRChecker ecrChecker;
+	private CFSFunctionManager funcManager;
 	private ImmutableMap<ECR, Collection<IRVar>> snapShot;
 	private IRControlFlowGraph currentCFG;
+	private Collection<CallSite> callSites = Lists.newArrayList();
 
 	private SteensgaardCFS(SymbolTable symbolTable) {
+		this.symbolTable = symbolTable;
 		uf = UnionFindECR.create();
 		ecrEncoder = ECREncoder.create(uf, symbolTable);
-		this.symbolTable = symbolTable;
+		funcManager = new CFSFunctionManager(ecrEncoder);
 	}
 
 	public static SteensgaardCFS create(SymbolTable symbolTable) {
@@ -83,40 +90,33 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 
 		// Analyze non-global CFGs
 
+		// Register function first
 		for (IRControlFlowGraph CFG : CFGs) {
-			symbolTable.enterScope(CFG);
-			currentCFG = CFG;
 			GNode declarator = CFG.getSourceNode().getGeneric(2);
 			GNode identifier = CAnalyzer.getDeclaredId(declarator);
-			FunctionT funcXtcType = symbolTable.lookupType(identifier.getString(0))
-					.resolve().toFunction();
-
-			if (!funcXtcType.getParameters().isEmpty()) {
+			String funcName = identifier.getString(0);
+			Type funcType = symbolTable.lookupType(funcName);
+			CFSFunction func = funcManager.register(funcName, funcType);
+			ecrEncoder.toRval(identifier);
+			FunctionT funcTy = funcType.resolve().toFunction();
+			if (!funcTy.getParameters().isEmpty()) {
 				GNode parameters = CAnalyzer.getFunctionDeclarator(declarator)
 						.getGeneric(1);
 				parameters = parameters.getGeneric(0);
 
-				List<ECR> paramECRs = Lists.newArrayList();
 				for (Object o : parameters) {
 					GNode paramNode = ((Node) o).getGeneric(1);
 					assert (null != paramNode);
 					Node paramIdNode = CAnalyzer.getDeclaredId(paramNode);
 					ECR paramECR = ecrEncoder.toRval(paramIdNode);
-					paramECRs.add(paramECR);
-				}
-
-				ECR funcECR = ecrEncoder.toRval(identifier);
-				LambdaType lamType = uf.getType(uf.getFunc(funcECR)).asLambda();
-				List<ECR> lamECRs = lamType.getParams();
-				assert lamECRs.size() >= paramECRs.size();
-
-				for (int i = 0; i < paramECRs.size(); i++) {
-					ECR lamECR = lamECRs.get(i);
-					ECR paramECR = paramECRs.get(i);
-					uf.cjoin(lamECR, paramECR);
+					func.addArgument(paramECR);
 				}
 			}
+		}
 
+		for (IRControlFlowGraph CFG : CFGs) {
+			symbolTable.enterScope(CFG);
+			currentCFG = CFG;
 			final Collection<IRBasicBlock> topologicSeq = Lists
 					.reverse(CFG.topologicalSeq(CFG.getEntry()));
 
@@ -131,6 +131,9 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 				}
 			}
 		}
+
+		// Resolve call sites
+		resolveCallSites();
 
 		initChecker();
 	}
@@ -169,17 +172,14 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		}
 		case RETURN: {
 			String functionName = currentCFG.getName();
-			ECR funcECR = ecrEncoder.getFunctionECR(functionName);
-			LambdaType funcType = uf.getType(uf.getFunc(uf.getLoc(funcECR)))
-					.asLambda();
-			ECR retECR = funcType.getRet();
+			CFSFunction function = funcManager.get(functionName);
+			ECR retECR = function.getResult();
 
 			Node srcNode = stmt.getOperand(0).getSourceNode();
 			ECR srcECR = ecrEncoder.toRval(srcNode);
-
-			Type resType = symbolTable.lookupType(functionName).resolve().toFunction()
-					.getResult();
-			simpleAssign(resType, retECR, srcECR);
+			uf.join(retECR, srcECR);
+			// Type resType = function.getType().resolve().toFunction().getResult();
+			// simpleAssign(resType, retECR, srcECR);
 			break;
 		}
 		case INIT:
@@ -224,10 +224,10 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 				Type funcType = symbolTable.lookupType(funcName).resolve();
 				if (funcType.isFunction()) { // Otherwise, function pointer
 					if (!symbolTable.rootScope().isDefined(funcName)) {
-						IOUtils.debug().pln("Undefined function call: " + funcName);
 						// Encode the undefined function node, otherwise, function inline
-						// processor will complain about cannot the ECR of the function node.
+						// processor will complain about cannot find function ECR.
 						ecrEncoder.toRval(funcNode);
+						IOUtils.err().print("Undefined function call: " + funcName);
 						break;
 					}
 				}
@@ -249,63 +249,75 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 
 	private void processCallSite(IRStatement stmt) {
 		Node funcNode = stmt.getOperand(0).getSourceNode();
-		ECR funcECR = ecrEncoder.toRval(funcNode);
-		assert (null != funcECR);
-		Type funcType = CType.getType(funcNode).resolve();
 
-		if (funcType.isPointer()) {
+		Node funcId = CAnalyzer.getIdentifier((GNode) funcNode);
+		ECR funcECR = null;
+		if (funcId == null || !CType.getType(funcId).resolve().isFunction()) {
+			funcECR = ecrEncoder.toRval(funcNode);
 			funcECR = uf.getLoc(funcECR);
-			funcType = funcType.toPointer().getType();
+			assert (funcECR != null);
 		}
 
-		/* For the function pointer declared but not yet assigned */
-		if (uf.getType(funcECR).isBottom()) {
-			IOUtils.err().println("WARNING: get Func of " + funcECR);
-			Size size = Size.createForType(PointerT.TO_VOID);
-			uf.expand(funcECR, size);
+		// Get the type of function. Normalize the function to call
+		// as a function pointer via pointerizing the function type
+		Type funcPtrTy = CType.getInstance().pointerize(CType.getType(funcNode));
+		FunctionT funcTy = funcPtrTy.toPointer().getType().resolve().toFunction();
+
+		Iterator<IRExpression> argItr = stmt.getOperands().iterator();
+		argItr.next();
+
+		// Calculate the return value...
+		ECR retECR = null;
+		if (!funcTy.getResult().isVoid()) {
+			Node retNode = argItr.next().getSourceNode();
+			retECR = ecrEncoder.toRval(retNode);
 		}
 
-		ECR lamECR = uf.getFunc(funcECR);
-
-		if (uf.getType(lamECR).isBottom()) {
-			ValueType lamType = ecrEncoder.getLamdaType(funcType);
-			uf.setType(lamECR, lamType);
-		}
-
-		LambdaType lamType = uf.getType(lamECR).asLambda();
-		int paramIndex = 1;
-
-		// Process the return value first.
-		if (!funcType.toFunction().getResult().isVoid()) {
-			Node retNode = stmt.getOperand(1).getSourceNode();
-			ECR retECR = ecrEncoder.toRval(retNode);
-			ECR lamRetECR = lamType.getRet();
-			ValueType lamRetType = uf.getType(lamRetECR);
-			paramRetAssign(lamRetType.getSize(), retECR, lamRetECR);
-
-			++paramIndex; // Shift by one to skip return value.
-		}
-
-		// Process the parameters.
-		Iterator<ECR> paramECRItr = lamType.getParams().iterator();
-		while (paramIndex < stmt.getOperands().size()) {
-			Node srcNode = stmt.getOperand(paramIndex).getSourceNode();
-			Type paramType = CType.getType(srcNode).resolve();
-
-			// Resolve the syntax sugar of assign function to a function pointer
-			ECR argECR = paramType.isFunction() ? ecrEncoder.toLval(srcNode)
-					: ecrEncoder.toRval(srcNode);
-
-			if (paramECRItr.hasNext()) {
-				ECR paramECR = paramECRItr.next();
-				ValueType argType = uf.getType(argECR);
-				paramRetAssign(argType.getSize(), paramECR, argECR);
-			} else {
-				lamType.addParamECR(argECR); // varg
+		// Add a new function call entry...
+		CallSite callSite;
+		Node srcNode = stmt.getSourceNode();
+		if (funcECR != null) {
+			// Indirect function call
+			/* For the function pointer declared but not yet assigned */
+			if (uf.getType(funcECR).isBottom()) {
+				IOUtils.err().println("WARNING: get Func of " + funcECR);
+				Size size = Size.createForType(PointerT.TO_VOID);
+				uf.expand(funcECR, size);
 			}
 
-			++paramIndex;
+			callSite = CallSite.createIndirectCall(srcNode, funcECR, retECR);
+		} else {
+			// Direct function call
+			String funcName = funcId.getString(0);
+			if (!funcManager.isRegistered(funcName)) {
+				CFSFunction func = funcManager.register(funcName, funcTy);
+
+				for (Type paramTy : funcTy.getParameters()) {
+					// The funcID is declared (not yet defined).
+					func.addArgument(ecrEncoder.createECR(paramTy));
+				}
+			}
+
+			CFSFunction FB = funcManager.get(funcName);
+			callSite = CallSite.createDirectCall(srcNode, FB, retECR);
 		}
+
+		// Calculate the arguments vector...
+		while (argItr.hasNext()) {
+			Node argNode = argItr.next().getSourceNode();
+			Type argTy = CType.getType(argNode).resolve();
+			ECR argECR = argTy.isFunction() ? ecrEncoder.toLval(argNode)
+					: ecrEncoder.toRval(argNode);
+			argTy = CType.getInstance().pointerize(argTy);
+
+			if (argTy.isPointer() || CType.isStructOrUnion(argTy)) {
+				callSite.addPtrArg(argECR);
+			} else {
+				callSite.addNonPtrArg(argECR);
+			}
+		}
+
+		callSites.add(callSite);
 	}
 
 	private void initChecker() {
@@ -318,6 +330,8 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 	@Override
 	public void reset() {
 		uf.reset();
+		callSites.clear();
+		funcManager.reset();
 	}
 
 	@Override
@@ -432,8 +446,6 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 
 		for (Entry<ECR, Collection<IRVar>> entry : snapShot.entrySet()) {
 			ECR ecr = entry.getKey();
-			if (uf.getType(ecr).isLambda())
-				continue;
 			Collection<IRVar> vars = entry.getValue();
 			if (!vars.isEmpty()) {
 				sb.append("Partition ").append(ecr.getId()).append(": ");
@@ -453,7 +465,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		Type funcType = CType.getType(funcNode).resolve();
 		if (funcType.isPointer())
 			rep = getPtsToFieldRep(rep);
-		ECR funcRep = uf.getFunc(rep);
+		ECR funcRep = uf.getLoc(rep);
 		return uf.getEquivClass(funcRep);
 	}
 
@@ -507,7 +519,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		uf.ccjoin(rangeSize, rhs, lhs);
 	}
 
-	private void paramRetAssign(Size rangeSize, ECR lhs, ECR rhs) {
+	private void resolveParamRet(Size rangeSize, ECR lhs, ECR rhs) {
 		ValueType lhs_type = uf.getType(lhs);
 		ValueType rhs_type = uf.getType(rhs);
 
@@ -524,6 +536,91 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 
 		uf.join(rhsLoc, lhsLoc);
 		uf.join(rhsFunc, lhsFunc);
+	}
+
+	private void resolveCallSites() {
+		List<CallSite> calls = Lists.newArrayList(callSites);
+
+		{
+			// Loop over and eliminate direct calls
+			Iterator<CallSite> callItr = calls.iterator();
+			while (callItr.hasNext()) {
+				CallSite call = callItr.next();
+				if (call.isDirectCall()) {
+					CFSFunction F = call.getCalleeFunc();
+					if (!F.isDeclaration()) {
+						resolveFunctionCall(F, call);
+					}
+					callItr.remove();
+				}
+			}
+		}
+
+		if (!calls.isEmpty()) {
+			// Loop over indirect calls
+			boolean changed;
+			Map<ECR, Set<CFSFunction>> indirectCallFuncs = Maps.newHashMap();
+			do {
+				changed = false;
+				for (CallSite call : calls) {
+					ECR calleeECR = call.getCalleeECR();
+					Set<CFSFunction> callFuncs = getEquivFunctions(uf.getLoc(calleeECR));
+					Set<CFSFunction> PreCallFuns = indirectCallFuncs.put(calleeECR,
+							callFuncs);
+					SetView<CFSFunction> DiffCallFuns;
+					if (PreCallFuns == null) {
+						DiffCallFuns = Sets.difference(callFuncs, Sets.newHashSet());
+					} else {
+						DiffCallFuns = Sets.difference(callFuncs, PreCallFuns);
+					}
+
+					if (!DiffCallFuns.isEmpty()) {
+						changed = true;
+						for (CFSFunction F : DiffCallFuns) {
+							if (!F.isDeclaration()) {
+								resolveFunctionCall(F, call);
+							}
+						}
+					}
+				}
+			} while (changed);
+		}
+	}
+
+	private Set<CFSFunction> getEquivFunctions(ECR calleeECR) {
+		Set<CFSFunction> resFunctions = Sets.newHashSet();
+		for (IRVar var : uf.getEquivClass(calleeECR)) {
+			String varName = var.getName();
+			Type varType = var.getType();
+			if (!varType.resolve().isFunction())
+				continue;
+
+			resFunctions.add(funcManager.get(varName));
+		}
+
+		return resFunctions;
+	}
+
+	private void resolveFunctionCall(CFSFunction F, CallSite call) {
+		FunctionT funcType = F.getType().resolve().toFunction();
+
+		if (!funcType.getResult().isVoid()) {
+			Type resType = funcType.getResult();
+			resolveParamRet(Size.createForType(resType), F.getResult(),
+					call.getRetECR());
+		}
+
+		int numFixedParams = funcType.getParameters().size();
+		for (int i = 0; i < call.getNumArgs(); ++i) {
+			Type paramType = funcType.getParameters().get(i);
+			ECR argECR = call.getArg(i);
+			if (i < numFixedParams) {
+				ECR paramECR = F.getArgument(i);
+				resolveParamRet(Size.createForType(paramType), paramECR, argECR);
+			} else {
+				F.addVarArgument(argECR);
+			}
+		}
 	}
 
 	@Override

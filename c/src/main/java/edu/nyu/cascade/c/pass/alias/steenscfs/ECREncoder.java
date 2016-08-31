@@ -3,7 +3,6 @@
  */
 package edu.nyu.cascade.c.pass.alias.steenscfs;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -12,7 +11,6 @@ import xtc.tree.GNode;
 import xtc.tree.Node;
 import xtc.tree.VisitingException;
 import xtc.tree.Visitor;
-import xtc.type.FunctionT;
 import xtc.type.NumberT;
 import xtc.type.PointerT;
 import xtc.type.Type;
@@ -83,7 +81,7 @@ public class ECREncoder extends Visitor {
 
 			if (type.resolve().isFunction()) {
 				ECR varECR = deref(addrECR, type);
-				ECR lamECR = uf.getFunc(varECR);
+				ECR lamECR = uf.getLoc(varECR);
 				VarImpl funcVar = new VarImpl(id, type, scopeName, lamECR);
 				uf.add(funcVar);
 			}
@@ -479,27 +477,6 @@ public class ECREncoder extends Visitor {
 		return ecrMap.get(Pair.of(functionName, CScopeAnalyzer.getRootScopeName()));
 	}
 
-	ValueType getLamdaType(Type type) {
-		Preconditions.checkArgument(type.resolve().isFunction());
-		FunctionT funcType = type.resolve().toFunction();
-		List<ECR> paramECRs;
-		if (!funcType.getParameters().isEmpty()) {
-			int paramSize = funcType.getParameters().size();
-			paramECRs = Lists.newArrayListWithCapacity(paramSize);
-			for (int i = 0; i < paramSize; i++) {
-				Type paramType = funcType.getParameters().get(i);
-				ECR paramECR = deref(createECR(paramType), paramType);
-				paramECRs.add(paramECR);
-			}
-		} else {
-			paramECRs = Collections.<ECR> emptyList();
-		}
-
-		ECR retECR = deref(createECR(funcType.getResult()), funcType.getResult());
-		ValueType lambdaType = ValueType.lam(retECR, paramECRs, Parent.getBottom());
-		return lambdaType;
-	}
-
 	private ECR deref(ECR ecr, Type type) {
 		if (!(CType.isScalar(type) || type.resolve().isFunction()))
 			return ecr;
@@ -563,18 +540,14 @@ public class ECREncoder extends Visitor {
 		BlankType blankType = ValueType.blank(Size.createForType(ptr2Type),
 				Parent.getBottom());
 		ECR blankECR = uf.createECR(blankType);
-		SimpleType refType = ValueType.simple(blankECR, ECR.createBottom(),
+		SimpleType refType = ValueType.simple(blankECR,
 				Size.createForType(type), Parent.getBottom());
 		ECR ptrECR = uf.createECR(refType);
 		return ptrECR;
 	}
 
-	private ECR createECR(Type type) {
+	ECR createECR(Type type) {
 		type = type.resolve();
-
-		if (type.isFunction())
-			return createForFunction(type);
-
 		Size size;
 		if (type.isInternal()) {
 			size = Size.getTop();
@@ -589,27 +562,9 @@ public class ECREncoder extends Visitor {
 		if (type.isInternal())
 			return varECR;
 
-		SimpleType addrType = ValueType.simple(varECR, ECR.createBottom(),
+		SimpleType addrType = ValueType.simple(varECR,
 				Size.createForType(new PointerT(type)), Parent.getBottom());
 
-		return uf.createECR(addrType);
-	}
-
-	/**
-	 * Create ECRs for function symbol: lambda ECR
-	 */
-	private ECR createForFunction(Type type) {
-		ValueType lambdaType = getLamdaType(type);
-		ECR func = uf.createECR(lambdaType);
-
-		Size size = Size.createForType(new PointerT(type));
-
-		ValueType varType = ValueType.simple(ECR.createBottom(), func, size,
-				Parent.getBottom());
-		ECR varECR = uf.createECR(varType);
-
-		SimpleType addrType = ValueType.simple(varECR, ECR.createBottom(), size,
-				Parent.getBottom());
 		return uf.createECR(addrType);
 	}
 
@@ -656,7 +611,7 @@ public class ECREncoder extends Visitor {
 		Size size = CType.isScalar(type) ? Size.createForType(type) : Size.getBot();
 		ECR fieldECR = uf.createECR(ValueType.blank(size, parent));
 
-		SimpleType addrType = ValueType.simple(fieldECR, ECR.createBottom(),
+		SimpleType addrType = ValueType.simple(fieldECR,
 				Size.createForType(new PointerT(type)), Parent.getBottom());
 
 		return uf.createECR(addrType);

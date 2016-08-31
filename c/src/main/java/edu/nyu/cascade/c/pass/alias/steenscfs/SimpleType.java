@@ -3,7 +3,6 @@ package edu.nyu.cascade.c.pass.alias.steenscfs;
 class SimpleType extends ValueType {
 
 	private final ECR loc;
-	private final ECR func;
 	private Size size;
 
 	private Parent parent;
@@ -11,8 +10,7 @@ class SimpleType extends ValueType {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder().append("SIMPLE (")
-				.append(((ECR) loc.findRoot()).getId()).append(", ")
-				.append(((ECR) func.findRoot()).getId()).append(", ").append(size)
+				.append(((ECR) loc.findRoot()).getId()).append(", ").append(size)
 				.append(", ").append(parent).append(')');
 
 		return sb.toString();
@@ -25,8 +23,6 @@ class SimpleType extends ValueType {
 		SimpleType that = (SimpleType) o;
 		if (!loc.equals(that.loc))
 			return false;
-		if (!func.equals(that.func))
-			return false;
 		if (!size.equals(that.size))
 			return false;
 		if (!parent.equals(that.parent))
@@ -34,9 +30,8 @@ class SimpleType extends ValueType {
 		return true;
 	}
 
-	SimpleType(ECR loc, ECR func, Size size, Parent parent) {
+	SimpleType(ECR loc, Size size, Parent parent) {
 		this.loc = loc;
-		this.func = func;
 		this.size = size;
 		this.parent = parent;
 	}
@@ -68,9 +63,5 @@ class SimpleType extends ValueType {
 
 	ECR getLoc() {
 		return loc;
-	}
-
-	ECR getFunc() {
-		return func;
 	}
 }
