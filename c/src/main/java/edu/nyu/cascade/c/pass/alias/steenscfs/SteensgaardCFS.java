@@ -225,6 +225,9 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 				if (funcType.isFunction()) { // Otherwise, function pointer
 					if (!symbolTable.rootScope().isDefined(funcName)) {
 						IOUtils.debug().pln("Undefined function call: " + funcName);
+						// Encode the undefined function node, otherwise, function inline
+						// processor will complain about cannot the ECR of the function node.
+						ecrEncoder.toRval(funcNode);
 						break;
 					}
 				}
