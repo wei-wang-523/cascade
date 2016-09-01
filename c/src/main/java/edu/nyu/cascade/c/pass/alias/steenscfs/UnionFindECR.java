@@ -9,6 +9,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -319,6 +320,8 @@ public class UnionFindECR {
 	}
 
 	ECR join(ECR e1, ECR e2) {
+		Preconditions.checkNotNull(e1);
+		Preconditions.checkNotNull(e2);
 		if (e1.equals(e2))
 			return e1;
 

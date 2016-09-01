@@ -23,6 +23,7 @@ import xtc.type.FunctionT;
 import xtc.type.PointerT;
 import xtc.type.Type;
 import edu.nyu.cascade.c.CAnalyzer;
+import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.pass.alias.LeftValueCollectingPassImpl;
 import edu.nyu.cascade.ir.IRBasicBlock;
@@ -171,15 +172,22 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 			break;
 		}
 		case RETURN: {
-			String functionName = currentCFG.getName();
-			CFSFunction function = funcManager.get(functionName);
-			ECR retECR = function.getResult();
-
 			Node srcNode = stmt.getOperand(0).getSourceNode();
 			ECR srcECR = ecrEncoder.toRval(srcNode);
-			uf.join(retECR, srcECR);
-			// Type resType = function.getType().resolve().toFunction().getResult();
-			// simpleAssign(resType, retECR, srcECR);
+
+			String functionName = currentCFG.getName();
+			// option --inline-malloc may introduce return statements of inlined
+			// function (other than the current function. If so, ignore the following
+			// process.
+			String returnRootScope = CScopeAnalyzer
+					.getLastScopeName(CType.getScopeName(srcNode));
+			if (functionName.equals(returnRootScope)) {
+				CFSFunction function = funcManager.get(functionName);
+				Type functionType = function.getType();
+				assert (!functionType.resolve().toFunction().getResult().isVoid());
+				ECR retECR = function.getResult();
+				uf.join(retECR, srcECR);
+			}
 			break;
 		}
 		case INIT:
