@@ -141,11 +141,16 @@ public class UnionFindECR {
 
 		List<Pair<Long, ECR>> worklist = Lists.newArrayList();
 		worklist.add(Pair.of(0L, top_ecr));
+		Set<ECR> visited = Sets.newHashSet();
 
 		while (!worklist.isEmpty()) {
 			Pair<Long, ECR> curr = worklist.remove(0);
 			long curr_offset = curr.fst();
 			ECR curr_ecr = curr.snd();
+			if (visited.contains(curr_ecr)) {
+				continue;
+			}
+			visited.add(curr_ecr);
 			ValueType curr_type = getType(curr_ecr);
 			assert curr_type.isStruct();
 			Map<Range<Long>, ECR> curr_fieldRangeMap = curr_type.asStruct()

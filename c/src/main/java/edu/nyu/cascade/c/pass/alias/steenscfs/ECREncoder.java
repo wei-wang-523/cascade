@@ -76,7 +76,7 @@ public class ECREncoder extends Visitor {
 				return ecrMap.get(key);
 
 			Type type = varInfo.getXtcType();
-			ECR addrECR = createECR(type);
+			ECR addrECR = createPointerECR(type);
 			ecrMap.put(key, addrECR);
 
 			if (type.resolve().isFunction()) {
@@ -138,8 +138,7 @@ public class ECREncoder extends Visitor {
 			if (ecrMap.containsKey(key))
 				return ecrMap.get(key);
 
-			Type type = varInfo.getXtcType();
-			ECR addrECR = createECR(type);
+			ECR addrECR = createPointerECR(varInfo.getXtcType());
 			ecrMap.put(key, addrECR);
 			return addrECR;
 		}
@@ -534,18 +533,6 @@ public class ECREncoder extends Visitor {
 		return ECR.createBottom();
 	}
 
-	private ECR createPointerECR(Type type) {
-		Preconditions.checkArgument(type.resolve().isPointer());
-		Type ptr2Type = type.resolve().toPointer().getType();
-		BlankType blankType = ValueType.blank(Size.createForType(ptr2Type),
-				Parent.getBottom());
-		ECR blankECR = uf.createECR(blankType);
-		SimpleType refType = ValueType.simple(blankECR,
-				Size.createForType(type), Parent.getBottom());
-		ECR ptrECR = uf.createECR(refType);
-		return ptrECR;
-	}
-
 	ECR createECR(Type type) {
 		type = type.resolve();
 		Size size;
@@ -557,15 +544,18 @@ public class ECREncoder extends Visitor {
 			size = Size.getBot();
 		}
 
-		ValueType varType = ValueType.blank(size, Parent.getBottom());
-		ECR varECR = uf.createECR(varType);
-		if (type.isInternal())
+		return uf.createECR(ValueType.blank(size, Parent.getBottom()));
+	}
+
+	private ECR createPointerECR(Type type) {
+		ECR varECR = createECR(type);
+		if (type.isInternal()) {
 			return varECR;
-
-		SimpleType addrType = ValueType.simple(varECR,
-				Size.createForType(new PointerT(type)), Parent.getBottom());
-
-		return uf.createECR(addrType);
+		} else {
+			SimpleType addrType = ValueType.simple(varECR,
+					Size.createForType(PointerT.TO_VOID), Parent.getBottom());
+			return uf.createECR(addrType);
+		}
 	}
 
 	/**
