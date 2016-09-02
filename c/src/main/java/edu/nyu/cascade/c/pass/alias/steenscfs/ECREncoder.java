@@ -144,9 +144,14 @@ public class ECREncoder extends Visitor {
 		}
 
 		public ECR visitSubscriptExpression(GNode node) {
-			ECR baseECR = rvalVisitor.encodeECR(node.getNode(0));
-			ECR idxECR = rvalVisitor.encodeECR(node.getNode(1));
-			return getOpECR(node, baseECR, idxECR);
+			Node baseNode = node.getNode(0);
+			Node idxNode = node.getNode(1);
+			ECR baseECR = rvalVisitor.encodeECR(baseNode);
+			ECR idxECR = rvalVisitor.encodeECR(idxNode);
+			Type baseType = CType.getInstance().pointerize(CType.getType(baseNode));
+			Type idxType = CType.getInstance().pointerize(CType.getType(idxNode));
+			ECR srcECR = baseType.isPointer() ? baseECR : idxECR;
+			return getOpECR(node, srcECR);
 		}
 
 		public ECR visitIntegerConstant(GNode node) {
@@ -187,14 +192,16 @@ public class ECREncoder extends Visitor {
 			Node rhsNode = node.getNode(2);
 			ECR lhsECR = encodeECR(lhsNode);
 			ECR rhsECR = encodeECR(rhsNode);
+			
+			Type lhsType = CType.getInstance().pointerize(CType.getType(lhsNode));
+			Type rhsType = CType.getInstance().pointerize(CType.getType(rhsNode));
+			ECR srcECR = rhsType.isPointer() ? rhsECR : lhsECR;
 
 			if (Preferences.isSet(Preferences.OPTION_CFS_POINTER_ARITH)) {
 				Type type = CType.getType(node);
 				// TODO: add pointer-arith pending
 				if (type.resolve().isPointer()) {
 					// TODO: swap lhs and rhs if lhs is constant and rhs is pointer
-					Type lhsType = CType.getType(lhsNode);
-					Type rhsType = CType.getType(rhsNode);
 					if (lhsType.resolve().isPointer() && rhsType.hasConstant()) {
 						ECR resECR = createPointerECR(type);
 						opECRMap.put(Pair.of(node, CType.getScopeName(node)), resECR);
@@ -213,7 +220,7 @@ public class ECREncoder extends Visitor {
 				}
 			}
 
-			return getOpECR(node, lhsECR, rhsECR);
+			return getOpECR(node, srcECR);
 		}
 
 		public ECR visitShiftExpression(GNode node) {
@@ -221,7 +228,10 @@ public class ECREncoder extends Visitor {
 			Node rhsNode = node.getNode(2);
 			ECR lhsECR = encodeECR(lhsNode);
 			ECR rhsECR = encodeECR(rhsNode);
-			return getOpECR(node, lhsECR, rhsECR);
+			Type lhsType = CType.getInstance().pointerize(CType.getType(lhsNode));
+			Type rhsType = CType.getInstance().pointerize(CType.getType(rhsNode));
+			ECR srcECR = rhsType.isPointer() ? rhsECR : lhsECR;
+			return getOpECR(node, srcECR);
 		}
 
 		public ECR visitSubscriptExpression(GNode node) {
@@ -255,7 +265,7 @@ public class ECREncoder extends Visitor {
 			Node rhsNode = node.getNode(2);
 			ECR lhsECR = encodeECR(lhsNode);
 			ECR rhsECR = encodeECR(rhsNode);
-			return getOpECR(node, lhsECR, rhsECR);
+			return getOpECR(node, lhsECR);
 		}
 
 		public ECR visitBitwiseAndExpression(GNode node) {
@@ -263,7 +273,10 @@ public class ECREncoder extends Visitor {
 			Node rhsNode = node.getNode(1);
 			ECR lhsECR = encodeECR(lhsNode);
 			ECR rhsECR = encodeECR(rhsNode);
-			return getOpECR(node, lhsECR, rhsECR);
+			Type lhsType = CType.getInstance().pointerize(CType.getType(lhsNode));
+			Type rhsType = CType.getInstance().pointerize(CType.getType(rhsNode));
+			ECR srcECR = rhsType.isPointer() ? rhsECR : lhsECR;
+			return getOpECR(node, srcECR);
 		}
 
 		public ECR visitBitwiseOrExpression(GNode node) {
@@ -271,7 +284,10 @@ public class ECREncoder extends Visitor {
 			Node rhsNode = node.getNode(1);
 			ECR lhsECR = encodeECR(lhsNode);
 			ECR rhsECR = encodeECR(rhsNode);
-			return getOpECR(node, lhsECR, rhsECR);
+			Type lhsType = CType.getInstance().pointerize(CType.getType(lhsNode));
+			Type rhsType = CType.getInstance().pointerize(CType.getType(rhsNode));
+			ECR srcECR = rhsType.isPointer() ? rhsECR : lhsECR;
+			return getOpECR(node, srcECR);
 		}
 
 		public ECR visitBitwiseXorExpression(GNode node) {
@@ -279,7 +295,10 @@ public class ECREncoder extends Visitor {
 			Node rhsNode = node.getNode(1);
 			ECR lhsECR = encodeECR(lhsNode);
 			ECR rhsECR = encodeECR(rhsNode);
-			return getOpECR(node, lhsECR, rhsECR);
+			Type lhsType = CType.getInstance().pointerize(CType.getType(lhsNode));
+			Type rhsType = CType.getInstance().pointerize(CType.getType(rhsNode));
+			ECR srcECR = rhsType.isPointer() ? rhsECR : lhsECR;
+			return getOpECR(node, srcECR);
 		}
 
 		public ECR visitBitwiseNegationExpression(GNode node) {
@@ -360,26 +379,22 @@ public class ECREncoder extends Visitor {
 
 		public ECR visitPreincrementExpression(GNode node) {
 			ECR base = encodeECR(node.getNode(0));
-			ECR intConstant = getConstant();
-			return getOpECR(node, base, intConstant);
+			return getOpECR(node, base);
 		}
 
 		public ECR visitPredecrementExpression(GNode node) {
 			ECR base = encodeECR(node.getNode(0));
-			ECR intConstant = getConstant();
-			return getOpECR(node, base, intConstant);
+			return getOpECR(node, base);
 		}
 
 		public ECR visitPostincrementExpression(GNode node) {
 			ECR base = encodeECR(node.getNode(0));
-			ECR intConstant = getConstant();
-			return getOpECR(node, base, intConstant);
+			return getOpECR(node, base);
 		}
 
 		public ECR visitPostdecrementExpression(GNode node) {
 			ECR base = encodeECR(node.getNode(0));
-			ECR intConstant = getConstant();
-			return getOpECR(node, base, intConstant);
+			return getOpECR(node, base);
 		}
 
 		public ECR visitPrimaryIdentifier(GNode node) {
@@ -566,6 +581,21 @@ public class ECREncoder extends Visitor {
 	 * @param rightECR
 	 * @return
 	 */
+	private ECR getOpECR(GNode node, ECR sourceECR) {
+		Pair<GNode, String> key = Pair.of(node, CType.getScopeName(node));
+		if (opECRMap.containsKey(key))
+			return opECRMap.get(key);
+
+		ECR resECR = ECR.createBottom();
+		opECRMap.put(key, resECR);
+
+		uf.ccjoin(Size.getBot(), sourceECR, resECR);
+
+		// Parent is stored at the points-to loc of
+		uf.addCollapseECR(uf.getLoc(resECR));
+		return resECR;
+	}
+	
 	private ECR getOpECR(GNode node, ECR leftECR, ECR rightECR) {
 		Pair<GNode, String> key = Pair.of(node, CType.getScopeName(node));
 		if (opECRMap.containsKey(key))
