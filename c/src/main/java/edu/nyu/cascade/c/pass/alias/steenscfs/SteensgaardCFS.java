@@ -162,7 +162,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 	}
 
 	private void analysis(IRStatement stmt) {
-		IOUtils.out().println("Preprocess: " + stmt.getLocation() + ": " + stmt);
+		IOUtils.debug().pln("Preprocess: " + stmt.getLocation() + ": " + stmt);
 		switch (stmt.getType()) {
 		case DECLARE:
 		case DECLARE_ARRAY: {

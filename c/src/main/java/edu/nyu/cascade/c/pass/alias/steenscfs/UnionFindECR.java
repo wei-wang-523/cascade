@@ -115,10 +115,10 @@ public class UnionFindECR {
 				currECR = nextECR;
 				currRange = nextRange;
 			} else {
-				currRange = merge(currRange, nextRange);
-				ECR mergedECR = cjoin(currECR, nextECR);
-				ensureSimple(mergedECR);
+				// Merge field ECR (the points-to ECR of the field entry)
+				ECR mergedECR = join(getLoc(currECR), getLoc(nextECR));
 				getType(mergedECR).setSize(Size.getTop());
+				currRange = merge(currRange, nextRange);
 				changed = true;
 			}
 		}
