@@ -149,7 +149,6 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 			uf.ensureSimple(lhsECR);
 			uf.ensureSimple(rhsECR);
 			uf.join(uf.getLoc(lhsECR), uf.getLoc(rhsECR));
-			uf.join(uf.getFunc(lhsECR), uf.getFunc(rhsECR));
 			return;
 		}
 
@@ -163,7 +162,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 	}
 
 	private void analysis(IRStatement stmt) {
-		IOUtils.debug().pln("Preprocess: " + stmt.getLocation() + ": " + stmt);
+		IOUtils.out().println("Preprocess: " + stmt.getLocation() + ": " + stmt);
 		switch (stmt.getType()) {
 		case DECLARE:
 		case DECLARE_ARRAY: {
@@ -288,7 +287,8 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 			// Indirect function call
 			/* For the function pointer declared but not yet assigned */
 			if (uf.getType(funcECR).isBottom()) {
-				IOUtils.err().println("WARNING: get Func of " + funcECR);
+				IOUtils.err().println("WARNING:	Function pointer is declared but not"
+						+ " yet assigned " + srcNode);
 				Size size = Size.createForType(PointerT.TO_VOID);
 				uf.expand(funcECR, size);
 			}
@@ -548,11 +548,10 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		if (!Size.isLessThan(rangeSize, rhs_size))
 			uf.expand(rhs, rangeSize);
 
-		ECR lhsLoc = uf.getLoc(lhs), rhsLoc = uf.getLoc(rhs);
-		ECR lhsFunc = uf.getFunc(lhs), rhsFunc = uf.getFunc(rhs);
+		ECR lhsLoc = uf.getLoc(lhs);
+		ECR rhsLoc = uf.getLoc(rhs);
 
 		uf.join(rhsLoc, lhsLoc);
-		uf.join(rhsFunc, lhsFunc);
 	}
 
 	private void resolveCallSites() {

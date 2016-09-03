@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import xtc.tree.GNode;
+import xtc.tree.Location;
 import xtc.tree.Node;
 import xtc.tree.VisitingException;
 import xtc.tree.Visitor;
@@ -45,7 +46,7 @@ public class ECREncoder extends Visitor {
 	 * names (variable names) and scope names
 	 */
 	private final Map<Pair<String, String>, ECR> ecrMap = Maps.newHashMap();
-	private final Map<Pair<GNode, String>, ECR> opECRMap = Maps.newHashMap();
+	private final Map<Pair<GNode, Location>, ECR> opECRMap = Maps.newHashMap();
 
 	@SuppressWarnings("unused")
 	private class LvalVisitor extends Visitor {
@@ -204,7 +205,7 @@ public class ECREncoder extends Visitor {
 					// TODO: swap lhs and rhs if lhs is constant and rhs is pointer
 					if (lhsType.resolve().isPointer() && rhsType.hasConstant()) {
 						ECR resECR = createPointerECR(type);
-						opECRMap.put(Pair.of(node, CType.getScopeName(node)), resECR);
+						opECRMap.put(Pair.of(node, node.getLocation()), resECR);
 
 						long val = rhsType.getConstant().longValue();
 						boolean positive = "+".equals(node.getString(1));
@@ -306,7 +307,7 @@ public class ECREncoder extends Visitor {
 		}
 
 		public ECR visitCastExpression(GNode node) {
-			Pair<GNode, String> key = Pair.of(node, CType.getScopeName(node));
+			Pair<GNode, Location> key = Pair.of(node, node.getLocation());
 			if (opECRMap.containsKey(key))
 				return opECRMap.get(key);
 
@@ -477,7 +478,7 @@ public class ECREncoder extends Visitor {
 		return ecrMap;
 	}
 
-	Map<Pair<GNode, String>, ECR> getOpECRMap() {
+	Map<Pair<GNode, Location>, ECR> getOpECRMap() {
 		return opECRMap;
 	}
 
@@ -573,16 +574,8 @@ public class ECREncoder extends Visitor {
 		}
 	}
 
-	/**
-	 * Get the ECR of <code>op(leftECR, rightECR)</code>
-	 * 
-	 * @param node
-	 * @param leftECR
-	 * @param rightECR
-	 * @return
-	 */
 	private ECR getOpECR(GNode node, ECR sourceECR) {
-		Pair<GNode, String> key = Pair.of(node, CType.getScopeName(node));
+		Pair<GNode, Location> key = Pair.of(node, node.getLocation());
 		if (opECRMap.containsKey(key))
 			return opECRMap.get(key);
 
@@ -597,7 +590,7 @@ public class ECREncoder extends Visitor {
 	}
 	
 	private ECR getOpECR(GNode node, ECR leftECR, ECR rightECR) {
-		Pair<GNode, String> key = Pair.of(node, CType.getScopeName(node));
+		Pair<GNode, Location> key = Pair.of(node, node.getLocation());
 		if (opECRMap.containsKey(key))
 			return opECRMap.get(key);
 

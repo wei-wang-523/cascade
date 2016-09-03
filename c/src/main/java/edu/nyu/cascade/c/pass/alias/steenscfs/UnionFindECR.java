@@ -645,12 +645,6 @@ public class UnionFindECR {
 		return type.asSimple().getLoc();
 	}
 
-	ECR getFunc(ECR srcECR) {
-		// ensureSimple(srcECR);
-		// ValueType type = getType(srcECR);
-		return ECR.createBottom();
-	}
-
 	/**
 	 * Collapse <code>structECR</code> by merge it with all its element ECRs, and
 	 * set its type as object type
