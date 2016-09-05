@@ -620,7 +620,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 	private void resolveFunctionCall(CFSFunction F, CallSite call) {
 		FunctionT funcType = F.getType().resolve().toFunction();
 
-		if (!funcType.getResult().isVoid()) {
+		if (!funcType.getResult().resolve().isVoid()) {
 			Type resType = funcType.getResult();
 			resolveParamRet(Size.createForType(resType), F.getResult(),
 					call.getRetECR());
@@ -628,13 +628,21 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 
 		int numFixedParams = funcType.getParameters().size();
 		for (int i = 0; i < call.getNumArgs(); ++i) {
-			Type paramType = funcType.getParameters().get(i);
+			Type paramType = funcType.getParameters().get(i).resolve();
 			ECR argECR = call.getArg(i);
 			if (i < numFixedParams) {
-				ECR paramECR = F.getArgument(i);
-				resolveParamRet(Size.createForType(paramType), paramECR, argECR);
+				if (paramType.isPointer() || CType.isStructOrUnion(paramType)) {
+					ECR paramECR = F.getArgument(i);
+					resolveParamRet(Size.createForType(paramType), paramECR, argECR);
+				}
 			} else {
-				F.addVarArgument(argECR);
+				int varArgIdx = i - numFixedParams;
+				if (F.hasVarArgument(varArgIdx)) {
+					resolveParamRet(Size.createForType(paramType),
+							F.getArgument(varArgIdx), argECR);
+				} else {
+					F.addVarArgument(argECR);
+				}
 			}
 		}
 	}

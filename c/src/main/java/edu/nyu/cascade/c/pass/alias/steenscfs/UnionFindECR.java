@@ -60,7 +60,7 @@ public class UnionFindECR {
 	}
 
 	boolean normalizeStructECRs() {
-		Set<ECR> top_structECRs = Sets.newHashSet();
+		Set<ECR> top_structECRs = Sets.newLinkedHashSet();
 		Set<ECR> visited_structECRs = Sets.newHashSet();
 		List<ECR> worklist = Lists.newArrayList(structECRs);
 		while (!worklist.isEmpty()) {
@@ -71,10 +71,8 @@ public class UnionFindECR {
 
 			ValueType type = getType(ecr);
 			Collection<ECR> parents = type.getParent().getECRs();
-			if (parents.isEmpty()) {
-				if (type.isStruct()) {
-					top_structECRs.add(ecr);
-				}
+			if (parents.isEmpty() && type.isStruct()) {
+				top_structECRs.add(ecr);
 			} else {
 				worklist.addAll(parents);
 			}
@@ -82,7 +80,9 @@ public class UnionFindECR {
 
 		Map<ECR, TreeMap<Range<Long>, ECR>> structFlattenMap = Maps.newHashMap();
 		for (ECR ecr : top_structECRs) {
-			assert getType(ecr).isStruct();
+			// Skip ECR if it has been collapsed when flattening other struct.
+			if (!getType(ecr).isStruct())
+				continue;
 			TreeMap<Range<Long>, ECR> flattenMap = flattenStructECRs(ecr);
 			if (!getType(ecr).isStruct()) {
 				IOUtils.err()
@@ -152,7 +152,8 @@ public class UnionFindECR {
 			}
 			visited.add(curr_ecr);
 			ValueType curr_type = getType(curr_ecr);
-			assert curr_type.isStruct();
+			if (!curr_type.isStruct())
+				continue;
 			Map<Range<Long>, ECR> curr_fieldRangeMap = curr_type.asStruct()
 					.getFieldMap();
 			for (Entry<Range<Long>, ECR> curr_entry : curr_fieldRangeMap.entrySet()) {
@@ -705,7 +706,9 @@ public class UnionFindECR {
 					: unify(unionType, elemLocType);
 		}
 		unionType = unionType == null ? ValueType.bottom() : unionType;
-		unionType.setParent(structT.getParent());
+		if (!structT.getParent().getECRs().isEmpty()) {
+			unionType.setParent(structT.getParent());
+		}
 		setType(structECR, unionType);
 		ECR root = findRoot(structECR);
 
