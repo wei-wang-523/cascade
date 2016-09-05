@@ -10,11 +10,9 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
@@ -30,12 +28,6 @@ import edu.nyu.cascade.util.UnionFind.Partition;
 
 public class UnionFindECR {
 	private final UnionFind<IRVar> uf;
-	/**
-	 * Record the pointer arithmetic pending joins if the numeric operand is a
-	 * constant
-	 */
-	private final Map<Pair<ECR, Long>, Pair<ECR, Long>> ptrAriJoins = Maps
-			.newHashMap();
 	private final Set<ECR> structECRs = Sets.newLinkedHashSet();
 	private final Set<ECR> collapseECRs = Sets.newLinkedHashSet();
 
@@ -419,23 +411,19 @@ public class UnionFindECR {
 		return root;
 	}
 
-	ECR cjoin(ECR e1, ECR e2) {
-		if (e1.equals(e2))
-			return findRoot(e1);
+	void cjoin(ECR e1, ECR e2) {
+		if (e1.equals(e2)) return;
 
 		if (getType(e1).isBottom()) {
-
 			Collection<ECR> joins2 = getCjoins(e2);
 			Collection<Pair<Size, ECR>> cjoins2 = getCCjoins(e2);
 
 			addCjoin(e1, e2);
 			addCjoins(e1, joins2);
 			addCCjoins(e1, cjoins2);
-
-			return findRoot(e1);
+		} else {
+			join(e1, e2);
 		}
-
-		return join(e1, e2);
 	}
 
 	void ccjoin(Size rangeSize, ECR e1, ECR e2) {
@@ -449,7 +437,7 @@ public class UnionFindECR {
 		if (!Size.isLessThan(rangeSize, size1)) {
 			addCCjoin(rangeSize, e1, e2);
 			expand(e1, rangeSize); // expand(e1) would call setType(e1, ...) and thus
-															// ccjoin(e1, e2)
+														 // ccjoin(e1, e2)
 			return;
 		}
 
@@ -657,10 +645,6 @@ public class UnionFindECR {
 		collapseStruct(structECR, structT, Sets.<ECR> newHashSet(structECR));
 		ensureSimple(structECR);
 		return getType(structECR);
-	}
-
-	void ptrAri(ECR resLocECR, long size, ECR lhsLocECR, long shift) {
-		ptrAriJoins.put(Pair.of(resLocECR, size), Pair.of(lhsLocECR, shift));
 	}
 
 	/**
@@ -928,81 +912,5 @@ public class UnionFindECR {
 		}
 
 		return unify(t1, t2);
-	}
-
-	void clearPointerArithmetic() {
-		if (ptrAriJoins.isEmpty())
-			return;
-		for (Entry<Pair<ECR, Long>, Pair<ECR, Long>> cell : ptrAriJoins
-				.entrySet()) {
-			ECR resECR = findRoot(cell.getKey().fst());
-			final ECR origECR = findRoot(cell.getValue().fst());
-			long shift = cell.getValue().snd();
-			if (shift >= 0) {
-				// TODO: could do more precise analysis here.
-				collapse(origECR, resECR);
-				continue;
-			}
-
-			ValueType origType = getType(origECR);
-			Parent parent = origType.getParent();
-			if (parent.getECRs().isEmpty()) {
-				// TODO: could do more precise analysis here.
-				collapse(origECR, resECR);
-				continue;
-			}
-
-			for (ECR parentECR : parent.getECRs()) {
-				ValueType parentType = getType(parentECR);
-				if (!parentType.isStruct()) {
-					IOUtils.errPrinter().pln("WARNING: non-struct parent");
-					join(parentECR, origECR);
-					continue;
-				}
-
-				Map<Range<Long>, ECR> fieldMap = parentType.asStruct().getFieldMap();
-				Entry<Range<Long>, ECR> fieldRange = Iterables.find(fieldMap.entrySet(),
-						new Predicate<Entry<Range<Long>, ECR>>() {
-							@Override
-							public boolean apply(Entry<Range<Long>, ECR> input) {
-								return origECR.equals(getLoc(input.getValue()));
-							}
-						});
-				long low = fieldRange.getKey().lowerEndpoint() + shift;
-				Size parentSize = parentType.getSize();
-				long size = cell.getKey().snd();
-				if (low == 0 && (parentSize.isBottom()
-						|| parentSize.isNumber() && parentSize.getValue() == size)) {
-					join(parentECR, resECR);
-					continue;
-				}
-
-				collapse(origECR, resECR);
-			}
-		}
-	}
-
-	private void collapse(ECR e1, ECR e2) {
-		ECR root = join(e1, e2);
-
-		// Parent is stored at the points-to loc of
-		Parent parent = getType(root).getParent();
-		Collection<ECR> parentECRs = ImmutableList.copyOf(parent.getECRs());
-
-		for (ECR ecr : parentECRs) {
-			ValueType ecrType = getType(ecr);
-			if (ecrType.isStruct())
-				collapseStruct(ecr, ecrType.asStruct());
-		}
-	}
-
-	boolean containsPtrAritJoin(ECR locECR, long size) {
-		return ptrAriJoins.containsKey(Pair.of(locECR, size));
-	}
-
-	void replacePtrAriJoin(ECR freshLocECR, long freshSize, ECR locECR,
-			long size) {
-		Pair<ECR, Long> value = ptrAriJoins.remove(Pair.of(locECR, size));
-		ptrAriJoins.put(Pair.of(freshLocECR, freshSize), value);
 	}
 }

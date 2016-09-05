@@ -29,7 +29,6 @@ import edu.nyu.cascade.ir.IRVarInfo;
 import edu.nyu.cascade.ir.SymbolTable;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Pair;
-import edu.nyu.cascade.util.Preferences;
 import edu.nyu.cascade.util.ReservedFunction;
 import edu.nyu.cascade.util.ReservedFunction.Sig;
 
@@ -197,30 +196,6 @@ public class ECREncoder extends Visitor {
 			Type lhsType = CType.getInstance().pointerize(CType.getType(lhsNode));
 			Type rhsType = CType.getInstance().pointerize(CType.getType(rhsNode));
 			ECR srcECR = rhsType.isPointer() ? rhsECR : lhsECR;
-
-			if (Preferences.isSet(Preferences.OPTION_CFS_POINTER_ARITH)) {
-				Type type = CType.getType(node);
-				// TODO: add pointer-arith pending
-				if (type.resolve().isPointer()) {
-					// TODO: swap lhs and rhs if lhs is constant and rhs is pointer
-					if (lhsType.resolve().isPointer() && rhsType.hasConstant()) {
-						ECR resECR = createPointerECR(type);
-						opECRMap.put(Pair.of(node, node.getLocation()), resECR);
-
-						long val = rhsType.getConstant().longValue();
-						boolean positive = "+".equals(node.getString(1));
-						long shift = positive ? val : -val;
-						long size = cTypeAnalyzer
-								.getSize(type.resolve().toPointer().getType());
-
-						ECR lhsLocECR = uf.getLoc(lhsECR);
-						ECR resLocECR = uf.getLoc(resECR);
-						uf.ptrAri(resLocECR, size, lhsLocECR, shift);
-						return resECR;
-					}
-				}
-			}
-
 			return getOpECR(node, srcECR);
 		}
 
@@ -639,22 +614,6 @@ public class ECREncoder extends Visitor {
 		final ECR locECR = uf.getLoc(e);
 		Type ptr2Type = targetType.resolve().toPointer().getType();
 		long freshPtr2Size = cTypeAnalyzer.getSize(ptr2Type);
-
-		if (Preferences.isSet(Preferences.OPTION_CFS_POINTER_ARITH)) {
-			long srcPtr2Size = srcType.resolve().isPointer()
-					? cTypeAnalyzer.getSize(srcType.resolve().toPointer().getType()) : 0;
-			if (uf.containsPtrAritJoin(locECR, srcPtr2Size)) {
-				// Create a fresh reference ECR to replace the one
-				// created for pointer arithmetic operations.
-				// Sample code: (typeof(*msg) *)((char *)__mptr -
-				// (size_t)&((typeof(*msg) *)0)->list)
-				ECR freshECR = createPointerECR(targetType);
-				ECR freshLocECR = uf.getLoc(freshECR);
-				uf.replacePtrAriJoin(freshLocECR, freshPtr2Size, locECR, srcPtr2Size);
-				return freshECR;
-			}
-		}
-
 		uf.expand(locECR, Size.createForType(ptr2Type));
 
 		ValueType locType = uf.getType(locECR);

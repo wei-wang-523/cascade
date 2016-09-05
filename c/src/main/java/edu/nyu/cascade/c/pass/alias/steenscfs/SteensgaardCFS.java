@@ -329,7 +329,6 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 	}
 
 	private void initChecker() {
-		uf.clearPointerArithmetic();
 		uf.normalizeStructECRs();
 		uf.normalizeCollapseECRs();
 		ecrChecker = ECRChecker.create(uf, symbolTable, ecrEncoder);
