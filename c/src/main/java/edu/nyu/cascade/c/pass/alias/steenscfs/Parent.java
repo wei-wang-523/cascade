@@ -67,8 +67,9 @@ class Parent {
 		if (!(o instanceof Parent))
 			return false;
 		Parent that = (Parent) o;
-		Set<ECR> diff = Sets.difference(this.getECRs(), that.getECRs());
-		return diff.isEmpty();
+		Set<ECR> diff1 = Sets.difference(this.getECRs(), that.getECRs());
+		Set<ECR> diff2 = Sets.difference(that.getECRs(), this.getECRs());
+		return diff1.isEmpty() && diff2.isEmpty();
 	}
 
 	/**
