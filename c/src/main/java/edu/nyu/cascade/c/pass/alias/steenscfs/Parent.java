@@ -8,19 +8,13 @@ import com.google.common.collect.Sets;
 
 class Parent {
 
-	enum Kind {
-		TOP, BOTTOM, SET,
-	}
-
-	private final Kind kind;
 	private final Set<ECR> parents;
 
-	private Parent(Kind kind, Set<ECR> parents) {
-		this.kind = kind;
+	private Parent(Set<ECR> parents) {
 		this.parents = parents;
 	}
 
-	private static Parent botInstance = null, topInstance = null;
+	private static Parent botInstance = null;
 
 	/**
 	 * Get the parent with uninitialized ecr for blank type only
@@ -30,7 +24,7 @@ class Parent {
 	static Parent getBottom() {
 		if (botInstance != null)
 			return botInstance;
-		botInstance = new Parent(Kind.BOTTOM, Collections.<ECR> emptySet());
+		botInstance = new Parent(Collections.<ECR> emptySet());
 		return botInstance;
 	}
 
@@ -41,26 +35,13 @@ class Parent {
 	 * @return
 	 */
 	static Parent create(ECR ecr) {
-		return new Parent(Kind.SET, Sets.newHashSet(ecr));
+		return new Parent(Sets.newHashSet(ecr));
 	}
 
 	static Parent create(Collection<ECR> ecrs) {
 		if (ecrs.isEmpty())
 			return getBottom();
-		return new Parent(Kind.SET, Sets.newHashSet(ecrs));
-	}
-
-	/**
-	 * Create the parent with no parent, while allowing use of least-upper-bound
-	 * operators in the type inference algorithm
-	 * 
-	 * @return
-	 */
-	static Parent getTop() {
-		if (topInstance != null)
-			return topInstance;
-		topInstance = new Parent(Kind.TOP, Collections.<ECR> emptySet());
-		return topInstance;
+		return new Parent(Sets.newHashSet(ecrs));
 	}
 
 	/**
@@ -72,30 +53,13 @@ class Parent {
 	 * @return
 	 */
 	static Parent getLUB(Parent p1, Parent p2) {
-		Parent top = getTop();
-		if (p1.isTop() || p2.isTop())
-			return top;
-		if (p1.isBottom())
-			return p2;
-		if (p2.isBottom())
-			return p1;
-
 		Set<ECR> ecrs = Sets.union(p1.getECRs(), p2.getECRs());
 		return create(ecrs);
 	}
 
 	@Override
 	public String toString() {
-		switch (kind) {
-		case BOTTOM:
-			return String.valueOf('\u22A5');
-		case TOP:
-			return String.valueOf('\u22A4');
-		default: {
-			Set<ECR> ecrs = getECRs();
-			return ecrs.toString();
-		}
-		}
+		return parents.toString();
 	}
 
 	@Override
@@ -103,20 +67,8 @@ class Parent {
 		if (!(o instanceof Parent))
 			return false;
 		Parent that = (Parent) o;
-		if (!kind.equals(that.kind))
-			return false;
-		if (!kind.equals(Kind.SET))
-			return true;
 		Set<ECR> diff = Sets.difference(this.getECRs(), that.getECRs());
 		return diff.isEmpty();
-	}
-
-	boolean isBottom() {
-		return Kind.BOTTOM.equals(kind);
-	}
-
-	boolean isTop() {
-		return Kind.TOP.equals(kind);
 	}
 
 	/**
@@ -134,8 +86,7 @@ class Parent {
 	}
 
 	Parent removeECR(ECR parent) {
-		if (kind.equals(Kind.TOP) || kind.equals(Kind.BOTTOM))
-			return this;
+		if (parents.isEmpty()) return this;
 
 		Set<ECR> ecrs = Sets.newHashSet(parents);
 		for (ECR ecr : parents) {
