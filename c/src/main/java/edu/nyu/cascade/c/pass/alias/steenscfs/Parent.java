@@ -18,8 +18,6 @@ class Parent {
 
 	/**
 	 * Get the parent with uninitialized ecr for blank type only
-	 * 
-	 * @return
 	 */
 	static Parent getBottom() {
 		if (botInstance != null)
@@ -30,9 +28,6 @@ class Parent {
 
 	/**
 	 * Create the parent as <code>ecr</code>
-	 * 
-	 * @param ecr
-	 * @return
 	 */
 	static Parent create(ECR ecr) {
 		return new Parent(Sets.newHashSet(ecr));
@@ -47,10 +42,6 @@ class Parent {
 	/**
 	 * Compute the least-upper-bound operators for two parents <code>p1</code> and
 	 * <code>p2</code>
-	 * 
-	 * @param p1
-	 * @param p2
-	 * @return
 	 */
 	static Parent getLUB(Parent p1, Parent p2) {
 		Set<ECR> ecrs = Sets.union(p1.getECRs(), p2.getECRs());
@@ -74,8 +65,6 @@ class Parent {
 
 	/**
 	 * Always return the root of ECR
-	 * 
-	 * @return
 	 */
 	Set<ECR> getECRs() {
 		Set<ECR> ecrs = Sets.newHashSet();

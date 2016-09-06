@@ -6,14 +6,14 @@ import com.google.common.collect.Range;
 
 class StructType extends ValueType {
 
-	private final Map<Range<Long>, ECR> fieldMap_;
-	private final Size size;
-	private Parent parent;
+	private final Map<Range<Long>, ECR> _fieldMap;
+	private Size _size;
+	private Parent _parent;
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder().append("STRUCT (").append(size)
-				.append(", ").append(fieldMap_).append(", ").append(parent).append(')');
+		StringBuilder sb = new StringBuilder().append("STRUCT (").append(_size)
+				.append(", ").append(_fieldMap).append(", ").append(_parent).append(')');
 
 		return sb.toString();
 	}
@@ -23,34 +23,34 @@ class StructType extends ValueType {
 		if (!(o instanceof StructType))
 			return false;
 		StructType that = (StructType) o;
-		if (!parent.equals(that.parent))
+		if (!_parent.equals(that._parent))
 			return false;
-		if (!size.equals(that.size))
+		if (!_size.equals(that._size))
 			return false;
-		if (!fieldMap_.equals(that.fieldMap_))
+		if (!_fieldMap.equals(that._fieldMap))
 			return false;
 		return true;
 	}
 
 	StructType(Map<Range<Long>, ECR> fieldMap, Size size, Parent parent) {
-		this.size = size;
-		this.parent = parent;
-		fieldMap_ = Maps.newHashMap(fieldMap);
+		_size = size;
+		_parent = parent;
+		_fieldMap = Maps.newHashMap(fieldMap);
 	}
 
 	ECR addFieldECR(Range<Long> range, ECR ecr) {
-		if (fieldMap_.containsKey(range)) {
-			return fieldMap_.get(range);
+		if (_fieldMap.containsKey(range)) {
+			return _fieldMap.get(range);
 		} else {
-			fieldMap_.put(range, ecr);
+			_fieldMap.put(range, ecr);
 			return ecr;
 		}
 	}
 
 	StructType(Size size, Parent parent) {
-		this.size = size;
-		this.parent = parent;
-		fieldMap_ = Maps.newHashMap();
+		_size = size;
+		_parent = parent;
+		_fieldMap = Maps.newHashMap();
 	}
 
 	@Override
@@ -60,25 +60,25 @@ class StructType extends ValueType {
 
 	@Override
 	void setSize(Size size) {
-		throw new UnsupportedOperationException();
+		_size = size;
 	}
 
 	@Override
 	Size getSize() {
-		return size;
+		return _size;
 	}
 
 	@Override
 	Parent getParent() {
-		return parent;
+		return _parent;
 	}
 
 	@Override
 	void setParent(Parent parent) {
-		this.parent = parent;
+		_parent = parent;
 	}
 
 	Map<Range<Long>, ECR> getFieldMap() {
-		return fieldMap_;
+		return _fieldMap;
 	}
 }
