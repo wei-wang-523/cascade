@@ -320,12 +320,10 @@ public class UnionFindECR {
 	void join(ECR e1, ECR e2) {
 		Preconditions.checkNotNull(e1);
 		Preconditions.checkNotNull(e2);
-		if (e1.equals(e2))
+		if (e1.equals(e2)) {
 			return;
-
-		Pair<ECR, ECR> ecr_pair = swap(e1, e2);
-		e1 = ecr_pair.fst();
-		e2 = ecr_pair.snd();
+		}
+		checkStructCollapse(e1, e2);
 
 		ValueType t1 = getType(e1);
 		ValueType t2 = getType(e2);
@@ -370,47 +368,45 @@ public class UnionFindECR {
 			}
 			break;
 		}
-		case BLANK: {
-			processRoot(root, t1, t2, ccjoins1, ccjoins2);
-		}
-		case SIMPLE: {
-			if (t2.isSimple()) {
-				processRoot(root, t1, t2, ccjoins1, ccjoins2);
-			} else {
-				Size size1 = t1.getSize();
-				Range<Long> range1 = size1.isNumber()
-						? Range.closedOpen((long) 0, size1.getValue())
-						: Range.atLeast((long) 0);
-				t1.getParent().addParent(e2);
-			}
-		}
 		default: {
-			assert t2.isStruct();
-			processRoot(root, t1, t2, ccjoins1, ccjoins2);
+			switch (t2.getKind()) {
+			case BOTTOM: {
+				setType(root, t1);
+
+				root.clearCCjoins(ccjoins2);
+				for (Pair<Size, ECR> pair : ccjoins2)
+					ccjoin(pair.fst(), root, pair.snd());
+
+				root.clearCjoins(cjoins2);
+				for (ECR cjoin : cjoins2)
+					cjoin(root, cjoin);
+
+				break;
+			}
+			default: {
+				setType(root, t1);
+				ValueType unionType = unify(t1, t2);
+
+				ValueType freshType = getType(root);
+				if (!freshType.equals(t1)) {
+					unionType = resolveType(root, unionType, freshType);
+				}
+
+				setType(root, unionType);
+
+				root.clearCCjoins(ccjoins1);
+				root.clearCCjoins(ccjoins2);
+
+				for (Pair<Size, ECR> pair : ccjoins1)
+					ccjoin(pair.fst(), root, pair.snd());
+				for (Pair<Size, ECR> pair : ccjoins2)
+					ccjoin(pair.fst(), root, pair.snd());
+				break;
+			}
+			}
 			break;
 		}
 		}
-	}
-
-	private void processRoot(ECR root, ValueType t1, ValueType t2,
-			Collection<Pair<Size, ECR>> ccjoins1,
-			Collection<Pair<Size, ECR>> ccjoins2) {
-		setType(root, t1);
-		ValueType unionType = unify(t1, t2);
-		ValueType freshType = getType(root);
-		if (!freshType.equals(t1)) {
-			unionType = resolveType(root, unionType, freshType);
-		}
-
-		root.setType(unionType);
-
-		root.clearCCjoins(ccjoins1);
-		root.clearCCjoins(ccjoins2);
-
-		for (Pair<Size, ECR> pair : ccjoins1)
-			ccjoin(pair.fst(), root, pair.snd());
-		for (Pair<Size, ECR> pair : ccjoins2)
-			ccjoin(pair.fst(), root, pair.snd());
 	}
 
 	void cjoin(ECR e1, ECR e2) {
@@ -440,7 +436,7 @@ public class UnionFindECR {
 		if (!Size.isLessThan(rangeSize, size1)) {
 			addCCjoin(rangeSize, e1, e2);
 			expand(e1, rangeSize); // expand(e1) would call setType(e1, ...) and thus
-															// ccjoin(e1, e2)
+														 // ccjoin(e1, e2)
 			return;
 		}
 
@@ -484,14 +480,16 @@ public class UnionFindECR {
 					expand(e2, rangeSize);
 				return;
 			}
-			default: { // case STRUCT
+			case STRUCT: {
 				addCCjoin(rangeSize, e1, e2);
 				collapseStruct(e2, type2.asStruct());
 				return;
 			}
+			default: // lambda
+				return;
 			}
 		}
-		default: { // case STRUCT
+		case STRUCT: {
 			ValueType type2 = getType(e2);
 			switch (type2.getKind()) {
 			case BOTTOM: {
@@ -519,11 +517,15 @@ public class UnionFindECR {
 				}
 				return;
 			}
-			default: { // case STRUCT
+			case STRUCT: {
 				throw new IllegalArgumentException();
 			}
+			default:
+				return; // lambda
 			}
 		}
+		default:
+			return; // lambda
 		}
 	}
 
@@ -747,8 +749,9 @@ public class UnionFindECR {
 			if (fieldMap.containsKey(range2)) {
 				ECR ecr1 = fieldMap.get(range2);
 				join(ecr1, ecr2);
+			} else {
+				fieldMap.put(range2, ecr2);
 			}
-			fieldMap.put(range2, ecr2);
 		}
 		return fieldMap;
 	}
@@ -781,21 +784,8 @@ public class UnionFindECR {
 		return;
 	}
 
-	private Pair<ECR, ECR> swap(ECR e1, ECR e2) {
-		ValueType t1 = getType(e1);
-		ValueType t2 = getType(e2);
-		Pair<ValueType, ValueType> pair = swap(t1, t2);
-		if (pair.fst() == t1) {
-			return Pair.of(e1, e2);
-		} else {
-			return Pair.of(e2, e1);
-		}
-	}
-
 	/**
-	 * Swap <code>t1</code> and <code>t2</code> if <code> kind(t1) > kind(t2) 
-	 * </code>. Return the pair of value types <code>(t1', t2')</code> that
-	 * <code>kind(t1') <= kind(t2')</code>
+	 * Swap t1 and t2 if kind(t1) > kind(t2) 
 	 */
 	private Pair<ValueType, ValueType> swap(ValueType t1, ValueType t2) {
 
@@ -838,6 +828,30 @@ public class UnionFindECR {
 				return Pair.of(t1, t2);
 			}
 		}
+	}
+
+	/**
+	 * Check if one of <code>e1</code> or <code>e2</code> is a struct, and the
+	 * other is either object or simple, collapse the one with struct type
+	 * 
+	 * @param e1
+	 * @param e2
+	 */
+	private void checkStructCollapse(ECR e1, ECR e2) {
+		ValueType t1 = getType(e1);
+		ValueType t2 = getType(e2);
+
+		if (t2.isStruct() && t1.isSimple()) {
+			collapseStruct(e2, t2.asStruct());
+			return;
+		}
+
+		if (t1.isStruct() && t2.isSimple()) {
+			collapseStruct(e1, t1.asStruct());
+			return;
+		}
+
+		return;
 	}
 
 	/**
