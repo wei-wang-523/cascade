@@ -489,10 +489,10 @@ public class ECREncoder extends Visitor {
 		if (fieldType.resolve().isArray())
 			fieldType = CType.getArrayCellType(fieldType);
 
-		if (locType.getSize().isTop()) {
-			uf.ensureSimple(loc);
-			locType = uf.getType(loc);
-		}
+		//		if (locType.getSize().isTop()) {
+		//			uf.ensureSimple(loc);
+		//			locType = uf.getType(loc);
+		//		}
 
 		if (locType.isSimple()) {
 			uf.expand(loc, Size.createForType(fieldType));
