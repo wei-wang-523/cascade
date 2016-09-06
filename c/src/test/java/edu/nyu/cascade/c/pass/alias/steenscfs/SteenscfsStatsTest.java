@@ -77,16 +77,19 @@ public class SteenscfsStatsTest {
 	}
 
 	public SteenscfsStatsTest(File file) {
+		Preferences.set(Preferences.OPTION_BYTE_BASED);
 		main = getInjector().getInstance(Main.class);
 		main.init();
 		main.prepare();
 		cfile = file;
-
-		Preferences.set(Preferences.OPTION_BYTE_BASED);
 	}
 
 	@Test
 	public void test() throws ParseException, IOException {
+		Printer printer = IOUtils.outPrinter();
+		Printer debugPrinter = IOUtils.debug();
+		CPrinter cprinter = new CPrinter(debugPrinter);
+		
 		Node ast = main.parseSourceFile(cfile);
 		main.processSourceFile(cfile, ast);
 		Collection<IRControlFlowGraph> CFGs = main.getControlFlowGraphs();
@@ -113,10 +116,6 @@ public class SteenscfsStatsTest {
 			aliasMap.put(NH, lval);
 		}
 
-		Printer printer = IOUtils.outPrinter();
-		Printer debugPrinter = IOUtils.debug();
-		CPrinter cprinter = new CPrinter(debugPrinter);
-
 		printer.p(cfile.getName()).p(',').p(lvals.size()).p(',')
 				.p(aliasMap.keySet().size()).pln();
 
@@ -125,7 +124,7 @@ public class SteenscfsStatsTest {
 			Collection<Pair<Node, String>> aliasGroup = aliasMap.get(ecr);
 			if (aliasGroup.size() <= 1)
 				continue;
-			debugPrinter.p(ecr.getId());
+			debugPrinter.p(ecr.getId()).p(':').p(ecr.getType().getSize().toString());
 			for (Pair<Node, String> lval : aliasGroup) {
 				debugPrinter.pln().p('\t');
 				cprinter.dispatch(lval.fst());

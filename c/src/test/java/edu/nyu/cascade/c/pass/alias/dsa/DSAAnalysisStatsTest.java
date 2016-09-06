@@ -79,12 +79,11 @@ public class DSAAnalysisStatsTest {
 	}
 
 	public DSAAnalysisStatsTest(File file) {
+		Preferences.set(Preferences.OPTION_BYTE_BASED);
 		main = getInjector().getInstance(Main.class);
 		main.init();
 		main.prepare();
 		cfile = file;
-
-		Preferences.set(Preferences.OPTION_BYTE_BASED);
 	}
 
 	@After
@@ -95,6 +94,10 @@ public class DSAAnalysisStatsTest {
 
 	@Test
 	public void test() throws ParseException, IOException {
+		Printer printer = IOUtils.outPrinter();
+		Printer debugPrinter = IOUtils.debug();
+		CPrinter cprinter = new CPrinter(debugPrinter);
+		
 		Node ast = main.parseSourceFile(cfile);
 		main.processSourceFile(cfile, ast);
 		Collection<IRControlFlowGraph> CFGs = main.getControlFlowGraphs();
@@ -121,10 +124,6 @@ public class DSAAnalysisStatsTest {
 			DSNodeHandle NH = dsa.getRep(lval.fst());
 			aliasMap.put(NH, lval);
 		}
-
-		Printer printer = IOUtils.outPrinter();
-		Printer debugPrinter = IOUtils.debug();
-		CPrinter cprinter = new CPrinter(debugPrinter);
 
 		printer.p(cfile.getName()).p(',').p(lvals.size()).p(',')
 				.p(aliasMap.keySet().size()).pln();
