@@ -486,14 +486,10 @@ public class ECREncoder extends Visitor {
 		ECR loc = uf.getLoc(srcECR);
 		ValueType locType = uf.getType(loc);
 
-		if (fieldType.resolve().isArray())
+		if (fieldType.resolve().isArray()) {
 			fieldType = CType.getArrayCellType(fieldType);
-
-		//		if (locType.getSize().isTop()) {
-		//			uf.ensureSimple(loc);
-		//			locType = uf.getType(loc);
-		//		}
-
+		}
+		
 		if (locType.isSimple()) {
 			uf.expand(loc, Size.createForType(fieldType));
 			return srcECR;
@@ -528,7 +524,7 @@ public class ECREncoder extends Visitor {
 		type = type.resolve();
 		Size size;
 		if (type.isInternal()) {
-			size = Size.getTop();
+			size = Size.getTop(0);
 		} else if (CType.isScalar(type)) {
 			size = Size.createForType(type);
 		} else { // Composite type

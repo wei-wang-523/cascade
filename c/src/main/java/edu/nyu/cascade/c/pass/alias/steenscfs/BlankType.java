@@ -29,15 +29,6 @@ class BlankType extends ValueType {
 		return true;
 	}
 
-	/**
-	 * Get Blank(T, {})
-	 * 
-	 * @return
-	 */
-	static BlankType getTop() {
-		return new BlankType(Size.getTop(), Parent.getBottom());
-	}
-
 	@Override
 	ValueTypeKind getKind() {
 		return ValueTypeKind.BLANK;

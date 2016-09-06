@@ -17,14 +17,14 @@ class Size {
 
 	private static Map<Long, Size> map = Maps.newHashMap();
 
-	private static Size topInstance = new Size(Kind.TOP);
-	private static Size botInstance = new Size(Kind.BOT);
+	private static Size botInstance = new Size(Kind.BOT, 0);
 
 	private final Kind kind;
-	private long value = 0;
+	private final long value;
 
-	private Size(Kind kind) {
+	private Size(Kind kind, long value) {
 		this.kind = kind;
+		this.value = value;
 	}
 
 	/**
@@ -39,8 +39,8 @@ class Size {
 	 * 
 	 * @return
 	 */
-	static Size getTop() {
-		return topInstance;
+	static Size getTop(long value) {
+		return new Size(Kind.TOP, value);
 	}
 
 	/**
@@ -58,14 +58,13 @@ class Size {
 	 * @param size
 	 * @return
 	 */
-	private static Size create(long size) {
+	private static Size createNum(long size) {
 		Preconditions.checkArgument(size >= 0);
 		if (size == 0)
 			return getBot();
 		if (map.containsKey(size))
 			return map.get(size);
-		Size res = new Size(Kind.NUMBER);
-		res.value = size;
+		Size res = new Size(Kind.NUMBER, size);
 		map.put(size, res);
 		return res;
 	}
@@ -83,7 +82,7 @@ class Size {
 		case VOID:
 			return getBot();
 		default:
-			return create(CType.getInstance().getSize(type));
+			return createNum(CType.getInstance().getSize(type));
 		}
 	}
 
@@ -116,7 +115,7 @@ class Size {
 			return s2;
 		if (isLessThan(s2, s1))
 			return s1;
-		return topInstance;
+		return getTop(Math.max(s1.getValue(), s2.getValue()));
 	}
 
 	@Override
@@ -127,10 +126,10 @@ class Size {
 			sb.append(value);
 			break;
 		case BOT:
-			sb.append("BOT");
+			sb.append("BOT").append(':').append(value);
 			break;
 		default:
-			sb.append("TOP");
+			sb.append("TOP").append(':').append(value);
 			break;
 		}
 		return sb.toString();
@@ -142,12 +141,7 @@ class Size {
 	}
 
 	long getValue() {
-		Preconditions.checkArgument(kind.equals(Kind.NUMBER));
 		return value;
-	}
-
-	Kind getKind() {
-		return kind;
 	}
 
 	boolean isTop() {
