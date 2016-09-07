@@ -14,10 +14,10 @@ public class CFSFunctionManager {
 	final ConcurrentMap<String, CFSFunction> functionCache = Maps
 			.newConcurrentMap();
 
-	final ECREncoder ecrEncoder;
+	final UnionFindECR uf;
 
-	CFSFunctionManager(ECREncoder ecrEncoder) {
-		this.ecrEncoder = ecrEncoder;
+	CFSFunctionManager(UnionFindECR uf) {
+		this.uf = uf;
 	}
 
 	CFSFunction register(String funcName, Type funcType) {
@@ -30,7 +30,7 @@ public class CFSFunctionManager {
 		CFSFunction func = new CFSFunction(funcName, funcScope, funcType);
 
 		if (!funcTy.getResult().isVoid()) {
-			ECR res = ecrEncoder.createECR(funcTy.getResult());
+			ECR res = uf.createECR(funcTy.getResult());
 			func.setResult(res);
 		}
 

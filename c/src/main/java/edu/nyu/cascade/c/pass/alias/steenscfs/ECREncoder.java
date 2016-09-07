@@ -98,7 +98,7 @@ public class ECREncoder extends Visitor {
 			if (ecrMap.containsKey(key))
 				return ecrMap.get(key);
 
-			ECR varECR = createECR(info.getXtcType());
+			ECR varECR = uf.createECR(info.getXtcType());
 			ecrMap.put(key, varECR);
 
 			return varECR;
@@ -226,10 +226,7 @@ public class ECREncoder extends Visitor {
 			} else {
 				returnType = CType.getType(node);
 			}
-
-			Size size = Size.createForType(returnType);
-			BlankType type = ValueType.blank(size, Parent.getBottom());
-			return uf.createECR(type);
+			return uf.createECR(returnType);
 		}
 
 		public ECR visitAddressExpression(GNode node) {
@@ -338,7 +335,7 @@ public class ECREncoder extends Visitor {
 			Node rhsNode = node.getNode(1);
 			ECR lhsECR = encodeECR(lhsNode);
 			ECR rhsECR = encodeECR(rhsNode);
-			return createECR(NumberT.INT);
+			return uf.createECR(NumberT.INT);
 		}
 
 		public ECR visitLogicalNegationExpression(GNode node) {
@@ -350,7 +347,7 @@ public class ECREncoder extends Visitor {
 			Node rhsNode = node.getNode(1);
 			ECR lhsECR = encodeECR(lhsNode);
 			ECR rhsECR = encodeECR(rhsNode);
-			return createECR(NumberT.INT);
+			return uf.createECR(NumberT.INT);
 		}
 
 		public ECR visitPreincrementExpression(GNode node) {
@@ -520,22 +517,8 @@ public class ECREncoder extends Visitor {
 		return ECR.createBottom();
 	}
 
-	ECR createECR(Type type) {
-		type = type.resolve();
-		Size size;
-		if (type.isInternal()) {
-			size = Size.getTop(0);
-		} else if (CType.isScalar(type)) {
-			size = Size.createForType(type);
-		} else { // Composite type
-			size = Size.getBot();
-		}
-
-		return uf.createECR(ValueType.blank(size, Parent.getBottom()));
-	}
-
 	private ECR createPointerECR(Type type) {
-		ECR varECR = createECR(type);
+		ECR varECR = uf.createECR(type);
 		if (type.isInternal()) {
 			return varECR;
 		} else {
@@ -577,7 +560,7 @@ public class ECREncoder extends Visitor {
 	}
 
 	/**
-	 * Create a field ECR with <code>xtcType</code>, <code>scopeName</code>, and
+	 * Create a field ECR with type, range, and parent srcECR.
 	 * <code>parent</code>. If <code>xtcType</code> is scalar, this method creates
 	 * a single field ECR, otherwise, two ECRs will be created, one for the field
 	 * and the other for the region it points to. For the field ECR, whose address
@@ -590,13 +573,12 @@ public class ECREncoder extends Visitor {
 	 * @return
 	 */
 	private ECR createFieldECR(Range<Long> range, Type type, ECR srcECR) {
-		type = type.resolve();
+		ECR fieldECR = uf.createECR(type);
 		Parent parent = Parent.create(uf.findRoot(srcECR));
-		Size size = CType.isScalar(type) ? Size.createForType(type) : Size.getBot();
-		ECR fieldECR = uf.createECR(ValueType.blank(size, parent));
+		uf.getType(fieldECR).setParent(parent);
 
 		SimpleType addrType = ValueType.simple(fieldECR,
-				Size.createForType(new PointerT(type)), Parent.getBottom());
+				Size.createForType(PointerT.TO_VOID), Parent.getBottom());
 
 		return uf.createECR(addrType);
 	}

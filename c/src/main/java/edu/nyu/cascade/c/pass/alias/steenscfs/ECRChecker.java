@@ -168,10 +168,7 @@ class ECRChecker extends Visitor {
 			} else {
 				returnType = CType.getType(node);
 			}
-
-			Size size = Size.createForType(returnType);
-			BlankType type = ValueType.blank(size, Parent.getBottom());
-			return uf.createECR(type);
+			return uf.createECR(returnType);
 		}
 
 		public ECR visitAddressExpression(GNode node) {
