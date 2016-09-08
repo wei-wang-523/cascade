@@ -319,9 +319,9 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 			argTy = CType.getInstance().pointerize(argTy);
 
 			if (argTy.isPointer() || CType.isStructOrUnion(argTy)) {
-				callSite.addPtrArg(argECR);
+				callSite.addPtrArg(argECR, argTy);
 			} else {
-				callSite.addNonPtrArg(argECR);
+				callSite.addNonPtrArg(argECR, argTy);
 			}
 		}
 
@@ -626,9 +626,9 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 
 		int numFixedParams = funcType.getParameters().size();
 		for (int i = 0; i < call.getNumArgs(); ++i) {
-			Type paramType = funcType.getParameters().get(i).resolve();
 			ECR argECR = call.getArg(i);
 			if (i < numFixedParams) {
+				Type paramType = funcType.getParameters().get(i).resolve();
 				if (paramType.isPointer() || CType.isStructOrUnion(paramType)) {
 					ECR paramECR = F.getArgument(i);
 					resolveParamRet(Size.createForType(paramType), paramECR, argECR);
@@ -636,7 +636,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 			} else {
 				int varArgIdx = i - numFixedParams;
 				if (F.hasVarArgument(varArgIdx)) {
-					resolveParamRet(Size.createForType(paramType),
+					resolveParamRet(Size.createForType(call.getArgType(i)),
 							F.getArgument(varArgIdx), argECR);
 				} else {
 					F.addVarArgument(argECR);

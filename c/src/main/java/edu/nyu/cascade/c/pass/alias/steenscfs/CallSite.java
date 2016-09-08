@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import xtc.tree.Node;
+import xtc.type.Type;
 
 class CallSite {
 	final Node CallNode; // Actual call site
@@ -14,6 +15,7 @@ class CallSite {
 	final ECR CalleeECR; // The function node called (indirect call)
 	final ECR RetVal; // Returned value
 	final List<ECR> Args; // The arguments.
+	final List<Type> ArgTypes;
 
 	// The size of PtrArgMarks is the sum of the size of Args and the size of
 	// VarArgs. For the i-th mark of PtrArgMarks, if i is less than the size of
@@ -33,6 +35,7 @@ class CallSite {
 		CalleeECR = callee;
 		RetVal = retVal;
 		Args = Lists.newArrayList();
+		ArgTypes = Lists.newArrayList();
 		PtrArgMarks = Lists.newArrayList();
 	}
 
@@ -77,21 +80,27 @@ class CallSite {
 		return numPtrArgs;
 	}
 
-	void addPtrArg(ECR arg) {
+	void addPtrArg(ECR arg, Type argType) {
 		++numPtrArgs;
 		Args.add(arg);
+		ArgTypes.add(argType);
 		++numArgs;
 		PtrArgMarks.add(true);
 	}
 
-	void addNonPtrArg(ECR arg) {
+	void addNonPtrArg(ECR arg, Type argType) {
 		Args.add(arg);
+		ArgTypes.add(argType);
 		++numArgs;
 		PtrArgMarks.add(false);
 	}
 
 	ECR getArg(int i) {
 		return Args.get(i);
+	}
+	
+	Type getArgType(int i) {
+		return ArgTypes.get(i);
 	}
 	
 	ECR getCalleeECR() {
