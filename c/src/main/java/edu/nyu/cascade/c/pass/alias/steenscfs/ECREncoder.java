@@ -560,7 +560,7 @@ public class ECREncoder extends Visitor {
 	}
 
 	/**
-	 * Create a field ECR with <code>xtcType</code>, <code>scopeName</code>, and
+	 * Create a field ECR with type, range, and parent srcECR.
 	 * <code>parent</code>. If <code>xtcType</code> is scalar, this method creates
 	 * a single field ECR, otherwise, two ECRs will be created, one for the field
 	 * and the other for the region it points to. For the field ECR, whose address
@@ -573,8 +573,8 @@ public class ECREncoder extends Visitor {
 	 * @return
 	 */
 	private ECR createFieldECR(Range<Long> range, Type type, ECR srcECR) {
-		Parent parent = Parent.create(uf.findRoot(srcECR));
 		ECR fieldECR = uf.createECR(type);
+		Parent parent = Parent.create(uf.findRoot(srcECR));
 		uf.getType(fieldECR).setParent(parent);
 
 		SimpleType addrType = ValueType.simple(fieldECR,
