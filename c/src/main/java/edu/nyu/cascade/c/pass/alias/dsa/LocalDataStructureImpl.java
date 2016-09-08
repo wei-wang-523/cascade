@@ -1089,6 +1089,13 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				getValueDest(rvalVisitor.encode(lhs), lhsTy);
 				return;
 			}
+			
+			// Set up the return value...
+			Type retTy = CType.getType(stmt.getSourceNode());
+			if (!retTy.resolve().isVoid()) {
+				Node retNode = stmt.getOperand(1).getSourceNode();
+				lvalVisitor.encode(retNode);
+			}
 		}
 		
 		private void visitCallStmt(IRStatement stmt) {
