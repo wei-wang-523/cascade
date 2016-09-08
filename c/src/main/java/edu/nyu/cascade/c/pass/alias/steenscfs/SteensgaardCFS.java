@@ -60,7 +60,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		this.symbolTable = symbolTable;
 		uf = UnionFindECR.create();
 		ecrEncoder = ECREncoder.create(uf, symbolTable);
-		funcManager = new CFSFunctionManager(ecrEncoder);
+		funcManager = new CFSFunctionManager(uf);
 	}
 
 	public static SteensgaardCFS create(SymbolTable symbolTable) {
@@ -302,7 +302,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 
 				for (Type paramTy : funcTy.getParameters()) {
 					// The funcID is declared (not yet defined).
-					func.addArgument(ecrEncoder.createECR(paramTy));
+					func.addArgument(uf.createECR(paramTy));
 				}
 			}
 
@@ -530,8 +530,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		// the structures involved
 		if (targetType.isStruct())
 			targetType = new PointerT(targetType);
-		Size rangeSize = CType.isArithmetic(targetType) ? Size.getBot()
-				: Size.createForType(targetType);
+		Size rangeSize = Size.createForType(targetType);
 		uf.ccjoin(rangeSize, rhs, lhs);
 	}
 

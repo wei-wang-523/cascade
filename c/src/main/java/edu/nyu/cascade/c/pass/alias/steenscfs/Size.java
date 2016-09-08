@@ -77,12 +77,13 @@ class Size {
 	 */
 	static Size createForType(Type type) {
 		Preconditions.checkNotNull(type);
-		switch (type.tag()) {
-		case FUNCTION:
-		case VOID:
-			return getBot();
-		default:
+		type = type.resolve();
+		if (type.isInternal()) {
+			return Size.getTop(0);
+		} else if (CType.isScalar(type)) {
 			return createNum(CType.getInstance().getSize(type));
+		} else { // Composite type, void type and function type
+			return Size.getBot();
 		}
 	}
 

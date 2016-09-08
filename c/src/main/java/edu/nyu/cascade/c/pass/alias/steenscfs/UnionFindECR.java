@@ -19,12 +19,14 @@ import com.google.common.collect.Range;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 
+import edu.nyu.cascade.c.CType;
 import edu.nyu.cascade.c.pass.alias.steenscfs.ValueType.ValueTypeKind;
 import edu.nyu.cascade.ir.pass.IRVar;
 import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.UnionFind;
 import edu.nyu.cascade.util.UnionFind.Partition;
+import xtc.type.Type;
 
 public class UnionFindECR {
 	private final UnionFind<IRVar> uf;
@@ -50,6 +52,19 @@ public class UnionFindECR {
 			structECRs.add(ecr);
 		}
 		return ecr;
+	}
+	
+	ECR createECR(Type type) {
+		type = type.resolve();
+		Size size = Size.createForType(type);
+		Parent parent = Parent.getBottom();
+		if (CType.isScalar(type)) {
+			return createECR(ValueType.simple(ECR.createBottom(), size, parent));
+		} else if (CType.isStructOrUnion(type)) {
+			return createECR(ValueType.struct(size, parent));
+		} else {
+			return createECR(ValueType.blank(size, Parent.getBottom()));
+		}
 	}
 
 	boolean normalizeStructECRs() {
@@ -100,9 +115,11 @@ public class UnionFindECR {
 	private boolean mergeOverlapFields(
 			TreeMap<Range<Long>, ECR> flattenFieldMap) {
 		Iterator<Range<Long>> fieldItr = flattenFieldMap.keySet().iterator();
-
+		if (!fieldItr.hasNext()) {
+			return false;
+		}
+		
 		boolean changed = false;
-
 		Range<Long> currRange = fieldItr.next();
 		ECR currECR = flattenFieldMap.get(currRange);
 		while (fieldItr.hasNext()) {
