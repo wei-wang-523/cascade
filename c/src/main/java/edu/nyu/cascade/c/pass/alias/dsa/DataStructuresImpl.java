@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.Map.Entry;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -229,7 +230,8 @@ abstract class DataStructuresImpl extends DataStructures {
 		ReachabilityCloner RC = new ReachabilityCloner(Graph, GG, cloneFlags, true);
 
 		// Clone the global nodes into this graph.
-		for (GlobalValue GV : Graph.getScalarMap().getGlobalSet()) {
+		for (GlobalValue GV : ImmutableSet
+				.copyOf(Graph.getScalarMap().getGlobalSet())) {
 			RC.getClonedNH(GG.getNodeForValue(GV));
 		}
 	}

@@ -100,9 +100,7 @@ public class SteensDataStructureImpl extends DataStructuresImpl {
 			String FuncID = CFG.getName();
 			Type FuncTy = SymbolTable.lookupType(FuncID);
 			Function FB = (Function) ValueManager.get(FuncID, FuncTy);
-			if (!FB.isDeclaration()) {
-				ResultGraph.spliceFrom(LocalDS.getDSGraph(FB));
-			}
+			ResultGraph.spliceFrom(LocalDS.getDSGraph(FB));
 		}
 
 		ResultGraph.removeTriviallyDeadNodes();
