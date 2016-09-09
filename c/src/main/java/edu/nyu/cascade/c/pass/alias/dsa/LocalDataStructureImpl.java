@@ -372,6 +372,31 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			DSNodeHandle ResNH = new DSNodeHandle();
 			return ResNH;
 		}
+		
+		private DSNodeHandle implicitCast(Type fromTy, Type toTy, DSNodeHandle fromNH) {
+			// IntToPtrCast
+			if (toTy.resolve().isPointer() && fromTy.resolve().isInteger()) {
+				DSNode N = createNode();
+				N.setIntToPtrMarker();
+				N.setUnknownMarker();
+				DSNodeHandle NH = new DSNodeHandle(N, 0);
+				return NH;
+			}
+
+			// PtrToCast
+			if (toTy.resolve().isInteger() && fromTy.resolve().isPointer()) {
+				DSNode N = getValueDest(fromNH, fromTy).getNode();
+				if (N != null)
+					N.setPtrToIntMarker();
+				return fromNH;
+			}
+
+			if (toTy.resolve().isPointer()) {
+				getValueDest(fromNH, fromTy);
+			}
+
+			return fromNH;
+		}
 
 		private void ensureSafeIndexAccess(DSNodeHandle NodeH, Type ElemTy) {
 			// Treat the memory object (DSNode) as an array.
@@ -1033,10 +1058,9 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			DSNodeHandle rhsNH = rvalVisitor.encode(rhs);
 
 			Type lhsTy = CType.getType(lhs);
-			lhsTy = CType.getInstance().pointerize(lhsTy);
 			Type rhsTy = CType.getType(rhs);
 			if (!lhsTy.equals(rhsTy)) { // Incompatible type
-				rhsNH = cast(rhsTy, lhsTy, rhsNH);
+				rhsNH = implicitCast(rhsTy, lhsTy, rhsNH);
 			}
 
 			lhsNH = getValueDest(lhsNH, lhsTy);
@@ -1056,6 +1080,10 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			}
 
 			if (CType.isStructOrUnion(lhsTy)) {
+				lhsNH.mergeWith(rhsNH);
+			}
+			
+			if (lhsTy.resolve().isArray()) {
 				lhsNH.mergeWith(rhsNH);
 			}
 
