@@ -454,15 +454,15 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		for (Entry<ECR, Collection<IRVar>> entry : snapShot.entrySet()) {
 			ECR ecr = entry.getKey();
 			Collection<IRVar> vars = Lists.newArrayList(entry.getValue());
-			
+
 			Iterator<IRVar> varItr = vars.iterator();
-			while(varItr.hasNext()) {
+			while (varItr.hasNext()) {
 				IRVar var = varItr.next();
-				if(var.getType().resolve().isFunction()) {
+				if (var.getType().resolve().isFunction()) {
 					varItr.remove();
 				}
 			}
-			
+
 			if (!vars.isEmpty()) {
 				sb.append("Partition ").append(ecr.getId()).append(": ");
 				sb.append(uf.getType(ecr)).append("\n { ");
