@@ -226,10 +226,14 @@ public class UnionFindECR {
 		// need for collapsing).
 		for (ECR ecr : collapseECRs) {
 			ValueType type = getType(ecr);
-			if (type.getParent().getECRs().isEmpty()) {
-				continue;
-			} else {
-				worklist.add(ecr);
+			if (type.isSimple()) {
+				ECR loc = getLoc(ecr);
+				ValueType loc_type = getType(loc);
+				if (loc_type.getParent().getECRs().isEmpty()) {
+					continue;
+				} else {
+					worklist.add(loc);
+				}
 			}
 		}
 
