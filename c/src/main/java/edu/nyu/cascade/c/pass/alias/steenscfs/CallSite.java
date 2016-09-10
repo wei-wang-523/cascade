@@ -98,11 +98,11 @@ class CallSite {
 	ECR getArg(int i) {
 		return Args.get(i);
 	}
-	
+
 	Type getArgType(int i) {
 		return ArgTypes.get(i);
 	}
-	
+
 	ECR getCalleeECR() {
 		return CalleeECR;
 	}

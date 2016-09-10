@@ -13,7 +13,8 @@ class StructType extends ValueType {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder().append("STRUCT (").append(_size)
-				.append(", ").append(_fieldMap).append(", ").append(_parent).append(')');
+				.append(", ").append(_fieldMap).append(", ").append(_parent)
+				.append(')');
 
 		return sb.toString();
 	}

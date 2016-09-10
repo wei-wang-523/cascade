@@ -76,7 +76,8 @@ class Parent {
 	}
 
 	Parent removeECR(ECR parent) {
-		if (parents.isEmpty()) return this;
+		if (parents.isEmpty())
+			return this;
 
 		Set<ECR> ecrs = Sets.newHashSet(parents);
 		for (ECR ecr : parents) {
