@@ -249,7 +249,6 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 	public BooleanExpression validAccessRange(StateExpression state,
 			Expression ptr, Expression size, Node ptrNode) {
 		T srcRep = labelAnalyzer.getPtsToRep(ptrNode);
-		;
 		updateStateWithRep(state.asMultiple(), srcRep);
 
 		/* Get the related size array */
