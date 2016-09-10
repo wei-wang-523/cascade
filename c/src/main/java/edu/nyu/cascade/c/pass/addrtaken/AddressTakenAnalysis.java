@@ -78,7 +78,7 @@ public class AddressTakenAnalysis implements IRPass {
 		@SuppressWarnings("unused")
 		public void visitCharacterConstant(GNode node) {
 		}
-		
+
 		@SuppressWarnings("unused")
 		public void visitBitwiseNegationExpression(GNode node) {
 		}
