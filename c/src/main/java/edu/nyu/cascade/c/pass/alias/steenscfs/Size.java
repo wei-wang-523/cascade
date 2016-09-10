@@ -82,6 +82,8 @@ class Size {
 			return Size.getTop(0);
 		} else if (CType.isScalar(type)) {
 			return createNum(CType.getInstance().getSize(type));
+		} else if (CType.isStructOrUnion(type)) {
+			return createNum(CType.getInstance().getSize(type));
 		} else { // Composite type, void type and function type
 			return Size.getBot();
 		}
@@ -90,10 +92,6 @@ class Size {
 	/**
 	 * Calculate the partial order relations between <code>s1</code> and
 	 * <code>s2</code>
-	 * 
-	 * @param s1
-	 * @param s2
-	 * @return
 	 */
 	static boolean isLessThan(Size s1, Size s2) {
 		if (s1.equals(s2))
@@ -106,10 +104,6 @@ class Size {
 	/**
 	 * Compute the least-upper-bound of two size <code>s1</code> and
 	 * <code>s2</code>
-	 * 
-	 * @param s1
-	 * @param s2
-	 * @return
 	 */
 	static Size getLUB(Size s1, Size s2) {
 		if (isLessThan(s1, s2))
