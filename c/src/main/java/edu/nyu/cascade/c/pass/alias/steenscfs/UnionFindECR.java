@@ -53,7 +53,7 @@ public class UnionFindECR {
 		}
 		return ecr;
 	}
-	
+
 	ECR createECR(Type type) {
 		type = type.resolve();
 		Size size = Size.createForType(type);
@@ -118,7 +118,7 @@ public class UnionFindECR {
 		if (!fieldItr.hasNext()) {
 			return false;
 		}
-		
+
 		boolean changed = false;
 		Range<Long> currRange = fieldItr.next();
 		ECR currECR = flattenFieldMap.get(currRange);
