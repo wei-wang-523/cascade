@@ -115,7 +115,7 @@ public class ECREncoder extends Visitor {
 			Type fieldType = CType.getType(node);
 			String fieldName = node.getString(1);
 			long offset = cTypeAnalyzer.getOffset(baseType, fieldName);
-			return getComponent(baseECR, offset, fieldType);
+			return getComponent(baseECR, baseType, offset, fieldType);
 		}
 
 		public ECR visitDirectComponentSelection(GNode node) {
@@ -125,7 +125,7 @@ public class ECREncoder extends Visitor {
 			Type fieldType = CType.getType(node);
 			String fieldName = node.getString(1);
 			long offset = cTypeAnalyzer.getOffset(baseType, fieldName);
-			return getComponent(baseECR, offset, fieldType);
+			return getComponent(baseECR, baseType, offset, fieldType);
 		}
 
 		public ECR visitPrimaryIdentifier(GNode node) {
@@ -192,7 +192,7 @@ public class ECREncoder extends Visitor {
 			Node rhsNode = node.getNode(2);
 			ECR lhsECR = encodeECR(lhsNode);
 			ECR rhsECR = encodeECR(rhsNode);
-			
+
 			Type lhsType = CType.getInstance().pointerize(CType.getType(lhsNode));
 			Type rhsType = CType.getInstance().pointerize(CType.getType(rhsNode));
 			ECR srcECR = rhsType.isPointer() ? rhsECR : lhsECR;
@@ -479,21 +479,22 @@ public class ECREncoder extends Visitor {
 		return locECR;
 	}
 
-	private ECR getComponent(ECR srcECR, long offset, Type fieldType) {
-		ECR loc = uf.getLoc(srcECR);
-		ValueType locType = uf.getType(loc);
-
+	private ECR getComponent(ECR srcECR, Type baseType, long offset,
+			Type fieldType) {
 		if (fieldType.resolve().isArray()) {
 			fieldType = CType.getArrayCellType(fieldType);
 		}
-		
+
+		ECR loc = uf.getLoc(srcECR);
+		ValueType locType = uf.getType(loc);
+
 		if (locType.isSimple()) {
 			uf.expand(loc, Size.createForType(fieldType));
 			return srcECR;
 		}
 
-		ValueType structType = ValueType.struct(locType.getSize(),
-				locType.getParent());
+		ValueType structType = ValueType.struct(Size.createForType(baseType),
+				Parent.getBottom());
 
 		locType = uf.unify(locType, structType); // Ensure locType is struct type
 		// The type set to loc might not be locType. Since loc could be with bottom
@@ -542,7 +543,7 @@ public class ECREncoder extends Visitor {
 		uf.addCollapseECR(uf.getLoc(resECR));
 		return resECR;
 	}
-	
+
 	private ECR getOpECR(GNode node, ECR leftECR, ECR rightECR) {
 		Pair<GNode, Location> key = Pair.of(node, node.getLocation());
 		if (opECRMap.containsKey(key))
@@ -560,17 +561,11 @@ public class ECREncoder extends Visitor {
 	}
 
 	/**
-	 * Create a field ECR with type, range, and parent srcECR.
-	 * <code>parent</code>. If <code>xtcType</code> is scalar, this method creates
-	 * a single field ECR, otherwise, two ECRs will be created, one for the field
-	 * and the other for the region it points to. For the field ECR, whose address
-	 * ECR will be the same as the address attached with the ECR of
-	 * <code>parent</code>.
-	 * 
-	 * @param range
-	 * @param type
-	 * @param srcECR
-	 * @return
+	 * Creates a field ECR with type and parent srcECR. Each field has two ECRs:
+	 * one for the field and the other for the pointer of the field. Within the
+	 * parent srcECR, the fieldMap maps from the offset range to the pointer ECR.
+	 * However, the srcECR is set as the parent of the field ECR, rather than its
+	 * pointer. Returns the pointer ECR.
 	 */
 	private ECR createFieldECR(Range<Long> range, Type type, ECR srcECR) {
 		ECR fieldECR = uf.createECR(type);

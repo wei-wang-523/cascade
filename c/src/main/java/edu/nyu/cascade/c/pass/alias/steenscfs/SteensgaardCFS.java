@@ -528,8 +528,8 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		targetType = targetType.resolve();
 		// structure assign, treat like structure pointer assign to unify
 		// the structures involved
-		if (targetType.isStruct())
-			targetType = new PointerT(targetType);
+		if (CType.isStructOrUnion(targetType))
+			targetType = PointerT.TO_VOID;
 		Size rangeSize = Size.createForType(targetType);
 		uf.ccjoin(rangeSize, rhs, lhs);
 	}
