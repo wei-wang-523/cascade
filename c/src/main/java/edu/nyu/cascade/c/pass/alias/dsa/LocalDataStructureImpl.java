@@ -372,8 +372,9 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			DSNodeHandle ResNH = new DSNodeHandle();
 			return ResNH;
 		}
-		
-		private DSNodeHandle implicitCast(Type fromTy, Type toTy, DSNodeHandle fromNH) {
+
+		private DSNodeHandle implicitCast(Type fromTy, Type toTy,
+				DSNodeHandle fromNH) {
 			// IntToPtrCast
 			if (toTy.resolve().isPointer() && fromTy.resolve().isInteger()) {
 				DSNode N = createNode();
@@ -1082,7 +1083,7 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			if (CType.isStructOrUnion(lhsTy)) {
 				lhsNH.mergeWith(rhsNH);
 			}
-			
+
 			if (lhsTy.resolve().isArray()) {
 				lhsNH.mergeWith(rhsNH);
 			}
@@ -1112,12 +1113,12 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 			if (ReservedFunction.MEMSET.equals(funcName)) {
 				Node lhs = stmt.getOperand(2).getSourceNode();
 				Type lhsTy = CType.getType(lhs);
-				 // Record the left value's ECR for following region analysis.
+				// Record the left value's ECR for following region analysis.
 				lvalVisitor.encode(lhs);
 				getValueDest(rvalVisitor.encode(lhs), lhsTy);
 				return;
 			}
-			
+
 			// Set up the return value...
 			Type retTy = CType.getType(stmt.getSourceNode());
 			if (!retTy.resolve().isVoid()) {
@@ -1125,7 +1126,7 @@ public final class LocalDataStructureImpl extends DataStructuresImpl {
 				lvalVisitor.encode(retNode);
 			}
 		}
-		
+
 		private void visitCallStmt(IRStatement stmt) {
 			Node funcNode = stmt.getOperand(0).getSourceNode();
 			String funcName = CAnalyzer.toFunctionName(funcNode);
