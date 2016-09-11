@@ -1,4 +1,4 @@
-package edu.nyu.cascade.c.pass.alias.steenscfs;
+package edu.nyu.cascade.c.pass.alias;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -9,17 +9,17 @@ import com.google.common.collect.Lists;
 import xtc.Constants;
 import xtc.type.Type;
 
-class CFSFunction implements Comparable<CFSFunction> {
+public class Function<T> implements Comparable<Function<T>> {
 	private Type Type;
 	private String Name;
 	private String Scope;
 	private BigInteger ID;
 	private static BigInteger nextID = BigInteger.ZERO;
-	private List<ECR> Args;
-	private List<ECR> VarArgs;
-	private ECR Result;
+	private List<T> Args;
+	private List<T> VarArgs;
+	private T Result;
 
-	CFSFunction(String funcID, String funcScope, Type funcType) {
+	public Function(String funcID, String funcScope, Type funcType) {
 		Name = funcID;
 		ID = nextID;
 		Type = funcType;
@@ -30,7 +30,7 @@ class CFSFunction implements Comparable<CFSFunction> {
 	}
 
 	@Override
-	public int compareTo(CFSFunction o) {
+	public int compareTo(Function<T> o) {
 		return ID.compareTo(o.ID);
 	}
 
@@ -42,7 +42,7 @@ class CFSFunction implements Comparable<CFSFunction> {
 			return Scope + ", " + Name;
 	}
 
-	Type getType() {
+	public Type getType() {
 		return Type;
 	}
 
@@ -54,37 +54,37 @@ class CFSFunction implements Comparable<CFSFunction> {
 		return Scope;
 	}
 
-	ECR getArgument(int i) {
+	public T getArgument(int i) {
 		Preconditions.checkElementIndex(i, Args.size());
 		return Args.get(i);
 	}
 
-	boolean hasVarArgument(int i) {
+	public boolean hasVarArgument(int i) {
 		return i < VarArgs.size();
 	}
 
-	ECR getVarArgument(int i) {
+	T getVarArgument(int i) {
 		Preconditions.checkElementIndex(i, VarArgs.size());
 		return VarArgs.get(i);
 	}
 
-	void addArgument(ECR arg) {
+	public void addArgument(T arg) {
 		Args.add(arg);
 	}
 
-	void addVarArgument(ECR arg) {
+	public void addVarArgument(T arg) {
 		VarArgs.add(arg);
 	}
 
-	void setResult(ECR res) {
+	public void setResult(T res) {
 		Result = res;
 	}
 
-	ECR getResult() {
+	public T getResult() {
 		return Result;
 	}
 
-	boolean isDeclaration() {
+	public boolean isDeclaration() {
 		return !getType().hasAttribute(Constants.ATT_DEFINED);
 	}
 }

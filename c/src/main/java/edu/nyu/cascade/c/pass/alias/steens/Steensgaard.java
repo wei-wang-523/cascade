@@ -78,18 +78,15 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 				}
 			}
 		}
-
-		// Analyze non-global CFG
+		
+		// Register non-global CFG function
 		for (IRControlFlowGraph CFG : CFGs) {
-			symbolTable.enterScope(CFG);
-			currentCFG = CFG;
-
 			GNode declarator = CFG.getSourceNode().getGeneric(2);
 			GNode identifier = CAnalyzer.getDeclaredId(declarator);
-			FunctionT funcXtcType = symbolTable.lookupType(identifier.getString(0))
+			FunctionT funcType = symbolTable.lookupType(identifier.getString(0))
 					.resolve().toFunction();
 
-			if (!funcXtcType.getParameters().isEmpty()) {
+			if (!funcType.getParameters().isEmpty()) {
 				GNode parameters = CAnalyzer.getFunctionDeclarator(declarator)
 						.getGeneric(1);
 				parameters = parameters.getGeneric(0);
@@ -112,7 +109,12 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 					paramRetAssign(lamECRs.get(i), paramECRs.get(i));
 				}
 			}
+		}
 
+		// Analyze non-global CFG
+		for (IRControlFlowGraph CFG : CFGs) {
+			symbolTable.enterScope(CFG);
+			currentCFG = CFG;
 			final Collection<IRBasicBlock> topologicSeq = Lists
 					.reverse(CFG.topologicalSeq(CFG.getEntry()));
 
@@ -142,15 +144,7 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 			ecrEncoder.toLval(lhs);
 			break;
 		}
-		case INIT: {
-			Node lhs = stmt.getOperand(0).getSourceNode();
-			Node rhs = stmt.getOperand(1).getSourceNode();
-
-			ECR lhsECR = ecrEncoder.toRval(lhs);
-			ECR rhsECR = ecrEncoder.toRval(rhs);
-			uf.assign(lhsECR, rhsECR);
-			break;
-		}
+		case INIT:
 		case ASSIGN: {
 			Node lhs = stmt.getOperand(0).getSourceNode();
 			Node rhs = stmt.getOperand(1).getSourceNode();
@@ -321,12 +315,9 @@ public class Steensgaard implements IRAliasAnalyzer<ECR> {
 		return getPtsToFieldRep(getRep(node));
 	}
 
-	/**
-	 * Return unit type: steensgaard doesn't hold any type info
-	 */
 	@Override
 	public long getRepWidth(ECR rep) {
-		return CType.getInstance().getWidth(CType.getUnitType());
+		return CType.getInstance().getByteSize();
 	}
 
 	@Override

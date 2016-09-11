@@ -25,7 +25,7 @@ import edu.nyu.cascade.util.UnionFind;
 import edu.nyu.cascade.util.UnionFind.Partition;
 
 class UnionFindECR {
-	final UnionFind<IRVar> uf;
+	private final UnionFind<IRVar> uf;
 
 	private UnionFindECR() {
 		uf = UnionFind.create();
@@ -330,17 +330,6 @@ class UnionFindECR {
 			}
 			case STRUCT: {
 				throw new IllegalArgumentException();
-				// Size size2 = type2.getSize();
-				// if(!Size.isLessThan(rangeSize, size2)) {
-				// addCCjoin(rangeSize, e1, e2);
-				// expand(e2); return;
-				// }
-				//
-				// ValueType unifyStructType = unify(type1, type2); // unify structure
-				// type eagerly
-				// setType(e1, unifyStructType);
-				// setType(e2, unifyStructType);
-				// return;
 			}
 			default:
 				return; // lambda
@@ -368,6 +357,7 @@ class UnionFindECR {
 	 * @param o
 	 */
 	void makeUnknown(Offset o) {
+		Preconditions.checkNotNull(o);
 		if (o.isUnknown())
 			return;
 
@@ -391,6 +381,7 @@ class UnionFindECR {
 	 * @param ecr
 	 */
 	void unlessZero(Offset o, ECR ecr) {
+		Preconditions.checkNotNull(o);
 		switch (o.getKind()) {
 		case ZERO:
 			o.addCollapse(ecr);
@@ -403,8 +394,6 @@ class UnionFindECR {
 
 	/**
 	 * Expand <code>e</code> to size <code>T</code>
-	 * 
-	 * @param e
 	 */
 	void expand(ECR e) {
 		ValueType eType = getType(e);
@@ -415,9 +404,6 @@ class UnionFindECR {
 
 	/**
 	 * Promote <code>e</code> to object type with <code>size</code>
-	 * 
-	 * @param e
-	 * @param size
 	 */
 	void promote(ECR e, Size size) {
 		ValueType type = getType(e);
@@ -433,32 +419,27 @@ class UnionFindECR {
 
 	/**
 	 * Collapse <code>ecr</code> to object type with size as <code>T</code>
-	 * 
-	 * @param ecr
 	 */
 	void collapse(ECR ecr) {
 		ValueType type = getType(ecr);
-		if (type.isStruct())
+		if (type.isStruct()) {
 			type = collapseStruct(ecr, type.asStruct());
+		}
 
 		Collection<ECR> parentECRs = type.getParent().getECRs();
-
 		ValueType objType = ValueType.object(createBottomLocFunc(), Size.getTop(),
-				Parent.getTop());
+				Parent.getBottom());
 
 		ValueType unifyType = unify(type, objType);
+		unifyType.getParent().clear();
+
 		setType(ecr, unifyType);
 
-		for (ECR parentECR : parentECRs)
+		for (ECR parentECR : parentECRs) {
 			collapse(parentECR);
+		}
 	}
 
-	/**
-	 * Get the root of ECR <code>e</code>
-	 * 
-	 * @param e
-	 * @return
-	 */
 	ECR findRoot(ECR e) {
 		return (ECR) e.findRoot();
 	}
@@ -600,7 +581,9 @@ class UnionFindECR {
 				: type.asObject().getLoc();
 
 		Offset off = loc.getOffset();
-		unlessZero(off, loc);
+		if (off != null) {
+			unlessZero(off, loc);
+		}
 		return loc;
 	}
 
@@ -668,6 +651,9 @@ class UnionFindECR {
 					: unify(unionType, elemLocType);
 		}
 		unionType = unionType == null ? ValueType.bottom() : unionType;
+		if (!structT.getParent().getECRs().isEmpty()) {
+			unionType.setParent(structT.getParent());
+		}
 
 		setType(structECR, unionType);
 		ECR root = findRoot(structECR);
@@ -690,7 +676,6 @@ class UnionFindECR {
 	 */
 	private Pair<ECR, ECR> createBottomLocFunc() {
 		ECR loc = ECR.createBottom();
-		loc.setOffset(Offset.createZero());
 		ECR func = ECR.createBottom();
 		return Pair.of(loc, func);
 	}
@@ -781,7 +766,7 @@ class UnionFindECR {
 		return fieldMap;
 	}
 
-	private void ensureSimObj(ECR e, Size rangeSize) {
+	void ensureSimObj(ECR e, Size rangeSize) {
 		ValueType type = getType(e);
 
 		switch (type.getKind()) {

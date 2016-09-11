@@ -18,7 +18,7 @@ class Offset {
 	private Kind kind;
 
 	private final Collection<ECR> collapse = Sets.newHashSet();
-	private final Collection<Offset> unknown = Sets.newHashSet();
+	private final Collection<Offset> unknown = Sets.newLinkedHashSet();
 
 	Offset(Kind kind) {
 		this.kind = kind;
@@ -77,11 +77,16 @@ class Offset {
 	}
 
 	void addUnknown(Offset off) {
+		if (off == null)
+			return;
+
 		unknown.add(off);
 	}
 
 	void addUnknowns(Collection<Offset> offs) {
-		unknown.addAll(offs);
+		for (Offset off : offs) {
+			addUnknown(off);
+		}
 	}
 
 	void clearUnknown() {

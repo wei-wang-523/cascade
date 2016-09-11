@@ -537,7 +537,6 @@ public class ECREncoder extends Visitor {
 
 		uf.ccjoin(Size.getBot(), sourceECR, resECR);
 
-		// Parent is stored at the points-to loc of
 		uf.addCollapseECR(resECR);
 		return resECR;
 	}

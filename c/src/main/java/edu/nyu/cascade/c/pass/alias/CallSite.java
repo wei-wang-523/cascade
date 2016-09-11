@@ -1,4 +1,4 @@
-package edu.nyu.cascade.c.pass.alias.steenscfs;
+package edu.nyu.cascade.c.pass.alias;
 
 import java.util.Collection;
 import java.util.List;
@@ -6,15 +6,16 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import edu.nyu.cascade.c.pass.alias.Function;
 import xtc.tree.Node;
 import xtc.type.Type;
 
-class CallSite {
+public class CallSite<T> {
 	final Node CallNode; // Actual call site
-	final CFSFunction CalleeF; // The function called (direct call)
-	final ECR CalleeECR; // The function node called (indirect call)
-	final ECR RetVal; // Returned value
-	final List<ECR> Args; // The arguments.
+	final Function<T> CalleeF; // The function called (direct call)
+	final T CalleeECR; // The function node called (indirect call)
+	final T RetVal; // Returned value
+	final List<T> Args; // The arguments.
 	final List<Type> ArgTypes;
 
 	// The size of PtrArgMarks is the sum of the size of Args and the size of
@@ -29,7 +30,7 @@ class CallSite {
 
 	int numArgs = 0; // The current size of PtrArgMarks
 
-	CallSite(Node callNode, CFSFunction func, ECR callee, ECR retVal) {
+	CallSite(Node callNode, Function<T> func, T callee, T retVal) {
 		CallNode = callNode;
 		CalleeF = func;
 		CalleeECR = callee;
@@ -39,48 +40,49 @@ class CallSite {
 		PtrArgMarks = Lists.newArrayList();
 	}
 
-	static CallSite createDirectCall(Node callNode, CFSFunction func,
-			ECR retVal) {
-		return new CallSite(callNode, func, ECR.createBottom(), retVal);
+	public static <T> CallSite<T> createDirectCall(Node callNode, Function<T> func,
+			T retVal) {
+		return new CallSite<T>(callNode, func, null, retVal);
 	}
 
-	static CallSite createIndirectCall(Node callNode, ECR CalleeECR, ECR retVal) {
-		return new CallSite(callNode, null, CalleeECR, retVal);
+	public static <T> CallSite<T> createIndirectCall(Node callNode, T CalleeECR,
+			T retVal) {
+		return new CallSite<T>(callNode, null, CalleeECR, retVal);
 	}
 
-	boolean isDirectCall() {
+	public boolean isDirectCall() {
 		return CalleeF != null;
 	}
 
-	boolean isIndirectCall() {
+	public boolean isIndirectCall() {
 		return !isDirectCall();
 	}
 
-	CFSFunction getCalleeFunc() {
+	public Function<T> getCalleeFunc() {
 		return CalleeF;
 	}
 
-	Node getCallNode() {
+	public Node getCallNode() {
 		return CallNode;
 	}
 
-	ECR getRetECR() {
+	public T getRetECR() {
 		return RetVal;
 	}
 
-	int getNumArgs() {
+	public int getNumArgs() {
 		return Args.size();
 	}
 
-	Collection<ECR> getArgs() {
+	public Collection<T> getArgs() {
 		return ImmutableList.copyOf(Args);
 	}
 
-	int getNumPtrArgs() {
+	public int getNumPtrArgs() {
 		return numPtrArgs;
 	}
 
-	void addPtrArg(ECR arg, Type argType) {
+	public void addPtrArg(T arg, Type argType) {
 		++numPtrArgs;
 		Args.add(arg);
 		ArgTypes.add(argType);
@@ -88,22 +90,22 @@ class CallSite {
 		PtrArgMarks.add(true);
 	}
 
-	void addNonPtrArg(ECR arg, Type argType) {
+	public void addNonPtrArg(T arg, Type argType) {
 		Args.add(arg);
 		ArgTypes.add(argType);
 		++numArgs;
 		PtrArgMarks.add(false);
 	}
 
-	ECR getArg(int i) {
+	public T getArg(int i) {
 		return Args.get(i);
 	}
 
-	Type getArgType(int i) {
+	public Type getArgType(int i) {
 		return ArgTypes.get(i);
 	}
 
-	ECR getCalleeECR() {
+	public T getCalleeECR() {
 		return CalleeECR;
 	}
 }

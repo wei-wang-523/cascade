@@ -47,7 +47,6 @@ abstract class ValueType {
 	}
 
 	static ObjectType object(ECR loc, ECR func, Size size, Parent parent) {
-		Preconditions.checkNotNull(loc.getOffset());
 		return new ObjectType(loc, func, size, parent);
 	}
 
@@ -68,7 +67,6 @@ abstract class ValueType {
 	}
 
 	static SimpleType simple(ECR loc, ECR func, Size size, Parent parent) {
-		Preconditions.checkNotNull(loc.getOffset());
 		return new SimpleType(loc, func, size, parent);
 	}
 

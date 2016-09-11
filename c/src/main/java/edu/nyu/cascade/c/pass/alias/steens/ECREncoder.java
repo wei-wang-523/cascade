@@ -240,7 +240,7 @@ class ECREncoder extends Visitor {
 		public ECR visitEqualityExpression(GNode node) {
 			ECR lhsECR = encodeECR(node.getNode(0));
 			ECR rhsECR = encodeECR(node.getNode(2));
-			getOpECR(lhsECR, rhsECR);
+			uf.cjoin(lhsECR, rhsECR);
 			return getConstant();
 		}
 
@@ -386,9 +386,6 @@ class ECREncoder extends Visitor {
 
 	/**
 	 * Get the lambda ECR created for <code>functionName</code>
-	 * 
-	 * @param functionName
-	 * @return
 	 */
 	ECR getFunctionECR(String functionName) {
 		return ecrMap.get(Pair.of(functionName, CScopeAnalyzer.getRootScopeName()));
@@ -418,13 +415,6 @@ class ECREncoder extends Visitor {
 		}
 	}
 
-	/**
-	 * Create region ECR for <code>region</code>
-	 * 
-	 * @param region
-	 * @param ptrNode
-	 * @return
-	 */
 	void createRegionVar(Expression region, Node ptrNode) {
 		String name = region.asVariable().getName();
 		String scopeName = CType.getScopeName(ptrNode);
@@ -440,16 +430,14 @@ class ECREncoder extends Visitor {
 	 * defined in the array or structure, when we access it via <code>f.a</code>
 	 * or <code>f[0]</coe>, we are in the same 
 	 * alias group as <code>f</code>.
-	 * 
-	 * @param ecr
-	 * @param srcType
-	 * @return
 	 */
 	ECR deref(ECR ecr, Type type) {
 		Preconditions.checkNotNull(ecr);
-		if (CType.isScalar(type) || type.resolve().isFunction())
+		if (CType.isScalar(type) || type.resolve().isFunction()) {
 			return uf.getLoc(ecr);
-		return ecr;
+		} else {
+			return ecr;
+		}
 	}
 
 	ValueType getLamdaType(Type type) {
@@ -499,27 +487,24 @@ class ECREncoder extends Visitor {
 	}
 
 	private ECR createECR(Type type) {
-		if (type.resolve().isFunction())
+		if (type.resolve().isFunction()) {
 			return createForFunction(type);
+		} else if (type.resolve().isInternal()) {
+			return ECR.createBottom();
+		} else {
+			ECR varECR = ECR
+					.create(ValueType.ref(ECR.createBottom(), ECR.createBottom()));
 
-		ValueType refType = ValueType.ref(ECR.createBottom(), ECR.createBottom());
-		ECR varECR = ECR.create(refType);
-
-		if (type.resolve().isInternal())
-			return varECR;
-
-		ValueType addrType = ValueType.ref(varECR, ECR.createBottom());
-		ECR addrECR = ECR.create(addrType);
-		return addrECR;
+			ValueType addrType = ValueType.ref(varECR, ECR.createBottom());
+			ECR addrECR = ECR.create(addrType);
+			return addrECR;
+		}
 	}
 
 	private ECR getConstant() {
 		return ECR.createBottom();
 	}
 
-	/**
-	 * Create ECRs for function symbol: lambda ECR
-	 */
 	private ECR createForFunction(Type type) {
 		ValueType lambdaType = getLamdaType(type);
 		ECR func = ECR.create(lambdaType);
@@ -529,17 +514,10 @@ class ECREncoder extends Visitor {
 		return addrECR;
 	}
 
-	/**
-	 * Get the ECR in the format as <code>op(leftECR, rightECR)</code>
-	 * 
-	 * @param leftECR
-	 * @param rightECR
-	 * @return
-	 */
 	private ECR getOpECR(ECR leftECR, ECR rightECR) {
-		ECR resECR = ECR.createBottom();
-		uf.assign(resECR, leftECR);
-		uf.assign(resECR, rightECR);
-		return resECR;
+		ECR result = ECR.createBottom();
+		uf.cjoin(result, leftECR);
+		uf.cjoin(result, rightECR);
+		return result;
 	}
 }

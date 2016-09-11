@@ -25,6 +25,8 @@ import xtc.type.Type;
 import edu.nyu.cascade.c.CAnalyzer;
 import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.CType;
+import edu.nyu.cascade.c.pass.alias.CallSite;
+import edu.nyu.cascade.c.pass.alias.Function;
 import edu.nyu.cascade.c.pass.alias.LeftValueCollectingPassImpl;
 import edu.nyu.cascade.ir.IRBasicBlock;
 import edu.nyu.cascade.ir.IRControlFlowGraph;
@@ -51,16 +53,16 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 	private final SymbolTable symbolTable;
 	private final ECREncoder ecrEncoder;
 	private ECRChecker ecrChecker;
-	private CFSFunctionManager funcManager;
+	private FunctionManager funcManager;
 	private ImmutableMap<ECR, Collection<IRVar>> snapShot;
 	private IRControlFlowGraph currentCFG;
-	private Collection<CallSite> callSites = Lists.newArrayList();
+	private Collection<CallSite<ECR>> callSites = Lists.newArrayList();
 
 	private SteensgaardCFS(SymbolTable symbolTable) {
 		this.symbolTable = symbolTable;
 		uf = UnionFindECR.create();
 		ecrEncoder = ECREncoder.create(uf, symbolTable);
-		funcManager = new CFSFunctionManager(uf);
+		funcManager = new FunctionManager(uf);
 	}
 
 	public static SteensgaardCFS create(SymbolTable symbolTable) {
@@ -95,7 +97,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 			GNode identifier = CAnalyzer.getDeclaredId(declarator);
 			String funcName = identifier.getString(0);
 			Type funcType = symbolTable.lookupType(funcName);
-			CFSFunction func = funcManager.register(funcName, funcType);
+			Function<ECR> func = funcManager.register(funcName, funcType);
 			ecrEncoder.toRval(identifier);
 			FunctionT funcTy = funcType.resolve().toFunction();
 			if (!funcTy.getParameters().isEmpty()) {
@@ -180,7 +182,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 			String returnRootScope = CScopeAnalyzer
 					.getLastScopeName(CType.getScopeName(srcNode));
 			if (functionName.equals(returnRootScope)) {
-				CFSFunction function = funcManager.get(functionName);
+				Function<ECR> function = funcManager.get(functionName);
 				Type functionType = function.getType();
 				assert (!functionType.resolve().toFunction().getResult().isVoid());
 				ECR retECR = function.getResult();
@@ -280,7 +282,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		}
 
 		// Add a new function call entry...
-		CallSite callSite;
+		CallSite<ECR> callSite;
 		Node srcNode = stmt.getSourceNode();
 		if (funcECR != null) {
 			// Indirect function call
@@ -297,7 +299,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 			// Direct function call
 			String funcName = funcId.getString(0);
 			if (!funcManager.isRegistered(funcName)) {
-				CFSFunction func = funcManager.register(funcName, funcTy);
+				Function<ECR> func = funcManager.register(funcName, funcTy);
 
 				for (Type paramTy : funcTy.getParameters()) {
 					// The funcID is declared (not yet defined).
@@ -305,7 +307,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 				}
 			}
 
-			CFSFunction FB = funcManager.get(funcName);
+			Function<ECR> FB = funcManager.get(funcName);
 			callSite = CallSite.createDirectCall(srcNode, FB, retECR);
 		}
 
@@ -552,15 +554,15 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 	}
 
 	private void resolveCallSites() {
-		List<CallSite> calls = Lists.newArrayList(callSites);
+		List<CallSite<ECR>> calls = Lists.newArrayList(callSites);
 
 		{
 			// Loop over and eliminate direct calls
-			Iterator<CallSite> callItr = calls.iterator();
+			Iterator<CallSite<ECR>> callItr = calls.iterator();
 			while (callItr.hasNext()) {
-				CallSite call = callItr.next();
+				CallSite<ECR> call = callItr.next();
 				if (call.isDirectCall()) {
-					CFSFunction F = call.getCalleeFunc();
+					Function<ECR> F = call.getCalleeFunc();
 					if (!F.isDeclaration()) {
 						resolveFunctionCall(F, call);
 					}
@@ -572,15 +574,16 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		if (!calls.isEmpty()) {
 			// Loop over indirect calls
 			boolean changed;
-			Map<ECR, Set<CFSFunction>> indirectCallFuncs = Maps.newHashMap();
+			Map<ECR, Set<Function<ECR>>> indirectCallFuncs = Maps.newHashMap();
 			do {
 				changed = false;
-				for (CallSite call : calls) {
+				for (CallSite<ECR> call : calls) {
 					ECR calleeECR = call.getCalleeECR();
-					Set<CFSFunction> callFuncs = getEquivFunctions(uf.getLoc(calleeECR));
-					Set<CFSFunction> PreCallFuns = indirectCallFuncs.put(calleeECR,
+					Set<Function<ECR>> callFuncs = getEquivFunctions(
+							uf.getLoc(calleeECR));
+					Set<Function<ECR>> PreCallFuns = indirectCallFuncs.put(calleeECR,
 							callFuncs);
-					SetView<CFSFunction> DiffCallFuns;
+					SetView<Function<ECR>> DiffCallFuns;
 					if (PreCallFuns == null) {
 						DiffCallFuns = Sets.difference(callFuncs, Sets.newHashSet());
 					} else {
@@ -589,7 +592,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 
 					if (!DiffCallFuns.isEmpty()) {
 						changed = true;
-						for (CFSFunction F : DiffCallFuns) {
+						for (Function<ECR> F : DiffCallFuns) {
 							if (!F.isDeclaration()) {
 								resolveFunctionCall(F, call);
 							}
@@ -600,8 +603,8 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		}
 	}
 
-	private Set<CFSFunction> getEquivFunctions(ECR calleeECR) {
-		Set<CFSFunction> resFunctions = Sets.newHashSet();
+	private Set<Function<ECR>> getEquivFunctions(ECR calleeECR) {
+		Set<Function<ECR>> resFunctions = Sets.newHashSet();
 		for (IRVar var : uf.getEquivClass(calleeECR)) {
 			String varName = var.getName();
 			Type varType = var.getType();
@@ -614,7 +617,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		return resFunctions;
 	}
 
-	private void resolveFunctionCall(CFSFunction F, CallSite call) {
+	private void resolveFunctionCall(Function<ECR> F, CallSite<ECR> call) {
 		FunctionT funcType = F.getType().resolve().toFunction();
 
 		if (!funcType.getResult().resolve().isVoid()) {

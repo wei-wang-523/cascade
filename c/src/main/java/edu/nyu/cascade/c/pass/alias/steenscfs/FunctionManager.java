@@ -6,28 +6,29 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 
 import edu.nyu.cascade.c.CScopeAnalyzer;
+import edu.nyu.cascade.c.pass.alias.Function;
 import xtc.type.FunctionT;
 import xtc.type.Type;
 
-public class CFSFunctionManager {
+public class FunctionManager {
 	// FIXME: Function reload!
-	final ConcurrentMap<String, CFSFunction> functionCache = Maps
+	final ConcurrentMap<String, Function<ECR>> functionCache = Maps
 			.newConcurrentMap();
 
 	final UnionFindECR uf;
 
-	CFSFunctionManager(UnionFindECR uf) {
+	FunctionManager(UnionFindECR uf) {
 		this.uf = uf;
 	}
 
-	CFSFunction register(String funcName, Type funcType) {
+	Function<ECR> register(String funcName, Type funcType) {
 		Preconditions.checkNotNull(funcName);
 		Preconditions.checkArgument(!functionCache.containsKey(funcName));
 		Preconditions.checkArgument(funcType.resolve().isFunction());
 
 		String funcScope = CScopeAnalyzer.getRootScopeName();
 		FunctionT funcTy = funcType.resolve().toFunction();
-		CFSFunction func = new CFSFunction(funcName, funcScope, funcType);
+		Function<ECR> func = new Function<ECR>(funcName, funcScope, funcType);
 
 		if (!funcTy.getResult().isVoid()) {
 			ECR res = uf.createECR(funcTy.getResult());
@@ -38,7 +39,7 @@ public class CFSFunctionManager {
 		return func;
 	}
 
-	CFSFunction get(String funcName) {
+	Function<ECR> get(String funcName) {
 		Preconditions.checkNotNull(funcName);
 		Preconditions.checkArgument(functionCache.containsKey(funcName));
 		return functionCache.get(funcName);
