@@ -55,6 +55,15 @@ public final class CType {
 	public static Type getVoidType() {
 		return VoidT.TYPE;
 	}
+	
+	public static Type getCellType(Type type) {
+		type = type.resolve();
+		if (type.isArray()) {
+			return getArrayCellType(type);
+		} else {
+			return type;
+		}
+	}
 
 	public static Type getArrayCellType(Type type) {
 		Preconditions.checkArgument(Tag.ARRAY.equals(type.tag()));
