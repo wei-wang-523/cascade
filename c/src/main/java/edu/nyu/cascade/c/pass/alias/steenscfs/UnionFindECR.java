@@ -360,11 +360,11 @@ public class UnionFindECR {
 		return findRoot(e).getType();
 	}
 
-	void join(ECR e1, ECR e2) {
+	boolean join(ECR e1, ECR e2) {
 		Preconditions.checkNotNull(e1);
 		Preconditions.checkNotNull(e2);
 		if (e1.equals(e2)) {
-			return;
+			return false;
 		}
 		Pair<ECR, ECR> ecr_pair = swap(e1, e2);
 		e1 = ecr_pair.fst();
@@ -373,28 +373,33 @@ public class UnionFindECR {
 		ValueType t1 = getType(e1);
 		ValueType t2 = getType(e2);
 
+		boolean changed = false;
 		switch (t1.getKind()) {
 		case BOTTOM: {
 			processBottomUnion(e1, e2);
+			changed = true;
 			break;
 		}
 		case SIMPLE: {
 			if (t2.isStruct()) {
-				injectFieldIntoStruct(e1, e2);
+				changed = injectFieldIntoStruct(e1, e2);
 			} else {
 				assert t2.isSimple();
 				processUnion(e1, e2);
+				changed = true;
 			}
 			break;
 		}
 		default: { // t1 is BLANK or both are STRUCT
 			processUnion(e1, e2);
+			changed = true;
 			break;
 		}
 		}
+		return changed;
 	}
 
-	private void injectFieldIntoStruct(ECR simp_ecr, ECR struct_ecr) {
+	private boolean injectFieldIntoStruct(ECR simp_ecr, ECR struct_ecr) {
 		ValueType simple_type = getType(simp_ecr);
 		ValueType struct_type = getType(struct_ecr);
 
@@ -410,6 +415,8 @@ public class UnionFindECR {
 		} else {
 			range = Range.closedOpen((long) 0, size.getValue());
 		}
+		
+		boolean changed = false;
 
 		// If contains the field range, merge the field (avoid struct field to
 		// ensure termination. Otherwise, add a new field.
@@ -420,13 +427,16 @@ public class UnionFindECR {
 				Map<Range<Long>, ECR> tmp_field_map = tmp_type.asStruct().getFieldMap();
 				field_ecr = getLoc(tmp_field_map.get(range));
 			}
-			join(field_ecr, simp_ecr);
+			changed |= join(field_ecr, simp_ecr);
 		} else {
 			ECR addr_ecr = createECR(
 					ValueType.simple(simp_ecr, Size.getBot(), Parent.getBottom()));
 			field_map.put(range, addr_ecr);
 			injectFieldECRs.add(struct_ecr);
+			changed = true;
 		}
+		
+		return changed;
 	}
 
 	private void processBottomUnion(ECR e1, ECR e2) {
@@ -607,13 +617,6 @@ public class UnionFindECR {
 		}
 	}
 
-	/**
-	 * Unify value types <code>t1</code> and <code>t2</code>
-	 * 
-	 * @param t1
-	 * @param t2
-	 * @return a unified value type
-	 */
 	ValueType unify(ValueType t1, ValueType t2) {
 		Pair<ValueType, ValueType> pair = swap(t1, t2);
 		t1 = pair.fst();
@@ -808,10 +811,6 @@ public class UnionFindECR {
 	/**
 	 * Get the compatible map of the field range maps in struct types
 	 * <code>structT1</code> and <code>structT2</code>
-	 * 
-	 * @param structT1
-	 * @param structT2
-	 * @return a fresh and compatible field range map
 	 */
 	private Map<Range<Long>, ECR> getCompatibleMap(StructType structT1,
 			StructType structT2) {
