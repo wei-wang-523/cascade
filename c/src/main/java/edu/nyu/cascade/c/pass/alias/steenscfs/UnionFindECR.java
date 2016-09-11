@@ -72,23 +72,7 @@ public class UnionFindECR {
 
 		do {
 			injectFieldECRs.clear();
-			Set<ECR> top_structECRs = Sets.newLinkedHashSet();
-			Set<ECR> visited_structECRs = Sets.newHashSet();
-			List<ECR> worklist = Lists.newArrayList(structECRs);
-			while (!worklist.isEmpty()) {
-				ECR ecr = worklist.remove(0);
-				if (visited_structECRs.contains(ecr))
-					continue;
-				visited_structECRs.add(ecr);
-
-				ValueType type = getType(ecr);
-				Collection<ECR> parents = type.getParent().getECRs();
-				if (parents.isEmpty() && type.isStruct()) {
-					top_structECRs.add(ecr);
-				} else {
-					worklist.addAll(parents);
-				}
-			}
+			Collection<ECR> top_structECRs = getTopParents(structECRs);
 
 			Map<ECR, TreeMap<Range<Long>, ECR>> structFlattenMap = Maps.newHashMap();
 			for (ECR ecr : top_structECRs) {
@@ -221,9 +205,9 @@ public class UnionFindECR {
 	}
 
 	boolean normalizeCollapseECRs() {
-		List<ECR> worklist = Lists.newArrayList();
-		// Initialize work list with ECR has parents (optimization for arrays, no
-		// need for collapsing).
+
+		// Collect ECR has parents (optimization for arrays, no collapsing).
+		List<ECR> toCollapseECRs = Lists.newArrayList();
 		for (ECR ecr : collapseECRs) {
 			ValueType type = getType(ecr);
 			if (type.isSimple()) {
@@ -232,39 +216,22 @@ public class UnionFindECR {
 				if (loc_type.getParent().getECRs().isEmpty()) {
 					continue;
 				} else {
-					worklist.add(loc);
+					toCollapseECRs.add(loc);
 				}
 			}
 		}
 
-		// Collect the top level parents
-		Collection<ECR> topECRs = Sets.newLinkedHashSet();
-		Collection<ECR> visitedParent = Sets.newHashSet();
-		while (!worklist.isEmpty()) {
-			ECR ecr = worklist.remove(0);
-			if (visitedParent.contains(ecr)) {
-				continue;
-			}
-
-			visitedParent.add(ecr);
-			ValueType type = getType(ecr);
-
-			if (type.getParent().getECRs().isEmpty()) {
-				// Got top-level parent.
-				topECRs.add(findRoot(ecr));
-			} else {
-				worklist.addAll(type.getParent().getECRs());
-			}
+		Collection<ECR> topECRs = getTopParents(toCollapseECRs);
+		if (topECRs.isEmpty()) {
+			return false;
 		}
 
-		if (topECRs.isEmpty())
-			return false;
-
+		boolean changed = false;
 		for (ECR topECR : topECRs) {
 			Collection<ECR> collapseECRs = Sets.newHashSet();
+			Collection<ValueType> nonStructTypes = Sets.newLinkedHashSet();
 
-			// Reuse the work list
-			worklist.clear();
+			List<ECR> worklist = Lists.newArrayList();
 			worklist.add(topECR);
 			while (!worklist.isEmpty()) {
 				ECR ecr = worklist.remove(0);
@@ -278,41 +245,49 @@ public class UnionFindECR {
 							continue;
 						worklist.add(elemLoc);
 					}
+				} else {
+					nonStructTypes.add(type);
 				}
+			}
+
+			if (collapseECRs.size() <= 1) {
+				continue;
 			}
 
 			// Collapse the collapseECRs
 			Collection<ECR> cjoins = Sets.newHashSet();
 			Collection<Pair<Size, ECR>> ccjoins = Sets.newHashSet();
 
-			ECR root = ECR.createBottom();
-			ValueType unionType = ValueType.bottom();
-			for (ECR elem : collapseECRs) {
-				ValueType elemType = getType(elem);
+			Iterator<ECR> collapse_itr = collapseECRs.iterator();
+			ECR result = collapse_itr.next();
+			while (collapse_itr.hasNext()) {
+				ECR elem = collapse_itr.next();
+				if (elem.equals(result)) continue;
+				
 				cjoins.addAll(getCjoins(elem));
 				elem.clearCjoins(cjoins);
 				ccjoins.addAll(getCCjoins(elem));
 				elem.clearCCjoins(ccjoins);
-
-				union(root, elem);
-				elemType.setParent(Parent.getBottom());
-				if (!elemType.isStruct()) {
-					unionType = unify(unionType, elemType);
-				}
+				
+				union(result, elem);
+				changed = true;
+			}
+			
+			ValueType result_type = ValueType.bottom();
+			for (ValueType elem_type : nonStructTypes) {
+				result_type = unify(result_type, elem_type);
 			}
 
-			setType(root, unionType);
-			root = findRoot(root);
+			setType(result, result_type);
 
 			for (Pair<Size, ECR> cjoinPair : ccjoins)
-				ccjoin(cjoinPair.fst(), root, cjoinPair.snd());
+				ccjoin(cjoinPair.fst(), result, cjoinPair.snd());
 
 			for (ECR joinECR : cjoins)
-				cjoin(root, joinECR);
-
-			ensureSimple(root);
+				cjoin(result, joinECR);
 		}
-		return true;
+		
+		return changed;
 	}
 
 	void reset() {
@@ -415,7 +390,7 @@ public class UnionFindECR {
 		} else {
 			range = Range.closedOpen((long) 0, size.getValue());
 		}
-		
+
 		boolean changed = false;
 
 		// If contains the field range, merge the field (avoid struct field to
@@ -435,7 +410,7 @@ public class UnionFindECR {
 			injectFieldECRs.add(struct_ecr);
 			changed = true;
 		}
-		
+
 		return changed;
 	}
 
@@ -829,8 +804,8 @@ public class UnionFindECR {
 			break;
 		}
 		case BLANK: {
-			ValueType simType = ValueType.simple(ECR.createBottom(),
-					type.getSize(), type.getParent());
+			ValueType simType = ValueType.simple(ECR.createBottom(), type.getSize(),
+					type.getParent());
 			setType(e, simType);
 			return;
 		}
@@ -941,5 +916,28 @@ public class UnionFindECR {
 		}
 
 		return unify(t1, t2);
+	}
+
+	private Collection<ECR> getTopParents(Collection<ECR> ecrs) {
+		Set<ECR> top_structECRs = Sets.newLinkedHashSet();
+		Set<ECR> visited = Sets.newHashSet();
+
+		List<ECR> worklist = Lists.newArrayList(ecrs);
+		while (!worklist.isEmpty()) {
+			ECR curr_ecr = worklist.remove(0);
+			if (visited.contains(curr_ecr))
+				continue;
+			visited.add(curr_ecr);
+
+			ValueType type = getType(curr_ecr);
+			Collection<ECR> parents = type.getParent().getECRs();
+			if (parents.isEmpty()) {
+				top_structECRs.add(curr_ecr);
+			} else {
+				worklist.addAll(parents);
+			}
+		}
+
+		return top_structECRs;
 	}
 }
