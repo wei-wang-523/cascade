@@ -205,9 +205,8 @@ public class UnionFindECR {
 	}
 
 	boolean normalizeCollapseECRs() {
-
 		// Collect ECR has parents (optimization for arrays, no collapsing).
-		List<ECR> toCollapseECRs = Lists.newArrayList();
+		Set<ECR> toCollapseECRs = Sets.newHashSet();
 		for (ECR ecr : collapseECRs) {
 			ValueType type = getType(ecr);
 			if (type.isSimple()) {

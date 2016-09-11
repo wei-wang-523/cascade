@@ -89,8 +89,6 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 			}
 		}
 
-		// Analyze non-global CFGs
-
 		// Register function first
 		for (IRControlFlowGraph CFG : CFGs) {
 			GNode declarator = CFG.getSourceNode().getGeneric(2);
@@ -115,6 +113,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 			}
 		}
 
+		// Analyze non-global CFGs
 		for (IRControlFlowGraph CFG : CFGs) {
 			symbolTable.enterScope(CFG);
 			currentCFG = CFG;
@@ -528,7 +527,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		targetType = targetType.resolve();
 		// structure assign, treat like structure pointer assign to unify
 		// the structures involved
-		if (CType.isStructOrUnion(targetType))
+		if (CType.isStructOrUnion(targetType) || targetType.isArray())
 			targetType = PointerT.TO_VOID;
 		Size rangeSize = Size.createForType(targetType);
 		uf.ccjoin(rangeSize, rhs, lhs);
