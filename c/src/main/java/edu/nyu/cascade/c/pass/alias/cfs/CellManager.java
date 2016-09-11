@@ -65,13 +65,7 @@ class CellManager {
 		if (type.isFunction())
 			return function();
 
-		Type cellType;
-		if (type.isArray()) {
-			cellType = CType.getArrayCellType(type);
-		} else {
-			cellType = type;
-		}
-
+		Type cellType = CType.getCellType(type);
 		long cellSize = CType.getInstance().getSize(cellType);
 
 		Cell resultCell;

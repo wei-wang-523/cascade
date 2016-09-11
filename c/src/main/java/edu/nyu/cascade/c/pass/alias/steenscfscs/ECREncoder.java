@@ -543,8 +543,7 @@ public class ECREncoder extends Visitor {
 		ECR loc = uf.getLoc(srcECR);
 		ValueType locType = uf.getType(loc);
 
-		if (fieldType.resolve().isArray())
-			fieldType = CType.getArrayCellType(fieldType);
+		fieldType = CType.getCellType(fieldType);
 
 		if (locType.getSize().isTop()) {
 			uf.ensureSimple(loc);

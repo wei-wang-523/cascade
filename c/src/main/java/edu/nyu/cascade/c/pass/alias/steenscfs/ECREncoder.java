@@ -480,16 +480,14 @@ public class ECREncoder extends Visitor {
 	}
 
 	private ECR getComponent(ECR srcECR, Type baseType, long offset,
-			Type fieldType) {
-		if (fieldType.resolve().isArray()) {
-			fieldType = CType.getArrayCellType(fieldType);
-		}
+			Type field_type) {
+		Type field_cell_type = CType.getCellType(field_type);
 
 		ECR loc = uf.getLoc(srcECR);
 		ValueType locType = uf.getType(loc);
 
 		if (locType.isSimple()) {
-			uf.expand(loc, Size.createForType(fieldType));
+			uf.expand(loc, Size.createForType(field_cell_type));
 			return srcECR;
 		}
 
@@ -504,13 +502,13 @@ public class ECREncoder extends Visitor {
 		uf.setType(loc, locType);
 
 		if (uf.getType(loc).isSimple()) {
-			uf.expand(loc, Size.createForType(fieldType));
+			uf.expand(loc, Size.createForType(field_cell_type));
 			return srcECR;
 		}
 
-		long size = CType.getInstance().getSize(fieldType);
+		long size = CType.getInstance().getSize(field_type);
 		Range<Long> range = Range.closedOpen(offset, offset + size);
-		ECR ecr = createFieldECR(range, fieldType, loc);
+		ECR ecr = createFieldECR(range, field_cell_type, loc);
 		return locType.asStruct().addFieldECR(range, ecr);
 	}
 

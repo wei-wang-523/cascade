@@ -55,12 +55,12 @@ public class UnionFindECR {
 	}
 
 	ECR createECR(Type type) {
-		type = type.resolve();
-		Size size = Size.createForType(type);
+		Type cellType = CType.getCellType(type);
+		Size size = Size.createForType(cellType);
 		Parent parent = Parent.getBottom();
-		if (CType.isScalar(type)) {
+		if (CType.isScalar(cellType)) {
 			return createECR(ValueType.simple(ECR.createBottom(), size, parent));
-		} else if (CType.isStructOrUnion(type)) {
+		} else if (CType.isStructOrUnion(cellType)) {
 			return createECR(ValueType.struct(size, parent));
 		} else {
 			return createECR(ValueType.blank(size, Parent.getBottom()));
