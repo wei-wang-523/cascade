@@ -77,7 +77,7 @@ class Size {
 	 */
 	static Size createForType(Type type) {
 		Preconditions.checkNotNull(type);
-		type = type.resolve();
+		type = CType.getCellType(type);
 		if (type.isInternal()) {
 			return Size.getTop(0);
 		} else if (CType.isScalar(type)) {
@@ -106,11 +106,17 @@ class Size {
 	 * <code>s2</code>
 	 */
 	static Size getLUB(Size s1, Size s2) {
-		if (isLessThan(s1, s2))
-			return s2;
-		if (isLessThan(s2, s1))
+		if (s1.equals(s2)) {
 			return s1;
-		return getTop(Math.max(s1.getValue(), s2.getValue()));
+		}
+		
+		if (s1.isBottom()) {
+			return s2;
+		} else if (s2.isBottom()) {
+			return s1;
+		} else {
+			return getTop(Math.max(s1.getValue(), s2.getValue()));
+		}
 	}
 
 	@Override

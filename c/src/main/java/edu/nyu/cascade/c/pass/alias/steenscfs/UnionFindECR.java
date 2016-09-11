@@ -630,6 +630,10 @@ public class UnionFindECR {
 
 	void expand(ECR e, Size size) {
 		ValueType eType = getType(e);
+		if (eType.getSize().equals(size)) {
+			return;
+		}
+		
 		ValueType blankType = ValueType.blank(size, Parent.getBottom());
 		ValueType unifyType = unify(eType, blankType);
 		setType(e, unifyType);
