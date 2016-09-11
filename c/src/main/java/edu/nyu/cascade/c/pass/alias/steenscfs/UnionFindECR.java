@@ -654,12 +654,6 @@ public class UnionFindECR {
 		}
 	}
 
-	/**
-	 * Expand <code>e</code> to the <code>size</code>
-	 * 
-	 * @param e
-	 * @param size
-	 */
 	void expand(ECR e, Size size) {
 		ValueType eType = getType(e);
 		ValueType blankType = ValueType.blank(size, Parent.getBottom());
@@ -667,12 +661,6 @@ public class UnionFindECR {
 		setType(e, unifyType);
 	}
 
-	/**
-	 * Get the root of ECR <code>e</code>
-	 * 
-	 * @param e
-	 * @return
-	 */
 	ECR findRoot(ECR e) {
 		return (ECR) e.findRoot();
 	}
@@ -704,9 +692,6 @@ public class UnionFindECR {
 	/**
 	 * Collapse <code>structECR</code> by merge it with all its element ECRs, and
 	 * set its type as object type
-	 * 
-	 * @param structECR
-	 * @param structT
 	 */
 	ValueType collapseStruct(ECR structECR, StructType structT) {
 		collapseStruct(structECR, structT, Sets.<ECR> newHashSet(structECR));
@@ -844,9 +829,8 @@ public class UnionFindECR {
 			break;
 		}
 		case BLANK: {
-			BlankType blankType = type.asBlank();
 			ValueType simType = ValueType.simple(ECR.createBottom(),
-					blankType.getSize(), blankType.getParent());
+					type.getSize(), type.getParent());
 			setType(e, simType);
 			return;
 		}
