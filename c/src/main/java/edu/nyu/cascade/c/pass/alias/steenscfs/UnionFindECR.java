@@ -261,17 +261,18 @@ public class UnionFindECR {
 			ECR result = collapse_itr.next();
 			while (collapse_itr.hasNext()) {
 				ECR elem = collapse_itr.next();
-				if (elem.equals(result)) continue;
-				
+				if (elem.equals(result))
+					continue;
+
 				cjoins.addAll(getCjoins(elem));
 				elem.clearCjoins(cjoins);
 				ccjoins.addAll(getCCjoins(elem));
 				elem.clearCCjoins(ccjoins);
-				
+
 				union(result, elem);
 				changed = true;
 			}
-			
+
 			ValueType result_type = ValueType.bottom();
 			for (ValueType elem_type : nonStructTypes) {
 				result_type = unify(result_type, elem_type);
@@ -285,7 +286,7 @@ public class UnionFindECR {
 			for (ECR joinECR : cjoins)
 				cjoin(result, joinECR);
 		}
-		
+
 		return changed;
 	}
 
@@ -315,16 +316,22 @@ public class UnionFindECR {
 			structECRs.add(root);
 		}
 
-		Collection<Pair<Size, ECR>> ccjoins = ImmutableList
-				.copyOf(root.getCCjoins());
-		root.clearCCjoins(ccjoins);
-		for (Pair<Size, ECR> cjoinPair : ccjoins)
-			ccjoin(cjoinPair.fst(), root, cjoinPair.snd());
+		if (!(type.isBlank() || type.isBottom())) {
+			Collection<Pair<Size, ECR>> ccjoins = ImmutableList
+					.copyOf(root.getCCjoins());
+			root.clearCCjoins(ccjoins);
+			for (Pair<Size, ECR> cjoinPair : ccjoins) {
+				ccjoin(cjoinPair.fst(), root, cjoinPair.snd());
+			}
+		}
 
-		Collection<ECR> cjoins = ImmutableList.copyOf(root.getCjoins());
-		root.clearCjoins(cjoins);
-		for (ECR joinECR : cjoins)
-			cjoin(root, joinECR);
+		if (!(type.isBottom())) {
+			Collection<ECR> cjoins = ImmutableList.copyOf(root.getCjoins());
+			root.clearCjoins(cjoins);
+			for (ECR joinECR : cjoins) {
+				cjoin(root, joinECR);
+			}
+		}
 	}
 
 	/**
@@ -502,14 +509,12 @@ public class UnionFindECR {
 
 		Size size1 = type1.getSize();
 		if (!Size.isLessThan(rangeSize, size1)) {
-			addCCjoin(rangeSize, e1, e2);
-			// expand(e1) would call setType(e1, ...) and thus ccjoin(e1, e2)
 			expand(e1, rangeSize);
-			return;
 		}
 
-		if (e1.equals(e2))
+		if (e1.equals(e2)) {
 			return;
+		}
 
 		switch (type1.getKind()) {
 		case BLANK: {
@@ -633,7 +638,7 @@ public class UnionFindECR {
 		if (eType.getSize().equals(size)) {
 			return;
 		}
-		
+
 		ValueType blankType = ValueType.blank(size, Parent.getBottom());
 		ValueType unifyType = unify(eType, blankType);
 		setType(e, unifyType);
