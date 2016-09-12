@@ -32,7 +32,7 @@ public class UnionFindECR {
 	private final UnionFind<IRVar> uf;
 	private final Set<ECR> structECRs = Sets.newLinkedHashSet();
 	private final Set<ECR> collapseECRs = Sets.newLinkedHashSet();
-	private final Set<ECR> injectFieldECRs = Sets.newLinkedHashSet();
+	private final Set<ECR> expandedECRs = Sets.newLinkedHashSet();
 
 	private UnionFindECR() {
 		uf = UnionFind.create();
@@ -70,28 +70,25 @@ public class UnionFindECR {
 	boolean normalizeStructECRs() {
 		boolean changed = false;
 
-		do {
-			injectFieldECRs.clear();
-			Collection<ECR> top_structECRs = getTopParents(structECRs);
+		Collection<ECR> top_structECRs = getTopParents(structECRs);
 
-			Map<ECR, TreeMap<Range<Long>, ECR>> structFlattenMap = Maps.newHashMap();
-			for (ECR ecr : top_structECRs) {
-				// Skip ECR if it has been collapsed when flattening other struct.
-				if (!getType(ecr).isStruct())
-					continue;
-				TreeMap<Range<Long>, ECR> flattenMap = flattenStructECRs(ecr);
-				if (!getType(ecr).isStruct()) {
-					IOUtils.err()
-							.println("Top struct ECR has been collapsed when flattening.");
-				}
-				structFlattenMap.put(ecr, flattenMap);
+		Map<ECR, TreeMap<Range<Long>, ECR>> structFlattenMap = Maps.newHashMap();
+		for (ECR ecr : top_structECRs) {
+			// Skip ECR if it has been collapsed when flattening other struct.
+			if (!getType(ecr).isStruct())
+				continue;
+			TreeMap<Range<Long>, ECR> flattenMap = flattenStructECRs(ecr);
+			if (!getType(ecr).isStruct()) {
+				IOUtils.err()
+						.println("Top struct ECR has been collapsed when flattening.");
 			}
+			structFlattenMap.put(ecr, flattenMap);
+		}
 
-			for (TreeMap<Range<Long>, ECR> flattenFieldMap : structFlattenMap
-					.values()) {
-				changed |= mergeOverlapFields(flattenFieldMap);
-			}
-		} while (!injectFieldECRs.isEmpty());
+		for (TreeMap<Range<Long>, ECR> flattenFieldMap : structFlattenMap
+				.values()) {
+			changed |= mergeOverlapFields(flattenFieldMap);
+		}
 
 		return changed;
 	}
@@ -201,6 +198,22 @@ public class UnionFindECR {
 			return range2.upperEndpoint() <= range1.lowerEndpoint();
 		} else {
 			return false;
+		}
+	}
+
+	boolean normalizeExpandedECRs() {
+		Set<ECR> withParents = Sets.newHashSet();
+		for (ECR ecr : expandedECRs) {
+			ValueType type = getType(ecr);
+			if (!type.getParent().getECRs().isEmpty()) {
+				withParents.add(ecr);
+			}
+		}
+
+		if (withParents.isEmpty()) {
+			return false;
+		} else {
+			return true;
 		}
 	}
 
@@ -413,7 +426,6 @@ public class UnionFindECR {
 			ECR addr_ecr = createECR(
 					ValueType.simple(simp_ecr, Size.getBot(), Parent.getBottom()));
 			field_map.put(range, addr_ecr);
-			injectFieldECRs.add(struct_ecr);
 			changed = true;
 		}
 
@@ -464,12 +476,14 @@ public class UnionFindECR {
 		ValueType t1 = getType(e1);
 		ValueType t2 = getType(e2);
 		ECR root = union(e1, e2);
-
-		setType(root, t1);
 		ValueType unionType = unify(t1, t2);
+
+		// During the join process, there might be cycle. It means root might be set
+		// to freshType. The type-union should take care of it -- union freshType to
+		// unionType.
 		ValueType freshType = getType(root);
-		if (!freshType.equals(t1)) {
-			unionType = resolveType(root, unionType, freshType);
+		if (!freshType.equals(unionType)) {
+			unionType = unify(unionType, freshType);
 		}
 
 		setType(root, unionType);
@@ -667,6 +681,7 @@ public class UnionFindECR {
 	}
 
 	ECR getLoc(ECR srcECR) {
+		Preconditions.checkNotNull(srcECR);
 		ensureSimple(srcECR);
 		ValueType type = getType(srcECR);
 		return type.asSimple().getLoc();
@@ -802,6 +817,7 @@ public class UnionFindECR {
 	}
 
 	void ensureSimple(ECR e) {
+		Preconditions.checkNotNull(e);
 		ValueType type = getType(e);
 
 		switch (type.getKind()) {
@@ -885,45 +901,6 @@ public class UnionFindECR {
 				return Pair.of(t1, t2);
 			}
 		}
-	}
-
-	/**
-	 * During the join process, there might be cycle. It means the ECR <code>
-	 * root</code> might be set to <code>freshType</code>. The type-union should
-	 * take care of it -- union <code>freshType</code> to <code>unionType</code>.
-	 * In particular, <code>freshType</code> is an object type, while <code>
-	 * unionType</code> is a struct type, then <code>unionType</code> should be
-	 * collapsed before union with <code>freshType</code>.
-	 * 
-	 * @param root
-	 * @param unionType
-	 * @param freshType
-	 * @return unified type
-	 */
-	private ValueType resolveType(ECR root, ValueType unionType,
-			ValueType freshType) {
-		Pair<ValueType, ValueType> pair = swap(unionType, freshType);
-		ValueType t1 = pair.fst(), t2 = pair.snd();
-
-		if (t1.isSimple() && t2.isStruct()) {
-			Collection<ECR> elems = t2.asStruct().getFieldMap().values();
-			ValueType resType = t1;
-			for (ECR elem : elems) {
-				ECR elemLoc = getLoc(elem);
-				ValueType elemLocType = getType(elemLoc);
-				Parent parent = elemLocType.getParent().removeECR(root);
-				elemLocType.setParent(parent);
-				if (elemLocType.isStruct()) {
-					elemLocType = collapseStruct(elemLoc, elemLocType.asStruct());
-				}
-
-				union(root, elemLoc);
-				resType = unify(resType, elemLocType);
-			}
-			return resType;
-		}
-
-		return unify(t1, t2);
 	}
 
 	private Collection<ECR> getTopParents(Collection<ECR> ecrs) {

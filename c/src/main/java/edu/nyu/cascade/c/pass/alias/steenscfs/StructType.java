@@ -28,7 +28,7 @@ class StructType extends ValueType {
 			return false;
 		if (!_size.equals(that._size))
 			return false;
-		if (!_fieldMap.equals(that._fieldMap))
+		if (!Maps.difference(_fieldMap, that._fieldMap).areEqual())
 			return false;
 		return true;
 	}
