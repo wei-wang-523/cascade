@@ -16,8 +16,8 @@ final class ECR extends Partition {
 	private final BigInteger id;
 	private ValueType type;
 
-	final private Collection<Pair<Size, ECR>> ccjoin = Sets.newHashSet();
-	final private Collection<ECR> cjoin = Sets.newHashSet();
+	final private Collection<Pair<Size, ECR>> ccjoin = Sets.newLinkedHashSet();
+	final private Collection<ECR> cjoin = Sets.newLinkedHashSet();
 
 	ECR(ValueType _type) {
 		super();
