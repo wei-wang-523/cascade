@@ -5,21 +5,17 @@ package edu.nyu.cascade.c.pass.alias.steenscfs;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-
 import xtc.tree.GNode;
 import xtc.tree.Location;
 import xtc.tree.Node;
 import xtc.tree.VisitingException;
 import xtc.tree.Visitor;
 import xtc.type.NumberT;
-import xtc.type.PointerT;
 import xtc.type.Type;
+import xtc.type.VoidT;
 import xtc.util.SymbolTable.Scope;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
@@ -76,7 +72,8 @@ public class ECREncoder extends Visitor {
 				return ecrMap.get(key);
 
 			Type type = varInfo.getXtcType();
-			ECR addrECR = createPointerECR(type);
+			ECR addrECR = uf.createPointerECR(type);
+			uf.getType(uf.getLoc(addrECR)).setSource();
 			ecrMap.put(key, addrECR);
 
 			if (type.resolve().isFunction()) {
@@ -115,7 +112,9 @@ public class ECREncoder extends Visitor {
 			Type fieldType = CType.getType(node);
 			String fieldName = node.getString(1);
 			long offset = cTypeAnalyzer.getOffset(baseType, fieldName);
-			return getComponent(baseECR, baseType, offset, fieldType);
+			ECR fieldECR = getComponent(baseECR, baseType, offset, fieldType);
+			opECRMap.put(Pair.of(node, node.getLocation()), fieldECR);
+			return fieldECR;
 		}
 
 		public ECR visitDirectComponentSelection(GNode node) {
@@ -125,7 +124,9 @@ public class ECREncoder extends Visitor {
 			Type fieldType = CType.getType(node);
 			String fieldName = node.getString(1);
 			long offset = cTypeAnalyzer.getOffset(baseType, fieldName);
-			return getComponent(baseECR, baseType, offset, fieldType);
+			ECR fieldECR = getComponent(baseECR, baseType, offset, fieldType);
+			opECRMap.put(Pair.of(node, node.getLocation()), fieldECR);
+			return fieldECR;
 		}
 
 		public ECR visitPrimaryIdentifier(GNode node) {
@@ -138,7 +139,7 @@ public class ECREncoder extends Visitor {
 			if (ecrMap.containsKey(key))
 				return ecrMap.get(key);
 
-			ECR addrECR = createPointerECR(varInfo.getXtcType());
+			ECR addrECR = uf.createPointerECR(varInfo.getXtcType());
 			ecrMap.put(key, addrECR);
 			return addrECR;
 		}
@@ -151,7 +152,7 @@ public class ECREncoder extends Visitor {
 			Type baseType = CType.getInstance().pointerize(CType.getType(baseNode));
 			Type idxType = CType.getInstance().pointerize(CType.getType(idxNode));
 			ECR srcECR = baseType.isPointer() ? baseECR : idxECR;
-			return getOpECR(node, srcECR);
+			return getOpECR(node, srcECR, baseType);
 		}
 
 		public ECR visitIntegerConstant(GNode node) {
@@ -196,7 +197,7 @@ public class ECREncoder extends Visitor {
 			Type lhsType = CType.getInstance().pointerize(CType.getType(lhsNode));
 			Type rhsType = CType.getInstance().pointerize(CType.getType(rhsNode));
 			ECR srcECR = rhsType.isPointer() ? rhsECR : lhsECR;
-			return getOpECR(node, srcECR);
+			return getOpECR(node, srcECR, CType.getType(node));
 		}
 
 		public ECR visitShiftExpression(GNode node) {
@@ -207,7 +208,7 @@ public class ECREncoder extends Visitor {
 			Type lhsType = CType.getInstance().pointerize(CType.getType(lhsNode));
 			Type rhsType = CType.getInstance().pointerize(CType.getType(rhsNode));
 			ECR srcECR = rhsType.isPointer() ? rhsECR : lhsECR;
-			return getOpECR(node, srcECR);
+			return getOpECR(node, srcECR, VoidT.TYPE);
 		}
 
 		public ECR visitSubscriptExpression(GNode node) {
@@ -238,7 +239,8 @@ public class ECREncoder extends Visitor {
 			Node rhsNode = node.getNode(2);
 			ECR lhsECR = encodeECR(lhsNode);
 			ECR rhsECR = encodeECR(rhsNode);
-			return getOpECR(node, lhsECR);
+			uf.ccjoin(Size.getBot(), rhsECR, lhsECR);
+			return lhsECR;
 		}
 
 		public ECR visitBitwiseAndExpression(GNode node) {
@@ -249,7 +251,7 @@ public class ECREncoder extends Visitor {
 			Type lhsType = CType.getInstance().pointerize(CType.getType(lhsNode));
 			Type rhsType = CType.getInstance().pointerize(CType.getType(rhsNode));
 			ECR srcECR = rhsType.isPointer() ? rhsECR : lhsECR;
-			return getOpECR(node, srcECR);
+			return getOpECR(node, srcECR, VoidT.TYPE);
 		}
 
 		public ECR visitBitwiseOrExpression(GNode node) {
@@ -260,7 +262,7 @@ public class ECREncoder extends Visitor {
 			Type lhsType = CType.getInstance().pointerize(CType.getType(lhsNode));
 			Type rhsType = CType.getInstance().pointerize(CType.getType(rhsNode));
 			ECR srcECR = rhsType.isPointer() ? rhsECR : lhsECR;
-			return getOpECR(node, srcECR);
+			return getOpECR(node, srcECR, VoidT.TYPE);
 		}
 
 		public ECR visitBitwiseXorExpression(GNode node) {
@@ -271,7 +273,7 @@ public class ECREncoder extends Visitor {
 			Type lhsType = CType.getInstance().pointerize(CType.getType(lhsNode));
 			Type rhsType = CType.getInstance().pointerize(CType.getType(rhsNode));
 			ECR srcECR = rhsType.isPointer() ? rhsECR : lhsECR;
-			return getOpECR(node, srcECR);
+			return getOpECR(node, srcECR, VoidT.TYPE);
 		}
 
 		public ECR visitBitwiseNegationExpression(GNode node) {
@@ -352,22 +354,22 @@ public class ECREncoder extends Visitor {
 
 		public ECR visitPreincrementExpression(GNode node) {
 			ECR base = encodeECR(node.getNode(0));
-			return getOpECR(node, base);
+			return getOpECR(node, base, CType.getType(node));
 		}
 
 		public ECR visitPredecrementExpression(GNode node) {
 			ECR base = encodeECR(node.getNode(0));
-			return getOpECR(node, base);
+			return getOpECR(node, base, CType.getType(node));
 		}
 
 		public ECR visitPostincrementExpression(GNode node) {
 			ECR base = encodeECR(node.getNode(0));
-			return getOpECR(node, base);
+			return getOpECR(node, base, CType.getType(node));
 		}
 
 		public ECR visitPostdecrementExpression(GNode node) {
 			ECR base = encodeECR(node.getNode(0));
-			return getOpECR(node, base);
+			return getOpECR(node, base, CType.getType(node));
 		}
 
 		public ECR visitPrimaryIdentifier(GNode node) {
@@ -473,9 +475,7 @@ public class ECREncoder extends Visitor {
 			return locECR;
 
 		Size rangeSize = Size.createForType(type);
-		Size locSize = uf.getType(locECR).getSize();
-		if (locSize.isBottom())
-			uf.expand(locECR, rangeSize);
+		uf.expand(locECR, rangeSize);
 		return locECR;
 	}
 
@@ -491,52 +491,48 @@ public class ECREncoder extends Visitor {
 			return srcECR;
 		}
 
-		ValueType structType = ValueType.struct(Size.createForType(baseType),
-				Parent.getBottom());
-
-		locType = uf.unify(locType, structType); // Ensure locType is struct type
-		// The type set to loc might not be locType. Since loc could be with bottom
-		// type and associated with ccjoin or cjoin pending, the type change could
-		// trigger the pending resolving process and would change the type set to
-		// loc (could be ref)
-		uf.setType(loc, locType);
-
-		if (uf.getType(loc).isSimple()) {
-			uf.expand(loc, Size.createForType(field_cell_type));
-			return srcECR;
-		}
-
 		long size = CType.getInstance().getSize(field_type);
 		Range<Long> range = Range.closedOpen(offset, offset + size);
-		ECR ecr = createFieldECR(range, field_cell_type, loc);
-		return locType.asStruct().addFieldECR(range, ecr);
+
+		ECR structECR;
+		if (locType.isStruct() && locType.getSize().getValue() == CType
+				.getInstance().getSize(baseType)) {
+			structECR = loc;
+		} else {
+			structECR = uf.createECR(baseType);
+			uf.join(loc, structECR);
+		}
+
+		ValueType structType = uf.getType(structECR);
+		ECR fieldECR;
+		if (structType.asStruct().getFieldMap().containsKey(range)) {
+			fieldECR = structType.asStruct().getFieldMap().get(range);
+		} else {
+			fieldECR = uf.createPointerECR(field_cell_type);
+			ECR field_loc_ecr = uf.getLoc(fieldECR);
+			ValueType field_loc_type = uf.getType(field_loc_ecr);
+			field_loc_type.setParent(Parent.create(structECR));
+			uf.setType(field_loc_ecr, field_loc_type);
+			structType.asStruct().getFieldMap().put(range, fieldECR);
+			uf.setType(structECR, structType);
+		}
+		return fieldECR;
 	}
 
 	private ECR getConstant() {
 		return ECR.createBottom();
 	}
 
-	private ECR createPointerECR(Type type) {
-		ECR varECR = uf.createECR(type);
-		if (type.isInternal()) {
-			return varECR;
-		} else {
-			SimpleType addrType = ValueType.simple(varECR,
-					Size.createForType(PointerT.TO_VOID), Parent.getBottom());
-			return uf.createECR(addrType);
-		}
-	}
-
-	private ECR getOpECR(GNode node, ECR sourceECR) {
+	private ECR getOpECR(GNode node, ECR sourceECR, Type type) {
 		Pair<GNode, Location> key = Pair.of(node, node.getLocation());
 		if (opECRMap.containsKey(key))
 			return opECRMap.get(key);
 
-		ECR resECR = ECR.createBottom();
+		type = CType.getInstance().pointerize(type);
+		ECR resECR = type.isPointer()
+				? uf.createPointerECR(type.toPointer().getType()) : ECR.createBottom();
 		opECRMap.put(key, resECR);
-
 		uf.ccjoin(Size.getBot(), sourceECR, resECR);
-
 		uf.addCollapseECR(resECR);
 		return resECR;
 	}
@@ -546,68 +542,25 @@ public class ECREncoder extends Visitor {
 		if (opECRMap.containsKey(key))
 			return opECRMap.get(key);
 
-		ECR resECR = ECR.createBottom();
+		Type type = CType.getInstance().pointerize(CType.getType(node));
+		ECR resECR = type.isPointer() ? uf.createPointerECR(type)
+				: ECR.createBottom();
 		opECRMap.put(key, resECR);
-
 		uf.ccjoin(Size.getBot(), leftECR, resECR);
 		uf.ccjoin(Size.getBot(), rightECR, resECR);
-
 		uf.addCollapseECR(resECR);
 		return resECR;
 	}
 
-	/**
-	 * Creates a field ECR with type and parent srcECR. Each field has two ECRs:
-	 * one for the field and the other for the pointer of the field. Within the
-	 * parent srcECR, the fieldMap maps from the offset range to the pointer ECR.
-	 * However, the srcECR is set as the parent of the field ECR, rather than its
-	 * pointer. Returns the pointer ECR.
-	 */
-	private ECR createFieldECR(Range<Long> range, Type type, ECR srcECR) {
-		ECR fieldECR = uf.createECR(type);
-		Parent parent = Parent.create(uf.findRoot(srcECR));
-		uf.getType(fieldECR).setParent(parent);
-
-		SimpleType addrType = ValueType.simple(fieldECR,
-				Size.createForType(PointerT.TO_VOID), Parent.getBottom());
-
-		return uf.createECR(addrType);
-	}
-
-	private ECR pointerCast(ECR e, Type srcType, Type targetType) {
+	private ECR pointerCast(ECR srcECR, Type srcType, Type targetType) {
 		if (!targetType.resolve().isPointer())
-			return e;
-		if (uf.getType(e).isBottom())
-			return e;
+			return srcECR;
+		if (uf.getType(srcECR).isBottom())
+			return srcECR;
 
-		final ECR locECR = uf.getLoc(e);
-		Type ptr2Type = targetType.resolve().toPointer().getType();
-		long freshPtr2Size = cTypeAnalyzer.getSize(ptr2Type);
-		uf.expand(locECR, Size.createForType(ptr2Type));
-
-		ValueType locType = uf.getType(locECR);
-		for (ECR parent : locType.getParent().getECRs()) {
-			ValueType parentType = uf.getType(parent);
-			if (!parentType.isStruct())
-				continue;
-
-			Map<Range<Long>, ECR> fieldMap = parentType.asStruct().getFieldMap();
-			Entry<Range<Long>, ECR> entry = Iterables.find(fieldMap.entrySet(),
-					new Predicate<Entry<Range<Long>, ECR>>() {
-						@Override
-						public boolean apply(Entry<Range<Long>, ECR> entry) {
-							return uf.getLoc(entry.getValue()).equals(locECR);
-						}
-					});
-
-			Range<Long> range = entry.getKey();
-			long offset = range.lowerEndpoint();
-			Range<Long> newRange = Range.closedOpen(offset, offset + freshPtr2Size);
-			if (!fieldMap.containsKey(newRange)) {
-				ECR ecr = createFieldECR(range, ptr2Type, parent);
-				fieldMap.put(newRange, ecr);
-			}
-		}
-		return e;
+		uf.ensureSimple(srcECR);
+		ECR castECR = uf.createECR(targetType);
+		uf.pointerCast(srcECR, castECR);
+		return castECR;
 	}
 }

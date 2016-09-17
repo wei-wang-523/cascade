@@ -52,8 +52,7 @@ public class DSAAnalysisStatsTest {
 
 	@Parameterized.Parameters
 	public static Collection<File> cFiles() {
-		File[] programs_dirs = { programs_syntax, mini_invalids, mini_valids,
-				nec_programs, alias_programs };
+		File[] programs_dirs = { alias_programs };
 		Collection<File> fileList = Lists.newArrayList();
 
 		for (File programs_dir : programs_dirs) {
@@ -61,6 +60,7 @@ public class DSAAnalysisStatsTest {
 			FilenameFilter filter = new FilenameFilter() {
 				public boolean accept(File dir, String name) {
 					return name.endsWith("i") || name.endsWith("c");
+					// return name.contains("inf2.c");
 				}
 			};
 
@@ -84,6 +84,7 @@ public class DSAAnalysisStatsTest {
 		main.init();
 		main.prepare();
 		cfile = file;
+		IOUtils.enableOut();
 	}
 
 	@After
@@ -97,7 +98,7 @@ public class DSAAnalysisStatsTest {
 		Printer printer = IOUtils.outPrinter();
 		Printer debugPrinter = IOUtils.debug();
 		CPrinter cprinter = new CPrinter(debugPrinter);
-		
+
 		Node ast = main.parseSourceFile(cfile);
 		main.processSourceFile(cfile, ast);
 		Collection<IRControlFlowGraph> CFGs = main.getControlFlowGraphs();

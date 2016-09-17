@@ -18,7 +18,6 @@ import xtc.util.SymbolTable.Scope;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Range;
 
 import edu.nyu.cascade.c.CScopeAnalyzer;
 import edu.nyu.cascade.c.CType;
@@ -34,7 +33,6 @@ class ECRChecker extends Visitor {
 
 	private final UnionFindECR uf;
 	private final SymbolTable symbolTable;
-	private final CType cTypeAnalyzer = CType.getInstance();
 	private final ECREncoder ecrEncoder;
 	private final LvalVisitor lvalVisitor = new LvalVisitor();
 	private final RvalVisitor rvalVisitor = new RvalVisitor();
@@ -88,23 +86,11 @@ class ECRChecker extends Visitor {
 		}
 
 		public ECR visitIndirectComponentSelection(GNode node) {
-			Node baseNode = node.getNode(0);
-			ECR baseECR = rvalVisitor.encodeECR(baseNode);
-			Type baseType = CType.getType(baseNode).resolve().toPointer().getType();
-			Type fieldType = CType.getType(node);
-			String fieldName = node.getString(1);
-			long offset = cTypeAnalyzer.getOffset(baseType, fieldName);
-			return getComponent(baseECR, offset, fieldType);
+			return lookupOpECR(node);
 		}
 
 		public ECR visitDirectComponentSelection(GNode node) {
-			Node baseNode = node.getNode(0);
-			ECR baseECR = encodeECR(baseNode);
-			Type baseType = CType.getType(baseNode);
-			Type fieldType = CType.getType(node);
-			String fieldName = node.getString(1);
-			long offset = cTypeAnalyzer.getOffset(baseType, fieldName);
-			return getComponent(baseECR, offset, fieldType);
+			return lookupOpECR(node);
 		}
 
 		public ECR visitPrimaryIdentifier(GNode node) {
@@ -376,19 +362,6 @@ class ECRChecker extends Visitor {
 		ECR lvalECR = rvalVisitor.encodeECR(lvalNode);
 		VarImpl var = new VarImpl(name, type, scopeName, lvalECR);
 		uf.add(var);
-	}
-
-	private ECR getComponent(ECR srcECR, long offset, Type fieldType) {
-		ValueType locType = uf.getType(uf.getLoc(srcECR));
-		assert (locType.isSimple() || locType.isStruct());
-
-		if (locType.isSimple()) {
-			return srcECR;
-		} else {
-			long size = CType.getInstance().getSize(fieldType);
-			Range<Long> range = Range.closedOpen(offset, offset + size);
-			return locType.asStruct().getFieldMap().get(range);
-		}
 	}
 
 	private ECR deref(ECR ecr, Type type) {

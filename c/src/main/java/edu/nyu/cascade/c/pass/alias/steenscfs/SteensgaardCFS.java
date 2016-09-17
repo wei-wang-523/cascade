@@ -330,9 +330,13 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 	}
 
 	private void initChecker() {
-		uf.normalizeStructECRs();
-		uf.normalizeCollapseECRs();
-		uf.normalizeExpandedECRs();
+		boolean changed;
+		do {
+			changed = false;
+			changed |= uf.normalizeStructECRs();
+			changed |= uf.normalizeCollapseECRs();
+			changed |= uf.normalizeUnionCastECRs();
+		} while (changed);
 		ecrChecker = ECRChecker.create(uf, symbolTable, ecrEncoder);
 	}
 
@@ -345,7 +349,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 
 	@Override
 	public ECR getPtsToFieldRep(ECR base) {
-		if (base.getType().isBottom())
+		if (uf.getType(base).isBottom())
 			IOUtils.err().println("WARNING: get points-to Loc ECR of bottom " + base);
 		return uf.findRoot(uf.getLoc(base));
 	}
@@ -376,7 +380,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 
 		long ptrWidth = CType.getInstance().getWidth(PointerT.TO_VOID);
 
-		switch (ecr.getType().getKind()) {
+		switch (uf.getType(ecr).getKind()) {
 		// structure's cell type is pointer (not the size of structure)
 		case STRUCT:
 			return ptrWidth;
@@ -489,24 +493,22 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 
 	@Override
 	public Collection<ECR> getFieldReps(ECR rep, Type Ty) {
-		Collection<ECR> reps = Sets.newLinkedHashSet();
-		collectFieldReps(reps, rep);
-		return reps;
-	}
-
-	private void collectFieldReps(Collection<ECR> reps, ECR rep) {
-		if (reps.contains(rep))
-			return;
-
-		reps.add(rep);
-		ValueType repType = uf.getType(rep);
-
-		if (repType.isStruct()) {
-			for (ECR elem : repType.asStruct().getFieldMap().values()) {
-				ECR elemRep = uf.findRoot(uf.getLoc(elem));
-				collectFieldReps(reps, elemRep);
+		// void type is treated as unknown type with maximum size
+		long length = Ty.resolve().isVoid() ? Integer.MAX_VALUE
+				: CType.getInstance().getSize(Ty);
+		Collection<ECR> fields = Sets.newLinkedHashSet();
+		fields.add(uf.findRoot(rep));
+		Collection<Pair<Long, ECR>> fieldEntries = uf.getTopFieldEntries(rep);
+		for (Pair<Long, ECR> fieldEntry : fieldEntries) {
+			long fieldOffset = fieldEntry.fst();
+			ECR fieldECR = fieldEntry.snd();
+			if (uf.getType(fieldECR).isStruct()) {
+				fields.addAll(uf.getNestedFields(fieldECR, fieldOffset, length));
+			} else {
+				fields.add(uf.findRoot(fieldECR));
 			}
 		}
+		return fields;
 	}
 
 	private void heapAssign(Type lhsType, ECR lhs) {
@@ -521,9 +523,10 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		ECR lhsLoc = uf.getLoc(lhs);
 		ValueType lhsLocType = uf.getType(lhsLoc);
 		if (lhsLocType.isBottom()) {
-			ValueType blankType = ValueType.blank(Size.getBot(), Parent.getBottom());
-			uf.setType(lhsLoc, blankType);
+			lhsLocType = ValueType.blank(Size.getBot(), Parent.getBottom());
+			uf.setType(lhsLoc, lhsLocType);
 		}
+		lhsLocType.setSource();
 	}
 
 	private void simpleAssign(Type targetType, ECR lhs, ECR rhs) {

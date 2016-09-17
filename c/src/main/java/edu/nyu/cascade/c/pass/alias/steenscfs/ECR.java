@@ -13,17 +13,17 @@ final class ECR extends Partition {
 	private static final long serialVersionUID = 5892848983695588745L;
 	private static BigInteger nextId = BigInteger.ZERO;
 
-	private final BigInteger id;
-	private ValueType type;
+	private final BigInteger _id;
+	private ValueType _type;
 
-	final private Collection<Pair<Size, ECR>> ccjoin = Sets.newLinkedHashSet();
-	final private Collection<ECR> cjoin = Sets.newLinkedHashSet();
+	final private Collection<Pair<Size, ECR>> _ccjoin = Sets.newLinkedHashSet();
+	final private Collection<ECR> _cjoin = Sets.newLinkedHashSet();
 
-	ECR(ValueType _type) {
+	ECR(ValueType type) {
 		super();
-		type = _type;
+		_type = type;
 
-		this.id = nextId;
+		_id = nextId;
 		nextId = nextId.add(BigInteger.ONE);
 	}
 
@@ -37,51 +37,51 @@ final class ECR extends Partition {
 	}
 
 	ValueType getType() {
-		return type;
+		return _type;
 	}
 
 	void setType(ValueType type) {
-		this.type = type;
+		_type = type;
 	}
 
 	@Override
 	public String toString() {
-		return "ECR " + id;
+		return "ECR " + _id;
 	}
 
 	int getId() {
-		return id.intValue();
+		return _id.intValue();
 	}
 
 	void addCCjoin(Size size, ECR other) {
-		ccjoin.add(Pair.of(size, other));
+		_ccjoin.add(Pair.of(size, other));
 	}
 
 	void addCjoin(ECR other) {
-		cjoin.add(other);
+		_cjoin.add(other);
 	}
 
 	void addCCjoins(Collection<Pair<Size, ECR>> ccjoins) {
-		ccjoin.addAll(ccjoins);
+		_ccjoin.addAll(ccjoins);
 	}
 
 	void addCjoins(Collection<ECR> cjoins) {
-		cjoin.addAll(cjoins);
+		_cjoin.addAll(cjoins);
 	}
 
 	Collection<Pair<Size, ECR>> getCCjoins() {
-		return ccjoin;
+		return _ccjoin;
 	}
 
 	Collection<ECR> getCjoins() {
-		return cjoin;
+		return _cjoin;
 	}
 
 	void clearCCjoins(Collection<Pair<Size, ECR>> ccjoins) {
-		ccjoin.removeAll(ccjoins);
+		_ccjoin.removeAll(ccjoins);
 	}
 
 	void clearCjoins(Collection<ECR> cjoins) {
-		cjoin.removeAll(cjoins);
+		_cjoin.removeAll(cjoins);
 	}
 }

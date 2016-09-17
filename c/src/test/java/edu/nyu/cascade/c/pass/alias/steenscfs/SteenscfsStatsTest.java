@@ -7,6 +7,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -50,8 +51,7 @@ public class SteenscfsStatsTest {
 
 	@Parameterized.Parameters
 	public static Collection<File> cFiles() {
-		File[] programs_dirs = { programs_syntax, mini_invalids, mini_valids,
-				nec_programs, alias_programs };
+		File[] programs_dirs = { alias_programs };
 		Collection<File> fileList = Lists.newArrayList();
 
 		for (File programs_dir : programs_dirs) {
@@ -59,6 +59,7 @@ public class SteenscfsStatsTest {
 			FilenameFilter filter = new FilenameFilter() {
 				public boolean accept(File dir, String name) {
 					return name.endsWith("i") || name.endsWith("c");
+					// return name.contains("22_5");
 				}
 			};
 
@@ -82,6 +83,7 @@ public class SteenscfsStatsTest {
 		main.init();
 		main.prepare();
 		cfile = file;
+		IOUtils.enableOut();
 	}
 
 	@Test
@@ -89,7 +91,7 @@ public class SteenscfsStatsTest {
 		Printer printer = IOUtils.outPrinter();
 		Printer debugPrinter = IOUtils.debug();
 		CPrinter cprinter = new CPrinter(debugPrinter);
-		
+
 		Node ast = main.parseSourceFile(cfile);
 		main.processSourceFile(cfile, ast);
 		Collection<IRControlFlowGraph> CFGs = main.getControlFlowGraphs();

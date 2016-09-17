@@ -2,8 +2,6 @@ package edu.nyu.cascade.c.pass.alias.steenscfs;
 
 class BottomType extends ValueType {
 
-	private boolean op;
-
 	@Override
 	public boolean equals(Object o) {
 		if (!(o instanceof BottomType))
@@ -18,8 +16,7 @@ class BottomType extends ValueType {
 
 	@Override
 	public String toString() {
-		return new StringBuilder().append("(BOT, ").append(op).append(")")
-				.toString();
+		return new StringBuilder().append("(BOT)").toString();
 	}
 
 	@Override
@@ -40,5 +37,15 @@ class BottomType extends ValueType {
 	@Override
 	void setSize(Size size) {
 		throw new UnsupportedOperationException();
+	}
+	
+	@Override
+	void setSource() {
+		throw new UnsupportedOperationException();
+	}
+	
+	@Override
+	boolean isSource() {
+		return false;
 	}
 }

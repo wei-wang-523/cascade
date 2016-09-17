@@ -1565,7 +1565,6 @@ void entry_point(void) {
  }
 }
 
-// This benchmark is to test the determination of Steenscfs normalization of collapse algorithm.
 void main(void) {
      entry_point();
 }

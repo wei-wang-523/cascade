@@ -2,16 +2,18 @@ package edu.nyu.cascade.c.pass.alias.steenscfs;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 class Parent {
 
 	private final Set<ECR> parents;
 
-	private Parent(Set<ECR> parents) {
-		this.parents = parents;
+	private Parent(Collection<ECR> parents) {
+		this.parents = Sets.newLinkedHashSet(parents);
 	}
 
 	private static Parent botInstance = null;
@@ -30,18 +32,19 @@ class Parent {
 	 * Create the parent as <code>ecr</code>
 	 */
 	static Parent create(ECR ecr) {
-		return new Parent(Sets.newHashSet(ecr));
+		return new Parent(Collections.singleton(ecr));
 	}
 
 	static Parent create(Collection<ECR> ecrs) {
-		if (ecrs.isEmpty())
+		if (ecrs.isEmpty()) {
 			return getBottom();
-		return new Parent(Sets.newHashSet(ecrs));
+		} else {
+			return new Parent(ecrs);
+		}
 	}
 
 	/**
-	 * Compute the least-upper-bound operators for two parents <code>p1</code> and
-	 * <code>p2</code>
+	 * Compute the least-upper-bound operators for two parents p1 and p2.
 	 */
 	static Parent getLUB(Parent p1, Parent p2) {
 		Set<ECR> ecrs = Sets.union(p1.getECRs(), p2.getECRs());
@@ -66,29 +69,29 @@ class Parent {
 	/**
 	 * Always return the root of ECR
 	 */
-	Set<ECR> getECRs() {
-		Set<ECR> ecrs = Sets.newHashSet();
-		for (ECR ecr : parents) {
-			ecr = (ECR) ecr.findRoot();
-			ecrs.add(ecr);
-		}
-		return ecrs;
+	ImmutableSet<ECR> getECRs() {
+		return ImmutableSet.copyOf(parents);
 	}
 
-	Parent removeECR(ECR parent) {
+	Parent removeParent(ECR parent) {
 		if (parents.isEmpty())
-			return this;
+			return botInstance;
 
-		Set<ECR> ecrs = Sets.newHashSet(parents);
-		for (ECR ecr : parents) {
+		Collection<ECR> new_parents = Sets.newHashSet();
+		Iterator<ECR> parentItr = parents.iterator();
+		while (parentItr.hasNext()) {
+			ECR ecr = parentItr.next();
 			if (ecr.equals(parent)) {
-				ecrs.remove(ecr);
-				if (ecrs.isEmpty())
-					return botInstance;
-				return Parent.create(parents);
+				continue;
+			} else {
+				new_parents.add(ecr);
 			}
 		}
 
-		return this;
+		return Parent.create(new_parents);
+	}
+	
+	boolean isEmpty() {
+		return parents.isEmpty();
 	}
 }

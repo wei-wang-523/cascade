@@ -9,13 +9,14 @@ class StructType extends ValueType {
 	private final Map<Range<Long>, ECR> _fieldMap;
 	private Size _size;
 	private Parent _parent;
+	private boolean _isSource = false;;
 
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder().append("STRUCT (").append(_size)
 				.append(", ").append(_fieldMap).append(", ").append(_parent)
 				.append(')');
-
+		if (_isSource) sb.append(": ").append("source");
 		return sb.toString();
 	}
 
@@ -28,6 +29,8 @@ class StructType extends ValueType {
 			return false;
 		if (!_size.equals(that._size))
 			return false;
+		if (_isSource != that._isSource )
+			return false;
 		if (!Maps.difference(_fieldMap, that._fieldMap).areEqual())
 			return false;
 		return true;
@@ -37,15 +40,6 @@ class StructType extends ValueType {
 		_size = size;
 		_parent = parent;
 		_fieldMap = Maps.newHashMap(fieldMap);
-	}
-
-	ECR addFieldECR(Range<Long> range, ECR ecr) {
-		if (_fieldMap.containsKey(range)) {
-			return _fieldMap.get(range);
-		} else {
-			_fieldMap.put(range, ecr);
-			return ecr;
-		}
 	}
 
 	StructType(Size size, Parent parent) {
@@ -81,5 +75,15 @@ class StructType extends ValueType {
 
 	Map<Range<Long>, ECR> getFieldMap() {
 		return _fieldMap;
+	}
+	
+	@Override
+	void setSource() {
+		_isSource = true;
+	}
+	
+	@Override
+	boolean isSource() {
+		return _isSource;
 	}
 }

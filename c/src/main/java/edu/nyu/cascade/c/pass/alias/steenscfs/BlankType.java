@@ -2,18 +2,20 @@ package edu.nyu.cascade.c.pass.alias.steenscfs;
 
 class BlankType extends ValueType {
 
-	private Parent parent;
-	private Size size;
+	private Parent _parent;
+	private Size _size;
+	private boolean _isSource = false;
 
 	BlankType(Size size, Parent parent) {
-		this.size = size;
-		this.parent = parent;
+		_size = size;
+		_parent = parent;
 	}
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder().append("BLANK (").append(size)
-				.append(", ").append(parent).append(')');
+		StringBuilder sb = new StringBuilder().append("BLANK (").append(_size)
+				.append(", ").append(_parent).append(')');
+		if (_isSource) sb.append(": ").append("source");
 		return sb.toString();
 	}
 
@@ -22,9 +24,11 @@ class BlankType extends ValueType {
 		if (!(o instanceof BlankType))
 			return false;
 		BlankType that = (BlankType) o;
-		if (!size.equals(that.size))
+		if (!_size.equals(that._size))
 			return false;
-		if (!parent.equals(that.parent))
+		if (!_parent.equals(that._parent))
+			return false;
+		if (_isSource != that._isSource )
 			return false;
 		return true;
 	}
@@ -36,21 +40,31 @@ class BlankType extends ValueType {
 
 	@Override
 	void setParent(Parent parent) {
-		this.parent = parent;
+		_parent = parent;
 	}
 
 	@Override
 	void setSize(Size size) {
-		this.size = size;
+		_size = size;
 	}
 
 	@Override
 	Size getSize() {
-		return size;
+		return _size;
 	}
 
 	@Override
 	Parent getParent() {
-		return parent;
+		return _parent;
+	}
+	
+	@Override
+	void setSource() {
+		_isSource = true;
+	}
+	
+	@Override
+	boolean isSource() {
+		return _isSource;
 	}
 }

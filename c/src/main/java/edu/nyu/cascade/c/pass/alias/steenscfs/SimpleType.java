@@ -2,17 +2,17 @@ package edu.nyu.cascade.c.pass.alias.steenscfs;
 
 class SimpleType extends ValueType {
 
-	private final ECR loc;
-	private Size size;
-
-	private Parent parent;
+	private final ECR _loc;
+	private Size _size;
+	private Parent _parent;
+	private boolean _isSource;
 
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder().append("SIMPLE (")
-				.append(((ECR) loc.findRoot()).getId()).append(", ").append(size)
-				.append(", ").append(parent).append(')');
-
+				.append(((ECR) _loc.findRoot()).getId()).append(", ").append(_size)
+				.append(", ").append(_parent).append(')');
+		if (_isSource) sb.append(": ").append("source");
 		return sb.toString();
 	}
 
@@ -21,19 +21,21 @@ class SimpleType extends ValueType {
 		if (!(o instanceof SimpleType))
 			return false;
 		SimpleType that = (SimpleType) o;
-		if (!loc.equals(that.loc))
+		if (!_loc.equals(that._loc))
 			return false;
-		if (!size.equals(that.size))
+		if (!_size.equals(that._size))
 			return false;
-		if (!parent.equals(that.parent))
+		if (!_parent.equals(that._parent))
+			return false;
+		if (_isSource != that._isSource )
 			return false;
 		return true;
 	}
 
 	SimpleType(ECR loc, Size size, Parent parent) {
-		this.loc = loc;
-		this.size = size;
-		this.parent = parent;
+		_loc = loc;
+		_size = size;
+		_parent = parent;
 	}
 
 	@Override
@@ -43,25 +45,35 @@ class SimpleType extends ValueType {
 
 	@Override
 	Size getSize() {
-		return size;
+		return _size;
 	}
 
 	@Override
 	void setSize(Size size) {
-		this.size = size;
+		_size = size;
 	}
 
 	@Override
 	Parent getParent() {
-		return parent;
+		return _parent;
 	}
 
 	@Override
 	void setParent(Parent parent) {
-		this.parent = parent;
+		_parent = parent;
+	}
+	
+	@Override
+	void setSource() {
+		_isSource = true;
+	}
+	
+	@Override
+	boolean isSource() {
+		return _isSource;
 	}
 
 	ECR getLoc() {
-		return loc;
+		return _loc;
 	}
 }

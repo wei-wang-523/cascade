@@ -26,13 +26,17 @@ import edu.nyu.cascade.util.IOUtils;
 import edu.nyu.cascade.util.Pair;
 import edu.nyu.cascade.util.UnionFind;
 import edu.nyu.cascade.util.UnionFind.Partition;
+import xtc.type.PointerT;
 import xtc.type.Type;
 
 public class UnionFindECR {
 	private final UnionFind<IRVar> uf;
 	private final Set<ECR> structECRs = Sets.newLinkedHashSet();
 	private final Set<ECR> collapseECRs = Sets.newLinkedHashSet();
-	private final Set<ECR> expandedECRs = Sets.newLinkedHashSet();
+	private final Set<Pair<ECR, ECR>> unionCastECRs = Sets.newLinkedHashSet();
+	private final Map<ECR, Collection<Pair<Range<Long>, ECR>>> nestFieldECRMap = Maps
+			.newHashMap();
+	private final Set<Pair<ECR, ECR>> injectFields = Sets.newLinkedHashSet();
 
 	private UnionFindECR() {
 		uf = UnionFind.create();
@@ -54,6 +58,17 @@ public class UnionFindECR {
 		return ecr;
 	}
 
+	ECR createPointerECR(Type type) {
+		ECR varECR = createECR(type);
+		if (type.isInternal()) {
+			return varECR;
+		} else {
+			SimpleType addrType = ValueType.simple(varECR,
+					Size.createForType(PointerT.TO_VOID), Parent.getBottom());
+			return createECR(addrType);
+		}
+	}
+
 	ECR createECR(Type type) {
 		Type cellType = CType.getCellType(type);
 		Size size = Size.createForType(cellType);
@@ -71,18 +86,22 @@ public class UnionFindECR {
 		boolean changed = false;
 
 		Collection<ECR> top_structECRs = getTopParents(structECRs);
+		structECRs.retainAll(top_structECRs);
 
 		Map<ECR, TreeMap<Range<Long>, ECR>> structFlattenMap = Maps.newHashMap();
 		for (ECR ecr : top_structECRs) {
 			// Skip ECR if it has been collapsed when flattening other struct.
-			if (!getType(ecr).isStruct())
+			if (!getType(ecr).isStruct()) {
 				continue;
+			}
+
 			TreeMap<Range<Long>, ECR> flattenMap = flattenStructECRs(ecr);
+			structFlattenMap.put(ecr, flattenMap);
+
 			if (!getType(ecr).isStruct()) {
 				IOUtils.err()
 						.println("Top struct ECR has been collapsed when flattening.");
 			}
-			structFlattenMap.put(ecr, flattenMap);
 		}
 
 		for (TreeMap<Range<Long>, ECR> flattenFieldMap : structFlattenMap
@@ -95,25 +114,36 @@ public class UnionFindECR {
 
 	private boolean mergeOverlapFields(
 			TreeMap<Range<Long>, ECR> flattenFieldMap) {
-		Iterator<Range<Long>> fieldItr = flattenFieldMap.keySet().iterator();
+		Iterator<Entry<Range<Long>, ECR>> fieldItr = flattenFieldMap.entrySet()
+				.iterator();
 		if (!fieldItr.hasNext()) {
 			return false;
 		}
 
 		boolean changed = false;
-		Range<Long> currRange = fieldItr.next();
-		ECR currECR = flattenFieldMap.get(currRange);
+		Entry<Range<Long>, ECR> currPair = fieldItr.next();
+		ECR currECR = currPair.getValue();
+		long currOffset = currPair.getKey().lowerEndpoint();
+		long currSize = getType(getLoc(currECR)).getSize().getValue();
+		long currEndPoint = Math.max(currPair.getKey().upperEndpoint(),
+				currOffset + currSize);
+		Range<Long> currRange = Range.closedOpen(currOffset, currEndPoint);
 		while (fieldItr.hasNext()) {
-			Range<Long> nextRange = fieldItr.next();
-			ECR nextECR = flattenFieldMap.get(nextRange);
+			Entry<Range<Long>, ECR> nextPair = fieldItr.next();
+			ECR nextECR = nextPair.getValue();
+			long nextOffset = nextPair.getKey().lowerEndpoint();
+			long nextSize = getType(getLoc(nextECR)).getSize().getValue();
+			long nextEndPoint = Math.max(nextPair.getKey().upperEndpoint(),
+					nextOffset + nextSize);
+			Range<Long> nextRange = Range.closedOpen(nextOffset, nextEndPoint);
+
 			if (isDisjoint(currRange, nextRange)) {
 				currECR = nextECR;
 				currRange = nextRange;
 			} else {
 				// Merge field ECR (the points-to ECR of the field entry)
-				join(getLoc(currECR), getLoc(nextECR));
+				changed |= join(currECR, nextECR);
 				currRange = merge(currRange, nextRange);
-				changed = true;
 			}
 		}
 
@@ -201,20 +231,84 @@ public class UnionFindECR {
 		}
 	}
 
-	boolean normalizeExpandedECRs() {
-		Set<ECR> withParents = Sets.newHashSet();
-		for (ECR ecr : expandedECRs) {
-			ValueType type = getType(ecr);
-			if (!type.getParent().getECRs().isEmpty()) {
-				withParents.add(ecr);
+	boolean normalizeUnionCastECRs() {
+		boolean changed = false;
+		Iterator<Pair<ECR, ECR>> unionCastItr = ImmutableSet.copyOf(unionCastECRs)
+				.iterator();
+		while (unionCastItr.hasNext()) {
+			Pair<ECR, ECR> pair = unionCastItr.next();
+			pair = swap(pair.fst(), pair.snd());
+			ECR e1 = pair.fst();
+			ECR e2 = pair.snd();
+			ValueType t1 = getType(e1);
+			ValueType t2 = getType(e2);
+			if (t1.isBlank() || t2.isBlank()) {
+				continue;
+			} else if (t1.isSimple()) {
+				unionCastECRs.remove(pair);
+				changed |= join(e1, e2);
+				continue;
+			} else {
+				long size1 = t1.getSize().getValue();
+				long size2 = t2.getSize().getValue();
+				if (t1.isSource() && t2.isSource()) {
+					unionCastECRs.remove(pair);
+					if (size1 > size2) {
+						changed |= injectFieldIntoStruct(e2, e1);
+					} else {
+						changed |= injectFieldIntoStruct(e1, e2);
+					}
+				} else if (t1.isSource()) {
+					if (size1 > size2) {
+						unionCastECRs.remove(pair);
+						changed |= injectFieldIntoStruct(e2, e1);
+					} else {
+						unionCastECRs.remove(pair);
+						t1.setSize(Size.getTop(size2));
+						changed |= injectFieldIntoStruct(e2, e1);
+						IOUtils.err().println("Cannot merge 1" + e1 + ", " + e2);
+					}
+				} else if (t2.isSource()) {
+					if (size2 > size1) {
+						unionCastECRs.remove(pair);
+						changed |= injectFieldIntoStruct(e1, e2);
+					} else {
+						unionCastECRs.remove(pair);
+						t2.setSize(Size.getTop(size1));
+						// changed |= injectFieldIntoStruct(e1, e2);
+						IOUtils.err().println("Cannot merge 2: " + e1 + ", " + e2);
+					}
+				} else {
+					IOUtils.err().println("Cannot merge " + e1 + ", " + e2);
+				}
 			}
 		}
+		return changed;
+	}
 
-		if (withParents.isEmpty()) {
+	/** Inject field into the top parents of source */
+	private boolean injectFieldIntoTopParent(ECR source, ECR field) {
+		ValueType source_type = getType(source);
+		ValueType field_type = getType(field);
+		if (source_type.getParent().isEmpty()) {
 			return false;
-		} else {
-			return true;
 		}
+
+		boolean changed = false;
+		Collection<Pair<Long, ECR>> topFieldEntries = getTopFieldEntries(source);
+		long field_size = field_type.getSize().getValue();
+		for (Pair<Long, ECR> top_entry : topFieldEntries) {
+			long field_offset = top_entry.fst();
+			Range<Long> field_range = Range.closedOpen(field_offset,
+					field_offset + field_size);
+
+			ECR struct_ecr = top_entry.snd();
+			ValueType top_type = getType(struct_ecr);
+			assert top_type.isStruct();
+			changed |= addField(struct_ecr, field_range, field);
+		}
+
+		return changed;
 	}
 
 	boolean normalizeCollapseECRs() {
@@ -225,7 +319,7 @@ public class UnionFindECR {
 			if (type.isSimple()) {
 				ECR loc = getLoc(ecr);
 				ValueType loc_type = getType(loc);
-				if (loc_type.getParent().getECRs().isEmpty()) {
+				if (loc_type.getParent().isEmpty()) {
 					continue;
 				} else {
 					toCollapseECRs.add(loc);
@@ -240,64 +334,7 @@ public class UnionFindECR {
 
 		boolean changed = false;
 		for (ECR topECR : topECRs) {
-			Collection<ECR> collapseECRs = Sets.newHashSet();
-			Collection<ValueType> nonStructTypes = Sets.newLinkedHashSet();
-
-			List<ECR> worklist = Lists.newArrayList();
-			worklist.add(topECR);
-			while (!worklist.isEmpty()) {
-				ECR ecr = worklist.remove(0);
-				collapseECRs.add(ecr);
-				ValueType type = getType(ecr);
-				if (type.isStruct()) {
-					Collection<ECR> elems = type.asStruct().getFieldMap().values();
-					for (ECR elem : elems) {
-						ECR elemLoc = getLoc(elem);
-						if (collapseECRs.contains(elemLoc))
-							continue;
-						worklist.add(elemLoc);
-					}
-				} else {
-					nonStructTypes.add(type);
-				}
-			}
-
-			if (collapseECRs.size() <= 1) {
-				continue;
-			}
-
-			// Collapse the collapseECRs
-			Collection<ECR> cjoins = Sets.newHashSet();
-			Collection<Pair<Size, ECR>> ccjoins = Sets.newHashSet();
-
-			Iterator<ECR> collapse_itr = collapseECRs.iterator();
-			ECR result = collapse_itr.next();
-			while (collapse_itr.hasNext()) {
-				ECR elem = collapse_itr.next();
-				if (elem.equals(result))
-					continue;
-
-				cjoins.addAll(getCjoins(elem));
-				elem.clearCjoins(cjoins);
-				ccjoins.addAll(getCCjoins(elem));
-				elem.clearCCjoins(ccjoins);
-
-				union(result, elem);
-				changed = true;
-			}
-
-			ValueType result_type = ValueType.bottom();
-			for (ValueType elem_type : nonStructTypes) {
-				result_type = unify(result_type, elem_type);
-			}
-
-			setType(result, result_type);
-
-			for (Pair<Size, ECR> cjoinPair : ccjoins)
-				ccjoin(cjoinPair.fst(), result, cjoinPair.snd());
-
-			for (ECR joinECR : cjoins)
-				cjoin(result, joinECR);
+			changed |= collapseStruct(topECR);
 		}
 
 		return changed;
@@ -305,6 +342,11 @@ public class UnionFindECR {
 
 	void reset() {
 		uf.reset();
+		collapseECRs.clear();
+		unionCastECRs.clear();
+		structECRs.clear();
+		injectFields.clear();
+		// nestFieldECRMap.clear();
 	}
 
 	/**
@@ -347,6 +389,75 @@ public class UnionFindECR {
 		}
 	}
 
+	private boolean collapseStruct(ECR topECR) {
+		Collection<ECR> collapseECRs = Sets.newHashSet();
+		Collection<ValueType> nonStructTypes = Sets.newLinkedHashSet();
+		Parent parent = Parent.getBottom();
+
+		List<ECR> worklist = Lists.newArrayList();
+		worklist.add(topECR);
+		while (!worklist.isEmpty()) {
+			ECR ecr = worklist.remove(0);
+			collapseECRs.add(ecr);
+			ValueType type = getType(ecr);
+			parent = Parent.getLUB(parent, type.getParent());
+			if (type.isStruct()) {
+				Collection<ECR> elems = type.asStruct().getFieldMap().values();
+				for (ECR elem : elems) {
+					ECR elemLoc = getLoc(elem);
+					if (collapseECRs.contains(elemLoc))
+						continue;
+					worklist.add(elemLoc);
+				}
+			} else {
+				nonStructTypes.add(type);
+			}
+		}
+
+		if (collapseECRs.size() <= 1) {
+			return false;
+		}
+
+		// Collapse the collapseECRs
+		Collection<ECR> cjoins = Sets.newHashSet();
+		Collection<Pair<Size, ECR>> ccjoins = Sets.newHashSet();
+
+		boolean changed = false;
+		Iterator<ECR> collapse_itr = collapseECRs.iterator();
+		ECR result = collapse_itr.next();
+		while (collapse_itr.hasNext()) {
+			ECR elem = collapse_itr.next();
+			if (elem.equals(result))
+				continue;
+
+			cjoins.addAll(getCjoins(elem));
+			elem.clearCjoins(cjoins);
+			ccjoins.addAll(getCCjoins(elem));
+			elem.clearCCjoins(ccjoins);
+
+			union(result, elem);
+			changed = true;
+		}
+
+		ValueType result_type = ValueType.bottom();
+		for (ValueType elem_type : nonStructTypes) {
+			result_type = unify(result_type, elem_type);
+		}
+
+		Parent new_parent = parent.removeParent(result);
+		result_type.setParent(new_parent);
+
+		setType(result, result_type);
+
+		for (Pair<Size, ECR> cjoinPair : ccjoins)
+			ccjoin(cjoinPair.fst(), result, cjoinPair.snd());
+
+		for (ECR joinECR : cjoins)
+			cjoin(result, joinECR);
+
+		return changed;
+	}
+
 	/**
 	 * Get the type of the ECR @param e
 	 */
@@ -374,62 +485,81 @@ public class UnionFindECR {
 			changed = true;
 			break;
 		}
+		case BLANK: {
+			processBlankUnion(e1, e2);
+			changed = true;
+			break;
+		}
 		case SIMPLE: {
 			if (t2.isStruct()) {
 				changed = injectFieldIntoStruct(e1, e2);
 			} else {
 				assert t2.isSimple();
-				processUnion(e1, e2);
-				changed = true;
+				changed |= processUnion(e1, e2);
 			}
 			break;
 		}
-		default: { // t1 is BLANK or both are STRUCT
-			processUnion(e1, e2);
-			changed = true;
+		default: { // both are STRUCT
+			changed |= processStructUnion(e1, e2);
 			break;
 		}
 		}
 		return changed;
 	}
 
-	private boolean injectFieldIntoStruct(ECR simp_ecr, ECR struct_ecr) {
-		ValueType simple_type = getType(simp_ecr);
-		ValueType struct_type = getType(struct_ecr);
+	private boolean injectFieldIntoStruct(ECR field_ecr, ECR struct_ecr) {
+		Preconditions.checkArgument(getType(struct_ecr).isStruct());
+		if (injectFields.contains(Pair.of(field_ecr, struct_ecr))) {
+			return false;
+		}
 
-		// Update the parent of simp_ecr with the new one struct_ecr
-		Parent new_parent = Parent.create(struct_ecr);
-		simple_type.setParent(Parent.getLUB(new_parent, simple_type.getParent()));
-		Map<Range<Long>, ECR> field_map = struct_type.asStruct().getFieldMap();
+		injectFields.add(Pair.of(field_ecr, struct_ecr));
 
-		Size size = simple_type.getSize();
+		ValueType field_type = getType(field_ecr);
+		Size size = field_type.getSize();
 		Range<Long> range;
 		if (size.isBottom()) {
-			range = Range.closedOpen((long) 0, (long) 1);
+			range = Range.closedOpen((long) 0, (long) 0);
 		} else {
 			range = Range.closedOpen((long) 0, size.getValue());
 		}
+		return addField(struct_ecr, range, field_ecr);
+	}
 
-		boolean changed = false;
-
-		// If contains the field range, merge the field (avoid struct field to
-		// ensure termination. Otherwise, add a new field.
+	private boolean addField(ECR struct_ecr, Range<Long> range, ECR field_ecr) {
+		Preconditions.checkArgument(range.hasUpperBound());
+		Preconditions.checkArgument(getType(field_ecr).isSimple()
+				|| range.upperEndpoint() <= getType(struct_ecr).getSize().getValue());
+		ValueType struct_type = getType(struct_ecr);
+		Map<Range<Long>, ECR> field_map = struct_type.asStruct().getFieldMap();
 		if (field_map.containsKey(range)) {
-			ECR field_ecr = getLoc(field_map.get(range));
-			while (getType(field_ecr).isStruct()) {
-				ValueType tmp_type = getType(field_ecr);
-				Map<Range<Long>, ECR> tmp_field_map = tmp_type.asStruct().getFieldMap();
-				field_ecr = getLoc(tmp_field_map.get(range));
-			}
-			changed |= join(field_ecr, simp_ecr);
+			ECR _field_ecr = getLoc(field_map.get(range));
+			return joinField(_field_ecr, field_ecr);
 		} else {
 			ECR addr_ecr = createECR(
-					ValueType.simple(simp_ecr, Size.getBot(), Parent.getBottom()));
+					ValueType.simple(field_ecr, Size.getBot(), Parent.getBottom()));
 			field_map.put(range, addr_ecr);
-			changed = true;
+			// Update the parent of simp_ecr, inject a contains edge.
+			Parent new_parent = Parent.create(struct_ecr);
+			ValueType field_type = getType(field_ecr);
+			field_type.setParent(Parent.getLUB(new_parent, field_type.getParent()));
+			return true;
 		}
+	}
 
-		return changed;
+	private boolean joinField(ECR e1, ECR e2) {
+		Pair<ECR, ECR> swap_pair = swap(e1, e2);
+		ECR e1_prime = swap_pair.fst();
+		ECR e2_prime = swap_pair.snd();
+		ValueType t1 = getType(e1_prime);
+		ValueType t2 = getType(e2_prime);
+		if (t1.isSimple() && t2.isStruct()) {
+			collapseStruct(e2);
+			join(e1, e2);
+			return true;
+		} else {
+			return join(e1, e2);
+		}
 	}
 
 	private void processBottomUnion(ECR e1, ECR e2) {
@@ -466,17 +596,70 @@ public class UnionFindECR {
 		}
 	}
 
-	private void processUnion(ECR e1, ECR e2) {
-		Preconditions.checkArgument(getType(e1).isBlank()
-				|| (getType(e1).isStruct() && getType(e2).isStruct())
-				|| (getType(e1).isSimple() && getType(e2).isSimple()));
+	private void processBlankUnion(ECR e1, ECR e2) {
+		Preconditions.checkArgument(getType(e1).isBlank());
+		ValueType t1 = getType(e1);
+		ValueType t2 = getType(e2);
+		Size size1 = t1.getSize();
+		Size size2 = t2.getSize();
+		if (size1.isBottom() || size2.isBottom()
+				|| size1.getValue() == size2.getValue()) {
+			processUnion(e1, e2);
+		} else {
+			if (size1.getValue() < size2.getValue()) {
+				unionCastECRs.add(Pair.of(e1, e2));
+			} else {
+				unionCastECRs.add(Pair.of(e2, e1));
+			}
+		}
+	}
+
+	private boolean processStructUnion(ECR e1, ECR e2) {
+		Preconditions.checkArgument(getType(e1).isStruct());
+		Preconditions.checkArgument(getType(e2).isStruct());
+		ValueType t1 = getType(e1);
+		ValueType t2 = getType(e2);
+		Size size1 = t1.getSize();
+		Size size2 = t2.getSize();
+		assert !size1.isBottom();
+		assert !size2.isBottom();
+		if (size1.equals(size2)) {
+			return processUnion(e1, e2);
+		} else {
+			long value1 = size1.getValue();
+			long value2 = size2.getValue();
+			assert value1 != value2;
+			if (value1 < value2) {
+				unionCastECRs.add(Pair.of(e1, e2));
+			} else {
+				unionCastECRs.add(Pair.of(e2, e1));
+			}
+			return false;
+		}
+	}
+
+	private boolean processUnion(ECR e1, ECR e2) {
+		ValueType t1 = getType(e1);
+		ValueType t2 = getType(e2);
 
 		Collection<Pair<Size, ECR>> ccjoins1 = ImmutableList.copyOf(getCCjoins(e1));
 		Collection<Pair<Size, ECR>> ccjoins2 = ImmutableList.copyOf(getCCjoins(e2));
-		ValueType t1 = getType(e1);
-		ValueType t2 = getType(e2);
+
 		ECR root = union(e1, e2);
 		ValueType unionType = unify(t1, t2);
+
+		// Struct must have a compatible field map, set the root as the parent of
+		// every field loc ECR.
+		if (unionType.isStruct()) {
+			Parent new_parent = Parent.create(root);
+			for (ECR field_ecr : unionType.asStruct().getFieldMap().values()) {
+				ECR field_loc_ecr = getLoc(field_ecr);
+				ValueType field_type = getType(field_loc_ecr);
+				Parent parent = Parent.getLUB(field_type.getParent(), new_parent);
+				field_type.setParent(parent);
+				setType(field_loc_ecr, field_type);
+			}
+		}
 
 		// During the join process, there might be cycle. It means root might be set
 		// to freshType. The type-union should take care of it -- union freshType to
@@ -496,6 +679,8 @@ public class UnionFindECR {
 		for (Pair<Size, ECR> pair : ccjoins2) {
 			ccjoin(pair.fst(), root, pair.snd());
 		}
+
+		return true;
 	}
 
 	private void cjoin(ECR e1, ECR e2) {
@@ -569,7 +754,7 @@ public class UnionFindECR {
 			}
 			default: { // case STRUCT
 				addCCjoin(rangeSize, e1, e2);
-				collapseStruct(e2, type2.asStruct());
+				collapseStruct(e2);
 				return;
 			}
 			}
@@ -622,11 +807,15 @@ public class UnionFindECR {
 
 		Parent parent = Parent.getLUB(t1.getParent(), t2.getParent());
 		Size size = Size.getLUB(t1.getSize(), t2.getSize());
+		boolean isSource = t1.isSource() || t2.isSource();
 
 		switch (t1.getKind()) {
 		case BLANK: {
 			t2.setParent(parent);
 			t2.setSize(size);
+			if (isSource) {
+				t2.setSource();
+			}
 			return t2;
 		}
 		case SIMPLE: {
@@ -636,13 +825,21 @@ public class UnionFindECR {
 			join(loc1, loc2);
 			t2.setParent(parent);
 			t2.setSize(size);
+			if (isSource) {
+				t2.setSource();
+			}
 			return t2;
 		}
 		default: { // case STRUCT
 			assert t2.isStruct();
+			// assert t1.getSize().equals(t2.getSize());
 			Map<Range<Long>, ECR> map = getCompatibleMap(t1.asStruct(),
 					t2.asStruct());
-			return ValueType.struct(map, size, parent);
+			ValueType t = ValueType.struct(map, size, parent);
+			if (isSource) {
+				t.setSource();
+			}
+			return t;
 		}
 		}
 	}
@@ -653,9 +850,13 @@ public class UnionFindECR {
 			return;
 		}
 
-		ValueType blankType = ValueType.blank(size, Parent.getBottom());
-		ValueType unifyType = unify(eType, blankType);
-		setType(e, unifyType);
+		if (eType.isBottom()) {
+			ValueType blankType = ValueType.blank(size, Parent.getBottom());
+			setType(e, blankType);
+		} else {
+			Size sizePrime = Size.getLUB(size, eType.getSize());
+			eType.setSize(sizePrime);
+		}
 	}
 
 	ECR findRoot(ECR e) {
@@ -685,74 +886,6 @@ public class UnionFindECR {
 		ensureSimple(srcECR);
 		ValueType type = getType(srcECR);
 		return type.asSimple().getLoc();
-	}
-
-	/**
-	 * Collapse <code>structECR</code> by merge it with all its element ECRs, and
-	 * set its type as object type
-	 */
-	ValueType collapseStruct(ECR structECR, StructType structT) {
-		collapseStruct(structECR, structT, Sets.<ECR> newHashSet(structECR));
-		ensureSimple(structECR);
-		return getType(structECR);
-	}
-
-	/**
-	 * Collapse <code>structECR</code> by merge it with all its element ECRs, and
-	 * set its type as the cell type (simple type might with top size)
-	 * 
-	 * @param structECR
-	 * @param structT
-	 * @param ECRCache
-	 *          avoid structure cycle
-	 * @return
-	 */
-	private ValueType collapseStruct(ECR structECR, StructType structT,
-			Collection<ECR> ECRCache) {
-		// Ensure collapsed type to be simple
-		ValueType unionType = null;
-
-		// join components
-		Collection<ECR> elems = structT.getFieldMap().values();
-		Collection<ECR> cjoins = Sets.newHashSet();
-		Collection<Pair<Size, ECR>> ccjoins = Sets.newHashSet();
-
-		for (ECR elem : elems) {
-			ECR elemLoc = getLoc(elem);
-			ValueType elemLocType = getType(elemLoc);
-			Parent parent = elemLocType.getParent().removeECR(structECR);
-			elemLocType.setParent(parent);
-
-			if (!ECRCache.add(elemLoc))
-				continue; // ECRCache has elemLoc
-
-			cjoins.addAll(getCjoins(elemLoc));
-			elemLoc.clearCjoins(cjoins);
-			ccjoins.addAll(getCCjoins(elemLoc));
-			elemLoc.clearCCjoins(ccjoins);
-
-			if (elemLocType.isStruct()) {
-				elemLocType = collapseStruct(elemLoc, elemLocType.asStruct(), ECRCache);
-			}
-
-			union(structECR, elemLoc);
-			unionType = unionType == null ? elemLocType
-					: unify(unionType, elemLocType);
-		}
-		unionType = unionType == null ? ValueType.bottom() : unionType;
-		if (!structT.getParent().getECRs().isEmpty()) {
-			unionType.setParent(structT.getParent());
-		}
-		setType(structECR, unionType);
-		ECR root = findRoot(structECR);
-
-		for (Pair<Size, ECR> cjoinPair : ccjoins)
-			ccjoin(cjoinPair.fst(), root, cjoinPair.snd());
-
-		for (ECR joinECR : cjoins)
-			cjoin(root, joinECR);
-
-		return unionType;
 	}
 
 	private Collection<ECR> getCjoins(ECR e) {
@@ -834,7 +967,7 @@ public class UnionFindECR {
 			return;
 		}
 		case STRUCT: {
-			collapseStruct(e, type.asStruct());
+			collapseStruct(e);
 			break;
 		}
 		default: { // SIMPLE
@@ -910,8 +1043,9 @@ public class UnionFindECR {
 		List<ECR> worklist = Lists.newArrayList(ecrs);
 		while (!worklist.isEmpty()) {
 			ECR curr_ecr = worklist.remove(0);
-			if (visited.contains(curr_ecr))
+			if (visited.contains(curr_ecr)) {
 				continue;
+			}
 			visited.add(curr_ecr);
 
 			ValueType type = getType(curr_ecr);
@@ -919,10 +1053,131 @@ public class UnionFindECR {
 			if (parents.isEmpty()) {
 				top_structECRs.add(curr_ecr);
 			} else {
+				if (IOUtils.debugEnabled()) {
+					for (ECR ecr : parents) {
+						boolean found_it = false;
+						ValueType parent_type = getType(ecr);
+						for (Entry<Range<Long>, ECR> entry : parent_type.asStruct()
+								.getFieldMap().entrySet()) {
+							found_it |= getLoc(entry.getValue()).equals(curr_ecr);
+						}
+						if (!found_it) {
+							throw new IllegalStateException();
+						}
+					}
+				}
 				worklist.addAll(parents);
 			}
 		}
 
 		return top_structECRs;
+	}
+
+	Collection<Pair<Long, ECR>> getTopFieldEntries(ECR ecr) {
+		Collection<Pair<Long, ECR>> top_parents = Sets.newLinkedHashSet();
+		Set<Pair<Long, ECR>> visited = Sets.newHashSet();
+
+		List<Pair<Long, ECR>> worklist = Lists.newArrayList();
+		worklist.add(Pair.of((long) 0, ecr));
+		while (!worklist.isEmpty()) {
+			Pair<Long, ECR> pair = worklist.remove(0);
+			if (visited.contains(pair)) {
+				continue;
+			}
+			visited.add(pair);
+
+			ECR curr_ecr = pair.snd();
+			ValueType type = getType(curr_ecr);
+			if (type.getParent().isEmpty()) {
+				top_parents.add(pair);
+				continue;
+			}
+
+			long offset = pair.fst();
+			for (ECR parent : type.getParent().getECRs()) {
+				ValueType parent_type = getType(parent);
+				assert (parent_type.isStruct());
+				boolean found_it = false;
+				for (Entry<Range<Long>, ECR> entry : parent_type.asStruct()
+						.getFieldMap().entrySet()) {
+					Range<Long> range = entry.getKey();
+					ECR field_ecr = getLoc(entry.getValue());
+					if (field_ecr.equals(curr_ecr)) {
+						long incr_offset = offset + range.lowerEndpoint();
+						worklist.add(Pair.of(incr_offset, parent));
+						found_it |= true;
+					}
+				}
+				assert found_it;
+			}
+		}
+
+		return top_parents;
+	}
+
+	private Collection<Pair<Range<Long>, ECR>> getOrCreateNestedFields(ECR ecr) {
+		if (nestFieldECRMap.containsKey(ecr)) {
+			return nestFieldECRMap.get(ecr);
+		}
+
+		Collection<Pair<Range<Long>, ECR>> nestFields = Sets.newLinkedHashSet();
+		List<Pair<Range<Long>, ECR>> worklist = Lists.newArrayList();
+
+		worklist.add(Pair.of(
+				Range.closedOpen((long) 0, getType(ecr).getSize().getValue()), ecr));
+		while (!worklist.isEmpty()) {
+			Pair<Range<Long>, ECR> curr_entry = worklist.remove(0);
+			if (nestFields.contains(curr_entry)) {
+				continue;
+			}
+
+			nestFields.add(curr_entry);
+
+			long curr_low = curr_entry.fst().lowerEndpoint();
+			ECR curr_ecr = curr_entry.snd();
+			ValueType curr_type = getType(curr_ecr);
+
+			if (curr_type.isStruct()) {
+				for (Entry<Range<Long>, ECR> entry : curr_type.asStruct().getFieldMap()
+						.entrySet()) {
+					ECR field_ecr = getLoc(entry.getValue());
+					ValueType field_type = getType(field_ecr);
+					long field_size = field_type.getSize().getValue();
+					long field_low = curr_low + entry.getKey().lowerEndpoint();
+					long field_high = curr_low + Math.max(field_size + field_low,
+							entry.getKey().upperEndpoint());
+					worklist
+							.add(Pair.of(Range.closedOpen(field_low, field_high), field_ecr));
+				}
+			}
+		}
+
+		nestFieldECRMap.put(ecr, nestFields);
+		return nestFields;
+	}
+
+	Collection<ECR> getNestedFields(ECR ecr, long offset, long size) {
+		Preconditions.checkArgument(getType(ecr).isStruct());
+		Collection<Pair<Range<Long>, ECR>> nested_fields = getOrCreateNestedFields(
+				ecr);
+		Range<Long> range = size == Integer.MAX_VALUE ? Range.atLeast(offset)
+				: Range.closedOpen(offset, offset + size);
+		Collection<ECR> fields = Sets.newLinkedHashSet();
+		for (Pair<Range<Long>, ECR> field_entry : nested_fields) {
+			Range<Long> field_range = field_entry.fst();
+			if (isDisjoint(field_range, range)) {
+				continue;
+			} else {
+				fields.add(findRoot(field_entry.snd()));
+			}
+		}
+
+		return fields;
+	}
+
+	void pointerCast(ECR src_ecr, ECR target_ecr) {
+		Preconditions.checkArgument(getType(src_ecr).isSimple());
+		Preconditions.checkArgument(getType(target_ecr).isSimple());
+		join(getLoc(src_ecr), getLoc(target_ecr));
 	}
 }
