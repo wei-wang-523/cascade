@@ -10,6 +10,7 @@ import javax.annotation.Nullable;
 
 import xtc.tree.Node;
 import xtc.type.Type;
+import xtc.type.VoidT;
 
 // import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
@@ -488,9 +489,7 @@ public class MultiLambdaStateFactory<T> extends AbstractStateFactory<T> {
 		MultiLambdaStateExpression multiLambdaState = state.asMultiLambda();
 		Map<String, SingleLambdaStateExpression> stateMap = multiLambdaState
 				.getStateMap();
-		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode)).toPointer()
-				.getType();
-		for (T fillInRep : labelAnalyzer.getFieldReps(ptrRep, ty)) {
+		for (T fillInRep : labelAnalyzer.getFieldReps(ptrRep, VoidT.TYPE)) {
 			updateStateWithRep(multiLambdaState, fillInRep);
 			String label = labelAnalyzer.getRepId(fillInRep);
 			SingleLambdaStateExpression singleState = stateMap.get(label);

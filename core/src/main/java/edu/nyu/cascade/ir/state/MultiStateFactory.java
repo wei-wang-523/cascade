@@ -11,6 +11,7 @@ import javax.annotation.Nullable;
 
 import xtc.tree.Node;
 import xtc.type.Type;
+import xtc.type.VoidT;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.LinkedHashMultimap;
@@ -480,9 +481,7 @@ public class MultiStateFactory<T> extends AbstractStateFactory<T> {
 		T ptrRep = labelAnalyzer.getPtsToRep(ptrNode);
 		MultiStateExpression multiState = state.asMultiple();
 		Map<String, SingleStateExpression> stateMap = multiState.getStateMap();
-		Type ty = CType.getInstance().pointerize(CType.getType(ptrNode)).toPointer()
-				.getType();
-		for (T rep : labelAnalyzer.getFieldReps(ptrRep, ty)) {
+		for (T rep : labelAnalyzer.getFieldReps(ptrRep, VoidT.TYPE)) {
 			updateStateWithRep(multiState, rep);
 			String label = labelAnalyzer.getRepId(rep);
 			SingleStateExpression singleState = stateMap.get(label);
