@@ -320,7 +320,7 @@ public class SingleLambdaStateFactory<T> extends AbstractStateFactory<T> {
 			Expression region, Expression size, Node ptrNode) {
 		SingleLambdaStateExpression lambdaState = state.asSingleLambda();
 		SingleStateExpression singleState = lambdaState.getSingleState();
-		singleStateFactory.updateSizeStateWithFree(singleState, region, size,
+		singleStateFactory.updateSizeStateWithAlloc(singleState, region, size,
 				ptrNode);
 		addHeapRegInfo(lambdaState, region);
 	}

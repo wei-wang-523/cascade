@@ -299,15 +299,15 @@ public class SingleStateFactory<T> extends AbstractStateFactory<T> {
 	@Override
 	protected void updateSizeStateWithAlloc(StateExpression state,
 			Expression region, Expression size, Node ptrNode) {
-		Preconditions.checkNotNull(heapEncoder);
-
 		SingleStateExpression singleState = state.asSingle();
 		// FIXME: update size array only if region is not nullptr
 		IRDataFormatter formatter = getDataFormatter();
 		ArrayExpression sizePrime = formatter.updateSizeArray(singleState.getSize(),
 				region, size);
 		singleState.setSize(sizePrime);
-		heapEncoder.addFreshRegion(region);
+		if (heapEncoder != null) {
+			heapEncoder.addFreshRegion(region);
+		}
 	}
 
 	@Override
