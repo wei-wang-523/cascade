@@ -486,11 +486,8 @@ public class ECREncoder extends Visitor {
 		ECR loc = uf.getLoc(srcECR);
 		ValueType locType = uf.getType(loc);
 
-		if (locType.isSimple()) {
-			uf.expand(loc, Size.createForType(field_cell_type));
-			return srcECR;
-		}
-
+		assert !locType.isSimple();
+		
 		long size = CType.getInstance().getSize(field_type);
 		Range<Long> range = Range.closedOpen(offset, offset + size);
 
@@ -553,14 +550,13 @@ public class ECREncoder extends Visitor {
 	}
 
 	private ECR pointerCast(ECR srcECR, Type srcType, Type targetType) {
-		if (!targetType.resolve().isPointer())
-			return srcECR;
 		if (uf.getType(srcECR).isBottom())
 			return srcECR;
-
-		uf.ensureSimple(srcECR);
-		ECR castECR = uf.createECR(targetType);
-		uf.pointerCast(srcECR, castECR);
-		return castECR;
+		targetType = CType.getInstance().pointerize(targetType);
+		if (!targetType.isPointer())
+			return srcECR;
+		ECR resECR = uf.createPointerECR(targetType.toPointer().getType());
+		uf.pointerCast(srcECR, resECR);
+		return resECR;
 	}
 }

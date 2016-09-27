@@ -174,6 +174,9 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 		case RETURN: {
 			Node srcNode = stmt.getOperand(0).getSourceNode();
 			ECR srcECR = ecrEncoder.toRval(srcNode);
+			if (!CType.isScalar(CType.getType(srcNode).resolve())) {
+				srcECR = uf.getLoc(srcECR);
+			}
 
 			String functionName = currentCFG.getName();
 			// option --inline-malloc may introduce return statements of inlined
@@ -331,10 +334,14 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 
 	private void initChecker() {
 		boolean changed;
+		IOUtils.err().println("Initialize check...");
 		do {
 			changed = false;
+			IOUtils.err().println("Normalize structure...");
 			changed |= uf.normalizeStructECRs();
+			IOUtils.err().println("Normalize collapsed ECR...");
 			changed |= uf.normalizeCollapseECRs();
+			IOUtils.err().println("Normalize cast ECR...");
 			changed |= uf.normalizeUnionCastECRs();
 		} while (changed);
 		ecrChecker = ECRChecker.create(uf, symbolTable, ecrEncoder);
@@ -498,7 +505,7 @@ public class SteensgaardCFS implements IRAliasAnalyzer<ECR> {
 				: CType.getInstance().getSize(Ty);
 		Collection<ECR> fields = Sets.newLinkedHashSet();
 		fields.add(uf.findRoot(rep));
-		Collection<Pair<Long, ECR>> fieldEntries = uf.getTopFieldEntries(rep);
+		Collection<Pair<Long, ECR>> fieldEntries = uf.getSourceFieldEntries(rep);
 		for (Pair<Long, ECR> fieldEntry : fieldEntries) {
 			long fieldOffset = fieldEntry.fst();
 			ECR fieldECR = fieldEntry.snd();
