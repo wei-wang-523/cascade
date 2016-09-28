@@ -828,7 +828,7 @@ public class UnionFindECR {
 						.p(loc_size1).p(',').p(loc_size2)
 						.p("-- CFS always pick the smaller one.").pln();
 			}
-			ValueType t = loc_size1 < loc_size2 ? t2 : t1;
+			ValueType t = loc_size1 < loc_size2 ? t1 : t2;
 			t.setParent(parent);
 			t.setSize(size);
 			if (isSource) {
@@ -1094,9 +1094,7 @@ public class UnionFindECR {
 
 			ECR curr_ecr = pair.snd();
 			ValueType type = getType(curr_ecr);
-			if (type.getParent().isEmpty()) {
-				top_parents.add(pair);
-			}
+			top_parents.add(pair);
 
 			long offset = pair.fst();
 			for (ECR parent : type.getParent().getECRs()) {
