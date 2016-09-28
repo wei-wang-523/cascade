@@ -525,6 +525,13 @@ public class UnionFindECR {
 		long struct_size = struct_type.getSize().getValue();
 		long field_size = field_type.getSize().getValue();
 		assert (offset + field_size <= struct_size);
+		
+		if (offset == 0 && struct_size == field_size) {
+			if (field_type.isSimple()) {
+				collapseStruct(struct_ecr);
+			}
+			return join(struct_ecr, field_ecr);
+		}
 
 		Map<Range<Long>, ECR> field_map = struct_type.asStruct().getFieldMap();
 		Range<Long> range = Range.closedOpen(offset, offset + field_size);
@@ -828,7 +835,7 @@ public class UnionFindECR {
 						.p(loc_size1).p(',').p(loc_size2)
 						.p("-- CFS always pick the smaller one.").pln();
 			}
-			ValueType t = loc_size1 < loc_size2 ? t2 : t1;
+			ValueType t = loc_size1 < loc_size2 ? t1 : t2;
 			t.setParent(parent);
 			t.setSize(size);
 			if (isSource) {
