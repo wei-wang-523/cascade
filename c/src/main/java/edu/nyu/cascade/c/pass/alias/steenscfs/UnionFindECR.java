@@ -243,13 +243,13 @@ public class UnionFindECR {
 			Pair<ECR, ECR> pair = swap(cast_pair.fst(), cast_pair.snd());
 			ECR e1 = pair.fst();
 			ECR e2 = pair.snd();
-			
+
 			ValueType t1 = getType(e1);
 			ValueType t2 = getType(e2);
 			if (t1.isBlank() || t2.isBlank()) {
 				continue;
 			}
-			
+
 			if (t1.isSimple() && t2.isSimple()) {
 				changed |= join(e2, e2);
 				unionCastECRs.remove(cast_pair);
@@ -260,7 +260,7 @@ public class UnionFindECR {
 					e1);
 			Collection<Pair<Long, ECR>> sourceFieldEntries2 = getSourceFieldEntries(
 					e2);
-			
+
 			if (!sourceFieldEntries1.isEmpty()) {
 				changed |= injectFieldIntoSourceParent(sourceFieldEntries1, e2);
 			}
@@ -525,7 +525,7 @@ public class UnionFindECR {
 		long struct_size = struct_type.getSize().getValue();
 		long field_size = field_type.getSize().getValue();
 		assert (offset + field_size <= struct_size);
-		
+
 		if (offset == 0 && struct_size == field_size) {
 			if (field_type.isSimple()) {
 				collapseStruct(struct_ecr);
@@ -1101,7 +1101,7 @@ public class UnionFindECR {
 
 			ECR curr_ecr = pair.snd();
 			ValueType type = getType(curr_ecr);
-			if (type.getParent().isEmpty()) {
+			if (type.getParent().getECRs().isEmpty()) {
 				top_parents.add(pair);
 			}
 
@@ -1118,12 +1118,18 @@ public class UnionFindECR {
 						long incr_offset = offset + range.lowerEndpoint();
 						worklist.add(Pair.of(incr_offset, parent));
 						found_it |= true;
+					} else if (unionCastECRs.contains(Pair.of(field_ecr, curr_ecr))
+							|| unionCastECRs.contains(Pair.of(curr_ecr, field_ecr))) {
+						long incr_offset = offset + range.lowerEndpoint();
+						worklist.add(Pair.of(incr_offset, parent));
+						found_it |= true;
 					}
 				}
 				assert found_it;
 			}
 		}
 
+		assert !top_parents.isEmpty();
 		return top_parents;
 	}
 
