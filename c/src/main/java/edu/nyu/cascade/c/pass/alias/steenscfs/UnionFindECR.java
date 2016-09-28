@@ -1101,9 +1101,7 @@ public class UnionFindECR {
 
 			ECR curr_ecr = pair.snd();
 			ValueType type = getType(curr_ecr);
-			if (type.getParent().isEmpty()) {
-				top_parents.add(pair);
-			}
+			top_parents.add(pair);
 
 			long offset = pair.fst();
 			for (ECR parent : type.getParent().getECRs()) {
